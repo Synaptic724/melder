@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in closure pass; all linked tasks are complete and archived.
+
 # Story: Optimize SpellCrafter Phases
 
 ## Metadata
 - Story ID: STORY-2026-02-13-optimize-spellcrafter-phases
 - Epic: EPIC-2026-02-13-optimize-melder
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-13
@@ -41,9 +44,9 @@ Discovery-first optimization gives us a stable path to reduce overhead safely.
 - `EPIC-2026-02-13-optimize-melder`
 
 ## Tasks (Implementation Checklist)
-- [x] Task: TASK-2026-02-13-discovery-spellcrafter-phases - Build discovery baseline, hotspot map, and prioritized optimization candidates for SpellCrafter phases. (`context_compass/tasks/2026-02-13_discovery_spellcrafter_phases_task.md`)
-- [x] Task: TASK-2026-02-14-optimize-phase8-11-codegen-ir-capture-frequency - Reduce repeated phase8-11 capture rebuild work with contract-safe staging. (`context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md`)
-- [x] Task: TASK-2026-02-14-optimize-phase11-signature-hash-pipeline - Reduce signature/hash serialization overhead in phase11 export. (`context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md`)
+- [x] Task: TASK-2026-02-13-discovery-spellcrafter-phases - Build discovery baseline, hotspot map, and prioritized optimization candidates for SpellCrafter phases. (`context_compass/tasks/completed/2026-02-13_discovery_spellcrafter_phases_task.md`)
+- [x] Task: TASK-2026-02-14-optimize-phase8-11-codegen-ir-capture-frequency - Reduce repeated phase8-11 capture rebuild work with contract-safe staging. (`context_compass/tasks/completed/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md`)
+- [x] Task: TASK-2026-02-14-optimize-phase11-signature-hash-pipeline - Reduce signature/hash serialization overhead in phase11 export. (`context_compass/tasks/completed/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md`)
 - [x] Task: TASK-2026-02-14-optimize-phase8-10-codegen-row-builders-contract-fastpath - Remove defensive hot-path probing in row builders using contract-backed access. (`context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md`)
 
 ## Acceptance Criteria
@@ -71,7 +74,7 @@ Discovery-first optimization gives us a stable path to reduce overhead safely.
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: Rank-2 signature pipeline task moved to review after tuple-hash update for `steps_rows_signature`; latest harness shows reduced signature-path churn and improved warm profile shape (`10.833ms -> 9.804ms`, serializer calls `996 -> 612`, pickle calls `724 -> 340`).
-  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:6-93, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt:7-38, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:7-41
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:6-93, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt:7-38, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:7-41
   IMPACT: SpellCrafter rank-2 now has measurable warm-path gain and can be closed after user acceptance.
   NEXT: Walk rank-1/rank-2/rank-3 outcomes with user and request closure direction.
   REREAD: REQUIRED
@@ -89,7 +92,7 @@ Discovery-first optimization gives us a stable path to reduce overhead safely.
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: Rank-2 signature-pipeline task is implemented with regression rollback and final container-first scalar fastpath dispatch; measured result is near-neutral wall time with reduced pickle calls.
-  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:61-148, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_11_capture_freq_opt_output_run2.txt:7-38, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run6.txt:7-39, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt:7-39
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:61-148, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_11_capture_freq_opt_output_run2.txt:7-38, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run6.txt:7-39, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt:7-39
   IMPACT: Rank-2 is stable and ready for keep-vs-iterate decision as a low-risk internal cleanup with reduced pickle calls but near-neutral wall-time effect.
   NEXT: Evaluate rank-2 together with rank-3 in final acceptance walkthrough.
   REREAD: REQUIRED
@@ -98,7 +101,7 @@ Discovery-first optimization gives us a stable path to reduce overhead safely.
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: Rank-1 SpellCrafter task is implemented and in review with strong warm 8-11 gains after dirty-capture rollout.
-  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:6-58, context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:60-82, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_11_capture_freq_opt_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_11_capture_freq_opt_output_run2.txt:7-9
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:6-58, context_compass/tasks/completed/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:60-82, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_11_capture_freq_opt_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_11_capture_freq_opt_output_run2.txt:7-9
   IMPACT: Story has validated execution progress; next priority can move to rank-2 after acceptance.
   NEXT: Review rank-1 outcomes with user and confirm whether to proceed immediately to rank-2 signature pipeline task.
   REREAD: REQUIRED
@@ -107,7 +110,7 @@ Discovery-first optimization gives us a stable path to reduce overhead safely.
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Discovery is complete and produced a ranked execution plan: (1) capture-frequency reduction, (2) signature hash pipeline optimization, (3) contract-fastpath row builder cleanup.
-  EVIDENCE: context_compass/tasks/2026-02-13_discovery_spellcrafter_phases_task.md:63-111, context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:1-76, context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:1-76, context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md:1-105
+  EVIDENCE: context_compass/tasks/completed/2026-02-13_discovery_spellcrafter_phases_task.md:63-111, context_compass/tasks/completed/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:1-76, context_compass/tasks/completed/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:1-76, context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md:1-105
   IMPACT: Story moved from discovery-ready to execution-ready with explicit ranked tasks.
   NEXT: Start rank-1 task (`TASK-2026-02-14-optimize-phase8-11-codegen-ir-capture-frequency`).
   REREAD: REQUIRED
@@ -121,9 +124,8 @@ Discovery-first optimization gives us a stable path to reduce overhead safely.
   NEXT: Append new findings here as work continues.
 
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user
 ## Context / Handoff Summary
 Story discovery is complete and in-progress execution has started with three
 ranked implementation tasks now queued. Rank-1 is implemented with strong warm

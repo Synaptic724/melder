@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in closure pass; implementation/discovery outcomes are complete and archived.
+
 # Task: Optimize Conjure Scheduler Lifecycle Reduction
 
 ## Metadata
 - Task ID: TASK-2026-02-14-conjure-scheduler-lifecycle-reduction
 - Story: STORY-2026-02-13-optimize-conjure-paths
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -36,7 +39,7 @@ error propagation, and cleanup contracts.
 - `src/melder/spellbook/spellbook_creation_system.py`
 - `src/melder/utilities/synchronization/phase_scheduler.py` (if needed)
 - `tests/unit/melder/spellbook/` (targeted updates as needed)
-- `context_compass/stories/2026-02-13_optimize_conjure_paths_story.md`
+- `context_compass/stories/completed/2026-02-13_optimize_conjure_paths_story.md`
 
 ## Validation
 - `python -m pytest -q tests/unit/melder/spellbook/test_spellbook_creation_system_resolution_fastpath.py` -> `2 passed`.
@@ -54,8 +57,7 @@ error propagation, and cleanup contracts.
 - [x] Deliverables produced and linked
 - [x] Documentation updated (if needed)
 - [x] Validation status recorded
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-14
   TYPE: MEASURE

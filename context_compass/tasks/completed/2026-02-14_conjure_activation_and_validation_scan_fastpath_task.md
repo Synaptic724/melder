@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in closure pass; implementation/discovery outcomes are complete and archived.
+
 # Task: Optimize Conjure Activation and Validation Scan Fastpath
 
 ## Metadata
 - Task ID: TASK-2026-02-14-conjure-activation-and-validation-scan-fastpath
 - Story: STORY-2026-02-13-optimize-conjure-paths
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
@@ -52,8 +55,7 @@ while preserving correctness and diagnostic behavior.
 - [x] Deliverables produced and linked
 - [x] Documentation updated (if needed)
 - [x] Validation status recorded
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-14
   TYPE: MEASURE

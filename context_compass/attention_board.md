@@ -15,12 +15,6 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| context_compass artifact reference cleanup | review | codex | none | walk through cleanup outcomes and confirm acceptance for closure | `context_compass/tasks/2026-02-14_context_compass_artifact_reference_cleanup_task.md` | 2026-02-14 | REQUIRED |
-| optimize melder epic | in_progress | codex | none | all active optimization stories are now in review state; route acceptance and move approved tickets | `context_compass/epics/2026-02-13_optimize_melder_epic.md` | 2026-02-14 | REQUIRED |
-| optimize conjure paths | review | codex | none | confirm acceptance for scheduler-lifecycle/phase-unit/activation-scan tasks, then move approved tickets | `context_compass/stories/2026-02-13_optimize_conjure_paths_story.md` | 2026-02-14 | REQUIRED |
-| optimize meld paths | review | codex | none | review/confirm `TASK-2026-02-13-meld-dynamic-gate-fastdoor` acceptance, then close/move as directed | `context_compass/stories/2026-02-13_optimize_meld_paths_story.md` | 2026-02-14 | REQUIRED |
-| optimize spellcrafter phases | review | codex | none | rank-1/rank-2 are in review with measured gains; request closure direction | `context_compass/stories/2026-02-13_optimize_spellcrafter_phases_story.md` | 2026-02-14 | REQUIRED |
-| optimize creation context codegen | review | codex | none | rank-1/rank-2/rank-3 are implemented; walk outcomes and request closure acceptance | `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md` | 2026-02-14 | REQUIRED |
 
 ## Active Attention Details
 - TYPE: MEASURE
@@ -85,7 +79,7 @@ Attention details rule
 
 - TYPE: DECISION
 - CLAIM: Optimization-wave story routing was normalized: `optimize-conjure-paths`, `optimize-meld-paths`, and `optimize-creation-context-codegen` are now marked `review` to reflect completed implementation checklists.
-- EVIDENCE: `context_compass/epics/2026-02-13_optimize_melder_epic.md:123-139`, `context_compass/stories/2026-02-13_optimize_conjure_paths_story.md:6-6`, `context_compass/stories/2026-02-13_optimize_meld_paths_story.md:6-6`, `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md:6-6`
+- EVIDENCE: `context_compass/epics/completed/2026-02-13_optimize_melder_epic.md:123-139`, `context_compass/stories/completed/2026-02-13_optimize_conjure_paths_story.md:6-6`, `context_compass/stories/completed/2026-02-13_optimize_meld_paths_story.md:6-6`, `context_compass/stories/completed/2026-02-13_optimize_creation_context_codegen_story.md:6-6`
 - REREAD: REQUIRED
 - NEXT: Run user acceptance walk-through for review stories and move approved tickets.
 
@@ -151,25 +145,25 @@ Attention details rule
 
 - TYPE: MEASURE
 - CLAIM: SpellCrafter rank-2 signature-hash task moved to review after tuple-hash `steps_rows_signature` update; latest harness shows lower warm overhead and reduced signature serialization churn.
-- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:6-93`, `src/melder/spellbook/spell_crafter/spell_crafter.py:1756-1758`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt:7-38`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:7-41`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:6-93`, `src/melder/spellbook/spell_crafter/spell_crafter.py:1756-1758`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt:7-38`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:7-41`
 - REREAD: REQUIRED
 - NEXT: Walk rank-1/rank-2 outcomes with user and confirm close/move direction.
 
 - TYPE: MEASURE
 - CLAIM: Conjure activation/validation scan fastpath is implemented and in review with fresh targeted spellbook coverage (`12 passed`) after removing the redundant `_resolve_conjure_policy` duplicate-id recheck.
-- EVIDENCE: `context_compass/tasks/2026-02-14_conjure_activation_and_validation_scan_fastpath_task.md:6-69`, `src/melder/spellbook/spellbook_creation_system.py:258-285`, `context_compass/artifacts/2026-02-14_conjure_activation_validation_scan_fastpath_pytests.txt:1-12`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_conjure_activation_and_validation_scan_fastpath_task.md:6-69`, `src/melder/spellbook/spellbook_creation_system.py:258-285`, `context_compass/artifacts/2026-02-14_conjure_activation_validation_scan_fastpath_pytests.txt:1-12`
 - REREAD: REQUIRED
 - NEXT: Confirm acceptance for activation/validation task and route move-to-completed.
 
 - TYPE: MEASURE
 - CLAIM: Conjure phase-unit-allocation fastpath is implemented and in review with fresh focused validation (`4 passed` spellbook factory suite + `10 passed` scheduler suite).
-- EVIDENCE: `context_compass/tasks/2026-02-14_conjure_phase_unit_allocation_fastpath_task.md:6-77`, `src/melder/spellbook/spellbook_creation_system.py:1560-1619`, `src/melder/spellbook/spellbook_creation_system.py:1622-1719`, `src/melder/spellbook/spellbook_creation_system.py:1761-1883`, `context_compass/artifacts/2026-02-14_conjure_phase_unit_allocation_fastpath_pytests.txt:1-12`, `context_compass/artifacts/2026-02-14_conjure_phase_unit_allocation_fastpath_phase_scheduler_pytests.txt:1-12`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_conjure_phase_unit_allocation_fastpath_task.md:6-77`, `src/melder/spellbook/spellbook_creation_system.py:1560-1619`, `src/melder/spellbook/spellbook_creation_system.py:1622-1719`, `src/melder/spellbook/spellbook_creation_system.py:1761-1883`, `context_compass/artifacts/2026-02-14_conjure_phase_unit_allocation_fastpath_pytests.txt:1-12`, `context_compass/artifacts/2026-02-14_conjure_phase_unit_allocation_fastpath_phase_scheduler_pytests.txt:1-12`
 - REREAD: REQUIRED
 - NEXT: Confirm acceptance for phase-unit task and route move-to-completed.
 
 - TYPE: MEASURE
 - CLAIM: Conduit-resolution scheduler-lifecycle reduction is implemented and in review: phases 5-11 now execute under one scheduler lifecycle with foundational-error snapshot gating for plan-phase skip behavior.
-- EVIDENCE: `context_compass/tasks/2026-02-14_conjure_scheduler_lifecycle_reduction_task.md:6-10`, `src/melder/spellbook/spellbook_creation_system.py:740-759`, `src/melder/spellbook/spellbook_creation_system.py:852-933`, `context_compass/artifacts/2026-02-14_conjure_scheduler_lifecycle_single_run_fastpath_pytests.txt:1-12`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_conjure_scheduler_lifecycle_reduction_task.md:6-10`, `src/melder/spellbook/spellbook_creation_system.py:740-759`, `src/melder/spellbook/spellbook_creation_system.py:852-933`, `context_compass/artifacts/2026-02-14_conjure_scheduler_lifecycle_single_run_fastpath_pytests.txt:1-12`
 - REREAD: REQUIRED
 - NEXT: Request acceptance for scheduler-lifecycle task and route remaining conjure tasks to closure.
 
@@ -205,25 +199,25 @@ Attention details rule
 
 - TYPE: MEASURE
 - CLAIM: CreationContext rank-3 prefilter caching is implemented and validated: miss-path compile now reuses step-target/path-metadata caches via internal helper plumbing, focused unit suites passed (`17` + `40` tests), and harness reruns remained warm-neutral/slightly-better (`10.31` / `10.631` ms) with stable warm profile shape.
-- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_creation_context_override_prefilter_caching_task.md:70-127`, `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md:47-89`, `context_compass/artifacts/2026-02-14_creation_context_override_prefilter_caching_creation_context_unit_tests.txt:12-12`, `context_compass/artifacts/2026-02-14_creation_context_override_prefilter_caching_phase12_overrides_unit_tests.txt:12-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_creation_context_override_prefilter_caching_output.txt:7-38`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_creation_context_override_prefilter_caching_output_run2.txt:7-38`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_optimize_creation_context_override_prefilter_caching_task.md:70-127`, `context_compass/stories/completed/2026-02-13_optimize_creation_context_codegen_story.md:47-89`, `context_compass/artifacts/2026-02-14_creation_context_override_prefilter_caching_creation_context_unit_tests.txt:12-12`, `context_compass/artifacts/2026-02-14_creation_context_override_prefilter_caching_phase12_overrides_unit_tests.txt:12-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_creation_context_override_prefilter_caching_output.txt:7-38`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_creation_context_override_prefilter_caching_output_run2.txt:7-38`
 - REREAD: REQUIRED
 - NEXT: Walk through rank-1/rank-2/rank-3 outcomes and request user acceptance for story closure.
 
 - TYPE: MEASURE
 - CLAIM: CreationContext rank-2 miss-compile reuse is implemented and validated: miss-path specialization now reuses step-count source/code-object artifacts, focused unit suites passed (`16` + `38` tests), and harness reruns remained warm-neutral (`10.793` / `10.621` ms with unchanged warm profile shape).
-- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_creation_context_override_miss_compile_reuse_task.md:70-118`, `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md:47-83`, `context_compass/artifacts/2026-02-14_creation_context_override_miss_compile_reuse_creation_context_unit_tests.txt:12-12`, `context_compass/artifacts/2026-02-14_creation_context_override_miss_compile_reuse_phase12_overrides_unit_tests.txt:12-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_creation_context_override_miss_compile_reuse_output.txt:7-38`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_creation_context_override_miss_compile_reuse_output_run2.txt:7-38`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_optimize_creation_context_override_miss_compile_reuse_task.md:70-118`, `context_compass/stories/completed/2026-02-13_optimize_creation_context_codegen_story.md:47-83`, `context_compass/artifacts/2026-02-14_creation_context_override_miss_compile_reuse_creation_context_unit_tests.txt:12-12`, `context_compass/artifacts/2026-02-14_creation_context_override_miss_compile_reuse_phase12_overrides_unit_tests.txt:12-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_creation_context_override_miss_compile_reuse_output.txt:7-38`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_creation_context_override_miss_compile_reuse_output_run2.txt:7-38`
 - REREAD: REQUIRED
 - NEXT: Request user acceptance for rank-2 keep-vs-iterate, then start rank-3 (`TASK-2026-02-14-optimize-creation-context-override-prefilter-caching`).
 
 - TYPE: MEASURE
 - CLAIM: CreationContext rank-1 override-shape preprocessing task is implemented and validated, and active-surface `meld_runtime` terminology has been normalized to `CreationContext`; focused regression suites passed (`31`, `1`, and `2` tests).
-- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_creation_context_override_shape_preprocessing_task.md:82-109`, `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md:46-77`, `context_compass/artifacts/2026-02-14_meld_runtime_rename_conduit_facade_tests.txt:12-12`, `context_compass/artifacts/2026-02-14_meld_runtime_rename_test_meld_2_targeted.txt:12-12`, `context_compass/artifacts/2026-02-14_meld_runtime_rename_test_meld_cleanup_targeted.txt:12-12`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_optimize_creation_context_override_shape_preprocessing_task.md:82-109`, `context_compass/stories/completed/2026-02-13_optimize_creation_context_codegen_story.md:46-77`, `context_compass/artifacts/2026-02-14_meld_runtime_rename_conduit_facade_tests.txt:12-12`, `context_compass/artifacts/2026-02-14_meld_runtime_rename_test_meld_2_targeted.txt:12-12`, `context_compass/artifacts/2026-02-14_meld_runtime_rename_test_meld_cleanup_targeted.txt:12-12`
 - REREAD: REQUIRED
 - NEXT: Request user acceptance for rank-1 keep-vs-iterate, then start rank-2 (`TASK-2026-02-14-optimize-creation-context-override-miss-compile-reuse`).
 
 - TYPE: DECISION
 - CLAIM: CreationContext discovery is complete and translated into three ranked execution tasks: (1) override shape preprocessing, (2) override miss compile reuse, (3) override prefilter caching.
-- EVIDENCE: `context_compass/tasks/2026-02-13_discovery_creation_context_codegen_task.md:25-97`, `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md:44-109`, `context_compass/tasks/2026-02-14_optimize_creation_context_override_shape_preprocessing_task.md:1-63`, `context_compass/tasks/2026-02-14_optimize_creation_context_override_miss_compile_reuse_task.md:1-64`, `context_compass/tasks/2026-02-14_optimize_creation_context_override_prefilter_caching_task.md:1-62`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-13_discovery_creation_context_codegen_task.md:25-97`, `context_compass/stories/completed/2026-02-13_optimize_creation_context_codegen_story.md:44-109`, `context_compass/tasks/completed/2026-02-14_optimize_creation_context_override_shape_preprocessing_task.md:1-63`, `context_compass/tasks/completed/2026-02-14_optimize_creation_context_override_miss_compile_reuse_task.md:1-64`, `context_compass/tasks/completed/2026-02-14_optimize_creation_context_override_prefilter_caching_task.md:1-62`
 - REREAD: REQUIRED
 - NEXT: Discovery accepted and rank-1 executed; use newest rank-1 measure note above to route keep-vs-iterate and rank-2 start.
 
@@ -235,19 +229,19 @@ Attention details rule
 
 - TYPE: MEASURE
 - CLAIM: SpellCrafter rank-2 signature-pipeline work is implemented with regression-rollback evidence; final dispatch keeps schema stable and reduces `_pickle.dumps` calls (`996 -> 724`) with near-neutral warm metrics versus rank-1 anchor (`group_8_11_total_ms` `10.567` -> `10.552/10.833`, warm cProfile `0.035s` -> `0.036s`).
-- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:61-131`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_11_capture_freq_opt_output_run2.txt:7-38`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run6.txt:7-39`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt:7-39`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:61-131`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_11_capture_freq_opt_output_run2.txt:7-38`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run6.txt:7-39`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt:7-39`
 - REREAD: REQUIRED
 - NEXT: Get user keep-vs-iterate/closure direction for rank-2.
 
 - TYPE: MEASURE
 - CLAIM: SpellCrafter rank-1 dirty-capture implementation is complete and in review; warm 8-11 totals dropped from ~`26ms` to ~`10.6ms` across two reruns with lower warm cProfile sample (`~0.081/0.082s` -> `0.035s`).
-- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:60-90`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase5_opt_rerun_clean_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase5_opt_rerun_clean_output_run2.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_11_capture_freq_opt_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_11_capture_freq_opt_output_run2.txt:7-9`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:60-90`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase5_opt_rerun_clean_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase5_opt_rerun_clean_output_run2.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_11_capture_freq_opt_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_11_capture_freq_opt_output_run2.txt:7-9`
 - REREAD: REQUIRED
 - NEXT: Get user acceptance for rank-1 and continue with rank-2 task (`TASK-2026-02-14-optimize-phase11-signature-hash-pipeline`).
 
 - TYPE: FACT
 - CLAIM: SpellCrafter discovery is complete and now queued with three ranked follow-up optimization tasks; top priority is reducing phase8-11 capture-frequency recomputation.
-- EVIDENCE: `context_compass/tasks/2026-02-13_discovery_spellcrafter_phases_task.md:63-113`, `context_compass/stories/2026-02-13_optimize_spellcrafter_phases_story.md:43-55`, `context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:1-76`, `context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:1-76`, `context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md:1-105`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-13_discovery_spellcrafter_phases_task.md:63-113`, `context_compass/stories/completed/2026-02-13_optimize_spellcrafter_phases_story.md:43-55`, `context_compass/tasks/completed/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:1-76`, `context_compass/tasks/completed/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:1-76`, `context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md:1-105`
 - REREAD: REQUIRED
 - NEXT: Start rank-1 SpellCrafter follow-up implementation task and capture baseline-vs-after evidence.
 
@@ -325,7 +319,7 @@ Attention details rule
 
 - TYPE: FACT
 - CLAIM: Artifact reference cleanup is implemented: legacy artifact links remapped to canonical index, placeholder files removed, and global reference scan is clean.
-- EVIDENCE: `context_compass/tasks/2026-02-14_context_compass_artifact_reference_cleanup_task.md:1`, `context_compass/artifacts/README.md:1`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_context_compass_artifact_reference_cleanup_task.md:1`, `context_compass/artifacts/README.md:1`
 - REREAD: REQUIRED
 - NEXT: Confirm acceptance and close the cleanup task.
 
@@ -349,7 +343,7 @@ Attention details rule
 
 - TYPE: FACT
 - CLAIM: Phase-testing discovery scope now includes an explicit 8-11 baseline story/task, and missing discovery task files were created for spellcrafter, creation_context codegen, and phase12 codegen stories.
-- EVIDENCE: `context_compass/epics/completed/2026-02-14_phase_testing_epic.md:1`, `context_compass/stories/completed/2026-02-14_phase_group_8_11_baseline_story.md:1`, `context_compass/tasks/completed/2026-02-14_discovery_phase_group_8_11_baseline_task.md:1`, `context_compass/tasks/2026-02-13_discovery_spellcrafter_phases_task.md:1`, `context_compass/tasks/2026-02-13_discovery_creation_context_codegen_task.md:1`, `context_compass/tasks/2026-02-13_discovery_phase12_codegen_task.md:1`
+- EVIDENCE: `context_compass/epics/completed/2026-02-14_phase_testing_epic.md:1`, `context_compass/stories/completed/2026-02-14_phase_group_8_11_baseline_story.md:1`, `context_compass/tasks/completed/2026-02-14_discovery_phase_group_8_11_baseline_task.md:1`, `context_compass/tasks/completed/2026-02-13_discovery_spellcrafter_phases_task.md:1`, `context_compass/tasks/completed/2026-02-13_discovery_creation_context_codegen_task.md:1`, `context_compass/tasks/2026-02-13_discovery_phase12_codegen_task.md:1`
 - REREAD: REQUIRED
 - NEXT: Execute discovery tasks in phase-group order and append evidence-backed hotspots into linked story/task notes.
 
@@ -385,31 +379,31 @@ Attention details rule
 
 - TYPE: FACT
 - CLAIM: Added `active_documentation` skill and enforced `## Notes` sections across active epic/story/task tickets.
-- EVIDENCE: `context_compass/agent_onboarding/agent/general/skills/active_documentation.md:1`, `context_compass/agent_onboarding/agent/general/SKILLS.md:20`, `context_compass/WORKFLOW.md:31`, `context_compass/epics/2026-02-13_optimize_melder_epic.md:122`, `context_compass/stories/2026-02-13_optimize_conjure_paths_story.md:115`, `context_compass/tasks/2026-02-13_discovery_conjure_paths_task.md:133`
+- EVIDENCE: `context_compass/agent_onboarding/agent/general/skills/active_documentation.md:1`, `context_compass/agent_onboarding/agent/general/SKILLS.md:20`, `context_compass/WORKFLOW.md:31`, `context_compass/epics/completed/2026-02-13_optimize_melder_epic.md:122`, `context_compass/stories/completed/2026-02-13_optimize_conjure_paths_story.md:115`, `context_compass/tasks/completed/2026-02-13_discovery_conjure_paths_task.md:133`
 - REREAD: REQUIRED
 - NEXT: Use per-ticket `Notes` as the primary in-flight evidence log while continuing optimization tasks.
 
 - TYPE: FACT
 - CLAIM: Conjure discovery completed with ranked hotspots; three follow-up implementation tasks were created and queued in story order.
-- EVIDENCE: `context_compass/tasks/2026-02-13_discovery_conjure_paths_task.md:1`, `context_compass/tasks/2026-02-14_conjure_scheduler_lifecycle_reduction_task.md:1`, `context_compass/tasks/2026-02-14_conjure_phase_unit_allocation_fastpath_task.md:1`, `context_compass/tasks/2026-02-14_conjure_activation_and_validation_scan_fastpath_task.md:1`, `context_compass/stories/2026-02-13_optimize_conjure_paths_story.md:1`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-13_discovery_conjure_paths_task.md:1`, `context_compass/tasks/completed/2026-02-14_conjure_scheduler_lifecycle_reduction_task.md:1`, `context_compass/tasks/completed/2026-02-14_conjure_phase_unit_allocation_fastpath_task.md:1`, `context_compass/tasks/completed/2026-02-14_conjure_activation_and_validation_scan_fastpath_task.md:1`, `context_compass/stories/completed/2026-02-13_optimize_conjure_paths_story.md:1`
 - REREAD: REQUIRED
 - NEXT: Confirm discovery acceptance, then start scheduler lifecycle reduction task.
 
 - TYPE: FACT
 - CLAIM: Conjure discovery task was activated with ticket-first evidence logging and has now been completed.
-- EVIDENCE: `context_compass/tasks/2026-02-13_discovery_conjure_paths_task.md:1`, `context_compass/stories/2026-02-13_optimize_conjure_paths_story.md:1`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-13_discovery_conjure_paths_task.md:1`, `context_compass/stories/completed/2026-02-13_optimize_conjure_paths_story.md:1`
 - REREAD: REQUIRED
 - NEXT: Execute first follow-up optimization task in the same story.
 
 - TYPE: FACT
 - CLAIM: `TASK-2026-02-13-meld-dynamic-gate-fastdoor` implementation is complete and in review; `Conduit.meld` now uses local alias fastdoor while preserving close/wait/ticket invariants.
-- EVIDENCE: `src/melder/aether/conduit/conduit.py:2345`, `tests/unit/melder/aether/conduit/test_conduit_facade.py:746`, `tests/unit/melder/aether/conduit/test_conduit_facade.py:779`, `context_compass/tasks/2026-02-13_meld_dynamic_gate_fastdoor_task.md:1`
+- EVIDENCE: `src/melder/aether/conduit/conduit.py:2345`, `tests/unit/melder/aether/conduit/test_conduit_facade.py:746`, `tests/unit/melder/aether/conduit/test_conduit_facade.py:779`, `context_compass/tasks/completed/2026-02-13_meld_dynamic_gate_fastdoor_task.md:1`
 - REREAD: REQUIRED
 - NEXT: Ask user to confirm acceptance, then move task to completed.
 
 - TYPE: FACT
 - CLAIM: `TASK-2026-02-13-meld-validation-gate-microprofile` is accepted and closed; story flow now advances to dynamic gate fastdoor optimization.
-- EVIDENCE: `context_compass/tasks/completed/2026-02-13_meld_validation_gate_microprofile_task.md:1`, `context_compass/tasks/2026-02-13_meld_dynamic_gate_fastdoor_task.md:1`, `context_compass/stories/2026-02-13_optimize_meld_paths_story.md:126`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-13_meld_validation_gate_microprofile_task.md:1`, `context_compass/tasks/completed/2026-02-13_meld_dynamic_gate_fastdoor_task.md:1`, `context_compass/stories/completed/2026-02-13_optimize_meld_paths_story.md:126`
 - REREAD: REQUIRED
 - NEXT: Execute dynamic gate invariants/discovery and implement fastdoor optimization.
 
@@ -445,31 +439,37 @@ Attention details rule
 
 - TYPE: FACT
 - CLAIM: `TASK-2026-02-13-meld-contract-defaults-caching` was closed as out-of-scope for the current wave by user direction.
-- EVIDENCE: `context_compass/tasks/completed/2026-02-13_meld_contract_defaults_caching_task.md:1`, `context_compass/stories/2026-02-13_optimize_meld_paths_story.md:124`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-13_meld_contract_defaults_caching_task.md:1`, `context_compass/stories/completed/2026-02-13_optimize_meld_paths_story.md:124`
 - REREAD: REQUIRED
 - NEXT: Keep focus on remaining meld optimization tasks.
 
 - TYPE: FACT
 - CLAIM: Meld discovery leads are now converted into two active implementation tasks plus two completed tasks and one out-of-scope task.
-- EVIDENCE: `context_compass/tasks/completed/2026-02-13_meld_contract_defaults_caching_task.md:1`, `context_compass/tasks/completed/2026-02-13_meld_input_resolution_keypath_task.md:1`, `context_compass/tasks/completed/2026-02-13_meld_override_shape_hotpath_task.md:1`, `context_compass/tasks/2026-02-13_meld_dynamic_gate_fastdoor_task.md:1`, `context_compass/tasks/completed/2026-02-13_meld_validation_gate_microprofile_task.md:1`, `context_compass/stories/2026-02-13_optimize_meld_paths_story.md:124`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-13_meld_contract_defaults_caching_task.md:1`, `context_compass/tasks/completed/2026-02-13_meld_input_resolution_keypath_task.md:1`, `context_compass/tasks/completed/2026-02-13_meld_override_shape_hotpath_task.md:1`, `context_compass/tasks/completed/2026-02-13_meld_dynamic_gate_fastdoor_task.md:1`, `context_compass/tasks/completed/2026-02-13_meld_validation_gate_microprofile_task.md:1`, `context_compass/stories/completed/2026-02-13_optimize_meld_paths_story.md:124`
 - REREAD: REQUIRED
 - NEXT: Execute remaining tasks in order: validation-gate -> dynamic-gate.
 
 - TYPE: FACT
 - CLAIM: Meld-path discovery is documented with Conduit->Meld->CreationContext flow, ranked hotspots, and follow-up implementation tasks.
-- EVIDENCE: `context_compass/stories/2026-02-13_optimize_meld_paths_story.md:42`
+- EVIDENCE: `context_compass/stories/completed/2026-02-13_optimize_meld_paths_story.md:42`
 - REREAD: REQUIRED
 - NEXT: Active next implementation task is `TASK-2026-02-13-meld-validation-gate-microprofile`.
 
 - TYPE: FACT
 - CLAIM: New optimization wave scaffold exists as one epic plus five discovery-first stories with one discovery task per story.
-- EVIDENCE: `context_compass/epics/2026-02-13_optimize_melder_epic.md:1`, `context_compass/stories/2026-02-13_optimize_conjure_paths_story.md:1`, `context_compass/stories/2026-02-13_optimize_meld_paths_story.md:1`, `context_compass/stories/2026-02-13_optimize_spellcrafter_phases_story.md:1`, `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md:1`, `context_compass/stories/completed/2026-02-13_optimize_phase12_codegen_story.md:1`
+- EVIDENCE: `context_compass/epics/completed/2026-02-13_optimize_melder_epic.md:1`, `context_compass/stories/completed/2026-02-13_optimize_conjure_paths_story.md:1`, `context_compass/stories/completed/2026-02-13_optimize_meld_paths_story.md:1`, `context_compass/stories/completed/2026-02-13_optimize_spellcrafter_phases_story.md:1`, `context_compass/stories/completed/2026-02-13_optimize_creation_context_codegen_story.md:1`, `context_compass/stories/completed/2026-02-13_optimize_phase12_codegen_story.md:1`
 - REREAD: REQUIRED
 - NEXT: Execute discovery tasks and expand each story with implementation tasks ranked by measured impact/risk.
 
 ## Recently Closed Anchors
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
+| optimize creation context codegen | done | codex | none | none | `context_compass/stories/completed/2026-02-13_optimize_creation_context_codegen_story.md` | 2026-02-14 | HELPFUL |
+| optimize spellcrafter phases | done | codex | none | none | `context_compass/stories/completed/2026-02-13_optimize_spellcrafter_phases_story.md` | 2026-02-14 | HELPFUL |
+| optimize meld paths | done | codex | none | none | `context_compass/stories/completed/2026-02-13_optimize_meld_paths_story.md` | 2026-02-14 | HELPFUL |
+| optimize conjure paths | done | codex | none | none | `context_compass/stories/completed/2026-02-13_optimize_conjure_paths_story.md` | 2026-02-14 | HELPFUL |
+| optimize melder epic | done | codex | none | none | `context_compass/epics/completed/2026-02-13_optimize_melder_epic.md` | 2026-02-14 | HELPFUL |
+| context_compass artifact reference cleanup | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_context_compass_artifact_reference_cleanup_task.md` | 2026-02-14 | HELPFUL |
 | phase testing epic | done | codex | none | none | `context_compass/epics/completed/2026-02-14_phase_testing_epic.md` | 2026-02-14 | HELPFUL |
 | phase11 lazy phase8-11 capture | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_optimize_phase11_lazy_phase8_11_capture_task_completed.md` | 2026-02-14 | HELPFUL |
 | phase11 execution-plan variant reuse | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_optimize_phase11_execution_plan_variant_reuse_task_completed.md` | 2026-02-14 | HELPFUL |
@@ -481,7 +481,7 @@ Attention details rule
 | phase12 rank-2 override helper callpath tightening | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_optimize_phase12_override_helper_callpath_tightening_task.md` | 2026-02-14 | HELPFUL |
 | phase12 benchmark entrypoint repair | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_repair_phase12_route_matrix_benchmark_entrypoint_task.md` | 2026-02-14 | HELPFUL |
 | spellcrafter rank-3 row-builder contract fastpath | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md` | 2026-02-14 | HELPFUL |
-| meld dynamic gate fastdoor | review | codex | none | waiting for user acceptance | `context_compass/tasks/2026-02-13_meld_dynamic_gate_fastdoor_task.md` | 2026-02-14 | HELPFUL |
+| meld dynamic gate fastdoor | review | codex | none | waiting for user acceptance | `context_compass/tasks/completed/2026-02-13_meld_dynamic_gate_fastdoor_task.md` | 2026-02-14 | HELPFUL |
 | meld validation gate microprofile | done | codex | none | none | `context_compass/tasks/completed/2026-02-13_meld_validation_gate_microprofile_task.md` | 2026-02-14 | HELPFUL |
 | meld override shape hotpath | done | codex | none | none | `context_compass/tasks/completed/2026-02-13_meld_override_shape_hotpath_task.md` | 2026-02-14 | HELPFUL |
 | meld input resolution keypath | done | codex | none | none | `context_compass/tasks/completed/2026-02-13_meld_input_resolution_keypath_task.md` | 2026-02-13 | HELPFUL |

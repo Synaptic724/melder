@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in closure pass; implementation/discovery outcomes are complete and archived.
+
 # Task: Optimize CreationContext Override Shape Preprocessing
 
 ## Metadata
 - Task ID: TASK-2026-02-14-optimize-creation-context-override-shape-preprocessing
 - Story: STORY-2026-02-13-optimize-creation-context-codegen
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
@@ -46,7 +49,7 @@ duplicate override-map traversal before specialization-cache resolution.
 - `src/melder/aether/conduit/meld/meld.py`
 - `tests/unit/melder/aether/conduit/meld/test_meld.py`
 - `context_compass/components/src_components.md`
-- `context_compass/stories/2026-02-13_optimize_meld_paths_story.md`
+- `context_compass/stories/completed/2026-02-13_optimize_meld_paths_story.md`
 - `context_compass/agent_onboarding/agent/general/policies/ctx_autonomy_policy.md`
 
 ## Validation
@@ -74,8 +77,7 @@ duplicate override-map traversal before specialization-cache resolution.
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-14
   TYPE: MEASURE
@@ -89,7 +91,7 @@ duplicate override-map traversal before specialization-cache resolution.
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Active rename cleanup is implemented across current source/docs/policy surfaces, including docstrings/comments and conduit local alias naming, to align with `CreationContext` ownership.
-  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/occurrence_plan.py:34-90, src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:593-593, src/melder/spellbook/spell_crafter/spell_crafter.py:515-1975, src/melder/aether/conduit/conduit.py:1145-2371, src/melder/aether/conduit/meld/meld.py:72-72, tests/unit/melder/aether/conduit/meld/test_meld.py:531-531, context_compass/components/src_components.md:1900-1901, context_compass/stories/2026-02-13_optimize_meld_paths_story.md:190-191, context_compass/agent_onboarding/agent/general/policies/ctx_autonomy_policy.md:103-103
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/occurrence_plan.py:34-90, src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:593-593, src/melder/spellbook/spell_crafter/spell_crafter.py:515-1975, src/melder/aether/conduit/conduit.py:1145-2371, src/melder/aether/conduit/meld/meld.py:72-72, tests/unit/melder/aether/conduit/meld/test_meld.py:531-531, context_compass/components/src_components.md:1900-1901, context_compass/stories/completed/2026-02-13_optimize_meld_paths_story.md:190-191, context_compass/agent_onboarding/agent/general/policies/ctx_autonomy_policy.md:103-103
   IMPACT: Live repository terminology now reflects `Meld -> CreationContext` execution ownership instead of removed meld-runtime wording.
   NEXT: Verify remaining references are intentional historical/legacy anchors only.
   REREAD: REQUIRED
@@ -107,7 +109,7 @@ duplicate override-map traversal before specialization-cache resolution.
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Rename cleanup scope is limited to active/current surfaces; completed/archive records are preserved as historical evidence even when they contain `meld_runtime` wording.
-  EVIDENCE: context_compass/components/src_components.md:1900-1901, context_compass/stories/2026-02-13_optimize_meld_paths_story.md:190-191, context_compass/agent_onboarding/agent/general/policies/ctx_autonomy_policy.md:103-103, context_compass/tasks/completed/2026-02-08_meld-runtime-override-payload-micro-opts_task_completed.md:1-40
+  EVIDENCE: context_compass/components/src_components.md:1900-1901, context_compass/stories/completed/2026-02-13_optimize_meld_paths_story.md:190-191, context_compass/agent_onboarding/agent/general/policies/ctx_autonomy_policy.md:103-103, context_compass/tasks/completed/2026-02-08_meld-runtime-override-payload-micro-opts_task_completed.md:1-40
   IMPACT: We align live documentation/code terminology to `CreationContext` without rewriting historical change logs.
   NEXT: Apply wording/identifier updates in active files only and rerun targeted tests.
   REREAD: REQUIRED
@@ -125,7 +127,7 @@ duplicate override-map traversal before specialization-cache resolution.
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: A targeted rename scan found remaining active `meld_runtime` wording in current docs/tests (not only historical archive/completed tickets), so we still need a focused rename pass for active surfaces.
-  EVIDENCE: tests/unit/melder/aether/conduit/meld/test_meld_2.py:466-467, tests/unit/melder/aether/conduit/meld/test_meld.py:531-531, context_compass/components/src_components.md:1900-1900, context_compass/tasks/2026-02-14_optimize_creation_context_override_shape_preprocessing_task.md:85-96
+  EVIDENCE: tests/unit/melder/aether/conduit/meld/test_meld_2.py:466-467, tests/unit/melder/aether/conduit/meld/test_meld.py:531-531, context_compass/components/src_components.md:1900-1900, context_compass/tasks/completed/2026-02-14_optimize_creation_context_override_shape_preprocessing_task.md:85-96
   IMPACT: Rename request is only partially complete; leaving these active references causes terminology drift against the current `Meld -> CreationContext` runtime model.
   NEXT: Rename active/current references to `creation_context` wording while leaving historical archive/completed artifacts intact.
   REREAD: REQUIRED
@@ -152,7 +154,7 @@ duplicate override-map traversal before specialization-cache resolution.
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Test-path rename is applied: override/shape coverage now lives at `tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`, and the old `meld_runtime` test folder has been removed.
-  EVIDENCE: tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:1-120, context_compass/tasks/2026-02-14_optimize_creation_context_override_shape_preprocessing_task.md:38-47
+  EVIDENCE: tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:1-120, context_compass/tasks/completed/2026-02-14_optimize_creation_context_override_shape_preprocessing_task.md:38-47
   IMPACT: Active validation and ticket pointers align with current CreationContext naming.
   NEXT: Proceed with rank-1 preprocessing optimization in `creation_context.py` and validate against the renamed test module.
   REREAD: REQUIRED
@@ -179,7 +181,7 @@ duplicate override-map traversal before specialization-cache resolution.
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: The earlier test-path uncertainty is resolved; task validation now points to the existing `creation_context/test_creation_context.py` module.
-  EVIDENCE: context_compass/tasks/2026-02-14_optimize_creation_context_override_shape_preprocessing_task.md:38-47
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_creation_context_override_shape_preprocessing_task.md:38-47
   IMPACT: No remaining validation-path blocker for this task.
   NEXT: Continue implementation and run focused unit/component validation.
   REREAD: REQUIRED

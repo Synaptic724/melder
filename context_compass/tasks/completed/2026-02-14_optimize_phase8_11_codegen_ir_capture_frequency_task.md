@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in closure pass; implementation/discovery outcomes are complete and archived.
+
 # Task: Optimize Phase8-11 Codegen IR Capture Frequency
 
 ## Metadata
 - Task ID: TASK-2026-02-14-optimize-phase8-11-codegen-ir-capture-frequency
 - Story: STORY-2026-02-13-optimize-spellcrafter-phases
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -55,8 +58,7 @@ chain while preserving export correctness for downstream phase12/runtime usage.
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-14
   TYPE: FACT
@@ -70,7 +72,7 @@ chain while preserving export correctness for downstream phase12/runtime usage.
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Routing docs were synchronized to rank-1 outcomes; story/epic/attention-board now point to dirty-capture validation artifacts and rank-2 as next step.
-  EVIDENCE: context_compass/stories/2026-02-13_optimize_spellcrafter_phases_story.md:67-100, context_compass/epics/2026-02-13_optimize_melder_epic.md:122-157, context_compass/attention_board.md:23-38
+  EVIDENCE: context_compass/stories/completed/2026-02-13_optimize_spellcrafter_phases_story.md:67-100, context_compass/epics/completed/2026-02-13_optimize_melder_epic.md:122-157, context_compass/attention_board.md:23-38
   IMPACT: Re-entry context now reflects current execution state and avoids stale 'execute rank-1' routing.
   NEXT: Request user acceptance for rank-1 and either close task or proceed directly to rank-2.
   REREAD: REQUIRED

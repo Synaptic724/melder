@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in closure pass; implementation/discovery outcomes are complete and archived.
+
 # Task: Discovery SpellCrafter Phases
 
 ## Metadata
 - Task ID: TASK-2026-02-13-discovery-spellcrafter-phases
 - Story: STORY-2026-02-13-optimize-spellcrafter-phases
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-13
@@ -32,15 +35,15 @@ phase-artifact lifecycle so follow-up optimization tasks are evidence-backed.
 - Discovery baseline with per-phase hotspot map and evidence anchors.
 - Prioritized follow-up optimization candidates for SpellCrafter phases.
 - Ranked follow-up tasks:
-  - `context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md`
-  - `context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md`
+  - `context_compass/tasks/completed/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md`
+  - `context_compass/tasks/completed/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md`
   - `context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md`
 
 ## Files / Paths Impacted
-- `context_compass/stories/2026-02-13_optimize_spellcrafter_phases_story.md`
-- `context_compass/tasks/2026-02-13_discovery_spellcrafter_phases_task.md`
-- `context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md`
-- `context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md`
+- `context_compass/stories/completed/2026-02-13_optimize_spellcrafter_phases_story.md`
+- `context_compass/tasks/completed/2026-02-13_discovery_spellcrafter_phases_task.md`
+- `context_compass/tasks/completed/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md`
+- `context_compass/tasks/completed/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md`
 - `context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md`
 
 ## Validation
@@ -59,13 +62,12 @@ phase-artifact lifecycle so follow-up optimization tasks are evidence-backed.
 - [ ] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Discovery ranking is complete; follow-up implementation should execute in priority order: (1) phase8-11 capture-frequency reduction, (2) phase11 signature hash pipeline, (3) phase8-10 row-builder contract fastpath.
-  EVIDENCE: context_compass/tasks/2026-02-13_discovery_spellcrafter_phases_task.md:63-104, context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:1-76, context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:1-76, context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md:1-77
+  EVIDENCE: context_compass/tasks/completed/2026-02-13_discovery_spellcrafter_phases_task.md:63-104, context_compass/tasks/completed/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:1-76, context_compass/tasks/completed/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:1-76, context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md:1-77
   IMPACT: Story execution is unblocked with clear ranked implementation scope.
   NEXT: Update story task checklist and attention-board routing to start rank-1 implementation.
   REREAD: REQUIRED
@@ -110,7 +112,7 @@ phase-artifact lifecycle so follow-up optimization tasks are evidence-backed.
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: This story requires exactly one discovery task and already references this task ID.
-  EVIDENCE: context_compass/epics/2026-02-13_optimize_melder_epic.md:51, context_compass/stories/2026-02-13_optimize_spellcrafter_phases_story.md:44
+  EVIDENCE: context_compass/epics/completed/2026-02-13_optimize_melder_epic.md:51, context_compass/stories/completed/2026-02-13_optimize_spellcrafter_phases_story.md:44
   IMPACT: Creating this task closes the missing ticket link and unblocks discovery execution.
   NEXT: Start call-path mapping in `src/melder/spellbook/spell_crafter/spell_crafter.py`.
 

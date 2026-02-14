@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in closure pass; implementation/discovery outcomes are complete and archived.
+
 # Task: Optimize Conjure Phase Unit Allocation Fastpath
 
 ## Metadata
 - Task ID: TASK-2026-02-14-conjure-phase-unit-allocation-fastpath
 - Story: STORY-2026-02-13-optimize-conjure-paths
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
@@ -69,8 +72,7 @@ factories and scheduler barriers without changing phase semantics.
 - [x] Deliverables produced and linked
 - [x] Documentation updated (if needed)
 - [x] Validation status recorded
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-14
   TYPE: MEASURE
@@ -119,7 +121,7 @@ factories and scheduler barriers without changing phase semantics.
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Strategy is helper-based consolidation with contract-preserving outputs; no scheduler lifecycle restructuring in this task.
-  EVIDENCE: context_compass/tasks/2026-02-14_conjure_phase_unit_allocation_fastpath_task.md:1
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_conjure_phase_unit_allocation_fastpath_task.md:1
   IMPACT: Reduces blast radius and keeps this task aligned with user direction and current scope.
   NEXT: Implement helper extraction and run targeted spellbook scheduler/factory tests.
 

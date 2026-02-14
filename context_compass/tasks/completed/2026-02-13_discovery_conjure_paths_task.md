@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in closure pass; implementation/discovery outcomes are complete and archived.
+
 # Task: Discovery Conjure Paths
 
 ## Metadata
 - Task ID: TASK-2026-02-13-discovery-conjure-paths
 - Story: STORY-2026-02-13-optimize-conjure-paths
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-13
@@ -104,8 +107,8 @@ orchestration phases so we can define safe, high-impact optimization tasks.
 - Follow-up implementation task proposals in story/task docs.
 
 ## Files / Paths Impacted
-- `context_compass/stories/2026-02-13_optimize_conjure_paths_story.md`
-- `context_compass/tasks/2026-02-13_discovery_conjure_paths_task.md`
+- `context_compass/stories/completed/2026-02-13_optimize_conjure_paths_story.md`
+- `context_compass/tasks/completed/2026-02-13_discovery_conjure_paths_task.md`
 - `context_compass/attention_board.md`
 
 ## Validation
@@ -128,8 +131,7 @@ orchestration phases so we can define safe, high-impact optimization tasks.
 - [x] Deliverables produced and linked
 - [ ] Documentation updated (if needed)
 - [x] Validation status recorded
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-14
   TYPE: FACT

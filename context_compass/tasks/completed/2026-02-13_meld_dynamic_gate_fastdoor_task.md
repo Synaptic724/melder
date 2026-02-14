@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in closure pass; implementation/discovery outcomes are complete and archived.
+
 # Task: Optimize Dynamic Meld Gate Fastdoor
 
 ## Metadata
 - Task ID: TASK-2026-02-13-meld-dynamic-gate-fastdoor
 - Story: STORY-2026-02-13-optimize-meld-paths
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-13
@@ -49,8 +52,7 @@ wait, and drain semantics.
 - [x] Deliverables produced and linked
 - [x] Documentation updated (if needed)
 - [x] Validation status recorded
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-14
   TYPE: FACT

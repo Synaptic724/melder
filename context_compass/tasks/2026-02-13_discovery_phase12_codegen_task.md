@@ -72,7 +72,7 @@ paths so optimization tasks can be prioritized by measured impact.
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: This story requires exactly one discovery task and already references this task ID.
-  EVIDENCE: context_compass/epics/2026-02-13_optimize_melder_epic.md:51-51, context_compass/stories/completed/2026-02-13_optimize_phase12_codegen_story.md:48-52
+  EVIDENCE: context_compass/epics/completed/2026-02-13_optimize_melder_epic.md:51-51, context_compass/stories/completed/2026-02-13_optimize_phase12_codegen_story.md:48-52
   IMPACT: Creating this task closes the missing ticket link and unblocks discovery execution.
   NEXT: Start emitter-path mapping in `src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py` and `src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py`.
 

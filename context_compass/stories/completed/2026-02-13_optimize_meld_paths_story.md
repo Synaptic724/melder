@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in closure pass; all linked tasks are complete and archived.
+
 # Story: Optimize Meld Paths
 
 ## Metadata
 - Story ID: STORY-2026-02-13-optimize-meld-paths
 - Epic: EPIC-2026-02-13-optimize-melder
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-13
@@ -124,7 +127,7 @@ throughput without introducing semantic drift in resolution behavior.
 ## Tasks (Implementation Checklist)
 - [x] Task: TASK-2026-02-13-discovery-meld-paths - Build discovery baseline, hotspot map, and prioritized optimization candidates for meld.
 - [x] Task: TASK-2026-02-13-meld-contract-defaults-caching - Closed as out-of-scope for current wave by user direction (no implementation). (`context_compass/tasks/completed/2026-02-13_meld_contract_defaults_caching_task.md`)
-- [x] Task: TASK-2026-02-13-meld-dynamic-gate-fastdoor - Implemented local-alias fastdoor for dynamic gate entry in `Conduit.meld` with preserved closure/wait/ticket semantics; task in review pending acceptance. (`context_compass/tasks/2026-02-13_meld_dynamic_gate_fastdoor_task.md`)
+- [x] Task: TASK-2026-02-13-meld-dynamic-gate-fastdoor - Implemented local-alias fastdoor for dynamic gate entry in `Conduit.meld` with preserved closure/wait/ticket semantics; task in review pending acceptance. (`context_compass/tasks/completed/2026-02-13_meld_dynamic_gate_fastdoor_task.md`)
 - [x] Task: TASK-2026-02-13-meld-input-resolution-keypath - Implemented direct cache lookup with id-fallback for unhashable inputs; validated in meld unit tests. (`context_compass/tasks/completed/2026-02-13_meld_input_resolution_keypath_task.md`)
 - [x] Task: TASK-2026-02-13-meld-override-shape-hotpath - Implemented shape-first override specialization cache lookup with miss-only grouped-target collection; validated with unit and integration suites. (`context_compass/tasks/completed/2026-02-13_meld_override_shape_hotpath_task.md`)
 - [x] Task: TASK-2026-02-13-meld-validation-gate-microprofile - Implemented per-frame change-control manager cache in Meld gating path; accepted and moved to completed. (`context_compass/tasks/completed/2026-02-13_meld_validation_gate_microprofile_task.md`)
@@ -172,9 +175,8 @@ throughput without introducing semantic drift in resolution behavior.
   NEXT: Append new findings here as work continues.
 
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user
 ## Context / Handoff Summary
 Discovery is complete:
 - Documented how meld flows from `Conduit.meld` through `Meld.meld` and

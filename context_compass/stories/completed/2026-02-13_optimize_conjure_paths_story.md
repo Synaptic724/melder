@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in closure pass; all linked tasks are complete and archived.
+
 # Story: Optimize Conjure Paths
 
 ## Metadata
 - Story ID: STORY-2026-02-13-optimize-conjure-paths
 - Epic: EPIC-2026-02-13-optimize-melder
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-13
@@ -84,10 +87,10 @@ analysis protects correctness while giving us targeted optimization steps.
 5. Duplicate/registry scan in `_check_all_spells` before conduit construction.
 
 ## Tasks (Implementation Checklist)
-- [x] Task: TASK-2026-02-13-discovery-conjure-paths - Build discovery baseline, hotspot map, and prioritized optimization candidates for conjure. (`context_compass/tasks/2026-02-13_discovery_conjure_paths_task.md`)
-- [x] Task: TASK-2026-02-14-conjure-scheduler-lifecycle-reduction - Reduce per-conjure scheduler lifecycle overhead while preserving phase contracts. (`context_compass/tasks/2026-02-14_conjure_scheduler_lifecycle_reduction_task.md`)
-- [x] Task: TASK-2026-02-14-conjure-phase-unit-allocation-fastpath - Reduce avoidable phase-factory/unit allocation overhead in conjure path. (`context_compass/tasks/2026-02-14_conjure_phase_unit_allocation_fastpath_task.md`)
-- [x] Task: TASK-2026-02-14-conjure-activation-and-validation-scan-fastpath - Optimize global scan/wiring passes on conjure path. (`context_compass/tasks/2026-02-14_conjure_activation_and_validation_scan_fastpath_task.md`)
+- [x] Task: TASK-2026-02-13-discovery-conjure-paths - Build discovery baseline, hotspot map, and prioritized optimization candidates for conjure. (`context_compass/tasks/completed/2026-02-13_discovery_conjure_paths_task.md`)
+- [x] Task: TASK-2026-02-14-conjure-scheduler-lifecycle-reduction - Reduce per-conjure scheduler lifecycle overhead while preserving phase contracts. (`context_compass/tasks/completed/2026-02-14_conjure_scheduler_lifecycle_reduction_task.md`)
+- [x] Task: TASK-2026-02-14-conjure-phase-unit-allocation-fastpath - Reduce avoidable phase-factory/unit allocation overhead in conjure path. (`context_compass/tasks/completed/2026-02-14_conjure_phase_unit_allocation_fastpath_task.md`)
+- [x] Task: TASK-2026-02-14-conjure-activation-and-validation-scan-fastpath - Optimize global scan/wiring passes on conjure path. (`context_compass/tasks/completed/2026-02-14_conjure_activation_and_validation_scan_fastpath_task.md`)
 
 ## Acceptance Criteria
 - Discovery output identifies top conjure hotspots with evidence.
@@ -120,7 +123,7 @@ analysis protects correctness while giving us targeted optimization steps.
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: Activation/validation scan fastpath task is implemented and in review with fresh targeted coverage (`12 passed`) after removing the redundant conjure duplicate-id recheck.
-  EVIDENCE: context_compass/tasks/2026-02-14_conjure_activation_and_validation_scan_fastpath_task.md:6-69, context_compass/artifacts/2026-02-14_conjure_activation_validation_scan_fastpath_pytests.txt:1-12
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_conjure_activation_and_validation_scan_fastpath_task.md:6-69, context_compass/artifacts/2026-02-14_conjure_activation_validation_scan_fastpath_pytests.txt:1-12
   IMPACT: Conjure hotspot #4/#5 now has implemented evidence-backed scope ready for acceptance/closure.
   NEXT: Confirm acceptance and route task move to completed.
   REREAD: REQUIRED
@@ -129,7 +132,7 @@ analysis protects correctness while giving us targeted optimization steps.
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: Phase-unit-allocation fastpath task is implemented and in review with fresh focused validation (`4 passed` spellbook suite + `10 passed` scheduler suite).
-  EVIDENCE: context_compass/tasks/2026-02-14_conjure_phase_unit_allocation_fastpath_task.md:6-72, context_compass/artifacts/2026-02-14_conjure_phase_unit_allocation_fastpath_pytests.txt:1-12, context_compass/artifacts/2026-02-14_conjure_phase_unit_allocation_fastpath_phase_scheduler_pytests.txt:1-12
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_conjure_phase_unit_allocation_fastpath_task.md:6-72, context_compass/artifacts/2026-02-14_conjure_phase_unit_allocation_fastpath_pytests.txt:1-12, context_compass/artifacts/2026-02-14_conjure_phase_unit_allocation_fastpath_phase_scheduler_pytests.txt:1-12
   IMPACT: Conjure hotspot #3 now has implemented evidence-backed scope ready for acceptance/closure.
   NEXT: Confirm acceptance and route task move to completed.
   REREAD: REQUIRED
@@ -138,7 +141,7 @@ analysis protects correctness while giving us targeted optimization steps.
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: `TASK-2026-02-14-conjure-scheduler-lifecycle-reduction` is implemented and in review: conduit resolution now executes phases 5-11 through one scheduler lifecycle while preserving foundational-error gating semantics.
-  EVIDENCE: context_compass/tasks/2026-02-14_conjure_scheduler_lifecycle_reduction_task.md:6-10, src/melder/spellbook/spellbook_creation_system.py:740-759, src/melder/spellbook/spellbook_creation_system.py:852-933
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_conjure_scheduler_lifecycle_reduction_task.md:6-10, src/melder/spellbook/spellbook_creation_system.py:740-759, src/melder/spellbook/spellbook_creation_system.py:852-933
   IMPACT: Highest-ranked conjure hotspot (scheduler lifecycle churn) now has an implemented fastpath with focused regression coverage.
   NEXT: Confirm acceptance for scheduler-lifecycle reduction, then move to remaining conjure tasks (phase-unit-allocation and activation/validation scan closure).
   REREAD: REQUIRED
@@ -161,7 +164,7 @@ analysis protects correctness while giving us targeted optimization steps.
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Next conjure optimization step is the phase-unit-allocation fastpath using a shared per-spell factory helper while preserving labels/metadata/cancel-event contracts.
-  EVIDENCE: context_compass/tasks/2026-02-14_conjure_phase_unit_allocation_fastpath_task.md:1-46, src/melder/spellbook/spellbook_creation_system.py:1560-1619
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_conjure_phase_unit_allocation_fastpath_task.md:1-46, src/melder/spellbook/spellbook_creation_system.py:1560-1619
   IMPACT: Moves optimization forward with low blast radius after scheduler worker-stability fix.
   NEXT: Implement helper extraction and validate targeted spellbook factory tests.
 
@@ -180,9 +183,8 @@ analysis protects correctness while giving us targeted optimization steps.
   NEXT: Append new findings here as work continues.
 
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user
 ## Context / Handoff Summary
 Discovery is complete and documented.
 All three conjure implementation follow-up tasks are now implemented and in

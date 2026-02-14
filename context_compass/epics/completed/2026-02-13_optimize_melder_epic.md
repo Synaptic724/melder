@@ -1,8 +1,11 @@
+Completed: 2026-02-14
+Summary: Accepted in closure pass; all optimize-melder stories/tasks are complete and archived.
+
 # Epic: Optimize Melder Runtime and Codegen
 
 ## Metadata
 - Epic ID: EPIC-2026-02-13-optimize-melder
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-13
@@ -77,19 +80,19 @@ correctness while improving throughput and latency on real runtime paths.
 - [ ] Milestone 3: Follow-up implementation tasks added and prioritized.
 
 ## Stories (Required to Complete)
-- [ ] Story: STORY-2026-02-13-optimize-conjure-paths - Discovery-first optimization plan for conjure paths.
-- [ ] Story: STORY-2026-02-13-optimize-meld-paths - Discovery-first optimization plan for meld paths.
-- [ ] Story: STORY-2026-02-13-optimize-spellcrafter-phases - Discovery-first optimization plan for SpellCrafter phases.
-- [ ] Story: STORY-2026-02-13-optimize-creation-context-codegen - Discovery-first optimization plan for CreationContext codegen.
+- [x] Story: STORY-2026-02-13-optimize-conjure-paths - Discovery-first optimization plan for conjure paths.
+- [x] Story: STORY-2026-02-13-optimize-meld-paths - Discovery-first optimization plan for meld paths.
+- [x] Story: STORY-2026-02-13-optimize-spellcrafter-phases - Discovery-first optimization plan for SpellCrafter phases.
+- [x] Story: STORY-2026-02-13-optimize-creation-context-codegen - Discovery-first optimization plan for CreationContext codegen.
 - [x] Story: STORY-2026-02-13-optimize-phase12-codegen - Discovery-first optimization plan for Phase 12 codegen.
 
 ## Tasks (Cross-Cutting or Epic-Level)
-- [ ] Task: Complete story STORY-2026-02-13-optimize-conjure-paths.
-- [ ] Task: Complete story STORY-2026-02-13-optimize-meld-paths.
-- [ ] Task: Complete story STORY-2026-02-13-optimize-spellcrafter-phases.
-- [ ] Task: Complete story STORY-2026-02-13-optimize-creation-context-codegen.
+- [x] Task: Complete story STORY-2026-02-13-optimize-conjure-paths.
+- [x] Task: Complete story STORY-2026-02-13-optimize-meld-paths.
+- [x] Task: Complete story STORY-2026-02-13-optimize-spellcrafter-phases.
+- [x] Task: Complete story STORY-2026-02-13-optimize-creation-context-codegen.
 - [x] Task: Complete story STORY-2026-02-13-optimize-phase12-codegen.
-- [ ] Task: Keep architecture/components docs synced when optimization behavior changes.
+- [x] Task: Keep architecture/components docs synced when optimization behavior changes.
 
 ## Acceptance Criteria (Epic Done)
 - All five discovery stories are completed and accepted by the user.
@@ -123,7 +126,7 @@ correctness while improving throughput and latency on real runtime paths.
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Story-level status drift exists in the optimization wave: `optimize-conjure-paths`, `optimize-meld-paths`, and `optimize-creation-context-codegen` still show `in_progress` despite all listed implementation checklist rows already marked complete.
-  EVIDENCE: context_compass/stories/2026-02-13_optimize_conjure_paths_story.md:6-6, context_compass/stories/2026-02-13_optimize_conjure_paths_story.md:87-90, context_compass/stories/2026-02-13_optimize_meld_paths_story.md:6-6, context_compass/stories/2026-02-13_optimize_meld_paths_story.md:125-130, context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md:6-6, context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md:45-48
+  EVIDENCE: context_compass/stories/completed/2026-02-13_optimize_conjure_paths_story.md:6-6, context_compass/stories/completed/2026-02-13_optimize_conjure_paths_story.md:87-90, context_compass/stories/completed/2026-02-13_optimize_meld_paths_story.md:6-6, context_compass/stories/completed/2026-02-13_optimize_meld_paths_story.md:125-130, context_compass/stories/completed/2026-02-13_optimize_creation_context_codegen_story.md:6-6, context_compass/stories/completed/2026-02-13_optimize_creation_context_codegen_story.md:45-48
   IMPACT: Attention routing overstates active implementation and obscures that these stories are now closure/acceptance-only.
   NEXT: Normalize these three stories to `review` while keeping closure confirmation gates pending user acceptance.
   REREAD: REQUIRED
@@ -132,7 +135,7 @@ correctness while improving throughput and latency on real runtime paths.
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Normalized `optimize-conjure-paths`, `optimize-meld-paths`, and `optimize-creation-context-codegen` story statuses to `review` so the epic reflects closure-state work instead of active implementation.
-  EVIDENCE: context_compass/stories/2026-02-13_optimize_conjure_paths_story.md:6-6, context_compass/stories/2026-02-13_optimize_meld_paths_story.md:6-6, context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md:6-6
+  EVIDENCE: context_compass/stories/completed/2026-02-13_optimize_conjure_paths_story.md:6-6, context_compass/stories/completed/2026-02-13_optimize_meld_paths_story.md:6-6, context_compass/stories/completed/2026-02-13_optimize_creation_context_codegen_story.md:6-6
   IMPACT: Optimization wave routing is now consistent with actual task state; remaining work is acceptance/move-to-completed sequencing.
   NEXT: Walk review stories with user and move accepted story/task tickets in order.
   REREAD: REQUIRED
@@ -141,7 +144,7 @@ correctness while improving throughput and latency on real runtime paths.
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: SpellCrafter rank-2 signature pipeline task moved to review after tuple-hash `steps_rows_signature` update; latest harness shows warm gain (`10.833ms -> 9.804ms`) and reduced signature serialization churn (`996 -> 612`, pickle `724 -> 340`).
-  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:6-93, src/melder/spellbook/spell_crafter/spell_crafter.py:1756-1758, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt:7-38, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:7-41
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:6-93, src/melder/spellbook/spell_crafter/spell_crafter.py:1756-1758, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt:7-38, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:7-41
   IMPACT: Epic SpellCrafter lane now has rank-1 (review), rank-2 (review), and rank-3 (done), with closure pending user acceptance direction.
   NEXT: Walk SpellCrafter rank outcomes with user and close/move accepted tickets.
   REREAD: REQUIRED
@@ -150,7 +153,7 @@ correctness while improving throughput and latency on real runtime paths.
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: Conjure story now has all three ranked follow-up tasks implemented and in review (scheduler-lifecycle reduction, phase-unit-allocation fastpath, activation/validation scan fastpath) with fresh validation artifacts.
-  EVIDENCE: context_compass/tasks/2026-02-14_conjure_scheduler_lifecycle_reduction_task.md:6-47, context_compass/tasks/2026-02-14_conjure_phase_unit_allocation_fastpath_task.md:6-62, context_compass/tasks/2026-02-14_conjure_activation_and_validation_scan_fastpath_task.md:6-44, context_compass/artifacts/2026-02-14_conjure_scheduler_lifecycle_single_run_fastpath_pytests.txt:1-12, context_compass/artifacts/2026-02-14_conjure_phase_unit_allocation_fastpath_pytests.txt:1-12, context_compass/artifacts/2026-02-14_conjure_activation_validation_scan_fastpath_pytests.txt:1-12
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_conjure_scheduler_lifecycle_reduction_task.md:6-47, context_compass/tasks/completed/2026-02-14_conjure_phase_unit_allocation_fastpath_task.md:6-62, context_compass/tasks/completed/2026-02-14_conjure_activation_and_validation_scan_fastpath_task.md:6-44, context_compass/artifacts/2026-02-14_conjure_scheduler_lifecycle_single_run_fastpath_pytests.txt:1-12, context_compass/artifacts/2026-02-14_conjure_phase_unit_allocation_fastpath_pytests.txt:1-12, context_compass/artifacts/2026-02-14_conjure_activation_validation_scan_fastpath_pytests.txt:1-12
   IMPACT: Epic conjure lane is ready for user acceptance-driven closure routing.
   NEXT: Confirm acceptance for the three conjure review tasks and move approved tickets to completed.
   REREAD: REQUIRED
@@ -159,7 +162,7 @@ correctness while improving throughput and latency on real runtime paths.
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: Conjure scheduler-lifecycle reduction is now implemented and in review: conduit resolution phases 5-11 run in a single scheduler lifecycle with preserved foundational-error plan gating semantics.
-  EVIDENCE: context_compass/tasks/2026-02-14_conjure_scheduler_lifecycle_reduction_task.md:6-33, src/melder/spellbook/spellbook_creation_system.py:740-759, src/melder/spellbook/spellbook_creation_system.py:852-933, context_compass/artifacts/2026-02-14_conjure_scheduler_lifecycle_single_run_fastpath_pytests.txt:1-12
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_conjure_scheduler_lifecycle_reduction_task.md:6-33, src/melder/spellbook/spellbook_creation_system.py:740-759, src/melder/spellbook/spellbook_creation_system.py:852-933, context_compass/artifacts/2026-02-14_conjure_scheduler_lifecycle_single_run_fastpath_pytests.txt:1-12
   IMPACT: Highest-ranked conjure hotspot has moved from discovery into validated implementation.
   NEXT: Request user acceptance for scheduler-lifecycle reduction and continue closure routing for remaining conjure tasks.
   REREAD: REQUIRED
@@ -213,7 +216,7 @@ correctness while improving throughput and latency on real runtime paths.
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: SpellCrafter rank-1 execution task is implemented and in review with major warm 8-11 reduction after phase8-11 dirty-capture rollout.
-  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:6-58, context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:60-90, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_11_capture_freq_opt_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_11_capture_freq_opt_output_run2.txt:7-9
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:6-58, context_compass/tasks/completed/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:60-90, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_11_capture_freq_opt_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_11_capture_freq_opt_output_run2.txt:7-9
   IMPACT: Epic’s SpellCrafter branch has moved from planning-only into high-impact validated implementation.
   NEXT: Confirm rank-1 acceptance and continue with rank-2 signature pipeline task.
   REREAD: REQUIRED
@@ -222,7 +225,7 @@ correctness while improving throughput and latency on real runtime paths.
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: SpellCrafter discovery moved from ready to execution-ready: hotspot mapping is complete and three ranked follow-up tasks are now queued under the story.
-  EVIDENCE: context_compass/tasks/2026-02-13_discovery_spellcrafter_phases_task.md:6-113, context_compass/stories/2026-02-13_optimize_spellcrafter_phases_story.md:6-55, context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:1-76, context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:1-76, context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md:1-105
+  EVIDENCE: context_compass/tasks/completed/2026-02-13_discovery_spellcrafter_phases_task.md:6-113, context_compass/stories/completed/2026-02-13_optimize_spellcrafter_phases_story.md:6-55, context_compass/tasks/completed/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:1-76, context_compass/tasks/completed/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:1-76, context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md:1-105
   IMPACT: Epic progress advanced on the SpellCrafter branch and now has concrete next implementation targets.
   NEXT: Execute rank-1 SpellCrafter follow-up task while continuing remaining discovery tracks.
   REREAD: REQUIRED
@@ -236,15 +239,14 @@ correctness while improving throughput and latency on real runtime paths.
   NEXT: Append new findings here as work continues.
 
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user
 ## Context / Handoff Summary
 Epic created with five linked discovery-first stories for optimization of
 conjure, meld, SpellCrafter phases, CreationContext codegen, and Phase 12
 codegen. Meld discovery is now complete and documented with ranked hotspot
 candidates and follow-up implementation tasks in
-`context_compass/stories/2026-02-13_optimize_meld_paths_story.md`. SpellCrafter
+`context_compass/stories/completed/2026-02-13_optimize_meld_paths_story.md`. SpellCrafter
 discovery is now complete and execution-ready with three ranked follow-up tasks
 queued. Rank-1 is implemented and in review with strong warm 8-11 gains, and
 rank-2 is implemented and in review with tuple-hash signature-path gains.

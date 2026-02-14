@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in closure pass; implementation/discovery outcomes are complete and archived.
+
 # Task: Discovery CreationContext Codegen
 
 ## Metadata
 - Task ID: TASK-2026-02-13-discovery-creation-context-codegen
 - Story: STORY-2026-02-13-optimize-creation-context-codegen
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-13
@@ -33,11 +36,11 @@ dispatch paths so optimization work stays contract-safe and measurable.
 - Prioritized follow-up optimization candidates for CreationContext lanes.
 
 ## Files / Paths Impacted
-- `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md`
-- `context_compass/tasks/2026-02-13_discovery_creation_context_codegen_task.md`
-- `context_compass/tasks/2026-02-14_optimize_creation_context_override_shape_preprocessing_task.md`
-- `context_compass/tasks/2026-02-14_optimize_creation_context_override_miss_compile_reuse_task.md`
-- `context_compass/tasks/2026-02-14_optimize_creation_context_override_prefilter_caching_task.md`
+- `context_compass/stories/completed/2026-02-13_optimize_creation_context_codegen_story.md`
+- `context_compass/tasks/completed/2026-02-13_discovery_creation_context_codegen_task.md`
+- `context_compass/tasks/completed/2026-02-14_optimize_creation_context_override_shape_preprocessing_task.md`
+- `context_compass/tasks/completed/2026-02-14_optimize_creation_context_override_miss_compile_reuse_task.md`
+- `context_compass/tasks/completed/2026-02-14_optimize_creation_context_override_prefilter_caching_task.md`
 
 ## Validation
 - Not run.
@@ -53,13 +56,12 @@ dispatch paths so optimization work stays contract-safe and measurable.
 - [x] Deliverables produced and linked
 - [x] Documentation updated (if needed)
 - [x] Validation status recorded
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Discovery ranking finalized with three follow-up tasks: (1) override shape preprocessing reduction, (2) override miss compile reuse, (3) override prefilter caching.
-  EVIDENCE: context_compass/tasks/2026-02-14_optimize_creation_context_override_shape_preprocessing_task.md:1-63, context_compass/tasks/2026-02-14_optimize_creation_context_override_miss_compile_reuse_task.md:1-64, context_compass/tasks/2026-02-14_optimize_creation_context_override_prefilter_caching_task.md:1-62
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_creation_context_override_shape_preprocessing_task.md:1-63, context_compass/tasks/completed/2026-02-14_optimize_creation_context_override_miss_compile_reuse_task.md:1-64, context_compass/tasks/completed/2026-02-14_optimize_creation_context_override_prefilter_caching_task.md:1-62
   IMPACT: Story is now execution-ready with ranked optimization backlog and concrete implementation scopes.
   NEXT: Sync story checklist/notes and request user acceptance for discovery closure before starting rank-1 task.
   REREAD: REQUIRED
@@ -104,7 +106,7 @@ dispatch paths so optimization work stays contract-safe and measurable.
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: This story requires exactly one discovery task and already references this task ID.
-  EVIDENCE: context_compass/epics/2026-02-13_optimize_melder_epic.md:51, context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md:45
+  EVIDENCE: context_compass/epics/completed/2026-02-13_optimize_melder_epic.md:51, context_compass/stories/completed/2026-02-13_optimize_creation_context_codegen_story.md:45
   IMPACT: Creating this task closes the missing ticket link and unblocks discovery execution.
   NEXT: Start route-family mapping in `src/melder/aether/conduit/meld/creation_context/creation_context.py`.
 
