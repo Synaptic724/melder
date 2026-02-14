@@ -16,7 +16,7 @@ Attention details rule
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
 | context_compass artifact reference cleanup | review | codex | none | walk through cleanup outcomes and confirm acceptance for closure | `context_compass/tasks/2026-02-14_context_compass_artifact_reference_cleanup_task.md` | 2026-02-14 | REQUIRED |
-| phase testing epic | in_progress | codex | none | execute phase11 variant-reuse follow-up task, then rerun harness and re-evaluate closure direction for rank backlog | `context_compass/epics/2026-02-14_phase_testing_epic.md` | 2026-02-14 | REQUIRED |
+| phase testing epic | in_progress | codex | none | review phase11 variant-reuse results with user and confirm closure routing for backlog story/task set | `context_compass/epics/2026-02-14_phase_testing_epic.md` | 2026-02-14 | REQUIRED |
 | optimize melder epic | in_progress | codex | none | phase12 wave is closed; continue remaining active story closures and phase discovery priorities | `context_compass/epics/2026-02-13_optimize_melder_epic.md` | 2026-02-14 | REQUIRED |
 | optimize conjure paths | in_progress | codex | none | confirm acceptance for scheduler-lifecycle fastpath and remaining conjure in-review tasks, then close/move in story order | `context_compass/stories/2026-02-13_optimize_conjure_paths_story.md` | 2026-02-14 | REQUIRED |
 | optimize meld paths | in_progress | codex | none | review/confirm `TASK-2026-02-13-meld-dynamic-gate-fastdoor` acceptance, then close/move as directed | `context_compass/stories/2026-02-13_optimize_meld_paths_story.md` | 2026-02-14 | REQUIRED |
@@ -24,11 +24,17 @@ Attention details rule
 | optimize creation context codegen | in_progress | codex | none | rank-3 complete/in review; walk through full story outcomes and request closure acceptance | `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md` | 2026-02-14 | REQUIRED |
 
 ## Active Attention Details
+- TYPE: MEASURE
+- CLAIM: Phase11 variant-reuse follow-up is now implemented and validated: warm 8-11 totals improved (`group_8_11_total_ms` `9.085 -> 8.124`, `phase_execution_plan_ms` `7.3 -> 6.289`), warm cProfile calls dropped (`108778 -> 96062`), and phase11 plan rebuild calls dropped (`51 -> 17`) for `_build_execution_plan_variant` and `ExecutionPlanBuilder.build`.
+- EVIDENCE: `src/melder/spellbook/spell_crafter/spell_crafter.py:3726-3754`, `src/melder/spellbook/spell_crafter/spell_crafter.py:3808-3867`, `tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py:5578-5719`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:21-22`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_reuse_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_reuse_output.txt:26-27`, `context_compass/artifacts/2026-02-14_phase11_variant_reuse_targeted_unit_tests.txt:1-1`, `context_compass/artifacts/2026-02-14_phase11_variant_reuse_targeted_unit_tests.txt:12-12`
+- REREAD: REQUIRED
+- NEXT: Request user acceptance for `TASK-2026-02-14-optimize-phase11-execution-plan-variant-reuse` and route backlog close/move decisions.
+
 - TYPE: DECISION
 - CLAIM: Phase-testing optimization backlog was re-opened for one additional ranked follow-up because the latest warm sample still shows heavy phase11 variant rebuild churn (`51` calls to `_build_execution_plan_variant` and `ExecutionPlanBuilder.build`).
 - EVIDENCE: `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:44-49`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:71-78`, `context_compass/tasks/2026-02-14_optimize_phase11_execution_plan_variant_reuse_task.md:4-11`, `context_compass/tasks/2026-02-14_optimize_phase11_execution_plan_variant_reuse_task.md:60-67`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:21-23`
 - REREAD: REQUIRED
-- NEXT: Execute `TASK-2026-02-14-optimize-phase11-execution-plan-variant-reuse` and capture post-change warm profile deltas.
+- NEXT: Keep as historical anchor for why the follow-up was opened; current active next step is acceptance/closure routing after implementation.
 
 - TYPE: MEASURE
 - CLAIM: Phase-testing rank-2 row-builder task gained a measurable warm improvement after the `PathRegistry.format_path` memoization follow-up pass (`group_8_11_total_ms` `9.804 -> 9.085`, `phase_patch_maps_ms` `1.288 -> 0.573`, calls `120524 -> 108778`).

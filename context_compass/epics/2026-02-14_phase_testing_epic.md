@@ -124,6 +124,15 @@ runtime changes.
 
 ## Notes
 - DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Phase11 variant-reuse follow-up is implemented and validated; warm 8-11 totals improved (`group_8_11_total_ms` `9.085 -> 8.124`, `phase_execution_plan_ms` `7.3 -> 6.289`), warm cProfile calls dropped (`108778 -> 96062`), and warm phase11 plan rebuild calls dropped (`51 -> 17`) for `_build_execution_plan_variant` and `ExecutionPlanBuilder.build`.
+  EVIDENCE: src/melder/spellbook/spell_crafter/spell_crafter.py:3726-3754, src/melder/spellbook/spell_crafter/spell_crafter.py:3808-3867, tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py:5578-5719, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:21-22, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_reuse_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_reuse_output.txt:26-27, context_compass/artifacts/2026-02-14_phase11_variant_reuse_targeted_unit_tests.txt:1-1, context_compass/artifacts/2026-02-14_phase11_variant_reuse_targeted_unit_tests.txt:12-12
+  IMPACT: The reopened phase-testing follow-up now has measured improvement and can move to acceptance/closure routing.
+  NEXT: Review backlog outcomes with user and confirm close/move direction for phase-testing story/task set.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Phase-testing backlog execution is re-opened for one additional ranked follow-up task targeting phase11 variant rebuild churn (`TASK-2026-02-14-optimize-phase11-execution-plan-variant-reuse`).
   EVIDENCE: context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:44-49, context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:71-78, context_compass/tasks/2026-02-14_optimize_phase11_execution_plan_variant_reuse_task.md:1-33, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:21-23
@@ -273,6 +282,6 @@ across harness design, 1-4 baseline, conduit-wide 5-7 baseline, target-local
 Execution delivered validated rank1/rank2/rank3 follow-ups and then re-opened
 for one additional ranked phase11 optimization task focused on variant rebuild
 churn (`TASK-2026-02-14-optimize-phase11-execution-plan-variant-reuse`).
-Latest evidence still shows `51` warm calls each to `_build_execution_plan_variant`
-and `ExecutionPlanBuilder.build`, so next step is implementation + rerun before
-closure routing.
+That follow-up is now implemented and remeasured with reduced warm totals/calls
+and reduced phase11 builder call frequency (`51 -> 17`). Next step is user
+acceptance and closure routing for the backlog story/task set.

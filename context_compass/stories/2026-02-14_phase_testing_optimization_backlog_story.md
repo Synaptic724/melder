@@ -3,7 +3,7 @@
 ## Metadata
 - Story ID: STORY-2026-02-14-phase-testing-optimization-backlog
 - Epic: EPIC-2026-02-14-phase-testing
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
@@ -46,7 +46,7 @@ prioritization and reduced speculative work.
 - [x] Task: TASK-2026-02-14-optimize-phase11-codegen-ir-capture - Optimize top warm 8-11 codegen IR hotspot.
 - [x] Task: TASK-2026-02-14-optimize-phase8-10-plan-row-builders - Optimize warm plan row-builder/path-materialization hotspot.
 - [x] Task: TASK-2026-02-14-optimize-phase5-root-blueprints-hotpath - Optimize foundational conduit-wide phase5 hotspot.
-- [ ] Task: TASK-2026-02-14-optimize-phase11-execution-plan-variant-reuse - Reuse phase11 plan structure across override variants to cut repeated builder work.
+- [x] Task: TASK-2026-02-14-optimize-phase11-execution-plan-variant-reuse - Reuse phase11 plan structure across override variants to cut repeated builder work.
 
 ## Acceptance Criteria
 - Ranked optimization backlog exists with evidence for each candidate.
@@ -69,6 +69,15 @@ prioritization and reduced speculative work.
 - 2026-02-14: Story created from EPIC-2026-02-14-phase-testing.
 
 ## Notes
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: The re-opened phase11 variant-reuse follow-up is now implemented and validated; warm 8-11 totals improved (`group_8_11_total_ms` `9.085 -> 8.124`, `phase_execution_plan_ms` `7.3 -> 6.289`), warm cProfile calls dropped (`108778 -> 96062`), and phase11 plan rebuild calls dropped (`51 -> 17`) per warm sample.
+  EVIDENCE: src/melder/spellbook/spell_crafter/spell_crafter.py:3726-3754, src/melder/spellbook/spell_crafter/spell_crafter.py:3808-3867, tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py:5578-5719, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:21-22, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_reuse_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_reuse_output.txt:26-27, context_compass/artifacts/2026-02-14_phase11_variant_reuse_targeted_unit_tests.txt:1-1, context_compass/artifacts/2026-02-14_phase11_variant_reuse_targeted_unit_tests.txt:12-12
+  IMPACT: All ranked backlog tasks plus the follow-up slice are now implemented with fresh validation evidence.
+  NEXT: Walk through backlog outcomes with user and confirm closure/move direction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Re-opened the story for a ranked follow-up because the latest warm 8-11 profile still shows repeated phase11 variant plan rebuilding (`_build_execution_plan_variant` + `ExecutionPlanBuilder.build`) as a top cumulative hotspot (`51` calls per warm sample).
@@ -156,5 +165,7 @@ prioritization and reduced speculative work.
 Story optimization execution delivered validated rank1/rank2/rank3 outcomes,
 then re-opened for one additional ranked follow-up focused on phase11 variant
 rebuild churn observed in the latest warm sample (`_build_execution_plan_variant`
-and `ExecutionPlanBuilder.build` at 51 calls each). Next step is to execute the
-new follow-up task and remeasure before closure routing.
+and `ExecutionPlanBuilder.build` at 51 calls each). The follow-up is now
+implemented and validated with reduced warm totals/calls and reduced phase11
+builder call frequency. Next step is user acceptance and move-to-completed
+routing.

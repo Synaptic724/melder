@@ -3,7 +3,7 @@
 ## Metadata
 - Task ID: TASK-2026-02-14-optimize-phase11-execution-plan-variant-reuse
 - Story: STORY-2026-02-14-phase-testing-optimization-backlog
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
@@ -22,12 +22,12 @@ execution-plan structural data across override variants.
 - Changing public API contracts.
 
 ## Steps / Checklist
-- [ ] Confirm safe reuse boundaries for phase11 plan variant data.
-- [ ] Implement low-risk variant reuse with compatibility fallback.
-- [ ] Add/adjust focused tests for variant semantics and execution-plan lifecycle.
-- [ ] Rerun focused spell-crafter tests and component harness for warm 8-11.
-- [ ] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Confirm safe reuse boundaries for phase11 plan variant data.
+- [x] Implement low-risk variant reuse with compatibility fallback.
+- [x] Add/adjust focused tests for variant semantics and execution-plan lifecycle.
+- [x] Rerun focused spell-crafter tests and component harness for warm 8-11.
+- [x] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Reduced repeated phase11 variant build churn on warm 8-11 path.
@@ -39,25 +39,35 @@ execution-plan structural data across override variants.
 - `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md`
 
 ## Validation
-- Not run.
-- Recommended commands:
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py -k "run_phase_execution_plan_flushes_phase8_11_codegen_ir_before_compile or capture_phase8_11_codegen_ir_exports_sorted_payloads or capture_phase8_11_codegen_ir_signature_stable_across_map_insertion_orders or build_phase11_variant_ir_payload_signature_changes_on_variant_label or build_phase11_variant_ir_payload_signature_changes_on_step_semantic_change"`
-  - `python -m pytest -q -s tests/component/melder/spellbook/test_phase_component_cprofile_harness.py`
+- Ran:
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py -k "run_phase_execution_plan_flushes_phase8_11_codegen_ir_before_compile or capture_phase8_11_codegen_ir_exports_sorted_payloads or capture_phase8_11_codegen_ir_signature_stable_across_map_insertion_orders or build_phase11_variant_ir_payload_signature_changes_on_variant_label or build_phase11_variant_ir_payload_signature_changes_on_step_semantic_change or run_phase_execution_plan_reuses_no_overrides_base_for_sibling_variants or run_phase_execution_plan_falls_back_to_full_build_for_incompatible_base"` (`6 passed, 147 deselected`) -> `context_compass/artifacts/2026-02-14_phase11_variant_reuse_targeted_unit_tests.txt`
+  - `python -m pytest -q -s tests/component/melder/spellbook/test_phase_component_cprofile_harness.py` (`1 passed`) -> `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_reuse_output.txt`
+- Notes:
+  - Pytest emitted a cache write warning for `.pytest_cache` permission (`WinError 5`); test outcomes still completed successfully.
 
 ## Risks / Rollback Notes
 - Risk: variant reuse could accidentally collapse per-variant semantics.
 - Rollback: revert to per-variant rebuild path in `run_phase_execution_plan`.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
 - [ ] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Variant reuse for phase11 plan siblings is implemented and validated: warm 8-11 totals improved (`group_8_11_total_ms` `9.085 -> 8.124`, `phase_execution_plan_ms` `7.3 -> 6.289`), warm cProfile calls dropped (`108778 -> 96062`), and phase11 plan rebuild calls dropped from `51` to `17` per warm sample (`_build_execution_plan_variant` + `ExecutionPlanBuilder.build`).
+  EVIDENCE: src/melder/spellbook/spell_crafter/spell_crafter.py:3726-3754, src/melder/spellbook/spell_crafter/spell_crafter.py:3808-3867, tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py:5578-5719, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:21-22, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_reuse_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_reuse_output.txt:26-27, context_compass/artifacts/2026-02-14_phase11_variant_reuse_targeted_unit_tests.txt:1-1, context_compass/artifacts/2026-02-14_phase11_variant_reuse_targeted_unit_tests.txt:12-12
+  IMPACT: The follow-up hotspot is reduced with behavior-parity guard coverage, and the task is ready for user acceptance/closure routing.
+  NEXT: Walk through outcome and request acceptance to move this task to completed.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-14
   TYPE: PLAN
   CLAIM: Implement a no-overrides-base reuse path in `run_phase_execution_plan`: build `NO_OVERRIDES_FAST` once, derive `OVERRIDES` and `OVERRIDES_WITH_MUTATIONS` plans from shared structural data, and fallback to legacy per-variant rebuild when base-plan shape is incompatible (for test stubs/edge cases).
@@ -77,6 +87,8 @@ execution-plan structural data across override variants.
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary
-Task opened from the latest warm profile after rank1/rank2/rank3 completion.
-Primary target is phase11 variant rebuild churn in `run_phase_execution_plan`.
-Next step is code implementation plus focused tests and harness rerun.
+Task implementation and validation are complete. Phase11 now builds
+`NO_OVERRIDES_FAST` once and derives sibling variants from base structure with
+safe fallback rebuild for incompatible shapes. Warm harness evidence shows
+reduced phase11 rebuild churn and lower total calls. Next step is acceptance
+confirmation and move-to-completed routing.
