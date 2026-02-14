@@ -1423,8 +1423,8 @@ class SpellCrafter(Cleanable):
             payloads, aggregation flags) as deterministic schema-only rows.
         Contract:
             - Returns only primitive tuple rows.
-            - Missing/unknown injection-spec attributes are tolerated and
-              serialized as empty/default values.
+            - Expects InjectionSpec/ParamSource contract fields to be present.
+            - Fails fast when malformed/cleaned artifacts violate contract.
         Args:
             instance_injections:
                 Mapping from instance key to InjectionSpec-like objects.
@@ -1438,23 +1438,11 @@ class SpellCrafter(Cleanable):
                 key=self._instance_key_sort_key,
         ):
             injection_spec = instance_injections[instance_key]
-            allow_list_aggregation = False
-            uses_positional_override = False
+            allow_list_aggregation = bool(injection_spec.allow_list_aggregation)
+            uses_positional_override = bool(injection_spec.uses_positional_override)
             contract_payload_items: Tuple[Tuple[str, Any], ...] = ()
             param_rows: List[Tuple[Any, ...]] = []
-            try:
-                allow_list_aggregation = bool(injection_spec.allow_list_aggregation)
-            except AttributeError:
-                allow_list_aggregation = False
-            try:
-                uses_positional_override = bool(injection_spec.uses_positional_override)
-            except AttributeError:
-                uses_positional_override = False
-
-            try:
-                contract_payload = injection_spec.contract_payload
-            except AttributeError:
-                contract_payload = None
+            contract_payload = injection_spec.contract_payload
             if contract_payload:
                 contract_payload_items = tuple(
                     sorted(
@@ -1466,22 +1454,13 @@ class SpellCrafter(Cleanable):
                     )
                 )
 
-            try:
-                param_sources = injection_spec.param_sources
-            except AttributeError:
-                param_sources = None
+            param_sources = injection_spec.param_sources
             if param_sources:
                 for param_name in sorted(param_sources.keys()):
                     param_source = param_sources[param_name]
-                    try:
-                        kind = param_source.kind
-                    except AttributeError:
-                        continue
+                    kind = param_source.kind
                     dependency_keys: Tuple[Tuple[str, Optional[int]], ...] = ()
-                    try:
-                        raw_dependency_keys = param_source.dependency_keys
-                    except AttributeError:
-                        raw_dependency_keys = None
+                    raw_dependency_keys = param_source.dependency_keys
                     if raw_dependency_keys:
                         dependency_key_list = [
                             tuple(dependency_key)
@@ -1492,16 +1471,8 @@ class SpellCrafter(Cleanable):
                                 key=self._instance_key_sort_key,
                             )
                         dependency_keys = tuple(dependency_key_list)
-                    override_key = None
-                    try:
-                        override_key = param_source.override_key
-                    except AttributeError:
-                        override_key = None
-                    contract_key = None
-                    try:
-                        contract_key = param_source.contract_key
-                    except AttributeError:
-                        contract_key = None
+                    override_key = param_source.override_key
+                    contract_key = param_source.contract_key
                     param_rows.append(
                         (
                             param_name,
@@ -1536,7 +1507,8 @@ class SpellCrafter(Cleanable):
         Contract:
             - Returns only primitive tuple rows.
             - Includes specificity values when available.
-            - Ignores malformed socket target entries.
+            - Expects OverridePatchMap target/spec specificity contracts.
+            - Fails fast when malformed/cleaned artifacts violate contract.
         Args:
             override_patch_map:
                 OverridePatchMap-like object.
@@ -1546,32 +1518,22 @@ class SpellCrafter(Cleanable):
         """
         if override_patch_map is None:
             return ()
-        try:
-            targets_by_spec = override_patch_map._targets_by_spec
-        except AttributeError:
-            return ()
-        try:
-            specificity_by_spec = override_patch_map._specificity_by_spec
-        except AttributeError:
-            specificity_by_spec = {}
+        targets_by_spec = override_patch_map._targets_by_spec
+        specificity_by_spec = override_patch_map._specificity_by_spec
 
         rows: List[Tuple[Any, ...]] = []
         for spec_key in sorted(targets_by_spec.keys()):
             raw_targets = targets_by_spec[spec_key]
             socket_rows: List[Tuple[str, str, int, str]] = []
-            if isinstance(raw_targets, (list, tuple)):
-                for socket_ref in raw_targets:
-                    try:
-                        socket_rows.append(
-                            (
-                                socket_ref.node_id,
-                                socket_ref.param_name,
-                                socket_ref.param_path_id,
-                                socket_ref.socket_kind.value,
-                            )
-                        )
-                    except AttributeError:
-                        continue
+            for socket_ref in raw_targets:
+                socket_rows.append(
+                    (
+                        socket_ref.node_id,
+                        socket_ref.param_name,
+                        socket_ref.param_path_id,
+                        socket_ref.socket_kind.value,
+                    )
+                )
             if len(socket_rows) > 1:
                 socket_rows.sort(key=self._socket_row_sort_key)
 
@@ -1579,13 +1541,7 @@ class SpellCrafter(Cleanable):
             if specificity_by_spec:
                 specificity = specificity_by_spec.get(spec_key)
                 if specificity is not None:
-                    try:
-                        specificity_value = int(specificity)
-                    except Exception:
-                        try:
-                            specificity_value = specificity.name
-                        except AttributeError:
-                            specificity_value = repr(specificity)
+                    specificity_value = int(specificity)
 
             rows.append(
                 (
@@ -1608,7 +1564,8 @@ class SpellCrafter(Cleanable):
             for codegen contract completeness and signature invalidation.
         Contract:
             - Returns only primitive tuple rows.
-            - Ignores malformed mutation patch entries.
+            - Expects MutationPatchMap target contract fields.
+            - Fails fast when malformed/cleaned artifacts violate contract.
         Args:
             mutation_patch_map:
                 MutationPatchMap-like object.
@@ -1618,27 +1575,20 @@ class SpellCrafter(Cleanable):
         """
         if mutation_patch_map is None:
             return ()
-        try:
-            targets_by_spec = mutation_patch_map._targets_by_spec
-        except AttributeError:
-            return ()
+        targets_by_spec = mutation_patch_map._targets_by_spec
         rows: List[Tuple[Any, ...]] = []
         for spec_key in sorted(targets_by_spec.keys()):
             raw_patches = targets_by_spec[spec_key]
             patch_rows: List[Tuple[Any, ...]] = []
-            if isinstance(raw_patches, (list, tuple)):
-                for patch in raw_patches:
-                    try:
-                        patch_rows.append(
-                            (
-                                patch.child_spell_id,
-                                patch.param_name,
-                                patch.param_path_id,
-                                patch.old_parent_id,
-                            )
-                        )
-                    except AttributeError:
-                        continue
+            for patch in raw_patches:
+                patch_rows.append(
+                    (
+                        patch.child_spell_id,
+                        patch.param_name,
+                        patch.param_path_id,
+                        patch.old_parent_id,
+                    )
+                )
             if len(patch_rows) > 1:
                 patch_rows.sort(
                     key=lambda row: (

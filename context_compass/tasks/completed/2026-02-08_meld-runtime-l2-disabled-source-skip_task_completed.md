@@ -36,18 +36,18 @@ misses when L2 persistence is disabled.
 
 ## Files / Paths Impacted
 - `src/melder/aether/conduit/meld/meld_runtime/meld_runtime.py`
-- `tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
+- `tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
 
 ## Validation
 - Ran:
-  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
-  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/test_meld.py tests/unit/melder/aether/conduit/meld/meld_context/test_meld_context.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py`
+  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
+  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/test_meld.py tests/unit/melder/aether/conduit/meld/meld_context/test_meld_context.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py`
 - Result:
   - MeldRuntime suite passed (`51 passed`).
   - Extended regression suite passed (`192 passed`).
 - Recommended commands:
-  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
-  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/test_meld.py tests/unit/melder/aether/conduit/meld/meld_context/test_meld_context.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py`
+  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
+  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/test_meld.py tests/unit/melder/aether/conduit/meld/meld_context/test_meld_context.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py`
 
 ## Risks / Rollback Notes
 - Risk: incorrect gating could prevent source persistence when L2 is enabled.
@@ -62,3 +62,4 @@ misses when L2 persistence is disabled.
 ## Context / Handoff Summary
 This pass is a compile-miss runtime micro-optimization limited to L2-disabled
 execution paths.
+

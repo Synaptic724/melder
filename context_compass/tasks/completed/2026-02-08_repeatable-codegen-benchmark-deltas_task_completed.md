@@ -47,18 +47,18 @@ baseline deltas for milestone tracking.
     - optional baseline report comparison,
     - JSON report output and pass/fail exit code.
 - Added benchmark baseline delta unit tests in:
-  - `tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
+  - `tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
 
 ## Files / Paths Impacted
 - `src/melder/aether/conduit/meld/meld_runtime/meld_runtime.py`
-- `tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
+- `tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
 - `benchmarks/testing_other_di/run_codegen_benchmark_deltas.py`
 - `context_compass/stories/completed/2026-02-07_validation-perf-gates_story_completed.md`
 - `context_compass/epics/completed/2026-02-07_full-aot-codegen-cutover_epic_completed.md`
 
 ## Validation
 - Ran:
-  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
+  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
   - `$env:PYTHONPATH='.;src'; python benchmarks/testing_other_di/run_codegen_benchmark_deltas.py --sample-count 1 --warmup-count 0 --allow-gate-failure --allow-baseline-regression --output-path benchmarks/testing_other_di/results/codegen_benchmark_report_smoke.json`
 - Result:
   - 39 passed (runtime unit suite).
@@ -78,3 +78,4 @@ baseline deltas for milestone tracking.
 Task closed with runtime-level baseline delta reporting and a repeatable runner
 script that can be used per milestone to record JSON benchmark reports and
 compare medians against prior baselines.
+

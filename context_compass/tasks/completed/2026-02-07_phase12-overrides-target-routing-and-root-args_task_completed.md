@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Emit Override Target Routing and Root Positional Args scope, updated validation notes, and confirmed acceptance.
 
 # Task: Emit Override Target Routing and Root Positional Args
@@ -46,7 +46,7 @@ root positional override support.
 
 ## Validation
 - Ran:
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
 - Result: 182 passed.
 
 ## Risks / Rollback Notes
@@ -66,5 +66,6 @@ SocketRef map -> specialization substitution. Root positional `__args__`-only
 payloads are handled as positional override input without invoking patch-map
 apply. Added contract/override precedence and root-args-only routing tests in
 `tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py`
-and `tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`.
+and `tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`.
+
 

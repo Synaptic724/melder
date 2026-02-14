@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Migrate Phase12 No-Overrides Compiler to Schema-Only Inputs scope, updated validation notes, and confirmed acceptance.
 
 # Task: Migrate Phase12 No-Overrides Compiler to Schema-Only Inputs
@@ -46,7 +46,7 @@ objects in IR.
 ## Validation
 - Ran:
   - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
-  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py`
+  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py`
 - Result: 126 passed (compiler/crafter suites), 30 passed (related runtime/shape-key suites).
 
 ## Risks / Rollback Notes
@@ -66,4 +66,5 @@ moves no-overrides compiler off live plan object payloads and onto schema-only
 IR contracts. Implemented `steps_rows` hydration using spell lookup, added
 schema-required-field fail-fast validation, and retained legacy path
 compatibility for incremental cutover.
+
 

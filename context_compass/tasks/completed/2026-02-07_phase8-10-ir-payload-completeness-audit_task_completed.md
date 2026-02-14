@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Audit Phase8-10 IR Payload Completeness for Full Codegen with evidence-backed consumer mapping and validation.
 
 # Task: Audit Phase8-10 IR Payload Completeness for Full Codegen
@@ -52,7 +52,7 @@ introspection.
 ## Validation
 - Ran:
   - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
 - Result: 143 passed (SpellCrafter suite), 209 passed (targeted full codegen regression bundle).
 
 ## Risks / Rollback Notes
@@ -80,4 +80,5 @@ Audit outcome and field/consumer matrix summary:
   - Phase10: patch-map `override_target_rows` and `mutation_target_rows`.
 - Follow-on implementation is now landed in `SpellCrafter._capture_phase8_11_codegen_ir`
   with deterministic ordering and signature coverage for all enriched segments.
+
 

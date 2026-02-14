@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Enforce Fail-Fast Handling for Phase12 No-Overrides Compiler Errors scope, updated validation notes, and confirmed acceptance.
 
 # Task: Enforce Fail-Fast Handling for Phase12 No-Overrides Compiler Errors
@@ -41,7 +41,7 @@ invalid generated source or namespace wiring fails loudly with actionable errors
 
 ## Validation
 - Ran:
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
 - Result: 20 passed.
 
 ## Risks / Rollback Notes
@@ -60,4 +60,5 @@ Implemented hard-fail behavior in Phase12 no-overrides compile path: malformed
 generated source and missing callable export now raise deterministic runtime
 errors instead of silent fallback. Added focused regression tests for compile
 failure, missing callable export, and eligible fallback-only scenarios.
+
 

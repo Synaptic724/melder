@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Add L2 Persisted Source Cache for Override Specializations scope, updated validation notes, and confirmed acceptance.
 
 # Task: Add L2 Persisted Source Cache for Override Specializations
@@ -45,11 +45,11 @@ cache as the fast path.
 - `src/melder/aether/conduit/meld/meld_runtime/meld_runtime.py`
 - `src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py`
 - `src/melder/spellbook/spell_crafter/spell_crafter.py`
-- `tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
+- `tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
 
 ## Validation
 - Ran:
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
 - Result: 188 passed.
 
 ## Risks / Rollback Notes
@@ -73,5 +73,6 @@ Fresh compile paths emit deterministic source and persist artifacts to L2 with
 per-spell bounded oldest-first eviction. Added coverage for hit/miss,
 runtime-version invalidation, corrupt-artifact fallback, and bounded L2
 eviction behavior in
-`tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`.
+`tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`.
+
 

@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Inline SpellSpace Semantics in Emitted No-Overrides Code scope, updated validation notes, and confirmed acceptance.
 
 # Task: Inline SpellSpace Semantics in Emitted No-Overrides Code
@@ -39,7 +39,7 @@ Emit dedicated spellspace lookup/registration path with active spellspace requir
 ## Validation
 - Ran:
   - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
 - Result: 133 passed (targeted no-overrides + crafter), 193 passed (full codegen regression bundle).
 
 ## Risks / Rollback Notes
@@ -60,4 +60,5 @@ contracts are preserved from shared helpers while interpreter-step fallback is
 removed.
 Added emitted-route spellspace regressions for both successful singleton reuse
 and fail-fast behavior when no active spellspace is present.
+
 

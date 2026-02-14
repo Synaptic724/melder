@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Applied emitted no-overrides executor micro-optimizations and validated behavior parity with unit tests.
 
 # Task: Micro-Optimize Phase12 No-Overrides Executor Path
@@ -37,18 +37,18 @@ avoidable allocations in the generated no-overrides executor route.
 - `src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py`
 - `src/melder/aether/conduit/meld/meld_runtime/meld_runtime.py`
 - `tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py`
-- `tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
+- `tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
 
 ## Validation
 - Ran:
-  - python -m pytest -q tests/unit/melder/aether/conduit/meld/test_meld.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py
+  - python -m pytest -q tests/unit/melder/aether/conduit/meld/test_meld.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py
   - $env:PYTHONPATH='.;src'; python benchmarks/testing_other_di/run_codegen_benchmark_deltas.py --sample-count 1 --warmup-count 0 --allow-gate-failure --allow-baseline-regression --output-path benchmarks/testing_other_di/results/codegen_benchmark_report_smoke_v2.json
 - Result:
   - Focused suites passed (138 passed).
   - Benchmark runner smoke passed and produced route matrix output.
 - Recommended commands:
   - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py`
-  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
+  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
 
 ## Risks / Rollback Notes
 - Risk: over-optimization can reduce readability and mask bug sources.
@@ -63,5 +63,6 @@ avoidable allocations in the generated no-overrides executor route.
 ## Context / Handoff Summary
 Task focuses on the highest-volume no-overrides codegen route first for
 maximal warm-path gains.
+
 
 

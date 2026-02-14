@@ -43,8 +43,8 @@ Discovery-first optimization gives us a stable path to reduce overhead safely.
 ## Tasks (Implementation Checklist)
 - [x] Task: TASK-2026-02-13-discovery-spellcrafter-phases - Build discovery baseline, hotspot map, and prioritized optimization candidates for SpellCrafter phases. (`context_compass/tasks/2026-02-13_discovery_spellcrafter_phases_task.md`)
 - [x] Task: TASK-2026-02-14-optimize-phase8-11-codegen-ir-capture-frequency - Reduce repeated phase8-11 capture rebuild work with contract-safe staging. (`context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md`)
-- [ ] Task: TASK-2026-02-14-optimize-phase11-signature-hash-pipeline - Reduce signature/hash serialization overhead in phase11 export. (`context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md`)
-- [ ] Task: TASK-2026-02-14-optimize-phase8-10-codegen-row-builders-contract-fastpath - Remove defensive hot-path probing in row builders using contract-backed access. (`context_compass/tasks/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md`)
+- [x] Task: TASK-2026-02-14-optimize-phase11-signature-hash-pipeline - Reduce signature/hash serialization overhead in phase11 export. (`context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md`)
+- [x] Task: TASK-2026-02-14-optimize-phase8-10-codegen-row-builders-contract-fastpath - Remove defensive hot-path probing in row builders using contract-backed access. (`context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md`)
 
 ## Acceptance Criteria
 - Discovery output identifies top SpellCrafter phase hotspots with evidence.
@@ -70,10 +70,19 @@ Discovery-first optimization gives us a stable path to reduce overhead safely.
 ## Notes
 - DATE: 2026-02-14
   TYPE: MEASURE
+  CLAIM: Rank-3 row-builder contract-fastpath task is implemented and validated across two harness reruns; warm `group_8_11_total_ms` measured `11.047` then `10.266`, and warm cProfile sample was `0.034s` with `122060` calls versus pre-rank3 rank-2 samples `0.036s` with `123618` calls.
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md:1-105, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_contract_fastpath_output.txt:7-38, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_contract_fastpath_output_run2.txt:7-38, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run6.txt:7-38, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt:7-38
+  IMPACT: Ranked SpellCrafter follow-up tasks are now implemented and validated; remaining work is acceptance/closure direction, not additional unplanned implementation.
+  NEXT: Rank-3 is accepted and closed; review rank-1/rank-2 closure direction or proceed to the next discovery story.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: MEASURE
   CLAIM: Rank-2 signature-pipeline task is implemented with regression rollback and final container-first scalar fastpath dispatch; measured result is near-neutral wall time with reduced pickle calls.
   EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:61-148, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_11_capture_freq_opt_output_run2.txt:7-38, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run6.txt:7-39, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt:7-39
-  IMPACT: Story remains in-progress with rank-2 ready for keep-vs-iterate decision before moving to rank-3.
-  NEXT: Review rank-2 outcome with user and decide whether to continue to rank-3 task.
+  IMPACT: Rank-2 is stable and ready for keep-vs-iterate decision as a low-risk internal cleanup with reduced pickle calls but near-neutral wall-time effect.
+  NEXT: Evaluate rank-2 together with rank-3 in final acceptance walkthrough.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
@@ -89,7 +98,7 @@ Discovery-first optimization gives us a stable path to reduce overhead safely.
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Discovery is complete and produced a ranked execution plan: (1) capture-frequency reduction, (2) signature hash pipeline optimization, (3) contract-fastpath row builder cleanup.
-  EVIDENCE: context_compass/tasks/2026-02-13_discovery_spellcrafter_phases_task.md:63-111, context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:1-76, context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:1-76, context_compass/tasks/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md:1-77
+  EVIDENCE: context_compass/tasks/2026-02-13_discovery_spellcrafter_phases_task.md:63-111, context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:1-76, context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:1-76, context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md:1-105
   IMPACT: Story moved from discovery-ready to execution-ready with explicit ranked tasks.
   NEXT: Start rank-1 task (`TASK-2026-02-14-optimize-phase8-11-codegen-ir-capture-frequency`).
   REREAD: REQUIRED
@@ -110,7 +119,10 @@ Discovery-first optimization gives us a stable path to reduce overhead safely.
 Story discovery is complete and in-progress execution has started with three
 ranked implementation tasks now queued. Rank-1 is implemented with strong warm
 8-11 reduction evidence. Rank-2 is now implemented with a stable final variant
-after one discarded regression attempt; current measured outcome is near-neutral
-wall time with reduced pickle call volume. Next step is user direction for
-rank-2 keep-vs-iterate, then execution of rank-3 row-builder fastpath task.
+after one discarded regression attempt; measured outcome is near-neutral wall
+time with reduced pickle call volume. Rank-3 is now implemented with contract-
+strict row builders plus fail-fast tests and two harness reruns showing mixed
+wall-time variance (`11.047`, `10.266`) but lower warm profile call volume/time
+shape versus rank-2 (`122060` calls at `0.034s` vs `123618` at `0.036s`). Next
+step is user closure direction for rank-1/rank-2; rank-3 is accepted and closed.
 

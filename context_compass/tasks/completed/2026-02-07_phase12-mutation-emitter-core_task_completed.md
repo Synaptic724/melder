@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Emit Mutation-Override Specialization Executor Source scope, updated validation notes, and confirmed acceptance.
 
 # Task: Emit Mutation-Override Specialization Executor Source
@@ -38,7 +38,7 @@ Generate mutation-capable specialization executors from mutation plan variant.
 
 ## Validation
 - Ran:
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
 - Result: 180 passed.
 
 ## Risks / Rollback Notes
@@ -59,4 +59,5 @@ executor still consumes mutation-aware Phase11 variant rows, preserving
 existence/reuse/registration semantics through the existing step resolver.
 Coverage includes compile-failure and missing-callable tests in
 `tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py`.
+
 

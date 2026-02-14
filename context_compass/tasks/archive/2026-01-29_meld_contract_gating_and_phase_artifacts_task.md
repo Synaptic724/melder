@@ -37,7 +37,7 @@ Restore a clean baseline by aligning meld contract gating behavior and phase-art
 - `src/melder/aether/conduit/meld/meld.py`
 - `src/melder/aether/conduit/meld/meld_runtime/meld_runtime.py`
 - `tests/unit/melder/aether/conduit/meld/test_meld.py`
-- `tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
+- `tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
 - `tests/unit/melder/spellbook/test_spell.py`
 - `tests/integration/melder/conduit/test_conduit_integration_links_contracts.py`
 - `tests/integration/melder/conduit/test_conduit_integration_spell_contract_variants.py`
@@ -45,7 +45,7 @@ Restore a clean baseline by aligning meld contract gating behavior and phase-art
 ## Validation
 - Not run.
 - Recommended commands:
-  - `pytest tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py -q`
+  - `pytest tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py -q`
   - `pytest tests/unit/melder/aether/conduit/meld/test_meld.py -q`
   - `pytest tests/unit/melder/spellbook/test_spell.py::test_run_all_phases_invokes_crafter_in_order -q`
   - `pytest tests/integration/melder/conduit/test_conduit_integration_links_contracts.py -q`
@@ -64,3 +64,4 @@ Restore a clean baseline by aligning meld contract gating behavior and phase-art
 
 ## Context / Handoff Summary
 Created task to stabilize meld contract gating and phase artifact expectations per reported failing tests; execution_plan is confirmed to be part of run_all_phases. Next: inspect code/tests and propose concrete changes for approval.
+

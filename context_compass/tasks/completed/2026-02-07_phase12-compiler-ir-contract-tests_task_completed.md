@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Add Phase12 Compiler IR Contract Test Matrix scope, updated validation notes, and confirmed acceptance.
 
 # Task: Add Phase12 Compiler IR Contract Test Matrix
@@ -39,12 +39,12 @@ so schema regressions fail immediately.
 ## Files / Paths Impacted
 - `tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
 - `tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py`
-- `tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
+- `tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
 
 ## Validation
 - Ran:
   - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py`
-  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py`
+  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py`
 - Result: 123 passed (first run), 153 passed (combined targeted run).
 
 ## Risks / Rollback Notes
@@ -65,4 +65,5 @@ direct tests for phase2_5 and phase8_11 payload contracts, deterministic
 ordering, and signature stability across map insertion order differences.
 Added compile cache tests for no-overrides signature reuse/recompile behavior
 and a required-field guard for malformed no-overrides IR payloads.
+
 

@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Implemented meld front-door spell-id fast-path cache routing and bounded cache insertion helpers.
 
 # Task: Optimize Meld Entry Fast-Path Routing
@@ -39,7 +39,7 @@ for common spell-id and no-override warm paths.
 
 ## Validation
 - Ran:
-  - python -m pytest -q tests/unit/melder/aether/conduit/meld/test_meld.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py
+  - python -m pytest -q tests/unit/melder/aether/conduit/meld/test_meld.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py
   - $env:PYTHONPATH='.;src'; python benchmarks/testing_other_di/run_codegen_benchmark_deltas.py --sample-count 1 --warmup-count 0 --allow-gate-failure --allow-baseline-regression --output-path benchmarks/testing_other_di/results/codegen_benchmark_report_smoke_v2.json
 - Result:
   - Focused suites passed (138 passed).
@@ -60,5 +60,6 @@ for common spell-id and no-override warm paths.
 ## Context / Handoff Summary
 Task isolates front-door `Meld` resolution overhead reduction before deeper
 runtime and executor micro-optimization work.
+
 
 

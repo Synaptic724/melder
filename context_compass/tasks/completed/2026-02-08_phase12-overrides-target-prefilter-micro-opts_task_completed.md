@@ -41,12 +41,12 @@ repeat path-registry filtering for non-shared instances.
 
 ## Validation
 - Ran:
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
 - Result:
   - Focused suites passed (`56 passed`).
 - Recommended commands:
   - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py`
-  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
+  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
 
 ## Risks / Rollback Notes
 - Risk: incorrect prefiltering could drop valid overrides for non-shared steps.
@@ -63,3 +63,4 @@ This task targets hot-path override execution overhead after Phase12 codegen
 cutover by moving deterministic path filtering to specialization compile time.
 Runtime override map materialization now assumes compile-time filtered target
 sets per step.
+

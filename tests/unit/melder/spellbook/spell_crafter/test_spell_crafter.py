@@ -4558,7 +4558,12 @@ def test_capture_phase8_11_codegen_ir_exports_sorted_payloads() -> None:
                     ),
                 },
             ),
-            ("a", None): object(),
+            ("a", None): types.SimpleNamespace(
+                allow_list_aggregation=False,
+                uses_positional_override=False,
+                contract_payload=None,
+                param_sources={},
+            ),
         },
     )
     crafter._override_patch_map_phase10 = types.SimpleNamespace(
@@ -4676,6 +4681,68 @@ def test_capture_phase8_11_codegen_ir_exports_sorted_payloads() -> None:
     assert payload["execution"]["overrides"]["plan_variant"] == "overrides"
     assert payload["execution"]["overrides_with_mutations"]["plan_variant"] == "overrides_with_mutations"
     assert signatures["phase8_11"] == payload["signature"]
+
+
+def test_build_injection_instance_rows_fails_fast_on_invalid_spec_contract() -> None:
+    """
+    Purpose:
+        Verify Phase9 injection row export fails fast on malformed specs.
+    Contract:
+        `_build_injection_instance_rows` expects InjectionSpec fields and raises
+        when a malformed object is supplied.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If malformed specs do not fail fast.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    with pytest.raises(AttributeError):
+        crafter._build_injection_instance_rows(
+            {
+                ("root", None): object(),
+            }
+        )
+
+
+def test_build_override_target_rows_fails_fast_on_invalid_socket_ref_contract() -> None:
+    """
+    Purpose:
+        Verify Phase10 override row export fails fast on malformed socket refs.
+    Contract:
+        `_build_override_target_rows` expects socket refs with node/param/path/
+        socket-kind fields and raises when malformed entries are supplied.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If malformed socket refs do not fail fast.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    override_patch_map = types.SimpleNamespace(
+        _targets_by_spec={"spec": [object()]},
+        _specificity_by_spec={"spec": 1},
+    )
+    with pytest.raises(AttributeError):
+        crafter._build_override_target_rows(override_patch_map)
+
+
+def test_build_mutation_target_rows_fails_fast_on_invalid_patch_contract() -> None:
+    """
+    Purpose:
+        Verify Phase10 mutation row export fails fast on malformed patches.
+    Contract:
+        `_build_mutation_target_rows` expects mutation patch fields and raises
+        when malformed entries are supplied.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If malformed mutation patches do not fail fast.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    mutation_patch_map = types.SimpleNamespace(
+        _targets_by_spec={"spec": [object()]},
+    )
+    with pytest.raises(AttributeError):
+        crafter._build_mutation_target_rows(mutation_patch_map)
 
 
 def test_capture_phase8_11_codegen_ir_signature_stable_across_map_insertion_orders() -> None:

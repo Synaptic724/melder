@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Populate IR Fields and Signature Coverage and validated results with targeted codegen suites.
 
 # Task: Populate IR Fields and Signature Coverage
@@ -39,7 +39,7 @@ Ensure phases emit every field needed by generators and compute stable signature
 ## Validation
 - Ran:
   - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
 - Result: 143 passed (SpellCrafter suite), 209 passed (targeted full codegen regression bundle).
 
 ## Risks / Rollback Notes
@@ -60,4 +60,5 @@ Phase8-10 schema contracts:
 - Expanded phase signatures to fingerprint enriched schema segments.
 - Added regression tests for schema ordering/content, signature stability across
   equivalent insertion orders, and signature invalidation on semantic drift.
+
 

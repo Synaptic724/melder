@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Emit Mutation PatchMap and Contract Routing Logic scope, updated validation notes, and confirmed acceptance.
 
 # Task: Emit Mutation PatchMap and Contract Routing Logic
@@ -38,7 +38,7 @@ Inline mutation patch application and contract payload routing in generated code
 
 ## Validation
 - Ran:
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
 - Result: 180 passed.
 
 ## Risks / Rollback Notes
@@ -60,4 +60,5 @@ removes an unnecessary patch-map dependency for root-only calls.
 Added contract/override precedence coverage proving root positional overrides
 and socket override values outrank contract payload defaults in compiled
 specialization execution.
+
 

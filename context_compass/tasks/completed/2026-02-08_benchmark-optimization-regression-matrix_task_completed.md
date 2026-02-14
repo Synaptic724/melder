@@ -40,7 +40,7 @@ mixed, overrides, and spellspace routes with baseline delta reporting.
 
 ## Validation
 - Ran:
-  - python -m pytest -q tests/unit/melder/aether/conduit/meld/test_meld.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py
+  - python -m pytest -q tests/unit/melder/aether/conduit/meld/test_meld.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py
   - $env:PYTHONPATH='.;src'; python benchmarks/testing_other_di/run_codegen_benchmark_deltas.py --sample-count 1 --warmup-count 0 --allow-gate-failure --allow-baseline-regression --output-path benchmarks/testing_other_di/results/codegen_benchmark_report_smoke_v2.json
 - Result:
   - Focused suites passed (138 passed).
@@ -61,5 +61,6 @@ mixed, overrides, and spellspace routes with baseline delta reporting.
 ## Context / Handoff Summary
 Task provides the benchmark guardrail surface for optimization tasks so each
 change can be accepted/rejected against reproducible deltas.
+
 
 

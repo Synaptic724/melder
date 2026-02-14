@@ -53,8 +53,8 @@ Cover all existences and override/mutation permutations on generated paths.
 ## Validation
 - Ran:
   - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py`
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_occurrence_plan.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_occurrence_plan.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_occurrence_plan.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_occurrence_plan.py`
 - Result:
   - 226 passed.
 
@@ -74,4 +74,5 @@ and target-kind routing, including owner/scope-specific creations behavior and
 spellspace override rejection semantics. Added deterministic canonical selection
 assertion update in meld-engine helper tests to align with Phase8 ordering
 hardening.
+
 

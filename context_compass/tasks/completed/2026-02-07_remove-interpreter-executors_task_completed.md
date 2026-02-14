@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Remove Interpreter-Style Execution Helpers scope, updated validation notes, and confirmed acceptance.
 
 # Task: Remove Interpreter-Style Execution Helpers
@@ -39,7 +39,7 @@ Delete interpreter helper execution paths from phase12 runtime modules.
 ## Validation
 - Ran:
   - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
 - Result: 133 passed (targeted no-overrides + crafter), 193 passed (full codegen regression bundle).
 
 ## Risks / Rollback Notes
@@ -62,4 +62,5 @@ emitted source was then brought to the same model by removing
 override-aware step semantics in source-emitted blocks.
 Added semantic regressions around no-overrides spellspace execution and
 override existing-instance rejection to keep helper-removal behavior stable.
+
 

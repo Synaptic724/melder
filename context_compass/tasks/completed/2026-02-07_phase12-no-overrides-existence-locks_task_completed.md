@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Inline Existence and Lock Semantics in Emitted No-Overrides Code scope, updated validation notes, and confirmed acceptance.
 
 # Task: Inline Existence and Lock Semantics in Emitted No-Overrides Code
@@ -39,7 +39,7 @@ Emit direct lock/reuse/register code paths for all non-spellspace existences.
 ## Validation
 - Ran:
   - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
 - Result: 133 passed (targeted no-overrides + crafter), 193 passed (full codegen regression bundle).
 
 ## Risks / Rollback Notes
@@ -59,4 +59,5 @@ and spell-lock flows with deterministic check/construct/register ordering, while
 preserving lock-hint suppression when caller creations lock is already held.
 Added emitted-route regression coverage for lock-hint suppression when caller
 creations lock is already held to ensure spell-lock bypass remains stable.
+
 

@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Enrich Phase2-5 IR Payloads for Full Emitted Codegen and aligned signatures/tests for contract completeness.
 
 # Task: Enrich Phase2-5 IR Payloads for Full Emitted Codegen
@@ -45,7 +45,7 @@ override/mutation code generation and signature invalidation.
 ## Validation
 - Ran:
   - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
 - Result: 128 passed (SpellCrafter suite), 194 passed (targeted full codegen regression bundle).
 
 ## Risks / Rollback Notes
@@ -71,4 +71,5 @@ Implemented deterministic `phase2_5` payload enrichment in
 
 Added regression coverage for new payload fields and signature invalidation when
 Phase5 schema rows change.
+
 

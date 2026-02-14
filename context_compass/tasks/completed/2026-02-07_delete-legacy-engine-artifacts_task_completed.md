@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Delete Legacy Engine Execution Artifacts scope, updated validation notes, and confirmed acceptance.
 
 # Task: Delete Legacy Engine Execution Artifacts
@@ -38,7 +38,7 @@ Remove remaining legacy engine/runtime execution artifacts and references.
 
 ## Validation
 - Ran:
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
 - Result: 188 passed.
 
 ## Risks / Rollback Notes
@@ -59,4 +59,5 @@ meld contract/runtime-facing docs (`meld.py`, `spell_map.py`, and
 residual override step helper execution path as well by deleting
 `_resolve_step_instance_with_overrides` and inlining those semantics in emitted
 override source.
+
 

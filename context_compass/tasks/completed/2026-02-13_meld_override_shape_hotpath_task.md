@@ -37,19 +37,19 @@ specialization lookup while preserving override correctness.
 
 ## Files / Paths Impacted
 - `src/melder/aether/conduit/meld/creation_context/creation_context.py`
-- `tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
+- `tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
 - `tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py`
 - `tests/integration/melder/spellbook/test_spellbook_integration_overrides.py`
 
 ## Validation
 - Run:
-  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
+  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
     - Result: `13 passed`
   - `python -m pytest -q tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py`
     - Result: `18 passed`
   - `python -m pytest -q tests/integration/melder/spellbook/test_spellbook_integration_overrides.py`
     - Result: `7 passed`
-  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/integration/melder/spellbook/test_spellbook_integration_overrides.py`
+  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/integration/melder/spellbook/test_spellbook_integration_overrides.py`
     - Result: `38 passed`
 
 ## Risks / Rollback Notes
@@ -75,3 +75,4 @@ contracts:
   semantics.
 - Added tests covering shape-helper parity and cache-hit bypass behavior.
 User confirmed acceptance and directed progression to the next ticket.
+

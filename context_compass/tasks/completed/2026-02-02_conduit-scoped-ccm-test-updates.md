@@ -38,7 +38,7 @@ Align test stubs and expectations with conduit-scoped change-control APIs and up
 
 ## Files / Paths Impacted
 - `tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership_contracts.py`
-- `tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
+- `tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
 - `tests/unit/melder/aether/conduit/meld/test_meld.py`
 - `tests/unit/melder/aether/dev_ops/change_control_manager/test_change_control_manager.py`
 - `tests/unit/melder/aether/dev_ops/test_dev_ops_manager.py`
@@ -53,7 +53,7 @@ Align test stubs and expectations with conduit-scoped change-control APIs and up
   - pytest -q tests/unit/melder/aether/dev_ops/change_control_manager/test_change_control_manager.py
   - pytest -q tests/unit/melder/aether/dev_ops/test_dev_ops_manager.py
   - pytest -q tests/unit/melder/aether/test_aether.py
-  - pytest -q tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py
+  - pytest -q tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py
   - pytest -q tests/unit/melder/aether/conduit/meld/test_meld.py
   - pytest -q tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py
 
@@ -72,3 +72,4 @@ Align test stubs and expectations with conduit-scoped change-control APIs and up
 Created task to update tests for conduit-scoped change-control APIs and context
 fields. Pending test updates and validation. Closed per user request with test
 work still outstanding.
+

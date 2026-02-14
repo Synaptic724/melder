@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Migrate Override Specialization Compiler to Schema-Only Inputs scope, updated validation notes, and confirmed acceptance.
 
 # Task: Migrate Override Specialization Compiler to Schema-Only Inputs
@@ -39,12 +39,12 @@ Move override specialization compile/runtime routing off live
 - `src/melder/aether/conduit/meld/meld_runtime/meld_runtime.py`
 - `src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py`
 - `src/melder/spellbook/spell_crafter/spell_crafter.py`
-- `tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
+- `tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
 - `tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py`
 
 ## Validation
 - Ran:
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
 - Result: 165 passed.
 
 ## Risks / Rollback Notes
@@ -67,4 +67,5 @@ Overrides compiler now accepts schema `plan_rows` + `spell_lookup` hydration
 and runtime passes schema rows when available. Remaining work is full invalid-
 schema/hit-miss behavior coverage is now added. Remaining work is final
 legacy-path retirement.
+
 

@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Optimized override specialization hot path for L1 hits and skipped L2 key/load work when L2 is disabled.
 
 # Task: Optimize Override Specialization Cache Hot Path
@@ -35,17 +35,17 @@ shape-key handling and L1/L2 cache interactions.
 
 ## Files / Paths Impacted
 - `src/melder/aether/conduit/meld/meld_runtime/meld_runtime.py`
-- `tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
+- `tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
 
 ## Validation
 - Ran:
-  - python -m pytest -q tests/unit/melder/aether/conduit/meld/test_meld.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py
+  - python -m pytest -q tests/unit/melder/aether/conduit/meld/test_meld.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py
   - $env:PYTHONPATH='.;src'; python benchmarks/testing_other_di/run_codegen_benchmark_deltas.py --sample-count 1 --warmup-count 0 --allow-gate-failure --allow-baseline-regression --output-path benchmarks/testing_other_di/results/codegen_benchmark_report_smoke_v2.json
 - Result:
   - Focused suites passed (138 passed).
   - Benchmark runner smoke passed and produced route matrix output.
 - Recommended commands:
-  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py -k override`
+  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py -k override`
 
 ## Risks / Rollback Notes
 - Risk: cache key or eviction drift could produce stale specialization reuse.
@@ -60,5 +60,6 @@ shape-key handling and L1/L2 cache interactions.
 ## Context / Handoff Summary
 Task targets the highest-cost override runtime region while preserving the
 established TargetSpec->SocketRef->substitution contract.
+
 
 

@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Audit Phase11 Signature Coverage for Codegen Invalidation and validated results with targeted codegen suites.
 
 # Task: Audit Phase11 Signature Coverage for Codegen Invalidation
@@ -52,7 +52,7 @@ behavioral changes.
 ## Validation
 - Ran:
   - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
 - Result: 143 passed (SpellCrafter suite), 209 passed (targeted full codegen regression bundle).
 
 ## Risks / Rollback Notes
@@ -83,4 +83,5 @@ Audit outcome:
 
 Coverage added in `test_spell_crafter.py` includes broad semantic-field
 invalidation parametrization and explicit variant-label distinctness tests.
+
 

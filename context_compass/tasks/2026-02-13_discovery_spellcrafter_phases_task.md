@@ -34,14 +34,14 @@ phase-artifact lifecycle so follow-up optimization tasks are evidence-backed.
 - Ranked follow-up tasks:
   - `context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md`
   - `context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md`
-  - `context_compass/tasks/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md`
+  - `context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md`
 
 ## Files / Paths Impacted
 - `context_compass/stories/2026-02-13_optimize_spellcrafter_phases_story.md`
 - `context_compass/tasks/2026-02-13_discovery_spellcrafter_phases_task.md`
 - `context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md`
 - `context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md`
-- `context_compass/tasks/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md`
+- `context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md`
 
 ## Validation
 - Not run.
@@ -65,7 +65,7 @@ phase-artifact lifecycle so follow-up optimization tasks are evidence-backed.
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Discovery ranking is complete; follow-up implementation should execute in priority order: (1) phase8-11 capture-frequency reduction, (2) phase11 signature hash pipeline, (3) phase8-10 row-builder contract fastpath.
-  EVIDENCE: context_compass/tasks/2026-02-13_discovery_spellcrafter_phases_task.md:63-104, context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:1-76, context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:1-76, context_compass/tasks/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md:1-77
+  EVIDENCE: context_compass/tasks/2026-02-13_discovery_spellcrafter_phases_task.md:63-104, context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:1-76, context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:1-76, context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md:1-77
   IMPACT: Story execution is unblocked with clear ranked implementation scope.
   NEXT: Update story task checklist and attention-board routing to start rank-1 implementation.
   REREAD: REQUIRED
@@ -120,3 +120,4 @@ SpellCrafter phases. Ranked follow-up tasks were created for capture-frequency
 reduction, signature-hash pipeline optimization, and contract-fastpath row
 builder cleanup. Next step is user acceptance for discovery and execution start
 on the rank-1 follow-up task.
+

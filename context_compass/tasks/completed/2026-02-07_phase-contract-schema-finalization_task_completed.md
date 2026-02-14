@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Finalize Phase IR Schema for Full Generation and validated results with targeted codegen suites.
 
 # Task: Finalize Phase IR Schema for Full Generation
@@ -39,7 +39,7 @@ Define final IR schema that fully specifies generated execution semantics for al
 ## Validation
 - Ran:
   - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
 - Result: 143 passed (SpellCrafter suite), 209 passed (targeted full codegen regression bundle).
 
 ## Risks / Rollback Notes
@@ -60,4 +60,5 @@ Finalized schema-level IR exports for current codegen consumers:
 - Signature composition for both phase payloads now includes enriched schema
   segments with deterministic ordering.
 - Tests assert schema determinism and signature invalidation behavior.
+
 

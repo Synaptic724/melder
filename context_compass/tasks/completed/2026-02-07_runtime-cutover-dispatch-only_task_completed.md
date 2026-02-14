@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Cut Runtime to Dispatch-Only Generated Executors scope, updated validation notes, and confirmed acceptance.
 
 # Task: Cut Runtime to Dispatch-Only Generated Executors
@@ -38,7 +38,7 @@ Ensure runtime only dispatches generated executors and handles cache/invariants.
 
 ## Validation
 - Ran:
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
 - Result: 188 passed.
 
 ## Risks / Rollback Notes
@@ -56,4 +56,5 @@ Runtime dispatch remains generated-executor-only: no-overrides uses compiled
 Phase12 executor artifacts and override/mutation routes compile or restore
 specializations from Phase11 IR payloads. No runtime engine fallback wiring is
 present in `meld_runtime.py`.
+
 

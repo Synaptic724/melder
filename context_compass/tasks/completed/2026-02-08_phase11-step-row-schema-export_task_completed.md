@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Export Phase11 Step Rows as Schema-Only IR scope, updated validation notes, and confirmed acceptance.
 
 # Task: Export Phase11 Step Rows as Schema-Only IR
@@ -43,7 +43,7 @@ IR payloads are deterministic and serializable.
 ## Validation
 - Ran:
   - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py`
 - Result: 120 passed (SpellCrafter suite), 33 passed (related runtime/compiler suites).
 
 ## Risks / Rollback Notes
@@ -63,4 +63,5 @@ objects in IR payloads. First normalization slice exports schema rows while
 keeping compatibility fields. Implemented `steps_rows` and
 `steps_rows_signature` export, added schema-safe value freezing, and expanded
 IR contract tests for row content and deterministic signature behavior.
+
 

@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Emit No-Overrides Executor Source from Plans scope, updated validation notes, and confirmed acceptance.
 
 # Task: Emit No-Overrides Executor Source from Plans
@@ -39,7 +39,7 @@ Generate no-overrides executor source directly from plan arrays, no interpreter 
 ## Validation
 - Ran:
   - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
 - Result: 133 passed (targeted no-overrides + crafter), 188 passed (full codegen regression bundle).
 
 ## Risks / Rollback Notes
@@ -59,4 +59,5 @@ non-transient route. Removed interpreter-style loop fallback wiring from
 compile path (`<melder_phase12_no_overrides_step_executor>`). Added regression
 assertions that emitted step source is used when transient source is unavailable
 and for normal schema-driven no-overrides plans.
+
 

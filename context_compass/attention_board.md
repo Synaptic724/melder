@@ -16,20 +16,32 @@ Attention details rule
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
 | context_compass artifact reference cleanup | review | codex | none | walk through cleanup outcomes and confirm acceptance for closure | `context_compass/tasks/2026-02-14_context_compass_artifact_reference_cleanup_task.md` | 2026-02-14 | REQUIRED |
-| phase testing epic | in_progress | codex | none | review rank1/rank2/rank3 outcomes with user and confirm closure direction | `context_compass/epics/2026-02-14_phase_testing_epic.md` | 2026-02-14 | REQUIRED |
+| phase testing epic | in_progress | codex | none | rank-3 closed; review rank1/rank2 closure direction and confirm next phase discovery priorities | `context_compass/epics/2026-02-14_phase_testing_epic.md` | 2026-02-14 | REQUIRED |
 | optimize melder epic | ready | codex | none | execute discovery tasks in linked stories and append implementation tasks from findings | `context_compass/epics/2026-02-13_optimize_melder_epic.md` | 2026-02-14 | REQUIRED |
 | optimize conjure paths | in_progress | codex | none | confirm acceptance for `TASK-2026-02-14-conjure-phase-unit-allocation-fastpath`, then execute `TASK-2026-02-14-conjure-activation-and-validation-scan-fastpath` | `context_compass/stories/2026-02-13_optimize_conjure_paths_story.md` | 2026-02-14 | REQUIRED |
 | optimize meld paths | in_progress | codex | none | review/confirm `TASK-2026-02-13-meld-dynamic-gate-fastdoor` acceptance, then close/move as directed | `context_compass/stories/2026-02-13_optimize_meld_paths_story.md` | 2026-02-14 | REQUIRED |
-| optimize spellcrafter phases | in_progress | codex | none | review rank-2 signature-pipeline keep-vs-iterate decision, then proceed to rank-3 row-builder fastpath task | `context_compass/stories/2026-02-13_optimize_spellcrafter_phases_story.md` | 2026-02-14 | REQUIRED |
-| optimize creation context codegen | ready | codex | none | run discovery task and produce hotspot-ranked candidates | `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md` | 2026-02-13 | REQUIRED |
+| optimize spellcrafter phases | in_progress | codex | none | rank-3 closed; review rank-1/rank-2 closure direction while continuing next phase discovery | `context_compass/stories/2026-02-13_optimize_spellcrafter_phases_story.md` | 2026-02-14 | REQUIRED |
+| optimize creation context codegen | in_progress | codex | none | discovery complete; review acceptance and start rank-1 override-shape preprocessing task | `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md` | 2026-02-14 | REQUIRED |
 | optimize phase12 codegen | ready | codex | none | run discovery task and produce hotspot-ranked candidates | `context_compass/stories/2026-02-13_optimize_phase12_codegen_story.md` | 2026-02-13 | REQUIRED |
 
 ## Active Attention Details
+- TYPE: DECISION
+- CLAIM: CreationContext discovery is complete and translated into three ranked execution tasks: (1) override shape preprocessing, (2) override miss compile reuse, (3) override prefilter caching.
+- EVIDENCE: `context_compass/tasks/2026-02-13_discovery_creation_context_codegen_task.md:25-97`, `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md:44-109`, `context_compass/tasks/2026-02-14_optimize_creation_context_override_shape_preprocessing_task.md:1-63`, `context_compass/tasks/2026-02-14_optimize_creation_context_override_miss_compile_reuse_task.md:1-64`, `context_compass/tasks/2026-02-14_optimize_creation_context_override_prefilter_caching_task.md:1-62`
+- REREAD: REQUIRED
+- NEXT: Request user acceptance for discovery closure, then execute rank-1 task (`TASK-2026-02-14-optimize-creation-context-override-shape-preprocessing`).
+
+- TYPE: MEASURE
+- CLAIM: SpellCrafter rank-3 row-builder contract-fastpath task is implemented and validated with two harness reruns; warm `group_8_11_total_ms` measured `11.047` then `10.266`, and warm cProfile sample stabilized at `0.034s` with `122060` calls versus pre-rank3 rank-2 samples at `0.036s` with `123618` calls.
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md:1-105`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_contract_fastpath_output.txt:7-38`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_contract_fastpath_output_run2.txt:7-38`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run6.txt:7-38`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt:7-38`
+- REREAD: REQUIRED
+- NEXT: Rank-3 accepted and closed; continue with creation-context discovery and finalize remaining SpellCrafter closure decisions.
+
 - TYPE: MEASURE
 - CLAIM: SpellCrafter rank-2 signature-pipeline work is implemented with regression-rollback evidence; final dispatch keeps schema stable and reduces `_pickle.dumps` calls (`996 -> 724`) with near-neutral warm metrics versus rank-1 anchor (`group_8_11_total_ms` `10.567` -> `10.552/10.833`, warm cProfile `0.035s` -> `0.036s`).
 - EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:61-131`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_11_capture_freq_opt_output_run2.txt:7-38`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run6.txt:7-39`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt:7-39`
 - REREAD: REQUIRED
-- NEXT: Get user keep-vs-iterate direction for rank-2, then execute rank-3 task.
+- NEXT: Get user keep-vs-iterate/closure direction for rank-2.
 
 - TYPE: MEASURE
 - CLAIM: SpellCrafter rank-1 dirty-capture implementation is complete and in review; warm 8-11 totals dropped from ~`26ms` to ~`10.6ms` across two reruns with lower warm cProfile sample (`~0.081/0.082s` -> `0.035s`).
@@ -39,7 +51,7 @@ Attention details rule
 
 - TYPE: FACT
 - CLAIM: SpellCrafter discovery is complete and now queued with three ranked follow-up optimization tasks; top priority is reducing phase8-11 capture-frequency recomputation.
-- EVIDENCE: `context_compass/tasks/2026-02-13_discovery_spellcrafter_phases_task.md:63-113`, `context_compass/stories/2026-02-13_optimize_spellcrafter_phases_story.md:43-55`, `context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:1-76`, `context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:1-76`, `context_compass/tasks/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md:1-77`
+- EVIDENCE: `context_compass/tasks/2026-02-13_discovery_spellcrafter_phases_task.md:63-113`, `context_compass/stories/2026-02-13_optimize_spellcrafter_phases_story.md:43-55`, `context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:1-76`, `context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:1-76`, `context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md:1-105`
 - REREAD: REQUIRED
 - NEXT: Start rank-1 SpellCrafter follow-up implementation task and capture baseline-vs-after evidence.
 
@@ -53,7 +65,7 @@ Attention details rule
 - CLAIM: Rank-2 optimization task is implemented and validated; warm 8-11 total is mixed across two reruns (`27.932ms` and `25.438ms`) versus rank1 anchor (`27.829ms`), while warm cProfile sample improved from `0.083s` to `0.081s`/`0.080s`.
 - EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:98-105`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_opt_output.txt:12-15`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run2.txt:7-9`
 - REREAD: REQUIRED
-- NEXT: Get user keep-vs-iterate direction for rank-2, then execute rank-3 task.
+- NEXT: Get user keep-vs-iterate/closure direction for rank-2.
 
 - TYPE: FACT
 - CLAIM: Rank-1 optimization task is now implemented and validated; warm 8-11 sample dropped from `34.993ms` to `27.829ms`, and warm cProfile sample dropped from `0.091s` to `0.083s`.
@@ -213,13 +225,13 @@ Attention details rule
 
 - TYPE: FACT
 - CLAIM: `TASK-2026-02-13-meld-override-shape-hotpath` is completed and user-accepted; work now proceeds to validation-gate microprofile.
-- EVIDENCE: `context_compass/tasks/completed/2026-02-13_meld_override_shape_hotpath_task.md:1`, `src/melder/aether/conduit/meld/creation_context/creation_context.py:571`, `tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py:388`, `context_compass/tasks/completed/2026-02-13_meld_validation_gate_microprofile_task.md:1`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-13_meld_override_shape_hotpath_task.md:1`, `src/melder/aether/conduit/meld/creation_context/creation_context.py:571`, `tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:388`, `context_compass/tasks/completed/2026-02-13_meld_validation_gate_microprofile_task.md:1`
 - REREAD: REQUIRED
 - NEXT: Execute baseline profiling and safe micro-optimizations in `TASK-2026-02-13-meld-validation-gate-microprofile`.
 
 - TYPE: FACT
 - CLAIM: `TASK-2026-02-13-meld-override-shape-hotpath` implementation is complete with cache-hit short-circuiting of grouped-target collection in `CreationContext` while preserving specialization-key semantics.
-- EVIDENCE: `src/melder/aether/conduit/meld/creation_context/creation_context.py:571`, `src/melder/aether/conduit/meld/creation_context/creation_context.py:582`, `src/melder/aether/conduit/meld/creation_context/creation_context.py:653`, `tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py:189`, `tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py:388`, `context_compass/tasks/completed/2026-02-13_meld_override_shape_hotpath_task.md:1`
+- EVIDENCE: `src/melder/aether/conduit/meld/creation_context/creation_context.py:571`, `src/melder/aether/conduit/meld/creation_context/creation_context.py:582`, `src/melder/aether/conduit/meld/creation_context/creation_context.py:653`, `tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:189`, `tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:388`, `context_compass/tasks/completed/2026-02-13_meld_override_shape_hotpath_task.md:1`
 - REREAD: REQUIRED
 - NEXT: Keep implementation notes linked while executing the next task.
 
@@ -265,6 +277,7 @@ Attention details rule
 | context_compass documentation integrity audit | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_context_compass_documentation_integrity_audit_task.md` | 2026-02-14 | HELPFUL |
 | context_compass packaging migration | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_context_compass_rename_and_profile_config_task.md` | 2026-02-14 | HELPFUL |
 | onboarding policy hardening | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_onboarding_policy_ticket_note_enforcement_task.md` | 2026-02-14 | HELPFUL |
+| spellcrafter rank-3 row-builder contract fastpath | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md` | 2026-02-14 | HELPFUL |
 | meld dynamic gate fastdoor | review | codex | none | waiting for user acceptance | `context_compass/tasks/2026-02-13_meld_dynamic_gate_fastdoor_task.md` | 2026-02-14 | HELPFUL |
 | meld validation gate microprofile | done | codex | none | none | `context_compass/tasks/completed/2026-02-13_meld_validation_gate_microprofile_task.md` | 2026-02-14 | HELPFUL |
 | meld override shape hotpath | done | codex | none | none | `context_compass/tasks/completed/2026-02-13_meld_override_shape_hotpath_task.md` | 2026-02-14 | HELPFUL |
@@ -275,3 +288,4 @@ Attention details rule
 | spellstate advanced flag producers | closed | codex | none | none | `context_compass/stories/completed/2026-02-13_spellstate_advanced_flag_producers_story_completed.md` | 2026-02-13 | HELPFUL |
 | revalidate src_architecture document | closed | codex | none | none | `context_compass/epics/2026-02-13_revalidate_src_architecture_document_epic.md` | 2026-02-13 | HELPFUL |
 | revalidate src_components document | closed | codex | none | none | `context_compass/epics/2026-02-13_revalidate_src_components_document_epic.md` | 2026-02-13 | HELPFUL |
+

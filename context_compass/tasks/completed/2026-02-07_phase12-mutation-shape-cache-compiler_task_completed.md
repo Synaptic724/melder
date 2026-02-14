@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Compile and Cache Mutation Shape Specializations scope, updated validation notes, and confirmed acceptance.
 
 # Task: Compile and Cache Mutation Shape Specializations
@@ -38,7 +38,7 @@ Implement bounded specialization compilation and cache strategy for mutation sha
 
 ## Validation
 - Ran:
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
 - Result: 175 passed.
 
 ## Risks / Rollback Notes
@@ -59,4 +59,5 @@ selection now resolve against the `overrides_with_mutations` Phase11 IR variant.
 Mutation-only calls compile/cache one specialization per mutation plan shape,
 while mutation+override calls continue to require Phase10 override patch-map
 normalization for per-call payloads.
+
 

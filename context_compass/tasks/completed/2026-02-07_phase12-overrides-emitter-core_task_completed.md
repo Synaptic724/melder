@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Emit Override Specialization Executor Source scope, updated validation notes, and confirmed acceptance.
 
 # Task: Emit Override Specialization Executor Source
@@ -38,7 +38,7 @@ Generate override specialization executors from override-aware plan variant.
 
 ## Validation
 - Ran:
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
 - Result: 193 passed.
 
 ## Risks / Rollback Notes
@@ -63,4 +63,5 @@ existence/lock/reuse/register flow per generated step block.
 Added semantic matrix regressions for emitted override execution covering
 root override rejection on existing shared instances and targeted-override
 rejection on existing dependency instances.
+
 

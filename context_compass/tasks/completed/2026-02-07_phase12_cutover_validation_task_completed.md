@@ -39,7 +39,7 @@ cutover.
 ## Validation
 - Ran:
   - `python -m pytest -q tests/component/melder/aether/conduit/test_conduit_component_meld_overrides.py tests/component/melder/aether/conduit/test_conduit_component_meld_overrides_deep.py tests/component/melder/aether/conduit/test_conduit_component_spell_contracts.py tests/integration/melder/conduit/test_conduit_integration_spell_contract_variants.py tests/integration/melder/spellbook/test_spellbook_integration_resolution.py`
-  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
+  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
   - `$env:PYTHONPATH='src'; python -m pytest -q -s benchmarks/testing_other_di/test_melder_hotpath_profiles.py::test_profile_conjure_depth9_hotpaths benchmarks/testing_other_di/test_melder_hotpath_profiles.py::test_profile_meld_depth9_hotpaths`
 - Results:
   - Focused runtime/component/integration suite: `81 passed, 2 xfailed`.
@@ -74,5 +74,6 @@ cutover.
 
 ## Context / Handoff Summary
 Cutover validation is complete for active code paths. The remaining test debt is
-isolated to legacy `tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`,
+isolated to legacy `tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`,
 which still asserts removed engine-era internals.
+

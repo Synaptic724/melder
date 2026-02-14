@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Reduced lock contention in generated unique_per_conduit/spellspace routes using lockless read then locked re-check semantics.
 
 # Task: Reduce Lock Contention in Meld Runtime Hot Paths
@@ -40,7 +40,7 @@ existing lock ordering and correctness guarantees.
 
 ## Validation
 - Ran:
-  - python -m pytest -q tests/unit/melder/aether/conduit/meld/test_meld.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py
+  - python -m pytest -q tests/unit/melder/aether/conduit/meld/test_meld.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py
   - $env:PYTHONPATH='.;src'; python benchmarks/testing_other_di/run_codegen_benchmark_deltas.py --sample-count 1 --warmup-count 0 --allow-gate-failure --allow-baseline-regression --output-path benchmarks/testing_other_di/results/codegen_benchmark_report_smoke_v2.json
 - Result:
   - Focused suites passed (138 passed).
@@ -61,5 +61,6 @@ existing lock ordering and correctness guarantees.
 ## Context / Handoff Summary
 Task isolates contention-focused tuning after first-pass routing and cache
 optimizations are in place.
+
 
 

@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Normalize Phase11 IR to Schema-Only Serializable Payloads scope, updated validation notes, and confirmed acceptance.
 
 # Task: Normalize Phase11 IR to Schema-Only Serializable Payloads
@@ -58,7 +58,7 @@ that fully drives no-overrides/override codegen without plan object coupling.
 
 ## Validation
 - Ran:
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
 - Result: 166 passed.
 
 ## Risks / Rollback Notes
@@ -83,4 +83,5 @@ overrides schema consumer migrations are in place. Final retirement landed:
 Phase11 IR no longer emits `steps` or `transient_plan`, no-overrides transient
 codegen now consumes schema-only `transient_schema`, and compile wiring enforces
 schema-only step rows.
+
 

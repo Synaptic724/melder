@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Audit Phase11 Variant Semantics and Distinctness and validated results with targeted codegen suites.
 
 # Task: Audit Phase11 Variant Semantics and Distinctness
@@ -46,7 +46,7 @@ fields to keep variant behavior explicit and invalidation-safe.
 ## Validation
 - Ran:
   - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
-  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
+  - `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
 - Result: 143 passed (SpellCrafter suite), 209 passed (targeted full codegen regression bundle).
 
 ## Risks / Rollback Notes
@@ -72,4 +72,5 @@ payloads. Contract requirement is therefore:
 
 Follow-on test coverage now asserts variant-label signature distinctness even
 when step-row signatures are equal.
+
 

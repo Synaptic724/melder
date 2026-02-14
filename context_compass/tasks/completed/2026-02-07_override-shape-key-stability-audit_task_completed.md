@@ -1,4 +1,4 @@
-﻿Completed: 2026-02-08
+Completed: 2026-02-08
 Summary: Delivered Audit Override Shape-Key Stability Against Plan Identity Coupling scope, updated validation notes, and confirmed acceptance.
 
 # Task: Audit Override Shape-Key Stability Against Plan Identity Coupling
@@ -40,11 +40,11 @@ identity for equivalent-plan cache reuse guarantees.
 ## Files / Paths Impacted
 - `src/melder/aether/conduit/meld/meld_runtime/meld_runtime.py`
 - `src/melder/spellbook/spell_crafter/spell_crafter.py`
-- `tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
+- `tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
 
 ## Validation
 - Ran:
-  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
+  - `python -m pytest -q tests/unit/melder/aether/conduit/meld/meld_engine/test_meld_engine_2.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
 - Result: 30 passed.
 
 ## Risks / Rollback Notes
@@ -64,4 +64,5 @@ identity-coupling from shape-key behavior. Added explicit malformed-plan failure
 wrapping in override execution route. Added regression tests to validate:
 equivalent-plan key stability across object rebuilds, semantic-change key
 invalidation, and runtime error wrapping for invalid plan artifacts.
+
 

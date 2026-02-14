@@ -132,7 +132,7 @@ correctness while improving throughput and latency on real runtime paths.
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: SpellCrafter discovery moved from ready to execution-ready: hotspot mapping is complete and three ranked follow-up tasks are now queued under the story.
-  EVIDENCE: context_compass/tasks/2026-02-13_discovery_spellcrafter_phases_task.md:6-113, context_compass/stories/2026-02-13_optimize_spellcrafter_phases_story.md:6-55, context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:1-76, context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:1-76, context_compass/tasks/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md:1-77
+  EVIDENCE: context_compass/tasks/2026-02-13_discovery_spellcrafter_phases_task.md:6-113, context_compass/stories/2026-02-13_optimize_spellcrafter_phases_story.md:6-55, context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:1-76, context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:1-76, context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md:1-105
   IMPACT: Epic progress advanced on the SpellCrafter branch and now has concrete next implementation targets.
   NEXT: Execute rank-1 SpellCrafter follow-up task while continuing remaining discovery tracks.
   REREAD: REQUIRED
@@ -160,3 +160,4 @@ queued. Rank-1 is now implemented and in review with strong warm 8-11 gains.
 Next step is acceptance of rank-1 and execution of SpellCrafter rank-2 while
 continuing remaining discovery tracks for creation-context and phase12 codegen
 stories.
+
