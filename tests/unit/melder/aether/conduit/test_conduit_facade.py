@@ -743,6 +743,72 @@ def test_dynamic_meld_skips_conduit_hook_dispatch_when_no_meld_hooks(
     assert conduit_dynamic_normal._creation_gate.active_ticket_count() == 0
 
 
+def test_dynamic_meld_waits_then_rechecks_closed_before_ticket_registration(
+    conduit_dynamic_normal: Conduit,
+) -> None:
+    """
+    Verify dynamic meld re-checks terminal closure after wait and before tickets.
+
+    Contract:
+        - Gate closure after wait raises RuntimeError.
+        - Ticket registration does not occur when post-wait close is observed.
+        - Meld delegation is not executed on post-wait closure.
+
+    Args:
+        conduit_dynamic_normal (Conduit): Dynamic normal conduit instance.
+
+    Raises:
+        AssertionError: If post-wait closure handling regresses.
+    """
+    conduit_dynamic_normal._meld = MagicMock()
+    conduit_dynamic_normal._meld.meld.return_value = "result"
+    gate = MagicMock()
+    gate.enabled = False
+    gate.is_closed.side_effect = [False, True]
+    conduit_dynamic_normal._creation_gate = gate
+
+    with pytest.raises(RuntimeError, match="CreationGate is closed"):
+        conduit_dynamic_normal.meld(spell="sha-1")
+
+    gate.wait.assert_called_once_with()
+    gate.register_ticket.assert_not_called()
+    gate.unregister_ticket.assert_not_called()
+    conduit_dynamic_normal._meld.meld.assert_not_called()
+
+
+def test_dynamic_meld_enabled_path_skips_wait_and_tracks_ticket(
+    conduit_dynamic_normal: Conduit,
+) -> None:
+    """
+    Verify dynamic meld enabled-path skips wait and still tracks tickets.
+
+    Contract:
+        - Enabled gate bypasses wait.
+        - Ticket register/unregister pair wraps delegated meld call.
+        - Meld result is passed through unchanged.
+
+    Args:
+        conduit_dynamic_normal (Conduit): Dynamic normal conduit instance.
+
+    Raises:
+        AssertionError: If enabled-path gate flow regresses.
+    """
+    conduit_dynamic_normal._meld = MagicMock()
+    conduit_dynamic_normal._meld.meld.return_value = "result"
+    gate = MagicMock()
+    gate.enabled = True
+    gate.is_closed.return_value = False
+    conduit_dynamic_normal._creation_gate = gate
+
+    result = conduit_dynamic_normal.meld(spell="sha-1")
+
+    assert result == "result"
+    gate.wait.assert_not_called()
+    gate.register_ticket.assert_called_once_with()
+    gate.unregister_ticket.assert_called_once_with()
+    conduit_dynamic_normal._meld.meld.assert_called_once()
+
+
 def test_get_conduit_by_id_rejects_non_string_frame(
     conduit_normal: Conduit,
 ) -> None:

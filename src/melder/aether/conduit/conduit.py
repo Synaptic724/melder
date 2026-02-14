@@ -2342,19 +2342,23 @@ class Conduit(Cleanable, IConduit):
         """
         self.check_cleaned()
 
+        meld_runtime = self._meld
+
         if self.__dynamic_environment__:
-            if self._creation_gate.is_closed():
+            creation_gate = self._creation_gate
+
+            if creation_gate.is_closed():
                 raise RuntimeError(f"[CONDUIT: {self.id}] CreationGate is closed.")
 
-            if not self._creation_gate.enabled:
-                self._creation_gate.wait()
-                if self._creation_gate.is_closed():
+            if not creation_gate.enabled:
+                creation_gate.wait()
+                if creation_gate.is_closed():
                     raise RuntimeError(f"[CONDUIT: {self.id}] CreationGate is closed.")
 
             try:
                 # Track active melds for shutdown/drain semantics.
-                self._creation_gate.register_ticket()
-                return self._meld.meld(
+                creation_gate.register_ticket()
+                return meld_runtime.meld(
                     spell_name=spell_name,
                     spell=spell,
                     spellframe=spellframe,
@@ -2362,9 +2366,9 @@ class Conduit(Cleanable, IConduit):
                     spell_override=spell_override,
                 )
             finally:
-                self._creation_gate.unregister_ticket()
+                creation_gate.unregister_ticket()
 
-        return self._meld.meld(
+        return meld_runtime.meld(
             spell_name=spell_name,
             spell=spell,
             spellframe=spellframe,
