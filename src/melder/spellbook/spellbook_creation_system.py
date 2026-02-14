@@ -282,7 +282,6 @@ class SpellbookCreationSystem(Cleanable):
             policy=policy,
             automatic=automatic,
         )
-        spellbook._check_all_spells()
         return EnumHelpers.convert_enum_and_check(policy, Policies)
 
     @staticmethod
