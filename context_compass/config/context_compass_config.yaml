@@ -1,0 +1,15 @@
+version: 1
+
+profiles:
+  active_profile: default_general
+  available_profiles:
+    - default_general
+
+workflow:
+  ticket_microcycle:
+    enabled: true
+    mode: strict
+    require_note_before_continue: true
+    minimum_note_score: 8
+    expansion_gate_max_files: 10
+    unknown_default: true
