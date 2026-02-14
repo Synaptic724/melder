@@ -11,5 +11,5 @@ workflow:
     mode: strict
     require_note_before_continue: true
     minimum_note_score: 8
-    expansion_gate_max_files: 10
+    expansion_gate_max_files: 5
     unknown_default: true
