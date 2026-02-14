@@ -5778,6 +5778,314 @@ def test_run_phase_execution_plan_reuses_no_overrides_base_for_sibling_variants(
     assert crafter._execution_plan_phase11.fast_transient_plan is None
 
 
+def test_run_phase_execution_plan_reuses_no_overrides_plan_when_input_signature_unchanged(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify phase11 reuses cached no-overrides plan across warm runs when
+        no-overrides input signature remains unchanged.
+    Contract:
+        With stable signature and compatible base plan, only one no-overrides
+        full build occurs across repeated phase11 runs.
+    Args:
+        monkeypatch: Pytest fixture for replacing phase11 collaborators.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If no-overrides full build is not elided on warm rerun.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    crafter._occurrence_plan_phase8 = types.SimpleNamespace()
+    crafter._injection_plan_phase9 = types.SimpleNamespace()
+
+    build_calls: list[str] = []
+    signature_calls: list[str] = []
+
+    def _build_signature_stub(
+        self: SpellCrafter,
+        *,
+        occurrence_plan: object,
+        injection_plan: object,
+        spell_lookup: dict[str, object],
+    ) -> str:
+        del self, occurrence_plan, injection_plan, spell_lookup
+        signature_calls.append("called")
+        return "stable-phase11-signature"
+
+    def _build_plan_stub(
+        self: SpellCrafter,
+        *,
+        occurrence_plan: object,
+        injection_plan: object,
+        spell_lookup: dict[str, object],
+        plan_variant: str,
+    ) -> object:
+        del self, occurrence_plan, injection_plan, spell_lookup
+        build_calls.append(plan_variant)
+        return types.SimpleNamespace(
+            root_spell_id="root",
+            root_instance_key=("root", None),
+            steps=[_make_phase11_step_stub("root")],
+            spell_id_step_index={"root": 0},
+            optimistic_object_refs_by_spell_id={},
+            available_param_by_spell_id={"root": 1},
+            plan_variant=plan_variant,
+            fast_transient_plan=None,
+        )
+
+    def _cache_metrics_stub(
+        self: SpellCrafter,
+        *,
+        occurrence_plan: object,
+        plan: object,
+    ) -> None:
+        del self, occurrence_plan, plan
+        return None
+
+    def _compile_plan_stub(
+        self: SpellCrafter,
+        plan: object,
+    ) -> None:
+        del self
+        assert plan is not None
+        return None
+
+    monkeypatch.setattr(SpellCrafter, "_build_phase11_no_overrides_input_signature", _build_signature_stub)
+    monkeypatch.setattr(SpellCrafter, "_build_execution_plan_variant", _build_plan_stub)
+    monkeypatch.setattr(SpellCrafter, "_cache_execution_plan_metrics", _cache_metrics_stub)
+    monkeypatch.setattr(SpellCrafter, "_compile_phase12_no_overrides_executor_from_plan", _compile_plan_stub)
+
+    crafter.run_phase_execution_plan("cid")
+    first_plan = crafter._execution_plan_phase11_no_overrides
+    crafter.run_phase_execution_plan("cid")
+
+    assert build_calls == [spell_crafter_module.ExecutionPlanVariant.NO_OVERRIDES_FAST]
+    assert signature_calls == ["called", "called"]
+    assert first_plan is not None
+    assert crafter._execution_plan_phase11_no_overrides is first_plan
+    assert crafter._phase11_no_overrides_input_signature == "stable-phase11-signature"
+
+
+def test_run_phase_execution_plan_reuses_cached_variant_set_when_input_signature_unchanged(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify phase11 reuses the full cached variant set on unchanged-signature
+        warm reruns.
+    Contract:
+        With stable no-overrides input signature and cached variants, phase11
+        should not derive sibling variants again and should retain cached plan
+        object identities.
+    Args:
+        monkeypatch: Pytest fixture for replacing phase11 collaborators.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cached sibling variants are rebuilt on warm rerun.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    crafter._occurrence_plan_phase8 = types.SimpleNamespace()
+    crafter._injection_plan_phase9 = types.SimpleNamespace()
+
+    signature_calls: list[str] = []
+    build_calls: list[str] = []
+    derive_calls: list[str] = []
+    cache_metrics_calls = 0
+    compile_calls = 0
+
+    def _build_signature_stub(
+        self: SpellCrafter,
+        *,
+        occurrence_plan: object,
+        injection_plan: object,
+        spell_lookup: dict[str, object],
+    ) -> str:
+        del self, occurrence_plan, injection_plan, spell_lookup
+        signature_calls.append("called")
+        return "stable-phase11-signature"
+
+    def _build_plan_stub(
+        self: SpellCrafter,
+        *,
+        occurrence_plan: object,
+        injection_plan: object,
+        spell_lookup: dict[str, object],
+        plan_variant: str,
+    ) -> object:
+        del self, occurrence_plan, injection_plan, spell_lookup
+        build_calls.append(plan_variant)
+        return types.SimpleNamespace(
+            root_spell_id="root",
+            root_instance_key=("root", None),
+            steps=[_make_phase11_step_stub("root")],
+            spell_id_step_index={"root": 0},
+            optimistic_object_refs_by_spell_id={},
+            available_param_by_spell_id={"root": 1},
+            plan_variant=plan_variant,
+            fast_transient_plan=None,
+        )
+
+    def _derive_from_base_stub(
+        self: SpellCrafter,
+        *,
+        base_plan: object,
+        plan_variant: str,
+    ) -> object:
+        del self
+        derive_calls.append(plan_variant)
+        return types.SimpleNamespace(
+            root_spell_id=base_plan.root_spell_id,
+            root_instance_key=base_plan.root_instance_key,
+            steps=list(base_plan.steps),
+            spell_id_step_index=dict(base_plan.spell_id_step_index),
+            optimistic_object_refs_by_spell_id=dict(base_plan.optimistic_object_refs_by_spell_id),
+            available_param_by_spell_id=dict(base_plan.available_param_by_spell_id),
+            plan_variant=plan_variant,
+            fast_transient_plan=None,
+        )
+
+    def _cache_metrics_stub(
+        self: SpellCrafter,
+        *,
+        occurrence_plan: object,
+        plan: object,
+    ) -> None:
+        del self, occurrence_plan, plan
+        nonlocal cache_metrics_calls
+        cache_metrics_calls += 1
+        return None
+
+    def _compile_plan_stub(
+        self: SpellCrafter,
+        plan: object,
+    ) -> None:
+        assert plan is not None
+        nonlocal compile_calls
+        compile_calls += 1
+        self._phase12_no_overrides_executor = object()
+        self._phase12_no_overrides_executor_signature = "compiled-signature"
+        return None
+
+    monkeypatch.setattr(SpellCrafter, "_build_phase11_no_overrides_input_signature", _build_signature_stub)
+    monkeypatch.setattr(SpellCrafter, "_build_execution_plan_variant", _build_plan_stub)
+    monkeypatch.setattr(SpellCrafter, "_try_build_execution_plan_variant_from_base", _derive_from_base_stub)
+    monkeypatch.setattr(SpellCrafter, "_cache_execution_plan_metrics", _cache_metrics_stub)
+    monkeypatch.setattr(SpellCrafter, "_compile_phase12_no_overrides_executor_from_plan", _compile_plan_stub)
+
+    crafter.run_phase_execution_plan("cid")
+    first_no_overrides = crafter._execution_plan_phase11_no_overrides
+    first_overrides = crafter._execution_plan_phase11_overrides
+    first_overrides_with_mutations = crafter._execution_plan_phase11
+
+    crafter.run_phase_execution_plan("cid")
+
+    assert signature_calls == ["called", "called"]
+    assert build_calls == [spell_crafter_module.ExecutionPlanVariant.NO_OVERRIDES_FAST]
+    assert derive_calls == [
+        spell_crafter_module.ExecutionPlanVariant.OVERRIDES,
+        spell_crafter_module.ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS,
+    ]
+    assert cache_metrics_calls == 2
+    assert compile_calls == 1
+    assert crafter._execution_plan_phase11_no_overrides is first_no_overrides
+    assert crafter._execution_plan_phase11_overrides is first_overrides
+    assert crafter._execution_plan_phase11 is first_overrides_with_mutations
+    assert crafter._phase11_no_overrides_input_signature == "stable-phase11-signature"
+
+
+def test_run_phase_execution_plan_rebuilds_no_overrides_plan_when_input_signature_changes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify phase11 rebuilds no-overrides plan when input signature changes.
+    Contract:
+        A changed no-overrides input signature forces a fresh no-overrides full
+        build even when sibling variant reuse remains available.
+    Args:
+        monkeypatch: Pytest fixture for replacing phase11 collaborators.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If signature drift does not trigger no-overrides rebuild.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    crafter._occurrence_plan_phase8 = types.SimpleNamespace()
+    crafter._injection_plan_phase9 = types.SimpleNamespace()
+
+    signature_values = ["phase11-signature-a", "phase11-signature-b"]
+    build_calls: list[str] = []
+
+    def _build_signature_stub(
+        self: SpellCrafter,
+        *,
+        occurrence_plan: object,
+        injection_plan: object,
+        spell_lookup: dict[str, object],
+    ) -> str:
+        del self, occurrence_plan, injection_plan, spell_lookup
+        return signature_values.pop(0)
+
+    def _build_plan_stub(
+        self: SpellCrafter,
+        *,
+        occurrence_plan: object,
+        injection_plan: object,
+        spell_lookup: dict[str, object],
+        plan_variant: str,
+    ) -> object:
+        del self, occurrence_plan, injection_plan, spell_lookup
+        build_calls.append(plan_variant)
+        return types.SimpleNamespace(
+            root_spell_id="root",
+            root_instance_key=("root", None),
+            steps=[_make_phase11_step_stub("root")],
+            spell_id_step_index={"root": 0},
+            optimistic_object_refs_by_spell_id={},
+            available_param_by_spell_id={"root": 1},
+            plan_variant=plan_variant,
+            fast_transient_plan=None,
+        )
+
+    def _cache_metrics_stub(
+        self: SpellCrafter,
+        *,
+        occurrence_plan: object,
+        plan: object,
+    ) -> None:
+        del self, occurrence_plan, plan
+        return None
+
+    def _compile_plan_stub(
+        self: SpellCrafter,
+        plan: object,
+    ) -> None:
+        del self
+        assert plan is not None
+        return None
+
+    monkeypatch.setattr(SpellCrafter, "_build_phase11_no_overrides_input_signature", _build_signature_stub)
+    monkeypatch.setattr(SpellCrafter, "_build_execution_plan_variant", _build_plan_stub)
+    monkeypatch.setattr(SpellCrafter, "_cache_execution_plan_metrics", _cache_metrics_stub)
+    monkeypatch.setattr(SpellCrafter, "_compile_phase12_no_overrides_executor_from_plan", _compile_plan_stub)
+
+    crafter.run_phase_execution_plan("cid")
+    first_plan = crafter._execution_plan_phase11_no_overrides
+    crafter.run_phase_execution_plan("cid")
+    second_plan = crafter._execution_plan_phase11_no_overrides
+
+    assert build_calls == [
+        spell_crafter_module.ExecutionPlanVariant.NO_OVERRIDES_FAST,
+        spell_crafter_module.ExecutionPlanVariant.NO_OVERRIDES_FAST,
+    ]
+    assert first_plan is not None
+    assert second_plan is not None
+    assert second_plan is not first_plan
+    assert crafter._phase11_no_overrides_input_signature == "phase11-signature-b"
+
+
 def test_run_phase_execution_plan_falls_back_to_full_build_for_incompatible_base(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -16,14 +16,44 @@ Attention details rule
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
 | context_compass artifact reference cleanup | review | codex | none | walk through cleanup outcomes and confirm acceptance for closure | `context_compass/tasks/2026-02-14_context_compass_artifact_reference_cleanup_task.md` | 2026-02-14 | REQUIRED |
-| phase testing epic | in_progress | codex | none | plan-based no-overrides compile follow-up is implemented/validated; walk story+epic outcomes and request closure direction | `context_compass/epics/2026-02-14_phase_testing_epic.md` | 2026-02-14 | REQUIRED |
-| optimize melder epic | in_progress | codex | none | phase12 wave is closed; continue remaining active story closures and phase discovery priorities | `context_compass/epics/2026-02-13_optimize_melder_epic.md` | 2026-02-14 | REQUIRED |
-| optimize conjure paths | in_progress | codex | none | confirm acceptance for scheduler-lifecycle fastpath and remaining conjure in-review tasks, then close/move in story order | `context_compass/stories/2026-02-13_optimize_conjure_paths_story.md` | 2026-02-14 | REQUIRED |
-| optimize meld paths | in_progress | codex | none | review/confirm `TASK-2026-02-13-meld-dynamic-gate-fastdoor` acceptance, then close/move as directed | `context_compass/stories/2026-02-13_optimize_meld_paths_story.md` | 2026-02-14 | REQUIRED |
+| phase testing epic | review | codex | none | final phase11 follow-up is implemented/validated; walk acceptance and closure routing | `context_compass/epics/2026-02-14_phase_testing_epic.md` | 2026-02-14 | REQUIRED |
+| optimize melder epic | in_progress | codex | none | all active optimization stories are now in review state; route acceptance and move approved tickets | `context_compass/epics/2026-02-13_optimize_melder_epic.md` | 2026-02-14 | REQUIRED |
+| optimize conjure paths | review | codex | none | confirm acceptance for scheduler-lifecycle/phase-unit/activation-scan tasks, then move approved tickets | `context_compass/stories/2026-02-13_optimize_conjure_paths_story.md` | 2026-02-14 | REQUIRED |
+| optimize meld paths | review | codex | none | review/confirm `TASK-2026-02-13-meld-dynamic-gate-fastdoor` acceptance, then close/move as directed | `context_compass/stories/2026-02-13_optimize_meld_paths_story.md` | 2026-02-14 | REQUIRED |
 | optimize spellcrafter phases | review | codex | none | rank-1/rank-2 are in review with measured gains; request closure direction | `context_compass/stories/2026-02-13_optimize_spellcrafter_phases_story.md` | 2026-02-14 | REQUIRED |
-| optimize creation context codegen | in_progress | codex | none | rank-3 complete/in review; walk through full story outcomes and request closure acceptance | `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md` | 2026-02-14 | REQUIRED |
+| optimize creation context codegen | review | codex | none | rank-1/rank-2/rank-3 are implemented; walk outcomes and request closure acceptance | `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md` | 2026-02-14 | REQUIRED |
 
 ## Active Attention Details
+- TYPE: MEASURE
+- CLAIM: `TASK-2026-02-14-optimize-phase11-variant-set-warm-reuse` is implemented and rerun-validated (`6 passed` targeted unit slice, `1 passed` harness) with warm 8-11 reduction (`group_8_11_total_ms` `3.167 -> 3.024`, `phase_execution_plan_ms` `1.383 -> 0.989`).
+- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase11_variant_set_warm_reuse_task.md:6-98`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-54`, `context_compass/artifacts/2026-02-14_phase11_variant_set_warm_reuse_targeted_unit_tests.txt:1-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:23-25`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:7-9`
+- REREAD: REQUIRED
+- NEXT: Walk final phase-testing follow-up outcomes with user and confirm closure/move direction.
+
+- TYPE: DECISION
+- CLAIM: Phase-testing lane is reopened for one additional follow-up (`TASK-2026-02-14-optimize-phase11-variant-set-warm-reuse`) because warm profile still shows measurable phase11 overhead and unchanged-signature flow still derives sibling variants each run.
+- EVIDENCE: `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:17-25`, `src/melder/spellbook/spell_crafter/spell_crafter.py:4100-4188`, `src/melder/spellbook/spell_crafter/spell_crafter.py:4229-4300`, `context_compass/tasks/2026-02-14_optimize_phase11_variant_set_warm_reuse_task.md:1-87`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-53`
+- REREAD: REQUIRED
+- NEXT: Implement the new phase11 task and attach targeted unit + harness rerun artifacts.
+
+- TYPE: MEASURE
+- CLAIM: `TASK-2026-02-14-optimize-phase11-plan-rebuild-elision` is now implemented and rerun-validated with captured artifacts (`5 passed` targeted phase11 unit slice, `1 passed` component harness); story checklist is complete and routed to review.
+- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase11_plan_rebuild_elision_task.md:6-147`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-6`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:52-52`, `context_compass/artifacts/2026-02-14_phase11_plan_rebuild_elision_targeted_unit_tests.txt:1-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:7-7`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:59-59`
+- REREAD: REQUIRED
+- NEXT: Walk phase-testing epic/story outcomes with user and confirm closure/move direction.
+
+- TYPE: DECISION
+- CLAIM: Phase-testing backlog is reopened for one additional phase11 follow-up (`TASK-2026-02-14-optimize-phase11-plan-rebuild-elision`) targeting repeated no-overrides full-build overhead still visible after plan-based compile changes.
+- EVIDENCE: `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-6`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:51-52`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:74-81`, `context_compass/tasks/2026-02-14_optimize_phase11_plan_rebuild_elision_task.md:1-80`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_based_compile_output.txt:17-20`
+- REREAD: REQUIRED
+- NEXT: Implement the plan-rebuild-elision task and rerun targeted unit + harness validation.
+
+- TYPE: DECISION
+- CLAIM: Optimization-wave story routing was normalized: `optimize-conjure-paths`, `optimize-meld-paths`, and `optimize-creation-context-codegen` are now marked `review` to reflect completed implementation checklists.
+- EVIDENCE: `context_compass/epics/2026-02-13_optimize_melder_epic.md:123-139`, `context_compass/stories/2026-02-13_optimize_conjure_paths_story.md:6-6`, `context_compass/stories/2026-02-13_optimize_meld_paths_story.md:6-6`, `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md:6-6`
+- REREAD: REQUIRED
+- NEXT: Run user acceptance walk-through for review stories and move approved tickets.
+
 - TYPE: DECISION
 - CLAIM: Phase-testing baseline stories were normalized from stale `in_progress` state to `review` and their linked task rows were checked complete, matching the already-reviewed task tickets.
 - EVIDENCE: `context_compass/epics/2026-02-14_phase_testing_epic.md:126-142`, `context_compass/stories/2026-02-14_phase_component_cprofile_harness_story.md:6-6`, `context_compass/stories/2026-02-14_phase_component_cprofile_harness_story.md:44-45`, `context_compass/stories/2026-02-14_phase_group_1_4_baseline_story.md:6-6`, `context_compass/stories/2026-02-14_phase_group_1_4_baseline_story.md:42-42`, `context_compass/stories/2026-02-14_phase_group_5_7_conduit_baseline_story.md:6-6`, `context_compass/stories/2026-02-14_phase_group_5_7_conduit_baseline_story.md:43-43`, `context_compass/stories/2026-02-14_phase_group_5_7_local_baseline_story.md:6-6`, `context_compass/stories/2026-02-14_phase_group_5_7_local_baseline_story.md:43-43`, `context_compass/stories/2026-02-14_phase_group_8_11_baseline_story.md:6-6`, `context_compass/stories/2026-02-14_phase_group_8_11_baseline_story.md:44-44`

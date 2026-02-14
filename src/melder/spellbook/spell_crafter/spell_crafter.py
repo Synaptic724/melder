@@ -23,6 +23,7 @@ from melder.spellbook.spell_crafter.system.spell_system_adjacency_snapshot impor
 from melder.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
 from melder.spellbook.spell_crafter.system.spell_system_root_blueprint_builder import SpellSystemRootBlueprintBuilder
 from melder.spellbook.spell_types.spell_types import SpellType
+from melder.spellbook.existence.existence import Existence
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.spell_requirements_finder import (
@@ -197,6 +198,7 @@ class SpellCrafter(Cleanable):
         "_execution_plan_phase11_overrides",
         "_phase12_no_overrides_executor",
         "_phase12_no_overrides_executor_signature",
+        "_phase11_no_overrides_input_signature",
         "_codegen_ir",
         "_phase8_11_codegen_ir_dirty",
         "_spell_system_index_phase5",
@@ -244,6 +246,7 @@ class SpellCrafter(Cleanable):
         self._execution_plan_phase11_overrides: Optional[ExecutionPlan] = None
         self._phase12_no_overrides_executor: Optional[Callable[..., Any]] = None
         self._phase12_no_overrides_executor_signature: Optional[str] = None
+        self._phase11_no_overrides_input_signature: Optional[str] = None
         self._codegen_ir: Optional[Dict[str, Any]] = None
         self._phase8_11_codegen_ir_dirty: bool = False
         self._spell_system_index_phase5: Optional[SpellSystemIndex] = None
@@ -345,6 +348,7 @@ class SpellCrafter(Cleanable):
             self._execution_plan_phase11_overrides = None
             self._phase12_no_overrides_executor = None
             self._phase12_no_overrides_executor_signature = None
+            self._phase11_no_overrides_input_signature = None
             self._codegen_ir = None
             self._phase8_11_codegen_ir_dirty = False
             self._spell_system_index_phase5 = None
@@ -1835,6 +1839,240 @@ class SpellCrafter(Cleanable):
             bool(step.must_register),
         )
 
+    def _build_phase11_spell_signature_row(
+            self,
+            spell: ISpell,
+    ) -> Tuple[Any, ...]:
+        """
+        Build deterministic spell metadata row for Phase 11 no-overrides inputs.
+
+        Purpose:
+            Capture spell fields consumed by `ExecutionPlanBuilder.build` so
+            phase11 can detect when no-overrides rebuild is required.
+        Contract:
+            - Includes existence/register/disposal and optimistic-object identity.
+            - Uses primitive/tuple values only for deterministic hashing.
+        Args:
+            spell:
+                Spell referenced by occurrence execution order.
+        Returns:
+            Tuple[Any, ...]:
+                Deterministic spell metadata row.
+        """
+        optimistic_object_identity = None
+        if spell.user_created_object is not None:
+            optimistic_object_identity = id(spell.user_created_object)
+        is_callable_spell = spell.spell_type in (
+            SpellType.SPELL,
+            SpellType.SPELL_WITH_SPELLFRAME,
+            SpellType.SPELL_WITH_BINDING_NAME,
+            SpellType.SPELL_WITH_BINDING_NAME_WITH_SPELLFRAME,
+            SpellType.METHOD,
+            SpellType.METHOD_WITH_BINDING_NAME,
+            SpellType.METHOD_WITH_SPELLFRAME,
+            SpellType.METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME,
+            SpellType.LAMBDA_METHOD_WITH_BINDING_NAME,
+            SpellType.LAMBDA_METHOD_WITH_SPELLFRAME,
+            SpellType.LAMBDA_METHOD_WITH_BINDING_NAME_WITH_SPELLFRAME,
+        )
+        must_register = True
+        if spell.existence is Existence.many and not spell.has_disposal_methods:
+            must_register = False
+        return (
+            spell.spell_index.current,
+            spell.existence.name,
+            bool(spell.is_existing_creation),
+            bool(is_callable_spell),
+            bool(must_register),
+            bool(spell.has_disposal_methods),
+            tuple(spell.disposal_method_names),
+            optimistic_object_identity,
+        )
+
+    @staticmethod
+    def _build_phase11_injection_spec_signature_row(
+            injection_spec: Any,
+    ) -> Tuple[Any, ...]:
+        """
+        Build deterministic InjectionSpec row for Phase 11 input signatures.
+
+        Purpose:
+            Normalize injection metadata used by `ExecutionPlanBuilder.build`
+            without allocating Phase 11 steps.
+        Contract:
+            - Includes param source wiring, aggregation flags, and contract payload.
+            - Returns tuple-only deterministic structure.
+        Args:
+            injection_spec:
+                Phase 9 InjectionSpec-like object.
+        Returns:
+            Tuple[Any, ...]:
+                Deterministic signature row.
+        """
+        param_rows: List[Tuple[Any, ...]] = []
+        param_sources = injection_spec.param_sources
+        for param_name in sorted(param_sources.keys()):
+            param_source = param_sources[param_name]
+            dependency_keys = None
+            if param_source.dependency_keys is not None:
+                dependency_keys = tuple(
+                    tuple(dependency_key)
+                    for dependency_key in param_source.dependency_keys
+                )
+            param_rows.append(
+                (
+                    param_name,
+                    param_source.kind,
+                    dependency_keys,
+                    param_source.override_key,
+                    param_source.contract_key,
+                )
+            )
+
+        contract_payload = injection_spec.contract_payload
+        normalized_contract_payload = None
+        if contract_payload is not None:
+            normalized_contract_payload = dict(contract_payload)
+            if (
+                    "__args__" in normalized_contract_payload
+                    and isinstance(normalized_contract_payload["__args__"], list)
+            ):
+                normalized_contract_payload["__args__"] = tuple(
+                    normalized_contract_payload["__args__"]
+                )
+
+        return (
+            tuple(param_rows),
+            bool(injection_spec.allow_list_aggregation),
+            bool(injection_spec.uses_positional_override),
+            normalized_contract_payload,
+        )
+
+    def _build_phase11_no_overrides_input_signature(
+            self,
+            *,
+            occurrence_plan: OccurrencePlan,
+            injection_plan: Optional[InjectionPlan],
+            spell_lookup: Dict[str, ISpell],
+    ) -> Optional[str]:
+        """
+        Build deterministic no-overrides input signature for Phase 11 reuse.
+
+        Purpose:
+            Detect semantic drift in plan-builder inputs so repeated warm runs
+            can safely skip redundant no-overrides full builds.
+        Contract:
+            - Returns `None` when required spell/injection inputs are missing,
+              forcing the legacy rebuild path.
+            - Includes occurrence graph rows, injection wiring rows, and spell
+              metadata consumed by `ExecutionPlanBuilder.build`.
+        Args:
+            occurrence_plan:
+                Phase 8 occurrence plan for this spell.
+            injection_plan:
+                Optional Phase 9 injection plan.
+            spell_lookup:
+                Spell lookup map keyed by spell id.
+        Returns:
+            Optional[str]:
+                Deterministic input signature, or `None` when rebuild must not be
+                elided due to missing inputs.
+        """
+        try:
+            execution_order = tuple(occurrence_plan.execution_order)
+            shared_spell_ids = occurrence_plan.shared_spell_ids
+            shared_spell_ids_row = tuple(sorted(shared_spell_ids))
+            root_instance_key = tuple(occurrence_plan.root_instance_key)
+            root_spell_id = occurrence_plan.root_spell_id
+            contract_dependencies_complete = bool(
+                occurrence_plan.contract_dependencies_complete,
+            )
+            occurrence_graph = occurrence_plan.occurrence_graph
+            instance_keys_by_spell_id = occurrence_plan.instance_keys_by_spell_id
+            canonical_occurrences_by_spell_id = occurrence_plan.canonical_occurrences_by_spell_id
+            contract_overrides_by_occurrence = occurrence_plan.contract_overrides_by_occurrence
+        except AttributeError:
+            return None
+
+        spell_rows: List[Tuple[Any, ...]] = []
+        occurrence_rows: List[Tuple[Any, ...]] = []
+
+        for spell_id in execution_order:
+            spell = spell_lookup.get(spell_id)
+            if spell is None:
+                return None
+            spell_rows.append(self._build_phase11_spell_signature_row(spell))
+
+            canonical_occurrence = canonical_occurrences_by_spell_id.get(spell_id)
+            instance_keys = instance_keys_by_spell_id.get(spell_id, ())
+            for instance_key in instance_keys:
+                occurrence = (spell_id, instance_key[1])
+                if spell_id in shared_spell_ids and canonical_occurrence is not None:
+                    occurrence = canonical_occurrence
+                dependencies = occurrence_graph.get(occurrence, {})
+                dependency_rows: List[Tuple[Any, ...]] = []
+                for param_name in sorted(dependencies.keys()):
+                    dependency_rows.append(
+                        (
+                            param_name,
+                            tuple(
+                                tuple(dependency_occurrence)
+                                for dependency_occurrence in dependencies[param_name]
+                            ),
+                        )
+                    )
+                contract_payload = contract_overrides_by_occurrence.get(occurrence)
+                if contract_payload is not None and "__args__" in contract_payload:
+                    args_payload = contract_payload["__args__"]
+                    if isinstance(args_payload, list):
+                        contract_payload = dict(contract_payload)
+                        contract_payload["__args__"] = tuple(args_payload)
+                occurrence_rows.append(
+                    (
+                        tuple(instance_key),
+                        tuple(occurrence),
+                        tuple(dependency_rows),
+                        contract_payload,
+                    )
+                )
+
+        injection_rows: Tuple[Any, ...] = ()
+        if injection_plan is not None:
+            try:
+                injection_lookup = injection_plan.select_for_runtime(
+                    root_spell_id=root_spell_id,
+                )
+            except AttributeError:
+                return None
+            if injection_lookup is None:
+                return None
+            injection_rows_list: List[Tuple[Any, ...]] = []
+            for instance_key in sorted(injection_lookup.keys()):
+                try:
+                    injection_spec_row = self._build_phase11_injection_spec_signature_row(
+                        injection_lookup[instance_key]
+                    )
+                except AttributeError:
+                    return None
+                injection_rows_list.append(
+                    (
+                        tuple(instance_key),
+                        injection_spec_row,
+                    )
+                )
+            injection_rows = tuple(injection_rows_list)
+
+        return self._hash_codegen_signature(
+            root_spell_id,
+            root_instance_key,
+            contract_dependencies_complete,
+            execution_order,
+            shared_spell_ids_row,
+            tuple(spell_rows),
+            tuple(occurrence_rows),
+            injection_rows,
+        )
+
     def _build_phase12_no_overrides_plan_signature(
             self,
             plan: ExecutionPlan,
@@ -2234,6 +2472,7 @@ class SpellCrafter(Cleanable):
         self._phase8_11_codegen_ir_dirty = False
         self._phase12_no_overrides_executor = None
         self._phase12_no_overrides_executor_signature = None
+        self._phase11_no_overrides_input_signature = None
 
 
     def _notify_dependencies_updated(self, dependency_ids: List[str]) -> None:
@@ -3877,6 +4116,12 @@ class SpellCrafter(Cleanable):
             - Replaces existing ExecutionPlan references for this spell.
             - Uses the Spellbook-managed spell_id_pool (spell_id -> ISpell) as the
               spell lookup map without rebuilding it per phase.
+            - Reuses cached no-overrides plan when deterministic Phase11
+              no-overrides input signature is unchanged.
+            - Reuses the full cached phase11 variant set when signature is
+              unchanged and cached sibling variants are available.
+            - Falls back to the legacy no-overrides rebuild path when signature
+              inputs are missing.
         """
         self.check_cleaned()
         if self._spell.is_existing_creation:
@@ -3884,13 +4129,54 @@ class SpellCrafter(Cleanable):
 
         occurrence_plan = self._occurrence_plan_phase8
         injection_plan = self._injection_plan_phase9
+        spell_lookup = self._spell._spellbook._spell_id_pool
 
-        plan_no_overrides = self._build_execution_plan_variant(
+        no_overrides_input_signature = self._build_phase11_no_overrides_input_signature(
             occurrence_plan=occurrence_plan,
             injection_plan=injection_plan,
-            spell_lookup=self._spell._spellbook._spell_id_pool,
-            plan_variant=ExecutionPlanVariant.NO_OVERRIDES_FAST,
+            spell_lookup=spell_lookup,
         )
+        previous_no_overrides_signature = self._phase11_no_overrides_input_signature
+        no_overrides_signature_unchanged = (
+            no_overrides_input_signature is not None
+            and previous_no_overrides_signature == no_overrides_input_signature
+        )
+        if (
+                no_overrides_signature_unchanged
+                and self._execution_plan_phase11_no_overrides is not None
+                and self._execution_plan_phase11_overrides is not None
+                and self._execution_plan_phase11 is not None
+        ):
+            cached_plan_no_overrides = self._execution_plan_phase11_no_overrides
+            self._phase11_no_overrides_input_signature = no_overrides_input_signature
+            self._cache_execution_plan_metrics(
+                occurrence_plan=occurrence_plan,
+                plan=cached_plan_no_overrides,
+            )
+            if (
+                    self._phase12_no_overrides_executor is None
+                    or self._phase12_no_overrides_executor_signature is None
+            ):
+                self._compile_phase12_no_overrides_executor_from_plan(
+                    cached_plan_no_overrides,
+                )
+            return
+
+        plan_no_overrides: ExecutionPlan
+        if (
+                no_overrides_signature_unchanged
+                and self._execution_plan_phase11_no_overrides is not None
+        ):
+            plan_no_overrides = self._execution_plan_phase11_no_overrides
+        else:
+            plan_no_overrides = self._build_execution_plan_variant(
+                occurrence_plan=occurrence_plan,
+                injection_plan=injection_plan,
+                spell_lookup=spell_lookup,
+                plan_variant=ExecutionPlanVariant.NO_OVERRIDES_FAST,
+            )
+        self._phase11_no_overrides_input_signature = no_overrides_input_signature
+
         plan_overrides = self._try_build_execution_plan_variant_from_base(
             base_plan=plan_no_overrides,
             plan_variant=ExecutionPlanVariant.OVERRIDES,
@@ -3899,7 +4185,7 @@ class SpellCrafter(Cleanable):
             plan_overrides = self._build_execution_plan_variant(
                 occurrence_plan=occurrence_plan,
                 injection_plan=injection_plan,
-                spell_lookup=self._spell._spellbook._spell_id_pool,
+                spell_lookup=spell_lookup,
                 plan_variant=ExecutionPlanVariant.OVERRIDES,
             )
 
@@ -3911,7 +4197,7 @@ class SpellCrafter(Cleanable):
             plan_overrides_with_mutations = self._build_execution_plan_variant(
                 occurrence_plan=occurrence_plan,
                 injection_plan=injection_plan,
-                spell_lookup=self._spell._spellbook._spell_id_pool,
+                spell_lookup=spell_lookup,
                 plan_variant=ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS,
             )
 

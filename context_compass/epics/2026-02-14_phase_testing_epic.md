@@ -124,6 +124,42 @@ runtime changes.
 
 ## Notes
 - DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Latest phase11 follow-up (`TASK-2026-02-14-optimize-phase11-variant-set-warm-reuse`) is implemented and rerun-validated with warm-path reduction (`group_8_11_total_ms` `3.167 -> 3.024`, `phase_execution_plan_ms` `1.383 -> 0.989`) and green targeted validation (`6 passed` + `1 passed` harness).
+  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase11_variant_set_warm_reuse_task.md:6-98, context_compass/artifacts/2026-02-14_phase11_variant_set_warm_reuse_targeted_unit_tests.txt:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:23-25, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:7-9
+  IMPACT: Phase-testing optimization backlog checklist is complete and back in review mode pending user acceptance/closure routing.
+  NEXT: Walk phase-testing outcomes with user and confirm move-to-completed direction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: DECISION
+  CLAIM: Epic execution is reopened for one additional phase11 follow-up (`TASK-2026-02-14-optimize-phase11-variant-set-warm-reuse`) because current warm profile still shows measurable phase11 execution-plan overhead and unchanged-signature flow still derives sibling variants on each call.
+  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:17-25, src/melder/spellbook/spell_crafter/spell_crafter.py:4100-4188, src/melder/spellbook/spell_crafter/spell_crafter.py:4229-4300, context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-6, context_compass/tasks/2026-02-14_optimize_phase11_variant_set_warm_reuse_task.md:1-87
+  IMPACT: Phase-testing lane remains in active optimization execution rather than closure routing.
+  NEXT: Implement and validate the new phase11 follow-up task, then reassess closure readiness.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Final phase11 follow-up (`TASK-2026-02-14-optimize-phase11-plan-rebuild-elision`) is now implemented and rerun-validated; backlog story checklist is complete and routed to `review`.
+  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase11_plan_rebuild_elision_task.md:6-147, context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-6, context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:52-52, context_compass/artifacts/2026-02-14_phase11_plan_rebuild_elision_targeted_unit_tests.txt:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:7-7, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:59-59
+  IMPACT: Epic optimization scope is fully implemented for this wave and now awaits acceptance/closure routing.
+  NEXT: Walk through epic/story outcomes with user and confirm move-to-completed direction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: DECISION
+  CLAIM: Phase-testing backlog is reopened for one additional phase11 follow-up (`TASK-2026-02-14-optimize-phase11-plan-rebuild-elision`) because warm profile after plan-based compile still shows one full no-overrides plan build per spell.
+  EVIDENCE: context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-6, context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:51-52, context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:74-81, context_compass/tasks/2026-02-14_optimize_phase11_plan_rebuild_elision_task.md:1-80, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_based_compile_output.txt:17-20
+  IMPACT: Epic remains in active execution while this final follow-up is implemented and revalidated.
+  NEXT: Execute the new phase11 plan-rebuild-elision task and rerun targeted unit + harness validations.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Phase-baseline story state is stale: `phase-component-cprofile-harness`, `phase-group-1-4-baseline`, `phase-group-5-7-conduit-baseline`, `phase-group-5-7-local-baseline`, and `phase-group-8-11-baseline` remain `in_progress` with unchecked task rows even though their linked tasks are already `review` with executed checklists.
   EVIDENCE: context_compass/stories/2026-02-14_phase_component_cprofile_harness_story.md:6-6, context_compass/stories/2026-02-14_phase_component_cprofile_harness_story.md:44-45, context_compass/stories/2026-02-14_phase_group_1_4_baseline_story.md:6-6, context_compass/stories/2026-02-14_phase_group_1_4_baseline_story.md:42-42, context_compass/stories/2026-02-14_phase_group_5_7_conduit_baseline_story.md:6-6, context_compass/stories/2026-02-14_phase_group_5_7_conduit_baseline_story.md:43-43, context_compass/stories/2026-02-14_phase_group_5_7_local_baseline_story.md:6-6, context_compass/stories/2026-02-14_phase_group_5_7_local_baseline_story.md:43-43, context_compass/stories/2026-02-14_phase_group_8_11_baseline_story.md:6-6, context_compass/stories/2026-02-14_phase_group_8_11_baseline_story.md:44-44, context_compass/tasks/2026-02-14_discovery_phase_component_cprofile_harness_task.md:6-6, context_compass/tasks/2026-02-14_implement_phase_component_cprofile_harness_task.md:6-6, context_compass/tasks/2026-02-14_discovery_phase_group_1_4_baseline_task.md:6-6, context_compass/tasks/2026-02-14_discovery_phase_group_5_7_conduit_baseline_task.md:6-6, context_compass/tasks/2026-02-14_discovery_phase_group_5_7_local_baseline_task.md:6-6, context_compass/tasks/2026-02-14_discovery_phase_group_8_11_baseline_task.md:6-6
@@ -342,7 +378,8 @@ Epic created for component-level phase profiling with explicit isolation from
 scheduler and worker orchestration overhead. Planned flow is discovery-first
 across harness design, 1-4 baseline, conduit-wide 5-7 baseline, target-local
 5-7 baseline, conduit-wide 8-11 baseline, then optimization backlog generation.
-Execution delivered rank1/rank2/rank3 optimization tasks plus three phase11
-follow-ups (variant reuse, lazy capture, and plan-based no-overrides compile).
-All follow-ups are now implemented and rerun-validated with fresh artifacts.
+Execution delivered rank1/rank2/rank3 optimization tasks plus four phase11
+follow-ups (variant reuse, lazy capture, plan-based no-overrides compile, and
+plan-rebuild elision). The latest follow-up (`TASK-2026-02-14-optimize-phase11-variant-set-warm-reuse`)
+is now also implemented and rerun-validated with warm-path improvement.
 Next step is user acceptance and closure routing for the backlog story/epic.

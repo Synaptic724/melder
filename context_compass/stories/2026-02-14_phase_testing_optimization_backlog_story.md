@@ -49,6 +49,8 @@ prioritization and reduced speculative work.
 - [x] Task: TASK-2026-02-14-optimize-phase11-execution-plan-variant-reuse - Reuse phase11 plan structure across override variants to cut repeated builder work.
 - [x] Task: TASK-2026-02-14-optimize-phase11-lazy-phase8-11-capture - Compile phase12 no-overrides executor from direct phase11 payload and defer full phase8-11 IR capture to dirty-reader paths.
 - [x] Task: TASK-2026-02-14-optimize-phase11-plan-based-no-overrides-compile - Remove phase11 eager no-overrides IR payload build from hot compile-signature checks via plan-based compile/signature path.
+- [x] Task: TASK-2026-02-14-optimize-phase11-plan-rebuild-elision - Reduce repeated phase11 no-overrides plan rebuild work on warm cycles when phase8-10 inputs are unchanged.
+- [x] Task: TASK-2026-02-14-optimize-phase11-variant-set-warm-reuse - Reuse full phase11 variant set on warm cycles when no-overrides input signature is unchanged.
 
 ## Acceptance Criteria
 - Ranked optimization backlog exists with evidence for each candidate.
@@ -71,6 +73,42 @@ prioritization and reduced speculative work.
 - 2026-02-14: Story created from EPIC-2026-02-14-phase-testing.
 
 ## Notes
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: New phase11 follow-up (`TASK-2026-02-14-optimize-phase11-variant-set-warm-reuse`) is implemented and rerun-validated: targeted phase11 unit slice passes (`6 passed`) and harness rerun passes (`1 passed`) with warm improvements (`group_8_11_total_ms` `3.167 -> 3.024`, `phase_execution_plan_ms` `1.383 -> 0.989`).
+  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase11_variant_set_warm_reuse_task.md:6-98, context_compass/artifacts/2026-02-14_phase11_variant_set_warm_reuse_targeted_unit_tests.txt:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:23-25, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:7-9
+  IMPACT: Backlog story checklist is complete again and returns to review pending acceptance/closure routing.
+  NEXT: Walk through final phase11 follow-up outcomes with user and confirm closure direction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: DECISION
+  CLAIM: Backlog story is reopened for one additional phase11 follow-up (`TASK-2026-02-14-optimize-phase11-variant-set-warm-reuse`) because warm profile still shows measurable phase11 overhead and current unchanged-signature path still derives sibling variants on each call.
+  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:17-25, src/melder/spellbook/spell_crafter/spell_crafter.py:4100-4188, src/melder/spellbook/spell_crafter/spell_crafter.py:4229-4300, context_compass/tasks/2026-02-14_optimize_phase11_variant_set_warm_reuse_task.md:1-87
+  IMPACT: Story returns to active execution with one more low-risk phase11 warm-path optimization slice.
+  NEXT: Implement `TASK-2026-02-14-optimize-phase11-variant-set-warm-reuse` and rerun targeted unit + harness validation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: The phase11 plan-rebuild-elision follow-up is implemented and rerun-validated: targeted phase11 unit slice passes (`5 passed`) and component harness rerun passes (`1 passed`) with warm 8-11 sample output recorded.
+  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase11_plan_rebuild_elision_task.md:6-147, context_compass/artifacts/2026-02-14_phase11_plan_rebuild_elision_targeted_unit_tests.txt:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:7-7, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:59-59
+  IMPACT: Backlog story implementation checklist is complete; story is now in review awaiting user acceptance/closure direction.
+  NEXT: Walk through phase11 follow-up outcomes with user and confirm closure/move direction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: DECISION
+  CLAIM: Story is reopened for one additional phase11 follow-up because warm profile after plan-based compile still shows `run_phase_execution_plan` dominated by one no-overrides full build (`_build_execution_plan_variant` + `ExecutionPlanBuilder.build`) per spell.
+  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_based_compile_output.txt:17-20, src/melder/spellbook/spell_crafter/spell_crafter.py:3888-3893, src/melder/spellbook/spell_crafter/spell_crafter.py:3931-3967
+  IMPACT: There is another low-risk warm-path candidate: elide redundant no-overrides plan rebuilds when phase8-10 inputs are semantically unchanged.
+  NEXT: Execute `TASK-2026-02-14-optimize-phase11-plan-rebuild-elision`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: The plan-based no-overrides compile follow-up is now validated with fresh reruns: targeted spell-crafter slice passes (`10 passed`) and component harness rerun passes (`1 passed`) with updated phase11 warm profile output.
@@ -230,6 +268,7 @@ prioritization and reduced speculative work.
 Story optimization execution delivered validated rank1/rank2/rank3 outcomes,
 then re-opened for additional ranked phase11 follow-ups. Variant-reuse and
 lazy-capture follow-ups were implemented, rerun-validated, and moved to
-completed. The latest follow-up (plan-based no-overrides compile-signature
-path) is now implemented and rerun-validated with fresh artifacts. Next step is
-acceptance/closure routing with the user.
+completed. Additional follow-ups (plan-based compile and plan-rebuild elision)
+are now implemented and rerun-validated with fresh artifacts. The latest
+follow-up (`TASK-2026-02-14-optimize-phase11-variant-set-warm-reuse`) is also
+implemented and rerun-validated. Next step is user acceptance/closure routing.
