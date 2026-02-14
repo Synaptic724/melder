@@ -120,7 +120,6 @@ class SpellSystemRootBlueprintBuilder:
                 The compiled blueprint for the requested spell id.
 
         """
-
         dag, ordered_ids = self._build_single_root_dag(
             root_spell_id=root_spell_id,
             dependencies=snapshot.dependencies,
@@ -185,6 +184,7 @@ class SpellSystemRootBlueprintBuilder:
         # ------------------------------------------------------------------
         reachable_ids: Set[str] = set()
         stack: List[str] = [root_spell_id]
+        visible_spell_ids = allowed_spell_ids
 
         while stack:
             current_id = stack.pop()
@@ -196,9 +196,10 @@ class SpellSystemRootBlueprintBuilder:
             direct_deps = dependencies.get(current_id)
             if not direct_deps:
                 continue
-            # Reverse sort for LIFO stack so pop-order remains ascending.
-            for dep_id in sorted(direct_deps, reverse=True):
-                if allowed_spell_ids is not None and dep_id not in allowed_spell_ids:
+            # Traversal order is intentionally not sorted here; final node and edge
+            # order is normalized by deterministic sorted passes below.
+            for dep_id in direct_deps:
+                if visible_spell_ids is not None and dep_id not in visible_spell_ids:
                     continue
                 if dep_id not in reachable_ids:
                     stack.append(dep_id)

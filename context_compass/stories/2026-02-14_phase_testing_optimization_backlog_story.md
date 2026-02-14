@@ -41,11 +41,11 @@ prioritization and reduced speculative work.
 - `EPIC-2026-02-14-phase-testing`
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: TASK-2026-02-14-discovery-phase-testing-optimization-backlog - Build ranked optimization backlog from measured phase profile outputs.
-- [ ] Task: TASK-2026-02-14-execute-phase-group-baseline-measurements - Run baseline harness measurements and record outputs for ranking readiness.
-- [ ] Task: TASK-2026-02-14-optimize-phase11-codegen-ir-capture - Optimize top warm 8-11 codegen IR hotspot.
-- [ ] Task: TASK-2026-02-14-optimize-phase8-10-plan-row-builders - Optimize warm plan row-builder/path-materialization hotspot.
-- [ ] Task: TASK-2026-02-14-optimize-phase5-root-blueprints-hotpath - Optimize foundational conduit-wide phase5 hotspot.
+- [x] Task: TASK-2026-02-14-discovery-phase-testing-optimization-backlog - Build ranked optimization backlog from measured phase profile outputs.
+- [x] Task: TASK-2026-02-14-execute-phase-group-baseline-measurements - Run baseline harness measurements and record outputs for ranking readiness.
+- [x] Task: TASK-2026-02-14-optimize-phase11-codegen-ir-capture - Optimize top warm 8-11 codegen IR hotspot.
+- [x] Task: TASK-2026-02-14-optimize-phase8-10-plan-row-builders - Optimize warm plan row-builder/path-materialization hotspot.
+- [x] Task: TASK-2026-02-14-optimize-phase5-root-blueprints-hotpath - Optimize foundational conduit-wide phase5 hotspot.
 
 ## Acceptance Criteria
 - Ranked optimization backlog exists with evidence for each candidate.
@@ -68,6 +68,24 @@ prioritization and reduced speculative work.
 - 2026-02-14: Story created from EPIC-2026-02-14-phase-testing.
 
 ## Notes
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Rank-3 phase5 revalidation is complete with clean reruns; focused unit tests passed and warm conduit 5-7 timings remain below the pre-rank3 anchor with expected run-to-run noise.
+  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase5_root_blueprints_hotpath_task.md:59-99, context_compass/artifacts/2026-02-14_phase5_opt_builder_unit_tests_rerun_clean.txt:12-12, context_compass/artifacts/2026-02-14_phase5_opt_spell_crafter_unit_tests_rerun_clean.txt:12-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase5_opt_rerun_clean_output.txt:4-4, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase5_opt_rerun_clean_output_run2.txt:4-4, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output.txt:4-4, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run2.txt:4-4
+  IMPACT: All ranked backlog optimization tasks are now implemented and in review.
+  NEXT: Walk through rank1/rank2/rank3 outcomes with user and confirm closure direction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Rank-2 implementation is complete and validated; two harness reruns show mixed warm totals (`27.932ms`, `25.438ms`) against the rank1 anchor (`27.829ms`) while warm cProfile sample improved to `0.081s`/`0.080s` from `0.083s`.
+  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:98-105, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_opt_output.txt:12-15, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run2.txt:7-9
+  IMPACT: Rank-2 slice is safe and in review, but warm-total gain is noisy at this sample size.
+  NEXT: Get user direction to keep-or-iterate rank-2, then execute rank-3 task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: Rank-1 implementation produced measured warm-path improvement (`group_8_11_warm` `34.993ms` -> `27.829ms`) and lower warm cProfile sample time (`0.091s` -> `0.083s`).
@@ -116,6 +134,6 @@ prioritization and reduced speculative work.
 - [ ] Acceptance criteria confirmed by user
 
 ## Context / Handoff Summary
-Story is now in execution-ready backlog state: ranking is complete and three
-follow-up optimization tasks are created. Next step is user-confirmed execution
-order and implementation starting with rank 1.
+Story optimization execution is complete through rank1/rank2/rank3, with each
+task validated and currently in review. Next step is user acceptance direction
+for closure and whether an additional optimization iteration is desired.

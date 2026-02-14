@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-02-13
+- Updated: 2026-02-14
 
 ## Scope
 This document defines C3 components, C2 subcomponents, and C1 code references
@@ -723,6 +723,8 @@ Responsibilities:
 - Resolve SpellMap defaults and single/collection DI targets during Phase 3 graph construction.
 - Compile Phase 8-11 artifacts for spells with attached blueprints; existing-creation
   spells bypass Phase 8-11 compilation.
+- Track `SpellCrafter._phase8_11_codegen_ir_dirty` as a spell-local export
+  freshness bit for phase8_11 IR snapshot updates.
 - Run validation strategies and record results.
 - Clean per-phase artifacts after resolution phases.
 - Register ChangeControlManager revalidator and rebuild component-of index.
@@ -753,6 +755,8 @@ Invariants/Guarantees:
 - Single-annotation DI resolves to exactly one class/creation spell (methods/lambdas excluded).
 - Collection DI (list[FrameType]) can resolve zero or more spells, including methods/lambdas.
 - SpellMap defaults must resolve to exactly one candidate.
+- `phase8_11` IR dirty state means "refresh export payload before read/compile",
+  not "runtime root requires revalidation."
 
 Failure Modes:
 - Validation errors captured in SpellValidationResult and SpellbookValidationError.
@@ -808,6 +812,8 @@ Invariants/Guarantees:
 - Dirty roots for a conduit can block Meld execution.
 - `revalidate_dirty_roots(conduit_id, ...)` returns early without dirty roots or a revalidator for that conduit.
 - Successful revalidation clears dirty roots and disables monitoring for that conduit.
+- DevOps dirty roots are conduit-scoped revalidation state and are separate from
+  SpellCrafter `phase8_11` IR freshness dirty tracking.
 
 Failure Modes:
 - ValueError for invalid or missing ids.
@@ -1066,6 +1072,8 @@ Data Structures:
 - Requirements, symbolic graph, resolution frame, validation results.
 - RootResolutionBlueprint uses a PathRegistry (PathId interning) and DagIndex
   (SocketRef stores param_path_id) for Phase 5/8 path handling.
+- `_phase8_11_codegen_ir_dirty` tracks whether exported phase8_11 IR must be
+  recaptured before `codegen_ir` reads or Phase 12 compile.
 Concurrency/Threading:
 - SpellCrafter RLock; PhaseScheduler creates UnitOfWork.
 Key Files (C1):
@@ -1106,6 +1114,8 @@ Purpose:
 Contract/Interface:
 - `ChangeControlManager.rebuild_component_of(conduit_id, ...)` and `set_revalidator(conduit_id, ...)`.
 - Component-of rebuild uses **owned roots only** (filtered from Phase 5 root blueprints). EVIDENCE: src/melder/spellbook/spell_crafter/spell_crafter.py:run_phase_root_blueprints + _filter_root_blueprints_to_owned.
+- Revalidation wiring consumes ChangeControlManager dirty roots and is not
+  driven by `SpellCrafter._phase8_11_codegen_ir_dirty`.
 Data Structures:
 - Root blueprint DAGs from Phase 5.
 Concurrency/Threading:

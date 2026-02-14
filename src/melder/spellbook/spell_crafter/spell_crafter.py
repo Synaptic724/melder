@@ -197,6 +197,7 @@ class SpellCrafter(Cleanable):
         "_phase12_no_overrides_executor",
         "_phase12_no_overrides_executor_signature",
         "_codegen_ir",
+        "_phase8_11_codegen_ir_dirty",
         "_spell_system_index_phase5",
         "_is_broken",
         "_entire_dag_blueprint_phase5",
@@ -243,6 +244,7 @@ class SpellCrafter(Cleanable):
         self._phase12_no_overrides_executor: Optional[Callable[..., Any]] = None
         self._phase12_no_overrides_executor_signature: Optional[str] = None
         self._codegen_ir: Optional[Dict[str, Any]] = None
+        self._phase8_11_codegen_ir_dirty: bool = False
         self._spell_system_index_phase5: Optional[SpellSystemIndex] = None
         self._entire_dag_blueprint_phase5 : Optional[Dict[str, RootResolutionBlueprint]] = None
         self._is_broken: bool = False
@@ -343,6 +345,7 @@ class SpellCrafter(Cleanable):
             self._phase12_no_overrides_executor = None
             self._phase12_no_overrides_executor_signature = None
             self._codegen_ir = None
+            self._phase8_11_codegen_ir_dirty = False
             self._spell_system_index_phase5 = None
             self._entire_dag_blueprint_phase5 = None
             self._validated_phase4 = False
@@ -532,12 +535,14 @@ class SpellCrafter(Cleanable):
             consume without re-deriving phase semantics at runtime.
         Contract:
             - Returns None until at least one phase export has populated IR.
+            - Flushes pending phase8-11 export when that payload is marked dirty.
             - Returned mapping is owned by this crafter and treated as read-only.
         Returns:
             Optional[Dict[str, Any]]:
                 Current IR payload for this spell, or None.
         """
         self.check_cleaned()
+        self._capture_phase8_11_codegen_ir_if_dirty()
         return self._codegen_ir
 
     @property
@@ -753,7 +758,8 @@ class SpellCrafter(Cleanable):
             Avoid expensive mega-`repr(...)` materialization on large nested
             IR payloads while preserving deterministic signature behavior.
         Contract:
-            - Uses `pickle` protocol 5 for fast deterministic bytes.
+            - Uses typed fastpaths for common scalar values.
+            - Uses direct `pickle` fallback for container and unsupported values.
             - Falls back to `repr(...).encode(...)` for non-picklable values.
         Args:
             part:
@@ -762,6 +768,26 @@ class SpellCrafter(Cleanable):
             bytes:
                 Deterministic encoded bytes for hashing.
         """
+        part_type = type(part)
+        if part_type is dict or part_type is tuple or part_type is list or part_type is set or part_type is frozenset:
+            try:
+                return pickle.dumps(part, protocol=5)
+            except (pickle.PickleError, TypeError, AttributeError):
+                return repr(part).encode("utf-8")
+        if part is None:
+            return b"N"
+        if part_type is bool:
+            return b"B1" if part else b"B0"
+        if part_type is int:
+            return b"I" + str(part).encode("ascii")
+        if part_type is float:
+            return b"F" + repr(part).encode("ascii")
+        if part_type is str:
+            return b"S" + part.encode("utf-8")
+        if part_type is bytes:
+            return b"Y" + part
+        if part_type is bytearray:
+            return b"Y" + bytes(part)
         try:
             return pickle.dumps(part, protocol=5)
         except (pickle.PickleError, TypeError, AttributeError):
@@ -1227,15 +1253,15 @@ class SpellCrafter(Cleanable):
             dependency_rows: List[Tuple[str, Tuple[Tuple[str, Optional[int]], ...]]] = []
             for param_name in sorted(dependency_map.keys()):
                 dependency_occurrences = dependency_map[param_name]
-                normalized_occurrences = tuple(
-                    sorted(
-                        (
-                            tuple(dependency_occurrence)
-                            for dependency_occurrence in dependency_occurrences
-                        ),
+                normalized_occurrences_list = [
+                    tuple(dependency_occurrence)
+                    for dependency_occurrence in dependency_occurrences
+                ]
+                if len(normalized_occurrences_list) > 1:
+                    normalized_occurrences_list.sort(
                         key=self._occurrence_key_sort_key,
                     )
-                )
+                normalized_occurrences = tuple(normalized_occurrences_list)
                 dependency_rows.append((param_name, normalized_occurrences))
             rows.append(
                 (
@@ -1267,15 +1293,13 @@ class SpellCrafter(Cleanable):
         """
         rows: List[Tuple[str, Tuple[Tuple[str, Optional[int]], ...]]] = []
         for spell_id in sorted(instance_keys_by_spell_id.keys()):
-            instance_keys = tuple(
-                sorted(
-                    (
-                        tuple(instance_key)
-                        for instance_key in instance_keys_by_spell_id[spell_id]
-                    ),
-                    key=self._instance_key_sort_key,
-                )
-            )
+            instance_keys_list = [
+                tuple(instance_key)
+                for instance_key in instance_keys_by_spell_id[spell_id]
+            ]
+            if len(instance_keys_list) > 1:
+                instance_keys_list.sort(key=self._instance_key_sort_key)
+            instance_keys = tuple(instance_keys_list)
             rows.append((spell_id, instance_keys))
         return tuple(rows)
 
@@ -1459,15 +1483,15 @@ class SpellCrafter(Cleanable):
                     except AttributeError:
                         raw_dependency_keys = None
                     if raw_dependency_keys:
-                        dependency_keys = tuple(
-                            sorted(
-                                (
-                                    tuple(dependency_key)
-                                    for dependency_key in raw_dependency_keys
-                                ),
+                        dependency_key_list = [
+                            tuple(dependency_key)
+                            for dependency_key in raw_dependency_keys
+                        ]
+                        if len(dependency_key_list) > 1:
+                            dependency_key_list.sort(
                                 key=self._instance_key_sort_key,
                             )
-                        )
+                        dependency_keys = tuple(dependency_key_list)
                     override_key = None
                     try:
                         override_key = param_source.override_key
@@ -1548,7 +1572,8 @@ class SpellCrafter(Cleanable):
                         )
                     except AttributeError:
                         continue
-            socket_rows.sort(key=self._socket_row_sort_key)
+            if len(socket_rows) > 1:
+                socket_rows.sort(key=self._socket_row_sort_key)
 
             specificity_value = None
             if specificity_by_spec:
@@ -1614,14 +1639,15 @@ class SpellCrafter(Cleanable):
                         )
                     except AttributeError:
                         continue
-            patch_rows.sort(
-                key=lambda row: (
-                    row[0],
-                    row[1],
-                    row[2],
-                    "" if row[3] is None else row[3],
+            if len(patch_rows) > 1:
+                patch_rows.sort(
+                    key=lambda row: (
+                        row[0],
+                        row[1],
+                        row[2],
+                        "" if row[3] is None else row[3],
+                    )
                 )
-            )
             rows.append((spec_key, tuple(patch_rows)))
         return tuple(rows)
 
@@ -1956,6 +1982,39 @@ class SpellCrafter(Cleanable):
         ir_payload = self._ensure_codegen_ir()
         ir_payload["phase8_11"] = phase8_11_payload
         ir_payload["signatures"]["phase8_11"] = phase8_11_signature
+        self._phase8_11_codegen_ir_dirty = False
+
+    def _mark_phase8_11_codegen_ir_dirty(self) -> None:
+        """
+        Mark phase8_11 codegen export as stale.
+
+        Purpose:
+            Record that one or more Phase8-11 artifacts changed and a new IR
+            export is required before consumers read phase8_11 payloads.
+        Contract:
+            - Idempotent; repeated calls keep dirty state true.
+            - Does not mutate codegen payloads directly.
+        Returns:
+            None.
+        """
+        self._phase8_11_codegen_ir_dirty = True
+
+    def _capture_phase8_11_codegen_ir_if_dirty(self) -> None:
+        """
+        Flush phase8_11 codegen export only when stale.
+
+        Purpose:
+            Avoid repeated full payload/signature rebuilds while preserving
+            freshness for phase12 compilation and runtime readers.
+        Contract:
+            - No-op when dirty flag is false.
+            - Executes full `_capture_phase8_11_codegen_ir` once per dirty cycle.
+        Returns:
+            None.
+        """
+        if not self._phase8_11_codegen_ir_dirty:
+            return
+        self._capture_phase8_11_codegen_ir()
 
     def _compile_phase12_no_overrides_executor(self) -> None:
         """
@@ -2054,12 +2113,14 @@ class SpellCrafter(Cleanable):
         Contract:
             - No-op when IR is not initialized.
             - Always clears compiled no-overrides executor cache.
+            - Resets pending phase8_11 dirty state.
         Returns:
             None.
         """
         if self._codegen_ir is not None:
             self._codegen_ir["phase8_11"] = {}
             self._codegen_ir["signatures"].pop("phase8_11", None)
+        self._phase8_11_codegen_ir_dirty = False
         self._phase12_no_overrides_executor = None
         self._phase12_no_overrides_executor_signature = None
 
@@ -3473,7 +3534,7 @@ class SpellCrafter(Cleanable):
         # Hot-swap the plan without cleaning the previous object in-place.
         # Concurrent phase runners may still hold references to the prior plan.
         self._occurrence_plan_phase8 = plan
-        self._capture_phase8_11_codegen_ir()
+        self._mark_phase8_11_codegen_ir_dirty()
 
 
     # ------------------------------------------------------------------
@@ -3539,7 +3600,7 @@ class SpellCrafter(Cleanable):
         # Hot-swap the plan without cleaning the previous object in-place.
         # Concurrent phase runners may still hold references to the prior plan.
         self._injection_plan_phase9 = plan
-        self._capture_phase8_11_codegen_ir()
+        self._mark_phase8_11_codegen_ir_dirty()
 
 
     # ------------------------------------------------------------------
@@ -3608,7 +3669,7 @@ class SpellCrafter(Cleanable):
         # Concurrent runners may still be reading the prior maps.
         self._override_patch_map_phase10 = override_patch_map
         self._mutation_patch_map_phase10 = mutation_patch_map
-        self._capture_phase8_11_codegen_ir()
+        self._mark_phase8_11_codegen_ir_dirty()
 
 
     # ------------------------------------------------------------------
@@ -3742,7 +3803,8 @@ class SpellCrafter(Cleanable):
         self._execution_plan_phase11_no_overrides = plan_no_overrides
         self._execution_plan_phase11_overrides = plan_overrides
         self._execution_plan_phase11 = plan_overrides_with_mutations
-        self._capture_phase8_11_codegen_ir()
+        self._mark_phase8_11_codegen_ir_dirty()
+        self._capture_phase8_11_codegen_ir_if_dirty()
         self._compile_phase12_no_overrides_executor()
 
     def _build_execution_plan_variant(

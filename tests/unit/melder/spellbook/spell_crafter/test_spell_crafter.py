@@ -4830,6 +4830,76 @@ def test_capture_phase8_11_codegen_ir_signature_stable_across_map_insertion_orde
     assert second_rows_signature == first_rows_signature
 
 
+def test_hash_codegen_signature_fastpaths_skip_pickle_for_supported_types(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify supported signature parts use typed fastpaths instead of pickle.
+    Contract:
+        Scalar fastpath parts should hash deterministically without calling
+        `pickle.dumps`.
+    Args:
+        monkeypatch:
+            Pytest monkeypatch fixture used to force pickle-path failure.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If pickle path is invoked or hash output is unstable.
+    """
+    def _pickle_boom(*args: Any, **kwargs: Any) -> bytes:
+        raise AssertionError("pickle.dumps should not be called for fastpath parts")
+
+    monkeypatch.setattr(spell_crafter_module.pickle, "dumps", _pickle_boom)
+
+    first_signature = SpellCrafter._hash_codegen_signature(
+        None,
+        True,
+        False,
+        7,
+        -3.5,
+        "alpha",
+        b"beta",
+        bytearray(b"gamma"),
+    )
+    second_signature = SpellCrafter._hash_codegen_signature(
+        None,
+        True,
+        False,
+        7,
+        -3.5,
+        "alpha",
+        b"beta",
+        bytearray(b"gamma"),
+    )
+
+    assert second_signature == first_signature
+
+
+def test_serialize_codegen_signature_part_falls_back_to_repr_on_pickle_error() -> None:
+    """
+    Purpose:
+        Verify serializer fallback remains deterministic when pickling fails.
+    Contract:
+        Unsupported values that raise during pickling should serialize via
+        repr-based bytes.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If repr fallback is not applied.
+    """
+    class _Unpicklable:
+        def __reduce__(self) -> Any:
+            raise TypeError("cannot pickle")
+
+        def __repr__(self) -> str:
+            return "UnpicklableStable()"
+
+    payload = SpellCrafter._serialize_codegen_signature_part(_Unpicklable())
+
+    assert payload == b"UnpicklableStable()"
+
+
 @pytest.mark.parametrize(
     "step_overrides",
     (
@@ -5293,4 +5363,187 @@ def test_compile_phase12_no_overrides_executor_recompiles_on_signature_change(
     assert len(compiled_executors) == 2
     assert first_executor is compiled_executors[0]
     assert crafter.phase12_no_overrides_executor is compiled_executors[1]
+
+
+def test_phase8_10_runs_mark_phase8_11_codegen_ir_dirty_without_eager_capture(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify phases 8-10 mark phase8_11 IR dirty state without eager capture.
+    Contract:
+        `run_phase_occurrence_plan`, `run_phase_injection_plan`, and
+        `run_phase_patch_maps` call dirty-marking and do not invoke direct
+        phase8_11 capture.
+    Args:
+        monkeypatch: Pytest fixture for replacing builders and capture hooks.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If phases 8-10 still perform eager capture.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    crafter._root_blueprint_phase5 = object()
+
+    class _OccurrencePlanBuilderStub:
+        def __init__(self, **_kwargs: object) -> None:
+            pass
+
+        def build(self) -> object:
+            return types.SimpleNamespace(
+                execution_order=(),
+                root_instance_key=("root", None),
+                shared_spell_ids=set(),
+                contract_dependencies_complete=True,
+                occurrence_graph={},
+                instance_keys_by_spell_id={},
+                canonical_occurrences_by_spell_id={},
+                contract_overrides_by_occurrence={},
+                contract_overrides_by_spell_id={},
+            )
+
+    class _InjectionPlanBuilderStub:
+        def __init__(self, **_kwargs: object) -> None:
+            pass
+
+        def build(self) -> object:
+            return types.SimpleNamespace(instance_injections={})
+
+    class _PatchMapBuilderStub:
+        def __init__(self, **_kwargs: object) -> None:
+            pass
+
+        def build_override_patch_map(self) -> object:
+            return types.SimpleNamespace(_targets_by_spec={}, _specificity_by_spec={})
+
+        def build_mutation_patch_map(self) -> object:
+            return types.SimpleNamespace(_targets_by_spec={})
+
+    mark_calls: list[str] = []
+    capture_calls: list[str] = []
+
+    def _mark_stub(self: SpellCrafter) -> None:
+        mark_calls.append("mark")
+        self._phase8_11_codegen_ir_dirty = True
+
+    def _capture_stub(self: SpellCrafter) -> None:
+        capture_calls.append("capture")
+
+    monkeypatch.setattr(spell_crafter_module, "OccurrencePlanBuilder", _OccurrencePlanBuilderStub)
+    monkeypatch.setattr(spell_crafter_module, "InjectionPlanBuilder", _InjectionPlanBuilderStub)
+    monkeypatch.setattr(spell_crafter_module, "PatchMapBuilder", _PatchMapBuilderStub)
+    monkeypatch.setattr(SpellCrafter, "_mark_phase8_11_codegen_ir_dirty", _mark_stub)
+    monkeypatch.setattr(SpellCrafter, "_capture_phase8_11_codegen_ir", _capture_stub)
+
+    crafter.run_phase_occurrence_plan("cid")
+    crafter.run_phase_injection_plan("cid")
+    crafter.run_phase_patch_maps("cid")
+
+    assert mark_calls == ["mark", "mark", "mark"]
+    assert capture_calls == []
+    assert crafter._phase8_11_codegen_ir_dirty is True
+
+
+def test_run_phase_execution_plan_flushes_phase8_11_codegen_ir_before_compile(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify phase11 run flushes dirty phase8_11 IR before phase12 compile.
+    Contract:
+        `run_phase_execution_plan` marks phase8_11 IR dirty, flushes dirty IR
+        once, then compiles the phase12 no-overrides executor.
+    Args:
+        monkeypatch: Pytest fixture for replacing plan/flush/compile hooks.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If flush or compile ordering contracts are violated.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    crafter._occurrence_plan_phase8 = types.SimpleNamespace()
+    crafter._injection_plan_phase9 = types.SimpleNamespace()
+
+    flush_calls: list[bool] = []
+    compile_calls: list[str] = []
+
+    def _build_plan_stub(
+        self: SpellCrafter,
+        *,
+        occurrence_plan: object,
+        injection_plan: object,
+        spell_lookup: dict[str, object],
+        plan_variant: str,
+    ) -> object:
+        return _make_phase11_plan_stub(
+            plan_variant=plan_variant,
+            root_spell_id="root",
+            step_spell_ids=("root",),
+        )
+
+    def _cache_metrics_stub(
+        self: SpellCrafter,
+        *,
+        occurrence_plan: object,
+        plan: object,
+    ) -> None:
+        return None
+
+    def _flush_stub(self: SpellCrafter) -> None:
+        flush_calls.append(self._phase8_11_codegen_ir_dirty)
+        self._phase8_11_codegen_ir_dirty = False
+
+    def _compile_stub(self: SpellCrafter) -> None:
+        compile_calls.append("compile")
+
+    monkeypatch.setattr(SpellCrafter, "_build_execution_plan_variant", _build_plan_stub)
+    monkeypatch.setattr(SpellCrafter, "_cache_execution_plan_metrics", _cache_metrics_stub)
+    monkeypatch.setattr(SpellCrafter, "_capture_phase8_11_codegen_ir_if_dirty", _flush_stub)
+    monkeypatch.setattr(SpellCrafter, "_compile_phase12_no_overrides_executor", _compile_stub)
+
+    crafter.run_phase_execution_plan("cid")
+
+    assert flush_calls == [True]
+    assert compile_calls == ["compile"]
+    assert crafter._phase8_11_codegen_ir_dirty is False
+
+
+def test_codegen_ir_property_flushes_phase8_11_when_dirty(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify `codegen_ir` property lazily flushes pending phase8_11 exports.
+    Contract:
+        When phase8_11 IR is marked dirty, `codegen_ir` access triggers one
+        dirty flush before returning the payload mapping.
+    Args:
+        monkeypatch: Pytest fixture for replacing dirty-flush helper.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If `codegen_ir` does not flush dirty state.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    crafter._phase8_11_codegen_ir_dirty = True
+    flush_calls: list[bool] = []
+
+    def _flush_stub(self: SpellCrafter) -> None:
+        flush_calls.append(self._phase8_11_codegen_ir_dirty)
+        self._codegen_ir = {
+            "spell_id": "root",
+            "lineage_id": "lineage",
+            "phase2_5": {},
+            "phase8_11": {"signature": "sig"},
+            "signatures": {"phase8_11": "sig"},
+        }
+        self._phase8_11_codegen_ir_dirty = False
+
+    monkeypatch.setattr(SpellCrafter, "_capture_phase8_11_codegen_ir_if_dirty", _flush_stub)
+
+    payload = crafter.codegen_ir
+
+    assert flush_calls == [True]
+    assert payload is crafter._codegen_ir
+    assert crafter._phase8_11_codegen_ir_dirty is False
 

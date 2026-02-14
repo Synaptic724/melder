@@ -125,6 +125,24 @@ runtime changes.
 ## Notes
 - DATE: 2026-02-14
   TYPE: MEASURE
+  CLAIM: Rank-3 phase5 task is revalidated with clean reruns; focused phase5 suites passed and warm conduit 5-7 metrics remain below the pre-rank3 anchor with expected run-to-run noise.
+  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase5_root_blueprints_hotpath_task.md:59-99, context_compass/artifacts/2026-02-14_phase5_opt_builder_unit_tests_rerun_clean.txt:12-12, context_compass/artifacts/2026-02-14_phase5_opt_spell_crafter_unit_tests_rerun_clean.txt:12-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase5_opt_rerun_clean_output.txt:4-4, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase5_opt_rerun_clean_output_run2.txt:4-4, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output.txt:4-4, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run2.txt:4-4
+  IMPACT: Ranked optimization backlog execution is complete; epic now needs acceptance/closure decisions and any next-wave follow-up scoping.
+  NEXT: Review rank1/rank2/rank3 outcomes with user and confirm closure direction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Rank-2 optimization task is implemented and validated; harness reruns report mixed warm totals (`27.932ms` and `25.438ms`) against rank1 anchor (`27.829ms`) with warm cProfile sample reduced from `0.083s` to `0.081s`/`0.080s`.
+  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:98-105, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_opt_output.txt:12-15, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run2.txt:7-9
+  IMPACT: Epic execution progressed through rank-2 with no regressions, but warm-total impact is noisy and needs keep-vs-iterate direction.
+  NEXT: Confirm rank-2 acceptance direction, then execute rank-3 task (`TASK-2026-02-14-optimize-phase5-root-blueprints-hotpath`).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: MEASURE
   CLAIM: Rank-1 optimization execution is validated with measured warm 8-11 improvement (`34.993ms` -> `27.829ms`) and reduced warm cProfile sample (`0.091s` -> `0.083s`).
   EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:11-15, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_opt_output.txt:12-15, context_compass/tasks/2026-02-14_optimize_phase11_codegen_ir_capture_task.md:57-89
   IMPACT: Epic has moved from planning/ranking into verified optimization execution outcomes.
@@ -234,3 +252,6 @@ Epic created for component-level phase profiling with explicit isolation from
 scheduler and worker orchestration overhead. Planned flow is discovery-first
 across harness design, 1-4 baseline, conduit-wide 5-7 baseline, target-local
 5-7 baseline, conduit-wide 8-11 baseline, then optimization backlog generation.
+Execution is now complete across ranked optimization follow-ups (rank1/rank2/rank3),
+with validation artifacts captured for each. Next step is user acceptance for
+closure and optional next-wave optimization targeting.

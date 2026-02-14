@@ -121,6 +121,24 @@ correctness while improving throughput and latency on real runtime paths.
 
 ## Notes
 - DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: SpellCrafter rank-1 execution task is implemented and in review with major warm 8-11 reduction after phase8-11 dirty-capture rollout.
+  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:6-58, context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:60-90, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_11_capture_freq_opt_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_11_capture_freq_opt_output_run2.txt:7-9
+  IMPACT: Epic’s SpellCrafter branch has moved from planning-only into high-impact validated implementation.
+  NEXT: Confirm rank-1 acceptance and continue with rank-2 signature pipeline task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: FACT
+  CLAIM: SpellCrafter discovery moved from ready to execution-ready: hotspot mapping is complete and three ranked follow-up tasks are now queued under the story.
+  EVIDENCE: context_compass/tasks/2026-02-13_discovery_spellcrafter_phases_task.md:6-113, context_compass/stories/2026-02-13_optimize_spellcrafter_phases_story.md:6-55, context_compass/tasks/2026-02-14_optimize_phase8_11_codegen_ir_capture_frequency_task.md:1-76, context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:1-76, context_compass/tasks/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md:1-77
+  IMPACT: Epic progress advanced on the SpellCrafter branch and now has concrete next implementation targets.
+  NEXT: Execute rank-1 SpellCrafter follow-up task while continuing remaining discovery tracks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Notes section added to enforce active_documentation for in-flight findings.
   EVIDENCE: context_compass/agent_onboarding/agent/general/skills/active_documentation.md:1
@@ -136,6 +154,9 @@ Epic created with five linked discovery-first stories for optimization of
 conjure, meld, SpellCrafter phases, CreationContext codegen, and Phase 12
 codegen. Meld discovery is now complete and documented with ranked hotspot
 candidates and follow-up implementation tasks in
-`context_compass/stories/2026-02-13_optimize_meld_paths_story.md`. Next step is to
-execute discovery for remaining stories and then append implementation tasks
-based on evidence.
+`context_compass/stories/2026-02-13_optimize_meld_paths_story.md`. SpellCrafter
+discovery is now complete and execution-ready with three ranked follow-up tasks
+queued. Rank-1 is now implemented and in review with strong warm 8-11 gains.
+Next step is acceptance of rank-1 and execution of SpellCrafter rank-2 while
+continuing remaining discovery tracks for creation-context and phase12 codegen
+stories.

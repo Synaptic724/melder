@@ -605,6 +605,7 @@ class PatchMapBuilder(object):
     __melder_internal__ = _mrg.sentinel
     __slots__ = [
         "_blueprint",
+        "_path_spec_key_by_id",
     ]
 
     def __init__(
@@ -630,6 +631,31 @@ class PatchMapBuilder(object):
         if blueprint is None:
             raise ValueError("blueprint must not be None.")
         self._blueprint = blueprint
+        self._path_spec_key_by_id: Dict[int, str] = {}
+
+    def _get_path_spec_key(self, path_id: int) -> str:
+        """
+        Return the canonical path key for a PathId with local memoization.
+
+        Contract:
+            - Returns stable `'a>b>c'` path keys produced by the blueprint path registry.
+            - Reuses cached values for repeated PathIds within this builder lifetime.
+            - Does not mutate blueprint path state.
+
+        Args:
+            path_id:
+                Interned path id from the root blueprint registry.
+
+        Returns:
+            str:
+                Canonical patch-map path key.
+        """
+        path_key = self._path_spec_key_by_id.get(path_id)
+        if path_key is not None:
+            return path_key
+        path_key = self._blueprint.path_registry.format_path(path_id)
+        self._path_spec_key_by_id[path_id] = path_key
+        return path_key
 
     def build_override_patch_map(self) -> OverridePatchMap:
         """
@@ -648,11 +674,10 @@ class PatchMapBuilder(object):
         specificity_by_spec: Dict[str, _Specificity] = {}
 
         sockets = list(self._blueprint.socket_refs or [])
-        path_registry = self._blueprint.path_registry
         by_name: Dict[str, List[SocketRef]] = {}
         for socket in sockets:
             by_name.setdefault(socket.param_name, []).append(socket)
-            path_key = path_registry.format_path(socket.param_path_id)
+            path_key = self._get_path_spec_key(socket.param_path_id)
             targets_by_spec[path_key] = [socket]
             specificity_by_spec[path_key] = _Specificity.PATH
 
@@ -689,27 +714,24 @@ class PatchMapBuilder(object):
             ref for ref in (self._blueprint.socket_refs or [])
             if ref.socket_kind is SocketKind.MUTATION_CONTRACT
         ]
-        path_registry = self._blueprint.path_registry
         by_name: Dict[str, List[SocketRef]] = {}
         for socket in sockets:
             by_name.setdefault(socket.param_name, []).append(socket)
-            path_key = path_registry.format_path(socket.param_path_id)
+            path_key = self._get_path_spec_key(socket.param_path_id)
             targets_by_spec[path_key] = _build_mutation_patches(
                 blueprint=self._blueprint,
                 socket_ref=socket,
             )
 
         for name, matches in by_name.items():
+            grouped_patches = _build_mutation_patches_for_group(
+                blueprint=self._blueprint,
+                socket_refs=matches,
+            )
             broadcast_key = f"**{name}"
-            targets_by_spec[broadcast_key] = _build_mutation_patches_for_group(
-                blueprint=self._blueprint,
-                socket_refs=matches,
-            )
+            targets_by_spec[broadcast_key] = list(grouped_patches)
             unique_key = f"*{name}"
-            targets_by_spec[unique_key] = _build_mutation_patches_for_group(
-                blueprint=self._blueprint,
-                socket_refs=matches,
-            )
+            targets_by_spec[unique_key] = list(grouped_patches)
 
         return MutationPatchMap(
             root_spell_id=root_spell_id,

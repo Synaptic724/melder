@@ -5,7 +5,7 @@
 - Status: in_progress
 - Owner:
 - Created: 2026-01-17
-- Updated: 2026-02-13
+- Updated: 2026-02-14
 
 ## Table of Contents
 - Metadata
@@ -466,6 +466,25 @@ Phases 1-4 are structural and run before Conduit creation:
 - Phase 2: Symbolic graph build.
 - Phase 3: Local frame creation and dependency graph assembly.
 - Phase 4: Validation via SpellValidationSystem strategies.
+
+Dirty terminology guardrail for this pipeline:
+- `SpellCrafter._phase8_11_codegen_ir_dirty` is a local IR-freshness bit
+  ("phase8_11 export payload is stale"), not a runtime validity gate.
+- This bit is set by phase8/9/10/11 artifact replacement and flushed by
+  `_capture_phase8_11_codegen_ir_if_dirty()` before Phase 12 compile and on
+  `codegen_ir` reads.
+- Change-control dirty roots remain a separate system:
+  `ChangeControlManager.is_root_dirty(conduit_id, root_id)` is the meld gate
+  checked by `Meld._gated_validation_required(...)`.
+- EVIDENCE:
+  - `src/melder/spellbook/spell_crafter/spell_crafter.py:529-546`
+  - `src/melder/spellbook/spell_crafter/spell_crafter.py:1966-1997`
+  - `src/melder/spellbook/spell_crafter/spell_crafter.py:3513-3517`
+  - `src/melder/spellbook/spell_crafter/spell_crafter.py:3579-3583`
+  - `src/melder/spellbook/spell_crafter/spell_crafter.py:3647-3651`
+  - `src/melder/spellbook/spell_crafter/spell_crafter.py:3780-3787`
+  - `src/melder/aether/dev_ops/change_control_manager/change_control_manager.py:1403-1475`
+  - `src/melder/aether/conduit/meld/meld.py:502-532`
 
 PhaseScheduler coordinates these phases using worker threads and a shared
 cancellation event; broken spells trigger SpellbookValidationError.
