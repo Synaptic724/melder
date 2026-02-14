@@ -1,9 +1,13 @@
 # Story: Rename codex_todo to context_compass with Core/Profile Packaging
 
+- Completed: 2026-02-14
+- Summary: Completed hard-cut rename to `context_compass`, introduced
+  `core/` + `profiles/` packaging, and added configurable ticket microcycle policy.
+
 ## Metadata
 - Story ID: STORY-2026-02-14-context-compass-core-profile-packaging
 - Epic: none (standalone)
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -75,11 +79,20 @@ execution safety.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-14
+  TYPE: DECISION
+  CLAIM: User approved closure and requested story/task move to completed folders.
+  EVIDENCE: user instruction in session (2026-02-14)
+  IMPACT: Story is closed and ready for completed-folder move.
+  NEXT: Move story and linked task to completed folders and update board.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user
 
 ## Context / Handoff Summary
-Story implementation complete and in review pending user acceptance.
+Story implementation complete, accepted, and closed.
 Workspace now uses `context_compass` with core/profile/config packaging and a
 configurable Ticket Microcycle policy.

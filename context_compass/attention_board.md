@@ -14,7 +14,7 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| context_compass packaging migration | review | codex | none | walk through migration changes and confirm acceptance for closure | `context_compass/tasks/2026-02-14_context_compass_rename_and_profile_config_task.md` | 2026-02-14 | REQUIRED |
+| context_compass documentation integrity audit | in_progress | codex | none | run stale-reference and broken-path checks, then patch docs and re-verify | `context_compass/tasks/2026-02-14_context_compass_documentation_integrity_audit_task.md` | 2026-02-14 | REQUIRED |
 | phase testing epic | ready | codex | none | execute discovery for component cprofile harness, then baseline 1-4, 5-7, and 8-11 tracks | `context_compass/epics/2026-02-14_phase_testing_epic.md` | 2026-02-14 | REQUIRED |
 | optimize melder epic | ready | codex | none | execute discovery tasks in linked stories and append implementation tasks from findings | `context_compass/epics/2026-02-13_optimize_melder_epic.md` | 2026-02-14 | REQUIRED |
 | optimize conjure paths | in_progress | codex | none | confirm acceptance for `TASK-2026-02-14-conjure-phase-unit-allocation-fastpath`, then execute `TASK-2026-02-14-conjure-activation-and-validation-scan-fastpath` | `context_compass/stories/2026-02-13_optimize_conjure_paths_story.md` | 2026-02-14 | REQUIRED |
@@ -25,10 +25,16 @@ Attention details rule
 
 ## Active Attention Details
 - TYPE: FACT
-- CLAIM: New user-directed migration requires renaming `codex_todo` to `context_compass`, adding generalized core/profile structure, and adding microcycle-config toggles.
-- EVIDENCE: `context_compass/tasks/2026-02-14_context_compass_rename_and_profile_config_task.md:1`, `context_compass/stories/2026-02-14_context_compass_core_profile_packaging_story.md:1`
+- CLAIM: Started a dedicated documentation integrity audit task after user requested a full post-transition verification pass.
+- EVIDENCE: `context_compass/tasks/2026-02-14_context_compass_documentation_integrity_audit_task.md:1`
 - REREAD: REQUIRED
-- NEXT: Confirm acceptance and close story/task tickets.
+- NEXT: Run reference scans and patch invalid links.
+
+- TYPE: FACT
+- CLAIM: New user-directed migration requires renaming `codex_todo` to `context_compass`, adding generalized core/profile structure, and adding microcycle-config toggles.
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_context_compass_rename_and_profile_config_task.md:1`, `context_compass/stories/completed/2026-02-14_context_compass_core_profile_packaging_story.md:1`
+- REREAD: REQUIRED
+- NEXT: none (accepted and closed; keep as historical anchor).
 
 - TYPE: FACT
 - CLAIM: Onboarding hardening patch is implemented across AGENTS/workflow/skills/behavioral docs/templates with microcycle gates, UNKNOWN-first defaults, and board-first routing.
@@ -165,6 +171,7 @@ Attention details rule
 ## Recently Closed Anchors
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
+| context_compass packaging migration | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_context_compass_rename_and_profile_config_task.md` | 2026-02-14 | HELPFUL |
 | onboarding policy hardening | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_onboarding_policy_ticket_note_enforcement_task.md` | 2026-02-14 | HELPFUL |
 | meld dynamic gate fastdoor | review | codex | none | waiting for user acceptance | `context_compass/tasks/2026-02-13_meld_dynamic_gate_fastdoor_task.md` | 2026-02-14 | HELPFUL |
 | meld validation gate microprofile | done | codex | none | none | `context_compass/tasks/completed/2026-02-13_meld_validation_gate_microprofile_task.md` | 2026-02-14 | HELPFUL |

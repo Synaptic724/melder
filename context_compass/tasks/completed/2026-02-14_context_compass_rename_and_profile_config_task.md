@@ -1,9 +1,14 @@
 # Task: Implement context_compass Rename, Core/Profile Split, and Microcycle Config
 
+- Completed: 2026-02-14
+- Summary: Renamed `codex_todo` to `context_compass`, added `core/` and
+  `profiles/` packaging, added microcycle config, and finalized hard-cut
+  transition with no compatibility shim.
+
 ## Metadata
 - Task ID: TASK-2026-02-14-context-compass-rename-and-profile-config
 - Story: STORY-2026-02-14-context-compass-core-profile-packaging
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -56,7 +61,7 @@ switch for Ticket Microcycle enforcement.
 - [x] Deliverables produced and linked
 - [x] Documentation updated (if needed)
 - [x] Validation status recorded
-- [ ] Acceptance criteria reviewed with user and confirmed
+- [x] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
 - DATE: 2026-02-14
@@ -108,7 +113,16 @@ switch for Ticket Microcycle enforcement.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-14
+  TYPE: DECISION
+  CLAIM: User approved closure and requested migration tickets be moved to completed.
+  EVIDENCE: user instruction in session (2026-02-14)
+  IMPACT: Task is closed and ready for completed-folder move.
+  NEXT: Move task and linked story to completed folders and update board routing.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-Implementation complete and in review pending user acceptance.
+Implementation complete, accepted, and closed.
 Hard-cut transition is active (`context_compass` only), with core/profile/config
 packaging and microcycle policy toggles documented.
