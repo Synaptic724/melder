@@ -2,9 +2,8 @@ import threading
 import time
 from concurrent.futures import wait, FIRST_EXCEPTION
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
-from queue import SimpleQueue
+from queue import SimpleQueue, Empty as QueueEmpty
 
-from melder.utilities.custom_exceptions.empty_error import Empty
 from melder.utilities.interfaces.interfaces import IConfiguration, ISpellbook
 from melder.utilities.synchronization.cancellation_event_signal import (
     CancellationEvent,
@@ -397,7 +396,7 @@ class PhaseScheduler(Cleanable):
             # If empty, briefly sleep to avoid a hot spin.
             try:
                 uow = self._queue.get(timeout=0.1)
-            except Empty:
+            except QueueEmpty:
                 continue
 
             if uow is self._sentinel:

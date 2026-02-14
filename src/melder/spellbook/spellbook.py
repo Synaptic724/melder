@@ -1273,14 +1273,41 @@ class Spellbook(Cleanable, ISpellbook):
         Performs a system check to verify that no locally bound spell ID is already
         registered in the global Aether registry for this frame.
 
+        Contract:
+            - Uses the warmed local version cache when available.
+            - Falls back to SpellIndex version scans when the cache is empty.
+            - Raises on the first duplicate detected in the Aether registry.
+
         Raises:
             RuntimeError: If a spell ID is found to be duplicated in the Aether.
         """
         with self._lock:
+            check_for_spell = Spellbook._aether._check_for_spell
+            aetheric_frame = self._aetheric_frame
+            version_ids = self._spell_versions
+
+            if version_ids:
+                for spell_version_id in version_ids:
+                    if check_for_spell(spell_version_id, aetheric_frame):
+                        self._logger.error(
+                            f"Spell with ID {spell_version_id} already exists in the registry.",
+                            "_check_all_spells",
+                            exc_info=True,
+                        )
+                        raise RuntimeError(f"Spell with ID {spell_version_id} already exists in the registry.")
+                return
+
             for spell_index in self._spells.keys():
-                for spell_version_id in spell_index._versions:
-                    if Spellbook._aether._check_for_spell(spell_version_id, self._aetheric_frame):
-                        self._logger.error(f"Spell with ID {spell_version_id} already exists in the registry.", "_check_all_spells", exc_info=True)
+                versions = spell_index._versions
+                if not versions:
+                    continue
+                for spell_version_id in versions:
+                    if check_for_spell(spell_version_id, aetheric_frame):
+                        self._logger.error(
+                            f"Spell with ID {spell_version_id} already exists in the registry.",
+                            "_check_all_spells",
+                            exc_info=True,
+                        )
                         raise RuntimeError(f"Spell with ID {spell_version_id} already exists in the registry.")
 
 

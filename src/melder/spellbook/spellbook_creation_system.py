@@ -1478,6 +1478,68 @@ class SpellbookCreationSystem(Cleanable):
                 pass
 
     @staticmethod
+    def _build_per_spell_phase_units(
+            *,
+            spellbook: Any,
+            scheduler: PhaseScheduler,
+            phase_name: str,
+            phase_callable_attr: str,
+            conduit_id: Optional[str] = None,
+    ) -> Sequence[IUnitOfWork]:
+        """
+        Purpose:
+            Build one unit-of-work per local spell for repeated per-spell phases.
+        Contract:
+            - Returns an empty list when no local spells exist.
+            - Preserves existing label and metadata shape:
+              `label="<phase_name>:<spell_id>"`,
+              `metadata={"phase": <phase_name>, "spell_id": <spell_id>}`.
+            - Uses `(cancel_event,)` args for structural phases and
+              `(conduit_id, cancel_event,)` args for conduit-scoped phases.
+        Args:
+            spellbook: Owning Spellbook instance.
+            scheduler: Scheduler creating units of work.
+            phase_name: Phase label prefix and metadata phase value.
+            phase_callable_attr: Spell method name to invoke for each unit.
+            conduit_id: Optional conduit scope id for conduit-scoped phases.
+        Returns:
+            Sequence[IUnitOfWork]: Per-spell units for the requested phase.
+        Raises:
+            RuntimeError: If spellbook has already been cleaned.
+            AttributeError: If a spell does not expose `phase_callable_attr`.
+        """
+        spellbook.check_cleaned()
+        spells = spellbook._spells
+        if not spells:
+            return []
+
+        cancel_event = scheduler.cancel_event
+        create_unit_of_work = scheduler.create_unit_of_work
+        if conduit_id is None:
+            args_factory: Callable[[ISpell], Tuple[Any, ...]] = (
+                lambda _spell: (cancel_event,)
+            )
+        else:
+            args_factory = lambda _spell: (conduit_id, cancel_event,)
+
+        units: List[IUnitOfWork] = []
+        for spell in spells.values():
+            phase_func = getattr(spell, phase_callable_attr)
+            spell_id = spell.spell_id
+            units.append(
+                create_unit_of_work(
+                    func=phase_func,
+                    args=args_factory(spell),
+                    label=f"{phase_name}:{spell_id}",
+                    metadata={
+                        "phase": phase_name,
+                        "spell_id": spell_id,
+                    },
+                )
+            )
+        return units
+
+    @staticmethod
     def phase_requirements_factory(
             spellbook: Any,
             scheduler: PhaseScheduler,
@@ -1495,21 +1557,12 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             RuntimeError: If spellbook has already been cleaned.
         """
-        spellbook.check_cleaned()
-        units: List[IUnitOfWork] = []
-        for spell in spellbook._spells.values():
-            units.append(
-                scheduler.create_unit_of_work(
-                    func=spell.run_phase_requirements,
-                    args=(scheduler.cancel_event,),
-                    label=f"requirements:{spell.spell_id}",
-                    metadata={
-                        "phase": "requirements",
-                        "spell_id": spell.spell_id,
-                    },
-                )
-            )
-        return units
+        return SpellbookCreationSystem._build_per_spell_phase_units(
+            spellbook=spellbook,
+            scheduler=scheduler,
+            phase_name="requirements",
+            phase_callable_attr="run_phase_requirements",
+        )
 
     @staticmethod
     def phase_symbolic_graph_factory(
@@ -1529,21 +1582,12 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             RuntimeError: If spellbook has already been cleaned.
         """
-        spellbook.check_cleaned()
-        units: List[IUnitOfWork] = []
-        for spell in spellbook._spells.values():
-            units.append(
-                scheduler.create_unit_of_work(
-                    func=spell.run_phase_symbolic_graph,
-                    args=(scheduler.cancel_event,),
-                    label=f"symbolic_graph:{spell.spell_id}",
-                    metadata={
-                        "phase": "symbolic_graph",
-                        "spell_id": spell.spell_id,
-                    },
-                )
-            )
-        return units
+        return SpellbookCreationSystem._build_per_spell_phase_units(
+            spellbook=spellbook,
+            scheduler=scheduler,
+            phase_name="symbolic_graph",
+            phase_callable_attr="run_phase_symbolic_graph",
+        )
 
     @staticmethod
     def phase_local_frame_factory(
@@ -1563,21 +1607,12 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             RuntimeError: If spellbook has already been cleaned.
         """
-        spellbook.check_cleaned()
-        units: List[IUnitOfWork] = []
-        for spell in spellbook._spells.values():
-            units.append(
-                scheduler.create_unit_of_work(
-                    func=spell.run_phase_local_frame,
-                    args=(scheduler.cancel_event,),
-                    label=f"local_frame:{spell.spell_id}",
-                    metadata={
-                        "phase": "local_frame",
-                        "spell_id": spell.spell_id,
-                    },
-                )
-            )
-        return units
+        return SpellbookCreationSystem._build_per_spell_phase_units(
+            spellbook=spellbook,
+            scheduler=scheduler,
+            phase_name="local_frame",
+            phase_callable_attr="run_phase_local_frame",
+        )
 
     @staticmethod
     def phase_validation_factory(
@@ -1597,21 +1632,12 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             RuntimeError: If spellbook has already been cleaned.
         """
-        spellbook.check_cleaned()
-        units: List[IUnitOfWork] = []
-        for spell in spellbook._spells.values():
-            units.append(
-                scheduler.create_unit_of_work(
-                    func=spell.run_phase_validation,
-                    args=(scheduler.cancel_event,),
-                    label=f"validation:{spell.spell_id}",
-                    metadata={
-                        "phase": "validation",
-                        "spell_id": spell.spell_id,
-                    },
-                )
-            )
-        return units
+        return SpellbookCreationSystem._build_per_spell_phase_units(
+            spellbook=spellbook,
+            scheduler=scheduler,
+            phase_name="validation",
+            phase_callable_attr="run_phase_validation",
+        )
 
     @staticmethod
     def phase_root_blueprints_factory(
@@ -1673,24 +1699,13 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             RuntimeError: If spellbook has already been cleaned.
         """
-        spellbook.check_cleaned()
-        if not spellbook._spells:
-            return []
-
-        units: List[IUnitOfWork] = []
-        for spell in spellbook._spells.values():
-            units.append(
-                scheduler.create_unit_of_work(
-                    func=spell.run_phase_occurrence_plan,
-                    args=(conduit_id, scheduler.cancel_event,),
-                    label=f"occurrence_plan:{spell.spell_id}",
-                    metadata={
-                        "phase": "occurrence_plan",
-                        "spell_id": spell.spell_id,
-                    },
-                )
-            )
-        return units
+        return SpellbookCreationSystem._build_per_spell_phase_units(
+            spellbook=spellbook,
+            scheduler=scheduler,
+            phase_name="occurrence_plan",
+            phase_callable_attr="run_phase_occurrence_plan",
+            conduit_id=conduit_id,
+        )
 
     @staticmethod
     def phase_injection_plan_factory(
@@ -1713,24 +1728,13 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             RuntimeError: If spellbook has already been cleaned.
         """
-        spellbook.check_cleaned()
-        if not spellbook._spells:
-            return []
-
-        units: List[IUnitOfWork] = []
-        for spell in spellbook._spells.values():
-            units.append(
-                scheduler.create_unit_of_work(
-                    func=spell.run_phase_injection_plan,
-                    args=(conduit_id, scheduler.cancel_event,),
-                    label=f"injection_plan:{spell.spell_id}",
-                    metadata={
-                        "phase": "injection_plan",
-                        "spell_id": spell.spell_id,
-                    },
-                )
-            )
-        return units
+        return SpellbookCreationSystem._build_per_spell_phase_units(
+            spellbook=spellbook,
+            scheduler=scheduler,
+            phase_name="injection_plan",
+            phase_callable_attr="run_phase_injection_plan",
+            conduit_id=conduit_id,
+        )
 
     @staticmethod
     def phase_patch_maps_factory(
@@ -1753,24 +1757,13 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             RuntimeError: If spellbook has already been cleaned.
         """
-        spellbook.check_cleaned()
-        if not spellbook._spells:
-            return []
-
-        units: List[IUnitOfWork] = []
-        for spell in spellbook._spells.values():
-            units.append(
-                scheduler.create_unit_of_work(
-                    func=spell.run_phase_patch_maps,
-                    args=(conduit_id, scheduler.cancel_event,),
-                    label=f"patch_maps:{spell.spell_id}",
-                    metadata={
-                        "phase": "patch_maps",
-                        "spell_id": spell.spell_id,
-                    },
-                )
-            )
-        return units
+        return SpellbookCreationSystem._build_per_spell_phase_units(
+            spellbook=spellbook,
+            scheduler=scheduler,
+            phase_name="patch_maps",
+            phase_callable_attr="run_phase_patch_maps",
+            conduit_id=conduit_id,
+        )
 
     @staticmethod
     def phase_execution_plan_factory(
@@ -1793,24 +1786,13 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             RuntimeError: If spellbook has already been cleaned.
         """
-        spellbook.check_cleaned()
-        if not spellbook._spells:
-            return []
-
-        units: List[IUnitOfWork] = []
-        for spell in spellbook._spells.values():
-            units.append(
-                scheduler.create_unit_of_work(
-                    func=spell.run_phase_execution_plan,
-                    args=(conduit_id, scheduler.cancel_event,),
-                    label=f"execution_plan:{spell.spell_id}",
-                    metadata={
-                        "phase": "execution_plan",
-                        "spell_id": spell.spell_id,
-                    },
-                )
-            )
-        return units
+        return SpellbookCreationSystem._build_per_spell_phase_units(
+            spellbook=spellbook,
+            scheduler=scheduler,
+            phase_name="execution_plan",
+            phase_callable_attr="run_phase_execution_plan",
+            conduit_id=conduit_id,
+        )
 
     @staticmethod
     def phase_system_validation_factory(

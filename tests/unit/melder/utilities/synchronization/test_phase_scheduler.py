@@ -180,3 +180,36 @@ def test_multiple_phases_and_thread_pool_reuse():
     assert [u.result() for u in results["phase2"]] == ["b"] * 4
 
     scheduler.cleanup()
+
+
+def test_idle_workers_survive_empty_queue_timeouts_between_phases():
+    cfg = DummyConfig(workers=5, timeout_ms=2000)
+
+    class InspectPhaseScheduler(PhaseScheduler):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.alive_before_phase: dict[str, int] = {}
+
+        def _run_single_phase(self, phase_name, factory):
+            self.alive_before_phase[phase_name] = sum(
+                1 for thread in self._threads if thread.is_alive()
+            )
+            return super()._run_single_phase(phase_name, factory)
+
+    scheduler = InspectPhaseScheduler(spellbook=object(), configuration=cfg)
+
+    scheduler.register_phase(
+        "p1",
+        lambda: [scheduler.create_unit_of_work(lambda: time.sleep(0.35))],
+    )
+    scheduler.register_phase(
+        "p2",
+        lambda: [scheduler.create_unit_of_work(lambda: "ok")],
+    )
+
+    try:
+        results = scheduler.run_all_phases("cid")
+        assert results["p2"][0].result() == "ok"
+        assert scheduler.alive_before_phase["p2"] == scheduler.workers
+    finally:
+        scheduler.cleanup()
