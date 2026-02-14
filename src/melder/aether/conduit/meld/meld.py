@@ -69,7 +69,7 @@ class Meld(Cleanable, IMeld):
     ) -> None:
         """
         Initialize the Meld component with references to the component store,
-        spellbook lookup maps, spell_id maps, and meld runtime caches.
+        spellbook lookup maps, spell_id maps, and creation-context caches.
 
         Args:
             creations:

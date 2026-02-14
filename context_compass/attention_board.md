@@ -21,15 +21,33 @@ Attention details rule
 | optimize conjure paths | in_progress | codex | none | confirm acceptance for `TASK-2026-02-14-conjure-phase-unit-allocation-fastpath`, then execute `TASK-2026-02-14-conjure-activation-and-validation-scan-fastpath` | `context_compass/stories/2026-02-13_optimize_conjure_paths_story.md` | 2026-02-14 | REQUIRED |
 | optimize meld paths | in_progress | codex | none | review/confirm `TASK-2026-02-13-meld-dynamic-gate-fastdoor` acceptance, then close/move as directed | `context_compass/stories/2026-02-13_optimize_meld_paths_story.md` | 2026-02-14 | REQUIRED |
 | optimize spellcrafter phases | in_progress | codex | none | rank-3 closed; review rank-1/rank-2 closure direction while continuing next phase discovery | `context_compass/stories/2026-02-13_optimize_spellcrafter_phases_story.md` | 2026-02-14 | REQUIRED |
-| optimize creation context codegen | in_progress | codex | none | discovery complete; review acceptance and start rank-1 override-shape preprocessing task | `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md` | 2026-02-14 | REQUIRED |
+| optimize creation context codegen | in_progress | codex | none | rank-3 complete/in review; walk through full story outcomes and request closure acceptance | `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md` | 2026-02-14 | REQUIRED |
 | optimize phase12 codegen | ready | codex | none | run discovery task and produce hotspot-ranked candidates | `context_compass/stories/2026-02-13_optimize_phase12_codegen_story.md` | 2026-02-13 | REQUIRED |
 
 ## Active Attention Details
+- TYPE: MEASURE
+- CLAIM: CreationContext rank-3 prefilter caching is implemented and validated: miss-path compile now reuses step-target/path-metadata caches via internal helper plumbing, focused unit suites passed (`17` + `40` tests), and harness reruns remained warm-neutral/slightly-better (`10.31` / `10.631` ms) with stable warm profile shape.
+- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_creation_context_override_prefilter_caching_task.md:70-127`, `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md:47-89`, `context_compass/artifacts/2026-02-14_creation_context_override_prefilter_caching_creation_context_unit_tests.txt:12-12`, `context_compass/artifacts/2026-02-14_creation_context_override_prefilter_caching_phase12_overrides_unit_tests.txt:12-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_creation_context_override_prefilter_caching_output.txt:7-38`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_creation_context_override_prefilter_caching_output_run2.txt:7-38`
+- REREAD: REQUIRED
+- NEXT: Walk through rank-1/rank-2/rank-3 outcomes and request user acceptance for story closure.
+
+- TYPE: MEASURE
+- CLAIM: CreationContext rank-2 miss-compile reuse is implemented and validated: miss-path specialization now reuses step-count source/code-object artifacts, focused unit suites passed (`16` + `38` tests), and harness reruns remained warm-neutral (`10.793` / `10.621` ms with unchanged warm profile shape).
+- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_creation_context_override_miss_compile_reuse_task.md:70-118`, `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md:47-83`, `context_compass/artifacts/2026-02-14_creation_context_override_miss_compile_reuse_creation_context_unit_tests.txt:12-12`, `context_compass/artifacts/2026-02-14_creation_context_override_miss_compile_reuse_phase12_overrides_unit_tests.txt:12-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_creation_context_override_miss_compile_reuse_output.txt:7-38`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_creation_context_override_miss_compile_reuse_output_run2.txt:7-38`
+- REREAD: REQUIRED
+- NEXT: Request user acceptance for rank-2 keep-vs-iterate, then start rank-3 (`TASK-2026-02-14-optimize-creation-context-override-prefilter-caching`).
+
+- TYPE: MEASURE
+- CLAIM: CreationContext rank-1 override-shape preprocessing task is implemented and validated, and active-surface `meld_runtime` terminology has been normalized to `CreationContext`; focused regression suites passed (`31`, `1`, and `2` tests).
+- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_creation_context_override_shape_preprocessing_task.md:82-109`, `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md:46-77`, `context_compass/artifacts/2026-02-14_meld_runtime_rename_conduit_facade_tests.txt:12-12`, `context_compass/artifacts/2026-02-14_meld_runtime_rename_test_meld_2_targeted.txt:12-12`, `context_compass/artifacts/2026-02-14_meld_runtime_rename_test_meld_cleanup_targeted.txt:12-12`
+- REREAD: REQUIRED
+- NEXT: Request user acceptance for rank-1 keep-vs-iterate, then start rank-2 (`TASK-2026-02-14-optimize-creation-context-override-miss-compile-reuse`).
+
 - TYPE: DECISION
 - CLAIM: CreationContext discovery is complete and translated into three ranked execution tasks: (1) override shape preprocessing, (2) override miss compile reuse, (3) override prefilter caching.
 - EVIDENCE: `context_compass/tasks/2026-02-13_discovery_creation_context_codegen_task.md:25-97`, `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md:44-109`, `context_compass/tasks/2026-02-14_optimize_creation_context_override_shape_preprocessing_task.md:1-63`, `context_compass/tasks/2026-02-14_optimize_creation_context_override_miss_compile_reuse_task.md:1-64`, `context_compass/tasks/2026-02-14_optimize_creation_context_override_prefilter_caching_task.md:1-62`
 - REREAD: REQUIRED
-- NEXT: Request user acceptance for discovery closure, then execute rank-1 task (`TASK-2026-02-14-optimize-creation-context-override-shape-preprocessing`).
+- NEXT: Discovery accepted and rank-1 executed; use newest rank-1 measure note above to route keep-vs-iterate and rank-2 start.
 
 - TYPE: MEASURE
 - CLAIM: SpellCrafter rank-3 row-builder contract-fastpath task is implemented and validated with two harness reruns; warm `group_8_11_total_ms` measured `11.047` then `10.266`, and warm cProfile sample stabilized at `0.034s` with `122060` calls versus pre-rank3 rank-2 samples at `0.036s` with `123618` calls.

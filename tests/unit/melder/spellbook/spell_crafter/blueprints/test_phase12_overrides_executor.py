@@ -2,7 +2,7 @@
 
 import threading
 from types import SimpleNamespace
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import pytest
 
@@ -10,6 +10,8 @@ import melder.spellbook.spell_crafter.blueprints.phase12_overrides_executor as p
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.blueprints.execution_plan import ExecutionPlanTargetKind
 from melder.spellbook.spell_crafter.blueprints.phase12_overrides_executor import (
+    compile_phase12_overrides_executor_code_object,
+    compile_phase12_overrides_executor_from_code_object,
     compile_phase12_overrides_executor,
     compile_phase12_overrides_executor_from_source,
     emit_phase12_overrides_executor_source,
@@ -294,6 +296,43 @@ def test_compile_phase12_overrides_executor_from_source_supports_schema_rows_exe
     source = emit_phase12_overrides_executor_source(step_count=1)
     executor = compile_phase12_overrides_executor_from_source(
         source=source,
+        execution_plan=None,
+        plan_rows=(_make_plan_row("root"),),
+        root_spell_id="root",
+        spell_lookup={"root": spell},
+        override_targets_by_spell_id={},
+        any_overrides_present=False,
+        path_registry=None,
+    )
+    assert executor.__code__.co_filename == "<melder_phase12_overrides_executor>"
+    assert "_resolve_step_instance_with_overrides" not in executor.__code__.co_names
+
+    context = SimpleNamespace(
+        caller_creations=SimpleNamespace(_lock=threading.RLock()),
+        caller_creations_lock_held=False,
+    )
+    result = executor(
+        context.caller_creations,
+        {},
+        None,
+        caller_creations_lock_held=context.caller_creations_lock_held,
+    )
+    assert result == "value:root"
+
+
+def test_compile_phase12_overrides_executor_code_object_rejects_empty_source() -> None:
+    """Code-object helper requires non-empty emitted source."""
+    with pytest.raises(ValueError, match="source must be a non-empty string"):
+        compile_phase12_overrides_executor_code_object(source="")
+
+
+def test_compile_phase12_overrides_executor_from_code_object_supports_schema_rows_execution() -> None:
+    """Code-object compile path emits a callable executor that executes."""
+    spell = _make_spell("root")
+    source = emit_phase12_overrides_executor_source(step_count=1)
+    code_object = compile_phase12_overrides_executor_code_object(source=source)
+    executor = compile_phase12_overrides_executor_from_code_object(
+        code_object=code_object,
         execution_plan=None,
         plan_rows=(_make_plan_row("root"),),
         root_spell_id="root",
@@ -644,6 +683,91 @@ def test_build_step_override_targets_caches_path_metadata_across_steps() -> None
     assert step_targets[1] == (socket_keep,)
     assert path_registry.parent_calls == 2
     assert path_registry.depth_calls == 2
+
+
+def test_build_step_override_targets_reuses_external_path_metadata_cache_across_calls() -> None:
+    """Shared external path metadata cache prevents repeated registry lookups across calls."""
+    socket_keep = _SocketRef("dep", "value", 101, "normal")
+    socket_drop = _SocketRef("dep", "value", 202, "normal")
+    path_registry = _TrackingPathRegistry(
+        parent_map={101: 7, 202: 5},
+        depth_map={101: 2, 202: 2},
+    )
+    steps = (
+        SimpleNamespace(
+            spell=_make_spell("dep"),
+            shared_instance=False,
+            override_match_prefix=7,
+            override_match_prefix_len=1,
+        ),
+    )
+    path_metadata_cache: Dict[Any, Tuple[Any, Any]] = {}
+
+    first_targets = phase12_module._build_step_override_targets(
+        steps=steps,
+        override_targets_by_spell_id={"dep": (socket_keep, socket_drop)},
+        path_registry=path_registry,
+        prefilter_path_metadata_cache=path_metadata_cache,
+    )
+    parent_calls_after_first = path_registry.parent_calls
+    depth_calls_after_first = path_registry.depth_calls
+    second_targets = phase12_module._build_step_override_targets(
+        steps=steps,
+        override_targets_by_spell_id={"dep": (socket_keep, socket_drop)},
+        path_registry=path_registry,
+        prefilter_path_metadata_cache=path_metadata_cache,
+    )
+
+    assert first_targets == second_targets
+    assert path_registry.parent_calls == parent_calls_after_first
+    assert path_registry.depth_calls == depth_calls_after_first
+
+
+def test_build_step_override_targets_reuses_prefilter_step_target_cache() -> None:
+    """Prefilter step-target cache bypasses repeat filtering work for same cache key."""
+    socket_keep = _SocketRef("dep", "value", 101, "normal")
+    socket_drop = _SocketRef("dep", "value", 202, "normal")
+    path_registry = _TrackingPathRegistry(
+        parent_map={101: 7, 202: 5},
+        depth_map={101: 2, 202: 2},
+    )
+    steps = (
+        SimpleNamespace(
+            spell=_make_spell("dep"),
+            shared_instance=False,
+            override_match_prefix=7,
+            override_match_prefix_len=1,
+        ),
+    )
+    cache_key = ("plan-signature", (("dep", 101, "value", "normal"),))
+    step_targets_cache: Dict[Tuple[Any, ...], Tuple[Tuple[Any, ...], ...]] = {}
+    path_metadata_cache: Dict[Any, Tuple[Any, Any]] = {}
+
+    first_targets = phase12_module._build_step_override_targets(
+        steps=steps,
+        override_targets_by_spell_id={"dep": (socket_keep, socket_drop)},
+        path_registry=path_registry,
+        prefilter_step_targets_cache=step_targets_cache,
+        prefilter_cache_key=cache_key,
+        prefilter_path_metadata_cache=path_metadata_cache,
+    )
+    parent_calls_after_first = path_registry.parent_calls
+    depth_calls_after_first = path_registry.depth_calls
+    path_registry.raise_on_access = True
+    second_targets = phase12_module._build_step_override_targets(
+        steps=steps,
+        override_targets_by_spell_id={"dep": (socket_keep, socket_drop)},
+        path_registry=path_registry,
+        prefilter_step_targets_cache=step_targets_cache,
+        prefilter_cache_key=cache_key,
+        prefilter_path_metadata_cache=path_metadata_cache,
+    )
+
+    assert first_targets == ((socket_keep,),)
+    assert second_targets == first_targets
+    assert path_registry.parent_calls == parent_calls_after_first
+    assert path_registry.depth_calls == depth_calls_after_first
+    assert step_targets_cache[cache_key] == first_targets
 
 
 def test_compile_phase12_overrides_executor_non_shared_path_filtering_is_compile_time_only() -> None:

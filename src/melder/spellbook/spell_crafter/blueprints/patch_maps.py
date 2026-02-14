@@ -590,7 +590,7 @@ class PatchMapBuilder(object):
 
     Purpose:
         Convert a Phase 5 RootResolutionBlueprint into override and mutation
-        patch maps used by the meld runtime.
+        patch maps used by CreationContext execution.
 
     Contract:
         - Does not mutate the provided blueprint.

@@ -1142,7 +1142,7 @@ class Conduit(Cleanable, IConduit):
                 (unknown hook names, non-callables, etc.).
         Contract:
             - Preserves the current creations manager during lesser -> normal upgrade.
-            - Rewires meld runtime to use the current creations manager.
+            - Rewires Meld/CreationContext execution to use the current creations manager.
             - Seeds per-conduit resolution state from the prior root conduit when available.
             - Rebinds lineage gates to the frame DevOps CreationGateController.
         """
@@ -2342,7 +2342,7 @@ class Conduit(Cleanable, IConduit):
         """
         self.check_cleaned()
 
-        meld_runtime = self._meld
+        meld_component = self._meld
 
         if self.__dynamic_environment__:
             creation_gate = self._creation_gate
@@ -2358,7 +2358,7 @@ class Conduit(Cleanable, IConduit):
             try:
                 # Track active melds for shutdown/drain semantics.
                 creation_gate.register_ticket()
-                return meld_runtime.meld(
+                return meld_component.meld(
                     spell_name=spell_name,
                     spell=spell,
                     spellframe=spellframe,
@@ -2368,7 +2368,7 @@ class Conduit(Cleanable, IConduit):
             finally:
                 creation_gate.unregister_ticket()
 
-        return meld_runtime.meld(
+        return meld_component.meld(
             spell_name=spell_name,
             spell=spell,
             spellframe=spellframe,

@@ -187,7 +187,7 @@ Implementation update:
 - `TASK-2026-02-13-meld-override-shape-hotpath` now uses shape-first
   specialization cache lookup in `CreationContext._execute_with_overrides`,
   with grouped target collection deferred to cache misses.
-- Tests added/updated in meld-runtime to assert shape-helper parity and cache-hit
+- Tests added/updated in CreationContext coverage to assert shape-helper parity and cache-hit
   bypass behavior; override integration and meld-engine suites pass.
 Next step:
 - Confirm acceptance for `TASK-2026-02-13-meld-dynamic-gate-fastdoor`, then close/move story if no further meld tasks remain.

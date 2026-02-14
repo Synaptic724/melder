@@ -70,6 +70,7 @@ def compile_phase12_overrides_executor(
     """
     compiled_executor, _ = _compile_phase12_overrides_executor_core(
         source=None,
+        code_object=None,
         execution_plan=execution_plan,
         override_targets_by_spell_id=override_targets_by_spell_id,
         any_overrides_present=any_overrides_present,
@@ -101,6 +102,7 @@ def compile_phase12_overrides_executor_from_source(
     """
     compiled_executor, _ = _compile_phase12_overrides_executor_core(
         source=source,
+        code_object=None,
         execution_plan=execution_plan,
         override_targets_by_spell_id=override_targets_by_spell_id,
         any_overrides_present=any_overrides_present,
@@ -108,6 +110,103 @@ def compile_phase12_overrides_executor_from_source(
         plan_rows=plan_rows,
         root_spell_id=root_spell_id,
         spell_lookup=spell_lookup,
+    )
+    return compiled_executor
+
+
+def compile_phase12_overrides_executor_code_object(
+        *,
+        source: str,
+) -> Any:
+    """
+    Compile emitted override specialization source into a reusable code object.
+
+    Contract:
+        - Source must be a non-empty string.
+        - Returned code object is safe to execute against different namespaces.
+        - Uses the same synthetic filename as direct override compilation.
+    """
+    if not isinstance(source, str) or not source:
+        raise ValueError("source must be a non-empty string.")
+    try:
+        return compile(
+            source,
+            "<melder_phase12_overrides_executor>",
+            "exec",
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            "Phase 12 overrides executor code generation failed."
+        ) from exc
+
+
+def compile_phase12_overrides_executor_from_code_object(
+        *,
+        code_object: Any,
+        execution_plan: Optional[Any],
+        override_targets_by_spell_id: Dict[str, Tuple[Any, ...]],
+        any_overrides_present: bool,
+        path_registry: Optional[Any],
+        plan_rows: Optional[Sequence[Dict[str, Any]]] = None,
+        root_spell_id: Optional[str] = None,
+        spell_lookup: Optional[Dict[str, Any]] = None,
+) -> Callable[..., Any]:
+    """
+    Compile a specialization executor from a previously compiled code object.
+
+    Contract:
+        - Reuses schema/plan validation and namespace binding from core compile flow.
+        - Executes `code_object` verbatim for specialization binding.
+    """
+    return _compile_phase12_overrides_executor_from_code_object_with_prefilter_cache(
+        code_object=code_object,
+        execution_plan=execution_plan,
+        override_targets_by_spell_id=override_targets_by_spell_id,
+        any_overrides_present=any_overrides_present,
+        path_registry=path_registry,
+        plan_rows=plan_rows,
+        root_spell_id=root_spell_id,
+        spell_lookup=spell_lookup,
+    )
+
+
+def _compile_phase12_overrides_executor_from_code_object_with_prefilter_cache(
+        *,
+        code_object: Any,
+        execution_plan: Optional[Any],
+        override_targets_by_spell_id: Dict[str, Tuple[Any, ...]],
+        any_overrides_present: bool,
+        path_registry: Optional[Any],
+        plan_rows: Optional[Sequence[Dict[str, Any]]] = None,
+        root_spell_id: Optional[str] = None,
+        spell_lookup: Optional[Dict[str, Any]] = None,
+        prefilter_step_targets_cache: Optional[Dict[Tuple[Any, ...], Tuple[Tuple[Any, ...], ...]]] = None,
+        prefilter_cache_key: Optional[Tuple[Any, ...]] = None,
+        prefilter_path_metadata_cache: Optional[Dict[Any, Tuple[Any, Any]]] = None,
+) -> Callable[..., Any]:
+    """
+    Internal code-object compile path with optional prefilter cache injection.
+
+    Contract:
+        - Reuses schema/plan validation and namespace binding from core compile flow.
+        - Executes `code_object` verbatim for specialization binding.
+        - Optional prefilter caches allow step-target reuse across compiles.
+    """
+    if code_object is None:
+        raise ValueError("code_object must not be None.")
+    compiled_executor, _ = _compile_phase12_overrides_executor_core(
+        source=None,
+        code_object=code_object,
+        execution_plan=execution_plan,
+        override_targets_by_spell_id=override_targets_by_spell_id,
+        any_overrides_present=any_overrides_present,
+        path_registry=path_registry,
+        plan_rows=plan_rows,
+        root_spell_id=root_spell_id,
+        spell_lookup=spell_lookup,
+        prefilter_step_targets_cache=prefilter_step_targets_cache,
+        prefilter_cache_key=prefilter_cache_key,
+        prefilter_path_metadata_cache=prefilter_path_metadata_cache,
     )
     return compiled_executor
 
@@ -131,6 +230,7 @@ def emit_phase12_overrides_executor_source(
 def _compile_phase12_overrides_executor_core(
         *,
         source: Optional[str],
+        code_object: Optional[Any],
         execution_plan: Optional[Any],
         override_targets_by_spell_id: Dict[str, Tuple[Any, ...]],
         any_overrides_present: bool,
@@ -138,7 +238,10 @@ def _compile_phase12_overrides_executor_core(
         plan_rows: Optional[Sequence[Dict[str, Any]]],
         root_spell_id: Optional[str],
         spell_lookup: Optional[Dict[str, Any]],
-) -> Tuple[Callable[..., Any], str]:
+        prefilter_step_targets_cache: Optional[Dict[Tuple[Any, ...], Tuple[Tuple[Any, ...], ...]]] = None,
+        prefilter_cache_key: Optional[Tuple[Any, ...]] = None,
+        prefilter_path_metadata_cache: Optional[Dict[Any, Tuple[Any, Any]]] = None,
+) -> Tuple[Callable[..., Any], Optional[str]]:
     """
     Shared compile flow for fresh and source-restored override executors.
 
@@ -177,15 +280,24 @@ def _compile_phase12_overrides_executor_core(
         steps=steps,
         override_targets_by_spell_id=override_targets_by_spell_id,
         path_registry=path_registry,
+        prefilter_step_targets_cache=prefilter_step_targets_cache,
+        prefilter_cache_key=prefilter_cache_key,
+        prefilter_path_metadata_cache=prefilter_path_metadata_cache,
     )
 
     source_to_compile = source
-    if source_to_compile is None:
+    if source_to_compile is not None and (
+            not isinstance(source_to_compile, str) or not source_to_compile
+    ):
+        raise ValueError("source must be a non-empty string.")
+    if source_to_compile is None and code_object is None:
         source_to_compile = emit_phase12_overrides_executor_source(
             step_count=len(steps),
         )
-    elif not isinstance(source_to_compile, str) or not source_to_compile:
-        raise ValueError("source must be a non-empty string.")
+    if code_object is None:
+        code_object = compile_phase12_overrides_executor_code_object(
+            source=source_to_compile,
+        )
 
     namespace = _build_phase12_overrides_executor_namespace(
         steps=steps,
@@ -197,7 +309,7 @@ def _compile_phase12_overrides_executor_core(
     local_namespace: Dict[str, Any] = {}
     try:
         exec(
-            compile(source_to_compile, "<melder_phase12_overrides_executor>", "exec"),
+            code_object,
             namespace,
             local_namespace,
         )
@@ -670,6 +782,9 @@ def _build_step_override_targets(
         steps: Tuple[Any, ...],
         override_targets_by_spell_id: Dict[str, Tuple[Any, ...]],
         path_registry: Optional[Any],
+        prefilter_step_targets_cache: Optional[Dict[Tuple[Any, ...], Tuple[Tuple[Any, ...], ...]]] = None,
+        prefilter_cache_key: Optional[Tuple[Any, ...]] = None,
+        prefilter_path_metadata_cache: Optional[Dict[Any, Tuple[Any, Any]]] = None,
 ) -> Tuple[Tuple[Any, ...], ...]:
     """
     Build per-step override target tuples from spell-id grouped targets.
@@ -678,9 +793,20 @@ def _build_step_override_targets(
         - Preserves deterministic target order provided by the caller.
         - Returns empty tuples for steps with no targeted sockets.
         - Pre-filters non-shared step targets at compile time.
-        - Caches per-socket path metadata during compile-time prefiltering.
+        - Supports external cache injection for step-target tuples and socket path
+          metadata to reduce repeated prefilter work across compiles.
     """
-    path_metadata_cache: Dict[Any, Tuple[Any, Any]] = {}
+    if (
+            prefilter_step_targets_cache is not None
+            and prefilter_cache_key is not None
+    ):
+        cached_step_targets = prefilter_step_targets_cache.get(prefilter_cache_key)
+        if cached_step_targets is not None:
+            return cached_step_targets
+
+    path_metadata_cache = prefilter_path_metadata_cache
+    if path_metadata_cache is None:
+        path_metadata_cache = {}
 
     def _resolve_socket_path_metadata(socket_ref: Any) -> Tuple[Any, Any]:
         metadata = path_metadata_cache.get(socket_ref)
@@ -716,7 +842,13 @@ def _build_step_override_targets(
             if parent_id == match_prefix and depth == match_depth:
                 filtered_targets.append(socket_ref)
         step_targets.append(tuple(filtered_targets))
-    return tuple(step_targets)
+    built_step_targets = tuple(step_targets)
+    if (
+            prefilter_step_targets_cache is not None
+            and prefilter_cache_key is not None
+    ):
+        prefilter_step_targets_cache[prefilter_cache_key] = built_step_targets
+    return built_step_targets
 
 def _raise_override_on_existing_instance(
         *,

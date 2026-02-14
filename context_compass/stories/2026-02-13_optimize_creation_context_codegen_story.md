@@ -43,9 +43,9 @@ targeting measurable wins.
 
 ## Tasks (Implementation Checklist)
 - [x] Task: TASK-2026-02-13-discovery-creation-context-codegen - Build discovery baseline, hotspot map, and prioritized optimization candidates for CreationContext codegen. (`context_compass/tasks/2026-02-13_discovery_creation_context_codegen_task.md`)
-- [ ] Task: TASK-2026-02-14-optimize-creation-context-override-shape-preprocessing - Reduce per-call override map preprocessing before specialization-cache lookup. (`context_compass/tasks/2026-02-14_optimize_creation_context_override_shape_preprocessing_task.md`)
-- [ ] Task: TASK-2026-02-14-optimize-creation-context-override-miss-compile-reuse - Reduce override miss-path Phase12 compile overhead via safe compile-asset reuse. (`context_compass/tasks/2026-02-14_optimize_creation_context_override_miss_compile_reuse_task.md`)
-- [ ] Task: TASK-2026-02-14-optimize-creation-context-override-prefilter-caching - Reduce repeated compile-time target prefilter work for override specialization misses. (`context_compass/tasks/2026-02-14_optimize_creation_context_override_prefilter_caching_task.md`)
+- [x] Task: TASK-2026-02-14-optimize-creation-context-override-shape-preprocessing - Reduce per-call override map preprocessing before specialization-cache lookup. (`context_compass/tasks/2026-02-14_optimize_creation_context_override_shape_preprocessing_task.md`)
+- [x] Task: TASK-2026-02-14-optimize-creation-context-override-miss-compile-reuse - Reduce override miss-path Phase12 compile overhead via safe compile-asset reuse. (`context_compass/tasks/2026-02-14_optimize_creation_context_override_miss_compile_reuse_task.md`)
+- [x] Task: TASK-2026-02-14-optimize-creation-context-override-prefilter-caching - Reduce repeated compile-time target prefilter work for override specialization misses. (`context_compass/tasks/2026-02-14_optimize_creation_context_override_prefilter_caching_task.md`)
 
 ## Acceptance Criteria
 - Discovery output identifies top CreationContext codegen hotspots with evidence.
@@ -69,6 +69,33 @@ targeting measurable wins.
 - 2026-02-13: Story created from user-requested optimization epic setup.
 
 ## Notes
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Rank-3 override prefilter caching is implemented/validated: CreationContext now reuses step-target and path-metadata prefilter caches through an internal phase12 helper; focused suites passed (`17` + `40` tests) with harness warm metrics `10.31` / `10.631` and stable warm profile shape.
+  EVIDENCE: context_compass/tasks/2026-02-14_optimize_creation_context_override_prefilter_caching_task.md:70-127, context_compass/artifacts/2026-02-14_creation_context_override_prefilter_caching_creation_context_unit_tests.txt:12-12, context_compass/artifacts/2026-02-14_creation_context_override_prefilter_caching_phase12_overrides_unit_tests.txt:12-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_creation_context_override_prefilter_caching_output.txt:7-38, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_creation_context_override_prefilter_caching_output_run2.txt:7-38
+  IMPACT: Story rank-3 execution is complete and review-ready with behavior-safe prefilter caching.
+  NEXT: Walk through full story outcomes and request user acceptance for closure/move-to-completed.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Rank-2 override miss-compile reuse is implemented/validated: CreationContext now reuses step-count compiler artifacts (source + code object) with fallback parity, and focused suites passed (`16` CreationContext tests, `38` phase12 override tests) with two harness reruns showing warm-neutral profile shape.
+  EVIDENCE: context_compass/tasks/2026-02-14_optimize_creation_context_override_miss_compile_reuse_task.md:70-118, context_compass/artifacts/2026-02-14_creation_context_override_miss_compile_reuse_creation_context_unit_tests.txt:12-12, context_compass/artifacts/2026-02-14_creation_context_override_miss_compile_reuse_phase12_overrides_unit_tests.txt:12-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_creation_context_override_miss_compile_reuse_output.txt:7-38, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_creation_context_override_miss_compile_reuse_output_run2.txt:7-38
+  IMPACT: Story rank-2 execution is complete and review-ready with behavior-safe compile-asset reuse.
+  NEXT: Request user keep-vs-iterate acceptance for rank-2, then proceed to rank-3 (`TASK-2026-02-14-optimize-creation-context-override-prefilter-caching`).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Rank-1 override-shape preprocessing is implemented/validated and includes active-surface terminology cleanup (`meld_runtime` -> `CreationContext`) for live source/docs; focused regression suites passed (`31`, `1`, and `2` tests).
+  EVIDENCE: context_compass/tasks/2026-02-14_optimize_creation_context_override_shape_preprocessing_task.md:68-106, context_compass/artifacts/2026-02-14_meld_runtime_rename_conduit_facade_tests.txt:12-12, context_compass/artifacts/2026-02-14_meld_runtime_rename_test_meld_2_targeted.txt:12-12, context_compass/artifacts/2026-02-14_meld_runtime_rename_test_meld_cleanup_targeted.txt:12-12
+  IMPACT: Story rank-1 execution has completed with behavior-safe validation and naming alignment to current architecture.
+  NEXT: Request user keep-vs-iterate acceptance for rank-1, then proceed to rank-2 (`TASK-2026-02-14-optimize-creation-context-override-miss-compile-reuse`).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Discovery ranking is complete and converted into three execution tasks: shape preprocessing (rank-1), miss compile reuse (rank-2), and prefilter caching (rank-3).
@@ -126,7 +153,9 @@ targeting measurable wins.
 - [ ] Acceptance criteria confirmed by user
 
 ## Context / Handoff Summary
-Story discovery is complete and in review, with three ranked implementation
-tasks now queued. Next step is user acceptance for discovery closure and rank-1
-execution start (`TASK-2026-02-14-optimize-creation-context-override-shape-preprocessing`).
+Discovery plus rank-1/rank-2/rank-3 implementation tasks are complete and in
+review. The wave now includes shape preprocessing reduction, miss compile-asset
+reuse, and prefilter cache reuse with stable warm profile shape across harness
+reruns. Next step is user acceptance decision for story closure and move to
+completed.
 

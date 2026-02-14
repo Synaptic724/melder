@@ -39,6 +39,15 @@ duplicate override-map traversal before specialization-cache resolution.
 - `src/melder/aether/conduit/meld/creation_context/creation_context.py`
 - `tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
 - `tests/component/melder/spellbook/test_phase_component_cprofile_harness.py`
+- `src/melder/spellbook/spell_crafter/blueprints/occurrence_plan.py`
+- `src/melder/spellbook/spell_crafter/blueprints/patch_maps.py`
+- `src/melder/spellbook/spell_crafter/spell_crafter.py`
+- `src/melder/aether/conduit/conduit.py`
+- `src/melder/aether/conduit/meld/meld.py`
+- `tests/unit/melder/aether/conduit/meld/test_meld.py`
+- `context_compass/components/src_components.md`
+- `context_compass/stories/2026-02-13_optimize_meld_paths_story.md`
+- `context_compass/agent_onboarding/agent/general/policies/ctx_autonomy_policy.md`
 
 ## Validation
 - `python -m pytest -q tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py -k "override or shape or creation_context"` -> `14 passed, 3 warnings`
@@ -47,6 +56,12 @@ duplicate override-map traversal before specialization-cache resolution.
   - `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_creation_context_override_shape_preprocessing_output.txt`
 - `python -m pytest -q -s tests/component/melder/spellbook/test_phase_component_cprofile_harness.py` -> `1 passed, 3 warnings` (run2)
   - `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_creation_context_override_shape_preprocessing_output_run2.txt`
+- `python -m pytest -q tests/unit/melder/aether/conduit/test_conduit_facade.py -k meld` -> `31 passed, 3 warnings`
+  - `context_compass/artifacts/2026-02-14_meld_runtime_rename_conduit_facade_tests.txt`
+- `python -m pytest -q tests/unit/melder/aether/conduit/meld/test_meld_2.py -k legacy_runtime_helpers_removed_from_meld` -> `1 passed, 15 deselected, 3 warnings`
+  - `context_compass/artifacts/2026-02-14_meld_runtime_rename_test_meld_2_targeted.txt`
+- `python -m pytest -q tests/unit/melder/aether/conduit/meld/test_meld.py -k cleanup` -> `2 passed, 53 deselected, 3 warnings`
+  - `context_compass/artifacts/2026-02-14_meld_runtime_rename_test_meld_cleanup_targeted.txt`
 
 ## Risks / Rollback Notes
 - Risk: shape-key drift could fragment specialization cache entries.
@@ -62,6 +77,60 @@ duplicate override-map traversal before specialization-cache resolution.
 - [ ] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Post-rename targeted validation passed for conduit/meld coverage: `31 passed` (`test_conduit_facade.py -k meld`), `1 passed` (`test_meld_2.py -k legacy_runtime_helpers_removed_from_meld`), and `2 passed` (`test_meld.py -k cleanup`).
+  EVIDENCE: context_compass/artifacts/2026-02-14_meld_runtime_rename_conduit_facade_tests.txt:12-12, context_compass/artifacts/2026-02-14_meld_runtime_rename_test_meld_2_targeted.txt:12-12, context_compass/artifacts/2026-02-14_meld_runtime_rename_test_meld_cleanup_targeted.txt:12-12
+  IMPACT: Active terminology cleanup did not regress nearby meld/conduit behavior in focused suites.
+  NEXT: Keep rename edits and finalize remaining ticket/story/board sync for review.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: FACT
+  CLAIM: Active rename cleanup is implemented across current source/docs/policy surfaces, including docstrings/comments and conduit local alias naming, to align with `CreationContext` ownership.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/occurrence_plan.py:34-90, src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:593-593, src/melder/spellbook/spell_crafter/spell_crafter.py:515-1975, src/melder/aether/conduit/conduit.py:1145-2371, src/melder/aether/conduit/meld/meld.py:72-72, tests/unit/melder/aether/conduit/meld/test_meld.py:531-531, context_compass/components/src_components.md:1900-1901, context_compass/stories/2026-02-13_optimize_meld_paths_story.md:190-191, context_compass/agent_onboarding/agent/general/policies/ctx_autonomy_policy.md:103-103
+  IMPACT: Live repository terminology now reflects `Meld -> CreationContext` execution ownership instead of removed meld-runtime wording.
+  NEXT: Verify remaining references are intentional historical/legacy anchors only.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATE: 2026-02-14
+  TYPE: FACT
+  CLAIM: Remaining `MeldRuntime`/`meld_runtime` hits are intentional: historical correction logs in revalidation epics plus legacy-removal assertion names in `test_meld_2`.
+  EVIDENCE: context_compass/epics/2026-02-13_revalidate_src_architecture_document_epic.md:235-235, context_compass/epics/2026-02-13_revalidate_src_components_document_epic.md:248-252, tests/unit/melder/aether/conduit/meld/test_meld_2.py:466-467
+  IMPACT: No additional active ownership drift remains to rename without rewriting historical evidence or weakening legacy-removal checks.
+  NEXT: Present completed rename pass and ask for acceptance/next ticket direction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATE: 2026-02-14
+  TYPE: DECISION
+  CLAIM: Rename cleanup scope is limited to active/current surfaces; completed/archive records are preserved as historical evidence even when they contain `meld_runtime` wording.
+  EVIDENCE: context_compass/components/src_components.md:1900-1901, context_compass/stories/2026-02-13_optimize_meld_paths_story.md:190-191, context_compass/agent_onboarding/agent/general/policies/ctx_autonomy_policy.md:103-103, context_compass/tasks/completed/2026-02-08_meld-runtime-override-payload-micro-opts_task_completed.md:1-40
+  IMPACT: We align live documentation/code terminology to `CreationContext` without rewriting historical change logs.
+  NEXT: Apply wording/identifier updates in active files only and rerun targeted tests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATE: 2026-02-14
+  TYPE: FACT
+  CLAIM: A deeper active-surface scan shows remaining `meld runtime` terminology in current source docstrings/comments and one local alias variable, beyond the previously observed tests/components note.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/occurrence_plan.py:34-34, src/melder/spellbook/spell_crafter/blueprints/occurrence_plan.py:90-90, src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:593-593, src/melder/spellbook/spell_crafter/spell_crafter.py:515-515, src/melder/spellbook/spell_crafter/spell_crafter.py:1975-1975, src/melder/aether/conduit/conduit.py:1145-1145, src/melder/aether/conduit/conduit.py:2345-2371, src/melder/aether/conduit/meld/meld.py:72-72, tests/unit/melder/aether/conduit/meld/test_meld.py:531-531, context_compass/components/src_components.md:1900-1901
+  IMPACT: Runtime ownership wording is still inconsistent with the current `Meld -> CreationContext` model and should be normalized in active code/docs.
+  NEXT: Apply targeted wording/identifier cleanup on active files, while preserving intentional legacy-removal assertions and historical completed/archive records.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATE: 2026-02-14
+  TYPE: FACT
+  CLAIM: A targeted rename scan found remaining active `meld_runtime` wording in current docs/tests (not only historical archive/completed tickets), so we still need a focused rename pass for active surfaces.
+  EVIDENCE: tests/unit/melder/aether/conduit/meld/test_meld_2.py:466-467, tests/unit/melder/aether/conduit/meld/test_meld.py:531-531, context_compass/components/src_components.md:1900-1900, context_compass/tasks/2026-02-14_optimize_creation_context_override_shape_preprocessing_task.md:85-96
+  IMPACT: Rename request is only partially complete; leaving these active references causes terminology drift against the current `Meld -> CreationContext` runtime model.
+  NEXT: Rename active/current references to `creation_context` wording while leaving historical archive/completed artifacts intact.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: Rank-1 validation passed (`14` focused unit tests; two harness reruns passed), with warm `group_8_11_total_ms` at `10.704` and `10.934` versus prior spellcrafter anchor runs `11.047` and `10.266`; cProfile shape stayed stable (`122060` calls, `0.035s`, `_pickle.dumps=724`).
@@ -126,7 +195,9 @@ duplicate override-map traversal before specialization-cache resolution.
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary
-Implementation and validation are complete for rank-1. Unit tests passed and
-two harness reruns were captured; warm runtime movement is mixed/noisy while
-profile shape remains stable. Next step is user keep-vs-iterate acceptance.
+Rank-1 preprocessing implementation/validation remains complete, and an
+additional active-surface terminology cleanup pass is now complete for
+`meld_runtime` -> `CreationContext` wording in live source/docs/policy files.
+Focused conduit/meld tests passed after cleanup; remaining references are
+intentional historical logs or legacy-removal assertion names.
 

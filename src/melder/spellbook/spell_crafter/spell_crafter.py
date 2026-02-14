@@ -512,7 +512,7 @@ class SpellCrafter(Cleanable):
 
         Purpose:
             Expose the spell-scoped compiled executor built from Phase 11
-            semantics so meld runtime can dispatch directly without rebuilding
+            semantics so CreationContext execution can dispatch directly without rebuilding
             transient codegen structures.
         Contract:
             - Returns None when the spell has no transient-only fast path.
@@ -1972,7 +1972,7 @@ class SpellCrafter(Cleanable):
 
         Purpose:
             Consume exported Phase 11 IR and build the callable artifact used
-            by meld runtime no-overrides fast paths.
+            by CreationContext no-overrides fast paths.
         Contract:
             - Reuses existing executor when IR signature is unchanged.
             - Stores None when no compatible transient IR exists.

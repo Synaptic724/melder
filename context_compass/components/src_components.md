@@ -1897,7 +1897,7 @@ graph TD
   with the contract-based sharing behavior.
 - Reframed Melder as a Dependency Graph Runtime (DGR) and scoped DI-style
   binding/resolution as a subset capability.
-- Updated the meld runtime component sequence and source map to reflect
+- Updated the CreationContext component sequence and source map to reflect
   Phase 12 generated executors as the active codegen-only execution path.
 - Added optimization-wave notes for:
   - meld front-door spell-id cache routing,

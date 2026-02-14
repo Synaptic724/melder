@@ -100,7 +100,7 @@ Layer-specific guidance
 
 Descriptive examples (score bands)
 - File ctx example (B vs D)
-  - B (80): "Exports SpellResolver.resolve; validates inputs; raises ValueError on missing contract; depends on meld_runtime; tests in tests/unit/<path>/test_spell_resolver.py."
+  - B (80): "Exports SpellResolver.resolve; validates inputs; raises ValueError on missing contract; depends on creation_context; tests in tests/unit/<path>/test_spell_resolver.py."
   - D (45): "Handles spell logic and errors." (no symbols, no paths, no dependencies)
 - Dir ctx example (A vs C)
   - A (92): "Owns spell_crafter DAG resolution; includes __dag__.json ctx for dag.py and __resolution_frame__.json; excludes runtime orchestration."

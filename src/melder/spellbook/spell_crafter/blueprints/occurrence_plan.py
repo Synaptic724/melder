@@ -31,7 +31,7 @@ class OccurrencePlanSelection:
     Runtime-ready selection derived from a Phase 8 OccurrencePlan.
 
     Purpose:
-        Bundle the occurrence plan data needed by meld runtime execution while
+        Bundle the occurrence plan data needed by CreationContext-backed meld execution while
         keeping selection logic in the Phase 8 module.
     """
     __melder_internal__ = _mrg.sentinel
@@ -87,7 +87,7 @@ class OccurrencePlan(Cleanable):
 
     Purpose:
         Precompute the path-aware occurrence graph and instance planning that
-        the meld runtime currently builds per call, including resolved
+        the meld entry path would otherwise build per call, including resolved
         SpellContract override payloads when available.
 
     Contract:

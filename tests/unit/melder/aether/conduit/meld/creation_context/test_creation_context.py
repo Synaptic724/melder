@@ -57,6 +57,7 @@ def _make_route_config(
         *,
         plan_signature: Tuple[Any, ...],
         baseline_executor: Optional[Any] = None,
+        plan_rows: Optional[Tuple[Dict[str, Any], ...]] = None,
 ) -> OverrideRouteConfig:
     """
     Build an OverrideRouteConfig used by override-lane harness tests.
@@ -64,7 +65,7 @@ def _make_route_config(
     return OverrideRouteConfig(
         plan_signature=plan_signature,
         path_registry="registry",
-        plan_rows=({"spell_id": "s1"},),
+        plan_rows=plan_rows if plan_rows is not None else ({"spell_id": "s1"},),
         root_spell_id="s1",
         spell_lookup={"s1": object()},
         empty_shape_key=(plan_signature, (), -1),
@@ -105,6 +106,10 @@ def _make_override_harness(
         -1,
     )
     context._override_specialization_cache = {}
+    context._override_executor_source_cache_by_step_count = {}
+    context._override_executor_code_object_cache_by_step_count = {}
+    context._override_prefilter_step_targets_cache = {}
+    context._override_prefilter_path_metadata_cache = {}
     return context
 
 
@@ -257,15 +262,35 @@ def test_get_or_compile_override_executor_caches_compiled_executor(
     )
 
     compile_count = {"value": 0}
+    source_emit_count = {"value": 0}
+    code_compile_count = {"value": 0}
 
-    def _compile_phase12_overrides_executor(**kwargs: Any) -> Any:
+    def _emit_phase12_overrides_executor_source(*, step_count: int) -> str:
+        source_emit_count["value"] += 1
+        return f"source:{step_count}"
+
+    def _compile_phase12_overrides_executor_code_object(*, source: str) -> Any:
+        code_compile_count["value"] += 1
+        return f"code:{source}"
+
+    def _compile_phase12_overrides_executor_from_code_object_with_prefilter_cache_stub(**kwargs: Any) -> Any:
         compile_count["value"] += 1
         return lambda *args, **inner_kwargs: "compiled"
 
     monkeypatch.setattr(
         creation_context_module,
-        "compile_phase12_overrides_executor",
-        _compile_phase12_overrides_executor,
+        "emit_phase12_overrides_executor_source",
+        _emit_phase12_overrides_executor_source,
+    )
+    monkeypatch.setattr(
+        creation_context_module,
+        "compile_phase12_overrides_executor_code_object",
+        _compile_phase12_overrides_executor_code_object,
+    )
+    monkeypatch.setattr(
+        creation_context_module,
+        "_compile_phase12_overrides_executor_from_code_object_with_prefilter_cache",
+        _compile_phase12_overrides_executor_from_code_object_with_prefilter_cache_stub,
     )
 
     shape_key = (route_config.plan_signature, (), -1)
@@ -284,6 +309,198 @@ def test_get_or_compile_override_executor_caches_compiled_executor(
         any_overrides_present=False,
         path_registry=route_config.path_registry,
         plan_rows=route_config.plan_rows,
+        root_spell_id=route_config.root_spell_id,
+        spell_lookup=route_config.spell_lookup,
+    )
+
+    assert first is second
+    assert compile_count["value"] == 1
+    assert source_emit_count["value"] == 1
+    assert code_compile_count["value"] == 1
+
+
+def test_get_or_compile_override_executor_reuses_step_count_artifacts_across_misses(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify miss-path specializations reuse source/code artifacts for same step-count.
+    """
+    route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
+    context = _make_override_harness(
+        route_config_active=route_config,
+        route_config_no_mutation=route_config,
+        patch_map=object(),
+    )
+
+    source_emit_count = {"value": 0}
+    code_compile_count = {"value": 0}
+    specialization_compile_count = {"value": 0}
+
+    def _emit_phase12_overrides_executor_source(*, step_count: int) -> str:
+        source_emit_count["value"] += 1
+        return f"source:{step_count}"
+
+    def _compile_phase12_overrides_executor_code_object(*, source: str) -> Any:
+        code_compile_count["value"] += 1
+        return f"code:{source}"
+
+    def _compile_phase12_overrides_executor_from_code_object_with_prefilter_cache_stub(**kwargs: Any) -> Any:
+        specialization_compile_count["value"] += 1
+        return lambda *args, **inner_kwargs: "compiled"
+
+    monkeypatch.setattr(
+        creation_context_module,
+        "emit_phase12_overrides_executor_source",
+        _emit_phase12_overrides_executor_source,
+    )
+    monkeypatch.setattr(
+        creation_context_module,
+        "compile_phase12_overrides_executor_code_object",
+        _compile_phase12_overrides_executor_code_object,
+    )
+    monkeypatch.setattr(
+        creation_context_module,
+        "_compile_phase12_overrides_executor_from_code_object_with_prefilter_cache",
+        _compile_phase12_overrides_executor_from_code_object_with_prefilter_cache_stub,
+    )
+
+    shape_key_a = (route_config.plan_signature, (("s1", 7, "a", "normal"),), -1)
+    shape_key_b = (route_config.plan_signature, (("s1", 9, "b", "normal"),), -1)
+    first = context._get_or_compile_override_executor(
+        shape_key=shape_key_a,
+        override_targets_by_spell_id={},
+        any_overrides_present=True,
+        path_registry=route_config.path_registry,
+        plan_rows=route_config.plan_rows,
+        root_spell_id=route_config.root_spell_id,
+        spell_lookup=route_config.spell_lookup,
+    )
+    second = context._get_or_compile_override_executor(
+        shape_key=shape_key_b,
+        override_targets_by_spell_id={},
+        any_overrides_present=True,
+        path_registry=route_config.path_registry,
+        plan_rows=route_config.plan_rows,
+        root_spell_id=route_config.root_spell_id,
+        spell_lookup=route_config.spell_lookup,
+    )
+
+    assert callable(first)
+    assert callable(second)
+    assert source_emit_count["value"] == 1
+    assert code_compile_count["value"] == 1
+    assert specialization_compile_count["value"] == 2
+
+
+def test_get_or_compile_override_executor_passes_prefilter_cache_contract(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify schema-row compile path passes CreationContext prefilter caches/keys.
+    """
+    route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
+    context = _make_override_harness(
+        route_config_active=route_config,
+        route_config_no_mutation=route_config,
+        patch_map=object(),
+    )
+
+    compile_calls: list[dict[str, Any]] = []
+
+    def _compile_phase12_overrides_executor_from_code_object_with_prefilter_cache_stub(**kwargs: Any) -> Any:
+        compile_calls.append(kwargs)
+        return lambda *args, **inner_kwargs: "compiled"
+
+    monkeypatch.setattr(
+        creation_context_module,
+        "_compile_phase12_overrides_executor_from_code_object_with_prefilter_cache",
+        _compile_phase12_overrides_executor_from_code_object_with_prefilter_cache_stub,
+    )
+
+    prefilter_cache_key = (route_config.plan_signature, (("s1", 7, "dep", "normal"),))
+    shape_key_a = (route_config.plan_signature, (("s1", 7, "dep", "normal"),), -1)
+    shape_key_b = (route_config.plan_signature, (("s1", 7, "dep", "normal"),), 2)
+    context._get_or_compile_override_executor(
+        shape_key=shape_key_a,
+        override_targets_by_spell_id={},
+        any_overrides_present=True,
+        path_registry=route_config.path_registry,
+        plan_rows=route_config.plan_rows,
+        root_spell_id=route_config.root_spell_id,
+        spell_lookup=route_config.spell_lookup,
+        prefilter_cache_key=prefilter_cache_key,
+    )
+    context._get_or_compile_override_executor(
+        shape_key=shape_key_b,
+        override_targets_by_spell_id={},
+        any_overrides_present=True,
+        path_registry=route_config.path_registry,
+        plan_rows=route_config.plan_rows,
+        root_spell_id=route_config.root_spell_id,
+        spell_lookup=route_config.spell_lookup,
+        prefilter_cache_key=prefilter_cache_key,
+    )
+
+    assert len(compile_calls) == 2
+    first_call = compile_calls[0]
+    second_call = compile_calls[1]
+    assert first_call["prefilter_step_targets_cache"] is context._override_prefilter_step_targets_cache
+    assert first_call["prefilter_path_metadata_cache"] is context._override_prefilter_path_metadata_cache
+    assert first_call["prefilter_cache_key"] == prefilter_cache_key
+    assert second_call["prefilter_cache_key"] == prefilter_cache_key
+
+
+def test_get_or_compile_override_executor_without_plan_rows_uses_full_compiler(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify fallback compile path uses full compiler when schema rows are absent.
+    """
+    route_config = _make_route_config(
+        plan_signature=("phase11", "sig", "rows"),
+        plan_rows=(),
+    )
+    context = _make_override_harness(
+        route_config_active=route_config,
+        route_config_no_mutation=route_config,
+        patch_map=object(),
+    )
+
+    compile_count = {"value": 0}
+
+    def _compile_phase12_overrides_executor(**kwargs: Any) -> Any:
+        compile_count["value"] += 1
+        return lambda *args, **inner_kwargs: "compiled"
+
+    monkeypatch.setattr(
+        creation_context_module,
+        "compile_phase12_overrides_executor",
+        _compile_phase12_overrides_executor,
+    )
+    monkeypatch.setattr(
+        creation_context_module,
+        "_compile_phase12_overrides_executor_from_code_object_with_prefilter_cache",
+        lambda **kwargs: (_ for _ in ()).throw(
+            AssertionError("code-object path must not run when plan_rows are absent")
+        ),
+    )
+
+    shape_key = (route_config.plan_signature, (), -1)
+    first = context._get_or_compile_override_executor(
+        shape_key=shape_key,
+        override_targets_by_spell_id={},
+        any_overrides_present=False,
+        path_registry=route_config.path_registry,
+        plan_rows=None,
+        root_spell_id=route_config.root_spell_id,
+        spell_lookup=route_config.spell_lookup,
+    )
+    second = context._get_or_compile_override_executor(
+        shape_key=shape_key,
+        override_targets_by_spell_id={},
+        any_overrides_present=False,
+        path_registry=route_config.path_registry,
+        plan_rows=None,
         root_spell_id=route_config.root_spell_id,
         spell_lookup=route_config.spell_lookup,
     )
@@ -368,7 +585,7 @@ def test_execute_with_overrides_applies_payload_and_reuses_shape_cache(
         apply_calls.append((override_patch_map, dict(override_payload)))
         return override_map
 
-    def _compile_phase12_overrides_executor(**kwargs: Any) -> Any:
+    def _compile_phase12_overrides_executor_from_code_object_with_prefilter_cache_stub(**kwargs: Any) -> Any:
         compile_count["value"] += 1
 
         def _executor(
@@ -402,8 +619,8 @@ def test_execute_with_overrides_applies_payload_and_reuses_shape_cache(
     )
     monkeypatch.setattr(
         creation_context_module,
-        "compile_phase12_overrides_executor",
-        _compile_phase12_overrides_executor,
+        "_compile_phase12_overrides_executor_from_code_object_with_prefilter_cache",
+        _compile_phase12_overrides_executor_from_code_object_with_prefilter_cache_stub,
     )
 
     caller_creations = object()
@@ -540,5 +757,9 @@ def test_cleanup_clears_runtime_cache_and_route_refs() -> None:
 
     assert context.cleaned is True
     assert context._override_specialization_cache is None
+    assert context._override_executor_source_cache_by_step_count is None
+    assert context._override_executor_code_object_cache_by_step_count is None
+    assert context._override_prefilter_step_targets_cache is None
+    assert context._override_prefilter_path_metadata_cache is None
     assert route_config_no_mutation.plan_signature is None
     assert route_config_mutation.plan_signature is None

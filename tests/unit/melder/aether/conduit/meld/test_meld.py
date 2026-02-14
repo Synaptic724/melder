@@ -528,7 +528,7 @@ class _SpellSpaceStub:
 
 class _ContextStub:
     """
-    Minimal context stub for meld runtime cleanup checks.
+    Minimal context stub for creation-context cleanup checks.
     """
 
     def __init__(self) -> None:
