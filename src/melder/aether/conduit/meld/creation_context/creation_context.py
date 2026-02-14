@@ -583,9 +583,10 @@ class CreationContext(Cleanable):
         executor = override_specialization_cache.get(shape_key)
         if executor is None:
             if override_map:
-                override_targets_by_spell_id, _ = (
-                    self._collect_override_targets_and_socket_shape(
+                override_targets_by_spell_id = (
+                    self._collect_override_targets_from_socket_shape(
                         override_map=override_map,
+                        socket_shape=socket_shape,
                     )
                 )
             else:
@@ -717,6 +718,57 @@ class CreationContext(Cleanable):
             )
         socket_shape.sort()
         return tuple(socket_shape)
+
+    @staticmethod
+    def _collect_override_targets_from_socket_shape(
+            *,
+            override_map: Dict[Any, Any],
+            socket_shape: Tuple[Tuple[Any, ...], ...],
+    ) -> Dict[str, Tuple[Any, ...]]:
+        """
+        Group override targets by spell id from precomputed socket-shape rows.
+
+        Purpose:
+            Reuse the existing shape-key preprocessing output on cache-miss paths
+            so grouped-target construction avoids a second sort workflow.
+
+        Contract:
+            - `socket_shape` must be the deterministic output from
+              `_collect_override_socket_shape(override_map=...)`.
+            - Group ordering follows `socket_shape` row order.
+            - Returns an empty mapping when no override sockets are present.
+        """
+        if not socket_shape:
+            return {}
+
+        shape_row_to_socket_ref: Dict[Tuple[Any, ...], Any] = {}
+        for socket_ref in override_map:
+            shape_row_to_socket_ref[
+                (
+                    socket_ref.node_id,
+                    socket_ref.param_path_id,
+                    socket_ref.param_name,
+                    socket_ref.socket_kind.value,
+                )
+            ] = socket_ref
+
+        by_spell_id: Dict[str, list[Any]] = {}
+        current_spell_id: Optional[str] = None
+        current_bucket: Optional[list[Any]] = None
+        for shape_row in socket_shape:
+            node_id, _, _, _ = shape_row
+            socket_ref = shape_row_to_socket_ref[shape_row]
+            if node_id != current_spell_id:
+                current_spell_id = node_id
+                current_bucket = [socket_ref]
+                by_spell_id[node_id] = current_bucket
+            else:
+                current_bucket.append(socket_ref)
+
+        return {
+            spell_id: tuple(refs)
+            for spell_id, refs in by_spell_id.items()
+        }
 
     @staticmethod
     def _collect_override_targets_and_socket_shape(

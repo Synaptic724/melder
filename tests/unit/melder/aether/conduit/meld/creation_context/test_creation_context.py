@@ -205,6 +205,28 @@ def test_collect_override_socket_shape_matches_grouped_shape_output() -> None:
     assert shape_only == grouped_shape
 
 
+def test_collect_override_targets_from_socket_shape_matches_grouped_output() -> None:
+    """
+    Verify grouped-target reconstruction from socket-shape matches legacy helper.
+    """
+    socket_a = _SocketRef("s1", "a", 9, "normal")
+    socket_b = _SocketRef("s1", "b", 1, "normal")
+    socket_c = _SocketRef("s2", "z", 3, "optional")
+    override_map = {socket_c: "vc", socket_b: "vb", socket_a: "va"}
+
+    grouped_targets, grouped_shape = (
+        CreationContext._collect_override_targets_and_socket_shape(
+            override_map=override_map,
+        )
+    )
+    reconstructed_targets = CreationContext._collect_override_targets_from_socket_shape(
+        override_map=override_map,
+        socket_shape=grouped_shape,
+    )
+
+    assert reconstructed_targets == grouped_targets
+
+
 def test_build_override_shape_key_uses_precomputed_socket_shape_and_arity() -> None:
     """
     Verify shape key includes plan signature, socket shape, and arg arity.
@@ -367,6 +389,16 @@ def test_execute_with_overrides_applies_payload_and_reuses_shape_cache(
         creation_context_module,
         "apply_phase10_override_payload",
         _apply_phase10_override_payload,
+    )
+    def _unexpected_collect(**kwargs: Any) -> Any:
+        raise AssertionError(
+            "legacy grouped collector must not run in _execute_with_overrides",
+        )
+
+    monkeypatch.setattr(
+        CreationContext,
+        "_collect_override_targets_and_socket_shape",
+        staticmethod(_unexpected_collect),
     )
     monkeypatch.setattr(
         creation_context_module,
