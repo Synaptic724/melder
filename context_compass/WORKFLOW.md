@@ -31,6 +31,7 @@ Provide a consistent planning and tracking workflow that uses GitHub-style ticke
 5. Use the Ticket Microcycle continuously:
     - `Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`.
 6. For every meaningful finding, immediately append a ticket `## Notes` entry before any further investigation.
+   - Use evidence ranges (`path:start_line-end_line`) rather than single-line anchors.
 7. Update "Context / Handoff Summary" sections as work progresses.
 8. Before closing a ticket:
     - Walk through what was delivered.
@@ -125,7 +126,7 @@ Even inside tickets:
   - `DATE`
   - `TYPE` (`FACT` | `UNKNOWN` | `HYPOTHESIS` | `DECISION` | `PLAN` | `MEASURE` | `RISK`)
   - `CLAIM`
-  - `EVIDENCE` (`path:line`)
+  - `EVIDENCE` (`path:start_line-end_line`; for a single line use `start=end`)
   - `IMPACT`
   - `NEXT`
   - `REREAD` (`REQUIRED` | `HELPFUL`)

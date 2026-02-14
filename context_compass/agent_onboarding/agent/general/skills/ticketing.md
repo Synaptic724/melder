@@ -56,7 +56,7 @@ Notes format requirement
   - `DATE`
   - `TYPE` (`FACT` | `UNKNOWN` | `HYPOTHESIS` | `DECISION` | `PLAN` | `MEASURE` | `RISK`)
   - `CLAIM`
-  - `EVIDENCE` (`path:line`)
+  - `EVIDENCE` (`path:start_line-end_line`; use `start=end` for single-line evidence)
   - `IMPACT`
   - `NEXT`
   - `REREAD` (`REQUIRED` | `HELPFUL`)

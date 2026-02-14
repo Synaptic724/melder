@@ -40,7 +40,7 @@ Before compaction, review these files in order:
 - Before compaction/handoff, verify `attention_board.md` is current and matches
   active ticket status.
 - Update the `## Notes` section of all active tickets with latest findings and
-  `path:line` evidence pointers.
+  `path:start_line-end_line` evidence pointers (use `start=end` for single-line evidence).
 - Ensure each meaningful finding was written as a note before the next
   investigation tranche (no end-of-pass batching).
 - Ensure UNKNOWN-first discipline was followed (unverified claims remain

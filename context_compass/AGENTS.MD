@@ -449,7 +449,8 @@ As a ritual, after implementing a change:
 * If investigation must expand beyond the current subsystem or exceed 10 files in one pass, append a `DECISION` note and ask the user for scope confirmation before continuing.
 * Follow `SKILLS.MD` and `WORKFLOW.md` for the deep descriptive format and tracking model.
 * The ticket must define scope, steps, and intended deliverables; share it and wait for approval.
-* Maintain a `## Notes` section in active tickets and append in-flight findings with `path:line` evidence pointers as they occur, not in end-of-pass batches.
+* Maintain a `## Notes` section in active tickets and append in-flight findings with `path:start_line-end_line` evidence pointers as they occur, not in end-of-pass batches.
+* Evidence ranges in notes must include both start and end lines. If the evidence is one line, repeat it (`path:42-42`).
 * New note entries must include a compaction usefulness score (`SCORE_0_TO_10`); if score is below 8, improve the note before proceeding.
 * Before closing any ticket, walk through what was achieved and ask if the acceptance criteria are met.
 * Only after explicit confirmation, move the ticket(s) to the matching completed folder

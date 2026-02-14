@@ -8,6 +8,7 @@ Purpose
 Attention details rule
 - Capture evidence pointers while reading (do not wait for end-of-pass summaries).
 - Keep entries short using: `TYPE`, `CLAIM`, `EVIDENCE`, `REREAD`, `NEXT`.
+- Use evidence ranges in `EVIDENCE` (`path:start_line-end_line`); for single-line evidence use `start=end`.
 - Append newest entries first under the matching active work item.
 - Promote durable conclusions into the linked ticket after verification.
 
@@ -15,7 +16,7 @@ Attention details rule
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
 | context_compass artifact reference cleanup | review | codex | none | walk through cleanup outcomes and confirm acceptance for closure | `context_compass/tasks/2026-02-14_context_compass_artifact_reference_cleanup_task.md` | 2026-02-14 | REQUIRED |
-| phase testing epic | ready | codex | none | execute discovery for component cprofile harness, then baseline 1-4, 5-7, and 8-11 tracks | `context_compass/epics/2026-02-14_phase_testing_epic.md` | 2026-02-14 | REQUIRED |
+| phase testing epic | in_progress | codex | none | execute rank-2 task `TASK-2026-02-14-optimize-phase8-10-plan-row-builders` | `context_compass/epics/2026-02-14_phase_testing_epic.md` | 2026-02-14 | REQUIRED |
 | optimize melder epic | ready | codex | none | execute discovery tasks in linked stories and append implementation tasks from findings | `context_compass/epics/2026-02-13_optimize_melder_epic.md` | 2026-02-14 | REQUIRED |
 | optimize conjure paths | in_progress | codex | none | confirm acceptance for `TASK-2026-02-14-conjure-phase-unit-allocation-fastpath`, then execute `TASK-2026-02-14-conjure-activation-and-validation-scan-fastpath` | `context_compass/stories/2026-02-13_optimize_conjure_paths_story.md` | 2026-02-14 | REQUIRED |
 | optimize meld paths | in_progress | codex | none | review/confirm `TASK-2026-02-13-meld-dynamic-gate-fastdoor` acceptance, then close/move as directed | `context_compass/stories/2026-02-13_optimize_meld_paths_story.md` | 2026-02-14 | REQUIRED |
@@ -24,6 +25,66 @@ Attention details rule
 | optimize phase12 codegen | ready | codex | none | run discovery task and produce hotspot-ranked candidates | `context_compass/stories/2026-02-13_optimize_phase12_codegen_story.md` | 2026-02-13 | REQUIRED |
 
 ## Active Attention Details
+- TYPE: FACT
+- CLAIM: Rank-1 optimization task is now implemented and validated; warm 8-11 sample dropped from `34.993ms` to `27.829ms`, and warm cProfile sample dropped from `0.091s` to `0.083s`.
+- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase11_codegen_ir_capture_task.md:57-89`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:11-15`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_opt_output.txt:12-15`
+- REREAD: REQUIRED
+- NEXT: Start `TASK-2026-02-14-optimize-phase8-10-plan-row-builders`.
+
+- TYPE: FACT
+- CLAIM: Optimization backlog ranking is complete and three scoped follow-up tasks were created from measured phase-testing outputs.
+- EVIDENCE: `context_compass/tasks/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:47-82`, `context_compass/tasks/2026-02-14_optimize_phase11_codegen_ir_capture_task.md:1-12`, `context_compass/tasks/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:1-12`, `context_compass/tasks/2026-02-14_optimize_phase5_root_blueprints_hotpath_task.md:1-12`
+- REREAD: REQUIRED
+- NEXT: Start rank-1 optimization implementation task.
+
+- TYPE: FACT
+- CLAIM: Harness validation and baseline measurement execution are complete; a durable artifact now contains 1-4, 5-7 conduit/local, and 8-11 measurements plus warm 8-11 cProfile output.
+- EVIDENCE: `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:5-14`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:51-52`
+- REREAD: REQUIRED
+- NEXT: Continue `TASK-2026-02-14-discovery-phase-testing-optimization-backlog` with ranked hotspot candidates and follow-up task creation.
+
+- TYPE: FACT
+- CLAIM: Execution tasks were created for harness implementation and baseline measurement runs, providing a concrete unblock path for phase-testing ranking.
+- EVIDENCE: `context_compass/tasks/2026-02-14_implement_phase_component_cprofile_harness_task.md:1`, `context_compass/tasks/2026-02-14_execute_phase_group_baseline_measurements_task.md:1`
+- REREAD: REQUIRED
+- NEXT: Implement `tests/component/melder/spellbook/test_phase_component_cprofile_harness.py` and run it with `pytest -q -s`.
+
+- TYPE: FACT
+- CLAIM: Phase-testing optimization-backlog discovery is blocked until measured outputs are attached; readiness gate and ranking schema are documented.
+- EVIDENCE: `context_compass/tasks/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:6`, `context_compass/tasks/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:28`
+- REREAD: REQUIRED
+- NEXT: Confirm acceptance for discovery tickets, then implement/run harness baselines to produce measured artifacts.
+
+- TYPE: FACT
+- CLAIM: Phase 8-11 baseline discovery is documented and in review with per-spell chain contract, warm/cold variants, and execution-plan metric outputs.
+- EVIDENCE: `context_compass/tasks/2026-02-14_discovery_phase_group_8_11_baseline_task.md:1`, `context_compass/stories/2026-02-14_phase_group_8_11_baseline_story.md:1`
+- REREAD: REQUIRED
+- NEXT: Execute `TASK-2026-02-14-discovery-phase-testing-optimization-backlog`.
+
+- TYPE: FACT
+- CLAIM: Local 5-7 baseline discovery is documented and in review with target-scoped chain and scoped-size reporting contract.
+- EVIDENCE: `context_compass/tasks/2026-02-14_discovery_phase_group_5_7_local_baseline_task.md:1`, `context_compass/stories/2026-02-14_phase_group_5_7_local_baseline_story.md:1`
+- REREAD: REQUIRED
+- NEXT: Execute `TASK-2026-02-14-discovery-phase-group-8-11-baseline`.
+
+- TYPE: FACT
+- CLAIM: Conduit-wide 5-7 baseline discovery is documented and in review with lead-spell frame-scoped direct-call sequencing and ranking output fields.
+- EVIDENCE: `context_compass/tasks/2026-02-14_discovery_phase_group_5_7_conduit_baseline_task.md:1`, `context_compass/stories/2026-02-14_phase_group_5_7_conduit_baseline_story.md:1`
+- REREAD: REQUIRED
+- NEXT: Execute `TASK-2026-02-14-discovery-phase-group-5-7-local-baseline`.
+
+- TYPE: FACT
+- CLAIM: Phase 1-4 baseline discovery is documented and in review with full-spellbook default scope, optional single-spell diagnostic slice, and explicit warm/cold variant contract.
+- EVIDENCE: `context_compass/tasks/2026-02-14_discovery_phase_group_1_4_baseline_task.md:1`, `context_compass/stories/2026-02-14_phase_group_1_4_baseline_story.md:1`
+- REREAD: REQUIRED
+- NEXT: Execute `TASK-2026-02-14-discovery-phase-group-5-7-conduit-baseline`.
+
+- TYPE: FACT
+- CLAIM: Harness discovery contract is documented and in review: four direct-call phase groups with no scheduler path, production-order gating, and standardized profile output schema.
+- EVIDENCE: `context_compass/tasks/2026-02-14_discovery_phase_component_cprofile_harness_task.md:34`, `context_compass/stories/2026-02-14_phase_component_cprofile_harness_story.md:1`
+- REREAD: REQUIRED
+- NEXT: Confirm acceptance for `TASK-2026-02-14-discovery-phase-component-cprofile-harness`, then execute `TASK-2026-02-14-discovery-phase-group-1-4-baseline`.
+
 - TYPE: FACT
 - CLAIM: Artifact reference cleanup is implemented: legacy artifact links remapped to canonical index, placeholder files removed, and global reference scan is clean.
 - EVIDENCE: `context_compass/tasks/2026-02-14_context_compass_artifact_reference_cleanup_task.md:1`, `context_compass/artifacts/README.md:1`

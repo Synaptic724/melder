@@ -9,7 +9,7 @@ Story steps
    - Treat unknowns as UNKNOWN by default.
 2) Investigate and document
    - Investigate until one meaningful finding, then append a `## Notes` entry before more investigation.
-   - Include evidence (`path:line`) and a concrete NEXT action.
+   - Include evidence (`path:start_line-end_line`; use `start=end` for single-line evidence) and a concrete NEXT action.
 3) Implement
    - Make minimal, reviewable changes.
    - Update docstrings/comments for touched code.

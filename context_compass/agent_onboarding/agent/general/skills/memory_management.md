@@ -8,7 +8,7 @@ Policy
 - Use `attention_board.md` as routing-only state to select the active ticket.
 - Store decisions, assumptions, and handoff context in ticket sections.
 - Maintain a `## Notes` section in active tickets for in-flight findings with
-  `path:line` evidence pointers.
+  `path:start_line-end_line` evidence pointers (`start=end` if single-line).
 - Use UNKNOWN as the default claim state and promote to FACT only when evidence is attached.
 - `00_overview.md` is optional and should not replace ticket notes or board routing.
 - Avoid separate memory stores or ad-hoc JSON logs.

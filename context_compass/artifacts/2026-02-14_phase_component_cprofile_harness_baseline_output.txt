@@ -1,0 +1,52 @@
+# Phase Component CProfile Harness Baseline Output
+# Date: 2026-02-14
+# Command: python -m pytest -q -s tests/component/melder/spellbook/test_phase_component_cprofile_harness.py
+
+[PHASE_PROFILE] label=group_1_4_cold broken_spell_count=0 group_1_4_total_ms=2.716 phase_local_frame_ms=1.063 phase_requirements_ms=0.444 phase_symbolic_graph_ms=0.139 phase_validation_ms=1.07 spell_count=17 variant=cold_reset
+[PHASE_PROFILE] label=group_1_4_warm broken_spell_count=0 group_1_4_total_ms=2.21 phase_local_frame_ms=0.763 phase_requirements_ms=0.534 phase_symbolic_graph_ms=0.144 phase_validation_ms=0.77 spell_count=17 variant=warm_reuse
+[PHASE_PROFILE] label=group_5_7_conduit_cold group_5_7_total_ms=4.971 lead_spell_id=30bfcdbb970a5e0ee39cccd780187b3ce258281c936d03964f94710c316d7415 phase_change_control_ms=0.01 phase_root_blueprints_ms=4.429 phase_system_validation_ms=0.533 resolution_has_errors=False spell_count=17 variant=cold_phase5_reset
+[PHASE_PROFILE] label=group_5_7_conduit_warm group_5_7_total_ms=5.577 lead_spell_id=30bfcdbb970a5e0ee39cccd780187b3ce258281c936d03964f94710c316d7415 phase_change_control_ms=0.007 phase_root_blueprints_ms=5.095 phase_system_validation_ms=0.474 resolution_has_errors=False spell_count=17 variant=warm_phase5_reuse
+[PHASE_PROFILE] label=group_5_7_local group_5_7_local_total_ms=5.531 phase_change_control_local_ms=0.014 phase_root_blueprints_local_ms=5.049 phase_system_validation_local_ms=0.468 resolution_has_errors=False scoped_root_count=1 scoped_spell_count=17 target_spell_id=a1cf184eb1ee5123ff2acf5475e7bc926872d810050c59f1ea91c1565f693cc2
+[PHASE_PROFILE] label=group_8_11_cold execution_plan_dispatch_route=ENGINE execution_plan_max_dependency_count=2 execution_plan_max_occurrence_depth=8 execution_plan_step_count=17 execution_plan_unique_spell_count=17 group_8_11_total_ms=51.877 phase_execution_plan_ms=41.63 phase_injection_plan_ms=1.532 phase_occurrence_plan_ms=1.992 phase_patch_maps_ms=6.724 resolution_has_errors=False spell_count=17 variant=cold_plan_reset
+[PHASE_PROFILE] label=group_8_11_warm execution_plan_dispatch_route=ENGINE execution_plan_max_dependency_count=2 execution_plan_max_occurrence_depth=8 execution_plan_step_count=17 execution_plan_unique_spell_count=17 group_8_11_total_ms=34.993 phase_execution_plan_ms=9.826 phase_injection_plan_ms=7.588 phase_occurrence_plan_ms=8.735 phase_patch_maps_ms=8.844 resolution_has_errors=False spell_count=17 variant=warm_plan_reuse
+
+[PROFILE] group_8_11_warm (sort=cumtime, top=30)
+         269176 function calls in 0.091 seconds
+
+   Ordered by: cumulative time
+   List reduced from 207 to 30 due to restriction <30>
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.091    0.091 test_phase_component_cprofile_harness.py:501(<lambda>)
+        1    0.000    0.000    0.091    0.091 test_phase_component_cprofile_harness.py:372(_run_group_8_11)
+       68    0.002    0.000    0.072    0.001 spell_crafter.py:1781(_capture_phase8_11_codegen_ir)
+      204    0.001    0.000    0.029    0.000 spell_crafter.py:1717(_build_phase11_variant_ir_payload)
+       17    0.000    0.000    0.026    0.002 spell.py:1140(run_phase_execution_plan)
+       17    0.000    0.000    0.026    0.002 spell_crafter.py:3661(run_phase_execution_plan)
+       17    0.000    0.000    0.023    0.001 spell.py:1125(run_phase_patch_maps)
+       17    0.000    0.000    0.023    0.001 spell_crafter.py:3521(run_phase_patch_maps)
+       17    0.000    0.000    0.022    0.001 spell.py:1067(run_phase_occurrence_plan)
+       17    0.000    0.000    0.022    0.001 spell_crafter.py:3405(run_phase_occurrence_plan)
+       68    0.010    0.000    0.022    0.000 spell_crafter.py:1478(_build_override_target_rows)
+      476    0.002    0.000    0.021    0.000 spell_crafter.py:746(_hash_codegen_signature)
+       17    0.000    0.000    0.019    0.001 spell.py:1096(run_phase_injection_plan)
+       17    0.000    0.000    0.019    0.001 spell_crafter.py:3455(run_phase_injection_plan)
+     2448    0.016    0.000    0.016    0.000 {built-in method builtins.repr}
+     1944    0.001    0.000    0.016    0.000 spell_crafter.py:1751(<genexpr>)
+     1740    0.011    0.000    0.016    0.000 spell_crafter.py:1652(_build_phase11_step_ir_row)
+       51    0.000    0.000    0.008    0.000 spell_crafter.py:3720(_build_execution_plan_variant)
+       51    0.003    0.000    0.008    0.000 execution_plan.py:1171(build)
+     6232    0.003    0.000    0.005    0.000 {method 'sort' of 'list' objects}
+    19716    0.003    0.000    0.004    0.000 enum.py:199(__get__)
+       17    0.001    0.000    0.004    0.000 patch_maps.py:634(build_override_patch_map)
+       17    0.000    0.000    0.004    0.000 occurrence_plan.py:413(build)
+     5127    0.003    0.000    0.004    0.000 {built-in method builtins.sorted}
+    41343    0.004    0.000    0.004    0.000 {method 'append' of 'list' objects}
+       68    0.002    0.000    0.003    0.000 spell_crafter.py:1366(_build_injection_instance_rows)
+     1498    0.000    0.000    0.003    0.000 dag_index.py:178(format_path)
+     1498    0.002    0.000    0.003    0.000 dag_index.py:154(materialize_path)
+       68    0.001    0.000    0.002    0.000 spell_crafter.py:1177(_build_occurrence_graph_rows)
+     4896    0.002    0.000    0.002    0.000 {method 'update' of '_hashlib.HASH' objects}
+
+pytest_result: passed
+pytest_summary: 1 passed, 3 warnings in 0.33s

@@ -3,7 +3,7 @@
 ## Metadata
 - Story ID: STORY-2026-02-14-phase-group-8-11-baseline
 - Epic: EPIC-2026-02-14-phase-testing
-- Status: ready
+- Status: in_progress
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -67,6 +67,24 @@ Direct-call baseline profiling keeps optimization work evidence-first and safe.
 
 ## Notes
 - DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: 8-11 baseline now has measured cold/warm totals plus warm cProfile hotspots dominated by IR capture and phase11 payload-build paths.
+  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:10-14, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:20-33
+  IMPACT: Story now has both aggregate and function-level evidence for plan-phase optimization ranking.
+  NEXT: Convert hotspot signals into prioritized backlog candidates.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: DECISION
+  CLAIM: 8-11 discovery is complete with per-spell chain contract, warm/cold plan variants, and execution-plan-aware output schema.
+  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_group_8_11_baseline_task.md:34
+  IMPACT: Story is ready for implementation after discovery acceptance.
+  NEXT: Move 8-11 discovery task to review and prepare optimization backlog synthesis.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Conduit plan-phase registration is an explicit 8-11 chain (occurrence, injection, patch maps, execution plan).
   EVIDENCE: src/melder/spellbook/spellbook_creation_system.py:1111, src/melder/spellbook/spellbook_creation_system.py:1121, src/melder/spellbook/spell.py:1067, src/melder/spellbook/spell.py:1140
@@ -78,5 +96,6 @@ Direct-call baseline profiling keeps optimization work evidence-first and safe.
 - [ ] Acceptance criteria confirmed by user
 
 ## Context / Handoff Summary
-Story is ready with one discovery task to lock direct-call baseline behavior for
-phases 8-11 and define stable output for optimization follow-up.
+Discovery for 8-11 baseline is documented in the linked task with sequence,
+variant, and output contracts. Next action is acceptance for task closeout and
+phase-testing optimization backlog synthesis.

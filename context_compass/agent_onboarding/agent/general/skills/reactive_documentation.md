@@ -36,7 +36,7 @@ Reactive capture protocol (mandatory)
 2) Record one broad claim line:
    - 1-2 sentences, general and scannable.
 3) Attach evidence pointers:
-   - `path/to/file.py:line` (preferred), plus symbol when useful.
+   - `path/to/file.py:start_line-end_line` (preferred), plus symbol when useful.
 4) Mark re-read priority:
    - `REQUIRED`: must reopen on next session.
    - `HELPFUL`: context only.
@@ -48,14 +48,14 @@ Reactive capture protocol (mandatory)
 Entry template
 - `TYPE`: FACT | UNKNOWN | HYPOTHESIS | DECISION | PLAN | MEASURE | RISK
 - `CLAIM`: <broad finding>
-- `EVIDENCE`: <path:line>, <path:line>
+- `EVIDENCE`: <path:start_line-end_line>, <path:start_line-end_line>
 - `REREAD`: REQUIRED | HELPFUL
 - `SCORE_0_TO_10`: <0-10>
 - `NEXT`: <single concrete step>
 
 Quality bar
 - Prefer targeted claims over narrative replay.
-- Every durable claim needs `file:line` evidence.
+- Every durable claim needs `file:start_line-end_line` evidence.
 - No evidence means mark it `UNKNOWN`.
 - Keep entries append-only when possible.
 

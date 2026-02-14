@@ -16,7 +16,7 @@ Scope budgeting protocol (mandatory)
 2) Investigate until one meaningful finding is identified.
 3) Immediately append a `## Notes` entry in the active ticket.
 4) Do not continue investigation until the note has:
-   - evidence (`path:line`),
+   - evidence (`path:start_line-end_line`),
    - impact,
    - concrete next step.
 5) Repeat the loop for each additional meaningful finding.
@@ -29,7 +29,7 @@ Required note payload per meaningful finding
 - `DATE`
 - `TYPE` (`FACT` | `UNKNOWN` | `HYPOTHESIS` | `DECISION` | `PLAN` | `MEASURE` | `RISK`)
 - `CLAIM`
-- `EVIDENCE` (`path:line`)
+- `EVIDENCE` (`path:start_line-end_line`; use `start=end` for single-line evidence)
 - `IMPACT`
 - `NEXT`
 - `REREAD` (`REQUIRED` | `HELPFUL`)

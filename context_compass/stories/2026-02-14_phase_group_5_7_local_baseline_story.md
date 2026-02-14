@@ -3,7 +3,7 @@
 ## Metadata
 - Story ID: STORY-2026-02-14-phase-group-5-7-local-baseline
 - Epic: EPIC-2026-02-14-phase-testing
-- Status: ready
+- Status: in_progress
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -64,6 +64,24 @@ its own bounded track before optimization decisions.
 
 ## Notes
 - DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Local 5-7 baseline now has measured totals, per-phase timings, and scoped-size metrics.
+  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:9-9
+  IMPACT: Story now supports local-vs-conduit foundational cost comparisons with real data.
+  NEXT: Apply scoped-size context while ranking local 5-7 optimization leads.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: DECISION
+  CLAIM: Local 5-7 discovery is complete with explicit target-scoped direct-call chain, deterministic target policy, and scoped-size output reporting.
+  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_group_5_7_local_baseline_task.md:34
+  IMPACT: Story can proceed to implementation once discovery acceptance is confirmed.
+  NEXT: Move local 5-7 discovery task to review and continue with 8-11 discovery.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Target-local 5-7 phases are registered as single local-scope phases in current orchestration.
   EVIDENCE: src/melder/spellbook/spellbook_creation_system.py:1206, src/melder/spellbook/spellbook_creation_system.py:1231, src/melder/spellbook/spellbook_creation_system.py:1245
@@ -75,4 +93,6 @@ its own bounded track before optimization decisions.
 - [ ] Acceptance criteria confirmed by user
 
 ## Context / Handoff Summary
-Story is ready with discovery-first setup for local 5-7 component profiling.
+Discovery for local 5-7 baseline is documented in the linked task with target
+policy, scoped-work semantics, and output contracts. Next action is acceptance
+for task closeout while discovery proceeds to 8-11.

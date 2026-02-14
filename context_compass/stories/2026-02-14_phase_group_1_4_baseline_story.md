@@ -3,7 +3,7 @@
 ## Metadata
 - Story ID: STORY-2026-02-14-phase-group-1-4-baseline
 - Epic: EPIC-2026-02-14-phase-testing
-- Status: ready
+- Status: in_progress
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -63,6 +63,24 @@ high-fidelity optimization direction for conjure preparation.
 
 ## Notes
 - DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: 1-4 baseline now has measured cold/warm totals and per-phase timings from the component harness run.
+  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:5-6
+  IMPACT: Story now contains ranking-ready structural baseline data.
+  NEXT: Use measured 1-4 deltas during optimization backlog ranking.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: DECISION
+  CLAIM: 1-4 discovery contract is complete: default full-spellbook baseline, optional single-spell diagnostic slice, and explicit warm/cold variants with per-phase output fields.
+  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_group_1_4_baseline_task.md:34
+  IMPACT: Story is unblocked for implementation once discovery acceptance is confirmed.
+  NEXT: Move discovery task to review and request acceptance before implementation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
   TYPE: FACT
   CLAIM: `Spell.run_structural_phases` provides canonical direct order for phases 1-4.
   EVIDENCE: src/melder/spellbook/spell.py:1270, src/melder/spellbook/spell.py:1294
@@ -74,5 +92,6 @@ high-fidelity optimization direction for conjure preparation.
 - [ ] Acceptance criteria confirmed by user
 
 ## Context / Handoff Summary
-Story is ready with a discovery task to lock direct-call baseline behavior for
-phases 1-4 and define stable output for optimization follow-up.
+Discovery for 1-4 baseline is documented in the linked task with sequence,
+scope policy, warm/cold variants, and output fields. Next action is acceptance
+of the discovery task, then harness implementation or move to 5-7 discovery.

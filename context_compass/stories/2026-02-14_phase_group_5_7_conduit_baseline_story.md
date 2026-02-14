@@ -3,7 +3,7 @@
 ## Metadata
 - Story ID: STORY-2026-02-14-phase-group-5-7-conduit-baseline
 - Epic: EPIC-2026-02-14-phase-testing
-- Status: ready
+- Status: in_progress
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -64,6 +64,24 @@ them directly gives clean optimization signal without scheduler noise.
 
 ## Notes
 - DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Conduit-wide 5-7 baseline now has measured cold/warm totals and phase-level timing breakdowns.
+  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:7-8
+  IMPACT: Story now provides evidence-backed foundational resolution baseline data for ranking.
+  NEXT: Compare 5-7 conduit costs against local 5-7 costs in backlog ranking.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: DECISION
+  CLAIM: Conduit-wide 5-7 discovery is complete with lead-spell direct-call contract, deterministic fixture policy, and ranking output schema including conduit error-state flagging.
+  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_group_5_7_conduit_baseline_task.md:34
+  IMPACT: Story is ready for implementation after discovery acceptance.
+  NEXT: Move discovery task to review and continue with local 5-7 discovery ticket.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Conduit-wide 5-7 is run as foundational phases from SpellbookCreationSystem.
   EVIDENCE: src/melder/spellbook/spellbook_creation_system.py:1063, src/melder/spellbook/spellbook_creation_system.py:1084
@@ -75,5 +93,6 @@ them directly gives clean optimization signal without scheduler noise.
 - [ ] Acceptance criteria confirmed by user
 
 ## Context / Handoff Summary
-Story is ready with a discovery task to define and lock conduit-wide 5-7
-component profiling behavior.
+Discovery for conduit-wide 5-7 baseline is documented in the linked task with
+sequence, fixture, and output contracts. Next action is acceptance for task
+closeout while continuing discovery on the next phase track.

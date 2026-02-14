@@ -2,6 +2,7 @@ import threading
 import time
 import hashlib
 import inspect
+import pickle
 import typing
 import types
 from typing import Any, Callable, Optional, List, Dict, Tuple, Set, Union, Collection, get_args, get_origin
@@ -744,6 +745,29 @@ class SpellCrafter(Cleanable):
         return self._codegen_ir
 
     @staticmethod
+    def _serialize_codegen_signature_part(part: Any) -> bytes:
+        """
+        Serialize one signature part into deterministic bytes.
+
+        Purpose:
+            Avoid expensive mega-`repr(...)` materialization on large nested
+            IR payloads while preserving deterministic signature behavior.
+        Contract:
+            - Uses `pickle` protocol 5 for fast deterministic bytes.
+            - Falls back to `repr(...).encode(...)` for non-picklable values.
+        Args:
+            part:
+                One primitive/tuple/dict/set signature segment.
+        Returns:
+            bytes:
+                Deterministic encoded bytes for hashing.
+        """
+        try:
+            return pickle.dumps(part, protocol=5)
+        except (pickle.PickleError, TypeError, AttributeError):
+            return repr(part).encode("utf-8")
+
+    @staticmethod
     def _hash_codegen_signature(*parts: Any) -> str:
         """
         Build a deterministic signature from primitive IR parts.
@@ -763,7 +787,7 @@ class SpellCrafter(Cleanable):
         """
         digest = hashlib.sha256()
         for part in parts:
-            digest.update(repr(part).encode("utf-8"))
+            digest.update(SpellCrafter._serialize_codegen_signature_part(part))
             digest.update(b"|")
         return digest.hexdigest()
 
@@ -1748,14 +1772,18 @@ class SpellCrafter(Cleanable):
                 "steps_rows_signature": None,
             }
 
+        steps = plan.steps
         steps_rows = tuple(
             self._build_phase11_step_ir_row(step)
-            for step in plan.steps
+            for step in steps
         )
-        steps_rows_signature = self._hash_codegen_signature(steps_rows)
+        if steps_rows:
+            steps_rows_signature = self._hash_codegen_signature(*steps_rows)
+        else:
+            steps_rows_signature = self._hash_codegen_signature(steps_rows)
         step_spell_ids = tuple(
             step.spell.spell_index.current
-            for step in plan.steps
+            for step in steps
         )
         transient_schema = self._build_fast_transient_schema(plan.fast_transient_plan)
         transient_signature = self._build_fast_transient_signature(transient_schema)
@@ -1769,7 +1797,7 @@ class SpellCrafter(Cleanable):
         return {
             "plan_variant": plan.plan_variant,
             "root_spell_id": plan.root_spell_id,
-            "step_count": len(plan.steps),
+            "step_count": len(steps),
             "step_spell_ids": step_spell_ids,
             "transient_signature": transient_signature,
             "signature": signature,

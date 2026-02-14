@@ -14,7 +14,8 @@ Rules
   `stories/completed/`, `tasks/completed/`) with a short summary and date.
 - Use `attention_board.md` as canonical routing state for active work.
 - Keep a `## Notes` section in active tickets and append evidence-backed
-  findings (`path:line`) during execution as each meaningful finding occurs.
+  findings (`path:start_line-end_line`, use `start=end` for one-line evidence)
+  during execution as each meaningful finding occurs.
 - UNKNOWN is the default claim state until evidence promotes it to FACT.
 - Git commands are active-only; certification must include environment (`active` or `inactive`).
 

@@ -3,7 +3,7 @@
 ## Metadata
 - Story ID: STORY-2026-02-14-phase-component-cprofile-harness
 - Epic: EPIC-2026-02-14-phase-testing
-- Status: ready
+- Status: in_progress
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -42,6 +42,7 @@ Without this harness, phase-level timing is mixed with orchestration overhead.
 
 ## Tasks (Implementation Checklist)
 - [ ] Task: TASK-2026-02-14-discovery-phase-component-cprofile-harness - Define direct-call harness contract, fixture strategy, and toggle matrix.
+- [ ] Task: TASK-2026-02-14-implement-phase-component-cprofile-harness - Implement component harness module and profile output contract.
 
 ## Acceptance Criteria
 - Harness contract is documented and approved with explicit no-scheduler constraint.
@@ -67,6 +68,24 @@ Without this harness, phase-level timing is mixed with orchestration overhead.
 ## Notes
 - DATE: 2026-02-14
   TYPE: FACT
+  CLAIM: Harness implementation executed successfully and emitted standardized profile output for all four groups.
+  EVIDENCE: context_compass/tasks/2026-02-14_implement_phase_component_cprofile_harness_task.md:3-3, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:5-13
+  IMPACT: Story has implementation evidence and can support downstream baseline measurement/ranking tasks.
+  NEXT: Confirm acceptance for the implementation task and close this story when directed.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: DECISION
+  CLAIM: Discovery locked the harness contract to four direct-call groups (`1-4`, `5-7 conduit`, `5-7 local`, `8-11 conduit`) with no scheduler path and production-order gating.
+  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_component_cprofile_harness_task.md:34, src/melder/spellbook/spellbook_creation_system.py:748, src/melder/spellbook/spellbook_creation_system.py:753
+  IMPACT: Harness implementation can proceed with explicit scope and deterministic execution geometry.
+  NEXT: Move discovery task to review and ask for acceptance before implementing harness code.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: FACT
   CLAIM: Spell facade methods allow direct phase invocation without the scheduler.
   EVIDENCE: src/melder/spellbook/spell.py:1270, src/melder/spellbook/spell.py:1011, src/melder/spellbook/spell.py:1160
   IMPACT: Confirms component profiling can isolate phase logic directly.
@@ -77,5 +96,6 @@ Without this harness, phase-level timing is mixed with orchestration overhead.
 - [ ] Acceptance criteria confirmed by user
 
 ## Context / Handoff Summary
-Story prepared for discovery-first harness design. Next step is to define exact
-direct-call sequencing and toggle schema before implementation.
+Discovery phase is complete for harness contract design. Next action is user
+acceptance on the discovery task, then implementation of the component harness
+under this story.

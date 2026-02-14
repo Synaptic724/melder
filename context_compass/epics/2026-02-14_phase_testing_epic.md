@@ -2,7 +2,7 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-02-14-phase-testing
-- Status: ready
+- Status: in_progress
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -123,6 +123,87 @@ runtime changes.
   the phase-testing discovery plan covers all conjure phase groups.
 
 ## Notes
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Rank-1 optimization execution is validated with measured warm 8-11 improvement (`34.993ms` -> `27.829ms`) and reduced warm cProfile sample (`0.091s` -> `0.083s`).
+  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:11-15, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_opt_output.txt:12-15, context_compass/tasks/2026-02-14_optimize_phase11_codegen_ir_capture_task.md:57-89
+  IMPACT: Epic has moved from planning/ranking into verified optimization execution outcomes.
+  NEXT: Execute rank-2 task (`TASK-2026-02-14-optimize-phase8-10-plan-row-builders`).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: DECISION
+  CLAIM: Phase-testing backlog ranking is complete and produced three scoped optimization tasks (phase11 IR capture, phase8-10 row builders, phase5 root-blueprints).
+  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:47-82, context_compass/tasks/2026-02-14_optimize_phase11_codegen_ir_capture_task.md:1-12, context_compass/tasks/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:1-12, context_compass/tasks/2026-02-14_optimize_phase5_root_blueprints_hotpath_task.md:1-12
+  IMPACT: Epic has moved from discovery-only to execution-ready optimization scope.
+  NEXT: Confirm task execution order and start rank-1 optimization task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Component harness run now provides measured outputs across all planned phase groups plus a warm 8-11 cProfile sample.
+  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:5-14, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:51-52
+  IMPACT: Epic can progress from discovery contracts to evidence-backed optimization backlog ranking.
+  NEXT: Execute backlog ranking and generate scoped optimization tasks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: FACT
+  CLAIM: Optimization-backlog discovery is blocked on missing measured outputs from baseline phase tasks; readiness gate and ranking schema are documented.
+  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:6, context_compass/tasks/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:28
+  IMPACT: Epic now waits on measurement implementation/runs to transition from discovery contracts to ranked optimization task generation.
+  NEXT: Implement harness/profile runs and attach measured outputs in baseline tasks to unblock backlog ranking.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: FACT
+  CLAIM: 8-11 baseline discovery is complete and in review with explicit sequence, variant, and output contracts.
+  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_group_8_11_baseline_task.md:1, context_compass/stories/2026-02-14_phase_group_8_11_baseline_story.md:1
+  IMPACT: All planned baseline discovery tracks are now documented and review-ready under this epic.
+  NEXT: Execute `TASK-2026-02-14-discovery-phase-testing-optimization-backlog` to convert baseline contracts/results into ranked follow-up tasks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: FACT
+  CLAIM: Local 5-7 baseline discovery is complete and in review with explicit target policy and scoped-work output contract.
+  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_group_5_7_local_baseline_task.md:1, context_compass/stories/2026-02-14_phase_group_5_7_local_baseline_story.md:1
+  IMPACT: Discovery progression can move to 8-11 baseline while preserving separate conduit-vs-local 5-7 artifacts.
+  NEXT: Execute `TASK-2026-02-14-discovery-phase-group-8-11-baseline`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: FACT
+  CLAIM: Conduit-wide 5-7 baseline discovery is complete and in review with lead-spell frame-scoped execution contract and ranking output schema.
+  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_group_5_7_conduit_baseline_task.md:1, context_compass/stories/2026-02-14_phase_group_5_7_conduit_baseline_story.md:1
+  IMPACT: Discovery sequence can proceed to local 5-7 while preserving closeout-ready evidence for conduit 5-7.
+  NEXT: Execute `TASK-2026-02-14-discovery-phase-group-5-7-local-baseline`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: FACT
+  CLAIM: 1-4 baseline discovery is complete and in review, with explicit full-spellbook default scope plus warm/cold variant contract.
+  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_group_1_4_baseline_task.md:1, context_compass/stories/2026-02-14_phase_group_1_4_baseline_story.md:1
+  IMPACT: Phase-testing discovery flow can continue to conduit 5-7 baseline while awaiting acceptance for 1-4 discovery closeout.
+  NEXT: Execute `TASK-2026-02-14-discovery-phase-group-5-7-conduit-baseline`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: FACT
+  CLAIM: Harness discovery output is complete and under review, with explicit direct-call group contracts (`1-4`, `5-7 conduit`, `5-7 local`, `8-11 conduit`) and standardized profiling output schema.
+  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_component_cprofile_harness_task.md:34, context_compass/stories/2026-02-14_phase_component_cprofile_harness_story.md:1
+  IMPACT: Epic phase-discovery flow is now unblocked for ordered baseline tasks once harness discovery is accepted.
+  NEXT: Confirm acceptance for harness discovery task, then run discovery for phase group 1-4.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: There are two 5-7 families today: conduit-wide foundational phases and target-local foundational phases.

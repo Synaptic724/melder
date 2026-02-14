@@ -10,7 +10,8 @@ Core rule
 - Every active ticket (epic/story/task) must include a `## Notes` section.
 - During active execution, append notes as meaningful findings happen; do not
   wait for end-of-pass summaries.
-- Evidence pointers must include file paths and line anchors when available.
+- Evidence pointers must include file paths with explicit start/end line ranges
+  (`path:start_line-end_line`).
 - UNKNOWN is the default claim state until evidence promotes a claim to FACT.
 - Do not continue investigation to the next finding until the current finding
   is documented.
@@ -26,7 +27,7 @@ For new note entries (legacy entries may omit newer fields):
 - `DATE`: `YYYY-MM-DD`
 - `TYPE`: `FACT` | `UNKNOWN` | `HYPOTHESIS` | `DECISION` | `PLAN` | `MEASURE` | `RISK`
 - `CLAIM`: short technical finding.
-- `EVIDENCE`: one or more `path:line` pointers.
+- `EVIDENCE`: one or more `path:start_line-end_line` pointers.
 - `IMPACT`: why this matters for current work.
 - `NEXT`: one concrete next action.
 - `REREAD`: `REQUIRED` | `HELPFUL`.
@@ -36,7 +37,7 @@ Example
 - `DATE`: 2026-02-14
 - `TYPE`: FACT
 - `CLAIM`: Conjure executes three scheduler lifecycles per run.
-- `EVIDENCE`: `src/melder/spellbook/spellbook_creation_system.py:637`, `src/melder/spellbook/spellbook_creation_system.py:743`, `src/melder/spellbook/spellbook_creation_system.py:757`
+- `EVIDENCE`: `src/melder/spellbook/spellbook_creation_system.py:637-637`, `src/melder/spellbook/spellbook_creation_system.py:743-743`, `src/melder/spellbook/spellbook_creation_system.py:757-757`
 - `IMPACT`: Scheduler setup/teardown overhead compounds on startup.
 - `NEXT`: Prototype a reduced scheduler lifecycle path behind existing contracts.
 
@@ -51,6 +52,7 @@ Update triggers (mandatory)
 Quality bar
 - Keep notes append-only unless correcting a factual error.
 - Prefer high-signal claims with precise evidence over long narrative.
+- If a finding is single-line evidence, still write a range with same start/end.
 - Mark unverified items as `UNKNOWN`; never promote to fact without evidence.
 - Never store secrets in notes.
 - No implementation from `UNKNOWN` or `HYPOTHESIS` notes without evidence-backed promotion to `FACT` or `DECISION`.

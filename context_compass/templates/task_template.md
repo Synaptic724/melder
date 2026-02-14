@@ -49,7 +49,7 @@
 - DATE: YYYY-MM-DD
   TYPE: FACT | UNKNOWN | HYPOTHESIS | DECISION | PLAN | MEASURE | RISK
   CLAIM: <short finding>
-  EVIDENCE: <path:line>, <path:line>
+  EVIDENCE: <path:start_line-end_line>, <path:start_line-end_line>
   IMPACT: <why this matters>
   NEXT: <one concrete next action>
   REREAD: REQUIRED | HELPFUL

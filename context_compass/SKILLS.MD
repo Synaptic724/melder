@@ -45,7 +45,7 @@ Required elements (use the template sections):
 - Risks / Mitigations: realistic failure modes and defenses.
 - Validation Plan: how correctness will be verified.
 - Decision Log: record key decisions and rationale.
-- Notes: active findings with `path:line` evidence pointers during execution.
+- Notes: active findings with `path:start_line-end_line` evidence pointers during execution.
 - Context / Handoff Summary: current state + next steps for future context.
 
 Ticket microcycle requirement:
@@ -53,6 +53,7 @@ Ticket microcycle requirement:
   `Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`.
 - Each meaningful finding must be documented immediately before further investigation.
 - UNKNOWN is the default claim state until evidence promotes it to FACT.
+- Evidence pointers in notes must include both start and end lines (`path:start-end`); use the same value for single-line evidence (`path:77-77`).
 
 ## Task Tracking Model (Required)
 Use checkboxes and keep status in sync.
