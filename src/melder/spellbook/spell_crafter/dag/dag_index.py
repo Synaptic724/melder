@@ -33,6 +33,7 @@ class PathRegistry(Cleanable):
         "_segments",
         "_depths",
         "_child_ids",
+        "_formatted_path_by_id",
     ]
 
     def __init__(self) -> None:
@@ -42,6 +43,7 @@ class PathRegistry(Cleanable):
         self._segments: List[Optional[str]] = [None]
         self._depths: List[int] = [0]
         self._child_ids: Dict[Tuple[int, str], int] = {}
+        self._formatted_path_by_id: Dict[int, str] = {self._root_path_id: ""}
 
     def cleanup(self) -> None:
         """
@@ -58,10 +60,12 @@ class PathRegistry(Cleanable):
         self._segments.clear()
         self._depths.clear()
         self._child_ids.clear()
+        self._formatted_path_by_id.clear()
         self._parent_ids = None
         self._segments = None
         self._depths = None
         self._child_ids = None
+        self._formatted_path_by_id = None
         self._root_path_id = None
 
     @property
@@ -179,7 +183,13 @@ class PathRegistry(Cleanable):
         """
         Format a path id into the canonical 'a>b>c' string.
         """
-        return ">".join(self.materialize_path(path_id))
+        self.check_cleaned()
+        path_text = self._formatted_path_by_id.get(path_id)
+        if path_text is not None:
+            return path_text
+        path_text = ">".join(self.materialize_path(path_id))
+        self._formatted_path_by_id[path_id] = path_text
+        return path_text
 
     def clone(self) -> "PathRegistry":
         """
@@ -196,6 +206,7 @@ class PathRegistry(Cleanable):
         cloned._segments = list(self._segments)
         cloned._depths = list(self._depths)
         cloned._child_ids = dict(self._child_ids)
+        cloned._formatted_path_by_id = dict(self._formatted_path_by_id)
         return cloned
 
 

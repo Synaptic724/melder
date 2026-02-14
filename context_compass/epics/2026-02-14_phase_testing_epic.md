@@ -124,6 +124,24 @@ runtime changes.
 
 ## Notes
 - DATE: 2026-02-14
+  TYPE: DECISION
+  CLAIM: Phase-testing backlog execution is re-opened for one additional ranked follow-up task targeting phase11 variant rebuild churn (`TASK-2026-02-14-optimize-phase11-execution-plan-variant-reuse`).
+  EVIDENCE: context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:44-49, context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:71-78, context_compass/tasks/2026-02-14_optimize_phase11_execution_plan_variant_reuse_task.md:1-33, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:21-23
+  IMPACT: Epic remains in active execution mode until the new follow-up task is implemented and remeasured.
+  NEXT: Execute the new phase11 variant-reuse task and re-evaluate closure routing with fresh warm profile evidence.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Rank-2 row-builder task received a follow-up memoization pass and remains in review with measurable warm-path gains: `group_8_11_total_ms` improved `9.804 -> 9.085`, `phase_patch_maps_ms` improved `1.288 -> 0.573`, function calls dropped `120524 -> 108778`, and patch-map helper cumulative time dropped (`build_override_patch_map` `0.006 -> 0.004`, `_get_path_spec_key` `0.005 -> 0.002`).
+  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:65-72, src/melder/spellbook/spell_crafter/dag/dag_index.py:182-191, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:25-27, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:32-34
+  IMPACT: Phase-testing execution lane now has improved rank-2 hotspot metrics and is ready for acceptance/closure routing.
+  NEXT: Review rank1/rank2/rank3 outcomes with user and confirm closure direction for the backlog story tasks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: Rank-3 phase5 task is revalidated with clean reruns; focused phase5 suites passed and warm conduit 5-7 metrics remain below the pre-rank3 anchor with expected run-to-run noise.
   EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase5_root_blueprints_hotpath_task.md:59-99, context_compass/artifacts/2026-02-14_phase5_opt_builder_unit_tests_rerun_clean.txt:12-12, context_compass/artifacts/2026-02-14_phase5_opt_spell_crafter_unit_tests_rerun_clean.txt:12-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase5_opt_rerun_clean_output.txt:4-4, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase5_opt_rerun_clean_output_run2.txt:4-4, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output.txt:4-4, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run2.txt:4-4
@@ -252,6 +270,9 @@ Epic created for component-level phase profiling with explicit isolation from
 scheduler and worker orchestration overhead. Planned flow is discovery-first
 across harness design, 1-4 baseline, conduit-wide 5-7 baseline, target-local
 5-7 baseline, conduit-wide 8-11 baseline, then optimization backlog generation.
-Execution is now complete across ranked optimization follow-ups (rank1/rank2/rank3),
-with validation artifacts captured for each. Next step is user acceptance for
-closure and optional next-wave optimization targeting.
+Execution delivered validated rank1/rank2/rank3 follow-ups and then re-opened
+for one additional ranked phase11 optimization task focused on variant rebuild
+churn (`TASK-2026-02-14-optimize-phase11-execution-plan-variant-reuse`).
+Latest evidence still shows `51` warm calls each to `_build_execution_plan_variant`
+and `ExecutionPlanBuilder.build`, so next step is implementation + rerun before
+closure routing.

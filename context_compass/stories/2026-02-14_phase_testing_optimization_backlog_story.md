@@ -46,6 +46,7 @@ prioritization and reduced speculative work.
 - [x] Task: TASK-2026-02-14-optimize-phase11-codegen-ir-capture - Optimize top warm 8-11 codegen IR hotspot.
 - [x] Task: TASK-2026-02-14-optimize-phase8-10-plan-row-builders - Optimize warm plan row-builder/path-materialization hotspot.
 - [x] Task: TASK-2026-02-14-optimize-phase5-root-blueprints-hotpath - Optimize foundational conduit-wide phase5 hotspot.
+- [ ] Task: TASK-2026-02-14-optimize-phase11-execution-plan-variant-reuse - Reuse phase11 plan structure across override variants to cut repeated builder work.
 
 ## Acceptance Criteria
 - Ranked optimization backlog exists with evidence for each candidate.
@@ -68,6 +69,24 @@ prioritization and reduced speculative work.
 - 2026-02-14: Story created from EPIC-2026-02-14-phase-testing.
 
 ## Notes
+- DATE: 2026-02-14
+  TYPE: DECISION
+  CLAIM: Re-opened the story for a ranked follow-up because the latest warm 8-11 profile still shows repeated phase11 variant plan rebuilding (`_build_execution_plan_variant` + `ExecutionPlanBuilder.build`) as a top cumulative hotspot (`51` calls per warm sample).
+  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:17-23, src/melder/spellbook/spell_crafter/spell_crafter.py:3726-3743
+  IMPACT: Rank-1/2/3 wins are preserved, but one additional low-risk optimization slice remains for phase11 variant construction overhead.
+  NEXT: Execute `TASK-2026-02-14-optimize-phase11-execution-plan-variant-reuse` with behavior-parity tests and harness rerun.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Rank-2 row-builder follow-up pass is now in review with measurable warm-path gains after `PathRegistry.format_path` memoization: `group_8_11_total_ms` improved `9.804 -> 9.085`, `phase_patch_maps_ms` improved `1.288 -> 0.573`, function calls dropped `120524 -> 108778`, and patch-map helper cumulative time dropped (`build_override_patch_map` `0.006 -> 0.004`, `_get_path_spec_key` `0.005 -> 0.002`).
+  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:65-72, src/melder/spellbook/spell_crafter/dag/dag_index.py:182-191, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:25-27, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:32-34
+  IMPACT: Rank-2 now has a clear warm improvement signal and remains closure-ready pending user acceptance direction.
+  NEXT: Walk rank1/rank2/rank3 outcomes with user and confirm closure/move direction for in-review tasks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: Rank-3 phase5 revalidation is complete with clean reruns; focused unit tests passed and warm conduit 5-7 timings remain below the pre-rank3 anchor with expected run-to-run noise.
@@ -134,6 +153,8 @@ prioritization and reduced speculative work.
 - [ ] Acceptance criteria confirmed by user
 
 ## Context / Handoff Summary
-Story optimization execution is complete through rank1/rank2/rank3, with each
-task validated and currently in review. Next step is user acceptance direction
-for closure and whether an additional optimization iteration is desired.
+Story optimization execution delivered validated rank1/rank2/rank3 outcomes,
+then re-opened for one additional ranked follow-up focused on phase11 variant
+rebuild churn observed in the latest warm sample (`_build_execution_plan_variant`
+and `ExecutionPlanBuilder.build` at 51 calls each). Next step is to execute the
+new follow-up task and remeasure before closure routing.

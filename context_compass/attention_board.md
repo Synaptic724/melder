@@ -16,14 +16,44 @@ Attention details rule
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
 | context_compass artifact reference cleanup | review | codex | none | walk through cleanup outcomes and confirm acceptance for closure | `context_compass/tasks/2026-02-14_context_compass_artifact_reference_cleanup_task.md` | 2026-02-14 | REQUIRED |
-| phase testing epic | in_progress | codex | none | rank-3 closed; review rank1/rank2 closure direction and confirm next phase discovery priorities | `context_compass/epics/2026-02-14_phase_testing_epic.md` | 2026-02-14 | REQUIRED |
+| phase testing epic | in_progress | codex | none | execute phase11 variant-reuse follow-up task, then rerun harness and re-evaluate closure direction for rank backlog | `context_compass/epics/2026-02-14_phase_testing_epic.md` | 2026-02-14 | REQUIRED |
 | optimize melder epic | in_progress | codex | none | phase12 wave is closed; continue remaining active story closures and phase discovery priorities | `context_compass/epics/2026-02-13_optimize_melder_epic.md` | 2026-02-14 | REQUIRED |
 | optimize conjure paths | in_progress | codex | none | confirm acceptance for scheduler-lifecycle fastpath and remaining conjure in-review tasks, then close/move in story order | `context_compass/stories/2026-02-13_optimize_conjure_paths_story.md` | 2026-02-14 | REQUIRED |
 | optimize meld paths | in_progress | codex | none | review/confirm `TASK-2026-02-13-meld-dynamic-gate-fastdoor` acceptance, then close/move as directed | `context_compass/stories/2026-02-13_optimize_meld_paths_story.md` | 2026-02-14 | REQUIRED |
-| optimize spellcrafter phases | in_progress | codex | none | rank-3 closed; review rank-1/rank-2 closure direction while continuing next phase discovery | `context_compass/stories/2026-02-13_optimize_spellcrafter_phases_story.md` | 2026-02-14 | REQUIRED |
+| optimize spellcrafter phases | review | codex | none | rank-1/rank-2 are in review with measured gains; request closure direction | `context_compass/stories/2026-02-13_optimize_spellcrafter_phases_story.md` | 2026-02-14 | REQUIRED |
 | optimize creation context codegen | in_progress | codex | none | rank-3 complete/in review; walk through full story outcomes and request closure acceptance | `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md` | 2026-02-14 | REQUIRED |
 
 ## Active Attention Details
+- TYPE: DECISION
+- CLAIM: Phase-testing optimization backlog was re-opened for one additional ranked follow-up because the latest warm sample still shows heavy phase11 variant rebuild churn (`51` calls to `_build_execution_plan_variant` and `ExecutionPlanBuilder.build`).
+- EVIDENCE: `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:44-49`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:71-78`, `context_compass/tasks/2026-02-14_optimize_phase11_execution_plan_variant_reuse_task.md:4-11`, `context_compass/tasks/2026-02-14_optimize_phase11_execution_plan_variant_reuse_task.md:60-67`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:21-23`
+- REREAD: REQUIRED
+- NEXT: Execute `TASK-2026-02-14-optimize-phase11-execution-plan-variant-reuse` and capture post-change warm profile deltas.
+
+- TYPE: MEASURE
+- CLAIM: Phase-testing rank-2 row-builder task gained a measurable warm improvement after the `PathRegistry.format_path` memoization follow-up pass (`group_8_11_total_ms` `9.804 -> 9.085`, `phase_patch_maps_ms` `1.288 -> 0.573`, calls `120524 -> 108778`).
+- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:65-72`, `src/melder/spellbook/spell_crafter/dag/dag_index.py:182-191`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:25-27`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:32-34`
+- REREAD: REQUIRED
+- NEXT: Walk rank1/rank2/rank3 outcomes with user and confirm closure/move direction for phase-testing backlog tasks.
+
+- TYPE: MEASURE
+- CLAIM: SpellCrafter rank-2 signature-hash task moved to review after tuple-hash `steps_rows_signature` update; latest harness shows lower warm overhead and reduced signature serialization churn.
+- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:6-93`, `src/melder/spellbook/spell_crafter/spell_crafter.py:1756-1758`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt:7-38`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:7-41`
+- REREAD: REQUIRED
+- NEXT: Walk rank-1/rank-2 outcomes with user and confirm close/move direction.
+
+- TYPE: MEASURE
+- CLAIM: Conjure activation/validation scan fastpath is implemented and in review with fresh targeted spellbook coverage (`12 passed`) after removing the redundant `_resolve_conjure_policy` duplicate-id recheck.
+- EVIDENCE: `context_compass/tasks/2026-02-14_conjure_activation_and_validation_scan_fastpath_task.md:6-69`, `src/melder/spellbook/spellbook_creation_system.py:258-285`, `context_compass/artifacts/2026-02-14_conjure_activation_validation_scan_fastpath_pytests.txt:1-12`
+- REREAD: REQUIRED
+- NEXT: Confirm acceptance for activation/validation task and route move-to-completed.
+
+- TYPE: MEASURE
+- CLAIM: Conjure phase-unit-allocation fastpath is implemented and in review with fresh focused validation (`4 passed` spellbook factory suite + `10 passed` scheduler suite).
+- EVIDENCE: `context_compass/tasks/2026-02-14_conjure_phase_unit_allocation_fastpath_task.md:6-77`, `src/melder/spellbook/spellbook_creation_system.py:1560-1619`, `src/melder/spellbook/spellbook_creation_system.py:1622-1719`, `src/melder/spellbook/spellbook_creation_system.py:1761-1883`, `context_compass/artifacts/2026-02-14_conjure_phase_unit_allocation_fastpath_pytests.txt:1-12`, `context_compass/artifacts/2026-02-14_conjure_phase_unit_allocation_fastpath_phase_scheduler_pytests.txt:1-12`
+- REREAD: REQUIRED
+- NEXT: Confirm acceptance for phase-unit task and route move-to-completed.
+
 - TYPE: MEASURE
 - CLAIM: Conduit-resolution scheduler-lifecycle reduction is implemented and in review: phases 5-11 now execute under one scheduler lifecycle with foundational-error snapshot gating for plan-phase skip behavior.
 - EVIDENCE: `context_compass/tasks/2026-02-14_conjure_scheduler_lifecycle_reduction_task.md:6-10`, `src/melder/spellbook/spellbook_creation_system.py:740-759`, `src/melder/spellbook/spellbook_creation_system.py:852-933`, `context_compass/artifacts/2026-02-14_conjure_scheduler_lifecycle_single_run_fastpath_pytests.txt:1-12`

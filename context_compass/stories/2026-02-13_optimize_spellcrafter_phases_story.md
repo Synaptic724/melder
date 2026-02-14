@@ -3,7 +3,7 @@
 ## Metadata
 - Story ID: STORY-2026-02-13-optimize-spellcrafter-phases
 - Epic: EPIC-2026-02-13-optimize-melder
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-13
@@ -70,6 +70,15 @@ Discovery-first optimization gives us a stable path to reduce overhead safely.
 ## Notes
 - DATE: 2026-02-14
   TYPE: MEASURE
+  CLAIM: Rank-2 signature pipeline task moved to review after tuple-hash update for `steps_rows_signature`; latest harness shows reduced signature-path churn and improved warm profile shape (`10.833ms -> 9.804ms`, serializer calls `996 -> 612`, pickle calls `724 -> 340`).
+  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:6-93, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt:7-38, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:7-41
+  IMPACT: SpellCrafter rank-2 now has measurable warm-path gain and can be closed after user acceptance.
+  NEXT: Walk rank-1/rank-2/rank-3 outcomes with user and request closure direction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: MEASURE
   CLAIM: Rank-3 row-builder contract-fastpath task is implemented and validated across two harness reruns; warm `group_8_11_total_ms` measured `11.047` then `10.266`, and warm cProfile sample was `0.034s` with `122060` calls versus pre-rank3 rank-2 samples `0.036s` with `123618` calls.
   EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_phase8_10_codegen_row_builder_contract_fastpath_task.md:1-105, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_contract_fastpath_output.txt:7-38, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_contract_fastpath_output_run2.txt:7-38, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run6.txt:7-38, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt:7-38
   IMPACT: Ranked SpellCrafter follow-up tasks are now implemented and validated; remaining work is acceptance/closure direction, not additional unplanned implementation.
@@ -118,9 +127,9 @@ Discovery-first optimization gives us a stable path to reduce overhead safely.
 ## Context / Handoff Summary
 Story discovery is complete and in-progress execution has started with three
 ranked implementation tasks now queued. Rank-1 is implemented with strong warm
-8-11 reduction evidence. Rank-2 is now implemented with a stable final variant
-after one discarded regression attempt; measured outcome is near-neutral wall
-time with reduced pickle call volume. Rank-3 is now implemented with contract-
+8-11 reduction evidence. Rank-2 is now implemented and in review with tuple-hash
+signature updates after one discarded regression attempt; latest run shows
+measurable warm improvement and lower serializer/pickle churn. Rank-3 is now implemented with contract-
 strict row builders plus fail-fast tests and two harness reruns showing mixed
 wall-time variance (`11.047`, `10.266`) but lower warm profile call volume/time
 shape versus rank-2 (`122060` calls at `0.034s` vs `123618` at `0.036s`). Next

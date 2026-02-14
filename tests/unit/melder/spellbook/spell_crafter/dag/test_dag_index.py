@@ -33,6 +33,24 @@ def test_path_registry_materialize_variants(segments, expected):
     assert registry.materialize_path(path_id) == expected
 
 
+def test_path_registry_format_path_reuses_cached_value(monkeypatch: pytest.MonkeyPatch) -> None:
+    registry = PathRegistry()
+    path_id = _path_id(registry, ("a", "b"))
+
+    assert registry.format_path(path_id) == "a>b"
+    call_counter = {"count": 0}
+    original_materialize = PathRegistry.materialize_path
+
+    def _counting_materialize(self: PathRegistry, requested_path_id: int):
+        call_counter["count"] += 1
+        return original_materialize(self, requested_path_id)
+
+    monkeypatch.setattr(PathRegistry, "materialize_path", _counting_materialize)
+    assert registry.format_path(path_id) == "a>b"
+    assert registry.format_path(path_id) == "a>b"
+    assert call_counter["count"] == 0
+
+
 @pytest.mark.parametrize(
     "path",
     [

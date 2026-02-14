@@ -122,6 +122,24 @@ correctness while improving throughput and latency on real runtime paths.
 ## Notes
 - DATE: 2026-02-14
   TYPE: MEASURE
+  CLAIM: SpellCrafter rank-2 signature pipeline task moved to review after tuple-hash `steps_rows_signature` update; latest harness shows warm gain (`10.833ms -> 9.804ms`) and reduced signature serialization churn (`996 -> 612`, pickle `724 -> 340`).
+  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:6-93, src/melder/spellbook/spell_crafter/spell_crafter.py:1756-1758, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt:7-38, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:7-41
+  IMPACT: Epic SpellCrafter lane now has rank-1 (review), rank-2 (review), and rank-3 (done), with closure pending user acceptance direction.
+  NEXT: Walk SpellCrafter rank outcomes with user and close/move accepted tickets.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Conjure story now has all three ranked follow-up tasks implemented and in review (scheduler-lifecycle reduction, phase-unit-allocation fastpath, activation/validation scan fastpath) with fresh validation artifacts.
+  EVIDENCE: context_compass/tasks/2026-02-14_conjure_scheduler_lifecycle_reduction_task.md:6-47, context_compass/tasks/2026-02-14_conjure_phase_unit_allocation_fastpath_task.md:6-62, context_compass/tasks/2026-02-14_conjure_activation_and_validation_scan_fastpath_task.md:6-44, context_compass/artifacts/2026-02-14_conjure_scheduler_lifecycle_single_run_fastpath_pytests.txt:1-12, context_compass/artifacts/2026-02-14_conjure_phase_unit_allocation_fastpath_pytests.txt:1-12, context_compass/artifacts/2026-02-14_conjure_activation_validation_scan_fastpath_pytests.txt:1-12
+  IMPACT: Epic conjure lane is ready for user acceptance-driven closure routing.
+  NEXT: Confirm acceptance for the three conjure review tasks and move approved tickets to completed.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: MEASURE
   CLAIM: Conjure scheduler-lifecycle reduction is now implemented and in review: conduit resolution phases 5-11 run in a single scheduler lifecycle with preserved foundational-error plan gating semantics.
   EVIDENCE: context_compass/tasks/2026-02-14_conjure_scheduler_lifecycle_reduction_task.md:6-33, src/melder/spellbook/spellbook_creation_system.py:740-759, src/melder/spellbook/spellbook_creation_system.py:852-933, context_compass/artifacts/2026-02-14_conjure_scheduler_lifecycle_single_run_fastpath_pytests.txt:1-12
   IMPACT: Highest-ranked conjure hotspot has moved from discovery into validated implementation.
@@ -210,7 +228,8 @@ codegen. Meld discovery is now complete and documented with ranked hotspot
 candidates and follow-up implementation tasks in
 `context_compass/stories/2026-02-13_optimize_meld_paths_story.md`. SpellCrafter
 discovery is now complete and execution-ready with three ranked follow-up tasks
-queued. Rank-1 is now implemented and in review with strong warm 8-11 gains.
+queued. Rank-1 is implemented and in review with strong warm 8-11 gains, and
+rank-2 is implemented and in review with tuple-hash signature-path gains.
 Conjure scheduler-lifecycle reduction is now implemented and in review with
 focused fastpath regression coverage.
 Phase12 discovery is now complete and execution-ready with ranked follow-up

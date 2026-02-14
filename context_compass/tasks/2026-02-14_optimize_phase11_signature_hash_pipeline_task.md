@@ -3,7 +3,7 @@
 ## Metadata
 - Task ID: TASK-2026-02-14-optimize-phase11-signature-hash-pipeline
 - Story: STORY-2026-02-13-optimize-spellcrafter-phases
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
@@ -40,12 +40,13 @@ deterministic signatures and invalidation semantics.
 - `tests/component/melder/spellbook/test_phase_component_cprofile_harness.py`
 
 ## Validation
-- `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py -k "signature or phase11 or serialize_codegen_signature_part or hash_codegen_signature_fastpaths"` -> `28 passed, 120 deselected`; outputs:
+- `python -m pytest -q tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py -k "signature or phase11 or serialize_codegen_signature_part or hash_codegen_signature_fastpaths"` -> `28 passed, 123 deselected`; outputs:
   - `context_compass/artifacts/2026-02-14_phase11_signature_pipeline_unit_tests.txt`
   - `context_compass/artifacts/2026-02-14_phase11_signature_pipeline_unit_tests_run2.txt`
   - `context_compass/artifacts/2026-02-14_phase11_signature_pipeline_unit_tests_run3.txt`
   - `context_compass/artifacts/2026-02-14_phase11_signature_pipeline_unit_tests_run4.txt` (contains one expected-failure iteration later fixed)
   - `context_compass/artifacts/2026-02-14_phase11_signature_pipeline_unit_tests_run5.txt`
+  - `context_compass/artifacts/2026-02-14_phase11_signature_pipeline_unit_tests_run6.txt`
 - `python -m pytest -q -s tests/component/melder/spellbook/test_phase_component_cprofile_harness.py` -> `1 passed, 3 warnings`; outputs:
   - `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output.txt` (regression attempt; discarded)
   - `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run2.txt`
@@ -54,6 +55,7 @@ deterministic signatures and invalidation semantics.
   - `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run5.txt`
   - `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run6.txt`
   - `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt`
+  - `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt`
 
 ## Risks / Rollback Notes
 - Risk: signature drift causing stale or over-eager phase12 recompilation.
@@ -61,14 +63,41 @@ deterministic signatures and invalidation semantics.
 
 ## Done Checklist
 - [x] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
 - [ ] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Tuple-hash signature update for `steps_rows_signature` reduced warm signature-path churn: `_serialize_codegen_signature_part` calls dropped `996 -> 612`, `_pickle.dumps` dropped `724 -> 340`, warm total moved `10.833ms -> 9.804ms`, and cProfile sample moved `0.036s -> 0.034s`.
+  EVIDENCE: src/melder/spellbook/spell_crafter/spell_crafter.py:1756-1758, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt:7-38, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:7-41
+  IMPACT: Rank-2 now shows measurable warm-path gain instead of near-neutral drift while preserving payload schema and deterministic invalidation semantics.
+  NEXT: Hold for user acceptance and close/move if approved.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: FACT
+  CLAIM: Focused signature/phase11 unit suite still passes after tuple-hash update (`28 passed, 123 deselected`) with no schema contract changes.
+  EVIDENCE: context_compass/artifacts/2026-02-14_phase11_signature_pipeline_unit_tests_run6.txt:12-12, src/melder/spellbook/spell_crafter/spell_crafter.py:1756-1758
+  IMPACT: Confirms signature-path change is behavior-safe for covered phase11 contracts.
+  NEXT: Keep task in review pending acceptance.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: FACT
+  CLAIM: Phase11 variant signature currently hashes `steps_rows` by splatting every row (`_hash_codegen_signature(*steps_rows)`), which increases per-row serializer churn in warm runs.
+  EVIDENCE: src/melder/spellbook/spell_crafter/spell_crafter.py:1752-1759, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt:33-36
+  IMPACT: The signature path performs more `_serialize_codegen_signature_part` calls than needed for stable invalidation, keeping avoidable overhead in the rank-2 hot path.
+  NEXT: Change `steps_rows_signature` to hash the tuple payload as one part, then rerun focused unit + harness validations.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Final implementation keeps Phase11 payload/schema unchanged and narrows optimization to serializer dispatch only: container-first pickle fallback plus scalar fastpaths (`None/bool/int/float/str/bytes/bytearray`), with no tuple-row signature conversion.
@@ -135,7 +164,8 @@ deterministic signatures and invalidation semantics.
 ## Context / Handoff Summary
 Rank-2 execution is implemented and validated with an evidence trail including a
 discarded regression attempt and final stabilized serializer-dispatch approach.
-Final code keeps signature schema/contracts intact and reduces pickle call count
-while yielding near-neutral warm phase timing versus current rank-1 anchor.
-Next step is user direction: accept current rank-2 as low-risk internal cleanup
-or iterate for stronger measurable wall-time gains.
+Final code keeps signature schema/contracts intact and now includes tuple-hash
+signature derivation for `steps_rows_signature`, reducing serializer and pickle
+call volume while improving warm profile shape in the latest harness run.
+Next step is user direction: accept rank-2 and close/move, or request another
+optimization iteration.

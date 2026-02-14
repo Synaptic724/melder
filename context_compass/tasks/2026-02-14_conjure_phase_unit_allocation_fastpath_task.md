@@ -3,7 +3,7 @@
 ## Metadata
 - Task ID: TASK-2026-02-14-conjure-phase-unit-allocation-fastpath
 - Story: STORY-2026-02-13-optimize-conjure-paths
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
@@ -56,23 +56,35 @@ factories and scheduler barriers without changing phase semantics.
 ## Validation
 - `python -m pytest -q tests/unit/melder/spellbook/test_spellbook.py -k "phase_factories_build_units_and_label or phase_factories_return_empty_when_no_spells or run_resolution_phases_success or run_resolution_phases_with_multiple_spells"` -> `4 passed`.
 - `python -m pytest -q tests/unit/melder/utilities/synchronization/test_phase_scheduler.py` -> `10 passed`.
+- Artifacts:
+  - `context_compass/artifacts/2026-02-14_conjure_phase_unit_allocation_fastpath_pytests.txt`
+  - `context_compass/artifacts/2026-02-14_conjure_phase_unit_allocation_fastpath_phase_scheduler_pytests.txt`
 
 ## Risks / Rollback Notes
 - Risk: metadata/label drift for diagnostic paths.
 - Rollback: revert to current phase-factory list build implementation.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
 - [ ] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
 - DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Fresh validation reruns pass for the phase-unit-allocation fastpath (`4 passed` focused spellbook factory tests and `10 passed` scheduler suite).
+  EVIDENCE: context_compass/artifacts/2026-02-14_conjure_phase_unit_allocation_fastpath_pytests.txt:1-12, context_compass/artifacts/2026-02-14_conjure_phase_unit_allocation_fastpath_phase_scheduler_pytests.txt:1-12
+  IMPACT: Task is now evidence-complete in review with current-run regression coverage.
+  NEXT: Walk outcomes with user for acceptance and completion move.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Implemented shared per-spell phase-factory helper `_build_per_spell_phase_units(...)` and routed the eight duplicated per-spell phase factories through it.
-  EVIDENCE: src/melder/spellbook/spellbook_creation_system.py:1481, src/melder/spellbook/spellbook_creation_system.py:1544, src/melder/spellbook/spellbook_creation_system.py:1622, src/melder/spellbook/spellbook_creation_system.py:1666, src/melder/spellbook/spellbook_creation_system.py:1706, src/melder/spellbook/spellbook_creation_system.py:1746, src/melder/spellbook/spellbook_creation_system.py:1786
+  EVIDENCE: src/melder/spellbook/spellbook_creation_system.py:1560-1619, src/melder/spellbook/spellbook_creation_system.py:1622-1719, src/melder/spellbook/spellbook_creation_system.py:1761-1883
   IMPACT: Removes repeated loop/allocation scaffolding while preserving phase output contract.
   NEXT: Confirm acceptance and then mark task complete/move as directed.
 
@@ -119,6 +131,7 @@ factories and scheduler barriers without changing phase semantics.
   NEXT: Append new findings here as work continues.
 
 ## Context / Handoff Summary
-Task created from conjure discovery hotspot #3.
-Next step is to map repeated phase-factory patterns and pick the smallest
-change with measurable allocation reduction.
+Per-spell phase-unit-allocation fastpath is implemented and in review.
+Shared helper wiring now covers structural and conduit per-spell phase factories
+with preserved labels/metadata/args contracts, and focused validation artifacts
+are attached for closure review.

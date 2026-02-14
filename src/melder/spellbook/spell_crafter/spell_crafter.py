@@ -1753,10 +1753,9 @@ class SpellCrafter(Cleanable):
             self._build_phase11_step_ir_row(step)
             for step in steps
         )
-        if steps_rows:
-            steps_rows_signature = self._hash_codegen_signature(*steps_rows)
-        else:
-            steps_rows_signature = self._hash_codegen_signature(steps_rows)
+        # Hash the full tuple payload as one signature part to avoid per-row
+        # serializer churn while preserving deterministic invalidation behavior.
+        steps_rows_signature = self._hash_codegen_signature(steps_rows)
         step_spell_ids = tuple(
             step.spell.spell_index.current
             for step in steps
@@ -3730,18 +3729,29 @@ class SpellCrafter(Cleanable):
             spell_lookup=self._spell._spellbook._spell_id_pool,
             plan_variant=ExecutionPlanVariant.NO_OVERRIDES_FAST,
         )
-        plan_overrides = self._build_execution_plan_variant(
-            occurrence_plan=occurrence_plan,
-            injection_plan=injection_plan,
-            spell_lookup=self._spell._spellbook._spell_id_pool,
+        plan_overrides = self._try_build_execution_plan_variant_from_base(
+            base_plan=plan_no_overrides,
             plan_variant=ExecutionPlanVariant.OVERRIDES,
         )
-        plan_overrides_with_mutations = self._build_execution_plan_variant(
-            occurrence_plan=occurrence_plan,
-            injection_plan=injection_plan,
-            spell_lookup=self._spell._spellbook._spell_id_pool,
+        if plan_overrides is None:
+            plan_overrides = self._build_execution_plan_variant(
+                occurrence_plan=occurrence_plan,
+                injection_plan=injection_plan,
+                spell_lookup=self._spell._spellbook._spell_id_pool,
+                plan_variant=ExecutionPlanVariant.OVERRIDES,
+            )
+
+        plan_overrides_with_mutations = self._try_build_execution_plan_variant_from_base(
+            base_plan=plan_no_overrides,
             plan_variant=ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS,
         )
+        if plan_overrides_with_mutations is None:
+            plan_overrides_with_mutations = self._build_execution_plan_variant(
+                occurrence_plan=occurrence_plan,
+                injection_plan=injection_plan,
+                spell_lookup=self._spell._spellbook._spell_id_pool,
+                plan_variant=ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS,
+            )
 
         self._cache_execution_plan_metrics(
             occurrence_plan=occurrence_plan,
@@ -3765,6 +3775,28 @@ class SpellCrafter(Cleanable):
             spell_lookup: Dict[str, ISpell],
             plan_variant: str,
     ) -> ExecutionPlan:
+        """
+        Build one Phase 11 execution-plan variant from phase8/phase9 artifacts.
+
+        Purpose:
+            Provide the canonical builder path used when variant reuse is not
+            possible or when a full rebuild is explicitly required.
+        Contract:
+            - Returns a fresh `ExecutionPlan` object for the requested variant.
+            - Does not mutate source occurrence/injection artifacts.
+        Args:
+            occurrence_plan:
+                Phase8 occurrence plan.
+            injection_plan:
+                Optional phase9 injection plan.
+            spell_lookup:
+                Spell lookup map keyed by spell id.
+            plan_variant:
+                Target `ExecutionPlanVariant` label.
+        Returns:
+            ExecutionPlan:
+                Fresh execution plan for the requested variant.
+        """
         builder = ExecutionPlanBuilder(
             occurrence_plan=occurrence_plan,
             injection_plan=injection_plan,
@@ -3772,6 +3804,68 @@ class SpellCrafter(Cleanable):
             plan_variant=plan_variant,
         )
         return builder.build()
+
+    def _try_build_execution_plan_variant_from_base(
+            self,
+            *,
+            base_plan: Any,
+            plan_variant: str,
+    ) -> Optional[ExecutionPlan]:
+        """
+        Attempt to derive a non-fast Phase 11 variant from an existing base plan.
+
+        Purpose:
+            Reuse shared step/index structure from the no-overrides plan to avoid
+            repeated full `ExecutionPlanBuilder.build()` passes for sibling
+            variants.
+        Contract:
+            - Returns a fresh `ExecutionPlan` with copied list/dict containers so
+              cleanup remains isolated per variant.
+            - Returns `None` when the base plan does not expose the required
+              structure (for example in test stubs), allowing a safe fallback to
+              the legacy full-build path.
+            - Derived variants do not carry fast-path arrays/transient plans.
+        Args:
+            base_plan:
+                Source plan expected to expose execution-plan structural fields.
+            plan_variant:
+                Target variant label for the derived plan.
+        Returns:
+            Optional[ExecutionPlan]:
+                Derived plan when compatible, otherwise `None`.
+        """
+        try:
+            root_spell_id = base_plan.root_spell_id
+            root_instance_key = base_plan.root_instance_key
+            steps = base_plan.steps
+            spell_id_step_index = base_plan.spell_id_step_index
+            optimistic_object_refs_by_spell_id = base_plan.optimistic_object_refs_by_spell_id
+            available_param_by_spell_id = base_plan.available_param_by_spell_id
+        except AttributeError:
+            return None
+
+        if root_spell_id is None or root_instance_key is None:
+            return None
+        if (
+                steps is None
+                or spell_id_step_index is None
+                or optimistic_object_refs_by_spell_id is None
+                or available_param_by_spell_id is None
+        ):
+            return None
+
+        try:
+            return ExecutionPlan(
+                root_spell_id=root_spell_id,
+                root_instance_key=root_instance_key,
+                steps=list(steps),
+                spell_id_step_index=dict(spell_id_step_index),
+                optimistic_object_refs_by_spell_id=dict(optimistic_object_refs_by_spell_id),
+                available_param_by_spell_id=dict(available_param_by_spell_id),
+                plan_variant=plan_variant,
+            )
+        except (TypeError, ValueError):
+            return None
 
     def _cleanup_execution_plans_phase11(self) -> None:
         """

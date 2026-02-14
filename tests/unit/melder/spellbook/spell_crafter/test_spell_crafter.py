@@ -5575,6 +5575,150 @@ def test_run_phase_execution_plan_flushes_phase8_11_codegen_ir_before_compile(
     assert crafter._phase8_11_codegen_ir_dirty is False
 
 
+def test_run_phase_execution_plan_reuses_no_overrides_base_for_sibling_variants(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify phase11 reuses the no-overrides structural plan for sibling variants.
+    Contract:
+        When the no-overrides plan exposes compatible structure, phase11 should
+        invoke `_build_execution_plan_variant` only once and derive overrides
+        variants from the base without rebuilding.
+    Args:
+        monkeypatch: Pytest fixture for replacing phase11 collaborators.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If rebuild count or variant contracts regress.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    crafter._occurrence_plan_phase8 = types.SimpleNamespace()
+    crafter._injection_plan_phase9 = types.SimpleNamespace()
+
+    build_calls: list[str] = []
+
+    def _build_plan_stub(
+        self: SpellCrafter,
+        *,
+        occurrence_plan: object,
+        injection_plan: object,
+        spell_lookup: dict[str, object],
+        plan_variant: str,
+    ) -> object:
+        del self, occurrence_plan, injection_plan, spell_lookup
+        build_calls.append(plan_variant)
+        return types.SimpleNamespace(
+            root_spell_id="root",
+            root_instance_key=("root", None),
+            steps=[_make_phase11_step_stub("root")],
+            spell_id_step_index={"root": 0},
+            optimistic_object_refs_by_spell_id={},
+            available_param_by_spell_id={"root": 1},
+            plan_variant=plan_variant,
+            fast_transient_plan=("placeholder",),
+        )
+
+    def _cache_metrics_stub(
+        self: SpellCrafter,
+        *,
+        occurrence_plan: object,
+        plan: object,
+    ) -> None:
+        del self, occurrence_plan, plan
+        return None
+
+    def _flush_stub(self: SpellCrafter) -> None:
+        self._phase8_11_codegen_ir_dirty = False
+
+    def _compile_stub(self: SpellCrafter) -> None:
+        del self
+        return None
+
+    monkeypatch.setattr(SpellCrafter, "_build_execution_plan_variant", _build_plan_stub)
+    monkeypatch.setattr(SpellCrafter, "_cache_execution_plan_metrics", _cache_metrics_stub)
+    monkeypatch.setattr(SpellCrafter, "_capture_phase8_11_codegen_ir_if_dirty", _flush_stub)
+    monkeypatch.setattr(SpellCrafter, "_compile_phase12_no_overrides_executor", _compile_stub)
+
+    crafter.run_phase_execution_plan("cid")
+
+    assert build_calls == [spell_crafter_module.ExecutionPlanVariant.NO_OVERRIDES_FAST]
+    assert crafter._execution_plan_phase11_no_overrides.plan_variant == spell_crafter_module.ExecutionPlanVariant.NO_OVERRIDES_FAST
+    assert crafter._execution_plan_phase11_overrides.plan_variant == spell_crafter_module.ExecutionPlanVariant.OVERRIDES
+    assert crafter._execution_plan_phase11.plan_variant == spell_crafter_module.ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS
+    assert crafter._execution_plan_phase11_overrides.fast_transient_plan is None
+    assert crafter._execution_plan_phase11.fast_transient_plan is None
+
+
+def test_run_phase_execution_plan_falls_back_to_full_build_for_incompatible_base(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify phase11 falls back to legacy per-variant rebuild when base plan
+        shape is incompatible with reuse.
+    Contract:
+        If the no-overrides base lacks required structural fields, phase11 must
+        call `_build_execution_plan_variant` for overrides and mutations variants.
+    Args:
+        monkeypatch: Pytest fixture for replacing phase11 collaborators.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If fallback rebuild behavior regresses.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    crafter._occurrence_plan_phase8 = types.SimpleNamespace()
+    crafter._injection_plan_phase9 = types.SimpleNamespace()
+
+    build_calls: list[str] = []
+
+    def _build_plan_stub(
+        self: SpellCrafter,
+        *,
+        occurrence_plan: object,
+        injection_plan: object,
+        spell_lookup: dict[str, object],
+        plan_variant: str,
+    ) -> object:
+        del self, occurrence_plan, injection_plan, spell_lookup
+        build_calls.append(plan_variant)
+        return _make_phase11_plan_stub(
+            plan_variant=plan_variant,
+            root_spell_id="root",
+            step_spell_ids=("root",),
+        )
+
+    def _cache_metrics_stub(
+        self: SpellCrafter,
+        *,
+        occurrence_plan: object,
+        plan: object,
+    ) -> None:
+        del self, occurrence_plan, plan
+        return None
+
+    def _flush_stub(self: SpellCrafter) -> None:
+        self._phase8_11_codegen_ir_dirty = False
+
+    def _compile_stub(self: SpellCrafter) -> None:
+        del self
+        return None
+
+    monkeypatch.setattr(SpellCrafter, "_build_execution_plan_variant", _build_plan_stub)
+    monkeypatch.setattr(SpellCrafter, "_cache_execution_plan_metrics", _cache_metrics_stub)
+    monkeypatch.setattr(SpellCrafter, "_capture_phase8_11_codegen_ir_if_dirty", _flush_stub)
+    monkeypatch.setattr(SpellCrafter, "_compile_phase12_no_overrides_executor", _compile_stub)
+
+    crafter.run_phase_execution_plan("cid")
+
+    assert build_calls == [
+        spell_crafter_module.ExecutionPlanVariant.NO_OVERRIDES_FAST,
+        spell_crafter_module.ExecutionPlanVariant.OVERRIDES,
+        spell_crafter_module.ExecutionPlanVariant.OVERRIDES_WITH_MUTATIONS,
+    ]
+
+
 def test_codegen_ir_property_flushes_phase8_11_when_dirty(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
