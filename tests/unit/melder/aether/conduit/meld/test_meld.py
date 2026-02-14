@@ -462,6 +462,7 @@ class _AetherStub:
             ccm: Change-control manager to return.
         """
         self._ccm = ccm
+        self.get_change_control_manager_calls = 0
 
     def _get_change_control_manager(self, frame_name: str) -> _ChangeControlManagerStub | None:
         """
@@ -472,6 +473,7 @@ class _AetherStub:
         Returns:
             Optional change-control manager.
         """
+        self.get_change_control_manager_calls += 1
         return self._ccm
 
 
@@ -1510,6 +1512,32 @@ def test_gated_validation_required_blocks_dirty_root() -> None:
 
     with pytest.raises(MeldExecutionError, match="dirty under change-control"):
         meld._gated_validation_required(spell)
+
+
+def test_gated_validation_required_reuses_cached_change_control_manager() -> None:
+    """
+    Verify change-control manager lookup is cached per frame.
+
+    Contract:
+        - First validation call resolves the frame manager once.
+        - Subsequent calls reuse the cached manager.
+    """
+    ccm = _ChangeControlManagerStub(dirty_roots=set())
+    aether = _AetherStub(ccm)
+    spellbook = _SpellbookStub(aetheric_frame="default", aether=aether)
+    meld = _make_meld(spellbook=spellbook)
+    state = _SystemStateStub(validity=SpellValidity.valid)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        system_state=state,
+        spellbook=spellbook,
+    )
+
+    assert aether.get_change_control_manager_calls == 0
+    assert meld._gated_validation_required(spell) is False
+    assert meld._gated_validation_required(spell) is False
+    assert meld._gated_validation_required(spell) is False
+    assert aether.get_change_control_manager_calls == 1
 
 
 def test_meld_reuses_cached_context_without_factory_rebuild() -> None:

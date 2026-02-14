@@ -126,6 +126,7 @@ class Meld(Cleanable, IMeld):
         self._input_resolution_cache: Dict[tuple[Any, Any, Any, Any], ISpell] = {}
         self._spell_id_resolution_cache: Dict[str, ISpell] = {}
         self._max_resolution_cache_size: int = 2048
+        self._change_control_manager_by_frame: Dict[str, Any] = {}
 
         # Optional hook map pulled from Configuration (via Conduit).
         # This is stored by reference when provided.
@@ -183,6 +184,7 @@ class Meld(Cleanable, IMeld):
             self._input_resolution_cache = None
             self._spell_id_resolution_cache = None
             self._max_resolution_cache_size = None
+            self._change_control_manager_by_frame = None
 
 
     # region Context Manager
@@ -455,6 +457,48 @@ class Meld(Cleanable, IMeld):
         # Resolution gating (per-conduit)
         self._ensure_resolution_resolvable(spell)
 
+    def _get_cached_change_control_manager(
+            self,
+            spellbook: Optional[ISpellbook],
+    ) -> Any:
+        """
+        Return a cached change-control manager for the spellbook frame.
+
+        Contract:
+            - Returns None when spellbook/aether is unavailable.
+            - Returns None when manager lookup fails.
+            - Caches only non-None managers keyed by frame name.
+
+        Args:
+            spellbook:
+                Spellbook owning the spell currently being validated.
+
+        Returns:
+            Any: Change-control manager for the frame, or None.
+        """
+        if spellbook is None:
+            return None
+
+        frame_name = spellbook._aetheric_frame
+        cache = self._change_control_manager_by_frame
+        cached_manager = cache.get(frame_name)
+        if cached_manager is not None:
+            return cached_manager
+
+        aether = spellbook._aether
+        if aether is None:
+            return None
+
+        try:
+            manager = aether._get_change_control_manager(frame_name)
+        except Exception:
+            return None
+
+        if manager is not None:
+            cache[frame_name] = manager
+
+        return manager
+
     def _gated_validation_required(self, spell: ISpell) -> bool:
         """
         Internal
@@ -477,19 +521,27 @@ class Meld(Cleanable, IMeld):
         "Should we try to revalidate this lineage now?"
         """
         state = spell.system_state
-        # Defensive: block dirty roots under change-control regardless of validity.
-        try:
+        conduit_id = self._resolution_conduit_id
+        if conduit_id:
             spellbook = spell._spellbook
-            frame_name = spellbook._aetheric_frame
-            ccm = spellbook._aether._get_change_control_manager(frame_name)
-            conduit_id = self._resolution_conduit_id
-            if ccm is not None and conduit_id and ccm.is_root_dirty(conduit_id, spell.spell_index.current):
-                raise MeldExecutionError(spell_id=spell.spell_index.current, spell_name=spell.spell_name, message=f"Root '{spell.spell_index.current}' is dirty under change-control; revalidation required.")
-        except MeldExecutionError:
-            raise
-        except Exception:
-            # If change-control is unavailable, proceed with existing validity gate.
-            pass
+            ccm = self._get_cached_change_control_manager(spellbook)
+            if ccm is not None:
+                spell_id = spell.spell_index.current
+                try:
+                    if ccm.is_root_dirty(conduit_id, spell_id):
+                        raise MeldExecutionError(
+                            spell_id=spell_id,
+                            spell_name=spell.spell_name,
+                            message=(
+                                f"Root '{spell_id}' is dirty under change-control; "
+                                "revalidation required."
+                            ),
+                        )
+                except MeldExecutionError:
+                    raise
+                except Exception:
+                    # If change-control is unavailable, proceed with existing validity gate.
+                    pass
 
         validity = state.validity
 
