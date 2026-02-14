@@ -60,8 +60,8 @@ artifacts and runtime is dispatch-only. No backward-compat fallback paths.
 - Override frontend targeting remains in Phase 10 patch maps and is reused for future codegen.
 
 ## Dependencies / External References
-- `context_compass/tasks/2026-02-07_codegen_fast_transient_task.md`
-- `context_compass/artifacts/phase12_precompute_meld_runtime/phase12_precompute_audit.md`
+- `context_compass/tasks/completed/2026-02-07_codegen_fast_transient_task.md`
+- `context_compass/artifacts/README.md`
 
 ## Milestones (Track Progress)
 - [x] Milestone 1: Phases 1-11 emit stable Codegen IR artifacts required by Phase 12.

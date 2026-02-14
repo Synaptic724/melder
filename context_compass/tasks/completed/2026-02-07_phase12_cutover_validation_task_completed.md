@@ -33,8 +33,8 @@ cutover.
 - Validation report for correctness and performance deltas.
 
 ## Files / Paths Impacted
-- `context_compass/tasks/2026-02-07_phase12_cutover_validation_task.md`
-- `context_compass/epics/2026-02-07_phase12_spell_scoped_execution_epic.md`
+- `context_compass/tasks/completed/2026-02-07_phase12_cutover_validation_task_completed.md`
+- `context_compass/epics/completed/2026-02-07_phase12_spell_scoped_execution_epic.md`
 
 ## Validation
 - Ran:

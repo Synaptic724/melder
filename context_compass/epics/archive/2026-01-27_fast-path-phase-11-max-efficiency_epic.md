@@ -56,7 +56,7 @@ the core plan model durable while enabling extreme performance experiments.
 - Phase 11 remains optional and gated.
 
 ## Dependencies / External References
-- context_compass/artifacts/fast_path_meld_plan/codex_exploration/phase8_10_migration_plan_2026-01-27.md
+- context_compass/artifacts/README.md
 - benchmarks/testing_other_di/optimistic/test_optimistic_meld_plan.py
 
 ## Milestones (Track Progress)

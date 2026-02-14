@@ -42,7 +42,7 @@ Remove implicit fallback behavior in meld resolution/registration paths so creat
 ## Files / Paths Impacted
 - `src/melder/aether/conduit/meld/meld.py`
 - `src/melder/aether/conduit/meld/meld_engine/meld_engine.py`
-- `context_compass/tasks/2026-02-07_meld_strict_creations_routing_task.md`
+- `context_compass/tasks/completed/2026-02-07_meld_strict_creations_routing_task.md`
 
 ## Validation
 - Not run.

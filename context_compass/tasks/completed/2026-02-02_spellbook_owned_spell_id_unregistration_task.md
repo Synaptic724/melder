@@ -37,7 +37,7 @@ Add a Spellbook helper that unregisters owned spell_id mappings and use it in ow
 - `src/melder/spellbook/spellbook.py`
 - `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py`
 - `tests/unit/melder/spellbook/test_spellbook.py`
-- `context_compass/tasks/2026-02-02_spellbook_owned_spell_id_unregistration_task.md`
+- `context_compass/tasks/completed/2026-02-02_spellbook_owned_spell_id_unregistration_task.md`
 
 ## Validation
 - Not run.

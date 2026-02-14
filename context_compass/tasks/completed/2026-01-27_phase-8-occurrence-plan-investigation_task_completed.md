@@ -33,11 +33,11 @@ inputs and outputs needed to compile an OccurrencePlan during Phase 8.
 - [ ] Write investigation note with evidence references and UNKNOWNs.
 
 ## Deliverables
-- `context_compass/artifacts/fast_path_meld_plan/phase8_occurrence_plan_investigation.md`
+- `context_compass/artifacts/README.md`
 
 ## Files / Paths Impacted
 - context_compass/tasks/2026-01-27_phase-8-occurrence-plan-investigation_task.md
-- context_compass/artifacts/fast_path_meld_plan/phase8_occurrence_plan_investigation.md
+- context_compass/artifacts/README.md
 
 ## Validation
 - Not run.
@@ -57,7 +57,7 @@ inputs and outputs needed to compile an OccurrencePlan during Phase 8.
 
 ## Context / Handoff Summary
 Draft investigation completed with evidence references in
-`context_compass/artifacts/fast_path_meld_plan/phase8_occurrence_plan_investigation.md`.
+`context_compass/artifacts/README.md`.
 Findings cover occurrence graph construction, ordered node expansion, execution
 order, and instance plan outputs plus UNKNOWNs for blueprint ordering and DAG
 socket kind sources.

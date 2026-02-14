@@ -77,6 +77,6 @@ This makes AI profile output trustworthy and complete without early filtering.
 
 ## Context / Handoff Summary
 Story created to expand SpellAIProfile inventory and provenance capture.
-Scope update captured in `context_compass/artifacts/ai_profile_inventory_ticket_update.md`.
+Scope update captured in `context_compass/artifacts/README.md`.
 Investigation and implementation tasks are complete; user reported passing the
 AI profile strategy tests. Acceptance confirmed; ready for closeout.

@@ -37,9 +37,9 @@ fast-path execution while preserving current runtime behavior through safe fallb
   - API changes.
 
 ## Dependencies / Related Work
-- context_compass/artifacts/fast_path_meld_plan/phase11_executor_design.md
-- context_compass/artifacts/fast_path_meld_plan/phase11_eligibility_gates.md
-- context_compass/artifacts/fast_path_meld_plan/README.md
+- context_compass/artifacts/README.md
+- context_compass/artifacts/README.md
+- context_compass/artifacts/README.md
 
 ## Tasks (Implementation Checklist)
 - [x] Task: TASK-2026-01-29-phase11-artifact-review - Summarize Phase 11 artifacts and gates.

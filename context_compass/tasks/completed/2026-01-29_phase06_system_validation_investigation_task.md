@@ -30,7 +30,7 @@ Document Phase 6 system validation inputs, outputs, and how per-conduit resoluti
 - [x] Document per-conduit validity updates.
 
 ## Deliverables
-- Updated `context_compass/artifacts/phase_system_investigation_2026-01-29/phase06_system_validation.md`.
+- Updated `context_compass/artifacts/README.md`.
 
 ## Files / Paths Impacted
 - src/melder/spellbook/spell_crafter/spell_crafter.py

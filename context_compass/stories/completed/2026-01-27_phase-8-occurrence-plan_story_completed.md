@@ -39,9 +39,9 @@ artifact that enables tight-loop execution with minimal branching.
   - Override/mutation patch maps (Phase 10).
 
 ## Dependencies / Related Work
-- context_compass/artifacts/fast_path_meld_plan/ticket_fast_path_github.md
-- context_compass/artifacts/fast_path_meld_plan/research_plan_compilation.md
-- context_compass/artifacts/fast_path_meld_plan/codex_exploration/meld_route_matrix_2026-01-26.md
+- context_compass/artifacts/README.md
+- context_compass/artifacts/README.md
+- context_compass/artifacts/README.md
 - src/melder/spellbook/spell_crafter/spell_crafter.py
 - src/melder/aether/conduit/meld/meld_engine/meld_engine.py
 

@@ -33,11 +33,11 @@ inputs needed to compile patch maps during Phase 10.
 - [x] Write investigation note with evidence references and UNKNOWNs.
 
 ## Deliverables
-- `context_compass/artifacts/fast_path_meld_plan/phase10_patch_map_investigation.md`
+- `context_compass/artifacts/README.md`
 
 ## Files / Paths Impacted
 - context_compass/tasks/2026-01-27_phase-10-patch-map-investigation_task.md
-- context_compass/artifacts/fast_path_meld_plan/phase10_patch_map_investigation.md
+- context_compass/artifacts/README.md
 
 ## Validation
 - Not run (docs-only).
@@ -55,5 +55,5 @@ inputs needed to compile patch maps during Phase 10.
 
 ## Context / Handoff Summary
 Draft investigation recorded in
-`context_compass/artifacts/fast_path_meld_plan/phase10_patch_map_investigation.md`
+`context_compass/artifacts/README.md`
 covering SpellOverrider and GraphMutator behaviors with patch-map implications.

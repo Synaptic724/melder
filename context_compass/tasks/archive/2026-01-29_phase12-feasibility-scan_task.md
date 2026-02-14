@@ -30,9 +30,9 @@ outline the minimal scope with evidence-backed rationale.
 - Phase 12 decision memo with scope outline or explicit UNKNOWNs.
 
 ## Files / Paths Impacted
-- context_compass/artifacts/fast_path_meld_plan/phase11_executor_design.md
-- context_compass/artifacts/fast_path_meld_plan/phase11_eligibility_gates.md
-- context_compass/artifacts/fast_path_meld_plan/research_plan_compilation.md
+- context_compass/artifacts/README.md
+- context_compass/artifacts/README.md
+- context_compass/artifacts/README.md
 
 ## Validation
 - Not run (analysis-only).
@@ -87,9 +87,9 @@ fast paths.
 - Codegen placement and cleanup lifecycle for generated executors.
 
 ## Evidence Anchors
-- context_compass/artifacts/fast_path_meld_plan/phase11_executor_design.md
-- context_compass/artifacts/fast_path_meld_plan/research_fast_path_gates.md
-- context_compass/artifacts/fast_path_meld_plan/research_codegen.md
+- context_compass/artifacts/README.md
+- context_compass/artifacts/README.md
+- context_compass/artifacts/README.md
 
 ## Context / Handoff Summary
 Phase 12 is justified as a separate optimization layer (creations storage,

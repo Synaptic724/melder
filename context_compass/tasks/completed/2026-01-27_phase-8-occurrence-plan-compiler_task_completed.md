@@ -32,11 +32,11 @@ to validate OccurrencePlan compilation and fallback behavior.
 - [ ] Record plan in a compiler note with evidence references.
 
 ## Deliverables
-- `context_compass/artifacts/fast_path_meld_plan/phase8_occurrence_plan_compiler_plan.md`
+- `context_compass/artifacts/README.md`
 
 ## Files / Paths Impacted
 - context_compass/tasks/2026-01-27_phase-8-occurrence-plan-compiler_task.md
-- context_compass/artifacts/fast_path_meld_plan/phase8_occurrence_plan_compiler_plan.md
+- context_compass/artifacts/README.md
 
 ## Validation
 - Not run.
@@ -56,6 +56,6 @@ to validate OccurrencePlan compilation and fallback behavior.
 
 ## Context / Handoff Summary
 Draft compiler plan recorded in
-`context_compass/artifacts/fast_path_meld_plan/phase8_occurrence_plan_compiler_plan.md`
+`context_compass/artifacts/README.md`
 with insertion-point options, SpellCrafter API changes, and revalidation
 integration notes.

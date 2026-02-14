@@ -40,7 +40,7 @@ Document final codegen-only execution architecture and removed legacy semantics.
 ## Files / Paths Impacted
 - `context_compass/architecture/src_architecture.md`
 - `context_compass/components/src_components.md`
-- `context_compass/stories/2026-02-07_validation-perf-gates_story.md`
+- `context_compass/stories/completed/2026-02-07_validation-perf-gates_story_completed.md`
 
 ## Validation
 - Not run (docs-only changes).

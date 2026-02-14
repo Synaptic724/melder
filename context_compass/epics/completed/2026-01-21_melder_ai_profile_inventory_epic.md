@@ -72,7 +72,7 @@ provenance for downstream ACL policy.
 
 ## Dependencies / External References
 - `SpellAIProfile` and inspector stack in spell_examiner.
-- Scope reference: `context_compass/artifacts/ai_profile_inventory_ticket_update.md`.
+- Scope reference: `context_compass/artifacts/README.md`.
 
 ## Milestones (Track Progress)
 - [x] Milestone 1: Investigation completed and schema proposal drafted.
@@ -111,6 +111,6 @@ provenance for downstream ACL policy.
 
 ## Context / Handoff Summary
 Epic created to expand SpellAIProfile inventory and provenance capture.
-Scope update captured in `context_compass/artifacts/ai_profile_inventory_ticket_update.md`.
+Scope update captured in `context_compass/artifacts/README.md`.
 Milestones and story tasks are complete; acceptance confirmed and ready for
 closeout.

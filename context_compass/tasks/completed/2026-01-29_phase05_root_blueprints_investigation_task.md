@@ -29,7 +29,7 @@ Document how Phase 5 selects roots and attaches root blueprints; assess changes 
 - [x] Record findings and unknowns.
 
 ## Deliverables
-- Updated `context_compass/artifacts/phase_system_investigation_2026-01-29/phase05_root_blueprints.md`.
+- Updated `context_compass/artifacts/README.md`.
 
 ## Files / Paths Impacted
 - src/melder/spellbook/spell_crafter/system/spell_system_adjacency_builder.py

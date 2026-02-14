@@ -41,8 +41,8 @@ artifacts only, and mixed execution ownership is removed.
 - Mutation-aware runtime codegen.
 
 ## Dependencies / Related Work
-- `context_compass/stories/2026-02-07_phase12_no_overrides_executor_story.md`
-- `context_compass/stories/2026-02-07_phase12_override_shape_specialization_story.md`
+- `context_compass/stories/completed/2026-02-07_phase12_no_overrides_executor_story_completed.md`
+- `context_compass/stories/completed/2026-02-07_phase12_override_shape_specialization_story_completed.md`
 
 ## Tasks (Implementation Checklist)
 - [x] Task: TASK-2026-02-07-disable-overrides-hard-fail - Reject overrides/mutations with explicit unsupported runtime errors.

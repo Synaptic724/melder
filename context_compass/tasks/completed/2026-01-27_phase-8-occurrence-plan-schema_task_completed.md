@@ -32,11 +32,11 @@ needed for Phase 8 compilation.
 - [ ] Record decisions and UNKNOWNs in a design doc.
 
 ## Deliverables
-- `context_compass/artifacts/fast_path_meld_plan/phase8_occurrence_plan_schema.md`
+- `context_compass/artifacts/README.md`
 
 ## Files / Paths Impacted
 - context_compass/tasks/2026-01-27_phase-8-occurrence-plan-schema_task.md
-- context_compass/artifacts/fast_path_meld_plan/phase8_occurrence_plan_schema.md
+- context_compass/artifacts/README.md
 
 ## Validation
 - Not run.
@@ -56,6 +56,6 @@ needed for Phase 8 compilation.
 
 ## Context / Handoff Summary
 Draft OccurrencePlan schema recorded in
-`context_compass/artifacts/fast_path_meld_plan/phase8_occurrence_plan_schema.md`
+`context_compass/artifacts/README.md`
 with evidence mapping to MeldEngine planning outputs and UNKNOWNs for storage
 location and invalidation inputs.

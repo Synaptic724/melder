@@ -30,7 +30,7 @@ Document Phase 11 execution plan compilation and runtime consumption rules.
 - [x] Document runtime consumption and failure modes.
 
 ## Deliverables
-- Updated `context_compass/artifacts/phase_system_investigation_2026-01-29/phase11_execution_plan.md`.
+- Updated `context_compass/artifacts/README.md`.
 
 ## Files / Paths Impacted
 - src/melder/spellbook/spell_crafter/spell_crafter.py

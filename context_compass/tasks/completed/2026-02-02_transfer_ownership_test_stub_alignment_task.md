@@ -35,7 +35,7 @@ Update transfer-of-ownership test stubs so they match the new conduit-scoped rev
 
 ## Files / Paths Impacted
 - `tests/unit/melder/aether/conduit/conduit_ward/transfer/test_transfer_of_ownership.py`
-- `context_compass/tasks/2026-02-02_transfer_ownership_test_stub_alignment_task.md`
+- `context_compass/tasks/completed/2026-02-02_transfer_ownership_test_stub_alignment_task.md`
 
 ## Validation
 - Not run.

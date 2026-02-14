@@ -43,7 +43,7 @@ first-class member records for non-callables.
 
 ## Deliverables
 - Updated SpellAIProfile output with full inventory and provenance.
-- Implementation scoped by `context_compass/artifacts/ai_profile_inventory_ticket_update.md`.
+- Implementation scoped by `context_compass/artifacts/README.md`.
 
 ## Files / Paths Impacted
 - `src/melder/spellbook/spell_crafter/spell_examiner/inspectors/class_inspector.py`

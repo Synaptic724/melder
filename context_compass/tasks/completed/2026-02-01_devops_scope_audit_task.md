@@ -63,8 +63,8 @@ Conduit-scoped (within frame):
 - SpellSystemValidationSystem.validate writes per-conduit resolution validity and diagnostics when conduit_id is provided. EVIDENCE: src/melder/spellbook/spell_crafter/system/spell_system_validation_system.py:validate + _record_conduit_resolution_state.
 
 ## Files / Paths Impacted
-- `context_compass/tasks/2026-02-01_devops_scope_audit_task.md`
-- `context_compass/stories/2026-02-01_devops_scope_audit_story.md`
+- `context_compass/tasks/completed/2026-02-01_devops_scope_audit_task.md`
+- `context_compass/stories/completed/2026-02-01_devops_scope_audit_story.md`
 
 ## Validation
 - Not run.

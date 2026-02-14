@@ -42,7 +42,7 @@ Moves remaining execution planning into the phase system so runtime meld is dete
 ## Dependencies / Related Work
 - Story: STORY-2026-01-29-phase11-execution-plan-precompute
 - Task: TASK-2026-01-29-phase12-feasibility-scan
-- Artifact: context_compass/artifacts/phase12_precompute_meld_runtime/phase12_precompute_audit.md
+- Artifact: context_compass/artifacts/README.md
 
 ## Tasks (Implementation Checklist)
 - [ ] Task: TASK-2026-01-29-phase12-precompute-meld-runtime - Investigate and design Phase 12 precompute artifacts

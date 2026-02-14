@@ -36,7 +36,7 @@ the durable Phase 8-10 plan artifacts rather than bypassing them.
   - Codegen or C-extension unless explicitly approved.
 
 ## Dependencies / Related Work
-- `context_compass/artifacts/fast_path_meld_plan/codex_exploration/phase8_10_migration_plan_2026-01-27.md`
+- `context_compass/artifacts/README.md`
 - `benchmarks/testing_other_di/optimistic/test_optimistic_meld_plan.py`
 
 ## Tasks (Implementation Checklist)

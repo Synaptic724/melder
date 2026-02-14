@@ -27,11 +27,11 @@ minimal branching and allocation overhead.
 - [ ] Record memory and allocation strategy.
 
 ## Deliverables
-- `context_compass/artifacts/fast_path_meld_plan/phase11_executor_design.md`
+- `context_compass/artifacts/README.md`
 
 ## Files / Paths Impacted
 - context_compass/tasks/2026-01-27_phase-11-executor-design_task.md
-- context_compass/artifacts/fast_path_meld_plan/phase11_executor_design.md
+- context_compass/artifacts/README.md
 
 ## Validation
 - Not run.
@@ -51,5 +51,5 @@ minimal branching and allocation overhead.
 
 ## Context / Handoff Summary
 Draft executor design recorded in
-`context_compass/artifacts/fast_path_meld_plan/phase11_executor_design.md`
+`context_compass/artifacts/README.md`
 with step-array model, prebinding ideas, and fallback notes.

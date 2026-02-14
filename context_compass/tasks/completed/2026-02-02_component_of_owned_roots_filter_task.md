@@ -36,7 +36,7 @@ Ensure change-control component_of rebuilds are limited to owned root spells, no
 ## Files / Paths Impacted
 - `src/melder/spellbook/spell_crafter/spell_crafter.py`
 - `tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
-- `context_compass/tasks/2026-02-02_component_of_owned_roots_filter_task.md`
+- `context_compass/tasks/completed/2026-02-02_component_of_owned_roots_filter_task.md`
 
 ## Validation
 - Not run.

@@ -44,7 +44,7 @@ Keeps AI introspection as an explicit opt-in, preserving safety and resource con
 - AI profiles are not used today; this is a preventive gate.
 
 ## Dependencies / External References
-- `context_compass/stories/2026-01-22_melder_ai_profile_opt_in_story.md`
+- `context_compass/stories/completed/2026-01-22_melder_ai_profile_opt_in_story.md`
 
 ## Milestones (Track Progress)
 - [ ] Milestone 1: Configuration toggle + guard implemented

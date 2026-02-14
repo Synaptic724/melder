@@ -30,7 +30,7 @@ Document Phase 9 injection plan compilation and runtime usage.
 - [x] Document runtime selection and kwargs build.
 
 ## Deliverables
-- Updated `context_compass/artifacts/phase_system_investigation_2026-01-29/phase09_injection_plan.md`.
+- Updated `context_compass/artifacts/README.md`.
 
 ## Files / Paths Impacted
 - src/melder/spellbook/spell_crafter/spell_crafter.py

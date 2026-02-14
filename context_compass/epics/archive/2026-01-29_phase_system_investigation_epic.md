@@ -47,7 +47,7 @@ Ensure the phase system is coherent and complete: every spell that can be melded
 - Root semantics may need adjustment or expansion.
 
 ## Dependencies / External References
-- `context_compass/artifacts/phase_system_investigation_2026-01-29/tracking.md`
+- `context_compass/artifacts/README.md`
 
 ## Milestones (Track Progress)
 - [x] Milestone 1: Complete phase-by-phase investigation (Phases 1-11)

@@ -87,8 +87,8 @@ Ownership transfer incident path:
 
 
 ## Files / Paths Impacted
-- `context_compass/tasks/2026-02-01_change_control_conduit_scope_design_task.md`
-- `context_compass/stories/2026-02-01_change_control_conduit_scope_story.md`
+- `context_compass/tasks/completed/2026-02-01_change_control_conduit_scope_design_task.md`
+- `context_compass/stories/completed/2026-02-01_change_control_conduit_scope_story.md`
 
 ## Validation
 - Not run.

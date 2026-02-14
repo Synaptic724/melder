@@ -45,7 +45,7 @@ meld-related docstrings with those decisions (no behavior changes).
 - `context_compass/components/src_components.md`
 - `src/melder/aether/conduit/conduit.py`
 - `src/melder/aether/conduit/spell_space/spell_space.py`
-- `context_compass/stories/2026-01-17_melder_architecture_components_docs_story.md`
+- `context_compass/stories/completed/2026-01-17_melder_architecture_components_docs_story.md`
 
 ## Validation
 - Not run.

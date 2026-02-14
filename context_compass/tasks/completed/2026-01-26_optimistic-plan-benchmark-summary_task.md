@@ -27,11 +27,11 @@ meld runtime comparisons in a concise artifact.
 - [x] Link the artifact in the task context summary.
 
 ## Deliverables
-- context_compass/artifacts/fast_path_meld_plan/codex_exploration/fast_path_benchmark_summary_2026-01-26.md
+- context_compass/artifacts/README.md
 
 ## Files / Paths Impacted
 - context_compass/tasks/2026-01-26_optimistic-plan-benchmark-summary_task.md
-- context_compass/artifacts/fast_path_meld_plan/codex_exploration/fast_path_benchmark_summary_2026-01-26.md
+- context_compass/artifacts/README.md
 
 ## Validation
 - Not run.
@@ -50,6 +50,6 @@ meld runtime comparisons in a concise artifact.
 - [x] Acceptance criteria reviewed with user and confirmed
 
 ## Context / Handoff Summary
-Artifact created: `context_compass/artifacts/fast_path_meld_plan/codex_exploration/fast_path_benchmark_summary_2026-01-26.md`
+Artifact created: `context_compass/artifacts/README.md`
 Includes meld-only execution metrics (conjure/cleanup omitted) and notes about
 synthetic optimistic plan execution.

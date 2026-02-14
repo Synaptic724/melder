@@ -30,7 +30,7 @@ Document Phase 8 occurrence plan compilation and runtime selection rules.
 - [x] Document runtime selection rules.
 
 ## Deliverables
-- Updated `context_compass/artifacts/phase_system_investigation_2026-01-29/phase08_occurrence_plan.md`.
+- Updated `context_compass/artifacts/README.md`.
 
 ## Files / Paths Impacted
 - src/melder/spellbook/spell_crafter/spell_crafter.py

@@ -39,8 +39,8 @@ This story turns existing phase work into a durable compiler contract. It keeps 
 - Override-shape specialization cache behavior.
 
 ## Dependencies / Related Work
-- `context_compass/stories/2026-02-07_phase12_no_overrides_executor_story.md`
-- `context_compass/tasks/2026-02-07_phase12_artifact_contract_task.md`
+- `context_compass/stories/completed/2026-02-07_phase12_no_overrides_executor_story_completed.md`
+- `context_compass/tasks/completed/2026-02-07_phase12_artifact_contract_task_completed.md`
 
 ## Tasks (Implementation Checklist)
 - [x] Task: TASK-2026-02-07-phase2-5-ir-export - Export phases 2-5 artifacts into canonical Codegen IR fields.

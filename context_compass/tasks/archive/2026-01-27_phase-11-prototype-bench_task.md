@@ -26,11 +26,11 @@ against the Phase 8-10 fast path.
 - [ ] Record results and comparison table.
 
 ## Deliverables
-- `context_compass/artifacts/fast_path_meld_plan/phase11_prototype_benchmarks.md`
+- `context_compass/artifacts/README.md`
 
 ## Files / Paths Impacted
 - context_compass/tasks/2026-01-27_phase-11-prototype-bench_task.md
-- context_compass/artifacts/fast_path_meld_plan/phase11_prototype_benchmarks.md
+- context_compass/artifacts/README.md
 
 ## Validation
 - Not run.

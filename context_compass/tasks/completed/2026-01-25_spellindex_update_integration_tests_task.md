@@ -35,7 +35,7 @@ through real Spellbook/Conduit wiring for owned and contracted spells.
 
 ## Files / Paths Impacted
 - `tests/integration/melder/spellbook/test_spellbook_integration_resolution_contract_extra.py`
-- `context_compass/stories/2026-01-25_spellindex_update_propagation_story.md`
+- `context_compass/stories/completed/2026-01-25_spellindex_update_propagation_story.md`
 
 ## Validation
 - Not run.

@@ -39,7 +39,7 @@ features, reducing rework risk.
   - Cross-frame coordination.
 
 ## Dependencies / Related Work
-- `context_compass/epics/2026-01-20_melder_change_control_devops_review_epic.md`
+- `context_compass/epics/completed/2026-01-20_melder_change_control_devops_review_epic.md`
 
 ## Tasks (Implementation Checklist)
 - [x] Task: TASK-2026-01-20-change-control-staged-scope-refresh - Refresh embargo scopes on staged updates.

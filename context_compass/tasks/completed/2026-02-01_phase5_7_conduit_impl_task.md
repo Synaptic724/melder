@@ -44,7 +44,7 @@ Implement conduit-scoped component_of storage and revalidation in ChangeControlM
 - `context_compass/architecture/src_architecture.md`
 - `context_compass/architecture/change_control_object_map.md`
 - `context_compass/components/src_components.md`
-- `context_compass/tasks/2026-02-01_phase5_7_conduit_impl_task.md`
+- `context_compass/tasks/completed/2026-02-01_phase5_7_conduit_impl_task.md`
 
 ## Validation
 - Not run.

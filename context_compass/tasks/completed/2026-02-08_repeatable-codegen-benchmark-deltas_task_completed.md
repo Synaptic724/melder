@@ -53,8 +53,8 @@ baseline deltas for milestone tracking.
 - `src/melder/aether/conduit/meld/meld_runtime/meld_runtime.py`
 - `tests/unit/melder/aether/conduit/meld/meld_runtime/test_meld_runtime.py`
 - `benchmarks/testing_other_di/run_codegen_benchmark_deltas.py`
-- `context_compass/stories/2026-02-07_validation-perf-gates_story.md`
-- `context_compass/epics/2026-02-07_full-aot-codegen-cutover_epic.md`
+- `context_compass/stories/completed/2026-02-07_validation-perf-gates_story_completed.md`
+- `context_compass/epics/completed/2026-02-07_full-aot-codegen-cutover_epic_completed.md`
 
 ## Validation
 - Ran:

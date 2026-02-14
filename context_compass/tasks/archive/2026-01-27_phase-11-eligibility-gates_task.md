@@ -27,11 +27,11 @@ fallback rules to the Phase 8-10 executor.
 - [ ] Record fallback triggers and error handling policy.
 
 ## Deliverables
-- `context_compass/artifacts/fast_path_meld_plan/phase11_eligibility_gates.md`
+- `context_compass/artifacts/README.md`
 
 ## Files / Paths Impacted
 - context_compass/tasks/2026-01-27_phase-11-eligibility-gates_task.md
-- context_compass/artifacts/fast_path_meld_plan/phase11_eligibility_gates.md
+- context_compass/artifacts/README.md
 
 ## Validation
 - Not run.
@@ -51,5 +51,5 @@ fallback rules to the Phase 8-10 executor.
 
 ## Context / Handoff Summary
 Draft eligibility gates documented in
-`context_compass/artifacts/fast_path_meld_plan/phase11_eligibility_gates.md`
+`context_compass/artifacts/README.md`
 with evidence anchors and fallback notes.

@@ -32,11 +32,11 @@ to validate InjectionPlan compilation and fallback behavior.
 - [x] Record plan in a compiler note with evidence references.
 
 ## Deliverables
-- `context_compass/artifacts/fast_path_meld_plan/phase9_injection_plan_compiler_plan.md`
+- `context_compass/artifacts/README.md`
 
 ## Files / Paths Impacted
 - context_compass/tasks/2026-01-27_phase-9-injection-plan-compiler_task.md
-- context_compass/artifacts/fast_path_meld_plan/phase9_injection_plan_compiler_plan.md
+- context_compass/artifacts/README.md
 
 ## Validation
 - Not run (planning-only).
@@ -54,5 +54,5 @@ to validate InjectionPlan compilation and fallback behavior.
 
 ## Context / Handoff Summary
 Draft compiler plan recorded in
-`context_compass/artifacts/fast_path_meld_plan/phase9_injection_plan_compiler_plan.md`
+`context_compass/artifacts/README.md`
 with insertion point after Phase 8 and revalidation integration notes.

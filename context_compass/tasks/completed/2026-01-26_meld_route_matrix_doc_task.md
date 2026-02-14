@@ -29,11 +29,11 @@ tickets.
 - [x] Record notes and open questions.
 
 ## Deliverables
-- context_compass/artifacts/fast_path_meld_plan/codex_exploration/meld_route_matrix_2026-01-26.md
+- context_compass/artifacts/README.md
 
 ## Files / Paths Impacted
 - context_compass/tasks/2026-01-26_meld_route_matrix_doc_task.md
-- context_compass/artifacts/fast_path_meld_plan/codex_exploration/meld_route_matrix_2026-01-26.md
+- context_compass/artifacts/README.md
 
 ## Validation
 - Not run.
@@ -52,5 +52,5 @@ tickets.
 - [x] Acceptance criteria reviewed with user and confirmed
 
 ## Context / Handoff Summary
-Artifact created: `context_compass/artifacts/fast_path_meld_plan/codex_exploration/meld_route_matrix_2026-01-26.md`
+Artifact created: `context_compass/artifacts/README.md`
 Summarizes best-case and fallback routes aligned to fast-path tickets.

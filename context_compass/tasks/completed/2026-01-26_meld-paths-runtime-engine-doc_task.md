@@ -27,11 +27,11 @@ and MeldEngine, including override, existence, and blueprint branches.
 - [x] Record observations and refactor candidates.
 
 ## Deliverables
-- context_compass/artifacts/fast_path_meld_plan/codex_exploration/meld_paths_runtime_engine_2026-01-26.md
+- context_compass/artifacts/README.md
 
 ## Files / Paths Impacted
 - context_compass/tasks/2026-01-26_meld-paths-runtime-engine-doc_task.md
-- context_compass/artifacts/fast_path_meld_plan/codex_exploration/meld_paths_runtime_engine_2026-01-26.md
+- context_compass/artifacts/README.md
 
 ## Validation
 - Not run.
@@ -50,6 +50,6 @@ and MeldEngine, including override, existence, and blueprint branches.
 - [x] Acceptance criteria reviewed with user and confirmed
 
 ## Context / Handoff Summary
-Artifact created: `context_compass/artifacts/fast_path_meld_plan/codex_exploration/meld_paths_runtime_engine_2026-01-26.md`
+Artifact created: `context_compass/artifacts/README.md`
 Captures meld, meld runtime, and meld engine lanes with override and existence
 branches, plus refactor candidates.

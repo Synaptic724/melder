@@ -42,7 +42,7 @@ reducing runtime duplication and keeping the execution path predictable.
   - Refactors outside meld/runtime and SpellCrafter phases 8-10.
 
 ## Dependencies / Related Work
-- Audit: context_compass/artifacts/meld_engine_phase_migration_audit/phase_migration_audit.md
+- Audit: context_compass/artifacts/README.md
 - Archived audit ticket: context_compass/tasks/archive/2026-01-28_phase8-10-migration-audit_task.md
 
 ## Tasks (Implementation Checklist)

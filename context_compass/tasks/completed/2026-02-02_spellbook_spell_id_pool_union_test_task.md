@@ -31,7 +31,7 @@ Add a unit test proving Spellbook._spell_id_pool matches the union of owned and 
 
 ## Files / Paths Impacted
 - `tests/unit/melder/spellbook/test_spellbook.py`
-- `context_compass/tasks/2026-02-02_spellbook_spell_id_pool_union_test_task.md`
+- `context_compass/tasks/completed/2026-02-02_spellbook_spell_id_pool_union_test_task.md`
 
 ## Validation
 - Not run.

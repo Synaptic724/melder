@@ -31,7 +31,7 @@ Add pytest coverage proving Phase 5-7 DevOps artifacts are isolated per conduit 
 
 ## Files / Paths Impacted
 - `tests/unit/melder/aether/dev_ops/change_control_manager/test_change_control_manager.py`
-- `context_compass/tasks/2026-02-01_phase5_7_conduit_tests_task.md`
+- `context_compass/tasks/completed/2026-02-01_phase5_7_conduit_tests_task.md`
 
 ## Validation
 - Not run.

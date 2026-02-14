@@ -41,7 +41,7 @@ evidence-based findings.
 ## Files / Paths Impacted
 - `context_compass/architecture/src_architecture.md`
 - `context_compass/components/src_components.md`
-- `context_compass/stories/2026-01-17_melder_architecture_components_docs_story.md`
+- `context_compass/stories/completed/2026-01-17_melder_architecture_components_docs_story.md`
 
 ## Validation
 - Not run.

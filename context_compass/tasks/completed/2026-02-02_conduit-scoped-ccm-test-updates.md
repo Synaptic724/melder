@@ -44,7 +44,7 @@ Align test stubs and expectations with conduit-scoped change-control APIs and up
 - `tests/unit/melder/aether/dev_ops/test_dev_ops_manager.py`
 - `tests/unit/melder/aether/test_aether.py`
 - `tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
-- `context_compass/tasks/2026-02-02_conduit-scoped-ccm-test-updates.md`
+- `context_compass/tasks/completed/2026-02-02_conduit-scoped-ccm-test-updates.md`
 
 ## Validation
 - Not run.

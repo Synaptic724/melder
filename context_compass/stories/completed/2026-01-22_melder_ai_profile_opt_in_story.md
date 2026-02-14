@@ -31,7 +31,7 @@ Prevents accidental heavy introspection while keeping a simple path to enable AI
   - AI tool integrations.
 
 ## Dependencies / Related Work
-- `context_compass/epics/2026-01-22_melder_ai_profile_opt_in_epic.md`
+- `context_compass/epics/completed/2026-01-22_melder_ai_profile_opt_in_epic.md`
 
 ## Tasks (Implementation Checklist)
 - [ ] Task: TASK-2026-01-22-melder-ai-profile-opt-in-guard - implement config flag + guard

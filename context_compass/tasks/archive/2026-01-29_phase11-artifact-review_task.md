@@ -30,8 +30,8 @@ fallback rules with evidence links.
 - Phase 11 artifact summary with gate checklist and open questions.
 
 ## Files / Paths Impacted
-- context_compass/artifacts/fast_path_meld_plan/phase11_executor_design.md
-- context_compass/artifacts/fast_path_meld_plan/phase11_eligibility_gates.md
+- context_compass/artifacts/README.md
+- context_compass/artifacts/README.md
 
 ## Validation
 - Not run (documentation-only).
@@ -79,9 +79,9 @@ fallback rules with evidence links.
   in Phase 10/slow path.
 
 ## Evidence Anchors
-- context_compass/artifacts/fast_path_meld_plan/phase11_executor_design.md
-- context_compass/artifacts/fast_path_meld_plan/phase11_eligibility_gates.md
-- context_compass/artifacts/fast_path_meld_plan/research_fast_path_gates.md
+- context_compass/artifacts/README.md
+- context_compass/artifacts/README.md
+- context_compass/artifacts/README.md
 
 ## Context / Handoff Summary
 Phase 11 executor/gates reviewed; deliverable captures the step array model,

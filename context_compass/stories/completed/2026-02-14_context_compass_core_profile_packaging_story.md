@@ -49,7 +49,7 @@ execution safety.
 - Core/profile structure exists with clear usage docs.
 - Config file exists with microcycle on/off switches.
 - Root bootstrap file references `context_compass` paths.
-- `codex_todo/` compatibility shim does not exist.
+- `codex_todo` compatibility shim does not exist.
 
 ## Validation / Test Plan
 - Not run.

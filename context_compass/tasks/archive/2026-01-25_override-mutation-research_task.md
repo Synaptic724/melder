@@ -27,10 +27,10 @@ plan patch maps.
 - [x] Record findings + unknowns in artifacts.
 
 ## Deliverables
-- context_compass/artifacts/fast_path_meld_plan/research_override_mutation.md
+- context_compass/artifacts/README.md
 
 ## Files / Paths Impacted
-- context_compass/artifacts/fast_path_meld_plan/research_override_mutation.md
+- context_compass/artifacts/README.md
 
 ## Validation
 - Not run.

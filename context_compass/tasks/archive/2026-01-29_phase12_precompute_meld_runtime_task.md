@@ -46,7 +46,7 @@ Investigate MeldEngine/MeldRuntime computations and design Phase 12 artifacts th
 - src/melder/aether/conduit/meld/meld_runtime/meld_runtime.py
 - src/melder/spellbook/spell_crafter/blueprints/execution_plan.py
 - src/melder/spellbook/spell_crafter/spell_crafter.py
-- context_compass/artifacts/phase12_precompute_meld_runtime/phase12_precompute_audit.md
+- context_compass/artifacts/README.md
 
 ## Validation
 - Not run (analysis-only).

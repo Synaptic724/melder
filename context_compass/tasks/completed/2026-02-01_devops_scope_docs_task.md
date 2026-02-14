@@ -33,7 +33,7 @@ Update architecture/components docs to reflect verified DevOps scoping (frame vs
 ## Files / Paths Impacted
 - `context_compass/architecture/src_architecture.md`
 - `context_compass/components/src_components.md`
-- `context_compass/tasks/2026-02-01_devops_scope_docs_task.md`
+- `context_compass/tasks/completed/2026-02-01_devops_scope_docs_task.md`
 
 ## Validation
 - Not run.

@@ -35,7 +35,7 @@ Implement Phase 5-11 attachment so constructed spells always have execution plan
 - Updated documentation to reflect new semantics.
 
 ## Files / Paths Impacted
-- context_compass/artifacts/phase_system_investigation_2026-01-29/implementation_plan.md
+- context_compass/artifacts/README.md
 - src/melder/spellbook/spell_crafter/system/spell_system_root_blueprint_builder.py
 - src/melder/spellbook/spell_crafter/spell_crafter.py
 - src/melder/spellbook/spellbook.py

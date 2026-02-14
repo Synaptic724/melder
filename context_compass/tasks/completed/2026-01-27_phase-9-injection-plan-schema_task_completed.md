@@ -32,11 +32,11 @@ needed for Phase 9 compilation.
 - [x] Record decisions and UNKNOWNs in a design doc.
 
 ## Deliverables
-- `context_compass/artifacts/fast_path_meld_plan/phase9_injection_plan_schema.md`
+- `context_compass/artifacts/README.md`
 
 ## Files / Paths Impacted
 - context_compass/tasks/2026-01-27_phase-9-injection-plan-schema_task.md
-- context_compass/artifacts/fast_path_meld_plan/phase9_injection_plan_schema.md
+- context_compass/artifacts/README.md
 
 ## Validation
 - Not run (docs-only).
@@ -54,5 +54,5 @@ needed for Phase 9 compilation.
 
 ## Context / Handoff Summary
 Draft InjectionPlan schema recorded in
-`context_compass/artifacts/fast_path_meld_plan/phase9_injection_plan_schema.md`
+`context_compass/artifacts/README.md`
 with evidence mapping and open questions for override handling.

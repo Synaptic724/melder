@@ -53,7 +53,7 @@ switch for Ticket Microcycle enforcement.
   - `rg -n "context_compass|microcycle" agents.md context_compass`
 
 ## Risks / Rollback Notes
-- Risk: external automation that still points at `codex_todo/*` will fail.
+- Risk: external automation that still points at legacy `codex_todo` paths will fail.
 - Rollback: move `context_compass` back to `codex_todo` and revert bootstrap.
 
 ## Done Checklist
@@ -106,7 +106,7 @@ switch for Ticket Microcycle enforcement.
 
 - DATE: 2026-02-14
   TYPE: MEASURE
-  CLAIM: Hard-cut migration is implemented: `context_compass/` exists with core/profile/config, root bootstrap points to new path, and `codex_todo/` is absent.
+  CLAIM: Hard-cut migration is implemented: `context_compass/` exists with core/profile/config, root bootstrap points to new path, and `codex_todo` is absent.
   EVIDENCE: `agents.md:3`, `context_compass/config/context_compass_config.yaml:1`, `context_compass/core/ticket_microcycle.md:1`, `context_compass/profiles/default_general_profile.md:1`
   IMPACT: Workspace is now share-ready under a single canonical namespace.
   NEXT: Walk through changes with user and request acceptance for ticket closure.

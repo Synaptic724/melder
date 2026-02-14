@@ -30,7 +30,7 @@ Document Phase 1-4 artifacts, invariants, and how dependencies are recorded for 
 - [x] Record evidence references in phase doc.
 
 ## Deliverables
-- Updated `context_compass/artifacts/phase_system_investigation_2026-01-29/phase01-04_structural.md`.
+- Updated `context_compass/artifacts/README.md`.
 
 ## Files / Paths Impacted
 - src/melder/spellbook/spell_crafter/spell_crafter.py

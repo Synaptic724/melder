@@ -30,7 +30,7 @@ Document Phase 7 change-control wiring, component_of rebuilds, and revalidator r
 - [x] Record findings and unknowns.
 
 ## Deliverables
-- Updated `context_compass/artifacts/phase_system_investigation_2026-01-29/phase07_change_control.md`.
+- Updated `context_compass/artifacts/README.md`.
 
 ## Files / Paths Impacted
 - src/melder/spellbook/spell_crafter/spell_crafter.py

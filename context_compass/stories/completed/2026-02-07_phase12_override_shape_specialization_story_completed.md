@@ -39,7 +39,7 @@ without reintroducing `MeldEngine` or fallback execution paths.
 - Global cross-spell specialization sharing.
 
 ## Dependencies / Related Work
-- `context_compass/stories/2026-02-07_phase12_no_overrides_executor_story.md`
+- `context_compass/stories/completed/2026-02-07_phase12_no_overrides_executor_story_completed.md`
 
 ## Tasks (Implementation Checklist)
 - [x] Task: TASK-2026-02-07-override-frontend-socketref-contract - Lock frontend targeting contract for runtime override codegen input.

@@ -25,18 +25,18 @@ capture dialog resolutions, design inputs, and open questions.
 - [x] Create codex_exploration folder under context_compass/artifacts/fast_path_meld_plan.
 - [x] Add README in context_compass/artifacts/fast_path_meld_plan.
 - [x] Add README in context_compass/artifacts/fast_path_meld_plan/codex_exploration.
-- [x] Write context_compass/artifacts/fast_path_meld_plan/codex_exploration/dialog_resolutions.md.
+- [x] Write context_compass/artifacts/README.md.
 
 ## Deliverables
-- context_compass/artifacts/fast_path_meld_plan/README.md
-- context_compass/artifacts/fast_path_meld_plan/codex_exploration/README.md
-- context_compass/artifacts/fast_path_meld_plan/codex_exploration/dialog_resolutions.md
+- context_compass/artifacts/README.md
+- context_compass/artifacts/README.md
+- context_compass/artifacts/README.md
 
 ## Files / Paths Impacted
 - context_compass/tasks/2026-01-26_fast-path-dialog-resolutions_task.md
-- context_compass/artifacts/fast_path_meld_plan/README.md
-- context_compass/artifacts/fast_path_meld_plan/codex_exploration/README.md
-- context_compass/artifacts/fast_path_meld_plan/codex_exploration/dialog_resolutions.md
+- context_compass/artifacts/README.md
+- context_compass/artifacts/README.md
+- context_compass/artifacts/README.md
 
 ## Validation
 - Not run.

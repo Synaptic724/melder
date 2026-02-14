@@ -39,9 +39,9 @@ correctness via explicit fallback when cases are unsupported.
   - Phase 11 codegen executor.
 
 ## Dependencies / Related Work
-- context_compass/artifacts/fast_path_meld_plan/ticket3_fast_path_github.md
-- context_compass/artifacts/fast_path_meld_plan/research_override_mutation.md
-- context_compass/artifacts/fast_path_meld_plan/codex_exploration/meld_route_matrix_2026-01-26.md
+- context_compass/artifacts/README.md
+- context_compass/artifacts/README.md
+- context_compass/artifacts/README.md
 - src/melder/aether/conduit/meld/overrides/graph_mutator.py
 - src/melder/aether/conduit/meld/overrides/spell_overrider.py
 

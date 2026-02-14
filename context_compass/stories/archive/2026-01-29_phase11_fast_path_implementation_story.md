@@ -36,8 +36,8 @@ Keeps the phase system as the single source of truth for runtime planning while 
 
 ## Dependencies / Related Work
 - Epic: EPIC-2026-01-29-phase-system-investigation
-- Tracking: context_compass/artifacts/phase_system_investigation_2026-01-29/tracking.md
-- Plan: context_compass/artifacts/phase_system_investigation_2026-01-29/implementation_plan.md
+- Tracking: context_compass/artifacts/README.md
+- Plan: context_compass/artifacts/README.md
 
 ## Tasks (Implementation Checklist)
 - [x] Task: TASK-2026-01-29-phase11-fast-path-implementation - Implement fast path + docs

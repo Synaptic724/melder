@@ -73,7 +73,7 @@ Phases should own compilation work; meld runtime/engine should consume artifacts
   - src/melder/aether/conduit/meld/meld_engine/meld_engine.py
   - src/melder/spellbook/spell_crafter/spell_crafter.py
   - src/melder/spellbook/spell_crafter/blueprints/
-  - context_compass/artifacts/meld_engine_phase_migration_audit/phase_migration_audit.md
+  - context_compass/artifacts/README.md
 
 ## Validation
 - Not run.

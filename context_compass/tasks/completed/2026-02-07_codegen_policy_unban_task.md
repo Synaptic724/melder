@@ -34,7 +34,7 @@ permission gate.
 - Updated `context_compass/agent_onboarding/agent/general/skills/python/banned_patterns.md`
 
 ## Files / Paths Impacted
-- `context_compass/tasks/2026-02-07_codegen_policy_unban_task.md`
+- `context_compass/tasks/completed/2026-02-07_codegen_policy_unban_task.md`
 - `context_compass/AGENTS.md`
 - `context_compass/agent_onboarding/agent/general/skills/python/banned_patterns.md`
 

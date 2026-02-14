@@ -32,7 +32,7 @@ precompiled at conjure time for Phase 11 (or Phase 12) fast-path execution.
 ## Files / Paths Impacted
 - src/melder/aether/conduit/meld/meld_engine/meld_engine.py
 - src/melder/aether/conduit/meld/meld_runtime/meld_runtime.py
-- context_compass/artifacts/fast_path_meld_plan/phase11_executor_design.md
+- context_compass/artifacts/README.md
 
 ## Validation
 - Not run (analysis-only).
@@ -106,8 +106,8 @@ precompiled at conjure time for Phase 11 (or Phase 12) fast-path execution.
 
 ## Evidence Anchors
 - src/melder/aether/conduit/meld/meld_engine/meld_engine.py
-- context_compass/artifacts/fast_path_meld_plan/phase11_executor_design.md
-- context_compass/artifacts/fast_path_meld_plan/research_plan_compilation.md
+- context_compass/artifacts/README.md
+- context_compass/artifacts/README.md
 
 ## Context / Handoff Summary
 Phase 11 can frontload occurrence planning, injection wiring, and per-step

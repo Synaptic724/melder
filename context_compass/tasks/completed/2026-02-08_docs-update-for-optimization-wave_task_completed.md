@@ -35,8 +35,8 @@ Keep architecture/components docs synchronized with optimization changes to
 ## Files / Paths Impacted
 - `context_compass/architecture/src_architecture.md`
 - `context_compass/components/src_components.md`
-- `context_compass/epics/2026-02-08_codegen-meld-runtime-optimization_epic.md`
-- `context_compass/stories/2026-02-08_codegen-meld-runtime-optimization-wave_story.md`
+- `context_compass/epics/completed/2026-02-08_codegen-meld-runtime-optimization_epic_completed.md`
+- `context_compass/stories/completed/2026-02-08_codegen-meld-runtime-optimization-wave_story_completed.md`
 
 ## Validation
 - Ran:

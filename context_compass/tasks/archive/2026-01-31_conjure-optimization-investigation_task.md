@@ -167,12 +167,12 @@ but must still be treated as unverified until reproduced in-repo.
 - Any “largest phase” or “top allocator” assertions beyond the code sites noted above.
 
 ## Existing Tickets to Map Against
-- `context_compass/tasks/2026-01-31_root_blueprint_overlay_cost_task.md`
-- `context_compass/tasks/2026-01-31_execution_plan_build_overhead_task.md`
-- `context_compass/tasks/2026-01-31_conjure-occurrence-plan-hotspots_task.md`
-- `context_compass/tasks/2026-01-31_phase6_socket_ref_sanity_hotspot_task.md`
-- `context_compass/tasks/2026-01-31_conjure-phase-churn_task.md`
-- `context_compass/tasks/2026-01-31_phase8-11_spell-id-pool_task.md`
+- `context_compass/tasks/archive/2026-01-31_root_blueprint_overlay_cost_task.md`
+- `context_compass/tasks/archive/2026-01-31_execution_plan_build_overhead_task.md`
+- `context_compass/tasks/archive/2026-01-31_conjure-occurrence-plan-hotspots_task.md`
+- `context_compass/tasks/archive/2026-01-31_phase6_socket_ref_sanity_hotspot_task.md`
+- `context_compass/tasks/archive/2026-01-31_conjure-phase-churn_task.md`
+- `context_compass/tasks/archive/2026-01-31_phase8-11_spell-id-pool_task.md`
 
 ## Ideas to Evaluate (from user notes)
 - Phase 5: reduce per-spell blueprint compilation
@@ -272,7 +272,7 @@ All gaps below remain UNKNOWN until a dedicated ticket is approved:
 - Recommended sequencing and risk notes.
 
 ## Files / Paths Impacted
-- `context_compass/tasks/2026-01-31_conjure-optimization-investigation_task.md`
+- `context_compass/tasks/archive/2026-01-31_conjure-optimization-investigation_task.md`
 
 ## Validation
 - Not run.

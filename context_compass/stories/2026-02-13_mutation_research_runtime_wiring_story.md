@@ -56,7 +56,7 @@ research artifacts and SpellSystemStates/ChangeControl state.
 - `src/melder/spellbook/mutations/research/spell/node/spell_mutation_node.py`
 - `src/melder/spellbook/mutations/research/creation/node/creation_mutation_node.py`
 - `src/melder/aether/dev_ops/spell_system_states/spell_system_states.py`
-- `context_compass/stories/2026-02-13_spellstate_advanced_flag_producers_story.md`
+- `context_compass/stories/completed/2026-02-13_spellstate_advanced_flag_producers_story_completed.md`
 
 ## Tasks (Implementation Checklist)
 - [ ] Task: TASK-2026-02-13-mutation-wiring-contract - Define runtime contract for mutation research transitions.

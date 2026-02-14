@@ -38,7 +38,7 @@ Ensures the phase system is the single source of truth for runtime artifacts, el
   - Performance tuning.
 
 ## Dependencies / Related Work
-- Tracking doc: `context_compass/artifacts/phase_system_investigation_2026-01-29/tracking.md`
+- Tracking doc: `context_compass/artifacts/README.md`
 
 ## Tasks (Implementation Checklist)
 - [x] Task: TASK-2026-01-29-phase01-04-structural-investigation - Phase 1-4 investigation

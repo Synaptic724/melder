@@ -37,7 +37,7 @@ competitor systems (Dishka, Dependency Injector, Lagom).
 - `benchmarks/competitors/melder_implementation_plan/competitor_analysis/melder_phase_meld_competitor_report.md`
 
 ## Files / Paths Impacted
-- `context_compass/tasks/2026-02-07_melder_phase_meld_competitor_report_task.md`
+- `context_compass/tasks/completed/2026-02-07_melder_phase_meld_competitor_report_task.md`
 - `benchmarks/competitors/melder_implementation_plan/competitor_analysis/melder_phase_meld_competitor_report.md`
 
 ## Validation

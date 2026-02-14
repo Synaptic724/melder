@@ -58,10 +58,10 @@ all layers.
 ## Dependencies / External References
 - `context_compass/architecture/change_control_object_map.md`
 - `context_compass/architecture/change_control_review_findings.md`
-- `context_compass/artifacts/change_control_test_plan.md`
+- `context_compass/artifacts/README.md`
 
 ## Milestones (Track Progress)
-- [x] Milestone 1: Test plan + tickets ready (`context_compass/artifacts/change_control_test_plan.md`).
+- [x] Milestone 1: Test plan + tickets ready (`context_compass/artifacts/README.md`).
 - [x] Milestone 2: Unit + component suites expanded.
 - [x] Milestone 3: Integration suite expanded and target count met.
 

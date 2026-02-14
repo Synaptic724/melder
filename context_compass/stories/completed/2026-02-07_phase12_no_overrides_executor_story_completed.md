@@ -37,9 +37,9 @@ This story makes execution ownership explicit: spell compilation owns exact exec
 - Mutation-aware codegen.
 
 ## Dependencies / Related Work
-- `context_compass/stories/2026-02-07_phase11_ir_data_harvest_story.md`
-- `context_compass/tasks/2026-02-07_codegen_fast_transient_task.md`
-- `context_compass/artifacts/phase12_precompute_meld_runtime/phase12_precompute_audit.md`
+- `context_compass/stories/completed/2026-02-07_phase11_ir_data_harvest_story_completed.md`
+- `context_compass/tasks/completed/2026-02-07_codegen_fast_transient_task.md`
+- `context_compass/artifacts/README.md`
 
 ## Tasks (Implementation Checklist)
 - [x] Task: TASK-2026-02-07-phase12-artifact-contract - Define and wire no-overrides executor artifact contract.
