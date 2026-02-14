@@ -9,6 +9,7 @@ from melder.aether.conduit.meld.creation_context.creation_context import (
     CreationContext,
     OverrideRouteConfig,
 )
+from melder.spellbook.spell_crafter.blueprints.execution_plan import ExecutionPlanTargetKind
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
 
@@ -53,6 +54,28 @@ def _make_spell(spell_id: str = "s1") -> Any:
     )
 
 
+def _make_plan_row(spell_id: str = "s1") -> Dict[str, Any]:
+    """
+    Build a minimal schema step row accepted by Phase12 override compile paths.
+    """
+    return {
+        "instance_key": (spell_id, None),
+        "spell_id": spell_id,
+        "existence": "many",
+        "creations_target_kind": ExecutionPlanTargetKind.CALLER,
+        "shared_instance": True,
+        "dependency_resolution_order": (),
+        "override_match_prefix": None,
+        "override_match_prefix_len": 0,
+        "uses_positional_override": False,
+        "contract_positional_override": None,
+        "has_contract_payload": False,
+        "contract_payload_items": (),
+        "use_spell_lock_hint": False,
+        "must_register": False,
+    }
+
+
 def _make_route_config(
         *,
         plan_signature: Tuple[Any, ...],
@@ -65,7 +88,7 @@ def _make_route_config(
     return OverrideRouteConfig(
         plan_signature=plan_signature,
         path_registry="registry",
-        plan_rows=plan_rows if plan_rows is not None else ({"spell_id": "s1"},),
+        plan_rows=plan_rows if plan_rows is not None else (_make_plan_row("s1"),),
         root_spell_id="s1",
         spell_lookup={"s1": object()},
         empty_shape_key=(plan_signature, (), -1),
@@ -106,8 +129,8 @@ def _make_override_harness(
         -1,
     )
     context._override_specialization_cache = {}
-    context._override_executor_source_cache_by_step_count = {}
-    context._override_executor_code_object_cache_by_step_count = {}
+    context._override_executor_source_cache_by_plan_signature = {}
+    context._override_executor_code_object_cache_by_plan_signature = {}
     context._override_prefilter_step_targets_cache = {}
     context._override_prefilter_path_metadata_cache = {}
     return context
@@ -265,9 +288,13 @@ def test_get_or_compile_override_executor_caches_compiled_executor(
     source_emit_count = {"value": 0}
     code_compile_count = {"value": 0}
 
-    def _emit_phase12_overrides_executor_source(*, step_count: int) -> str:
+    def _emit_phase12_overrides_executor_shape_source(
+            *,
+            plan_rows: Sequence[Dict[str, Any]],
+            root_spell_id: Optional[str],
+    ) -> str:
         source_emit_count["value"] += 1
-        return f"source:{step_count}"
+        return f"source:{len(plan_rows)}:{root_spell_id}"
 
     def _compile_phase12_overrides_executor_code_object(*, source: str) -> Any:
         code_compile_count["value"] += 1
@@ -279,8 +306,8 @@ def test_get_or_compile_override_executor_caches_compiled_executor(
 
     monkeypatch.setattr(
         creation_context_module,
-        "emit_phase12_overrides_executor_source",
-        _emit_phase12_overrides_executor_source,
+        "emit_phase12_overrides_executor_shape_source",
+        _emit_phase12_overrides_executor_shape_source,
     )
     monkeypatch.setattr(
         creation_context_module,
@@ -319,11 +346,11 @@ def test_get_or_compile_override_executor_caches_compiled_executor(
     assert code_compile_count["value"] == 1
 
 
-def test_get_or_compile_override_executor_reuses_step_count_artifacts_across_misses(
+def test_get_or_compile_override_executor_reuses_plan_signature_artifacts_across_misses(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
-    Verify miss-path specializations reuse source/code artifacts for same step-count.
+    Verify miss-path specializations reuse source/code artifacts for one plan signature.
     """
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
@@ -336,9 +363,13 @@ def test_get_or_compile_override_executor_reuses_step_count_artifacts_across_mis
     code_compile_count = {"value": 0}
     specialization_compile_count = {"value": 0}
 
-    def _emit_phase12_overrides_executor_source(*, step_count: int) -> str:
+    def _emit_phase12_overrides_executor_shape_source(
+            *,
+            plan_rows: Sequence[Dict[str, Any]],
+            root_spell_id: Optional[str],
+    ) -> str:
         source_emit_count["value"] += 1
-        return f"source:{step_count}"
+        return f"source:{len(plan_rows)}:{root_spell_id}"
 
     def _compile_phase12_overrides_executor_code_object(*, source: str) -> Any:
         code_compile_count["value"] += 1
@@ -350,8 +381,8 @@ def test_get_or_compile_override_executor_reuses_step_count_artifacts_across_mis
 
     monkeypatch.setattr(
         creation_context_module,
-        "emit_phase12_overrides_executor_source",
-        _emit_phase12_overrides_executor_source,
+        "emit_phase12_overrides_executor_shape_source",
+        _emit_phase12_overrides_executor_shape_source,
     )
     monkeypatch.setattr(
         creation_context_module,
@@ -757,8 +788,8 @@ def test_cleanup_clears_runtime_cache_and_route_refs() -> None:
 
     assert context.cleaned is True
     assert context._override_specialization_cache is None
-    assert context._override_executor_source_cache_by_step_count is None
-    assert context._override_executor_code_object_cache_by_step_count is None
+    assert context._override_executor_source_cache_by_plan_signature is None
+    assert context._override_executor_code_object_cache_by_plan_signature is None
     assert context._override_prefilter_step_targets_cache is None
     assert context._override_prefilter_path_metadata_cache is None
     assert route_config_no_mutation.plan_signature is None

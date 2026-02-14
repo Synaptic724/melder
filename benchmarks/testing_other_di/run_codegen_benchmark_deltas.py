@@ -6,7 +6,6 @@ from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
-from melder.aether.conduit.meld.meld_runtime.meld_runtime import MeldRuntime
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 
@@ -483,6 +482,273 @@ def _sample_callable_ns(
     return tuple(samples)
 
 
+def _normalize_benchmark_samples(
+        *,
+        name: str,
+        samples: Sequence[int],
+) -> Tuple[int, ...]:
+    """
+    Normalize one benchmark sample sequence and enforce numeric contract rules.
+
+    Contract:
+        - Requires non-empty int-only sample values.
+        - Rejects negative values.
+        - Returns immutable tuple for downstream median/ratio calculations.
+    """
+    if samples is None:
+        raise ValueError("{0} samples must not be None.".format(name))
+    normalized_samples = []
+    for sample in samples:
+        if not isinstance(sample, int):
+            raise ValueError("{0} samples must contain int values only.".format(name))
+        if sample < 0:
+            raise ValueError("{0} samples must be >= 0.".format(name))
+        normalized_samples.append(sample)
+    if not normalized_samples:
+        raise ValueError("{0} samples must not be empty.".format(name))
+    return tuple(normalized_samples)
+
+
+def _median_ns(samples: Sequence[int]) -> int:
+    """
+    Compute median nanosecond value using deterministic integer arithmetic.
+
+    Contract:
+        - Input sequence must be non-empty.
+        - Even-length medians are floor-divided integer midpoint values.
+    """
+    sorted_samples = sorted(samples)
+    if not sorted_samples:
+        raise ValueError("samples must not be empty.")
+    middle_index = len(sorted_samples) // 2
+    if (len(sorted_samples) % 2) == 1:
+        return sorted_samples[middle_index]
+    return (sorted_samples[middle_index - 1] + sorted_samples[middle_index]) // 2
+
+
+def _collect_codegen_benchmark_samples_ns(
+        *,
+        cold_compile_fn: Callable[[], Any],
+        warm_execute_fn: Callable[[], Any],
+        mixed_execute_fn: Callable[[], Any],
+        sample_count: int,
+        warmup_count: int,
+) -> Dict[str, Tuple[int, ...]]:
+    """
+    Collect cold/warm/mixed benchmark sample tuples for gate evaluation.
+
+    Contract:
+        - Applies identical sample/warmup counts to all benchmark lanes.
+        - Returns a stable key schema used by report and gate evaluators.
+    """
+    return {
+        "cold_compile_ns": _sample_callable_ns(
+            fn=cold_compile_fn,
+            sample_count=sample_count,
+            warmup_count=warmup_count,
+        ),
+        "warm_execute_ns": _sample_callable_ns(
+            fn=warm_execute_fn,
+            sample_count=sample_count,
+            warmup_count=warmup_count,
+        ),
+        "mixed_execute_ns": _sample_callable_ns(
+            fn=mixed_execute_fn,
+            sample_count=sample_count,
+            warmup_count=warmup_count,
+        ),
+    }
+
+
+def _evaluate_codegen_benchmark_gates(
+        *,
+        cold_compile_ns: Sequence[int],
+        warm_execute_ns: Sequence[int],
+        mixed_execute_ns: Sequence[int],
+        warm_to_cold_max_ratio: float,
+        mixed_to_cold_max_ratio: float,
+) -> Dict[str, Any]:
+    """
+    Evaluate warm/mixed benchmark gate ratios relative to cold compile median.
+
+    Contract:
+        - Produces deterministic median and ratio fields consumed by summary output.
+        - Fails gates when configured ratio thresholds are exceeded.
+    """
+    if warm_to_cold_max_ratio <= 0:
+        raise ValueError("warm_to_cold_max_ratio must be > 0.")
+    if mixed_to_cold_max_ratio <= 0:
+        raise ValueError("mixed_to_cold_max_ratio must be > 0.")
+
+    cold_samples = _normalize_benchmark_samples(
+        name="cold_compile_ns",
+        samples=cold_compile_ns,
+    )
+    warm_samples = _normalize_benchmark_samples(
+        name="warm_execute_ns",
+        samples=warm_execute_ns,
+    )
+    mixed_samples = _normalize_benchmark_samples(
+        name="mixed_execute_ns",
+        samples=mixed_execute_ns,
+    )
+
+    cold_compile_median_ns = _median_ns(cold_samples)
+    if cold_compile_median_ns < 1:
+        raise ValueError("cold compile median must be >= 1.")
+    warm_execute_median_ns = _median_ns(warm_samples)
+    mixed_execute_median_ns = _median_ns(mixed_samples)
+
+    warm_to_cold_ratio = warm_execute_median_ns / cold_compile_median_ns
+    mixed_to_cold_ratio = mixed_execute_median_ns / cold_compile_median_ns
+
+    failures = []
+    if warm_to_cold_ratio > warm_to_cold_max_ratio:
+        failures.append(
+            "warm_execute ratio {0:.4f} exceeded {1:.4f}".format(
+                warm_to_cold_ratio,
+                warm_to_cold_max_ratio,
+            )
+        )
+    if mixed_to_cold_ratio > mixed_to_cold_max_ratio:
+        failures.append(
+            "mixed_execute ratio {0:.4f} exceeded {1:.4f}".format(
+                mixed_to_cold_ratio,
+                mixed_to_cold_max_ratio,
+            )
+        )
+
+    return {
+        "cold_compile_median_ns": cold_compile_median_ns,
+        "warm_execute_median_ns": warm_execute_median_ns,
+        "mixed_execute_median_ns": mixed_execute_median_ns,
+        "warm_to_cold_ratio": warm_to_cold_ratio,
+        "mixed_to_cold_ratio": mixed_to_cold_ratio,
+        "thresholds": {
+            "warm_to_cold_max_ratio": warm_to_cold_max_ratio,
+            "mixed_to_cold_max_ratio": mixed_to_cold_max_ratio,
+        },
+        "failures": tuple(failures),
+        "passed": len(failures) == 0,
+    }
+
+
+def _evaluate_codegen_benchmark_baseline_deltas(
+        *,
+        current_gate_report: Dict[str, Any],
+        baseline_gate_report: Dict[str, Any],
+        cold_compile_max_regression_ratio: float,
+        warm_execute_max_regression_ratio: float,
+        mixed_execute_max_regression_ratio: float,
+) -> Dict[str, Any]:
+    """
+    Compare current gate medians against baseline medians with ratio thresholds.
+
+    Contract:
+        - Validates required median fields in both report payloads.
+        - Emits ratio fields consumed by summary output and exit-code checks.
+        - Fails when any configured regression threshold is exceeded.
+    """
+    if cold_compile_max_regression_ratio <= 0:
+        raise ValueError("cold_compile_max_regression_ratio must be > 0.")
+    if warm_execute_max_regression_ratio <= 0:
+        raise ValueError("warm_execute_max_regression_ratio must be > 0.")
+    if mixed_execute_max_regression_ratio <= 0:
+        raise ValueError("mixed_execute_max_regression_ratio must be > 0.")
+
+    def _require_median(report: Dict[str, Any], key: str, label: str) -> int:
+        value = report.get(key)
+        if not isinstance(value, int):
+            raise ValueError(
+                "{0}.{1} must be an int.".format(label, key)
+            )
+        if value < 1:
+            raise ValueError(
+                "{0}.{1} must be >= 1.".format(label, key)
+            )
+        return value
+
+    current_cold = _require_median(
+        current_gate_report,
+        "cold_compile_median_ns",
+        "current_gate_report",
+    )
+    current_warm = _require_median(
+        current_gate_report,
+        "warm_execute_median_ns",
+        "current_gate_report",
+    )
+    current_mixed = _require_median(
+        current_gate_report,
+        "mixed_execute_median_ns",
+        "current_gate_report",
+    )
+    baseline_cold = _require_median(
+        baseline_gate_report,
+        "cold_compile_median_ns",
+        "baseline_gate_report",
+    )
+    baseline_warm = _require_median(
+        baseline_gate_report,
+        "warm_execute_median_ns",
+        "baseline_gate_report",
+    )
+    baseline_mixed = _require_median(
+        baseline_gate_report,
+        "mixed_execute_median_ns",
+        "baseline_gate_report",
+    )
+
+    ratios = {
+        "cold_compile_ratio": current_cold / baseline_cold,
+        "warm_execute_ratio": current_warm / baseline_warm,
+        "mixed_execute_ratio": current_mixed / baseline_mixed,
+    }
+    failures = []
+    if ratios["cold_compile_ratio"] > cold_compile_max_regression_ratio:
+        failures.append(
+            "cold_compile ratio {0:.4f} exceeded {1:.4f}".format(
+                ratios["cold_compile_ratio"],
+                cold_compile_max_regression_ratio,
+            )
+        )
+    if ratios["warm_execute_ratio"] > warm_execute_max_regression_ratio:
+        failures.append(
+            "warm_execute ratio {0:.4f} exceeded {1:.4f}".format(
+                ratios["warm_execute_ratio"],
+                warm_execute_max_regression_ratio,
+            )
+        )
+    if ratios["mixed_execute_ratio"] > mixed_execute_max_regression_ratio:
+        failures.append(
+            "mixed_execute ratio {0:.4f} exceeded {1:.4f}".format(
+                ratios["mixed_execute_ratio"],
+                mixed_execute_max_regression_ratio,
+            )
+        )
+
+    return {
+        "current_medians_ns": {
+            "cold_compile_median_ns": current_cold,
+            "warm_execute_median_ns": current_warm,
+            "mixed_execute_median_ns": current_mixed,
+        },
+        "baseline_medians_ns": {
+            "cold_compile_median_ns": baseline_cold,
+            "warm_execute_median_ns": baseline_warm,
+            "mixed_execute_median_ns": baseline_mixed,
+        },
+        "ratios": ratios,
+        "thresholds": {
+            "cold_compile_max_regression_ratio": cold_compile_max_regression_ratio,
+            "warm_execute_max_regression_ratio": warm_execute_max_regression_ratio,
+            "mixed_execute_max_regression_ratio": mixed_execute_max_regression_ratio,
+        },
+        "failures": tuple(failures),
+        "passed": len(failures) == 0,
+    }
+
+
 def _collect_route_matrix_samples(
         *,
         session: CodegenBenchmarkSession,
@@ -547,11 +813,11 @@ def _evaluate_route_matrix_report(
     route_to_cold_ratios: Dict[str, float] = {}
     failures = []
     for route_name, samples in route_samples_ns.items():
-        normalized_samples = MeldRuntime._normalize_benchmark_samples(
+        normalized_samples = _normalize_benchmark_samples(
             name=route_name,
             samples=samples,
         )
-        median_ns = MeldRuntime._median_ns(normalized_samples)
+        median_ns = _median_ns(normalized_samples)
         ratio = median_ns / cold_compile_median_ns
         route_medians_ns[route_name] = median_ns
         route_to_cold_ratios[route_name] = ratio
@@ -673,14 +939,14 @@ def run_codegen_benchmark_report(arguments: argparse.Namespace) -> Dict[str, Any
         prewarm_root=True,
     )
     try:
-        samples = MeldRuntime.collect_codegen_benchmark_samples_ns(
+        samples = _collect_codegen_benchmark_samples_ns(
             cold_compile_fn=_run_cold_compile_iteration,
             warm_execute_fn=warm_session.resolve_root_once,
             mixed_execute_fn=warm_session.resolve_mixed_once,
             sample_count=arguments.sample_count,
             warmup_count=arguments.warmup_count,
         )
-        gate_report = MeldRuntime.evaluate_codegen_benchmark_gates(
+        gate_report = _evaluate_codegen_benchmark_gates(
             cold_compile_ns=samples["cold_compile_ns"],
             warm_execute_ns=samples["warm_execute_ns"],
             mixed_execute_ns=samples["mixed_execute_ns"],
@@ -718,7 +984,7 @@ def run_codegen_benchmark_report(arguments: argparse.Namespace) -> Dict[str, Any
     if baseline_path:
         baseline_payload = _load_json_report(baseline_path)
         baseline_gate_report = _extract_gate_report(baseline_payload)
-        baseline_delta_report = MeldRuntime.evaluate_codegen_benchmark_baseline_deltas(
+        baseline_delta_report = _evaluate_codegen_benchmark_baseline_deltas(
             current_gate_report=gate_report,
             baseline_gate_report=baseline_gate_report,
             cold_compile_max_regression_ratio=arguments.cold_max_regression_ratio,

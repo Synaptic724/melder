@@ -1,0 +1,30 @@
+﻿[user-reported-run]
+source: tests from user message (2026-02-14)
+benchmark_file: <local-workspace>\benchmarks\testing_other_di\test_overrides_all.py
+run_duration_note: approximately 6.5 minutes
+
+PASSED [  4%][dependency-injector] override-perf (solo): threads=1, duration=15.00s, steps=6104000, steps/s=406,895, errors=0
+PASSED [  8%][lagom] override-perf (solo): threads=1, duration=15.00s, steps=6622000, steps/s=441,383, errors=0
+PASSED [ 12%][injector] override-perf (solo): threads=1, duration=15.00s, steps=4246481, steps/s=283,095, errors=0
+PASSED [ 16%][dishka] override-perf (solo): threads=1, duration=15.00s, steps=5428101, steps/s=361,868, errors=0
+PASSED [ 20%][melder] override-perf (solo): threads=1, duration=15.00s, steps=4224000, steps/s=281,509, errors=0
+PASSED [ 24%][dependency-injector] override-perf (shallow): threads=1, duration=15.00s, steps=4143420, steps/s=276,222, errors=0
+PASSED [ 28%][lagom] override-perf (shallow): threads=1, duration=15.00s, steps=3419851, steps/s=227,983, errors=0
+PASSED [ 32%][injector] override-perf (shallow): threads=1, duration=15.00s, steps=417565, steps/s=27,837, errors=0
+PASSED [ 36%][dishka] override-perf (shallow): threads=1, duration=15.01s, steps=3158000, steps/s=210,424, errors=0
+PASSED [ 40%][melder] override-perf (shallow): threads=1, duration=15.00s, steps=1303133, steps/s=86,873, errors=0
+PASSED [ 44%][dependency-injector] override-perf (wide): threads=1, duration=15.01s, steps=2664000, steps/s=177,513, errors=0
+PASSED [ 48%][lagom] override-perf (wide): threads=1, duration=15.00s, steps=1916000, steps/s=127,698, errors=0
+PASSED [ 52%][injector] override-perf (wide): threads=1, duration=15.00s, steps=135053, steps/s=9,003, errors=0
+PASSED [ 56%][dishka] override-perf (wide): threads=1, duration=15.00s, steps=2148000, steps/s=143,179, errors=0
+PASSED [ 60%][melder] override-perf (wide): threads=1, duration=15.00s, steps=910526, steps/s=60,700, errors=0
+PASSED [ 64%][dependency-injector] override-perf (diamond): threads=1, duration=15.01s, steps=3032000, steps/s=202,060, errors=0
+PASSED [ 68%][lagom] override-perf (diamond): threads=1, duration=15.00s, steps=2356000, steps/s=157,043, errors=0
+PASSED [ 72%][injector] override-perf (diamond): threads=1, duration=15.00s, steps=293176, steps/s=19,545, errors=0
+PASSED [ 76%][dishka] override-perf (diamond): threads=1, duration=15.00s, steps=2713614, steps/s=180,903, errors=0
+PASSED [ 80%][melder] override-perf (diamond): threads=1, duration=15.01s, steps=1004000, steps/s=66,906, errors=0
+PASSED [ 84%][dependency-injector] override-perf (deep): threads=1, duration=15.00s, steps=108696, steps/s=7,246, errors=0
+PASSED [ 88%][lagom] override-perf (deep): threads=1, duration=15.00s, steps=58583, steps/s=3,905, errors=0
+PASSED [ 92%][injector] override-perf (deep): threads=1, duration=15.00s, steps=2675, steps/s=178, errors=0
+PASSED [ 96%][dishka] override-perf (deep): threads=1, duration=15.00s, steps=99259, steps/s=6,617, errors=0
+PASSED [100%][melder] override-perf (deep): threads=1, duration=15.00s, steps=27463, steps/s=1,831, errors=0

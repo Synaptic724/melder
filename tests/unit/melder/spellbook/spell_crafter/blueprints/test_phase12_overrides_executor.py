@@ -15,6 +15,7 @@ from melder.spellbook.spell_crafter.blueprints.phase12_overrides_executor import
     compile_phase12_overrides_executor,
     compile_phase12_overrides_executor_from_source,
     emit_phase12_overrides_executor_source,
+    emit_phase12_overrides_executor_shape_source,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
@@ -361,6 +362,93 @@ def test_emit_phase12_overrides_executor_source_rejects_negative_step_count() ->
     """Source emitter enforces non-negative step counts."""
     with pytest.raises(ValueError, match="step_count must not be negative"):
         emit_phase12_overrides_executor_source(step_count=-1)
+
+
+def test_emit_phase12_overrides_executor_shape_source_rejects_missing_required_field() -> None:
+    """Shape emitter fails fast when required row fields are missing."""
+    row = _make_plan_row("root")
+    row.pop("must_register")
+
+    with pytest.raises(RuntimeError, match="missing required field 'must_register'"):
+        emit_phase12_overrides_executor_shape_source(
+            plan_rows=(row,),
+            root_spell_id="root",
+        )
+
+
+def test_emit_phase12_overrides_executor_shape_source_rejects_unknown_existence_name() -> None:
+    """Shape emitter fails fast when row existence names are invalid."""
+    row = _make_plan_row("root")
+    row["existence"] = "not_an_existence"
+
+    with pytest.raises(RuntimeError, match="unknown existence"):
+        emit_phase12_overrides_executor_shape_source(
+            plan_rows=(row,),
+            root_spell_id="root",
+        )
+
+
+def test_emit_phase12_overrides_executor_shape_source_specializes_target_and_existence() -> None:
+    """Shape emitter removes runtime target/existence selection from emitted source."""
+    source = emit_phase12_overrides_executor_shape_source(
+        plan_rows=(_make_plan_row("root"),),
+        root_spell_id="root",
+    )
+
+    assert "step_creations_target_kinds" not in source
+    assert "step_existences" not in source
+    assert "if target_kind_0 in (" not in source
+    assert "existence_0 = step_existences[0]" not in source
+    assert "step_root_positional_override_0 = root_positional_override" in source
+    assert "step_root_positional_override_0 = None" not in source
+
+
+def test_emit_phase12_overrides_executor_shape_source_prebinds_non_root_override_to_none() -> None:
+    """Shape emitter prebinds non-root positional override as None with no runtime root-branch."""
+    source = emit_phase12_overrides_executor_shape_source(
+        plan_rows=(_make_plan_row("dep"),),
+        root_spell_id="root",
+    )
+
+    assert "step_root_positional_override_0 = None" in source
+    assert "root_positional_override if is_root_step_0 else None" not in source
+
+
+def test_compile_phase12_overrides_executor_from_shape_source_supports_schema_rows_execution() -> None:
+    """Shape-source code object compile path emits a callable executor that executes."""
+    spell = _make_spell("root")
+    source = emit_phase12_overrides_executor_shape_source(
+        plan_rows=(_make_plan_row("root"),),
+        root_spell_id="root",
+    )
+    code_object = compile_phase12_overrides_executor_code_object(source=source)
+    executor = compile_phase12_overrides_executor_from_code_object(
+        code_object=code_object,
+        execution_plan=None,
+        plan_rows=(_make_plan_row("root"),),
+        root_spell_id="root",
+        spell_lookup={"root": spell},
+        override_targets_by_spell_id={},
+        any_overrides_present=False,
+        path_registry=None,
+    )
+    assert executor.__code__.co_filename == "<melder_phase12_overrides_executor>"
+    assert "_resolve_step_instance_with_overrides" not in executor.__code__.co_names
+    assert "step_creations_target_kinds" not in executor.__code__.co_varnames
+    assert "step_existences" not in executor.__code__.co_varnames
+
+    context = SimpleNamespace(
+        caller_creations=SimpleNamespace(_lock=threading.RLock()),
+        caller_creations_lock_held=False,
+    )
+    result = executor(
+        context.caller_creations,
+        {},
+        None,
+        caller_creations_lock_held=context.caller_creations_lock_held,
+    )
+
+    assert result == "value:root"
 
 
 def test_emit_phase12_overrides_executor_source_uses_prebound_must_register_flags() -> None:
@@ -947,6 +1035,29 @@ def test_build_kwargs_with_overrides_override_precedence_skips_dependency_lookup
     assert kwargs == {"value": "override"}
 
 
+def test_build_kwargs_with_overrides_override_precedence_beats_contract_payload() -> None:
+    """Override values still outrank contract payload values and missing dependencies."""
+    dep_key_missing = ("dep-missing", None)
+    plan_step = SimpleNamespace(
+        spell=_make_spell("root"),
+        dependency_resolution_order=(
+            ("value", (dep_key_missing,)),
+        ),
+        contract_positional_override=None,
+        has_contract_payload=True,
+        contract_payload={"value": "contract"},
+        uses_positional_override=False,
+    )
+
+    kwargs = phase12_module._build_kwargs_with_overrides(
+        plan_step=plan_step,
+        instance_results={},
+        override_values={"value": "override"},
+    )
+
+    assert kwargs == {"value": "override"}
+
+
 def test_build_kwargs_with_overrides_two_dependency_fast_path_skips_iteration() -> None:
     """Overrides kwargs helper resolves two dependencies without sequence iteration."""
     first_dependency_key = ("dep-a", None)
@@ -991,6 +1102,52 @@ def test_build_kwargs_with_overrides_two_dependency_fast_path_skips_iteration() 
     assert kwargs == {
         "multi": ["v1", "v2"],
     }
+
+
+def test_construct_spell_instance_with_overrides_skips_helper_for_empty_non_root_overrides(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Construct helper bypasses override-value builder when no targeted/root overrides exist."""
+    captured: Dict[str, Any] = {}
+    plan_step = SimpleNamespace(spell=_make_spell("root"))
+
+    def _build_kwargs_with_overrides(**kwargs: Any) -> Dict[str, Any]:
+        captured["override_values"] = kwargs["override_values"]
+        return {"value": "payload"}
+
+    def _invoke_spell_with_kwargs(**kwargs: Any) -> str:
+        captured["invoked_kwargs"] = kwargs["kwargs"]
+        return "instance"
+
+    monkeypatch.setattr(
+        phase12_module,
+        "_build_step_override_values",
+        lambda **kwargs: (_ for _ in ()).throw(
+            AssertionError("override-values helper must not run for empty non-root payloads")
+        ),
+    )
+    monkeypatch.setattr(
+        phase12_module,
+        "_build_kwargs_with_overrides",
+        _build_kwargs_with_overrides,
+    )
+    monkeypatch.setattr(
+        phase12_module,
+        "_invoke_spell_with_kwargs",
+        _invoke_spell_with_kwargs,
+    )
+
+    result = phase12_module._construct_spell_instance_with_overrides(
+        plan_step=plan_step,
+        instance_results={},
+        override_targets=(),
+        override_map={},
+        root_positional_override=None,
+    )
+
+    assert result == "instance"
+    assert captured["override_values"] == {}
+    assert captured["invoked_kwargs"] == {"value": "payload"}
 
 
 def test_build_step_override_values_fast_path_returns_empty_when_no_targets(

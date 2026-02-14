@@ -112,10 +112,20 @@ analysis protects correctness while giving us targeted optimization steps.
 - 2026-02-14: Activated `TASK-2026-02-13-discovery-conjure-paths`; discovery now running with incremental ticket logging.
 - 2026-02-14: Discovery completed with source-anchored call flow + ranked hotspots; added three follow-up implementation tasks.
 - 2026-02-14: Scheduler path investigation found and fixed queue-empty exception handling in `PhaseScheduler` worker loop; added regression coverage.
+- 2026-02-14: Scheduler lifecycle reduction implemented for conduit resolution by collapsing 5-11 into one scheduler lifecycle with foundational-error plan gating snapshot plus focused regression tests.
 - 2026-02-14: Phase-unit-allocation fastpath implemented via shared per-spell factory helper consolidation in `SpellbookCreationSystem`.
 - 2026-02-14: Removed redundant conjure duplicate-id recheck (`spellbook._check_all_spells()`) from `_resolve_conjure_policy`; bind-time SHA guard remains unchanged.
 
 ## Notes
+- DATE: 2026-02-14
+  TYPE: FACT
+  CLAIM: `TASK-2026-02-14-conjure-scheduler-lifecycle-reduction` is implemented and in review: conduit resolution now executes phases 5-11 through one scheduler lifecycle while preserving foundational-error gating semantics.
+  EVIDENCE: context_compass/tasks/2026-02-14_conjure_scheduler_lifecycle_reduction_task.md:6-10, src/melder/spellbook/spellbook_creation_system.py:740-759, src/melder/spellbook/spellbook_creation_system.py:852-933
+  IMPACT: Highest-ranked conjure hotspot (scheduler lifecycle churn) now has an implemented fastpath with focused regression coverage.
+  NEXT: Confirm acceptance for scheduler-lifecycle reduction, then move to remaining conjure tasks (phase-unit-allocation and activation/validation scan closure).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Conjure duplicate-id recheck was removed from `_resolve_conjure_policy`; duplicate SHA check remains at `Spellbook.bind` front door.
@@ -157,7 +167,7 @@ analysis protects correctness while giving us targeted optimization steps.
 
 ## Context / Handoff Summary
 Discovery is complete and documented.
-Next step is to execute `TASK-2026-02-14-conjure-scheduler-lifecycle-reduction`
-as the first implementation task, then continue through the remaining two
-conjure optimization tasks in order.
+Scheduler-lifecycle reduction has now been implemented and validated in review.
+Next step is user acceptance for scheduler-task closure and then closure routing
+for phase-unit-allocation and activation/validation scan tasks.
 

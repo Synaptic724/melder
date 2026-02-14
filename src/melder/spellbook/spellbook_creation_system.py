@@ -737,28 +737,24 @@ class SpellbookCreationSystem(Cleanable):
         if not conduit_id:
             raise ValueError("conduit_id must not be empty.")
 
-        results: Dict[str, Sequence[IUnitOfWork]] = {}
-        results.update(
-            SpellbookCreationSystem._run_conduit_foundational_resolution_phases(
+        plan_skip_state: List[Optional[bool]] = [None]
+        results = SpellbookCreationSystem._run_scheduler_with_phases(
+            spellbook=spellbook,
+            phase_scheduler_cls=phase_scheduler_cls,
+            context_name="_run_resolution_phases_for_conduit",
+            register_phases=lambda scheduler: SpellbookCreationSystem._register_conduit_resolution_phases(
                 spellbook=spellbook,
+                scheduler=scheduler,
                 conduit_id=conduit_id,
-                phase_scheduler_cls=phase_scheduler_cls,
-            )
+                plan_skip_state=plan_skip_state,
+            ),
         )
-        if SpellbookCreationSystem._conduit_resolution_has_errors(
-                spellbook=spellbook,
-                conduit_id=conduit_id,
-        ):
-            SpellbookCreationSystem.cleanup_phase_artifacts_after_resolution(spellbook=spellbook)
-            return results
+        if plan_skip_state[0]:
+            results.pop("occurrence_plan", None)
+            results.pop("injection_plan", None)
+            results.pop("patch_maps", None)
+            results.pop("execution_plan", None)
 
-        results.update(
-            SpellbookCreationSystem._run_conduit_plan_resolution_phases(
-                spellbook=spellbook,
-                conduit_id=conduit_id,
-                phase_scheduler_cls=phase_scheduler_cls,
-            )
-        )
         SpellbookCreationSystem.cleanup_phase_artifacts_after_resolution(spellbook=spellbook)
         return results
 
@@ -851,6 +847,90 @@ class SpellbookCreationSystem(Cleanable):
             spell_ids=scoped_spell_ids,
         )
         return results
+
+    @staticmethod
+    def _register_conduit_resolution_phases(
+            *,
+            spellbook: Any,
+            scheduler: PhaseScheduler,
+            conduit_id: str,
+            plan_skip_state: List[Optional[bool]],
+    ) -> None:
+        """
+        Purpose:
+            Register conduit-scoped 5-11 phases on one scheduler lifecycle.
+        Contract:
+            - Preserves foundational-first ordering (`5/6/7` then `8/9/10/11`).
+            - Samples conduit error state exactly once at the plan boundary and
+              skips all plan phases when foundational phases already produced
+              conduit-resolution errors.
+            - Does not suppress plan phases due to errors introduced inside the
+              plan group itself, preserving previous two-pass semantics.
+        Args:
+            spellbook: Owning Spellbook instance.
+            scheduler: Scheduler receiving phase registrations.
+            conduit_id: Conduit scope id for resolution.
+            plan_skip_state:
+                Single-slot mutable state updated to indicate whether plan phases
+                were skipped due to foundational errors.
+        Returns:
+            None.
+        Raises:
+            None.
+        """
+        scheduler.register_phase(
+            "root_blueprints",
+            lambda: SpellbookCreationSystem.phase_root_blueprints_factory(
+                spellbook, scheduler, conduit_id
+            ),
+        )
+        scheduler.register_phase(
+            "system_validation",
+            lambda: SpellbookCreationSystem.phase_system_validation_factory(
+                spellbook, scheduler, conduit_id
+            ),
+        )
+        scheduler.register_phase(
+            "change_control",
+            lambda: SpellbookCreationSystem.phase_change_control_factory(
+                spellbook, scheduler, conduit_id
+            ),
+        )
+
+        def _should_skip_plan_phases() -> bool:
+            sampled_skip = plan_skip_state[0]
+            if sampled_skip is None:
+                sampled_skip = SpellbookCreationSystem._conduit_resolution_has_errors(
+                    spellbook=spellbook,
+                    conduit_id=conduit_id,
+                )
+                plan_skip_state[0] = sampled_skip
+            return sampled_skip
+
+        scheduler.register_phase(
+            "occurrence_plan",
+            lambda: [] if _should_skip_plan_phases() else SpellbookCreationSystem.phase_occurrence_plan_factory(
+                spellbook, scheduler, conduit_id
+            ),
+        )
+        scheduler.register_phase(
+            "injection_plan",
+            lambda: [] if _should_skip_plan_phases() else SpellbookCreationSystem.phase_injection_plan_factory(
+                spellbook, scheduler, conduit_id
+            ),
+        )
+        scheduler.register_phase(
+            "patch_maps",
+            lambda: [] if _should_skip_plan_phases() else SpellbookCreationSystem.phase_patch_maps_factory(
+                spellbook, scheduler, conduit_id
+            ),
+        )
+        scheduler.register_phase(
+            "execution_plan",
+            lambda: [] if _should_skip_plan_phases() else SpellbookCreationSystem.phase_execution_plan_factory(
+                spellbook, scheduler, conduit_id
+            ),
+        )
 
     @staticmethod
     def _new_phase_scheduler(

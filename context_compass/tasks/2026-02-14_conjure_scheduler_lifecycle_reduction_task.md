@@ -3,7 +3,7 @@
 ## Metadata
 - Task ID: TASK-2026-02-14-conjure-scheduler-lifecycle-reduction
 - Story: STORY-2026-02-13-optimize-conjure-paths
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -23,10 +23,10 @@ error propagation, and cleanup contracts.
 - Meld runtime path changes.
 
 ## Steps / Checklist
-- [ ] Baseline current scheduler lifecycle count and costs on conjure path.
-- [ ] Design a lower-overhead scheduler orchestration that preserves contracts.
-- [ ] Implement minimal safe changes in `SpellbookCreationSystem`.
-- [ ] Validate via targeted conjure-path tests/profile hooks.
+- [x] Baseline current scheduler lifecycle count and costs on conjure path.
+- [x] Design a lower-overhead scheduler orchestration that preserves contracts.
+- [x] Implement minimal safe changes in `SpellbookCreationSystem`.
+- [x] Validate via targeted conjure-path tests/profile hooks.
 
 ## Deliverables
 - Reduced scheduler lifecycle overhead in conjure path.
@@ -39,20 +39,51 @@ error propagation, and cleanup contracts.
 - `context_compass/stories/2026-02-13_optimize_conjure_paths_story.md`
 
 ## Validation
-- `python -m pytest -q tests/unit/melder/utilities/synchronization/test_phase_scheduler.py` -> `10 passed`.
+- `python -m pytest -q tests/unit/melder/spellbook/test_spellbook_creation_system_resolution_fastpath.py` -> `2 passed`.
+- `python -m pytest -q tests/unit/melder/spellbook/spellbook/test_conjure_phase_invocation_counts.py` -> `3 passed`.
+- Artifacts:
+  - `context_compass/artifacts/2026-02-14_conjure_scheduler_lifecycle_single_run_fastpath_pytests.txt`
+  - `context_compass/artifacts/2026-02-14_conjure_scheduler_lifecycle_phase_invocation_counts_pytests.txt`
 
 ## Risks / Rollback Notes
 - Risk: phase-order or error-gating drift.
 - Rollback: restore current multi-pass scheduler lifecycle path.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
 - [ ] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Targeted regression suites pass after single-lifecycle conduit-resolution fastpath implementation (`2 passed` focused lifecycle tests, `3 passed` conjure phase-invocation coverage).
+  EVIDENCE: context_compass/artifacts/2026-02-14_conjure_scheduler_lifecycle_single_run_fastpath_pytests.txt:1-12, context_compass/artifacts/2026-02-14_conjure_scheduler_lifecycle_phase_invocation_counts_pytests.txt:1-12
+  IMPACT: New scheduling path is validated for lifecycle-count and phase-routing invariants with no observed regression in covered conjure behavior.
+  NEXT: Walk this task outcome with user for acceptance and closure direction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: FACT
+  CLAIM: Added focused conduit-resolution regression tests that assert one scheduler lifecycle per conduit run and preserved foundational-error gating (plan factories skipped and plan-phase keys omitted when foundational errors exist).
+  EVIDENCE: tests/unit/melder/spellbook/test_spellbook_creation_system_resolution_fastpath.py:141-223, tests/unit/melder/spellbook/test_spellbook_creation_system_resolution_fastpath.py:226-308
+  IMPACT: Scheduler-lifecycle reduction now has direct guardrails on the new orchestration contract.
+  NEXT: Run targeted pytest and persist artifacts for ticket evidence.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: FACT
+  CLAIM: Implemented conduit-resolution single-lifecycle scheduling in `run_resolution_phases_for_conduit` by registering 5-11 once and snapshotting the foundational error gate at plan boundary; plan keys are removed when the snapshot indicates foundational errors to preserve previous return-shape semantics.
+  EVIDENCE: src/melder/spellbook/spellbook_creation_system.py:740-759, src/melder/spellbook/spellbook_creation_system.py:852-933
+  IMPACT: Conjure conduit-resolution path now avoids one scheduler startup/cleanup cycle while maintaining phase-order and error-gating contracts.
+  NEXT: Add focused unit tests for lifecycle count and foundational-error gating behavior.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: PhaseScheduler worker loop was catching a custom `Empty` exception instead of the queue's `Empty` exception, allowing idle workers to terminate on sparse/long phases.
@@ -82,6 +113,8 @@ error propagation, and cleanup contracts.
   NEXT: Append new findings here as work continues.
 
 ## Context / Handoff Summary
-Task created from conjure discovery hotspot #1.
-Next step is to quantify exact scheduler lifecycle overhead and choose the
-smallest safe reduction strategy.
+Single-lifecycle conduit-resolution scheduling is implemented and in review.
+Conjure conduit runs now register phases 5-11 in one scheduler lifecycle while
+preserving foundational-first gating semantics via a plan-boundary snapshot.
+Focused regression tests and conjure phase-invocation coverage pass, and
+artifacts are linked for handoff.

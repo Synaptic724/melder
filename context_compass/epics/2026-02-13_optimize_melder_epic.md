@@ -81,14 +81,14 @@ correctness while improving throughput and latency on real runtime paths.
 - [ ] Story: STORY-2026-02-13-optimize-meld-paths - Discovery-first optimization plan for meld paths.
 - [ ] Story: STORY-2026-02-13-optimize-spellcrafter-phases - Discovery-first optimization plan for SpellCrafter phases.
 - [ ] Story: STORY-2026-02-13-optimize-creation-context-codegen - Discovery-first optimization plan for CreationContext codegen.
-- [ ] Story: STORY-2026-02-13-optimize-phase12-codegen - Discovery-first optimization plan for Phase 12 codegen.
+- [x] Story: STORY-2026-02-13-optimize-phase12-codegen - Discovery-first optimization plan for Phase 12 codegen.
 
 ## Tasks (Cross-Cutting or Epic-Level)
 - [ ] Task: Complete story STORY-2026-02-13-optimize-conjure-paths.
 - [ ] Task: Complete story STORY-2026-02-13-optimize-meld-paths.
 - [ ] Task: Complete story STORY-2026-02-13-optimize-spellcrafter-phases.
 - [ ] Task: Complete story STORY-2026-02-13-optimize-creation-context-codegen.
-- [ ] Task: Complete story STORY-2026-02-13-optimize-phase12-codegen.
+- [x] Task: Complete story STORY-2026-02-13-optimize-phase12-codegen.
 - [ ] Task: Keep architecture/components docs synced when optimization behavior changes.
 
 ## Acceptance Criteria (Epic Done)
@@ -120,6 +120,60 @@ correctness while improving throughput and latency on real runtime paths.
 - 2026-02-13: User requested a new optimization epic with five discovery-first stories.
 
 ## Notes
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Conjure scheduler-lifecycle reduction is now implemented and in review: conduit resolution phases 5-11 run in a single scheduler lifecycle with preserved foundational-error plan gating semantics.
+  EVIDENCE: context_compass/tasks/2026-02-14_conjure_scheduler_lifecycle_reduction_task.md:6-33, src/melder/spellbook/spellbook_creation_system.py:740-759, src/melder/spellbook/spellbook_creation_system.py:852-933, context_compass/artifacts/2026-02-14_conjure_scheduler_lifecycle_single_run_fastpath_pytests.txt:1-12
+  IMPACT: Highest-ranked conjure hotspot has moved from discovery into validated implementation.
+  NEXT: Request user acceptance for scheduler-lifecycle reduction and continue closure routing for remaining conjure tasks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: DECISION
+  CLAIM: User accepted phase12 execution outcomes and reported improved override benchmark behavior; phase12 story/task lane is now closed for this wave.
+  EVIDENCE: context_compass/artifacts/2026-02-14_user_reported_override_perf_test_overrides_all.txt:1-30, context_compass/stories/completed/2026-02-13_optimize_phase12_codegen_story.md:1-5
+  IMPACT: Epic progress for phase12 moved from review to closed-completed state.
+  NEXT: Keep epic focus on remaining active stories.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Phase12 benchmark-entrypoint repair is implemented and validated in review; current-head route-matrix artifacts now regenerate successfully.
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_repair_phase12_route_matrix_benchmark_entrypoint_task.md:6-6, context_compass/tasks/completed/2026-02-14_repair_phase12_route_matrix_benchmark_entrypoint_task.md:37-43, context_compass/tasks/completed/2026-02-14_repair_phase12_route_matrix_benchmark_entrypoint_task.md:62-68, context_compass/artifacts/2026-02-14_phase12_codegen_route_matrix_current_head_output_repaired.txt:1-3, context_compass/artifacts/2026-02-14_phase12_codegen_route_matrix_current_head_report_repaired.json:19-31
+  IMPACT: Phase12 lane is now fully execution-complete in review (rank-1, rank-2, and measurement-unblock task), pending user acceptance and closure moves.
+  NEXT: Request user acceptance for phase12 review tasks and close/move approved tickets.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Phase12 rank-2 helper-callpath tightening is implemented and validated in review with focused blueprint tests passing.
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_phase12_override_helper_callpath_tightening_task.md:6-6, context_compass/tasks/completed/2026-02-14_optimize_phase12_override_helper_callpath_tightening_task.md:38-46, context_compass/tasks/completed/2026-02-14_optimize_phase12_override_helper_callpath_tightening_task.md:63-69, context_compass/artifacts/2026-02-14_phase12_override_helper_callpath_tightening_blueprint_pytests.txt:1-1, context_compass/artifacts/2026-02-14_phase12_override_helper_callpath_tightening_blueprint_pytests.txt:12-12
+  IMPACT: Epic phase12 lane now has two validated implementation tasks (rank-1 and rank-2), with benchmark-entrypoint repair remaining for fresh route metrics.
+  NEXT: Request user acceptance for rank-1/rank-2 closures, then execute benchmark-entrypoint repair.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Phase12 rank-1 implementation (shape-specialized source + plan-signature cache routing) is complete and validated in review with targeted suites passing.
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_phase12_override_shape_specialized_source_task.md:6-6, context_compass/tasks/completed/2026-02-14_optimize_phase12_override_shape_specialized_source_task.md:41-49, context_compass/tasks/completed/2026-02-14_optimize_phase12_override_shape_specialized_source_task.md:66-72, context_compass/artifacts/2026-02-14_phase12_override_shape_specialized_source_targeted_pytests.txt:1-1, context_compass/artifacts/2026-02-14_phase12_override_shape_specialized_source_targeted_pytests.txt:12-12
+  IMPACT: Epic phase12 lane has moved from ranked planning into validated execution, leaving rank-2 helper-callpath tightening and benchmark-entrypoint repair as next actions.
+  NEXT: Request user acceptance for rank-1 closure and then execute rank-2 task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: FACT
+  CLAIM: Phase12 discovery is complete with ranked follow-up tasks (shape-specialized source, helper callpath tightening) plus a benchmark-entrypoint repair task to unblock fresh current-head route metrics.
+  EVIDENCE: context_compass/tasks/2026-02-13_discovery_phase12_codegen_task.md:157-164, context_compass/stories/completed/2026-02-13_optimize_phase12_codegen_story.md:63-70, context_compass/tasks/completed/2026-02-14_optimize_phase12_override_shape_specialized_source_task.md:1-70, context_compass/tasks/completed/2026-02-14_optimize_phase12_override_helper_callpath_tightening_task.md:1-68, context_compass/tasks/completed/2026-02-14_repair_phase12_route_matrix_benchmark_entrypoint_task.md:1-66
+  IMPACT: Epic now has execution-ready scope for all targeted discovery tracks, with phase12 sequencing and measurement-unblock path explicitly defined.
+  NEXT: Request user acceptance for phase12 discovery closure, then execute rank-1 phase12 task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: SpellCrafter rank-1 execution task is implemented and in review with major warm 8-11 reduction after phase8-11 dirty-capture rollout.
@@ -157,7 +211,12 @@ candidates and follow-up implementation tasks in
 `context_compass/stories/2026-02-13_optimize_meld_paths_story.md`. SpellCrafter
 discovery is now complete and execution-ready with three ranked follow-up tasks
 queued. Rank-1 is now implemented and in review with strong warm 8-11 gains.
-Next step is acceptance of rank-1 and execution of SpellCrafter rank-2 while
-continuing remaining discovery tracks for creation-context and phase12 codegen
-stories.
+Conjure scheduler-lifecycle reduction is now implemented and in review with
+focused fastpath regression coverage.
+Phase12 discovery is now complete and execution-ready with ranked follow-up
+tasks plus a benchmark-entrypoint repair task to restore fresh route metrics.
+Phase12 rank-1, rank-2, and benchmark-entrypoint repair are implemented and
+validated in review; next step is user acceptance and closure movement for
+those phase12 tasks. User accepted this wave and the phase12 story was moved to
+completed.
 

@@ -15,7 +15,7 @@ from melder.spellbook.spell_crafter.blueprints.phase12_overrides_executor import
     compile_phase12_overrides_executor_code_object,
     compile_phase12_overrides_executor,
     _compile_phase12_overrides_executor_from_code_object_with_prefilter_cache,
-    emit_phase12_overrides_executor_source,
+    emit_phase12_overrides_executor_shape_source,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
@@ -156,8 +156,8 @@ class CreationContext(Cleanable):
         "_override_route_config_active",
         "_override_empty_shape_key",
         "_override_specialization_cache",
-        "_override_executor_source_cache_by_step_count",
-        "_override_executor_code_object_cache_by_step_count",
+        "_override_executor_source_cache_by_plan_signature",
+        "_override_executor_code_object_cache_by_plan_signature",
         "_override_prefilter_step_targets_cache",
         "_override_prefilter_path_metadata_cache",
     ]
@@ -248,8 +248,11 @@ class CreationContext(Cleanable):
             Tuple[Any, ...],
             Callable[..., Any],
         ] = {}
-        self._override_executor_source_cache_by_step_count: Dict[int, str] = {}
-        self._override_executor_code_object_cache_by_step_count: Dict[int, Any] = {}
+        self._override_executor_source_cache_by_plan_signature: Dict[Tuple[Any, ...], str] = {}
+        self._override_executor_code_object_cache_by_plan_signature: Dict[
+            Tuple[Any, ...],
+            Any,
+        ] = {}
         self._override_prefilter_step_targets_cache: Dict[
             Tuple[Any, ...],
             Tuple[Tuple[Any, ...], ...],
@@ -335,10 +338,12 @@ class CreationContext(Cleanable):
 
         override_specialization_cache = self._override_specialization_cache
         override_specialization_cache.clear()
-        override_executor_source_cache = self._override_executor_source_cache_by_step_count
+        override_executor_source_cache = (
+            self._override_executor_source_cache_by_plan_signature
+        )
         override_executor_source_cache.clear()
         override_executor_code_object_cache = (
-            self._override_executor_code_object_cache_by_step_count
+            self._override_executor_code_object_cache_by_plan_signature
         )
         override_executor_code_object_cache.clear()
         override_prefilter_step_targets_cache = self._override_prefilter_step_targets_cache
@@ -377,8 +382,8 @@ class CreationContext(Cleanable):
         self._override_route_config_active = None
         self._override_empty_shape_key = None
         self._override_specialization_cache = None
-        self._override_executor_source_cache_by_step_count = None
-        self._override_executor_code_object_cache_by_step_count = None
+        self._override_executor_source_cache_by_plan_signature = None
+        self._override_executor_code_object_cache_by_plan_signature = None
         self._override_prefilter_step_targets_cache = None
         self._override_prefilter_path_metadata_cache = None
 
@@ -963,7 +968,9 @@ class CreationContext(Cleanable):
             return cached
 
         if plan_rows is not None:
+            plan_signature = shape_key[0]
             compiled = self._compile_override_executor_from_plan_rows(
+                plan_signature=plan_signature,
                 override_targets_by_spell_id=override_targets_by_spell_id,
                 any_overrides_present=any_overrides_present,
                 path_registry=path_registry,
@@ -989,6 +996,7 @@ class CreationContext(Cleanable):
     def _compile_override_executor_from_plan_rows(
             self,
             *,
+            plan_signature: Tuple[Any, ...],
             override_targets_by_spell_id: Dict[str, Tuple[Any, ...]],
             any_overrides_present: bool,
             path_registry: Optional[Any],
@@ -998,17 +1006,20 @@ class CreationContext(Cleanable):
             prefilter_cache_key: Optional[Tuple[Any, ...]],
     ) -> Callable[..., Any]:
         """
-        Compile one override specialization using reusable step-count artifacts.
+        Compile one override specialization using reusable plan-signature artifacts.
 
         Contract:
-            - Reuses emitted source and compiled code objects per `step_count`.
+            - Reuses emitted source and compiled code objects per plan signature.
             - Binds per-shape namespace constants for each specialization compile.
             - Preserves runtime behavior of override executor compilation.
         """
-        step_count = len(plan_rows)
-        source = self._get_or_build_override_executor_source(step_count=step_count)
+        source = self._get_or_build_override_executor_source(
+            source_cache_key=plan_signature,
+            plan_rows=plan_rows,
+            root_spell_id=root_spell_id,
+        )
         code_object = self._get_or_build_override_executor_code_object(
-            step_count=step_count,
+            source_cache_key=plan_signature,
             source=source,
         )
         return _compile_phase12_overrides_executor_from_code_object_with_prefilter_cache(
@@ -1028,38 +1039,47 @@ class CreationContext(Cleanable):
     def _get_or_build_override_executor_source(
             self,
             *,
-            step_count: int,
+            source_cache_key: Tuple[Any, ...],
+            plan_rows: Sequence[Dict[str, Any]],
+            root_spell_id: Optional[str],
     ) -> str:
         """
-        Return cached emitted override source for one Phase12 step count.
+        Return cached emitted override source for one plan-signature shape.
         """
-        override_executor_source_cache = self._override_executor_source_cache_by_step_count
-        cached_source = override_executor_source_cache.get(step_count)
+        override_executor_source_cache = (
+            self._override_executor_source_cache_by_plan_signature
+        )
+        cached_source = override_executor_source_cache.get(source_cache_key)
         if cached_source is not None:
             return cached_source
-        emitted_source = emit_phase12_overrides_executor_source(
-            step_count=step_count,
+        emitted_source = emit_phase12_overrides_executor_shape_source(
+            plan_rows=plan_rows,
+            root_spell_id=root_spell_id,
         )
-        override_executor_source_cache[step_count] = emitted_source
+        override_executor_source_cache[source_cache_key] = emitted_source
         return emitted_source
 
     def _get_or_build_override_executor_code_object(
             self,
             *,
-            step_count: int,
+            source_cache_key: Tuple[Any, ...],
             source: str,
     ) -> Any:
         """
-        Return cached compiled override code object for one Phase12 step count.
+        Return cached compiled override code object for one plan-signature shape.
         """
         override_executor_code_object_cache = (
-            self._override_executor_code_object_cache_by_step_count
+            self._override_executor_code_object_cache_by_plan_signature
         )
-        cached_code_object = override_executor_code_object_cache.get(step_count)
+        cached_code_object = override_executor_code_object_cache.get(
+            source_cache_key,
+        )
         if cached_code_object is not None:
             return cached_code_object
         compiled_code_object = compile_phase12_overrides_executor_code_object(
             source=source,
         )
-        override_executor_code_object_cache[step_count] = compiled_code_object
+        override_executor_code_object_cache[source_cache_key] = (
+            compiled_code_object
+        )
         return compiled_code_object
