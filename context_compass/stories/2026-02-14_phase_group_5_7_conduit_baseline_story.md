@@ -3,7 +3,7 @@
 ## Metadata
 - Story ID: STORY-2026-02-14-phase-group-5-7-conduit-baseline
 - Epic: EPIC-2026-02-14-phase-testing
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -40,7 +40,7 @@ them directly gives clean optimization signal without scheduler noise.
 - `EPIC-2026-02-14-phase-testing`
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: TASK-2026-02-14-discovery-phase-group-5-7-conduit-baseline - Define conduit-wide 5-7 direct-call baseline and fixture/ordering requirements.
+- [x] Task: TASK-2026-02-14-discovery-phase-group-5-7-conduit-baseline - Define conduit-wide 5-7 direct-call baseline and fixture/ordering requirements.
 
 ## Acceptance Criteria
 - Conduit-wide 5-7 baseline path and ordering are documented and approved.

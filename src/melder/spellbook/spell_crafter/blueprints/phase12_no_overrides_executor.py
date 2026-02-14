@@ -148,6 +148,97 @@ def compile_phase12_no_overrides_executor(
     )
 
 
+def compile_phase12_no_overrides_executor_from_plan(
+        *,
+        plan: Any,
+        transient_schema: Optional[Dict[str, Any]] = None,
+) -> Optional[Callable[..., Any]]:
+    """
+    Compile a spell-scoped Phase 12 no-overrides executor from a Phase11 plan.
+
+    Purpose:
+        Support hot phase11 compile wiring without requiring schema-row export
+        payload construction when plan objects are already available.
+
+    Contract:
+        - Returns a callable when the plan contains executable steps.
+        - Returns None when the plan has zero steps.
+        - Uses transient-unrolled emission when the provided transient schema is
+          compatible with the plan steps.
+        - Uses emitted step-plan source for all other plans.
+        - Raises when root instance key cannot be resolved from the plan.
+
+    Args:
+        plan:
+            ExecutionPlan-like object exposing `steps`, `root_instance_key`,
+            and `root_spell_id`.
+        transient_schema:
+            Optional schema-only transient payload derived from the plan's fast
+            transient data.
+
+    Returns:
+        Optional[Callable[..., Any]]:
+            Compiled executor receiving direct creations inputs.
+
+    Raises:
+        ValueError:
+            If plan is None.
+        RuntimeError:
+            If the root instance key cannot be resolved.
+            If transient codegen source compilation or namespace wiring fails.
+    """
+    if plan is None:
+        raise ValueError("plan must not be None.")
+
+    steps = plan.steps
+    if not steps:
+        return None
+
+    root_instance_key = plan.root_instance_key
+    if root_instance_key is None:
+        root_instance_key = _resolve_root_instance_key(
+            steps=steps,
+            root_spell_id=plan.root_spell_id,
+        )
+    if root_instance_key is None:
+        raise RuntimeError("Phase 12 plan is missing a resolvable root instance key.")
+
+    if transient_schema is not None and _supports_transient_unrolled_plan(steps):
+        normalized_transient_schema = _normalize_transient_schema(
+            transient_schema=transient_schema,
+        )
+        source = _build_phase12_executor_source(transient_schema=normalized_transient_schema)
+        if source is not None:
+            namespace = _build_executor_namespace(
+                transient_schema=normalized_transient_schema,
+                steps=steps,
+            )
+            return _compile_emitted_no_overrides_executor(
+                source=source,
+                namespace=namespace,
+                source_name="<melder_phase12_no_overrides_transient_executor>",
+                compile_failure_message=(
+                    "Phase 12 no-overrides transient executor code generation failed."
+                ),
+            )
+
+    step_source = _build_step_plan_executor_source(
+        steps=steps,
+    )
+    step_namespace = _build_step_executor_namespace(
+        steps=steps,
+        root_instance_key=root_instance_key,
+    )
+    return _compile_emitted_no_overrides_executor(
+        source=step_source,
+        namespace=step_namespace,
+        source_name="<melder_phase12_no_overrides_step_executor>",
+        compile_failure_message=(
+            "Phase 12 no-overrides executor code generation failed."
+        ),
+    )
+
+
 def _hydrate_steps_from_rows(
         *,
         steps_rows: Sequence[Dict[str, Any]],

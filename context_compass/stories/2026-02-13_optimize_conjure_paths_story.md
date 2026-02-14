@@ -3,7 +3,7 @@
 ## Metadata
 - Story ID: STORY-2026-02-13-optimize-conjure-paths
 - Epic: EPIC-2026-02-13-optimize-melder
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-13

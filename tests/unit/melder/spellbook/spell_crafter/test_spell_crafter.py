@@ -4236,23 +4236,30 @@ def _make_phase11_plan_stub(
     plan_variant: str,
     root_spell_id: str,
     step_spell_ids: Sequence[str],
+    root_instance_key: tuple[str, int | None] | None = None,
 ) -> object:
     """
     Purpose:
         Build a minimal Phase 11 plan stub for IR export tests.
     Contract:
-        Exposes the plan fields consumed by SpellCrafter phase8_11 capture.
+        Exposes the plan fields consumed by SpellCrafter phase8_11 capture and
+        plan-based no-overrides compile signature generation.
     Args:
         plan_variant: Execution plan variant label.
         root_spell_id: Root spell id for the plan.
         step_spell_ids: Ordered spell ids for plan steps.
+        root_instance_key: Optional explicit root instance key override.
     Returns:
         object: Plan stub with deterministic step order and no transient plan.
     """
     steps = tuple(_make_phase11_step_stub(spell_id) for spell_id in step_spell_ids)
+    resolved_root_instance_key = root_instance_key
+    if resolved_root_instance_key is None:
+        resolved_root_instance_key = (root_spell_id, None)
     return types.SimpleNamespace(
         plan_variant=plan_variant,
         root_spell_id=root_spell_id,
+        root_instance_key=resolved_root_instance_key,
         steps=steps,
         fast_transient_plan=None,
     )
@@ -5432,6 +5439,120 @@ def test_compile_phase12_no_overrides_executor_recompiles_on_signature_change(
     assert crafter.phase12_no_overrides_executor is compiled_executors[1]
 
 
+def test_compile_phase12_no_overrides_executor_from_plan_reuses_cached_signature(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify plan-based no-overrides compile wiring reuses cached executors.
+    Contract:
+        Equivalent no-overrides plans should hit signature cache and avoid
+        recompilation.
+    Args:
+        monkeypatch: Pytest fixture for replacing plan compile helper.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If equivalent plans trigger recompilation.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    compile_calls: list[str] = []
+
+    def _compile_stub(
+            *,
+            plan: object,
+            transient_schema: dict[str, object] | None,
+    ) -> object:
+        del transient_schema
+        compile_calls.append(str(plan.plan_variant))
+        return lambda _context: "compiled"
+
+    monkeypatch.setattr(
+        spell_crafter_module,
+        "compile_phase12_no_overrides_executor_from_plan",
+        _compile_stub,
+    )
+
+    plan_first = _make_phase11_plan_stub(
+        plan_variant="no_overrides_fast",
+        root_spell_id="root",
+        step_spell_ids=("root",),
+    )
+    plan_second = _make_phase11_plan_stub(
+        plan_variant="no_overrides_fast",
+        root_spell_id="root",
+        step_spell_ids=("root",),
+    )
+
+    crafter._compile_phase12_no_overrides_executor_from_plan(plan_first)
+    first_executor = crafter.phase12_no_overrides_executor
+    crafter._compile_phase12_no_overrides_executor_from_plan(plan_second)
+
+    assert len(compile_calls) == 1
+    assert crafter.phase12_no_overrides_executor is first_executor
+
+
+def test_compile_phase12_no_overrides_executor_from_plan_recompiles_on_semantic_change(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify plan-based no-overrides compile cache invalidates on semantic drift.
+    Contract:
+        Changing compile-affecting step semantics changes signature and triggers
+        recompilation.
+    Args:
+        monkeypatch: Pytest fixture for replacing plan compile helper.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If semantic changes do not trigger recompilation.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    compiled_executors: list[object] = []
+
+    def _compile_stub(
+            *,
+            plan: object,
+            transient_schema: dict[str, object] | None,
+    ) -> object:
+        del plan, transient_schema
+        marker = len(compiled_executors)
+        executor = lambda _context, m=marker: m
+        compiled_executors.append(executor)
+        return executor
+
+    monkeypatch.setattr(
+        spell_crafter_module,
+        "compile_phase12_no_overrides_executor_from_plan",
+        _compile_stub,
+    )
+
+    first_plan = _make_phase11_plan_stub(
+        plan_variant="no_overrides_fast",
+        root_spell_id="root",
+        step_spell_ids=("root",),
+    )
+    first_step = _make_phase11_step_stub("root", must_register=True)
+    second_plan = types.SimpleNamespace(
+        plan_variant="no_overrides_fast",
+        root_spell_id="root",
+        root_instance_key=("root", None),
+        steps=(first_step,),
+        fast_transient_plan=None,
+    )
+
+    crafter._compile_phase12_no_overrides_executor_from_plan(first_plan)
+    first_executor = crafter.phase12_no_overrides_executor
+    first_signature = crafter._phase12_no_overrides_executor_signature
+    crafter._compile_phase12_no_overrides_executor_from_plan(second_plan)
+
+    assert len(compiled_executors) == 2
+    assert crafter._phase12_no_overrides_executor_signature != first_signature
+    assert first_executor is compiled_executors[0]
+    assert crafter.phase12_no_overrides_executor is compiled_executors[1]
+
+
 def test_phase8_10_runs_mark_phase8_11_codegen_ir_dirty_without_eager_capture(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -5511,28 +5632,30 @@ def test_phase8_10_runs_mark_phase8_11_codegen_ir_dirty_without_eager_capture(
     assert crafter._phase8_11_codegen_ir_dirty is True
 
 
-def test_run_phase_execution_plan_flushes_phase8_11_codegen_ir_before_compile(
+def test_run_phase_execution_plan_compiles_phase12_without_eager_phase8_11_flush(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     Purpose:
-        Verify phase11 run flushes dirty phase8_11 IR before phase12 compile.
+        Verify phase11 run compiles phase12 no-overrides executor without
+        forcing eager phase8_11 flush.
     Contract:
-        `run_phase_execution_plan` marks phase8_11 IR dirty, flushes dirty IR
-        once, then compiles the phase12 no-overrides executor.
+        `run_phase_execution_plan` marks phase8_11 IR dirty, compiles phase12
+        no-overrides executor from direct plan input, and leaves dirty IR for lazy
+        reader-triggered capture.
     Args:
         monkeypatch: Pytest fixture for replacing plan/flush/compile hooks.
     Returns:
         None.
     Raises:
-        AssertionError: If flush or compile ordering contracts are violated.
+        AssertionError: If eager flush occurs or compile plan contract drifts.
     """
     crafter, _, _ = _build_spell_and_crafter(spell_id="root")
     crafter._occurrence_plan_phase8 = types.SimpleNamespace()
     crafter._injection_plan_phase9 = types.SimpleNamespace()
 
     flush_calls: list[bool] = []
-    compile_calls: list[str] = []
+    compile_plan_variants: list[str] = []
 
     def _build_plan_stub(
         self: SpellCrafter,
@@ -5560,19 +5683,24 @@ def test_run_phase_execution_plan_flushes_phase8_11_codegen_ir_before_compile(
         flush_calls.append(self._phase8_11_codegen_ir_dirty)
         self._phase8_11_codegen_ir_dirty = False
 
-    def _compile_stub(self: SpellCrafter) -> None:
-        compile_calls.append("compile")
+    def _compile_plan_stub(
+        self: SpellCrafter,
+        plan: object | None,
+    ) -> None:
+        del self
+        assert plan is not None
+        compile_plan_variants.append(str(plan.plan_variant))
 
     monkeypatch.setattr(SpellCrafter, "_build_execution_plan_variant", _build_plan_stub)
     monkeypatch.setattr(SpellCrafter, "_cache_execution_plan_metrics", _cache_metrics_stub)
     monkeypatch.setattr(SpellCrafter, "_capture_phase8_11_codegen_ir_if_dirty", _flush_stub)
-    monkeypatch.setattr(SpellCrafter, "_compile_phase12_no_overrides_executor", _compile_stub)
+    monkeypatch.setattr(SpellCrafter, "_compile_phase12_no_overrides_executor_from_plan", _compile_plan_stub)
 
     crafter.run_phase_execution_plan("cid")
 
-    assert flush_calls == [True]
-    assert compile_calls == ["compile"]
-    assert crafter._phase8_11_codegen_ir_dirty is False
+    assert flush_calls == []
+    assert compile_plan_variants == [spell_crafter_module.ExecutionPlanVariant.NO_OVERRIDES_FAST]
+    assert crafter._phase8_11_codegen_ir_dirty is True
 
 
 def test_run_phase_execution_plan_reuses_no_overrides_base_for_sibling_variants(
@@ -5616,7 +5744,7 @@ def test_run_phase_execution_plan_reuses_no_overrides_base_for_sibling_variants(
             optimistic_object_refs_by_spell_id={},
             available_param_by_spell_id={"root": 1},
             plan_variant=plan_variant,
-            fast_transient_plan=("placeholder",),
+            fast_transient_plan=None,
         )
 
     def _cache_metrics_stub(
@@ -5628,17 +5756,17 @@ def test_run_phase_execution_plan_reuses_no_overrides_base_for_sibling_variants(
         del self, occurrence_plan, plan
         return None
 
-    def _flush_stub(self: SpellCrafter) -> None:
-        self._phase8_11_codegen_ir_dirty = False
-
-    def _compile_stub(self: SpellCrafter) -> None:
+    def _compile_plan_stub(
+        self: SpellCrafter,
+        plan: object | None,
+    ) -> None:
         del self
+        assert plan is not None
         return None
 
     monkeypatch.setattr(SpellCrafter, "_build_execution_plan_variant", _build_plan_stub)
     monkeypatch.setattr(SpellCrafter, "_cache_execution_plan_metrics", _cache_metrics_stub)
-    monkeypatch.setattr(SpellCrafter, "_capture_phase8_11_codegen_ir_if_dirty", _flush_stub)
-    monkeypatch.setattr(SpellCrafter, "_compile_phase12_no_overrides_executor", _compile_stub)
+    monkeypatch.setattr(SpellCrafter, "_compile_phase12_no_overrides_executor_from_plan", _compile_plan_stub)
 
     crafter.run_phase_execution_plan("cid")
 
@@ -5698,17 +5826,17 @@ def test_run_phase_execution_plan_falls_back_to_full_build_for_incompatible_base
         del self, occurrence_plan, plan
         return None
 
-    def _flush_stub(self: SpellCrafter) -> None:
-        self._phase8_11_codegen_ir_dirty = False
-
-    def _compile_stub(self: SpellCrafter) -> None:
+    def _compile_plan_stub(
+        self: SpellCrafter,
+        plan: object | None,
+    ) -> None:
         del self
+        assert plan is not None
         return None
 
     monkeypatch.setattr(SpellCrafter, "_build_execution_plan_variant", _build_plan_stub)
     monkeypatch.setattr(SpellCrafter, "_cache_execution_plan_metrics", _cache_metrics_stub)
-    monkeypatch.setattr(SpellCrafter, "_capture_phase8_11_codegen_ir_if_dirty", _flush_stub)
-    monkeypatch.setattr(SpellCrafter, "_compile_phase12_no_overrides_executor", _compile_stub)
+    monkeypatch.setattr(SpellCrafter, "_compile_phase12_no_overrides_executor_from_plan", _compile_plan_stub)
 
     crafter.run_phase_execution_plan("cid")
 

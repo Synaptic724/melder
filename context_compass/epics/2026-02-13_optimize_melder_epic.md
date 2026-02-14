@@ -121,6 +121,24 @@ correctness while improving throughput and latency on real runtime paths.
 
 ## Notes
 - DATE: 2026-02-14
+  TYPE: FACT
+  CLAIM: Story-level status drift exists in the optimization wave: `optimize-conjure-paths`, `optimize-meld-paths`, and `optimize-creation-context-codegen` still show `in_progress` despite all listed implementation checklist rows already marked complete.
+  EVIDENCE: context_compass/stories/2026-02-13_optimize_conjure_paths_story.md:6-6, context_compass/stories/2026-02-13_optimize_conjure_paths_story.md:87-90, context_compass/stories/2026-02-13_optimize_meld_paths_story.md:6-6, context_compass/stories/2026-02-13_optimize_meld_paths_story.md:125-130, context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md:6-6, context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md:45-48
+  IMPACT: Attention routing overstates active implementation and obscures that these stories are now closure/acceptance-only.
+  NEXT: Normalize these three stories to `review` while keeping closure confirmation gates pending user acceptance.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: DECISION
+  CLAIM: Normalized `optimize-conjure-paths`, `optimize-meld-paths`, and `optimize-creation-context-codegen` story statuses to `review` so the epic reflects closure-state work instead of active implementation.
+  EVIDENCE: context_compass/stories/2026-02-13_optimize_conjure_paths_story.md:6-6, context_compass/stories/2026-02-13_optimize_meld_paths_story.md:6-6, context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md:6-6
+  IMPACT: Optimization wave routing is now consistent with actual task state; remaining work is acceptance/move-to-completed sequencing.
+  NEXT: Walk review stories with user and move accepted story/task tickets in order.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: SpellCrafter rank-2 signature pipeline task moved to review after tuple-hash `steps_rows_signature` update; latest harness shows warm gain (`10.833ms -> 9.804ms`) and reduced signature serialization churn (`996 -> 612`, pickle `724 -> 340`).
   EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase11_signature_hash_pipeline_task.md:6-93, src/melder/spellbook/spell_crafter/spell_crafter.py:1756-1758, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run7.txt:7-38, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:7-41

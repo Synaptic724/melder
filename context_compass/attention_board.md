@@ -16,7 +16,7 @@ Attention details rule
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
 | context_compass artifact reference cleanup | review | codex | none | walk through cleanup outcomes and confirm acceptance for closure | `context_compass/tasks/2026-02-14_context_compass_artifact_reference_cleanup_task.md` | 2026-02-14 | REQUIRED |
-| phase testing epic | in_progress | codex | none | review phase11 variant-reuse results with user and confirm closure routing for backlog story/task set | `context_compass/epics/2026-02-14_phase_testing_epic.md` | 2026-02-14 | REQUIRED |
+| phase testing epic | in_progress | codex | none | plan-based no-overrides compile follow-up is implemented/validated; walk story+epic outcomes and request closure direction | `context_compass/epics/2026-02-14_phase_testing_epic.md` | 2026-02-14 | REQUIRED |
 | optimize melder epic | in_progress | codex | none | phase12 wave is closed; continue remaining active story closures and phase discovery priorities | `context_compass/epics/2026-02-13_optimize_melder_epic.md` | 2026-02-14 | REQUIRED |
 | optimize conjure paths | in_progress | codex | none | confirm acceptance for scheduler-lifecycle fastpath and remaining conjure in-review tasks, then close/move in story order | `context_compass/stories/2026-02-13_optimize_conjure_paths_story.md` | 2026-02-14 | REQUIRED |
 | optimize meld paths | in_progress | codex | none | review/confirm `TASK-2026-02-13-meld-dynamic-gate-fastdoor` acceptance, then close/move as directed | `context_compass/stories/2026-02-13_optimize_meld_paths_story.md` | 2026-02-14 | REQUIRED |
@@ -24,15 +24,57 @@ Attention details rule
 | optimize creation context codegen | in_progress | codex | none | rank-3 complete/in review; walk through full story outcomes and request closure acceptance | `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md` | 2026-02-14 | REQUIRED |
 
 ## Active Attention Details
+- TYPE: DECISION
+- CLAIM: Phase-testing baseline stories were normalized from stale `in_progress` state to `review` and their linked task rows were checked complete, matching the already-reviewed task tickets.
+- EVIDENCE: `context_compass/epics/2026-02-14_phase_testing_epic.md:126-142`, `context_compass/stories/2026-02-14_phase_component_cprofile_harness_story.md:6-6`, `context_compass/stories/2026-02-14_phase_component_cprofile_harness_story.md:44-45`, `context_compass/stories/2026-02-14_phase_group_1_4_baseline_story.md:6-6`, `context_compass/stories/2026-02-14_phase_group_1_4_baseline_story.md:42-42`, `context_compass/stories/2026-02-14_phase_group_5_7_conduit_baseline_story.md:6-6`, `context_compass/stories/2026-02-14_phase_group_5_7_conduit_baseline_story.md:43-43`, `context_compass/stories/2026-02-14_phase_group_5_7_local_baseline_story.md:6-6`, `context_compass/stories/2026-02-14_phase_group_5_7_local_baseline_story.md:43-43`, `context_compass/stories/2026-02-14_phase_group_8_11_baseline_story.md:6-6`, `context_compass/stories/2026-02-14_phase_group_8_11_baseline_story.md:44-44`
+- REREAD: REQUIRED
+- NEXT: Request closure acceptance for the phase-testing story set and move approved tickets.
+
+- TYPE: MEASURE
+- CLAIM: The plan-based no-overrides compile follow-up is rerun-validated with fresh artifacts: targeted spell-crafter slice passes (`10 passed`) and harness rerun passes (`1 passed`) with updated warm phase11 output.
+- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase11_plan_based_no_overrides_compile_task.md:69-76`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:51-83`, `context_compass/epics/2026-02-14_phase_testing_epic.md:128-135`, `context_compass/artifacts/2026-02-14_phase11_plan_based_compile_targeted_unit_tests.txt:1-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_based_compile_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_based_compile_output.txt:59-59`
+- REREAD: REQUIRED
+- NEXT: Request user acceptance for closure and move task/story/epic as directed.
+
+- TYPE: FACT
+- CLAIM: The follow-up fix preserved strict production plan contracts by correcting the test fixture: `_make_phase11_plan_stub` now always includes `root_instance_key` instead of adding defensive runtime introspection to hot-path signature logic.
+- EVIDENCE: `tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py:4234-4265`, `context_compass/tasks/2026-02-14_optimize_phase11_plan_based_no_overrides_compile_task.md:78-85`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:85-92`
+- REREAD: REQUIRED
+- NEXT: Keep fixture contract alignment for future plan-based compile tests.
+
+- TYPE: DECISION
+- CLAIM: Phase-testing backlog is reopened for one additional phase11 follow-up: remove no-overrides IR payload build from `run_phase_execution_plan` compile-signature path via plan-based compile/signature wiring.
+- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase11_plan_based_no_overrides_compile_task.md:1-79`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:43-51`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:72-80`
+- REREAD: REQUIRED
+- NEXT: Implement task changes in SpellCrafter/compiler path and rerun targeted unit + harness validations.
+
+- TYPE: DECISION
+- CLAIM: Lazy phase8-11 capture follow-up is accepted and moved to completed after rerun validation.
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_optimize_phase11_lazy_phase8_11_capture_task_completed.md:1-83`, `context_compass/artifacts/2026-02-14_phase11_lazy_capture_targeted_unit_tests.txt:12-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_lazy_capture_output.txt:7-9`
+- REREAD: REQUIRED
+- NEXT: Route phase-testing backlog story closure and then continue next active phase ticket.
+
+- TYPE: MEASURE
+- CLAIM: Lazy phase8-11 capture follow-up rerun remains strong: warm `group_8_11_total_ms` improved `8.124 -> 3.644`, `phase_execution_plan_ms` improved `6.289 -> 1.815`, and warm calls dropped `96062 -> 56255`.
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_optimize_phase11_lazy_phase8_11_capture_task_completed.md:1-83`, `src/melder/spellbook/spell_crafter/spell_crafter.py:3759-3768`, `src/melder/spellbook/spell_crafter/spell_crafter.py:1968-2035`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_reuse_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_lazy_capture_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_lazy_capture_output.txt:9-9`, `context_compass/artifacts/2026-02-14_phase11_lazy_capture_targeted_unit_tests.txt:12-12`
+- REREAD: REQUIRED
+- NEXT: Keep as the latest phase11 warm anchor while routing backlog closure.
+
+- TYPE: DECISION
+- CLAIM: Phase-testing backlog is re-opened for one additional follow-up because warm profile after phase11 variant reuse still shows eager `_capture_phase8_11_codegen_ir*` as the largest phase11 slice.
+- EVIDENCE: `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_reuse_output.txt:17-21`, `src/melder/spellbook/spell_crafter/spell_crafter.py:3759-3768`, `context_compass/tasks/completed/2026-02-14_optimize_phase11_lazy_phase8_11_capture_task_completed.md:1-39`
+- REREAD: REQUIRED
+- NEXT: Keep as historical anchor for why lazy-capture follow-up was opened.
+
 - TYPE: MEASURE
 - CLAIM: Phase11 variant-reuse follow-up is now implemented and validated: warm 8-11 totals improved (`group_8_11_total_ms` `9.085 -> 8.124`, `phase_execution_plan_ms` `7.3 -> 6.289`), warm cProfile calls dropped (`108778 -> 96062`), and phase11 plan rebuild calls dropped (`51 -> 17`) for `_build_execution_plan_variant` and `ExecutionPlanBuilder.build`.
 - EVIDENCE: `src/melder/spellbook/spell_crafter/spell_crafter.py:3726-3754`, `src/melder/spellbook/spell_crafter/spell_crafter.py:3808-3867`, `tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py:5578-5719`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:21-22`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_reuse_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_reuse_output.txt:26-27`, `context_compass/artifacts/2026-02-14_phase11_variant_reuse_targeted_unit_tests.txt:1-1`, `context_compass/artifacts/2026-02-14_phase11_variant_reuse_targeted_unit_tests.txt:12-12`
 - REREAD: REQUIRED
-- NEXT: Request user acceptance for `TASK-2026-02-14-optimize-phase11-execution-plan-variant-reuse` and route backlog close/move decisions.
+- NEXT: User accepted; task moved to completed and now serves as baseline for the lazy-capture follow-up.
 
 - TYPE: DECISION
 - CLAIM: Phase-testing optimization backlog was re-opened for one additional ranked follow-up because the latest warm sample still shows heavy phase11 variant rebuild churn (`51` calls to `_build_execution_plan_variant` and `ExecutionPlanBuilder.build`).
-- EVIDENCE: `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:44-49`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:71-78`, `context_compass/tasks/2026-02-14_optimize_phase11_execution_plan_variant_reuse_task.md:4-11`, `context_compass/tasks/2026-02-14_optimize_phase11_execution_plan_variant_reuse_task.md:60-67`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:21-23`
+- EVIDENCE: `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:44-49`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:71-78`, `context_compass/tasks/completed/2026-02-14_optimize_phase11_execution_plan_variant_reuse_task_completed.md:4-11`, `context_compass/tasks/completed/2026-02-14_optimize_phase11_execution_plan_variant_reuse_task_completed.md:61-69`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:21-23`
 - REREAD: REQUIRED
 - NEXT: Keep as historical anchor for why the follow-up was opened; current active next step is acceptance/closure routing after implementation.
 
@@ -363,6 +405,8 @@ Attention details rule
 ## Recently Closed Anchors
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
+| phase11 lazy phase8-11 capture | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_optimize_phase11_lazy_phase8_11_capture_task_completed.md` | 2026-02-14 | HELPFUL |
+| phase11 execution-plan variant reuse | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_optimize_phase11_execution_plan_variant_reuse_task_completed.md` | 2026-02-14 | HELPFUL |
 | context_compass documentation integrity audit | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_context_compass_documentation_integrity_audit_task.md` | 2026-02-14 | HELPFUL |
 | context_compass packaging migration | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_context_compass_rename_and_profile_config_task.md` | 2026-02-14 | HELPFUL |
 | onboarding policy hardening | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_onboarding_policy_ticket_note_enforcement_task.md` | 2026-02-14 | HELPFUL |

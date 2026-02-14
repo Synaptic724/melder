@@ -69,6 +69,7 @@ from melder.spellbook.spell_crafter.blueprints.execution_plan import (
 )
 from melder.spellbook.spell_crafter.blueprints.phase12_no_overrides_executor import (
     compile_phase12_no_overrides_executor,
+    compile_phase12_no_overrides_executor_from_plan,
 )
 from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
 from melder.spellbook.spell_crafter.system.system_diagnostic import (
@@ -1781,6 +1782,98 @@ class SpellCrafter(Cleanable):
             "steps_rows_signature": steps_rows_signature,
         }
 
+    def _build_phase12_no_overrides_step_signature_row(
+            self,
+            step: Any,
+    ) -> Tuple[Any, ...]:
+        """
+        Build one deterministic signature row for no-overrides compile caching.
+
+        Purpose:
+            Capture only the step fields that influence phase12 no-overrides
+            compiled source/namespace behavior without constructing full IR
+            payload dict rows.
+        Contract:
+            - Returns a tuple-only row with deterministic ordering.
+            - Includes dependency, contract, lock, and registration semantics.
+        Args:
+            step:
+                ExecutionPlanStep-like object.
+        Returns:
+            Tuple[Any, ...]:
+                Deterministic row used by no-overrides plan signature hashing.
+        """
+        dependency_resolution_order = tuple(
+            (
+                param_name,
+                tuple(dependency_keys),
+            )
+            for param_name, dependency_keys in step.dependency_resolution_order
+        )
+        contract_payload_items: Tuple[Any, ...] = ()
+        if step.contract_payload:
+            contract_payload_items = tuple(
+                sorted(
+                    (
+                        param_name,
+                        self._freeze_phase11_schema_value(value),
+                    )
+                    for param_name, value in step.contract_payload.items()
+                )
+            )
+        return (
+            tuple(step.instance_key),
+            step.spell.spell_index.current,
+            step.existence.name,
+            step.creations_target_kind,
+            dependency_resolution_order,
+            bool(step.uses_positional_override),
+            self._freeze_phase11_schema_value(step.contract_positional_override),
+            bool(step.has_contract_payload),
+            contract_payload_items,
+            bool(step.use_spell_lock_hint),
+            bool(step.must_register),
+        )
+
+    def _build_phase12_no_overrides_plan_signature(
+            self,
+            plan: ExecutionPlan,
+            transient_schema: Optional[Dict[str, Any]],
+    ) -> str:
+        """
+        Build deterministic no-overrides compile signature from a Phase11 plan.
+
+        Purpose:
+            Fingerprint compile-affecting plan semantics in phase11 hot path
+            without building full no-overrides IR payload rows.
+        Contract:
+            - Includes root instance key, step semantic rows, and transient
+              schema signature.
+            - Returned signature changes when no-overrides compiler inputs drift.
+        Args:
+            plan:
+                No-overrides execution plan.
+            transient_schema:
+                Schema-only transient payload for this plan.
+        Returns:
+            str:
+                Deterministic compile cache signature.
+        """
+        step_signature_rows = tuple(
+            self._build_phase12_no_overrides_step_signature_row(step)
+            for step in plan.steps
+        )
+        transient_signature = self._build_fast_transient_signature(transient_schema)
+        root_instance_key = None
+        if plan.root_instance_key is not None:
+            root_instance_key = tuple(plan.root_instance_key)
+        return self._hash_codegen_signature(
+            plan.root_spell_id,
+            root_instance_key,
+            step_signature_rows,
+            transient_signature,
+        )
+
     def _capture_phase8_11_codegen_ir(self) -> None:
         """
         Export phases 8-11 artifacts into the spell-scoped Codegen IR payload.
@@ -1954,7 +2047,8 @@ class SpellCrafter(Cleanable):
 
         Purpose:
             Avoid repeated full payload/signature rebuilds while preserving
-            freshness for phase12 compilation and runtime readers.
+            freshness for codegen-ir readers and any compile calls that consume
+            exported phase8-11 payloads.
         Contract:
             - No-op when dirty flag is false.
             - Executes full `_capture_phase8_11_codegen_ir` once per dirty cycle.
@@ -1980,18 +2074,86 @@ class SpellCrafter(Cleanable):
             None.
         """
         if self._codegen_ir is None:
-            self._phase12_no_overrides_executor = None
-            self._phase12_no_overrides_executor_signature = None
+            self._compile_phase12_no_overrides_executor_from_payload(None)
             return
 
         phase8_11 = self._codegen_ir["phase8_11"]
         execution_payload = phase8_11.get("execution")
         if not execution_payload:
+            self._compile_phase12_no_overrides_executor_from_payload(None)
+            return
+
+        no_overrides_payload = execution_payload.get("no_overrides")
+        self._compile_phase12_no_overrides_executor_from_payload(no_overrides_payload)
+
+    def _compile_phase12_no_overrides_executor_from_plan(
+            self,
+            plan: Optional[ExecutionPlan],
+    ) -> None:
+        """
+        Compile/cache phase12 no-overrides executor from a Phase11 plan object.
+
+        Purpose:
+            Keep `run_phase_execution_plan` on a plan-based hot path so warm
+            compile cache checks do not require building no-overrides IR payload
+            dict rows.
+        Contract:
+            - Stores `None` executor/signature when plan is missing or empty.
+            - Reuses existing executor when plan-derived signature is unchanged.
+            - Raises when compilation fails for a non-empty plan.
+        Args:
+            plan:
+                Phase11 no-overrides execution plan or `None`.
+        Returns:
+            None.
+        """
+        if plan is None or not plan.steps:
             self._phase12_no_overrides_executor = None
             self._phase12_no_overrides_executor_signature = None
             return
 
-        no_overrides_payload = execution_payload.get("no_overrides")
+        transient_schema = self._build_fast_transient_schema(plan.fast_transient_plan)
+        plan_signature = self._build_phase12_no_overrides_plan_signature(
+            plan=plan,
+            transient_schema=transient_schema,
+        )
+        if (
+                plan_signature == self._phase12_no_overrides_executor_signature
+                and self._phase12_no_overrides_executor is not None
+        ):
+            return
+
+        compiled_executor = compile_phase12_no_overrides_executor_from_plan(
+            plan=plan,
+            transient_schema=transient_schema,
+        )
+        if len(plan.steps) > 0 and compiled_executor is None:
+            raise RuntimeError(
+                "Phase 12 no-overrides executor compilation failed for a non-empty plan."
+            )
+        self._phase12_no_overrides_executor = compiled_executor
+        self._phase12_no_overrides_executor_signature = plan_signature
+
+    def _compile_phase12_no_overrides_executor_from_payload(
+            self,
+            no_overrides_payload: Optional[Dict[str, Any]],
+    ) -> None:
+        """
+        Compile/cache phase12 no-overrides executor from a payload mapping.
+
+        Purpose:
+            Compile from exported phase8-11 payloads when codegen-ir readers
+            trigger lazy capture or when payload-only compile paths are used.
+        Contract:
+            - Stores `None` executor/signature when payload is missing.
+            - Reuses existing executor when payload signature is unchanged.
+            - Raises on malformed payload shape for non-empty plans.
+        Args:
+            no_overrides_payload:
+                Phase11 no-overrides payload dictionary or `None`.
+        Returns:
+            None.
+        """
         if not no_overrides_payload:
             self._phase12_no_overrides_executor = None
             self._phase12_no_overrides_executor_signature = None
@@ -3764,8 +3926,7 @@ class SpellCrafter(Cleanable):
         self._execution_plan_phase11_overrides = plan_overrides
         self._execution_plan_phase11 = plan_overrides_with_mutations
         self._mark_phase8_11_codegen_ir_dirty()
-        self._capture_phase8_11_codegen_ir_if_dirty()
-        self._compile_phase12_no_overrides_executor()
+        self._compile_phase12_no_overrides_executor_from_plan(plan_no_overrides)
 
     def _build_execution_plan_variant(
             self,

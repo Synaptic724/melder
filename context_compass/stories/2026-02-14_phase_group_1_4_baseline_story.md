@@ -3,7 +3,7 @@
 ## Metadata
 - Story ID: STORY-2026-02-14-phase-group-1-4-baseline
 - Epic: EPIC-2026-02-14-phase-testing
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -39,7 +39,7 @@ high-fidelity optimization direction for conjure preparation.
 - `EPIC-2026-02-14-phase-testing`
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: TASK-2026-02-14-discovery-phase-group-1-4-baseline - Define 1-4 direct-call profile sequence and baseline fixture constraints.
+- [x] Task: TASK-2026-02-14-discovery-phase-group-1-4-baseline - Define 1-4 direct-call profile sequence and baseline fixture constraints.
 
 ## Acceptance Criteria
 - 1-4 grouped component profile path is documented and approved.

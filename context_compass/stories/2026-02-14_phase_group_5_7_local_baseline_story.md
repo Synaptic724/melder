@@ -3,7 +3,7 @@
 ## Metadata
 - Story ID: STORY-2026-02-14-phase-group-5-7-local-baseline
 - Epic: EPIC-2026-02-14-phase-testing
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -40,7 +40,7 @@ its own bounded track before optimization decisions.
 - `EPIC-2026-02-14-phase-testing`
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: TASK-2026-02-14-discovery-phase-group-5-7-local-baseline - Define target-local 5-7 direct-call baseline and target-scope setup.
+- [x] Task: TASK-2026-02-14-discovery-phase-group-5-7-local-baseline - Define target-local 5-7 direct-call baseline and target-scope setup.
 
 ## Acceptance Criteria
 - Local 5-7 baseline path is documented and approved.

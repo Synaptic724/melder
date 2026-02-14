@@ -3,7 +3,7 @@
 ## Metadata
 - Story ID: STORY-2026-02-14-phase-group-8-11-baseline
 - Epic: EPIC-2026-02-14-phase-testing
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -41,7 +41,7 @@ Direct-call baseline profiling keeps optimization work evidence-first and safe.
 - `EPIC-2026-02-14-phase-testing`
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: TASK-2026-02-14-discovery-phase-group-8-11-baseline - Define 8-11 direct-call profile sequence and baseline fixture constraints.
+- [x] Task: TASK-2026-02-14-discovery-phase-group-8-11-baseline - Define 8-11 direct-call profile sequence and baseline fixture constraints.
 
 ## Acceptance Criteria
 - 8-11 grouped component profile path is documented and approved.

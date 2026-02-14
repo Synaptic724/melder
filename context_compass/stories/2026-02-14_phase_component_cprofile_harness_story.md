@@ -3,7 +3,7 @@
 ## Metadata
 - Story ID: STORY-2026-02-14-phase-component-cprofile-harness
 - Epic: EPIC-2026-02-14-phase-testing
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -41,8 +41,8 @@ Without this harness, phase-level timing is mixed with orchestration overhead.
 - `EPIC-2026-02-14-phase-testing`
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: TASK-2026-02-14-discovery-phase-component-cprofile-harness - Define direct-call harness contract, fixture strategy, and toggle matrix.
-- [ ] Task: TASK-2026-02-14-implement-phase-component-cprofile-harness - Implement component harness module and profile output contract.
+- [x] Task: TASK-2026-02-14-discovery-phase-component-cprofile-harness - Define direct-call harness contract, fixture strategy, and toggle matrix.
+- [x] Task: TASK-2026-02-14-implement-phase-component-cprofile-harness - Implement component harness module and profile output contract.
 
 ## Acceptance Criteria
 - Harness contract is documented and approved with explicit no-scheduler constraint.
