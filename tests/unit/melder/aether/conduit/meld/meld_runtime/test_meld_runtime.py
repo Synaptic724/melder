@@ -186,6 +186,25 @@ def test_collect_override_targets_and_socket_shape_is_deterministic() -> None:
     assert targets_a["s2"] == (socket_c,)
 
 
+def test_collect_override_socket_shape_matches_grouped_shape_output() -> None:
+    """
+    Verify shape-only helper matches grouped helper socket-shape output.
+    """
+    socket_a = _SocketRef("s1", "a", 9, "normal")
+    socket_b = _SocketRef("s1", "b", 1, "normal")
+    socket_c = _SocketRef("s2", "z", 3, "optional")
+    override_map = {socket_c: "vc", socket_b: "vb", socket_a: "va"}
+
+    _, grouped_shape = CreationContext._collect_override_targets_and_socket_shape(
+        override_map=override_map,
+    )
+    shape_only = CreationContext._collect_override_socket_shape(
+        override_map=override_map,
+    )
+
+    assert shape_only == grouped_shape
+
+
 def test_build_override_shape_key_uses_precomputed_socket_shape_and_arity() -> None:
     """
     Verify shape key includes plan signature, socket shape, and arg arity.
@@ -364,6 +383,80 @@ def test_execute_with_overrides_applies_payload_and_reuses_shape_cache(
         (patch_map, {"dep": "payload"}),
     ]
     assert compile_count["value"] == 1
+
+
+def test_execute_with_overrides_cache_hit_skips_grouping_and_compile(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify cache-hit override execution bypasses grouping and specialization compile.
+    """
+    route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
+    context = _make_override_harness(
+        route_config_active=route_config,
+        route_config_no_mutation=route_config,
+        patch_map=object(),
+    )
+    socket_ref = _SocketRef("s1", "dep", 7, "normal")
+    override_map = {socket_ref: "value"}
+
+    def _apply_phase10_override_payload(
+            *,
+            override_patch_map: Any,
+            override_payload: Dict[str, Any],
+    ) -> Dict[Any, Any]:
+        return override_map
+
+    shape_key = CreationContext._build_override_shape_key(
+        plan_signature=route_config.plan_signature,
+        socket_shape=CreationContext._collect_override_socket_shape(
+            override_map=override_map,
+        ),
+        root_positional_override=None,
+    )
+
+    def _cached_executor(
+            caller_creations: Any,
+            received_override_map: Dict[Any, Any],
+            root_args: Optional[Sequence[Any]],
+            *,
+            owner_creations: Any,
+            caller_creations_lock_held: bool,
+    ) -> str:
+        assert received_override_map is override_map
+        assert root_args is None
+        return "cached"
+
+    context._override_specialization_cache[shape_key] = _cached_executor
+
+    def _unexpected_collect(**kwargs: Any) -> Any:
+        raise AssertionError("grouped target collection must not run on cache hit")
+
+    def _unexpected_compile(**kwargs: Any) -> Any:
+        raise AssertionError("phase12 compile must not run on cache hit")
+
+    monkeypatch.setattr(
+        creation_context_module,
+        "apply_phase10_override_payload",
+        _apply_phase10_override_payload,
+    )
+    monkeypatch.setattr(
+        CreationContext,
+        "_collect_override_targets_and_socket_shape",
+        staticmethod(_unexpected_collect),
+    )
+    monkeypatch.setattr(
+        creation_context_module,
+        "compile_phase12_overrides_executor",
+        _unexpected_compile,
+    )
+
+    result = context._execute_with_overrides(
+        caller_creations=object(),
+        overrides={"dep": "payload"},
+        caller_creations_lock_held=False,
+    )
+    assert result == "cached"
 
 
 def test_execute_with_overrides_wraps_phase10_apply_failures(

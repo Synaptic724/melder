@@ -568,14 +568,10 @@ class CreationContext(Cleanable):
                     ) from exc
 
         if override_map:
-            (
-                override_targets_by_spell_id,
-                socket_shape,
-            ) = self._collect_override_targets_and_socket_shape(
+            socket_shape = self._collect_override_socket_shape(
                 override_map=override_map,
             )
         else:
-            override_targets_by_spell_id = {}
             socket_shape = ()
         plan_signature = override_route_config.plan_signature
         shape_key = self._build_override_shape_key(
@@ -583,16 +579,27 @@ class CreationContext(Cleanable):
             socket_shape=socket_shape,
             root_positional_override=root_positional_override,
         )
-        any_overrides_present = overrides is not None
-        executor = self._get_or_compile_override_executor(
-            shape_key=shape_key,
-            override_targets_by_spell_id=override_targets_by_spell_id,
-            any_overrides_present=any_overrides_present,
-            path_registry=override_route_config.path_registry,
-            plan_rows=override_route_config.plan_rows,
-            root_spell_id=override_route_config.root_spell_id,
-            spell_lookup=override_route_config.spell_lookup,
-        )
+        override_specialization_cache = self._override_specialization_cache
+        executor = override_specialization_cache.get(shape_key)
+        if executor is None:
+            if override_map:
+                override_targets_by_spell_id, _ = (
+                    self._collect_override_targets_and_socket_shape(
+                        override_map=override_map,
+                    )
+                )
+            else:
+                override_targets_by_spell_id = {}
+            any_overrides_present = overrides is not None
+            executor = self._get_or_compile_override_executor(
+                shape_key=shape_key,
+                override_targets_by_spell_id=override_targets_by_spell_id,
+                any_overrides_present=any_overrides_present,
+                path_registry=override_route_config.path_registry,
+                plan_rows=override_route_config.plan_rows,
+                root_spell_id=override_route_config.root_spell_id,
+                spell_lookup=override_route_config.spell_lookup,
+            )
 
         result = executor(
             caller_creations,
@@ -641,6 +648,75 @@ class CreationContext(Cleanable):
                 continue
             normalized_payload[param_name] = value
         return normalized_payload, normalized_root_args
+
+    @staticmethod
+    def _collect_override_socket_shape(
+            *,
+            override_map: Dict[Any, Any],
+    ) -> Tuple[Tuple[Any, ...], ...]:
+        """
+        Build deterministic socket-shape rows without per-spell grouping.
+
+        Purpose:
+            Support override specialization cache lookup with lower per-call
+            preprocessing overhead on cache-hit paths.
+
+        Contract:
+            - Output ordering matches
+              `_collect_override_targets_and_socket_shape(...)[1]`.
+            - Does not allocate spell-id grouping buckets.
+            - Uses one/two-socket fast paths to avoid sort overhead.
+        """
+        if not override_map:
+            return ()
+        if len(override_map) == 1:
+            socket_ref = next(iter(override_map))
+            return (
+                (
+                    socket_ref.node_id,
+                    socket_ref.param_path_id,
+                    socket_ref.param_name,
+                    socket_ref.socket_kind.value,
+                ),
+            )
+        if len(override_map) == 2:
+            refs_iter = iter(override_map)
+            first_ref = next(refs_iter)
+            second_ref = next(refs_iter)
+            first_shape_row = (
+                first_ref.node_id,
+                first_ref.param_path_id,
+                first_ref.param_name,
+                first_ref.socket_kind.value,
+            )
+            second_shape_row = (
+                second_ref.node_id,
+                second_ref.param_path_id,
+                second_ref.param_name,
+                second_ref.socket_kind.value,
+            )
+            if second_shape_row < first_shape_row:
+                return (
+                    second_shape_row,
+                    first_shape_row,
+                )
+            return (
+                first_shape_row,
+                second_shape_row,
+            )
+
+        socket_shape: list[Tuple[Any, ...]] = []
+        for socket_ref in override_map:
+            socket_shape.append(
+                (
+                    socket_ref.node_id,
+                    socket_ref.param_path_id,
+                    socket_ref.param_name,
+                    socket_ref.socket_kind.value,
+                )
+            )
+        socket_shape.sort()
+        return tuple(socket_shape)
 
     @staticmethod
     def _collect_override_targets_and_socket_shape(
