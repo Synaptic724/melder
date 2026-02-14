@@ -189,10 +189,13 @@ class SpellCrafter(Cleanable):
         "_validated_phase6",
         "_validated",
         "_root_blueprint_phase5",
+        "_phase8_occurrence_plan_input_signature",
         "_occurrence_plan_phase8",
+        "_phase9_injection_plan_input_signature",
         "_injection_plan_phase9",
         "_override_patch_map_phase10",
         "_mutation_patch_map_phase10",
+        "_phase10_patch_maps_input_signature",
         "_execution_plan_phase11",
         "_execution_plan_phase11_no_overrides",
         "_execution_plan_phase11_overrides",
@@ -237,10 +240,13 @@ class SpellCrafter(Cleanable):
         self._validation_result_phase6: Any = None
         self._validated_phase6: bool = False
         self._root_blueprint_phase5: Optional[RootResolutionBlueprint] = None
+        self._phase8_occurrence_plan_input_signature: Optional[str] = None
         self._occurrence_plan_phase8: Optional[OccurrencePlan] = None
+        self._phase9_injection_plan_input_signature: Optional[str] = None
         self._injection_plan_phase9: Optional[InjectionPlan] = None
         self._override_patch_map_phase10: Optional[OverridePatchMap] = None
         self._mutation_patch_map_phase10: Optional[MutationPatchMap] = None
+        self._phase10_patch_maps_input_signature: Optional[Tuple[Any, ...]] = None
         self._execution_plan_phase11: Optional[ExecutionPlan] = None
         self._execution_plan_phase11_no_overrides: Optional[ExecutionPlan] = None
         self._execution_plan_phase11_overrides: Optional[ExecutionPlan] = None
@@ -339,10 +345,13 @@ class SpellCrafter(Cleanable):
                 except Exception:
                     pass
             self._root_blueprint_phase5 = None
+            self._phase8_occurrence_plan_input_signature = None
             self._occurrence_plan_phase8 = None
+            self._phase9_injection_plan_input_signature = None
             self._injection_plan_phase9 = None
             self._override_patch_map_phase10 = None
             self._mutation_patch_map_phase10 = None
+            self._phase10_patch_maps_input_signature = None
             self._execution_plan_phase11 = None
             self._execution_plan_phase11_no_overrides = None
             self._execution_plan_phase11_overrides = None
@@ -684,12 +693,14 @@ class SpellCrafter(Cleanable):
             - Leaves Phase 1-4 artifacts intact.
         """
         self._root_blueprint_phase5 = None
+        self._phase8_occurrence_plan_input_signature = None
         if self._occurrence_plan_phase8 is not None:
             try:
                 self._occurrence_plan_phase8.cleanup()
             except Exception:
                 pass
         self._occurrence_plan_phase8 = None
+        self._phase9_injection_plan_input_signature = None
         if self._injection_plan_phase9 is not None:
             try:
                 self._injection_plan_phase9.cleanup()
@@ -708,6 +719,7 @@ class SpellCrafter(Cleanable):
             except Exception:
                 pass
         self._mutation_patch_map_phase10 = None
+        self._phase10_patch_maps_input_signature = None
         if self._execution_plan_phase11 is not None:
             try:
                 self._execution_plan_phase11.cleanup()
@@ -729,6 +741,198 @@ class SpellCrafter(Cleanable):
         self._spell_system_index_phase5 = None
         self._reset_phase8_11_codegen_ir()
         self._capture_phase2_5_codegen_ir()
+
+    def _build_phase10_patch_maps_input_signature(
+            self,
+            root_blueprint: Optional[RootResolutionBlueprint],
+    ) -> Optional[Tuple[Any, ...]]:
+        """
+        Build deterministic phase10 input signature for patch-map reuse.
+
+        Purpose:
+            Detect whether phase10 patch-map inputs changed so warm runs can
+            safely skip redundant patch-map rebuilds.
+        Contract:
+            - Returns None when blueprint input is unavailable.
+            - Includes only lightweight blueprint identity/shape fields.
+        Args:
+            root_blueprint:
+                Phase5 root blueprint used as patch-map source.
+        Returns:
+            Optional[Tuple[Any, ...]]:
+                Deterministic signature tuple or None when unavailable.
+        """
+        if root_blueprint is None:
+            return None
+        path_registry_identity = None
+        socket_ref_count = 0
+        ordered_node_count = 0
+        try:
+            path_registry_identity = id(root_blueprint.path_registry)
+            socket_ref_count = len(root_blueprint.socket_refs or ())
+            ordered_node_count = len(root_blueprint.ordered_node_ids or ())
+        except Exception:
+            return None
+        return (
+            root_blueprint.root_spell_id,
+            path_registry_identity,
+            socket_ref_count,
+            ordered_node_count,
+        )
+
+    def _build_phase8_occurrence_plan_input_signature(
+            self,
+            *,
+            root_blueprint: Optional[RootResolutionBlueprint],
+            spell_lookup: Optional[Dict[str, ISpell]],
+    ) -> Optional[str]:
+        """
+        Build deterministic phase8 input signature for occurrence-plan reuse.
+
+        Purpose:
+            Detect semantic drift in phase8 inputs so warm runs can safely skip
+            redundant occurrence-plan rebuilds when inputs are unchanged.
+        Contract:
+            - Returns None when required inputs are unavailable, forcing rebuild.
+            - Includes blueprint shape, spell mutation/existence signals, local
+              topology socket structure, and contracted-provider routing state.
+        Args:
+            root_blueprint:
+                Phase5 root blueprint for this spell.
+            spell_lookup:
+                Spell lookup map keyed by spell id.
+        Returns:
+            Optional[str]:
+                Deterministic signature string or None when rebuild must proceed.
+        """
+        if root_blueprint is None or spell_lookup is None:
+            return None
+
+        try:
+            ordered_node_ids = tuple(root_blueprint.ordered_node_ids)
+            path_registry_identity = id(root_blueprint.path_registry)
+            blueprint_socket_rows = tuple(
+                (
+                    socket_ref.node_id,
+                    socket_ref.param_name,
+                    socket_ref.param_path_id,
+                    tuple(sorted(socket_ref.target_spell_ids)),
+                )
+                for socket_ref in (root_blueprint.socket_refs or ())
+            )
+        except Exception:
+            return None
+
+        try:
+            spell_rows = tuple(
+                (
+                    spell_id,
+                    spell.spell_index.current,
+                    spell.existence.name,
+                    bool(spell.is_existing_creation),
+                    self._freeze_phase11_schema_value(spell.mutation_override),
+                )
+                for spell_id, spell in sorted(spell_lookup.items())
+            )
+        except Exception:
+            return None
+
+        topology_rows: Tuple[Any, ...] = ()
+        local_topologies = None
+        if self._spell_system_states is not None:
+            local_topologies = getattr(self._spell_system_states, "_local_topologies", None)
+        if local_topologies is not None:
+            try:
+                topology_rows_list: List[Tuple[Any, ...]] = []
+                for spell_id in sorted(local_topologies.keys()):
+                    topology = local_topologies.get(spell_id)
+                    if topology is None:
+                        continue
+                    socket_rows = tuple(
+                        (
+                            socket.param_name,
+                            tuple(sorted(socket.target_spell_ids)),
+                        )
+                        for socket in topology.sockets
+                    )
+                    topology_rows_list.append((spell_id, socket_rows))
+                topology_rows = tuple(topology_rows_list)
+            except Exception:
+                return None
+
+        try:
+            spellbook = self._spell._spellbook
+            contracted_lookup = spellbook._lookup_contracted_spells
+            contracted_maps = spellbook._contracted_spells
+            system_state = spellbook._configuration.get_property("system_state")
+        except Exception:
+            return None
+
+        try:
+            contracted_rows_list: List[Tuple[Any, ...]] = []
+            for conduit_id in sorted(contracted_lookup.keys()):
+                lookup_map = contracted_lookup.get(conduit_id)
+                if lookup_map is None:
+                    continue
+                contracted_map = contracted_maps.get(conduit_id)
+                for contract_key in sorted(lookup_map.keys()):
+                    spell_index = lookup_map.get(contract_key)
+                    if spell_index is None:
+                        continue
+                    provider_spell_id = None
+                    if contracted_map is not None:
+                        provider_spell = contracted_map.get(spell_index)
+                        if provider_spell is not None:
+                            provider_spell_id = provider_spell.spell_index.current
+                    contracted_rows_list.append(
+                        (
+                            conduit_id,
+                            contract_key[0],
+                            contract_key[1],
+                            provider_spell_id,
+                        )
+                    )
+            contracted_rows = tuple(contracted_rows_list)
+        except Exception:
+            return None
+
+        return self._hash_codegen_signature(
+            root_blueprint.root_spell_id,
+            ordered_node_ids,
+            path_registry_identity,
+            blueprint_socket_rows,
+            spell_rows,
+            topology_rows,
+            system_state,
+            contracted_rows,
+        )
+
+    def _build_phase9_injection_plan_input_signature(
+            self,
+            *,
+            occurrence_plan: Optional[OccurrencePlan],
+    ) -> Optional[str]:
+        """
+        Build deterministic phase9 input signature for injection-plan reuse.
+
+        Purpose:
+            Detect phase9 semantic drift using phase8 signature state so warm
+            runs can safely skip redundant injection-plan rebuilds with minimal
+            additional signature overhead.
+        Contract:
+            - Returns None when occurrence-plan inputs are unavailable.
+            - Reuses phase8 occurrence-plan input signature when present.
+            - Falls back to rebuild (None) when phase8 signature is unavailable.
+        Args:
+            occurrence_plan:
+                Phase8 occurrence plan used to build phase9 injection plan.
+        Returns:
+            Optional[str]:
+                Deterministic signature string or None when rebuild must proceed.
+        """
+        if occurrence_plan is None:
+            return None
+        return self._phase8_occurrence_plan_input_signature
 
     def _ensure_codegen_ir(self) -> Dict[str, Any]:
         """
@@ -2472,6 +2676,9 @@ class SpellCrafter(Cleanable):
         self._phase8_11_codegen_ir_dirty = False
         self._phase12_no_overrides_executor = None
         self._phase12_no_overrides_executor_signature = None
+        self._phase8_occurrence_plan_input_signature = None
+        self._phase9_injection_plan_input_signature = None
+        self._phase10_patch_maps_input_signature = None
         self._phase11_no_overrides_input_signature = None
 
 
@@ -3872,11 +4079,22 @@ class SpellCrafter(Cleanable):
         if self._spell.is_existing_creation:
             return
         root_blueprint = self._root_blueprint_phase5
+        spell_lookup = self._spell._spellbook._spell_id_pool
+        occurrence_plan_input_signature = self._build_phase8_occurrence_plan_input_signature(
+            root_blueprint=root_blueprint,
+            spell_lookup=spell_lookup,
+        )
+        if (
+                occurrence_plan_input_signature is not None
+                and occurrence_plan_input_signature == self._phase8_occurrence_plan_input_signature
+                and self._occurrence_plan_phase8 is not None
+        ):
+            return
 
         builder = OccurrencePlanBuilder(
             root_spell=self._spell,
             blueprint=root_blueprint,
-            spell_lookup=self._spell._spellbook._spell_id_pool,
+            spell_lookup=spell_lookup,
             system_states=self._spell_system_states,
         )
         plan = builder.build()
@@ -3884,6 +4102,7 @@ class SpellCrafter(Cleanable):
         # Hot-swap the plan without cleaning the previous object in-place.
         # Concurrent phase runners may still hold references to the prior plan.
         self._occurrence_plan_phase8 = plan
+        self._phase8_occurrence_plan_input_signature = occurrence_plan_input_signature
         self._mark_phase8_11_codegen_ir_dirty()
 
 
@@ -3942,6 +4161,16 @@ class SpellCrafter(Cleanable):
             return
 
         occurrence_plan = self._occurrence_plan_phase8
+        injection_plan_input_signature = self._build_phase9_injection_plan_input_signature(
+            occurrence_plan=occurrence_plan,
+        )
+        if (
+                injection_plan_input_signature is not None
+                and injection_plan_input_signature == self._phase9_injection_plan_input_signature
+                and self._injection_plan_phase9 is not None
+        ):
+            return
+
         builder = InjectionPlanBuilder(
             occurrence_plan=occurrence_plan,
         )
@@ -3950,6 +4179,7 @@ class SpellCrafter(Cleanable):
         # Hot-swap the plan without cleaning the previous object in-place.
         # Concurrent phase runners may still hold references to the prior plan.
         self._injection_plan_phase9 = plan
+        self._phase9_injection_plan_input_signature = injection_plan_input_signature
         self._mark_phase8_11_codegen_ir_dirty()
 
 
@@ -4008,6 +4238,16 @@ class SpellCrafter(Cleanable):
             return
 
         root_blueprint = self._root_blueprint_phase5
+        patch_maps_input_signature = self._build_phase10_patch_maps_input_signature(
+            root_blueprint,
+        )
+        if (
+                patch_maps_input_signature is not None
+                and patch_maps_input_signature == self._phase10_patch_maps_input_signature
+                and self._override_patch_map_phase10 is not None
+                and self._mutation_patch_map_phase10 is not None
+        ):
+            return
 
         builder = PatchMapBuilder(
             blueprint=root_blueprint,
@@ -4019,6 +4259,7 @@ class SpellCrafter(Cleanable):
         # Concurrent runners may still be reading the prior maps.
         self._override_patch_map_phase10 = override_patch_map
         self._mutation_patch_map_phase10 = mutation_patch_map
+        self._phase10_patch_maps_input_signature = patch_maps_input_signature
         self._mark_phase8_11_codegen_ir_dirty()
 
 

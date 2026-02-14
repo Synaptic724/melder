@@ -125,6 +125,60 @@ runtime changes.
 ## Notes
 - DATE: 2026-02-14
   TYPE: MEASURE
+  CLAIM: Latest phase9 follow-up (`TASK-2026-02-14-optimize-phase9-injection-plan-warm-reuse`) is implemented and rerun-validated with reduced phase9 warm slice (`phase_injection_plan_ms` `0.179 -> 0.164`, builds `17 -> 15`) and green targeted validation (`3 passed` + `1 passed` harness), while total warm 8-11 remains near-neutral/noisy.
+  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase9_injection_plan_warm_reuse_task.md:6-98, context_compass/artifacts/2026-02-14_phase9_injection_plan_warm_reuse_targeted_unit_tests.txt:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase9_injection_plan_warm_reuse_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase9_injection_plan_warm_reuse_output.txt:25-28, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:7-9
+  IMPACT: Phase-testing optimization backlog is complete again and back in review mode pending user acceptance/closure routing.
+  NEXT: Walk latest phase-testing outcomes with user and confirm move-to-completed direction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: DECISION
+  CLAIM: Epic execution is reopened for one additional phase9 follow-up (`TASK-2026-02-14-optimize-phase9-injection-plan-warm-reuse`) because injection-plan rebuild remains a measurable warm phase8-11 slice after phase8/10 reuse changes.
+  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:7-7, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:25-28, context_compass/tasks/2026-02-14_optimize_phase9_injection_plan_warm_reuse_task.md:1-87, context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-57
+  IMPACT: Phase-testing lane remains in active optimization mode for one more warm-path slice.
+  NEXT: Implement and validate the phase9 injection-plan warm-reuse task, then reassess closure readiness.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Latest phase8 follow-up (`TASK-2026-02-14-optimize-phase8-occurrence-plan-warm-reuse`) is implemented and rerun-validated with net warm gain (`group_8_11_total_ms` `2.206 -> 2.114`, `phase_execution_plan_ms` `0.988 -> 0.751`) and green targeted validation (`3 passed` + `1 passed` harness).
+  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase8_occurrence_plan_warm_reuse_task.md:6-98, context_compass/artifacts/2026-02-14_phase8_occurrence_plan_warm_reuse_targeted_unit_tests.txt:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:59-59, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:7-9
+  IMPACT: Phase-testing optimization backlog is complete again and back in review mode pending user acceptance/closure routing.
+  NEXT: Walk latest phase-testing outcomes with user and confirm move-to-completed direction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: DECISION
+  CLAIM: Epic execution is reopened for one additional phase8 follow-up (`TASK-2026-02-14-optimize-phase8-occurrence-plan-warm-reuse`) because occurrence-plan rebuild is now the dominant warm phase8-11 hotspot after phase10 warm-reuse improvements.
+  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:7-7, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:17-19, context_compass/tasks/2026-02-14_optimize_phase8_occurrence_plan_warm_reuse_task.md:1-87, context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-56
+  IMPACT: Phase-testing lane remains in active optimization mode for one more high-impact warm-path slice.
+  NEXT: Implement and validate the new phase8 follow-up task, then reassess closure readiness.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: MEASURE
+  CLAIM: Latest phase10 follow-up (`TASK-2026-02-14-optimize-phase10-patch-maps-warm-reuse`) is implemented and rerun-validated with strong warm reduction (`phase_patch_maps_ms` `0.743 -> 0.026`, `group_8_11_total_ms` `3.024 -> 2.206`) plus green targeted validation (`3 passed` + `1 passed` harness).
+  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase10_patch_maps_warm_reuse_task.md:6-98, context_compass/artifacts/2026-02-14_phase10_patch_maps_warm_reuse_targeted_unit_tests.txt:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:59-59, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:7-9
+  IMPACT: Phase-testing optimization backlog is complete again and back in review mode pending user acceptance/closure routing.
+  NEXT: Walk latest phase-testing outcomes with user and confirm move-to-completed direction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: DECISION
+  CLAIM: Epic execution is reopened for one additional phase10 follow-up (`TASK-2026-02-14-optimize-phase10-patch-maps-warm-reuse`) because warm sample after the latest phase11 follow-up still shows patch-map rebuild as a measurable hotspot.
+  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:7-7, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:20-22, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:26-26, context_compass/tasks/2026-02-14_optimize_phase10_patch_maps_warm_reuse_task.md:1-87, context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-54
+  IMPACT: Phase-testing lane remains in active optimization mode for one more warm-path slice.
+  NEXT: Implement and validate the phase10 patch-maps warm-reuse task, then reassess closure readiness.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-14
+  TYPE: MEASURE
   CLAIM: Latest phase11 follow-up (`TASK-2026-02-14-optimize-phase11-variant-set-warm-reuse`) is implemented and rerun-validated with warm-path reduction (`group_8_11_total_ms` `3.167 -> 3.024`, `phase_execution_plan_ms` `1.383 -> 0.989`) and green targeted validation (`6 passed` + `1 passed` harness).
   EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase11_variant_set_warm_reuse_task.md:6-98, context_compass/artifacts/2026-02-14_phase11_variant_set_warm_reuse_targeted_unit_tests.txt:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:23-25, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:7-9
   IMPACT: Phase-testing optimization backlog checklist is complete and back in review mode pending user acceptance/closure routing.
@@ -381,5 +435,12 @@ across harness design, 1-4 baseline, conduit-wide 5-7 baseline, target-local
 Execution delivered rank1/rank2/rank3 optimization tasks plus four phase11
 follow-ups (variant reuse, lazy capture, plan-based no-overrides compile, and
 plan-rebuild elision). The latest follow-up (`TASK-2026-02-14-optimize-phase11-variant-set-warm-reuse`)
-is now also implemented and rerun-validated with warm-path improvement.
+is now also implemented and rerun-validated with warm-path improvement. A new
+phase10 follow-up (`TASK-2026-02-14-optimize-phase10-patch-maps-warm-reuse`)
+is now also implemented and rerun-validated with strong warm patch-map gains.
+A new phase8 follow-up (`TASK-2026-02-14-optimize-phase8-occurrence-plan-warm-reuse`)
+is now also implemented and rerun-validated with net warm-chain gain.
+A new phase9 follow-up (`TASK-2026-02-14-optimize-phase9-injection-plan-warm-reuse`)
+is now also implemented and rerun-validated with reduced phase9 slice and
+near-neutral total warm impact.
 Next step is user acceptance and closure routing for the backlog story/epic.

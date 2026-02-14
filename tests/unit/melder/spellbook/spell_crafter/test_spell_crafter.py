@@ -5553,6 +5553,411 @@ def test_compile_phase12_no_overrides_executor_from_plan_recompiles_on_semantic_
     assert crafter.phase12_no_overrides_executor is compiled_executors[1]
 
 
+def test_run_phase_occurrence_plan_reuses_cached_plan_when_input_signature_unchanged(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify phase8 reuses cached occurrence plan when phase8 input signature
+        is unchanged.
+    Contract:
+        With stable phase8 signature and cached occurrence plan, repeated calls
+        to `run_phase_occurrence_plan` should skip rebuild and avoid re-marking
+        phase8_11 codegen IR dirty.
+    Args:
+        monkeypatch: Pytest fixture for replacing phase8 collaborators.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If phase8 plan rebuild is not elided on warm rerun.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    crafter._root_blueprint_phase5 = types.SimpleNamespace()
+
+    builder_init_calls = 0
+    build_calls = 0
+    mark_calls: list[str] = []
+
+    class _OccurrencePlanBuilderStub:
+        def __init__(self, **_kwargs: object) -> None:
+            nonlocal builder_init_calls
+            builder_init_calls += 1
+
+        def build(self) -> object:
+            nonlocal build_calls
+            build_calls += 1
+            return types.SimpleNamespace(
+                execution_order=(),
+                root_instance_key=("root", None),
+                shared_spell_ids=set(),
+                contract_dependencies_complete=True,
+                occurrence_graph={},
+                instance_keys_by_spell_id={},
+                canonical_occurrences_by_spell_id={},
+                contract_overrides_by_occurrence={},
+                contract_overrides_by_spell_id={},
+            )
+
+    def _signature_stub(
+        self: SpellCrafter,
+        *,
+        root_blueprint: object,
+        spell_lookup: dict[str, object],
+    ) -> str:
+        del self, root_blueprint, spell_lookup
+        return "stable-phase8-signature"
+
+    def _mark_stub(self: SpellCrafter) -> None:
+        mark_calls.append("mark")
+        self._phase8_11_codegen_ir_dirty = True
+
+    monkeypatch.setattr(spell_crafter_module, "OccurrencePlanBuilder", _OccurrencePlanBuilderStub)
+    monkeypatch.setattr(SpellCrafter, "_build_phase8_occurrence_plan_input_signature", _signature_stub)
+    monkeypatch.setattr(SpellCrafter, "_mark_phase8_11_codegen_ir_dirty", _mark_stub)
+
+    crafter.run_phase_occurrence_plan("cid")
+    first_plan = crafter._occurrence_plan_phase8
+    crafter.run_phase_occurrence_plan("cid")
+
+    assert builder_init_calls == 1
+    assert build_calls == 1
+    assert mark_calls == ["mark"]
+    assert crafter._occurrence_plan_phase8 is first_plan
+    assert crafter._phase8_occurrence_plan_input_signature == "stable-phase8-signature"
+
+
+def test_run_phase_occurrence_plan_rebuilds_when_input_signature_changes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify phase8 rebuilds occurrence plan when phase8 signature changes.
+    Contract:
+        Changed phase8 input signature should force a fresh occurrence-plan
+        build and dirty mark.
+    Args:
+        monkeypatch: Pytest fixture for replacing phase8 collaborators.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If phase8 signature drift does not trigger rebuild.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    crafter._root_blueprint_phase5 = types.SimpleNamespace()
+
+    signature_values = ["phase8-signature-a", "phase8-signature-b"]
+    builder_init_calls = 0
+    build_calls = 0
+    mark_calls: list[str] = []
+
+    class _OccurrencePlanBuilderStub:
+        def __init__(self, **_kwargs: object) -> None:
+            nonlocal builder_init_calls
+            builder_init_calls += 1
+
+        def build(self) -> object:
+            nonlocal build_calls
+            build_calls += 1
+            return types.SimpleNamespace(
+                execution_order=(),
+                root_instance_key=("root", None),
+                shared_spell_ids=set(),
+                contract_dependencies_complete=True,
+                occurrence_graph={},
+                instance_keys_by_spell_id={},
+                canonical_occurrences_by_spell_id={},
+                contract_overrides_by_occurrence={},
+                contract_overrides_by_spell_id={},
+            )
+
+    def _signature_stub(
+        self: SpellCrafter,
+        *,
+        root_blueprint: object,
+        spell_lookup: dict[str, object],
+    ) -> str:
+        del self, root_blueprint, spell_lookup
+        return signature_values.pop(0)
+
+    def _mark_stub(self: SpellCrafter) -> None:
+        mark_calls.append("mark")
+        self._phase8_11_codegen_ir_dirty = True
+
+    monkeypatch.setattr(spell_crafter_module, "OccurrencePlanBuilder", _OccurrencePlanBuilderStub)
+    monkeypatch.setattr(SpellCrafter, "_build_phase8_occurrence_plan_input_signature", _signature_stub)
+    monkeypatch.setattr(SpellCrafter, "_mark_phase8_11_codegen_ir_dirty", _mark_stub)
+
+    crafter.run_phase_occurrence_plan("cid")
+    first_plan = crafter._occurrence_plan_phase8
+    crafter.run_phase_occurrence_plan("cid")
+
+    assert builder_init_calls == 2
+    assert build_calls == 2
+    assert mark_calls == ["mark", "mark"]
+    assert crafter._occurrence_plan_phase8 is not first_plan
+    assert crafter._phase8_occurrence_plan_input_signature == "phase8-signature-b"
+
+
+def test_run_phase_injection_plan_reuses_cached_plan_when_input_signature_unchanged(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify phase9 reuses cached injection plan when phase9 signature is
+        unchanged.
+    Contract:
+        With stable phase9 signature and cached injection plan, repeated calls
+        to `run_phase_injection_plan` should skip rebuild and avoid re-marking
+        phase8_11 codegen IR dirty.
+    Args:
+        monkeypatch: Pytest fixture for replacing phase9 collaborators.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If phase9 rebuild is not elided on warm rerun.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    crafter._occurrence_plan_phase8 = types.SimpleNamespace()
+
+    builder_init_calls = 0
+    build_calls = 0
+    mark_calls: list[str] = []
+
+    class _InjectionPlanBuilderStub:
+        def __init__(self, **_kwargs: object) -> None:
+            nonlocal builder_init_calls
+            builder_init_calls += 1
+
+        def build(self) -> object:
+            nonlocal build_calls
+            build_calls += 1
+            return types.SimpleNamespace(instance_injections={})
+
+    def _signature_stub(
+        self: SpellCrafter,
+        *,
+        occurrence_plan: object,
+    ) -> str:
+        del self, occurrence_plan
+        return "stable-phase9-signature"
+
+    def _mark_stub(self: SpellCrafter) -> None:
+        mark_calls.append("mark")
+        self._phase8_11_codegen_ir_dirty = True
+
+    monkeypatch.setattr(spell_crafter_module, "InjectionPlanBuilder", _InjectionPlanBuilderStub)
+    monkeypatch.setattr(SpellCrafter, "_build_phase9_injection_plan_input_signature", _signature_stub)
+    monkeypatch.setattr(SpellCrafter, "_mark_phase8_11_codegen_ir_dirty", _mark_stub)
+
+    crafter.run_phase_injection_plan("cid")
+    first_plan = crafter._injection_plan_phase9
+    crafter.run_phase_injection_plan("cid")
+
+    assert builder_init_calls == 1
+    assert build_calls == 1
+    assert mark_calls == ["mark"]
+    assert crafter._injection_plan_phase9 is first_plan
+    assert crafter._phase9_injection_plan_input_signature == "stable-phase9-signature"
+
+
+def test_run_phase_injection_plan_rebuilds_when_input_signature_changes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify phase9 rebuilds injection plan when phase9 signature changes.
+    Contract:
+        Changed phase9 signature should force a fresh injection-plan build and
+        dirty mark.
+    Args:
+        monkeypatch: Pytest fixture for replacing phase9 collaborators.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If phase9 signature drift does not trigger rebuild.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    crafter._occurrence_plan_phase8 = types.SimpleNamespace()
+
+    signature_values = ["phase9-signature-a", "phase9-signature-b"]
+    builder_init_calls = 0
+    build_calls = 0
+    mark_calls: list[str] = []
+
+    class _InjectionPlanBuilderStub:
+        def __init__(self, **_kwargs: object) -> None:
+            nonlocal builder_init_calls
+            builder_init_calls += 1
+
+        def build(self) -> object:
+            nonlocal build_calls
+            build_calls += 1
+            return types.SimpleNamespace(instance_injections={})
+
+    def _signature_stub(
+        self: SpellCrafter,
+        *,
+        occurrence_plan: object,
+    ) -> str:
+        del self, occurrence_plan
+        return signature_values.pop(0)
+
+    def _mark_stub(self: SpellCrafter) -> None:
+        mark_calls.append("mark")
+        self._phase8_11_codegen_ir_dirty = True
+
+    monkeypatch.setattr(spell_crafter_module, "InjectionPlanBuilder", _InjectionPlanBuilderStub)
+    monkeypatch.setattr(SpellCrafter, "_build_phase9_injection_plan_input_signature", _signature_stub)
+    monkeypatch.setattr(SpellCrafter, "_mark_phase8_11_codegen_ir_dirty", _mark_stub)
+
+    crafter.run_phase_injection_plan("cid")
+    first_plan = crafter._injection_plan_phase9
+    crafter.run_phase_injection_plan("cid")
+
+    assert builder_init_calls == 2
+    assert build_calls == 2
+    assert mark_calls == ["mark", "mark"]
+    assert crafter._injection_plan_phase9 is not first_plan
+    assert crafter._phase9_injection_plan_input_signature == "phase9-signature-b"
+
+
+def test_run_phase_patch_maps_reuses_cached_maps_when_input_signature_unchanged(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify phase10 reuses cached patch maps on unchanged blueprint signature.
+    Contract:
+        With stable phase10 input signature and cached maps, `run_phase_patch_maps`
+        should skip rebuild and avoid re-marking phase8_11 codegen IR dirty.
+    Args:
+        monkeypatch: Pytest fixture for replacing phase10 collaborators.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If phase10 rebuilds patch maps on unchanged signature.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    crafter._root_blueprint_phase5 = types.SimpleNamespace()
+
+    builder_init_calls = 0
+    override_build_calls = 0
+    mutation_build_calls = 0
+    mark_calls: list[str] = []
+
+    class _PatchMapBuilderStub:
+        def __init__(self, **_kwargs: object) -> None:
+            nonlocal builder_init_calls
+            builder_init_calls += 1
+
+        def build_override_patch_map(self) -> object:
+            nonlocal override_build_calls
+            override_build_calls += 1
+            return types.SimpleNamespace(_targets_by_spec={}, _specificity_by_spec={})
+
+        def build_mutation_patch_map(self) -> object:
+            nonlocal mutation_build_calls
+            mutation_build_calls += 1
+            return types.SimpleNamespace(_targets_by_spec={})
+
+    def _signature_stub(
+        self: SpellCrafter,
+        root_blueprint: object,
+    ) -> tuple[str]:
+        del self, root_blueprint
+        return ("stable-phase10-signature",)
+
+    def _mark_stub(self: SpellCrafter) -> None:
+        mark_calls.append("mark")
+        self._phase8_11_codegen_ir_dirty = True
+
+    monkeypatch.setattr(spell_crafter_module, "PatchMapBuilder", _PatchMapBuilderStub)
+    monkeypatch.setattr(SpellCrafter, "_build_phase10_patch_maps_input_signature", _signature_stub)
+    monkeypatch.setattr(SpellCrafter, "_mark_phase8_11_codegen_ir_dirty", _mark_stub)
+
+    crafter.run_phase_patch_maps("cid")
+    first_override_patch_map = crafter._override_patch_map_phase10
+    first_mutation_patch_map = crafter._mutation_patch_map_phase10
+    crafter.run_phase_patch_maps("cid")
+
+    assert builder_init_calls == 1
+    assert override_build_calls == 1
+    assert mutation_build_calls == 1
+    assert mark_calls == ["mark"]
+    assert crafter._override_patch_map_phase10 is first_override_patch_map
+    assert crafter._mutation_patch_map_phase10 is first_mutation_patch_map
+    assert crafter._phase10_patch_maps_input_signature == ("stable-phase10-signature",)
+
+
+def test_run_phase_patch_maps_rebuilds_when_input_signature_changes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify phase10 rebuilds patch maps when blueprint signature changes.
+    Contract:
+        A changed phase10 input signature forces a fresh patch-map rebuild and
+        dirty mark.
+    Args:
+        monkeypatch: Pytest fixture for replacing phase10 collaborators.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If signature drift does not trigger rebuild.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    crafter._root_blueprint_phase5 = types.SimpleNamespace()
+
+    signature_values = [("phase10-signature-a",), ("phase10-signature-b",)]
+    builder_init_calls = 0
+    override_build_calls = 0
+    mutation_build_calls = 0
+    mark_calls: list[str] = []
+
+    class _PatchMapBuilderStub:
+        def __init__(self, **_kwargs: object) -> None:
+            nonlocal builder_init_calls
+            builder_init_calls += 1
+
+        def build_override_patch_map(self) -> object:
+            nonlocal override_build_calls
+            override_build_calls += 1
+            return types.SimpleNamespace(_targets_by_spec={}, _specificity_by_spec={})
+
+        def build_mutation_patch_map(self) -> object:
+            nonlocal mutation_build_calls
+            mutation_build_calls += 1
+            return types.SimpleNamespace(_targets_by_spec={})
+
+    def _signature_stub(
+        self: SpellCrafter,
+        root_blueprint: object,
+    ) -> tuple[str]:
+        del self, root_blueprint
+        return signature_values.pop(0)
+
+    def _mark_stub(self: SpellCrafter) -> None:
+        mark_calls.append("mark")
+        self._phase8_11_codegen_ir_dirty = True
+
+    monkeypatch.setattr(spell_crafter_module, "PatchMapBuilder", _PatchMapBuilderStub)
+    monkeypatch.setattr(SpellCrafter, "_build_phase10_patch_maps_input_signature", _signature_stub)
+    monkeypatch.setattr(SpellCrafter, "_mark_phase8_11_codegen_ir_dirty", _mark_stub)
+
+    crafter.run_phase_patch_maps("cid")
+    first_override_patch_map = crafter._override_patch_map_phase10
+    first_mutation_patch_map = crafter._mutation_patch_map_phase10
+    crafter.run_phase_patch_maps("cid")
+
+    assert builder_init_calls == 2
+    assert override_build_calls == 2
+    assert mutation_build_calls == 2
+    assert mark_calls == ["mark", "mark"]
+    assert crafter._override_patch_map_phase10 is not first_override_patch_map
+    assert crafter._mutation_patch_map_phase10 is not first_mutation_patch_map
+    assert crafter._phase10_patch_maps_input_signature == ("phase10-signature-b",)
+
+
 def test_phase8_10_runs_mark_phase8_11_codegen_ir_dirty_without_eager_capture(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

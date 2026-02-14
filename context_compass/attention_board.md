@@ -16,7 +16,7 @@ Attention details rule
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
 | context_compass artifact reference cleanup | review | codex | none | walk through cleanup outcomes and confirm acceptance for closure | `context_compass/tasks/2026-02-14_context_compass_artifact_reference_cleanup_task.md` | 2026-02-14 | REQUIRED |
-| phase testing epic | review | codex | none | final phase11 follow-up is implemented/validated; walk acceptance and closure routing | `context_compass/epics/2026-02-14_phase_testing_epic.md` | 2026-02-14 | REQUIRED |
+| phase testing epic | review | codex | none | latest phase9 follow-up is implemented/validated; walk acceptance and closure routing | `context_compass/epics/2026-02-14_phase_testing_epic.md` | 2026-02-14 | REQUIRED |
 | optimize melder epic | in_progress | codex | none | all active optimization stories are now in review state; route acceptance and move approved tickets | `context_compass/epics/2026-02-13_optimize_melder_epic.md` | 2026-02-14 | REQUIRED |
 | optimize conjure paths | review | codex | none | confirm acceptance for scheduler-lifecycle/phase-unit/activation-scan tasks, then move approved tickets | `context_compass/stories/2026-02-13_optimize_conjure_paths_story.md` | 2026-02-14 | REQUIRED |
 | optimize meld paths | review | codex | none | review/confirm `TASK-2026-02-13-meld-dynamic-gate-fastdoor` acceptance, then close/move as directed | `context_compass/stories/2026-02-13_optimize_meld_paths_story.md` | 2026-02-14 | REQUIRED |
@@ -24,6 +24,42 @@ Attention details rule
 | optimize creation context codegen | review | codex | none | rank-1/rank-2/rank-3 are implemented; walk outcomes and request closure acceptance | `context_compass/stories/2026-02-13_optimize_creation_context_codegen_story.md` | 2026-02-14 | REQUIRED |
 
 ## Active Attention Details
+- TYPE: MEASURE
+- CLAIM: `TASK-2026-02-14-optimize-phase9-injection-plan-warm-reuse` is implemented and rerun-validated (`3 passed` targeted slice, `1 passed` harness) with reduced phase9 warm slice (`phase_injection_plan_ms` `0.179 -> 0.164`, injection builds `17 -> 15`) and near-neutral total warm impact.
+- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase9_injection_plan_warm_reuse_task.md:6-98`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-58`, `context_compass/artifacts/2026-02-14_phase9_injection_plan_warm_reuse_targeted_unit_tests.txt:1-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase9_injection_plan_warm_reuse_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase9_injection_plan_warm_reuse_output.txt:25-28`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:7-9`
+- REREAD: REQUIRED
+- NEXT: Walk latest phase9 follow-up outcomes with user and confirm closure/move direction.
+
+- TYPE: DECISION
+- CLAIM: Phase-testing lane is reopened for one additional follow-up (`TASK-2026-02-14-optimize-phase9-injection-plan-warm-reuse`) because phase9 injection-plan rebuild remains a measurable warm slice.
+- EVIDENCE: `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:7-7`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:25-28`, `context_compass/tasks/2026-02-14_optimize_phase9_injection_plan_warm_reuse_task.md:1-87`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-57`
+- REREAD: REQUIRED
+- NEXT: Implement phase9 injection-plan warm-reuse gate and attach targeted unit + harness artifacts.
+
+- TYPE: MEASURE
+- CLAIM: `TASK-2026-02-14-optimize-phase8-occurrence-plan-warm-reuse` is implemented and rerun-validated (`3 passed` targeted slice, `1 passed` harness) with net warm-chain gain (`group_8_11_total_ms` `2.206 -> 2.114`, `phase_execution_plan_ms` `0.988 -> 0.751`).
+- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase8_occurrence_plan_warm_reuse_task.md:6-98`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-56`, `context_compass/artifacts/2026-02-14_phase8_occurrence_plan_warm_reuse_targeted_unit_tests.txt:1-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:59-59`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:7-9`
+- REREAD: REQUIRED
+- NEXT: Walk latest phase8 follow-up outcomes with user and confirm closure/move direction.
+
+- TYPE: DECISION
+- CLAIM: Phase-testing lane is reopened for one additional follow-up (`TASK-2026-02-14-optimize-phase8-occurrence-plan-warm-reuse`) because phase8 occurrence-plan rebuild is now the dominant warm hotspot.
+- EVIDENCE: `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:7-7`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:17-19`, `context_compass/tasks/2026-02-14_optimize_phase8_occurrence_plan_warm_reuse_task.md:1-87`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-56`
+- REREAD: REQUIRED
+- NEXT: Implement phase8 occurrence-plan warm-reuse gate and attach targeted unit + harness artifacts.
+
+- TYPE: MEASURE
+- CLAIM: `TASK-2026-02-14-optimize-phase10-patch-maps-warm-reuse` is implemented and rerun-validated (`3 passed` targeted slice, `1 passed` harness) with strong warm reduction (`phase_patch_maps_ms` `0.743 -> 0.026`, `group_8_11_total_ms` `3.024 -> 2.206`).
+- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase10_patch_maps_warm_reuse_task.md:6-98`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-55`, `context_compass/artifacts/2026-02-14_phase10_patch_maps_warm_reuse_targeted_unit_tests.txt:1-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:59-59`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:7-9`
+- REREAD: REQUIRED
+- NEXT: Walk latest phase-testing follow-up outcomes with user and confirm closure/move direction.
+
+- TYPE: DECISION
+- CLAIM: Phase-testing lane is reopened for one additional follow-up (`TASK-2026-02-14-optimize-phase10-patch-maps-warm-reuse`) because warm sample still shows phase10 patch-map rebuild as a measurable slice.
+- EVIDENCE: `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:7-7`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:20-22`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:26-26`, `context_compass/tasks/2026-02-14_optimize_phase10_patch_maps_warm_reuse_task.md:1-87`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-54`
+- REREAD: REQUIRED
+- NEXT: Implement phase10 patch-map warm-reuse gate and attach targeted unit + harness artifacts.
+
 - TYPE: MEASURE
 - CLAIM: `TASK-2026-02-14-optimize-phase11-variant-set-warm-reuse` is implemented and rerun-validated (`6 passed` targeted unit slice, `1 passed` harness) with warm 8-11 reduction (`group_8_11_total_ms` `3.167 -> 3.024`, `phase_execution_plan_ms` `1.383 -> 0.989`).
 - EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase11_variant_set_warm_reuse_task.md:6-98`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-54`, `context_compass/artifacts/2026-02-14_phase11_variant_set_warm_reuse_targeted_unit_tests.txt:1-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:23-25`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:7-9`
