@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in the phase-testing closure pass; implementation and validation artifacts are captured in this task.
+
 # Task: Discovery Phase Group 1-4 Baseline
 
 ## Metadata
 - Task ID: TASK-2026-02-14-discovery-phase-group-1-4-baseline
 - Story: STORY-2026-02-14-phase-group-1-4-baseline
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -93,8 +96,8 @@ Define the baseline direct-call profiling contract for structural phases 1-4.
   - `broken_spell_count=0`
 
 ## Files / Paths Impacted
-- `context_compass/stories/2026-02-14_phase_group_1_4_baseline_story.md`
-- `context_compass/tasks/2026-02-14_discovery_phase_group_1_4_baseline_task.md`
+- `context_compass/stories/completed/2026-02-14_phase_group_1_4_baseline_story.md`
+- `context_compass/tasks/completed/2026-02-14_discovery_phase_group_1_4_baseline_task.md`
 
 ## Validation
 - Not run.
@@ -110,8 +113,7 @@ Define the baseline direct-call profiling contract for structural phases 1-4.
 - [x] Deliverables produced and linked
 - [x] Documentation updated (if needed)
 - [x] Validation status recorded
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-14
   TYPE: MEASURE

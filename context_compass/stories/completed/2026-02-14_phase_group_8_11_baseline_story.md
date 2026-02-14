@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in the phase-testing closure pass; all linked tasks are complete and archived.
+
 # Story: Phase Group 8-11 Baseline
 
 ## Metadata
 - Story ID: STORY-2026-02-14-phase-group-8-11-baseline
 - Epic: EPIC-2026-02-14-phase-testing
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -78,7 +81,7 @@ Direct-call baseline profiling keeps optimization work evidence-first and safe.
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: 8-11 discovery is complete with per-spell chain contract, warm/cold plan variants, and execution-plan-aware output schema.
-  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_group_8_11_baseline_task.md:34
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_discovery_phase_group_8_11_baseline_task.md:34
   IMPACT: Story is ready for implementation after discovery acceptance.
   NEXT: Move 8-11 discovery task to review and prepare optimization backlog synthesis.
   REREAD: REQUIRED
@@ -92,9 +95,8 @@ Direct-call baseline profiling keeps optimization work evidence-first and safe.
   NEXT: Define fixture and grouped output schema in discovery task.
 
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user
 ## Context / Handoff Summary
 Discovery for 8-11 baseline is documented in the linked task with sequence,
 variant, and output contracts. Next action is acceptance for task closeout and

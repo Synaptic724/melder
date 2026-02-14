@@ -16,7 +16,6 @@ Attention details rule
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
 | context_compass artifact reference cleanup | review | codex | none | walk through cleanup outcomes and confirm acceptance for closure | `context_compass/tasks/2026-02-14_context_compass_artifact_reference_cleanup_task.md` | 2026-02-14 | REQUIRED |
-| phase testing epic | review | codex | none | latest phase9 follow-up is implemented/validated; walk acceptance and closure routing | `context_compass/epics/2026-02-14_phase_testing_epic.md` | 2026-02-14 | REQUIRED |
 | optimize melder epic | in_progress | codex | none | all active optimization stories are now in review state; route acceptance and move approved tickets | `context_compass/epics/2026-02-13_optimize_melder_epic.md` | 2026-02-14 | REQUIRED |
 | optimize conjure paths | review | codex | none | confirm acceptance for scheduler-lifecycle/phase-unit/activation-scan tasks, then move approved tickets | `context_compass/stories/2026-02-13_optimize_conjure_paths_story.md` | 2026-02-14 | REQUIRED |
 | optimize meld paths | review | codex | none | review/confirm `TASK-2026-02-13-meld-dynamic-gate-fastdoor` acceptance, then close/move as directed | `context_compass/stories/2026-02-13_optimize_meld_paths_story.md` | 2026-02-14 | REQUIRED |
@@ -26,61 +25,61 @@ Attention details rule
 ## Active Attention Details
 - TYPE: MEASURE
 - CLAIM: `TASK-2026-02-14-optimize-phase9-injection-plan-warm-reuse` is implemented and rerun-validated (`3 passed` targeted slice, `1 passed` harness) with reduced phase9 warm slice (`phase_injection_plan_ms` `0.179 -> 0.164`, injection builds `17 -> 15`) and near-neutral total warm impact.
-- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase9_injection_plan_warm_reuse_task.md:6-98`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-58`, `context_compass/artifacts/2026-02-14_phase9_injection_plan_warm_reuse_targeted_unit_tests.txt:1-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase9_injection_plan_warm_reuse_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase9_injection_plan_warm_reuse_output.txt:25-28`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:7-9`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_optimize_phase9_injection_plan_warm_reuse_task.md:6-98`, `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:6-58`, `context_compass/artifacts/2026-02-14_phase9_injection_plan_warm_reuse_targeted_unit_tests.txt:1-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase9_injection_plan_warm_reuse_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase9_injection_plan_warm_reuse_output.txt:25-28`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:7-9`
 - REREAD: REQUIRED
 - NEXT: Walk latest phase9 follow-up outcomes with user and confirm closure/move direction.
 
 - TYPE: DECISION
 - CLAIM: Phase-testing lane is reopened for one additional follow-up (`TASK-2026-02-14-optimize-phase9-injection-plan-warm-reuse`) because phase9 injection-plan rebuild remains a measurable warm slice.
-- EVIDENCE: `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:7-7`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:25-28`, `context_compass/tasks/2026-02-14_optimize_phase9_injection_plan_warm_reuse_task.md:1-87`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-57`
+- EVIDENCE: `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:7-7`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:25-28`, `context_compass/tasks/completed/2026-02-14_optimize_phase9_injection_plan_warm_reuse_task.md:1-87`, `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:6-57`
 - REREAD: REQUIRED
 - NEXT: Implement phase9 injection-plan warm-reuse gate and attach targeted unit + harness artifacts.
 
 - TYPE: MEASURE
 - CLAIM: `TASK-2026-02-14-optimize-phase8-occurrence-plan-warm-reuse` is implemented and rerun-validated (`3 passed` targeted slice, `1 passed` harness) with net warm-chain gain (`group_8_11_total_ms` `2.206 -> 2.114`, `phase_execution_plan_ms` `0.988 -> 0.751`).
-- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase8_occurrence_plan_warm_reuse_task.md:6-98`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-56`, `context_compass/artifacts/2026-02-14_phase8_occurrence_plan_warm_reuse_targeted_unit_tests.txt:1-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:59-59`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:7-9`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_optimize_phase8_occurrence_plan_warm_reuse_task.md:6-98`, `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:6-56`, `context_compass/artifacts/2026-02-14_phase8_occurrence_plan_warm_reuse_targeted_unit_tests.txt:1-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:59-59`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:7-9`
 - REREAD: REQUIRED
 - NEXT: Walk latest phase8 follow-up outcomes with user and confirm closure/move direction.
 
 - TYPE: DECISION
 - CLAIM: Phase-testing lane is reopened for one additional follow-up (`TASK-2026-02-14-optimize-phase8-occurrence-plan-warm-reuse`) because phase8 occurrence-plan rebuild is now the dominant warm hotspot.
-- EVIDENCE: `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:7-7`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:17-19`, `context_compass/tasks/2026-02-14_optimize_phase8_occurrence_plan_warm_reuse_task.md:1-87`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-56`
+- EVIDENCE: `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:7-7`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:17-19`, `context_compass/tasks/completed/2026-02-14_optimize_phase8_occurrence_plan_warm_reuse_task.md:1-87`, `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:6-56`
 - REREAD: REQUIRED
 - NEXT: Implement phase8 occurrence-plan warm-reuse gate and attach targeted unit + harness artifacts.
 
 - TYPE: MEASURE
 - CLAIM: `TASK-2026-02-14-optimize-phase10-patch-maps-warm-reuse` is implemented and rerun-validated (`3 passed` targeted slice, `1 passed` harness) with strong warm reduction (`phase_patch_maps_ms` `0.743 -> 0.026`, `group_8_11_total_ms` `3.024 -> 2.206`).
-- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase10_patch_maps_warm_reuse_task.md:6-98`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-55`, `context_compass/artifacts/2026-02-14_phase10_patch_maps_warm_reuse_targeted_unit_tests.txt:1-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:59-59`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:7-9`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_optimize_phase10_patch_maps_warm_reuse_task.md:6-98`, `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:6-55`, `context_compass/artifacts/2026-02-14_phase10_patch_maps_warm_reuse_targeted_unit_tests.txt:1-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:59-59`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:7-9`
 - REREAD: REQUIRED
 - NEXT: Walk latest phase-testing follow-up outcomes with user and confirm closure/move direction.
 
 - TYPE: DECISION
 - CLAIM: Phase-testing lane is reopened for one additional follow-up (`TASK-2026-02-14-optimize-phase10-patch-maps-warm-reuse`) because warm sample still shows phase10 patch-map rebuild as a measurable slice.
-- EVIDENCE: `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:7-7`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:20-22`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:26-26`, `context_compass/tasks/2026-02-14_optimize_phase10_patch_maps_warm_reuse_task.md:1-87`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-54`
+- EVIDENCE: `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:7-7`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:20-22`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:26-26`, `context_compass/tasks/completed/2026-02-14_optimize_phase10_patch_maps_warm_reuse_task.md:1-87`, `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:6-54`
 - REREAD: REQUIRED
 - NEXT: Implement phase10 patch-map warm-reuse gate and attach targeted unit + harness artifacts.
 
 - TYPE: MEASURE
 - CLAIM: `TASK-2026-02-14-optimize-phase11-variant-set-warm-reuse` is implemented and rerun-validated (`6 passed` targeted unit slice, `1 passed` harness) with warm 8-11 reduction (`group_8_11_total_ms` `3.167 -> 3.024`, `phase_execution_plan_ms` `1.383 -> 0.989`).
-- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase11_variant_set_warm_reuse_task.md:6-98`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-54`, `context_compass/artifacts/2026-02-14_phase11_variant_set_warm_reuse_targeted_unit_tests.txt:1-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:23-25`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:7-9`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_optimize_phase11_variant_set_warm_reuse_task.md:6-98`, `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:6-54`, `context_compass/artifacts/2026-02-14_phase11_variant_set_warm_reuse_targeted_unit_tests.txt:1-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:23-25`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:7-9`
 - REREAD: REQUIRED
 - NEXT: Walk final phase-testing follow-up outcomes with user and confirm closure/move direction.
 
 - TYPE: DECISION
 - CLAIM: Phase-testing lane is reopened for one additional follow-up (`TASK-2026-02-14-optimize-phase11-variant-set-warm-reuse`) because warm profile still shows measurable phase11 overhead and unchanged-signature flow still derives sibling variants each run.
-- EVIDENCE: `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:17-25`, `src/melder/spellbook/spell_crafter/spell_crafter.py:4100-4188`, `src/melder/spellbook/spell_crafter/spell_crafter.py:4229-4300`, `context_compass/tasks/2026-02-14_optimize_phase11_variant_set_warm_reuse_task.md:1-87`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-53`
+- EVIDENCE: `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:17-25`, `src/melder/spellbook/spell_crafter/spell_crafter.py:4100-4188`, `src/melder/spellbook/spell_crafter/spell_crafter.py:4229-4300`, `context_compass/tasks/completed/2026-02-14_optimize_phase11_variant_set_warm_reuse_task.md:1-87`, `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:6-53`
 - REREAD: REQUIRED
 - NEXT: Implement the new phase11 task and attach targeted unit + harness rerun artifacts.
 
 - TYPE: MEASURE
 - CLAIM: `TASK-2026-02-14-optimize-phase11-plan-rebuild-elision` is now implemented and rerun-validated with captured artifacts (`5 passed` targeted phase11 unit slice, `1 passed` component harness); story checklist is complete and routed to review.
-- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase11_plan_rebuild_elision_task.md:6-147`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-6`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:52-52`, `context_compass/artifacts/2026-02-14_phase11_plan_rebuild_elision_targeted_unit_tests.txt:1-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:7-7`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:59-59`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_optimize_phase11_plan_rebuild_elision_task.md:6-147`, `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:6-6`, `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:52-52`, `context_compass/artifacts/2026-02-14_phase11_plan_rebuild_elision_targeted_unit_tests.txt:1-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:7-7`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:59-59`
 - REREAD: REQUIRED
 - NEXT: Walk phase-testing epic/story outcomes with user and confirm closure/move direction.
 
 - TYPE: DECISION
 - CLAIM: Phase-testing backlog is reopened for one additional phase11 follow-up (`TASK-2026-02-14-optimize-phase11-plan-rebuild-elision`) targeting repeated no-overrides full-build overhead still visible after plan-based compile changes.
-- EVIDENCE: `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:6-6`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:51-52`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:74-81`, `context_compass/tasks/2026-02-14_optimize_phase11_plan_rebuild_elision_task.md:1-80`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_based_compile_output.txt:17-20`
+- EVIDENCE: `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:6-6`, `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:51-52`, `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:74-81`, `context_compass/tasks/completed/2026-02-14_optimize_phase11_plan_rebuild_elision_task.md:1-80`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_based_compile_output.txt:17-20`
 - REREAD: REQUIRED
 - NEXT: Implement the plan-rebuild-elision task and rerun targeted unit + harness validation.
 
@@ -92,25 +91,25 @@ Attention details rule
 
 - TYPE: DECISION
 - CLAIM: Phase-testing baseline stories were normalized from stale `in_progress` state to `review` and their linked task rows were checked complete, matching the already-reviewed task tickets.
-- EVIDENCE: `context_compass/epics/2026-02-14_phase_testing_epic.md:126-142`, `context_compass/stories/2026-02-14_phase_component_cprofile_harness_story.md:6-6`, `context_compass/stories/2026-02-14_phase_component_cprofile_harness_story.md:44-45`, `context_compass/stories/2026-02-14_phase_group_1_4_baseline_story.md:6-6`, `context_compass/stories/2026-02-14_phase_group_1_4_baseline_story.md:42-42`, `context_compass/stories/2026-02-14_phase_group_5_7_conduit_baseline_story.md:6-6`, `context_compass/stories/2026-02-14_phase_group_5_7_conduit_baseline_story.md:43-43`, `context_compass/stories/2026-02-14_phase_group_5_7_local_baseline_story.md:6-6`, `context_compass/stories/2026-02-14_phase_group_5_7_local_baseline_story.md:43-43`, `context_compass/stories/2026-02-14_phase_group_8_11_baseline_story.md:6-6`, `context_compass/stories/2026-02-14_phase_group_8_11_baseline_story.md:44-44`
+- EVIDENCE: `context_compass/epics/completed/2026-02-14_phase_testing_epic.md:126-142`, `context_compass/stories/completed/2026-02-14_phase_component_cprofile_harness_story.md:6-6`, `context_compass/stories/completed/2026-02-14_phase_component_cprofile_harness_story.md:44-45`, `context_compass/stories/completed/2026-02-14_phase_group_1_4_baseline_story.md:6-6`, `context_compass/stories/completed/2026-02-14_phase_group_1_4_baseline_story.md:42-42`, `context_compass/stories/completed/2026-02-14_phase_group_5_7_conduit_baseline_story.md:6-6`, `context_compass/stories/completed/2026-02-14_phase_group_5_7_conduit_baseline_story.md:43-43`, `context_compass/stories/completed/2026-02-14_phase_group_5_7_local_baseline_story.md:6-6`, `context_compass/stories/completed/2026-02-14_phase_group_5_7_local_baseline_story.md:43-43`, `context_compass/stories/completed/2026-02-14_phase_group_8_11_baseline_story.md:6-6`, `context_compass/stories/completed/2026-02-14_phase_group_8_11_baseline_story.md:44-44`
 - REREAD: REQUIRED
 - NEXT: Request closure acceptance for the phase-testing story set and move approved tickets.
 
 - TYPE: MEASURE
 - CLAIM: The plan-based no-overrides compile follow-up is rerun-validated with fresh artifacts: targeted spell-crafter slice passes (`10 passed`) and harness rerun passes (`1 passed`) with updated warm phase11 output.
-- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase11_plan_based_no_overrides_compile_task.md:69-76`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:51-83`, `context_compass/epics/2026-02-14_phase_testing_epic.md:128-135`, `context_compass/artifacts/2026-02-14_phase11_plan_based_compile_targeted_unit_tests.txt:1-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_based_compile_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_based_compile_output.txt:59-59`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_optimize_phase11_plan_based_no_overrides_compile_task.md:69-76`, `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:51-83`, `context_compass/epics/completed/2026-02-14_phase_testing_epic.md:128-135`, `context_compass/artifacts/2026-02-14_phase11_plan_based_compile_targeted_unit_tests.txt:1-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_based_compile_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_based_compile_output.txt:59-59`
 - REREAD: REQUIRED
 - NEXT: Request user acceptance for closure and move task/story/epic as directed.
 
 - TYPE: FACT
 - CLAIM: The follow-up fix preserved strict production plan contracts by correcting the test fixture: `_make_phase11_plan_stub` now always includes `root_instance_key` instead of adding defensive runtime introspection to hot-path signature logic.
-- EVIDENCE: `tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py:4234-4265`, `context_compass/tasks/2026-02-14_optimize_phase11_plan_based_no_overrides_compile_task.md:78-85`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:85-92`
+- EVIDENCE: `tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py:4234-4265`, `context_compass/tasks/completed/2026-02-14_optimize_phase11_plan_based_no_overrides_compile_task.md:78-85`, `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:85-92`
 - REREAD: REQUIRED
 - NEXT: Keep fixture contract alignment for future plan-based compile tests.
 
 - TYPE: DECISION
 - CLAIM: Phase-testing backlog is reopened for one additional phase11 follow-up: remove no-overrides IR payload build from `run_phase_execution_plan` compile-signature path via plan-based compile/signature wiring.
-- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase11_plan_based_no_overrides_compile_task.md:1-79`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:43-51`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:72-80`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_optimize_phase11_plan_based_no_overrides_compile_task.md:1-79`, `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:43-51`, `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:72-80`
 - REREAD: REQUIRED
 - NEXT: Implement task changes in SpellCrafter/compiler path and rerun targeted unit + harness validations.
 
@@ -140,13 +139,13 @@ Attention details rule
 
 - TYPE: DECISION
 - CLAIM: Phase-testing optimization backlog was re-opened for one additional ranked follow-up because the latest warm sample still shows heavy phase11 variant rebuild churn (`51` calls to `_build_execution_plan_variant` and `ExecutionPlanBuilder.build`).
-- EVIDENCE: `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:44-49`, `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:71-78`, `context_compass/tasks/completed/2026-02-14_optimize_phase11_execution_plan_variant_reuse_task_completed.md:4-11`, `context_compass/tasks/completed/2026-02-14_optimize_phase11_execution_plan_variant_reuse_task_completed.md:61-69`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:21-23`
+- EVIDENCE: `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:44-49`, `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:71-78`, `context_compass/tasks/completed/2026-02-14_optimize_phase11_execution_plan_variant_reuse_task_completed.md:4-11`, `context_compass/tasks/completed/2026-02-14_optimize_phase11_execution_plan_variant_reuse_task_completed.md:61-69`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:21-23`
 - REREAD: REQUIRED
 - NEXT: Keep as historical anchor for why the follow-up was opened; current active next step is acceptance/closure routing after implementation.
 
 - TYPE: MEASURE
 - CLAIM: Phase-testing rank-2 row-builder task gained a measurable warm improvement after the `PathRegistry.format_path` memoization follow-up pass (`group_8_11_total_ms` `9.804 -> 9.085`, `phase_patch_maps_ms` `1.288 -> 0.573`, calls `120524 -> 108778`).
-- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:65-72`, `src/melder/spellbook/spell_crafter/dag/dag_index.py:182-191`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:25-27`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:32-34`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:65-72`, `src/melder/spellbook/spell_crafter/dag/dag_index.py:182-191`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:25-27`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:32-34`
 - REREAD: REQUIRED
 - NEXT: Walk rank1/rank2/rank3 outcomes with user and confirm closure/move direction for phase-testing backlog tasks.
 
@@ -254,25 +253,25 @@ Attention details rule
 
 - TYPE: MEASURE
 - CLAIM: Rank-3 phase5 task is revalidated with clean reruns; focused phase5 suites passed and warm conduit 5-7 metrics remain below the pre-rank3 anchor with expected run-to-run noise.
-- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase5_root_blueprints_hotpath_task.md:59-99`, `context_compass/artifacts/2026-02-14_phase5_opt_builder_unit_tests_rerun_clean.txt:12-12`, `context_compass/artifacts/2026-02-14_phase5_opt_spell_crafter_unit_tests_rerun_clean.txt:12-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase5_opt_rerun_clean_output.txt:4-4`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase5_opt_rerun_clean_output_run2.txt:4-4`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output.txt:4-4`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run2.txt:4-4`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_optimize_phase5_root_blueprints_hotpath_task.md:59-99`, `context_compass/artifacts/2026-02-14_phase5_opt_builder_unit_tests_rerun_clean.txt:12-12`, `context_compass/artifacts/2026-02-14_phase5_opt_spell_crafter_unit_tests_rerun_clean.txt:12-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase5_opt_rerun_clean_output.txt:4-4`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase5_opt_rerun_clean_output_run2.txt:4-4`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output.txt:4-4`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run2.txt:4-4`
 - REREAD: REQUIRED
 - NEXT: Request user acceptance for rank1/rank2/rank3 and decide closure vs extra iteration.
 
 - TYPE: MEASURE
 - CLAIM: Rank-2 optimization task is implemented and validated; warm 8-11 total is mixed across two reruns (`27.932ms` and `25.438ms`) versus rank1 anchor (`27.829ms`), while warm cProfile sample improved from `0.083s` to `0.081s`/`0.080s`.
-- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:98-105`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_opt_output.txt:12-15`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run2.txt:7-9`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:98-105`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_opt_output.txt:12-15`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run2.txt:7-9`
 - REREAD: REQUIRED
 - NEXT: Get user keep-vs-iterate/closure direction for rank-2.
 
 - TYPE: FACT
 - CLAIM: Rank-1 optimization task is now implemented and validated; warm 8-11 sample dropped from `34.993ms` to `27.829ms`, and warm cProfile sample dropped from `0.091s` to `0.083s`.
-- EVIDENCE: `context_compass/tasks/2026-02-14_optimize_phase11_codegen_ir_capture_task.md:57-89`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:11-15`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_opt_output.txt:12-15`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_optimize_phase11_codegen_ir_capture_task.md:57-89`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:11-15`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_opt_output.txt:12-15`
 - REREAD: REQUIRED
 - NEXT: Start `TASK-2026-02-14-optimize-phase8-10-plan-row-builders`.
 
 - TYPE: FACT
 - CLAIM: Optimization backlog ranking is complete and three scoped follow-up tasks were created from measured phase-testing outputs.
-- EVIDENCE: `context_compass/tasks/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:47-82`, `context_compass/tasks/2026-02-14_optimize_phase11_codegen_ir_capture_task.md:1-12`, `context_compass/tasks/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:1-12`, `context_compass/tasks/2026-02-14_optimize_phase5_root_blueprints_hotpath_task.md:1-12`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:47-82`, `context_compass/tasks/completed/2026-02-14_optimize_phase11_codegen_ir_capture_task.md:1-12`, `context_compass/tasks/completed/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:1-12`, `context_compass/tasks/completed/2026-02-14_optimize_phase5_root_blueprints_hotpath_task.md:1-12`
 - REREAD: REQUIRED
 - NEXT: Start rank-1 optimization implementation task.
 
@@ -284,43 +283,43 @@ Attention details rule
 
 - TYPE: FACT
 - CLAIM: Execution tasks were created for harness implementation and baseline measurement runs, providing a concrete unblock path for phase-testing ranking.
-- EVIDENCE: `context_compass/tasks/2026-02-14_implement_phase_component_cprofile_harness_task.md:1`, `context_compass/tasks/2026-02-14_execute_phase_group_baseline_measurements_task.md:1`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_implement_phase_component_cprofile_harness_task.md:1`, `context_compass/tasks/completed/2026-02-14_execute_phase_group_baseline_measurements_task.md:1`
 - REREAD: REQUIRED
 - NEXT: Implement `tests/component/melder/spellbook/test_phase_component_cprofile_harness.py` and run it with `pytest -q -s`.
 
 - TYPE: FACT
 - CLAIM: Phase-testing optimization-backlog discovery is blocked until measured outputs are attached; readiness gate and ranking schema are documented.
-- EVIDENCE: `context_compass/tasks/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:6`, `context_compass/tasks/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:28`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:6`, `context_compass/tasks/completed/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:28`
 - REREAD: REQUIRED
 - NEXT: Confirm acceptance for discovery tickets, then implement/run harness baselines to produce measured artifacts.
 
 - TYPE: FACT
 - CLAIM: Phase 8-11 baseline discovery is documented and in review with per-spell chain contract, warm/cold variants, and execution-plan metric outputs.
-- EVIDENCE: `context_compass/tasks/2026-02-14_discovery_phase_group_8_11_baseline_task.md:1`, `context_compass/stories/2026-02-14_phase_group_8_11_baseline_story.md:1`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_discovery_phase_group_8_11_baseline_task.md:1`, `context_compass/stories/completed/2026-02-14_phase_group_8_11_baseline_story.md:1`
 - REREAD: REQUIRED
 - NEXT: Execute `TASK-2026-02-14-discovery-phase-testing-optimization-backlog`.
 
 - TYPE: FACT
 - CLAIM: Local 5-7 baseline discovery is documented and in review with target-scoped chain and scoped-size reporting contract.
-- EVIDENCE: `context_compass/tasks/2026-02-14_discovery_phase_group_5_7_local_baseline_task.md:1`, `context_compass/stories/2026-02-14_phase_group_5_7_local_baseline_story.md:1`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_discovery_phase_group_5_7_local_baseline_task.md:1`, `context_compass/stories/completed/2026-02-14_phase_group_5_7_local_baseline_story.md:1`
 - REREAD: REQUIRED
 - NEXT: Execute `TASK-2026-02-14-discovery-phase-group-8-11-baseline`.
 
 - TYPE: FACT
 - CLAIM: Conduit-wide 5-7 baseline discovery is documented and in review with lead-spell frame-scoped direct-call sequencing and ranking output fields.
-- EVIDENCE: `context_compass/tasks/2026-02-14_discovery_phase_group_5_7_conduit_baseline_task.md:1`, `context_compass/stories/2026-02-14_phase_group_5_7_conduit_baseline_story.md:1`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_discovery_phase_group_5_7_conduit_baseline_task.md:1`, `context_compass/stories/completed/2026-02-14_phase_group_5_7_conduit_baseline_story.md:1`
 - REREAD: REQUIRED
 - NEXT: Execute `TASK-2026-02-14-discovery-phase-group-5-7-local-baseline`.
 
 - TYPE: FACT
 - CLAIM: Phase 1-4 baseline discovery is documented and in review with full-spellbook default scope, optional single-spell diagnostic slice, and explicit warm/cold variant contract.
-- EVIDENCE: `context_compass/tasks/2026-02-14_discovery_phase_group_1_4_baseline_task.md:1`, `context_compass/stories/2026-02-14_phase_group_1_4_baseline_story.md:1`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_discovery_phase_group_1_4_baseline_task.md:1`, `context_compass/stories/completed/2026-02-14_phase_group_1_4_baseline_story.md:1`
 - REREAD: REQUIRED
 - NEXT: Execute `TASK-2026-02-14-discovery-phase-group-5-7-conduit-baseline`.
 
 - TYPE: FACT
 - CLAIM: Harness discovery contract is documented and in review: four direct-call phase groups with no scheduler path, production-order gating, and standardized profile output schema.
-- EVIDENCE: `context_compass/tasks/2026-02-14_discovery_phase_component_cprofile_harness_task.md:34`, `context_compass/stories/2026-02-14_phase_component_cprofile_harness_story.md:1`
+- EVIDENCE: `context_compass/tasks/completed/2026-02-14_discovery_phase_component_cprofile_harness_task.md:34`, `context_compass/stories/completed/2026-02-14_phase_component_cprofile_harness_story.md:1`
 - REREAD: REQUIRED
 - NEXT: Confirm acceptance for `TASK-2026-02-14-discovery-phase-component-cprofile-harness`, then execute `TASK-2026-02-14-discovery-phase-group-1-4-baseline`.
 
@@ -350,13 +349,13 @@ Attention details rule
 
 - TYPE: FACT
 - CLAIM: Phase-testing discovery scope now includes an explicit 8-11 baseline story/task, and missing discovery task files were created for spellcrafter, creation_context codegen, and phase12 codegen stories.
-- EVIDENCE: `context_compass/epics/2026-02-14_phase_testing_epic.md:1`, `context_compass/stories/2026-02-14_phase_group_8_11_baseline_story.md:1`, `context_compass/tasks/2026-02-14_discovery_phase_group_8_11_baseline_task.md:1`, `context_compass/tasks/2026-02-13_discovery_spellcrafter_phases_task.md:1`, `context_compass/tasks/2026-02-13_discovery_creation_context_codegen_task.md:1`, `context_compass/tasks/2026-02-13_discovery_phase12_codegen_task.md:1`
+- EVIDENCE: `context_compass/epics/completed/2026-02-14_phase_testing_epic.md:1`, `context_compass/stories/completed/2026-02-14_phase_group_8_11_baseline_story.md:1`, `context_compass/tasks/completed/2026-02-14_discovery_phase_group_8_11_baseline_task.md:1`, `context_compass/tasks/2026-02-13_discovery_spellcrafter_phases_task.md:1`, `context_compass/tasks/2026-02-13_discovery_creation_context_codegen_task.md:1`, `context_compass/tasks/2026-02-13_discovery_phase12_codegen_task.md:1`
 - REREAD: REQUIRED
 - NEXT: Execute discovery tasks in phase-group order and append evidence-backed hotspots into linked story/task notes.
 
 - TYPE: FACT
 - CLAIM: Created `EPIC-2026-02-14-phase-testing` with discovery-first stories/tasks for direct phase component profiling (`cProfile`) without `PhaseScheduler`, workers, or `UnitOfWork`.
-- EVIDENCE: `context_compass/epics/2026-02-14_phase_testing_epic.md:1`, `context_compass/stories/2026-02-14_phase_component_cprofile_harness_story.md:1`, `context_compass/tasks/2026-02-14_discovery_phase_component_cprofile_harness_task.md:1`
+- EVIDENCE: `context_compass/epics/completed/2026-02-14_phase_testing_epic.md:1`, `context_compass/stories/completed/2026-02-14_phase_component_cprofile_harness_story.md:1`, `context_compass/tasks/completed/2026-02-14_discovery_phase_component_cprofile_harness_task.md:1`
 - REREAD: REQUIRED
 - NEXT: Execute harness discovery task and lock toggle matrix for phase groups.
 
@@ -471,6 +470,7 @@ Attention details rule
 ## Recently Closed Anchors
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
+| phase testing epic | done | codex | none | none | `context_compass/epics/completed/2026-02-14_phase_testing_epic.md` | 2026-02-14 | HELPFUL |
 | phase11 lazy phase8-11 capture | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_optimize_phase11_lazy_phase8_11_capture_task_completed.md` | 2026-02-14 | HELPFUL |
 | phase11 execution-plan variant reuse | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_optimize_phase11_execution_plan_variant_reuse_task_completed.md` | 2026-02-14 | HELPFUL |
 | context_compass documentation integrity audit | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_context_compass_documentation_integrity_audit_task.md` | 2026-02-14 | HELPFUL |

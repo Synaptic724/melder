@@ -44,7 +44,7 @@ no-overrides compile behavior and lazy `codegen_ir` freshness.
 ## Files / Paths Impacted
 - `src/melder/spellbook/spell_crafter/spell_crafter.py`
 - `tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py`
-- `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md`
+- `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md`
 
 ## Validation
 - Ran:

@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in the phase-testing closure pass; implementation and validation artifacts are captured in this task.
+
 # Task: Discovery Phase Group 5-7 Local Baseline
 
 ## Metadata
 - Task ID: TASK-2026-02-14-discovery-phase-group-5-7-local-baseline
 - Story: STORY-2026-02-14-phase-group-5-7-local-baseline
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -79,8 +82,8 @@ Define a direct-call baseline for target-local foundational phases 5-7.
   - `resolution_has_errors=False`
 
 ## Files / Paths Impacted
-- `context_compass/stories/2026-02-14_phase_group_5_7_local_baseline_story.md`
-- `context_compass/tasks/2026-02-14_discovery_phase_group_5_7_local_baseline_task.md`
+- `context_compass/stories/completed/2026-02-14_phase_group_5_7_local_baseline_story.md`
+- `context_compass/tasks/completed/2026-02-14_discovery_phase_group_5_7_local_baseline_task.md`
 
 ## Validation
 - Not run.
@@ -96,8 +99,7 @@ Define a direct-call baseline for target-local foundational phases 5-7.
 - [x] Deliverables produced and linked
 - [x] Documentation updated (if needed)
 - [x] Validation status recorded
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-14
   TYPE: MEASURE

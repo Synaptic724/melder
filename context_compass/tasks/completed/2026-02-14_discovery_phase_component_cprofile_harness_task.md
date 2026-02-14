@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in the phase-testing closure pass; implementation and validation artifacts are captured in this task.
+
 # Task: Discovery Phase Component CProfile Harness
 
 ## Metadata
 - Task ID: TASK-2026-02-14-discovery-phase-component-cprofile-harness
 - Story: STORY-2026-02-14-phase-component-cprofile-harness
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -88,8 +91,8 @@ including toggle schema, fixture rules, and output format.
     - `pstats.Stats(...).print_stats(top)` text.
 
 ## Files / Paths Impacted
-- `context_compass/stories/2026-02-14_phase_component_cprofile_harness_story.md`
-- `context_compass/tasks/2026-02-14_discovery_phase_component_cprofile_harness_task.md`
+- `context_compass/stories/completed/2026-02-14_phase_component_cprofile_harness_story.md`
+- `context_compass/tasks/completed/2026-02-14_discovery_phase_component_cprofile_harness_task.md`
 
 ## Validation
 - Not run.
@@ -105,13 +108,12 @@ including toggle schema, fixture rules, and output format.
 - [x] Deliverables produced and linked
 - [x] Documentation updated (if needed)
 - [x] Validation status recorded
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Harness contract has now been executed successfully via the implementation task, and baseline output artifact confirms all four groups emit standardized profile lines.
-  EVIDENCE: context_compass/tasks/2026-02-14_implement_phase_component_cprofile_harness_task.md:3-3, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:5-13
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_implement_phase_component_cprofile_harness_task.md:3-3, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:5-13
   IMPACT: Discovery contract is validated against real run output, not only source inspection.
   NEXT: Use the artifact as canonical evidence in baseline and backlog tasks.
   REREAD: REQUIRED

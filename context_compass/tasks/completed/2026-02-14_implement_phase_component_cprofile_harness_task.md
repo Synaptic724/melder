@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in the phase-testing closure pass; implementation and validation artifacts are captured in this task.
+
 # Task: Implement Phase Component CProfile Harness
 
 ## Metadata
 - Task ID: TASK-2026-02-14-implement-phase-component-cprofile-harness
 - Story: STORY-2026-02-14-phase-component-cprofile-harness
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -36,8 +39,8 @@ output aligned with the discovery contract.
 
 ## Files / Paths Impacted
 - `tests/component/melder/spellbook/test_phase_component_cprofile_harness.py`
-- `context_compass/stories/2026-02-14_phase_component_cprofile_harness_story.md`
-- `context_compass/tasks/2026-02-14_implement_phase_component_cprofile_harness_task.md`
+- `context_compass/stories/completed/2026-02-14_phase_component_cprofile_harness_story.md`
+- `context_compass/tasks/completed/2026-02-14_implement_phase_component_cprofile_harness_task.md`
 
 ## Validation
 - Ran:
@@ -58,8 +61,7 @@ output aligned with the discovery contract.
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-14
   TYPE: FACT
@@ -91,7 +93,7 @@ output aligned with the discovery contract.
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Harness discovery contract is review-complete and specifies direct-call group sequencing plus profile output shape.
-  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_component_cprofile_harness_task.md:34
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_discovery_phase_component_cprofile_harness_task.md:34
   IMPACT: Implementation can proceed without further contract ambiguity.
   NEXT: Implement the harness module in component tests.
   REREAD: REQUIRED

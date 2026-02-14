@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in the phase-testing closure pass; all linked tasks are complete and archived.
+
 # Story: Phase Component CProfile Harness
 
 ## Metadata
 - Story ID: STORY-2026-02-14-phase-component-cprofile-harness
 - Epic: EPIC-2026-02-14-phase-testing
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -69,7 +72,7 @@ Without this harness, phase-level timing is mixed with orchestration overhead.
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Harness implementation executed successfully and emitted standardized profile output for all four groups.
-  EVIDENCE: context_compass/tasks/2026-02-14_implement_phase_component_cprofile_harness_task.md:3-3, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:5-13
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_implement_phase_component_cprofile_harness_task.md:3-3, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:5-13
   IMPACT: Story has implementation evidence and can support downstream baseline measurement/ranking tasks.
   NEXT: Confirm acceptance for the implementation task and close this story when directed.
   REREAD: REQUIRED
@@ -78,7 +81,7 @@ Without this harness, phase-level timing is mixed with orchestration overhead.
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Discovery locked the harness contract to four direct-call groups (`1-4`, `5-7 conduit`, `5-7 local`, `8-11 conduit`) with no scheduler path and production-order gating.
-  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_component_cprofile_harness_task.md:34, src/melder/spellbook/spellbook_creation_system.py:748, src/melder/spellbook/spellbook_creation_system.py:753
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_discovery_phase_component_cprofile_harness_task.md:34, src/melder/spellbook/spellbook_creation_system.py:748, src/melder/spellbook/spellbook_creation_system.py:753
   IMPACT: Harness implementation can proceed with explicit scope and deterministic execution geometry.
   NEXT: Move discovery task to review and ask for acceptance before implementing harness code.
   REREAD: REQUIRED
@@ -92,9 +95,8 @@ Without this harness, phase-level timing is mixed with orchestration overhead.
   NEXT: Specify direct-call sequence design in discovery task.
 
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user
 ## Context / Handoff Summary
 Discovery phase is complete for harness contract design. Next action is user
 acceptance on the discovery task, then implementation of the component harness

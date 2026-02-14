@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in the phase-testing closure pass; implementation and validation artifacts are captured in this task.
+
 # Task: Optimize Phase8-10 Plan Row Builder Hotpath
 
 ## Metadata
 - Task ID: TASK-2026-02-14-optimize-phase8-10-plan-row-builders
 - Story: STORY-2026-02-14-phase-testing-optimization-backlog
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
@@ -59,13 +62,12 @@ supporting path-materialization work.
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Parent routing docs are now synchronized with the latest rank-2 follow-up measurements so compaction re-entry points to the improved warm-path evidence and updated closure direction.
-  EVIDENCE: context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:71-78, context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:145-151, context_compass/epics/2026-02-14_phase_testing_epic.md:126-133, context_compass/epics/2026-02-14_phase_testing_epic.md:264-269, context_compass/attention_board.md:19-19, context_compass/attention_board.md:27-31
+  EVIDENCE: context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:71-78, context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:145-151, context_compass/epics/completed/2026-02-14_phase_testing_epic.md:126-133, context_compass/epics/completed/2026-02-14_phase_testing_epic.md:264-269, context_compass/attention_board.md:19-19, context_compass/attention_board.md:27-31
   IMPACT: Phase-testing tickets/board now preserve the latest measured state without requiring re-derivation after compaction.
   NEXT: Walk the updated rank1/rank2/rank3 outcomes with the user and confirm closure/move direction.
   REREAD: REQUIRED

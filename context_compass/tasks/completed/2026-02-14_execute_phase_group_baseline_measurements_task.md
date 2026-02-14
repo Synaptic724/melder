@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in the phase-testing closure pass; implementation and validation artifacts are captured in this task.
+
 # Task: Execute Phase Group Baseline Measurements
 
 ## Metadata
 - Task ID: TASK-2026-02-14-execute-phase-group-baseline-measurements
 - Story: STORY-2026-02-14-phase-testing-optimization-backlog
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -36,12 +39,12 @@ phase story/task notes for optimization ranking.
 - Optimization-backlog task unblocked for ranking.
 
 ## Files / Paths Impacted
-- `context_compass/tasks/2026-02-14_discovery_phase_group_1_4_baseline_task.md`
-- `context_compass/tasks/2026-02-14_discovery_phase_group_5_7_conduit_baseline_task.md`
-- `context_compass/tasks/2026-02-14_discovery_phase_group_5_7_local_baseline_task.md`
-- `context_compass/tasks/2026-02-14_discovery_phase_group_8_11_baseline_task.md`
-- `context_compass/tasks/2026-02-14_discovery_phase_testing_optimization_backlog_task.md`
-- `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md`
+- `context_compass/tasks/completed/2026-02-14_discovery_phase_group_1_4_baseline_task.md`
+- `context_compass/tasks/completed/2026-02-14_discovery_phase_group_5_7_conduit_baseline_task.md`
+- `context_compass/tasks/completed/2026-02-14_discovery_phase_group_5_7_local_baseline_task.md`
+- `context_compass/tasks/completed/2026-02-14_discovery_phase_group_8_11_baseline_task.md`
+- `context_compass/tasks/completed/2026-02-14_discovery_phase_testing_optimization_backlog_task.md`
+- `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md`
 
 ## Validation
 - Ran:
@@ -73,8 +76,7 @@ phase story/task notes for optimization ranking.
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-14
   TYPE: MEASURE
@@ -88,7 +90,7 @@ phase story/task notes for optimization ranking.
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Backlog ranking is currently blocked only by missing measured outputs from phase baseline tasks.
-  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:6, context_compass/tasks/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:28
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:6, context_compass/tasks/completed/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:28
   IMPACT: Executing this task is the direct unblock path for the phase-testing epic.
   NEXT: Run harness and populate measured notes in each baseline task.
   REREAD: REQUIRED

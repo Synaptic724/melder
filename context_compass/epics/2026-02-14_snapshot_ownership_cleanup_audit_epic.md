@@ -64,7 +64,7 @@ This avoids speculative optimization and preserves contract correctness.
 - `src/melder/aether/conduit/meld/overrides/graph_mutator.py`
 - `src/melder/spellbook/spellbook.py`
 - `src/melder/spellbook/spell_crafter/spell_crafter.py`
-- `context_compass/epics/2026-02-14_phase_testing_epic.md`
+- `context_compass/epics/completed/2026-02-14_phase_testing_epic.md`
 
 ## Milestones (Track Progress)
 - [ ] Milestone 1: Discovery inventory completed for phase + meld snapshot/copy sites.

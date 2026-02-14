@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in the phase-testing closure pass; implementation and validation artifacts are captured in this task.
+
 # Task: Optimize Phase11 Plan Rebuild Elision
 
 ## Metadata
 - Task ID: TASK-2026-02-14-optimize-phase11-plan-rebuild-elision
 - Story: STORY-2026-02-14-phase-testing-optimization-backlog
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
@@ -61,8 +64,7 @@ full builds when phase8-10 inputs are semantically unchanged.
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-14
   TYPE: FACT

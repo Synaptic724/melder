@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in the phase-testing closure pass; implementation and validation artifacts are captured in this task.
+
 # Task: Optimize Phase11 Codegen IR Capture Hotpath
 
 ## Metadata
 - Task ID: TASK-2026-02-14-optimize-phase11-codegen-ir-capture
 - Story: STORY-2026-02-14-phase-testing-optimization-backlog
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -36,7 +39,7 @@ the 8-11 warm path.
 ## Files / Paths Impacted
 - `src/melder/spellbook/spell_crafter/spell_crafter.py`
 - `tests/component/melder/spellbook/test_phase_component_cprofile_harness.py`
-- `context_compass/tasks/2026-02-14_discovery_phase_testing_optimization_backlog_task.md`
+- `context_compass/tasks/completed/2026-02-14_discovery_phase_testing_optimization_backlog_task.md`
 
 ## Validation
 - Ran:
@@ -60,8 +63,7 @@ the 8-11 warm path.
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-14
   TYPE: MEASURE

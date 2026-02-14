@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in the phase-testing closure pass; all linked tasks are complete and archived.
+
 # Story: Phase Group 5-7 Local Baseline
 
 ## Metadata
 - Story ID: STORY-2026-02-14-phase-group-5-7-local-baseline
 - Epic: EPIC-2026-02-14-phase-testing
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -75,7 +78,7 @@ its own bounded track before optimization decisions.
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Local 5-7 discovery is complete with explicit target-scoped direct-call chain, deterministic target policy, and scoped-size output reporting.
-  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_group_5_7_local_baseline_task.md:34
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_discovery_phase_group_5_7_local_baseline_task.md:34
   IMPACT: Story can proceed to implementation once discovery acceptance is confirmed.
   NEXT: Move local 5-7 discovery task to review and continue with 8-11 discovery.
   REREAD: REQUIRED
@@ -89,9 +92,8 @@ its own bounded track before optimization decisions.
   NEXT: Define direct-call local sequence and fixture in discovery task.
 
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user
 ## Context / Handoff Summary
 Discovery for local 5-7 baseline is documented in the linked task with target
 policy, scoped-work semantics, and output contracts. Next action is acceptance

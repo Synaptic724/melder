@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in the phase-testing closure pass; all linked tasks are complete and archived.
+
 # Story: Phase Group 1-4 Baseline
 
 ## Metadata
 - Story ID: STORY-2026-02-14-phase-group-1-4-baseline
 - Epic: EPIC-2026-02-14-phase-testing
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -74,7 +77,7 @@ high-fidelity optimization direction for conjure preparation.
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: 1-4 discovery contract is complete: default full-spellbook baseline, optional single-spell diagnostic slice, and explicit warm/cold variants with per-phase output fields.
-  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_group_1_4_baseline_task.md:34
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_discovery_phase_group_1_4_baseline_task.md:34
   IMPACT: Story is unblocked for implementation once discovery acceptance is confirmed.
   NEXT: Move discovery task to review and request acceptance before implementation.
   REREAD: REQUIRED
@@ -88,9 +91,8 @@ high-fidelity optimization direction for conjure preparation.
   NEXT: Capture this sequence in discovery task harness contract.
 
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user
 ## Context / Handoff Summary
 Discovery for 1-4 baseline is documented in the linked task with sequence,
 scope policy, warm/cold variants, and output fields. Next action is acceptance

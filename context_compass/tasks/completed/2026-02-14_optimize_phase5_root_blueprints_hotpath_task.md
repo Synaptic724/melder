@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in the phase-testing closure pass; implementation and validation artifacts are captured in this task.
+
 # Task: Optimize Phase5 Root Blueprints Baseline Hotpath
 
 ## Metadata
 - Task ID: TASK-2026-02-14-optimize-phase5-root-blueprints-hotpath
 - Story: STORY-2026-02-14-phase-testing-optimization-backlog
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
@@ -53,13 +56,12 @@ Reduce conduit-wide phase5 root-blueprints cost while preserving foundational
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Phase-testing routing docs are now synchronized to clean phase5 rerun evidence (story, epic, and attention board all reference rerun-clean artifacts).
-  EVIDENCE: context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md:73-73, context_compass/epics/2026-02-14_phase_testing_epic.md:128-128, context_compass/attention_board.md:29-29
+  EVIDENCE: context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:73-73, context_compass/epics/completed/2026-02-14_phase_testing_epic.md:128-128, context_compass/attention_board.md:29-29
   IMPACT: Re-entry pointers now direct future iterations to uncontested measurements instead of contested prior runs.
   NEXT: Share rerun outcomes with the user and request acceptance/next-wave direction.
   REREAD: REQUIRED

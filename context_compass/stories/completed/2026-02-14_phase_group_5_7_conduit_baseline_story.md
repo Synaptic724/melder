@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in the phase-testing closure pass; all linked tasks are complete and archived.
+
 # Story: Phase Group 5-7 Conduit Baseline
 
 ## Metadata
 - Story ID: STORY-2026-02-14-phase-group-5-7-conduit-baseline
 - Epic: EPIC-2026-02-14-phase-testing
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-14
@@ -75,7 +78,7 @@ them directly gives clean optimization signal without scheduler noise.
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Conduit-wide 5-7 discovery is complete with lead-spell direct-call contract, deterministic fixture policy, and ranking output schema including conduit error-state flagging.
-  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_group_5_7_conduit_baseline_task.md:34
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_discovery_phase_group_5_7_conduit_baseline_task.md:34
   IMPACT: Story is ready for implementation after discovery acceptance.
   NEXT: Move discovery task to review and continue with local 5-7 discovery ticket.
   REREAD: REQUIRED
@@ -89,9 +92,8 @@ them directly gives clean optimization signal without scheduler noise.
   NEXT: Encode equivalent direct-call flow in discovery output.
 
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user
 ## Context / Handoff Summary
 Discovery for conduit-wide 5-7 baseline is documented in the linked task with
 sequence, fixture, and output contracts. Next action is acceptance for task

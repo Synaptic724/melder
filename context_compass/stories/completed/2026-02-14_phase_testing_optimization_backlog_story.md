@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in the phase-testing closure pass; all linked tasks are complete and archived.
+
 # Story: Phase Testing Optimization Backlog
 
 ## Metadata
 - Story ID: STORY-2026-02-14-phase-testing-optimization-backlog
 - Epic: EPIC-2026-02-14-phase-testing
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
@@ -79,7 +82,7 @@ prioritization and reduced speculative work.
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: New phase9 follow-up (`TASK-2026-02-14-optimize-phase9-injection-plan-warm-reuse`) is implemented and rerun-validated: targeted phase9 slice passes (`3 passed`) and harness rerun passes (`1 passed`) with reduced phase9 warm slice (`phase_injection_plan_ms` `0.179 -> 0.164`) and fewer injection-plan builds (`17 -> 15`), while total warm 8-11 remains near-neutral/noisy.
-  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase9_injection_plan_warm_reuse_task.md:6-98, context_compass/artifacts/2026-02-14_phase9_injection_plan_warm_reuse_targeted_unit_tests.txt:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase9_injection_plan_warm_reuse_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase9_injection_plan_warm_reuse_output.txt:25-28, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:7-9
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_phase9_injection_plan_warm_reuse_task.md:6-98, context_compass/artifacts/2026-02-14_phase9_injection_plan_warm_reuse_targeted_unit_tests.txt:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase9_injection_plan_warm_reuse_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase9_injection_plan_warm_reuse_output.txt:25-28, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:7-9
   IMPACT: Backlog story checklist is complete again and returns to review pending acceptance/closure routing.
   NEXT: Walk latest phase9 follow-up outcomes with user and confirm closure direction.
   REREAD: REQUIRED
@@ -88,7 +91,7 @@ prioritization and reduced speculative work.
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Backlog story is reopened for one additional follow-up (`TASK-2026-02-14-optimize-phase9-injection-plan-warm-reuse`) because phase9 injection-plan rebuild remains a measurable warm slice after phase8/10 improvements.
-  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:7-7, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:25-28, context_compass/tasks/2026-02-14_optimize_phase9_injection_plan_warm_reuse_task.md:1-87
+  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:7-7, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:25-28, context_compass/tasks/completed/2026-02-14_optimize_phase9_injection_plan_warm_reuse_task.md:1-87
   IMPACT: Story returns to active execution for one more low-risk warm-path optimization slice.
   NEXT: Implement `TASK-2026-02-14-optimize-phase9-injection-plan-warm-reuse` and rerun targeted unit + harness validation.
   REREAD: REQUIRED
@@ -97,7 +100,7 @@ prioritization and reduced speculative work.
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: New phase8 follow-up (`TASK-2026-02-14-optimize-phase8-occurrence-plan-warm-reuse`) is implemented and rerun-validated: targeted phase8 slice passes (`3 passed`) and harness rerun passes (`1 passed`) with net warm 8-11 gain (`group_8_11_total_ms` `2.206 -> 2.114`, `phase_execution_plan_ms` `0.988 -> 0.751`).
-  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase8_occurrence_plan_warm_reuse_task.md:6-98, context_compass/artifacts/2026-02-14_phase8_occurrence_plan_warm_reuse_targeted_unit_tests.txt:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:59-59, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:7-9
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_phase8_occurrence_plan_warm_reuse_task.md:6-98, context_compass/artifacts/2026-02-14_phase8_occurrence_plan_warm_reuse_targeted_unit_tests.txt:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:59-59, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:7-9
   IMPACT: Backlog story checklist is complete again and returns to review pending acceptance/closure routing.
   NEXT: Walk latest phase8 follow-up outcomes with user and confirm closure direction.
   REREAD: REQUIRED
@@ -106,7 +109,7 @@ prioritization and reduced speculative work.
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Backlog story is reopened for one additional follow-up (`TASK-2026-02-14-optimize-phase8-occurrence-plan-warm-reuse`) because phase8 occurrence-plan rebuild is now the dominant warm hotspot after phase10 patch-map reuse.
-  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:7-7, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:17-19, context_compass/tasks/2026-02-14_optimize_phase8_occurrence_plan_warm_reuse_task.md:1-87
+  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:7-7, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:17-19, context_compass/tasks/completed/2026-02-14_optimize_phase8_occurrence_plan_warm_reuse_task.md:1-87
   IMPACT: Story returns to active execution for one more high-impact warm-path optimization slice.
   NEXT: Implement `TASK-2026-02-14-optimize-phase8-occurrence-plan-warm-reuse` and rerun targeted unit + harness validation.
   REREAD: REQUIRED
@@ -115,7 +118,7 @@ prioritization and reduced speculative work.
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: New phase10 follow-up (`TASK-2026-02-14-optimize-phase10-patch-maps-warm-reuse`) is implemented and rerun-validated: targeted phase10 slice passes (`3 passed`) and harness rerun passes (`1 passed`) with warm patch-map reduction (`phase_patch_maps_ms` `0.743 -> 0.026`) and lower warm 8-11 total (`3.024 -> 2.206`).
-  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase10_patch_maps_warm_reuse_task.md:6-98, context_compass/artifacts/2026-02-14_phase10_patch_maps_warm_reuse_targeted_unit_tests.txt:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:59-59, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:7-9
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_phase10_patch_maps_warm_reuse_task.md:6-98, context_compass/artifacts/2026-02-14_phase10_patch_maps_warm_reuse_targeted_unit_tests.txt:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase10_patch_maps_warm_reuse_output.txt:59-59, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:7-9
   IMPACT: Backlog story checklist is complete again and returns to review pending acceptance/closure routing.
   NEXT: Walk latest follow-up outcomes with user and confirm closure direction.
   REREAD: REQUIRED
@@ -124,7 +127,7 @@ prioritization and reduced speculative work.
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Backlog story is reopened for one additional follow-up (`TASK-2026-02-14-optimize-phase10-patch-maps-warm-reuse`) because latest warm sample still shows phase10 patch-map rebuild as a measurable hotspot.
-  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:7-7, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:20-22, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:26-26, context_compass/tasks/2026-02-14_optimize_phase10_patch_maps_warm_reuse_task.md:1-87
+  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:7-7, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:20-22, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:26-26, context_compass/tasks/completed/2026-02-14_optimize_phase10_patch_maps_warm_reuse_task.md:1-87
   IMPACT: Story returns to active execution for one more low-risk warm-path optimization slice.
   NEXT: Implement `TASK-2026-02-14-optimize-phase10-patch-maps-warm-reuse` and rerun targeted unit + harness validation.
   REREAD: REQUIRED
@@ -133,7 +136,7 @@ prioritization and reduced speculative work.
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: New phase11 follow-up (`TASK-2026-02-14-optimize-phase11-variant-set-warm-reuse`) is implemented and rerun-validated: targeted phase11 unit slice passes (`6 passed`) and harness rerun passes (`1 passed`) with warm improvements (`group_8_11_total_ms` `3.167 -> 3.024`, `phase_execution_plan_ms` `1.383 -> 0.989`).
-  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase11_variant_set_warm_reuse_task.md:6-98, context_compass/artifacts/2026-02-14_phase11_variant_set_warm_reuse_targeted_unit_tests.txt:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:23-25, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:7-9
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_phase11_variant_set_warm_reuse_task.md:6-98, context_compass/artifacts/2026-02-14_phase11_variant_set_warm_reuse_targeted_unit_tests.txt:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_variant_set_warm_reuse_output.txt:23-25, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:7-9
   IMPACT: Backlog story checklist is complete again and returns to review pending acceptance/closure routing.
   NEXT: Walk through final phase11 follow-up outcomes with user and confirm closure direction.
   REREAD: REQUIRED
@@ -142,7 +145,7 @@ prioritization and reduced speculative work.
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Backlog story is reopened for one additional phase11 follow-up (`TASK-2026-02-14-optimize-phase11-variant-set-warm-reuse`) because warm profile still shows measurable phase11 overhead and current unchanged-signature path still derives sibling variants on each call.
-  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:17-25, src/melder/spellbook/spell_crafter/spell_crafter.py:4100-4188, src/melder/spellbook/spell_crafter/spell_crafter.py:4229-4300, context_compass/tasks/2026-02-14_optimize_phase11_variant_set_warm_reuse_task.md:1-87
+  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:17-25, src/melder/spellbook/spell_crafter/spell_crafter.py:4100-4188, src/melder/spellbook/spell_crafter/spell_crafter.py:4229-4300, context_compass/tasks/completed/2026-02-14_optimize_phase11_variant_set_warm_reuse_task.md:1-87
   IMPACT: Story returns to active execution with one more low-risk phase11 warm-path optimization slice.
   NEXT: Implement `TASK-2026-02-14-optimize-phase11-variant-set-warm-reuse` and rerun targeted unit + harness validation.
   REREAD: REQUIRED
@@ -151,7 +154,7 @@ prioritization and reduced speculative work.
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: The phase11 plan-rebuild-elision follow-up is implemented and rerun-validated: targeted phase11 unit slice passes (`5 passed`) and component harness rerun passes (`1 passed`) with warm 8-11 sample output recorded.
-  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase11_plan_rebuild_elision_task.md:6-147, context_compass/artifacts/2026-02-14_phase11_plan_rebuild_elision_targeted_unit_tests.txt:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:7-7, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:59-59
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_phase11_plan_rebuild_elision_task.md:6-147, context_compass/artifacts/2026-02-14_phase11_plan_rebuild_elision_targeted_unit_tests.txt:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:7-7, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_rebuild_elision_output.txt:59-59
   IMPACT: Backlog story implementation checklist is complete; story is now in review awaiting user acceptance/closure direction.
   NEXT: Walk through phase11 follow-up outcomes with user and confirm closure/move direction.
   REREAD: REQUIRED
@@ -169,7 +172,7 @@ prioritization and reduced speculative work.
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: The plan-based no-overrides compile follow-up is now validated with fresh reruns: targeted spell-crafter slice passes (`10 passed`) and component harness rerun passes (`1 passed`) with updated phase11 warm profile output.
-  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase11_plan_based_no_overrides_compile_task.md:45-54, context_compass/artifacts/2026-02-14_phase11_plan_based_compile_targeted_unit_tests.txt:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_based_compile_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_based_compile_output.txt:59-59
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_phase11_plan_based_no_overrides_compile_task.md:45-54, context_compass/artifacts/2026-02-14_phase11_plan_based_compile_targeted_unit_tests.txt:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_based_compile_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_plan_based_compile_output.txt:59-59
   IMPACT: Remaining backlog follow-up implementation is complete and review-ready.
   NEXT: Walk through story outcomes with user and request acceptance/closure routing.
   REREAD: REQUIRED
@@ -178,7 +181,7 @@ prioritization and reduced speculative work.
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: The follow-up resolved a test-fixture contract gap by updating `_make_phase11_plan_stub` to always expose `root_instance_key`, keeping production plan-signature logic strict and aligned with `ExecutionPlan`.
-  EVIDENCE: tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py:4234-4265, context_compass/tasks/2026-02-14_optimize_phase11_plan_based_no_overrides_compile_task.md:65-104
+  EVIDENCE: tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py:4234-4265, context_compass/tasks/completed/2026-02-14_optimize_phase11_plan_based_no_overrides_compile_task.md:65-104
   IMPACT: Removes the two AttributeError test failures without adding defensive runtime introspection in hot-path production code.
   NEXT: Keep fixture contract alignment as part of future plan-based compile test additions.
   REREAD: REQUIRED
@@ -250,7 +253,7 @@ prioritization and reduced speculative work.
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: Rank-2 row-builder follow-up pass is now in review with measurable warm-path gains after `PathRegistry.format_path` memoization: `group_8_11_total_ms` improved `9.804 -> 9.085`, `phase_patch_maps_ms` improved `1.288 -> 0.573`, function calls dropped `120524 -> 108778`, and patch-map helper cumulative time dropped (`build_override_patch_map` `0.006 -> 0.004`, `_get_path_spec_key` `0.005 -> 0.002`).
-  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:65-72, src/melder/spellbook/spell_crafter/dag/dag_index.py:182-191, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:25-27, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:32-34
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:65-72, src/melder/spellbook/spell_crafter/dag/dag_index.py:182-191, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_signature_pipeline_output_run8.txt:25-27, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run3.txt:32-34
   IMPACT: Rank-2 now has a clear warm improvement signal and remains closure-ready pending user acceptance direction.
   NEXT: Walk rank1/rank2/rank3 outcomes with user and confirm closure/move direction for in-review tasks.
   REREAD: REQUIRED
@@ -259,7 +262,7 @@ prioritization and reduced speculative work.
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: Rank-3 phase5 revalidation is complete with clean reruns; focused unit tests passed and warm conduit 5-7 timings remain below the pre-rank3 anchor with expected run-to-run noise.
-  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase5_root_blueprints_hotpath_task.md:59-99, context_compass/artifacts/2026-02-14_phase5_opt_builder_unit_tests_rerun_clean.txt:12-12, context_compass/artifacts/2026-02-14_phase5_opt_spell_crafter_unit_tests_rerun_clean.txt:12-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase5_opt_rerun_clean_output.txt:4-4, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase5_opt_rerun_clean_output_run2.txt:4-4, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output.txt:4-4, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run2.txt:4-4
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_phase5_root_blueprints_hotpath_task.md:59-99, context_compass/artifacts/2026-02-14_phase5_opt_builder_unit_tests_rerun_clean.txt:12-12, context_compass/artifacts/2026-02-14_phase5_opt_spell_crafter_unit_tests_rerun_clean.txt:12-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase5_opt_rerun_clean_output.txt:4-4, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase5_opt_rerun_clean_output_run2.txt:4-4, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output.txt:4-4, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run2.txt:4-4
   IMPACT: All ranked backlog optimization tasks are now implemented and in review.
   NEXT: Walk through rank1/rank2/rank3 outcomes with user and confirm closure direction.
   REREAD: REQUIRED
@@ -268,7 +271,7 @@ prioritization and reduced speculative work.
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: Rank-2 implementation is complete and validated; two harness reruns show mixed warm totals (`27.932ms`, `25.438ms`) against the rank1 anchor (`27.829ms`) while warm cProfile sample improved to `0.081s`/`0.080s` from `0.083s`.
-  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:98-105, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_opt_output.txt:12-15, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run2.txt:7-9
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:98-105, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_opt_output.txt:12-15, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output.txt:7-9, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_10_opt_output_run2.txt:7-9
   IMPACT: Rank-2 slice is safe and in review, but warm-total gain is noisy at this sample size.
   NEXT: Get user direction to keep-or-iterate rank-2, then execute rank-3 task.
   REREAD: REQUIRED
@@ -277,7 +280,7 @@ prioritization and reduced speculative work.
 - DATE: 2026-02-14
   TYPE: MEASURE
   CLAIM: Rank-1 implementation produced measured warm-path improvement (`group_8_11_warm` `34.993ms` -> `27.829ms`) and lower warm cProfile sample time (`0.091s` -> `0.083s`).
-  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:11-15, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_opt_output.txt:12-15, context_compass/tasks/2026-02-14_optimize_phase11_codegen_ir_capture_task.md:57-89
+  EVIDENCE: context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:11-15, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_opt_output.txt:12-15, context_compass/tasks/completed/2026-02-14_optimize_phase11_codegen_ir_capture_task.md:57-89
   IMPACT: Backlog execution has confirmed measurable ROI on the top-ranked candidate.
   NEXT: Continue with rank-2 and rank-3 tasks in order.
   REREAD: REQUIRED
@@ -286,7 +289,7 @@ prioritization and reduced speculative work.
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Measured backlog ranking produced three scoped optimization tasks prioritized by warm 8-11 and conduit 5-7 hotspot signals.
-  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:47-82, context_compass/tasks/2026-02-14_optimize_phase11_codegen_ir_capture_task.md:1-12, context_compass/tasks/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:1-12, context_compass/tasks/2026-02-14_optimize_phase5_root_blueprints_hotpath_task.md:1-12
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:47-82, context_compass/tasks/completed/2026-02-14_optimize_phase11_codegen_ir_capture_task.md:1-12, context_compass/tasks/completed/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:1-12, context_compass/tasks/completed/2026-02-14_optimize_phase5_root_blueprints_hotpath_task.md:1-12
   IMPACT: Story now has concrete follow-up implementation scope instead of a generic backlog placeholder.
   NEXT: Confirm ranking order with user and begin execution at rank 1.
   REREAD: REQUIRED
@@ -304,7 +307,7 @@ prioritization and reduced speculative work.
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Optimization-backlog discovery is currently blocked because upstream phase-testing tickets have discovery contracts but no measured profile outputs yet.
-  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:6, context_compass/tasks/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:60
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:6, context_compass/tasks/completed/2026-02-14_discovery_phase_testing_optimization_backlog_task.md:60
   IMPACT: Story cannot produce final ranked optimization tasks until measurement data is attached.
   NEXT: Unblock after measured outputs are recorded in the phase baseline tasks.
   REREAD: REQUIRED
@@ -313,14 +316,13 @@ prioritization and reduced speculative work.
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Backlog ranking will be based on measured component profile output, not intuition.
-  EVIDENCE: context_compass/epics/2026-02-14_phase_testing_epic.md:12
+  EVIDENCE: context_compass/epics/completed/2026-02-14_phase_testing_epic.md:12
   IMPACT: Keeps optimization follow-ups tied to evidence and avoids speculative churn.
   NEXT: Execute discovery after baseline stories complete.
 
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user
 ## Context / Handoff Summary
 Story optimization execution delivered validated rank1/rank2/rank3 outcomes,
 then re-opened for additional ranked phase11 follow-ups. Variant-reuse and

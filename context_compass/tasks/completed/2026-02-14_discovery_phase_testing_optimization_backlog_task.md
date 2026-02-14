@@ -1,9 +1,12 @@
+Completed: 2026-02-14
+Summary: Accepted in the phase-testing closure pass; implementation and validation artifacts are captured in this task.
+
 # Task: Discovery Phase Testing Optimization Backlog
 
 ## Metadata
 - Task ID: TASK-2026-02-14-discovery-phase-testing-optimization-backlog
 - Story: STORY-2026-02-14-phase-testing-optimization-backlog
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
@@ -85,8 +88,8 @@ optimization backlog for conjure-related phase work.
   stability notes.
 
 ## Files / Paths Impacted
-- `context_compass/stories/2026-02-14_phase_testing_optimization_backlog_story.md`
-- `context_compass/tasks/2026-02-14_discovery_phase_testing_optimization_backlog_task.md`
+- `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md`
+- `context_compass/tasks/completed/2026-02-14_discovery_phase_testing_optimization_backlog_task.md`
 
 ## Validation
 - Not run.
@@ -102,13 +105,12 @@ optimization backlog for conjure-related phase work.
 - [ ] Deliverables produced and linked
 - [ ] Documentation updated (if needed)
 - [ ] Validation status recorded
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Rank-1 follow-up task has already produced measurable warm-path improvement, validating the ranking approach with concrete results.
-  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase11_codegen_ir_capture_task.md:57-89, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:11-15, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_opt_output.txt:12-15
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_phase11_codegen_ir_capture_task.md:57-89, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:11-15, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase11_opt_output.txt:12-15
   IMPACT: Discovery-to-execution loop is now validated; next effort should continue ranked task execution.
   NEXT: Execute rank-2 task (`TASK-2026-02-14-optimize-phase8-10-plan-row-builders`).
   REREAD: REQUIRED
@@ -117,7 +119,7 @@ optimization backlog for conjure-related phase work.
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Ranked optimization backlog is now materialized into three scoped follow-up tasks linked to measured hotspot evidence.
-  EVIDENCE: context_compass/tasks/2026-02-14_optimize_phase11_codegen_ir_capture_task.md:1-12, context_compass/tasks/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:1-12, context_compass/tasks/2026-02-14_optimize_phase5_root_blueprints_hotpath_task.md:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:7-11, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:20-33
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_optimize_phase11_codegen_ir_capture_task.md:1-12, context_compass/tasks/completed/2026-02-14_optimize_phase8_10_plan_row_builders_task.md:1-12, context_compass/tasks/completed/2026-02-14_optimize_phase5_root_blueprints_hotpath_task.md:1-12, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:7-11, context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_baseline_output.txt:20-33
   IMPACT: This discovery task now delivers actionable optimization scope rather than only a ranking schema.
   NEXT: Review ranking output with user and confirm task execution order.
   REREAD: REQUIRED
@@ -135,7 +137,7 @@ optimization backlog for conjure-related phase work.
 - DATE: 2026-02-14
   TYPE: RISK
   CLAIM: Ranking now would be speculative because required measured outputs are not yet present in upstream tasks.
-  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_group_1_4_baseline_task.md:80, context_compass/tasks/2026-02-14_discovery_phase_group_5_7_conduit_baseline_task.md:76, context_compass/tasks/2026-02-14_discovery_phase_group_5_7_local_baseline_task.md:74, context_compass/tasks/2026-02-14_discovery_phase_group_8_11_baseline_task.md:83
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_discovery_phase_group_1_4_baseline_task.md:80, context_compass/tasks/completed/2026-02-14_discovery_phase_group_5_7_conduit_baseline_task.md:76, context_compass/tasks/completed/2026-02-14_discovery_phase_group_5_7_local_baseline_task.md:74, context_compass/tasks/completed/2026-02-14_discovery_phase_group_8_11_baseline_task.md:83
   IMPACT: Task status should remain blocked until measurements land.
   NEXT: Unblock by implementing/running baseline harness and attaching measured outputs.
   REREAD: REQUIRED
@@ -144,7 +146,7 @@ optimization backlog for conjure-related phase work.
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Upstream phase tickets currently contain discovery contracts in `review` state and no measured run outputs, so hotspot ranking cannot be evidence-complete yet.
-  EVIDENCE: context_compass/tasks/2026-02-14_discovery_phase_component_cprofile_harness_task.md:6, context_compass/tasks/2026-02-14_discovery_phase_component_cprofile_harness_task.md:95, context_compass/tasks/2026-02-14_discovery_phase_group_1_4_baseline_task.md:6, context_compass/tasks/2026-02-14_discovery_phase_group_1_4_baseline_task.md:80, context_compass/tasks/2026-02-14_discovery_phase_group_5_7_conduit_baseline_task.md:6, context_compass/tasks/2026-02-14_discovery_phase_group_5_7_local_baseline_task.md:6, context_compass/tasks/2026-02-14_discovery_phase_group_8_11_baseline_task.md:6
+  EVIDENCE: context_compass/tasks/completed/2026-02-14_discovery_phase_component_cprofile_harness_task.md:6, context_compass/tasks/completed/2026-02-14_discovery_phase_component_cprofile_harness_task.md:95, context_compass/tasks/completed/2026-02-14_discovery_phase_group_1_4_baseline_task.md:6, context_compass/tasks/completed/2026-02-14_discovery_phase_group_1_4_baseline_task.md:80, context_compass/tasks/completed/2026-02-14_discovery_phase_group_5_7_conduit_baseline_task.md:6, context_compass/tasks/completed/2026-02-14_discovery_phase_group_5_7_local_baseline_task.md:6, context_compass/tasks/completed/2026-02-14_discovery_phase_group_8_11_baseline_task.md:6
   IMPACT: This backlog task must first define readiness gates and a provisional ranking frame, then wait for measured outputs before final ranking.
   NEXT: Add explicit readiness criteria and provisional ranking schema to this ticket.
   REREAD: REQUIRED
@@ -153,7 +155,7 @@ optimization backlog for conjure-related phase work.
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: Backlog candidates must include explicit evidence pointers from phase-testing outputs.
-  EVIDENCE: context_compass/WORKFLOW.md:31, context_compass/epics/2026-02-14_phase_testing_epic.md:79
+  EVIDENCE: context_compass/WORKFLOW.md:31, context_compass/epics/completed/2026-02-14_phase_testing_epic.md:79
   IMPACT: Keeps optimization prioritization objective and reviewable.
   NEXT: Start this task after baseline discovery stories move to done.
 
