@@ -15,9 +15,36 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | continue from latest retained 3-run shallow override window `15.2360ms`; next medium/high-risk target is remaining override runtime in `creation_context._execute_with_overrides` + `patch_maps.apply_with_socket_shape` | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
+| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | retained duplicate-lookup prebind slice is validated (`units`: `47/17`, `cprofile suites`: `8/8`, latest overrides timings: shallow `11.5867ms`, wide `20.4836ms`, diamond `17.0113ms`); next step is next hotspot tranche from this baseline | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: User-approved duplicate-lookup prebind slice is now fully put-through and retained: focused unit suites reran green (`47 passed`, `17 passed`), full fast/overrides cprofile suites reran green (`8 passed`, `8 passed`), and latest overrides timing artifacts report `shallow=11.5867ms`, `wide=20.4836ms`, `diamond=17.0113ms`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_phase12_overrides_executor.txt:1-7, benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_creation_context.txt:1-7, benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:286-289, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:476-479
+  IMPACT: Active baseline is confirmed and no longer provisional.
+  NEXT: Continue optimization by re-ranking `_phase12_executor` and `patch_maps.apply_with_socket_shape` hotspots from this retained state.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: The follow-up duplicate-lookup prebind experiment (count-1/count-2 per-step override values reused between construct and merge) was rejected and reverted because matched 3-run windows regressed on the primary shallow lane (`14.7428ms` -> `15.7937ms`) despite wide/diamond gains.
+  EVIDENCE: context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md:68-83, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:437-459, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:750-790, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1009-1029
+  IMPACT: Retained baseline remains the previous merge-specialization slice; this experiment is explicitly excluded from the active baseline.
+  NEXT: Continue from retained baseline and target the next hotspot tranche in `_phase12_executor` or `patch_maps.apply_with_socket_shape`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Latest retained slice specializes final Phase12 override kwargs merge by `override_target_count_{step}` (0/1/2/fallback) and removes generic `len()/iter()/items()` merge branching; matched 3-run windows improved (`shallow` avg `16.4183ms` -> `14.7954ms`, `wide` avg `23.0127ms` -> `21.1589ms`, `diamond` avg `19.6639ms` -> `18.2567ms`) with focused units and full fast/overrides cprofile suites green.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:998-1029, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:405-427, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:1-20, benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:266-273, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:428-435
+  IMPACT: Cached override lane merge overhead is lower and the retained steady-state baseline moved down again.
+  NEXT: Re-rank remaining `_phase12_executor` and `patch_maps.apply_with_socket_shape` hotspots and implement the next structural slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-15
   TYPE: MEASURE
   CLAIM: Latest retained slice prebinds `step_override_target_counts` into the shape-emitted Phase12 overrides executor and removes runtime `len(override_targets_*)` branching in construct blocks; 3-run override timing windows improved (`shallow` avg `16.2058ms` -> `15.2360ms`, `wide` avg `24.2553ms` -> `20.0001ms`, `diamond` avg `22.4362ms` -> `18.7904ms`) with focused units and both full cprofile suites green.

@@ -749,18 +749,22 @@ def _append_overrides_construct_inline_source(
         f"{indent}        }}",
         f"{indent}elif override_target_count_{step_index} == 1:",
         f"{indent}    single_override_socket_{step_index} = override_targets_{step_index}[0]",
+        (
+            f"{indent}    single_override_value_{step_index} = "
+            f"override_map[single_override_socket_{step_index}]"
+        ),
         f"{indent}    if step_root_positional_override_{step_index} is None:",
         f"{indent}        override_values_{step_index} = {{",
         (
             f"{indent}            single_override_socket_{step_index}.param_name: "
-            f"override_map[single_override_socket_{step_index}],"
+            f"single_override_value_{step_index},"
         ),
         f"{indent}        }}",
         f"{indent}    else:",
         f"{indent}        override_values_{step_index} = {{",
         (
             f"{indent}            single_override_socket_{step_index}.param_name: "
-            f"override_map[single_override_socket_{step_index}],"
+            f"single_override_value_{step_index},"
         ),
         (
             f"{indent}            \"__args__\": "
@@ -776,16 +780,24 @@ def _append_overrides_construct_inline_source(
             f"{indent}    second_override_socket_{step_index} = "
             f"override_targets_{step_index}[1]"
         ),
+        (
+            f"{indent}    first_override_value_{step_index} = "
+            f"override_map[first_override_socket_{step_index}]"
+        ),
+        (
+            f"{indent}    second_override_value_{step_index} = "
+            f"override_map[second_override_socket_{step_index}]"
+        ),
         f"{indent}    override_values_{step_index} = {{",
         (
             f"{indent}        first_override_socket_{step_index}.param_name: "
-            f"override_map[first_override_socket_{step_index}],"
+            f"first_override_value_{step_index},"
         ),
         f"{indent}    }}",
         (
             f"{indent}    override_values_{step_index}["
             f"second_override_socket_{step_index}.param_name] = "
-            f"override_map[second_override_socket_{step_index}]"
+            f"second_override_value_{step_index}"
         ),
         f"{indent}    if step_root_positional_override_{step_index} is not None:",
         (
@@ -995,40 +1007,38 @@ def _append_overrides_kwargs_inline_source(
             ])
 
     lines.extend([
-        f"{indent}if override_values_{step_index}:",
-        f"{indent}    override_values_count_{step_index} = len(override_values_{step_index})",
-        f"{indent}    if override_values_count_{step_index} == 1:",
+        f"{indent}if override_target_count_{step_index} == 0:",
+        f"{indent}    if step_root_positional_override_{step_index} is not None:",
         (
-            f"{indent}        override_item_{step_index} = "
-            f"next(iter(override_values_{step_index}.items()))"
+            f"{indent}        kwargs_{step_index}[\"__args__\"] = "
+            f"step_root_positional_override_{step_index}"
+        ),
+        f"{indent}elif override_target_count_{step_index} == 1:",
+        (
+            f"{indent}    kwargs_{step_index}[single_override_socket_{step_index}.param_name] = "
+            f"single_override_value_{step_index}"
+        ),
+        f"{indent}    if step_root_positional_override_{step_index} is not None:",
+        (
+            f"{indent}        kwargs_{step_index}[\"__args__\"] = "
+            f"step_root_positional_override_{step_index}"
+        ),
+        f"{indent}elif override_target_count_{step_index} == 2:",
+        (
+            f"{indent}    kwargs_{step_index}[first_override_socket_{step_index}.param_name] = "
+            f"first_override_value_{step_index}"
         ),
         (
-            f"{indent}        kwargs_{step_index}[override_item_{step_index}[0]] = "
-            f"override_item_{step_index}[1]"
+            f"{indent}    kwargs_{step_index}[second_override_socket_{step_index}.param_name] = "
+            f"second_override_value_{step_index}"
         ),
-        f"{indent}    elif override_values_count_{step_index} == 2:",
+        f"{indent}    if step_root_positional_override_{step_index} is not None:",
         (
-            f"{indent}        override_items_iter_{step_index} = "
-            f"iter(override_values_{step_index}.items())"
+            f"{indent}        kwargs_{step_index}[\"__args__\"] = "
+            f"step_root_positional_override_{step_index}"
         ),
-        (
-            f"{indent}        override_item_a_{step_index} = "
-            f"next(override_items_iter_{step_index})"
-        ),
-        (
-            f"{indent}        kwargs_{step_index}[override_item_a_{step_index}[0]] = "
-            f"override_item_a_{step_index}[1]"
-        ),
-        (
-            f"{indent}        override_item_b_{step_index} = "
-            f"next(override_items_iter_{step_index})"
-        ),
-        (
-            f"{indent}        kwargs_{step_index}[override_item_b_{step_index}[0]] = "
-            f"override_item_b_{step_index}[1]"
-        ),
-        f"{indent}    else:",
-        f"{indent}        kwargs_{step_index}.update(override_values_{step_index})",
+        f"{indent}elif override_values_{step_index}:",
+        f"{indent}    kwargs_{step_index}.update(override_values_{step_index})",
     ])
 
 

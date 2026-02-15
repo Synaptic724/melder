@@ -65,6 +65,96 @@ Phase12/CreationContext and validate with targeted profiler suites.
 ## Notes
 - DATE: 2026-02-15
   TYPE: MEASURE
+  CLAIM: User-approved retry slice is fully put-through: focused unit suites reran green (`47 passed`, `17 passed`), both full cprofile suites reran green (`8 passed` fast, `8 passed` overrides), and latest override timing artifacts report `shallow=11.5867ms`, `wide=20.4836ms`, `diamond=17.0113ms`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_phase12_overrides_executor.txt:1-7, benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_creation_context.txt:1-7, benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:286-289, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:476-479
+  IMPACT: The duplicate-lookup prebind slice is retained as the current validated baseline.
+  NEXT: Continue the next optimization tranche from this baseline by re-ranking `_phase12_executor` and `patch_maps.apply_with_socket_shape` hotspots.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: User approved keeping the retried duplicate-lookup prebind slice, so this variant is now accepted as the active working baseline for the epic.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:750-790, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1016-1034, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:468-471
+  IMPACT: Execution proceeds with the retried slice in-place instead of reverting to the prior retained baseline.
+  NEXT: Run focused units plus full fast/overrides cprofile suites and record confirmation results for this kept state.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: One-time retry of the duplicate-lookup prebind slice completed successfully and produced improved timing output in the requested rerun (`shallow=13.998ms`, `wide=20.281ms`, `diamond=15.662ms`) with test pass (`4 passed`).
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:750-790, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1016-1034, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:468-471
+  IMPACT: Under this rerun, the retried slice looks favorable and remains in working-tree state for further confirmation.
+  NEXT: If we keep this slice, run a matched 3-run confirmation window when machine load is steadier; otherwise revert again.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: User requested one more retry of the previously rejected duplicate-lookup prebind slice under current machine load conditions; this tranche re-applies the same count-1/count-2 prebind variant and reruns the targeted overrides timing test.
+  EVIDENCE: context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md:68-76, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:437-459
+  IMPACT: Re-tests whether the shallow regression was noise versus a real non-win before finalizing this slice.
+  NEXT: Re-apply the prebind variant in `phase12_overrides_executor.py`, run `test_melder_overrides_graph_timings_cprofile`, and keep/reject based on measured output.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Post-revert validation is green again from the retained baseline: focused unit suites (`47 passed`, `17 passed`) and both full cprofile suites (`8 passed` fast, `8 passed` overrides) completed successfully with refreshed artifacts.
+  EVIDENCE: tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py:1-1151, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:1-825, benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:274-281, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:460-467
+  IMPACT: Working state is stable after rejecting the duplicate-lookup experiment.
+  NEXT: Continue optimization from the retained merge-specialization baseline and open the next structural slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: The duplicate-lookup prebind slice is fully reverted; runtime source emission is restored to the previous retained merge-specialization baseline.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:750-790, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1009-1029, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py:1-1151, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:1-825
+  IMPACT: Baseline integrity is restored and we can continue optimization from the last retained 3-run window without carrying the shallow regression experiment.
+  NEXT: Move to the next hotspot tranche (`_phase12_executor` shape/runtime overhead or `patch_maps.apply_with_socket_shape`) with a fresh decision note + matched measurement loop.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: The duplicate-lookup prebind experiment (count-1/count-2 override value scalars reused across construct+merge) is rejected: matched 3-run windows were mixed and regressed on the primary shallow lane (`14.7428ms` -> `15.7937ms`) even though wide/diamond improved (`20.7544ms` -> `19.2631ms`, `20.5159ms` -> `17.3325ms`).
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:750-796, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1010-1034, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:437-459
+  IMPACT: Keep focus on shallow-lane improvement; this variant should not be retained in the baseline.
+  NEXT: Revert this slice and continue from the previous retained state while targeting the next hotspot tranche.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Next structural slice will eliminate duplicate override-map lookups on count-1/count-2 shape lanes by prebinding per-step override values once in construct emission (`single_override_value_*`, `first_override_value_*`, `second_override_value_*`) and reusing those scalars in final kwargs merge emission.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:47-54, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:166-187, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:751-782, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1004-1018
+  IMPACT: Reduces repeated socket-hash/dict-lookup overhead inside `_phase12_executor` while preserving override precedence/order semantics.
+  NEXT: Patch construct+merge emission for count-1/count-2 lanes, rerun focused units, then run matched 3-run pre/post override timing windows and keep/revert by measured delta.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: The override-kwargs final-merge specialization slice is retained: shape-emitted Phase12 kwargs merge now branches on `override_target_count_{step}` (0/1/2/fallback) instead of generic `len()/iter()/items()` over `override_values`, and matched 3-run override timing windows improved (`shallow` avg `16.4183ms` -> `14.7954ms`, `wide` avg `23.0127ms` -> `21.1589ms`, `diamond` avg `19.6639ms` -> `18.2567ms`).
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:998-1029, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:405-427, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:1-20, benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:266-273, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:428-435
+  IMPACT: Override executor merge work is reduced on the hottest cached lanes while focused units and both full cprofile suites remain green.
+  NEXT: Re-rank the remaining override lane hotspots and target the next structural slice in `_phase12_executor` or `patch_maps.apply_with_socket_shape`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Next structural slice will specialize the generated final override-kwargs merge by `override_target_count_{step}` inside `_append_overrides_kwargs_inline_source(...)`, replacing generic `len()/iter()/items()` merge logic on 0/1/2-target lanes with direct keyed assignments.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:18-20, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.call_chain.json:100-143, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:816-1014
+  IMPACT: Removes repeated dynamic dict-iteration/count work from the hottest generated override executor path while preserving override precedence semantics.
+  NEXT: Capture 3-run pre baseline for override timings, patch merge emission, then rerun focused units and matched post windows to keep/revert by measured delta.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
   CLAIM: The step-target-count specialization slice is retained: shape-emitted Phase12 override construct blocks now use prebound `step_override_target_counts` instead of runtime `len(override_targets_*)` branching, and 3-run override timing windows improved on the target lanes (`shallow` avg `16.2058ms` -> `15.2360ms`, `wide` avg `24.2553ms` -> `20.0001ms`, `diamond` avg `22.4362ms` -> `18.7904ms`).
   EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:423-423, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:644-644, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:737-770, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:369-391, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:9-20, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.call_chain.json:100-143
   IMPACT: Override runtime reduces per-step target-count branching work in generated executors and lands a measurable steady-state gain on the primary override lanes.
