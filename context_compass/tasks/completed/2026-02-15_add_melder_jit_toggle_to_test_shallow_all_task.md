@@ -1,9 +1,15 @@
-# Task: Add Melder JIT Toggle to `test_shallow_all` Benchmark
+﻿# Task: Add Melder JIT Toggle to `test_shallow_all` Benchmark
+
+
+
+Completed: 2026-02-15
+Summary: Closed after user acceptance; implementation and validation artifacts are recorded in this ticket.
+
 
 ## Metadata
 - Task ID: TASK-2026-02-15-add-melder-jit-toggle-to-test-shallow-all
 - Story: standalone
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
@@ -53,8 +59,7 @@ Add a benchmark-level Melder configuration toggle in `benchmarks/testing_other_d
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-15
   TYPE: FACT
@@ -107,3 +112,5 @@ Add a benchmark-level Melder configuration toggle in `benchmarks/testing_other_d
 
 ## Context / Handoff Summary
 Implementation and follow-up fix are complete. Pending user acceptance confirmation to close and move task to completed.
+
+

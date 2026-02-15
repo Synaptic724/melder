@@ -1,9 +1,15 @@
-# Task: Discovery - JIT/AOT Propagation Contract Surfaces
+﻿# Task: Discovery - JIT/AOT Propagation Contract Surfaces
+
+
+
+Completed: 2026-02-15
+Summary: Closed after user acceptance; implementation and validation artifacts are recorded in this ticket.
+
 
 ## Metadata
 - Task ID: TASK-2026-02-15-discovery-jit-aot-propagation-contract-surfaces
 - Story: STORY-2026-02-14-jit-aot-split-discovery-and-viability
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
@@ -88,8 +94,7 @@ can proceed without widening scope or breaking owner semantics.
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-15
   TYPE: FACT
@@ -111,3 +116,5 @@ can proceed without widening scope or breaking owner semantics.
 ## Context / Handoff Summary
 Discovery gate is complete with an evidence-backed propagation map and
 implementation order. Next active lane is config flag/fluent API implementation.
+
+

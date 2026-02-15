@@ -1,9 +1,15 @@
-# Task: Discovery - JIT Mode Should Skip Conjure Phases 8-12
+﻿# Task: Discovery - JIT Mode Should Skip Conjure Phases 8-12
+
+
+
+Completed: 2026-02-15
+Summary: Closed after user acceptance; implementation and validation artifacts are recorded in this ticket.
+
 
 ## Metadata
 - Task ID: TASK-2026-02-15-discovery-jit-skip-conjure-phases-8-12
 - Story: none
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-15
@@ -56,8 +62,7 @@ Run focused discovery to verify and document why JIT mode currently executes con
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-15
   TYPE: FACT
@@ -124,3 +129,5 @@ Run focused discovery to verify and document why JIT mode currently executes con
 
 ## Context / Handoff Summary
 Discovery ticket confirmed and documented the original gap, then validated that current source now applies the guard strategy in `run_resolution_phases_for_conduit` and that targeted JIT fastpath tests pass (`3 passed`). Ticket is ready for user acceptance and routing to the next AOT/JIT lane.
+
+

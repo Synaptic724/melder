@@ -1,9 +1,15 @@
-# Task: Implement `resolution_complete` Phase12 Lifecycle
+﻿# Task: Implement `resolution_complete` Phase12 Lifecycle
+
+
+
+Completed: 2026-02-15
+Summary: Closed after user acceptance; implementation and validation artifacts are recorded in this ticket.
+
 
 ## Metadata
 - Task ID: TASK-2026-02-15-implement-resolution-complete-phase12-lifecycle
 - Story: none
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-15
@@ -67,8 +73,7 @@ Migrate `resolution_complete` semantics so it defaults to `False`, is set to `Tr
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-15
   TYPE: PLAN
@@ -88,5 +93,34 @@ Migrate `resolution_complete` semantics so it defaults to `False`, is set to `Tr
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Component fluent-chain configuration test fails because it calls `finalize()` without setting required `full_ahead_of_time_compilation`, while configuration validation requires all keys in `available_properties`.
+  EVIDENCE: tests/component/melder/spellbook/test_spellbook_component_configuration_core.py:258-282, src/melder/spellbook/configuration/configuration.py:76-81, src/melder/spellbook/configuration/configuration.py:271-273, src/melder/spellbook/configuration/configuration.py:702-725
+  IMPACT: Component suite fails despite runtime behavior being correct; fluent API test must include explicit `with_full_ahead_of_time_compilation(...)`.
+  NEXT: Patch the fluent-chain test to set `full_ahead_of_time_compilation` before `finalize()`, then rerun the targeted component test.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Fluent-chain component test now explicitly sets and asserts `full_ahead_of_time_compilation`, aligning the no-defaults chain with configuration validation requirements.
+  EVIDENCE: tests/component/melder/spellbook/test_spellbook_component_configuration_core.py:277-277, tests/component/melder/spellbook/test_spellbook_component_configuration_core.py:289-289
+  IMPACT: The test now models a complete required-property chain and should no longer fail at `finalize()` due to missing configuration keys.
+  NEXT: Run the targeted component test file to verify green status.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Targeted component configuration test file passes after the fluent-chain update.
+  EVIDENCE: tests/component/melder/spellbook/test_spellbook_component_configuration_core.py:258-290
+  IMPACT: Regression from missing `full_ahead_of_time_compilation` in fluent-chain configuration is resolved for the reported failing suite.
+  NEXT: Share result with user and continue ticket/epic closure flow once acceptance is confirmed.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 Implemented `resolution_complete` migration requested by user with scope constrained to `resolution_complete` only (no `resolution_required` semantic changes). Targeted unit tests are green; ticket is ready for acceptance.
+
+

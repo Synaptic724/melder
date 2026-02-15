@@ -1,9 +1,15 @@
-# Task: Discovery - JIT/AOT Assumption Challenge and User Discussion
+﻿# Task: Discovery - JIT/AOT Assumption Challenge and User Discussion
+
+
+
+Completed: 2026-02-15
+Summary: Closed after user acceptance; implementation and validation artifacts are recorded in this ticket.
+
 
 ## Metadata
 - Task ID: TASK-2026-02-14-discovery-jit-aot-assumption-challenge
 - Story: STORY-2026-02-14-jit-aot-split-discovery-and-viability
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
@@ -80,8 +86,7 @@ task deliverable.
 - [ ] Validation status recorded
 - [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [ ] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-15
   TYPE: DECISION
@@ -121,3 +126,5 @@ Task deliverables are complete and option selection is resolved (`A` with
 non-breaking default). Follow-on work has moved to
 `TASK-2026-02-15-discovery-jit-aot-propagation-contract-surfaces` before
 implementation starts.
+
+

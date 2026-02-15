@@ -1,9 +1,15 @@
-# Task: Align SpellCrafter Phase Order with SpellbookCreationSystem
+﻿# Task: Align SpellCrafter Phase Order with SpellbookCreationSystem
+
+
+
+Completed: 2026-02-15
+Summary: Closed after user acceptance; implementation and validation artifacts are recorded in this ticket.
+
 
 ## Metadata
 - Task ID: TASK-2026-02-15-align-spellcrafter-phase-order-with-spellbook-creation-system
 - Story: STORY-2026-02-14-jit-aot-runtime-phase-resolution-path
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
@@ -66,8 +72,7 @@ the same foundational-first resolution ordering contract used by
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-15
   TYPE: FACT
@@ -106,3 +111,5 @@ the same foundational-first resolution ordering contract used by
 User requested an immediate patch to make SpellCrafter follow the same contract
 as SpellbookCreationSystem. Implementation and targeted validation are complete;
 task is in review pending acceptance before completed-folder move.
+
+

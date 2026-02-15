@@ -274,6 +274,7 @@ def test_component_configuration_fluent_chain_validates_without_defaults() -> No
     config.with_debugging(True)
     config.with_disposal(True)
     config.with_disposal_method_names(["cleanup"])
+    config.with_full_ahead_of_time_compilation(True)
     config.with_phase_scheduler_workers(2)
     config.with_phase_scheduler_barrier_timeout(1000)
     config.with_ai_native(True)
@@ -285,6 +286,7 @@ def test_component_configuration_fluent_chain_validates_without_defaults() -> No
     assert config.get_property("debugging") is True
     assert config.get_property("disposal") is True
     assert config.get_property("disposal_method_names") == ["cleanup"]
+    assert config.get_property("full_ahead_of_time_compilation") is True
     assert config.get_property("phase_scheduler_workers_per_spellbook") == 2
     assert config.get_property("phase_scheduler_barrier_timeout_milliseconds") == 1000
     assert config.get_property("ai_native_enabled") is True

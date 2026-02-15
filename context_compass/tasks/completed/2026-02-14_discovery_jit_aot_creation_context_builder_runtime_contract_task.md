@@ -1,9 +1,15 @@
-# Task: Discovery - JIT/AOT CreationContext Builder Runtime Contract
+﻿# Task: Discovery - JIT/AOT CreationContext Builder Runtime Contract
+
+
+
+Completed: 2026-02-15
+Summary: Closed after user acceptance; implementation and validation artifacts are recorded in this ticket.
+
 
 ## Metadata
 - Task ID: TASK-2026-02-14-discovery-jit-aot-creation-context-builder-runtime-contract
 - Story: STORY-2026-02-14-jit-aot-split-discovery-and-viability
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
@@ -64,8 +70,7 @@ Use `hybrid_rule_bound`. The code paths already treat creation-context readiness
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
-
+- [x] Acceptance criteria reviewed with user and confirmed
 ## Notes
 - DATE: 2026-02-15
   TYPE: FACT
@@ -104,3 +109,5 @@ Use `hybrid_rule_bound`. The code paths already treat creation-context readiness
 Discovery matrix and recommendation are complete. Next step is user decision on
 `hybrid_rule_bound`, then implementation task breakdown for runtime gate + spell
 `resolution_required` lifecycle behavior.
+
+

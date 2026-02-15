@@ -15,39 +15,30 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| implementation: resolution_complete phase12 lifecycle | review | codex | none | confirm acceptance with user and close or route follow-up | `context_compass/tasks/2026-02-15_implement_resolution_complete_phase12_lifecycle_task.md` | 2026-02-15 | REQUIRED |
+| benchmark: shallow conjure aot-vs-jit pytest | in_progress | codex | none | confirm if benchmark task should be closed now or extended with follow-up measurements | `context_compass/tasks/2026-02-15_add_melder_shallow_conjure_aot_vs_jit_pytest_task.md` | 2026-02-15 | HELPFUL |
 
 ## Active Attention Details
 - DATE: 2026-02-15
   TYPE: PLAN
-  CLAIM: Active routing moved from discovery to implementation for resolution_complete lifecycle migration (default false, phase12 set true, invalidation clear false).
-  EVIDENCE: context_compass/tasks/2026-02-15_implement_resolution_complete_phase12_lifecycle_task.md:1-46, context_compass/tasks/2026-02-15_implement_resolution_complete_phase12_lifecycle_task.md:78-85
-  IMPACT: The next tranche is code edits + targeted validation, with scope constrained to resolution_complete semantics.
-  NEXT: Apply focused code patch in Spell/SpellCrafter/Spellbook creation and transfer paths, then run targeted pytests.
-  REREAD: REQUIRED
-  SCORE_0_TO_10: 9
-
-- DATE: 2026-02-15
-  TYPE: FACT
-  CLAIM: Resolution_complete lifecycle patch and targeted tests are complete; active row is now in review pending user acceptance.
-  EVIDENCE: context_compass/tasks/2026-02-15_implement_resolution_complete_phase12_lifecycle_task.md:23-46, context_compass/tasks/2026-02-15_implement_resolution_complete_phase12_lifecycle_task.md:49-62, context_compass/tasks/2026-02-15_implement_resolution_complete_phase12_lifecycle_task.md:87-94
-  IMPACT: Implementation tranche is finished and can be closed once acceptance is confirmed.
-  NEXT: Ask user to confirm acceptance criteria.
-  REREAD: REQUIRED
-  SCORE_0_TO_10: 9
+  CLAIM: After user-directed ticket turn-in, routing moved to the remaining in-progress benchmark task; closed review tasks were anchored under recently closed.
+  EVIDENCE: context_compass/tasks/2026-02-15_add_melder_shallow_conjure_aot_vs_jit_pytest_task.md:1-40, context_compass/tasks/completed/2026-02-15_implement_resolution_complete_phase12_lifecycle_task.md:1-14
+  IMPACT: Active board no longer references completed tickets and preserves one clear next work item.
+  NEXT: Close the remaining benchmark task if user confirms acceptance, otherwise continue follow-up benchmark scope.
+  REREAD: HELPFUL
+  SCORE_0_TO_10: 8
 
 ## Recently Closed Anchors
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
+| implementation: resolution_complete phase12 lifecycle | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_implement_resolution_complete_phase12_lifecycle_task.md` | 2026-02-15 | REQUIRED |
+| discovery: jit mode skip phase8-12 conjure | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_discovery_jit_mode_skip_phase8_12_conjure_task.md` | 2026-02-15 | REQUIRED |
+| discovery: jit/aot propagation contract surfaces | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_discovery_jit_aot_propagation_contract_surfaces_task.md` | 2026-02-15 | REQUIRED |
+| implementation: align spellcrafter phase order with spellbook creation system | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_align_spellcrafter_phase_order_with_spellbook_creation_system_task.md` | 2026-02-15 | REQUIRED |
+| implementation: add melder jit toggle to test_shallow_all | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_add_melder_jit_toggle_to_test_shallow_all_task.md` | 2026-02-15 | REQUIRED |
+| discovery: jit/aot resolution_required spell contract | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_discovery_jit_aot_resolution_required_spell_contract_task.md` | 2026-02-15 | REQUIRED |
+| discovery: jit/aot phase order contract | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_discovery_jit_aot_phase_order_contract_task.md` | 2026-02-15 | REQUIRED |
+| discovery: jit/aot creation_context builder runtime contract | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_discovery_jit_aot_creation_context_builder_runtime_contract_task.md` | 2026-02-15 | REQUIRED |
+| discovery: jit/aot assumption challenge | done | codex | none | none | `context_compass/tasks/completed/2026-02-14_discovery_jit_aot_assumption_challenge_task.md` | 2026-02-15 | REQUIRED |
+| discovery: phase12 codegen | done | codex | none | none | `context_compass/tasks/completed/2026-02-13_discovery_phase12_codegen_task.md` | 2026-02-15 | REQUIRED |
 | onboarding: readme compaction and readset reduction | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_onboarding_readme_compaction_task_completed.md` | 2026-02-15 | REQUIRED |
 | docs revalidation: src components epic | done | codex | none | none | `context_compass/epics/completed/2026-02-13_revalidate_src_components_document_epic.md` | 2026-02-15 | REQUIRED |
-| docs revalidation: src architecture epic | done | codex | none | none | `context_compass/epics/completed/2026-02-13_revalidate_src_architecture_document_epic.md` | 2026-02-15 | REQUIRED |
-| onboarding hardening: manual-read path no dump lookup drift | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_harden_manual_onboarding_no_dump_path_task_completed.md` | 2026-02-15 | REQUIRED |
-| onboarding policy: social contract first + remove parallel dump from instruction path | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_reorder_onboarding_social_contract_and_remove_parallel_dump_from_instruction_path_task_completed.md` | 2026-02-15 | REQUIRED |
-| onboarding parallel dump enforcement | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_enforce_dump_chunked_500_line_onboarding_task_completed.md` | 2026-02-15 | REQUIRED |
-| onboarding dump missing docs expansion | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_add_missing_onboarding_skills_docs_to_onboarding_dump_task.md` | 2026-02-15 | REQUIRED |
-| onboarding single-command read bootstrap | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_add_single_powershell_onboarding_reonboarding_read_command_task.md` | 2026-02-15 | REQUIRED |
-| re-onboarding read integrity enforcement | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_enforce_reonboard_real_read_no_performative_compliance_task.md` | 2026-02-15 | REQUIRED |
-| jit/aot transfer propagation (non-contracted) | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_implement_jit_aot_transfer_ownership_propagation_non_contracted_task.md` | 2026-02-15 | REQUIRED |
-| jit/aot post-conjure bind propagation | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_implement_jit_aot_post_conjure_bind_propagation_task.md` | 2026-02-15 | REQUIRED |
-| jit/aot conjure propagation | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_implement_jit_aot_conjure_propagation_task.md` | 2026-02-15 | REQUIRED |
