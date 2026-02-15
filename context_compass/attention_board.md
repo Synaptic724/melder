@@ -15,9 +15,27 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | patch-map prechecked-entry slice retained (`shallow -2.90%`, `wide -1.18%`, `diamond -0.76%` vs prior retained baseline); continue next hotspot wave from this new retained baseline | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
+| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | shared registration-prechecked slice was rejected/reverted (`shallow +5.48%` regression vs retained baseline); continue next hotspot wave from retained patch-map prechecked baseline | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Reject and revert the shared registration-prechecked experiment because override cadence regressed on priority lanes versus retained baseline (`shallow +5.48%`, `solo +2.17%`, `wide +1.39%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_register_prechecked_shared_delta_vs_patchmaps_prechecked_entry_baseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_register_prechecked_shared_baseline.txt:1-11
+  IMPACT: Retained state remains the prior patch-map prechecked-entry slice.
+  NEXT: Continue from retained baseline and target a different hotspot.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Shared registration-prechecked cadence reruns (`overrides x5`, `fast x3`) measured overrides `solo +2.17%`, `shallow +5.48%`, `wide +1.39%`, `diamond -0.21%` against the retained baseline; fast lanes were mixed/near-flat and did not offset override regressions.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_register_prechecked_shared_baseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_register_prechecked_shared_delta_vs_patchmaps_prechecked_entry_baseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_register_prechecked_shared_bench_runs.txt:1-981
+  IMPACT: Confirms this slice as non-retained for the current objective.
+  NEXT: Re-rank and implement the next override-path structural optimization.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-15
   TYPE: DECISION
   CLAIM: Retain the patch-map prechecked-entry slice. Override lanes improved versus the retained count1/count2 baseline (`solo -0.53%`, `shallow -2.90%`, `wide -1.18%`, `diamond -0.76%`) with focused validation green.

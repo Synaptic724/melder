@@ -65,6 +65,33 @@ Phase12/CreationContext and validate with targeted profiler suites.
 ## Notes
 - DATE: 2026-02-15
   TYPE: DECISION
+  CLAIM: Reject and revert the shared registration-prechecked slice (`Creations` prechecked registration methods + `_register_spell_instance_prebound` reroute). Override lanes regressed versus the retained prechecked patch-map baseline (`shallow +5.48%`, `solo +2.17%`, `wide +1.39%`), so this slice is not retained despite neutral/slight fast-lane movement.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_register_prechecked_shared_delta_vs_patchmaps_prechecked_entry_baseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_register_prechecked_shared_baseline.txt:1-11
+  IMPACT: Active retained baseline remains the prior patch-map prechecked-entry slice.
+  NEXT: Continue optimization from retained baseline and target a different override/runtime hotspot.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Cadence reruns for the shared registration-prechecked experiment (`overrides x5`, `fast x3`) produced regressions on the primary override lanes: overrides `solo +2.17%`, `shallow +5.48%`, `wide +1.39%`, `diamond -0.21%` versus the retained baseline.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_register_prechecked_shared_baseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_register_prechecked_shared_delta_vs_patchmaps_prechecked_entry_baseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_register_prechecked_shared_bench_runs.txt:1-981
+  IMPACT: The experiment is measurable but not a keep candidate for the override-priority objective.
+  NEXT: Apply reject/revert decision and proceed to the next slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Experimented with a shared registration hot-path refactor by adding prechecked `Creations` registration entries and rerouting Phase12 `_register_spell_instance_prebound` to them; this changed both no-overrides and overrides registration paths before being reverted after measurement.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_register_prechecked_shared_bench_runs.txt:1-981, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_register_prechecked_shared_delta_vs_patchmaps_prechecked_entry_baseline.txt:1-11
+  IMPACT: Candidate touched both lanes by design, but retention depended on override-lane outcome.
+  NEXT: Keep this as rejected experiment history and continue from retained state.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
   CLAIM: Retain the patch-map prechecked-entry slice. Override lanes improved versus the retained count1/count2 baseline (`solo -0.53%`, `shallow -2.90%`, `wide -1.18%`, `diamond -0.76%`) with focused validation green after test-double alignment.
   EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_prechecked_entry_delta_vs_phase12_count12_baseline.txt:1-11, tests/unit/melder/spellbook/spell_crafter/blueprints/test_patch_maps.py:1-163, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:614-786, tests/component/melder/aether/conduit/test_conduit_component_meld_overrides_deep.py:1-1099
   IMPACT: Active wave-1 baseline now includes the prechecked patch-map hot-path entry and direct CreationContext callsite usage.
