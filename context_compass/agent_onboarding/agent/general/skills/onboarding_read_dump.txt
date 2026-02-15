@@ -1050,7 +1050,6 @@ Artifact taxonomy (curated vs scratch)
   - `epics/`, `stories/`, `tasks/`
   - `epics/completed/`, `stories/completed/`, `tasks/completed/` (closed tickets)
   - `completed/` (legacy archive)
-  - `00_overview.md` (optional high-level pointer only)
 - Scratch, agent-owned (not canonical):
   - `workspace/agent/ideas/`
   - `workspace/agent/opinions/`
@@ -1264,7 +1263,6 @@ Policy
 - Maintain a `## Notes` section in active tickets for in-flight findings with
   `path:start_line-end_line` evidence pointers (`start=end` if single-line).
 - Use UNKNOWN as the default claim state and promote to FACT only when evidence is attached.
-- `00_overview.md` is optional and should not replace ticket notes or board routing.
 - Avoid separate memory stores or ad-hoc JSON logs.
 
 Safety rules
@@ -2550,7 +2548,6 @@ Required flow
 Certification record
 - Track certification in the session narrative and update `attention_board.md`
   routing when certification state affects execution.
-- `00_overview.md` may be updated optionally for high-level summaries only.
 
 References
 - `agent_onboarding/agent/SKILLS.md`
@@ -5125,7 +5122,6 @@ When unsure:
 
 Files
 - `attention_board.md` - canonical active routing board (`work_item/status/next/ticket/reread`).
-- `00_overview.md` - optional high-level summary pointer (not canonical execution memory).
 - `AGENTS.MD` - local agent rules for this directory.
 - `SKILLS.MD` - ticket-writing guidance and deep descriptive model.
 - `WORKFLOW.md` - epic/story/task lifecycle and tracking rules.

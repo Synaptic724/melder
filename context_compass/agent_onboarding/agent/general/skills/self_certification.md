@@ -20,7 +20,6 @@ Required flow
 Certification record
 - Track certification in the session narrative and update `attention_board.md`
   routing when certification state affects execution.
-- `00_overview.md` may be updated optionally for high-level summaries only.
 
 References
 - `agent_onboarding/agent/SKILLS.md`

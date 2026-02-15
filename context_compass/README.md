@@ -45,7 +45,6 @@ When unsure:
 
 Files
 - `attention_board.md` - canonical active routing board (`work_item/status/next/ticket/reread`).
-- `00_overview.md` - optional high-level summary pointer (not canonical execution memory).
 - `AGENTS.MD` - local agent rules for this directory.
 - `SKILLS.MD` - ticket-writing guidance and deep descriptive model.
 - `WORKFLOW.md` - epic/story/task lifecycle and tracking rules.

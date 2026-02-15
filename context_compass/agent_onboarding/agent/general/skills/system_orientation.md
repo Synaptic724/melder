@@ -30,7 +30,6 @@ Artifact taxonomy (curated vs scratch)
   - `epics/`, `stories/`, `tasks/`
   - `epics/completed/`, `stories/completed/`, `tasks/completed/` (closed tickets)
   - `completed/` (legacy archive)
-  - `00_overview.md` (optional high-level pointer only)
 - Scratch, agent-owned (not canonical):
   - `workspace/agent/ideas/`
   - `workspace/agent/opinions/`
