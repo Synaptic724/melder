@@ -479,7 +479,6 @@ class SpellbookCreationSystem(Cleanable):
             )
         )
         resolution_required: bool = not full_ahead_of_time_compilation
-        resolution_complete: bool = full_ahead_of_time_compilation
         with spellbook._lock:
             for spell in spellbook._spells.values():
                 try:
@@ -492,7 +491,6 @@ class SpellbookCreationSystem(Cleanable):
                     )
                     spell.spell_index._set_owner_conduit_id(conduit._id)
                     spell.resolution_required = resolution_required
-                    spell.resolution_complete = resolution_complete
 
                     if spell.user_created_object is not None:
                         try:

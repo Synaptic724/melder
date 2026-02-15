@@ -320,8 +320,9 @@ class Spell(Cleanable, ISpell):
         self._dynamic_environment: bool = False
         # Runtime resolution gate flag (False for full AOT by default).
         self.resolution_required: bool = False
-        # Runtime deferred-resolution completion flag (True for full AOT by default).
-        self.resolution_complete: bool = True
+        # Runtime deferred-resolution completion flag.
+        # Starts False and flips True only when Phase12 compile wiring completes.
+        self.resolution_complete: bool = False
 
         # Created after Conduit made (ownership / scope integration)
         self._owner_conduit_id: Optional[str] = None

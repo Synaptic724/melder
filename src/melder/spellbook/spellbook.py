@@ -2548,7 +2548,6 @@ class Spellbook(Cleanable, ISpellbook):
                 )
                 new_spell.spell_index._set_owner_conduit_id(self._conduit._id)
                 new_spell.resolution_required = not full_ahead_of_time_compilation
-                new_spell.resolution_complete = full_ahead_of_time_compilation
                 if new_spell.user_created_object is not None:
                     try:
                         self._conduit._register_to_creations(

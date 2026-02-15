@@ -2552,6 +2552,7 @@ class SpellCrafter(Cleanable):
         if plan is None or not plan.steps:
             self._phase12_no_overrides_executor = None
             self._phase12_no_overrides_executor_signature = None
+            self._spell.resolution_complete = False
             return
 
         transient_schema = self._build_fast_transient_schema(plan.fast_transient_plan)
@@ -2563,6 +2564,7 @@ class SpellCrafter(Cleanable):
                 plan_signature == self._phase12_no_overrides_executor_signature
                 and self._phase12_no_overrides_executor is not None
         ):
+            self._spell.resolution_complete = True
             return
 
         compiled_executor = compile_phase12_no_overrides_executor_from_plan(
@@ -2575,6 +2577,7 @@ class SpellCrafter(Cleanable):
             )
         self._phase12_no_overrides_executor = compiled_executor
         self._phase12_no_overrides_executor_signature = plan_signature
+        self._spell.resolution_complete = True
 
     def _compile_phase12_no_overrides_executor_from_payload(
             self,
@@ -2599,6 +2602,7 @@ class SpellCrafter(Cleanable):
         if not no_overrides_payload:
             self._phase12_no_overrides_executor = None
             self._phase12_no_overrides_executor_signature = None
+            self._spell.resolution_complete = False
             return
 
         required_payload_fields = (
@@ -2625,6 +2629,7 @@ class SpellCrafter(Cleanable):
                 payload_signature == self._phase12_no_overrides_executor_signature
                 and self._phase12_no_overrides_executor is not None
         ):
+            self._spell.resolution_complete = True
             return
 
         compiled_executor = compile_phase12_no_overrides_executor(
@@ -2637,6 +2642,7 @@ class SpellCrafter(Cleanable):
             )
         self._phase12_no_overrides_executor = compiled_executor
         self._phase12_no_overrides_executor_signature = payload_signature
+        self._spell.resolution_complete = True
 
     def _reset_phase2_5_codegen_ir(self) -> None:
         """
@@ -2676,6 +2682,7 @@ class SpellCrafter(Cleanable):
         self._phase8_11_codegen_ir_dirty = False
         self._phase12_no_overrides_executor = None
         self._phase12_no_overrides_executor_signature = None
+        self._spell.resolution_complete = False
         self._phase8_occurrence_plan_input_signature = None
         self._phase9_injection_plan_input_signature = None
         self._phase10_patch_maps_input_signature = None

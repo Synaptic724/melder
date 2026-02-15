@@ -15,15 +15,24 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| discovery: jit conjure skip phases 8-12 | in_progress | codex | none | continue discovery and document concrete guard insertion plan for skipping 8-12 during conjure in jit mode | `context_compass/tasks/2026-02-15_discovery_jit_mode_skip_phase8_12_conjure_task.md` | 2026-02-15 | REQUIRED |
+| implementation: resolution_complete phase12 lifecycle | review | codex | none | confirm acceptance with user and close or route follow-up | `context_compass/tasks/2026-02-15_implement_resolution_complete_phase12_lifecycle_task.md` | 2026-02-15 | REQUIRED |
 
 ## Active Attention Details
 - DATE: 2026-02-15
   TYPE: PLAN
-  CLAIM: Active routing returns to JIT conjure discovery after closing README compaction work.
-  EVIDENCE: context_compass/tasks/2026-02-15_discovery_jit_mode_skip_phase8_12_conjure_task.md:12-35, context_compass/tasks/2026-02-15_discovery_jit_mode_skip_phase8_12_conjure_task.md:59-88
-  IMPACT: Work focus is restored to unresolved runtime behavior discovery.
-  NEXT: Continue discovery notes with concrete guard insertion strategy and risks.
+  CLAIM: Active routing moved from discovery to implementation for resolution_complete lifecycle migration (default false, phase12 set true, invalidation clear false).
+  EVIDENCE: context_compass/tasks/2026-02-15_implement_resolution_complete_phase12_lifecycle_task.md:1-46, context_compass/tasks/2026-02-15_implement_resolution_complete_phase12_lifecycle_task.md:78-85
+  IMPACT: The next tranche is code edits + targeted validation, with scope constrained to resolution_complete semantics.
+  NEXT: Apply focused code patch in Spell/SpellCrafter/Spellbook creation and transfer paths, then run targeted pytests.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Resolution_complete lifecycle patch and targeted tests are complete; active row is now in review pending user acceptance.
+  EVIDENCE: context_compass/tasks/2026-02-15_implement_resolution_complete_phase12_lifecycle_task.md:23-46, context_compass/tasks/2026-02-15_implement_resolution_complete_phase12_lifecycle_task.md:49-62, context_compass/tasks/2026-02-15_implement_resolution_complete_phase12_lifecycle_task.md:87-94
+  IMPACT: Implementation tranche is finished and can be closed once acceptance is confirmed.
+  NEXT: Ask user to confirm acceptance criteria.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 

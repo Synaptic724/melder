@@ -3,7 +3,7 @@
 ## Metadata
 - Task ID: TASK-2026-02-15-discovery-jit-skip-conjure-phases-8-12
 - Story: none
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-15
@@ -23,12 +23,12 @@ Run focused discovery to verify and document why JIT mode currently executes con
   - Non-conjure runtime policy redesign.
 
 ## Steps / Checklist
-- [ ] Trace conjure pipeline and confirm whether phases 8-11 run unconditionally in JIT mode.
-- [ ] Confirm where Phase 12 compile is triggered during conjure.
-- [ ] Map where `full_ahead_of_time_compilation` currently affects runtime gate flags.
-- [ ] Propose concrete insertion points/guard strategy for skipping 8-12 during conjure in JIT mode.
-- [ ] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Trace conjure pipeline and confirm whether phases 8-11 run unconditionally in JIT mode.
+- [x] Confirm where Phase 12 compile is triggered during conjure.
+- [x] Map where `full_ahead_of_time_compilation` currently affects runtime gate flags.
+- [x] Propose concrete insertion points/guard strategy for skipping 8-12 during conjure in JIT mode.
+- [x] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Evidence-backed discovery notes describing current behavior and gap.
@@ -39,8 +39,10 @@ Run focused discovery to verify and document why JIT mode currently executes con
 - `context_compass/attention_board.md`
 
 ## Validation
-- Not run.
-- Recommended commands:
+- Ran:
+  - `python -m pytest -q tests/unit/melder/spellbook/test_spellbook_creation_system_resolution_fastpath.py`
+    - Result: `3 passed` (warnings: Python/GIL runtime warning from `src/melder/__init__.py`, pytest cache permission warning).
+- Recommended follow-up:
   - `python -m pytest -q tests/unit/melder/spellbook/test_spellbook.py -k jit`
 
 ## Risks / Rollback Notes
@@ -48,12 +50,12 @@ Run focused discovery to verify and document why JIT mode currently executes con
 - Discovery must separate intended JIT semantics from current implementation semantics before any code change.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
 - [ ] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
@@ -102,5 +104,23 @@ Run focused discovery to verify and document why JIT mode currently executes con
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: The JIT conjure skip plan is now present in runtime code: conduit resolution reads `full_ahead_of_time_compilation`, forces plan-phase skip when disabled, and removes plan-phase outputs; targeted fastpath tests assert plan factories remain at zero in JIT mode and pass.
+  EVIDENCE: src/melder/spellbook/spellbook_creation_system.py:773-820, src/melder/spellbook/spellbook_creation_system.py:996-1053, tests/unit/melder/spellbook/test_spellbook_creation_system_resolution_fastpath.py:406-483
+  IMPACT: This discovery ticket's identified behavior gap is now closed at source + unit-test level.
+  NEXT: Review with user for acceptance, then either close this discovery ticket or route to the next AOT/JIT active task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Current runtime contract treats `resolution_required=True` as "deferred runtime phases still needed" and `resolution_complete=True` as "deferred runtime phases complete"; meld success flips to `(required=False, complete=True)` and failure preserves `(required=True, complete=False)`.
+  EVIDENCE: src/melder/aether/conduit/meld/meld.py:463-510, tests/unit/melder/aether/conduit/meld/test_meld.py:1720-1773, tests/unit/melder/aether/conduit/meld/test_meld.py:1776-1806
+  IMPACT: Inverting this polarity (for example setting `resolution_required=True` on completion) would conflict with the active meld gate and regress deferred-resolution semantics.
+  NEXT: Align user-facing design discussion on preserving current flag polarity while deciding whether any additional invalidation hooks should set `(required=True, complete=False)` when plan artifacts are invalidated.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
-Discovery task created to analyze and document the JIT-mode conjure gap (phases 8-12 not skipped). Initial evidence shows conjure still schedules phase 8-11 and reaches Phase 12 compile; next step is to produce a concrete guard-insertion plan before implementation.
+Discovery ticket confirmed and documented the original gap, then validated that current source now applies the guard strategy in `run_resolution_phases_for_conduit` and that targeted JIT fastpath tests pass (`3 passed`). Ticket is ready for user acceptance and routing to the next AOT/JIT lane.

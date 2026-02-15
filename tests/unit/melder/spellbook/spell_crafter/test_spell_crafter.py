@@ -5692,6 +5692,68 @@ def test_compile_phase12_no_overrides_executor_from_plan_recompiles_on_semantic_
     assert crafter.phase12_no_overrides_executor is compiled_executors[1]
 
 
+def test_compile_phase12_no_overrides_executor_from_plan_sets_resolution_complete_true(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify successful plan-based Phase12 compile marks spell resolution complete.
+    Contract:
+        - `_compile_phase12_no_overrides_executor_from_plan` sets
+          `spell.resolution_complete=True` after successful compilation.
+    Args:
+        monkeypatch: Pytest fixture for replacing plan compile helper.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If successful compile does not set completion flag.
+    """
+    crafter, spell, _ = _build_spell_and_crafter(spell_id="root")
+    spell.resolution_complete = False
+
+    def _compile_stub(
+            *,
+            plan: object,
+            transient_schema: dict[str, object] | None,
+    ) -> object:
+        del plan, transient_schema
+        return lambda _context: "compiled"
+
+    monkeypatch.setattr(
+        spell_crafter_module,
+        "compile_phase12_no_overrides_executor_from_plan",
+        _compile_stub,
+    )
+
+    plan = _make_phase11_plan_stub(
+        plan_variant="no_overrides_fast",
+        root_spell_id="root",
+        step_spell_ids=("root",),
+    )
+    crafter._compile_phase12_no_overrides_executor_from_plan(plan)
+
+    assert spell.resolution_complete is True
+
+
+def test_reset_phase8_11_codegen_ir_clears_resolution_complete_flag() -> None:
+    """
+    Purpose:
+        Verify phase8-11 artifact reset clears spell completion flag.
+    Contract:
+        - `_reset_phase8_11_codegen_ir` sets `spell.resolution_complete=False`.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If reset does not clear completion flag.
+    """
+    crafter, spell, _ = _build_spell_and_crafter(spell_id="root")
+    spell.resolution_complete = True
+
+    crafter._reset_phase8_11_codegen_ir()
+
+    assert spell.resolution_complete is False
+
+
 def test_run_phase_occurrence_plan_reuses_cached_plan_when_input_signature_unchanged(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

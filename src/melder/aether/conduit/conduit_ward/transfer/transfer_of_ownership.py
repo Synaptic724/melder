@@ -531,7 +531,7 @@ class TransferOfOwnership:
             pass
         source_resolution_required = self._get_resolution_required_for_spellbook(src_book)
         spell_obj.resolution_required = source_resolution_required
-        spell_obj.resolution_complete = not source_resolution_required
+        spell_obj.resolution_complete = False
         src_states = src_book._spell_system_states
         tgt_states = tgt_book._spell_system_states
         if src_states is None:
@@ -986,7 +986,7 @@ class TransferOfOwnership:
                 tgt_book
             )
             spell_obj.resolution_required = target_resolution_required
-            spell_obj.resolution_complete = not target_resolution_required
+            spell_obj.resolution_complete = False
         except Exception as e:
             raise RuntimeError(f"Failed to flip spellbooks: {e}")
 

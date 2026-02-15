@@ -57,6 +57,7 @@ class DummySpell:
         self.binding_name = None
         self.profile = None
         self.resolution_required = False
+        self.resolution_complete = False
 
     def cleanup(self):
         """
@@ -1317,7 +1318,9 @@ def test_define_conduit_stamps_owner_and_primes_existing():
     assert spell_existing._owner[0] == conduit._id
     assert conduit.registered[0][1] == "obj"
     assert spell_existing.resolution_required is False
+    assert spell_existing.resolution_complete is False
     assert spell_normal.resolution_required is False
+    assert spell_normal.resolution_complete is False
 
 
 def test_define_conduit_sets_resolution_required_when_jit_enabled():
@@ -1348,6 +1351,7 @@ def test_define_conduit_sets_resolution_required_when_jit_enabled():
     SpellbookCreationSystem.define_conduit_into_spells(sb, conduit)
 
     assert spell.resolution_required is True
+    assert spell.resolution_complete is False
 
 
 def test_bind_after_conjure_sets_resolution_required_when_jit_enabled(monkeypatch):
@@ -1407,6 +1411,7 @@ def test_bind_after_conjure_sets_resolution_required_when_jit_enabled(monkeypatc
 
     assert result == "jit-sid"
     assert new_spell.resolution_required is True
+    assert new_spell.resolution_complete is False
     assert new_spell._owner[0] == "jit-cid"
     assert sb._conduit.registered == [(new_spell, "existing")]
     assert len(lineage_calls) == 1
@@ -1464,6 +1469,7 @@ def test_bind_after_conjure_keeps_resolution_required_false_when_aot_enabled(mon
 
     assert result == "aot-sid"
     assert new_spell.resolution_required is False
+    assert new_spell.resolution_complete is False
 
 
 def test_define_conduit_handles_errors():
