@@ -296,8 +296,10 @@ def test_get_or_compile_override_executor_caches_compiled_executor(
             *,
             plan_rows: Sequence[Dict[str, Any]],
             root_spell_id: Optional[str],
+            spell_lookup: Optional[Dict[str, Any]],
             override_targeted_spell_ids: Tuple[str, ...],
             override_target_counts_by_spell_id: Tuple[Tuple[str, int], ...],
+            override_target_counts_by_step: Tuple[int, ...],
             has_root_positional_override: bool,
     ) -> str:
         source_emit_count["value"] += 1
@@ -374,8 +376,10 @@ def test_get_or_compile_override_executor_reuses_plan_signature_artifacts_across
             *,
             plan_rows: Sequence[Dict[str, Any]],
             root_spell_id: Optional[str],
+            spell_lookup: Optional[Dict[str, Any]],
             override_targeted_spell_ids: Tuple[str, ...],
             override_target_counts_by_spell_id: Tuple[Tuple[str, int], ...],
+            override_target_counts_by_step: Tuple[int, ...],
             has_root_positional_override: bool,
     ) -> str:
         source_emit_count["value"] += 1

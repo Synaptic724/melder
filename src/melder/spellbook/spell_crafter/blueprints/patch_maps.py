@@ -104,6 +104,9 @@ class OverridePatchMap(Cleanable):
         "_last_single_value_id",
         "_last_single_override_map",
         "_last_single_socket_shape",
+        "_last_multi_signature",
+        "_last_multi_override_map",
+        "_last_multi_socket_shape",
     ]
 
     def __init__(
@@ -145,6 +148,9 @@ class OverridePatchMap(Cleanable):
         self._last_single_value_id: int = -1
         self._last_single_override_map: Optional[Dict[SocketRef, object]] = None
         self._last_single_socket_shape: Optional[tuple[tuple[object, ...], ...]] = None
+        self._last_multi_signature: Optional[tuple[tuple[str, int], ...]] = None
+        self._last_multi_override_map: Optional[Dict[SocketRef, object]] = None
+        self._last_multi_socket_shape: Optional[tuple[tuple[object, ...], ...]] = None
 
     def cleanup(self) -> None:
         """
@@ -164,6 +170,9 @@ class OverridePatchMap(Cleanable):
         self._last_single_value_id = -1
         self._last_single_override_map = None
         self._last_single_socket_shape = None
+        self._last_multi_signature = None
+        self._last_multi_override_map = None
+        self._last_multi_socket_shape = None
         self._root_spell_id = None
         self._targets_by_spec = None
         self._specificity_by_spec = None
@@ -172,6 +181,9 @@ class OverridePatchMap(Cleanable):
         self._last_single_value_id = None
         self._last_single_override_map = None
         self._last_single_socket_shape = None
+        self._last_multi_signature = None
+        self._last_multi_override_map = None
+        self._last_multi_socket_shape = None
 
     @property
     def root_spell_id(self) -> str:
@@ -285,6 +297,27 @@ class OverridePatchMap(Cleanable):
                 socket_shape,
             )
 
+        multi_signature: Optional[tuple[tuple[str, int], ...]] = None
+        override_count = len(spell_override)
+        if override_count <= 4:
+            multi_signature = tuple(
+                sorted(
+                    (
+                        raw_key,
+                        id(value),
+                    )
+                    for raw_key, value in spell_override.items()
+                )
+            )
+            if multi_signature == self._last_multi_signature:
+                cached_map = self._last_multi_override_map
+                cached_shape = self._last_multi_socket_shape
+                if cached_map is not None and cached_shape is not None:
+                    return (
+                        cached_map,
+                        cached_shape,
+                    )
+
         per_socket: Dict[SocketRef, tuple[_Specificity, object]] = {}
 
         for raw_key, value in spell_override.items():
@@ -312,6 +345,10 @@ class OverridePatchMap(Cleanable):
         socket_shape = self._build_socket_shape_from_matches(
             matches=tuple(override_map),
         )
+        if multi_signature is not None:
+            self._last_multi_signature = multi_signature
+            self._last_multi_override_map = override_map
+            self._last_multi_socket_shape = socket_shape
         return (
             override_map,
             socket_shape,

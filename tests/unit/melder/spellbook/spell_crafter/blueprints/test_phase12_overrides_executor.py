@@ -10,6 +10,7 @@ import melder.spellbook.spell_crafter.blueprints.phase12_overrides_executor as p
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.blueprints.execution_plan import ExecutionPlanTargetKind
 from melder.spellbook.spell_crafter.blueprints.phase12_overrides_executor import (
+    build_phase12_override_step_target_counts_from_rows,
     compile_phase12_overrides_executor_code_object,
     compile_phase12_overrides_executor_from_code_object,
     compile_phase12_overrides_executor,
@@ -414,6 +415,23 @@ def test_emit_phase12_overrides_executor_shape_source_prebinds_non_root_override
     assert "root_positional_override if is_root_step_0 else None" not in source
 
 
+def test_emit_phase12_overrides_executor_shape_source_static_spell_flags_elide_dynamic_invoke_branches() -> None:
+    """Shape emitter uses spell lookup metadata to remove dynamic invoke-type branching."""
+    row = _make_plan_row("root")
+    spell = _make_spell("root")
+    spell.is_class_spell = True
+
+    source = emit_phase12_overrides_executor_shape_source(
+        plan_rows=(row,),
+        root_spell_id="root",
+        spell_lookup={"root": spell},
+    )
+
+    assert "is_callable_spell_0 = step_is_callable_spell[0]" not in source
+    assert "if is_callable_spell_0:" not in source
+    assert "if is_existing_unique_creation_0:" not in source
+
+
 def test_emit_phase12_overrides_executor_shape_source_specializes_static_target_count() -> None:
     """Shape emitter removes dynamic override-target-count branching for static shapes."""
     source = emit_phase12_overrides_executor_shape_source(
@@ -443,6 +461,57 @@ def test_emit_phase12_overrides_executor_shape_source_duplicate_spell_id_skips_s
     assert "single_override_socket_1 = override_targets_1[0]" not in source
     assert "for override_socket_0 in override_targets_0:" in source
     assert "for override_socket_1 in override_targets_1:" in source
+
+
+def test_emit_phase12_overrides_executor_shape_source_uses_per_step_target_counts_when_provided() -> None:
+    """Shape emitter can specialize duplicate spell_id rows safely with per-step counts."""
+    source = emit_phase12_overrides_executor_shape_source(
+        plan_rows=(
+            _make_plan_row("dup"),
+            _make_plan_row("dup"),
+        ),
+        root_spell_id="dup",
+        override_targeted_spell_ids=("dup",),
+        override_target_counts_by_spell_id=(("dup", 1),),
+        override_target_counts_by_step=(1, 0),
+    )
+
+    assert "single_override_socket_0 = override_targets_0[0]" in source
+    assert "single_override_socket_1 = override_targets_1[0]" not in source
+    assert "override_values_1 = _EMPTY_OVERRIDE_VALUES" in source
+
+
+def test_build_phase12_override_step_target_counts_from_rows_filters_duplicate_spell_steps() -> None:
+    """Per-step target counts honor row-level shared/non-shared matching rules."""
+    socket_a = _SocketRef("dup", "value", 10, "normal")
+    socket_b = _SocketRef("dup", "value", 11, "normal")
+    row_a = _make_plan_row("dup")
+    row_b = _make_plan_row("dup")
+    row_a["shared_instance"] = False
+    row_b["shared_instance"] = False
+    row_a["override_match_prefix"] = "parent-a"
+    row_b["override_match_prefix"] = "parent-b"
+    row_a["override_match_prefix_len"] = 0
+    row_b["override_match_prefix_len"] = 0
+
+    path_registry = _TrackingPathRegistry(
+        parent_map={
+            10: "parent-a",
+            11: "parent-b",
+        },
+        depth_map={
+            10: 1,
+            11: 1,
+        },
+    )
+
+    counts = build_phase12_override_step_target_counts_from_rows(
+        plan_rows=(row_a, row_b),
+        override_targets_by_spell_id={"dup": (socket_a, socket_b)},
+        path_registry=path_registry,
+    )
+
+    assert counts == (1, 1)
 
 
 def test_compile_phase12_overrides_executor_from_shape_source_supports_schema_rows_execution() -> None:

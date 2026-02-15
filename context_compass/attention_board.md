@@ -15,9 +15,54 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | static-count Phase12 shape specialization retained (`shallow -2.34%`, `wide -5.89%`, `diamond -9.27%` vs retained baseline); next is next structural hotspot slice from this retained state | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
+| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | static invoke-lane specialization retained (`overrides: shallow -1.78%, wide -4.26%, diamond -2.93%, solo +0.92%` vs post-continue baseline); continue next hotspot wave from new retained state | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Static invoke-lane specialization slice is retained. Override lanes improved vs post-continue baseline (`shallow -1.78%`, `wide -4.26%`, `diamond -2.93%`) with minor solo variance (`+0.92%`); fast drift is treated as environment noise because this slice only changes override emitter/runtime paths.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_static_invoke_flags_delta_vs_postcontinue_baseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_static_invoke_flags_baseline.txt:1-11
+  IMPACT: Retained override baseline moved down again on the primary target lanes.
+  NEXT: Re-rank hotspots and implement the next structural override-path optimization slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Phase12 override shape emission now consumes `spell_lookup` and compiles static per-step callable/existing invoke metadata, allowing generated `_phase12_executor` blocks to elide dynamic invoke-type branch selection where metadata is known; CreationContext wiring now passes `spell_lookup` into shape emission.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:232-258, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:690-736, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1462-1578, src/melder/aether/conduit/meld/creation_context/creation_context.py:1138-1190
+  IMPACT: Cached override executor runtime removes additional dynamic per-step branch plumbing.
+  NEXT: Continue optimization from this retained runtime state.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Post-continue benchmark cadence completed and artifacts persisted (`overrides x5`, `fast x3`). Delta vs retained stepcount+multikey baseline: overrides `solo +1.00%`, `shallow -0.61%`, `wide -0.48%`, `diamond -3.90%`; fast reference `solo -0.58%`, `shallow -5.96%`, `wide -3.65%`, `diamond -5.04%`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_postcontinue_cadence_delta_vs_stepcount_multikey_baseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_postcontinue_cadence_baseline.txt:1-11
+  IMPACT: New post-continue baseline is available for the next optimization slice with stable override-lane behavior.
+  NEXT: Re-rank hotspots and implement the next structural patch before rerunning cadence.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Normal benchmark cadence completed and retained for the latest slice (`overrides x5`, `fast x3`): overrides improved vs prior retained baseline (`solo -0.22%`, `shallow -9.42%`, `wide -2.25%`, `diamond -1.46%`) with fast reference window also lower across all four graphs.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_stepcount_and_multikey_cache_delta.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_stepcount_and_multikey_cache_baseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:560-579, benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:370-381
+  IMPACT: New retained baseline is established for the next optimization tranche.
+  NEXT: Re-rank post-slice hotspots from latest artifacts and implement the next structural change.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: New optimization slices landed without full-suite reruns: (1) phase12 shape emission now receives exact per-step target counts from row-level prefilter logic, and (2) patch-map apply adds a small multi-key signature cache for repeated payloads up to 4 entries.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:231-334, src/melder/aether/conduit/meld/creation_context/creation_context.py:1116-1180, src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:290-347, tests/unit/melder/spellbook/spell_crafter/blueprints/test_patch_maps.py:104-180
+  IMPACT: Runtime paths are tighter on targeted override lanes; benchmark retention decision is pending.
+  NEXT: Hold before full benchmark windows until user confirms rerun timing.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-15
   TYPE: FACT
   CLAIM: Deep override regression is fixed: static-count shape specialization no longer assumes fixed per-step target counts for duplicated `spell_id` rows, which previously emitted `[0]` indexing against empty `override_targets` on sibling steps and raised `IndexError` in deep/shared paths.

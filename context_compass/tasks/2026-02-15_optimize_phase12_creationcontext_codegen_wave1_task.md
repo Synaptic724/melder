@@ -64,6 +64,96 @@ Phase12/CreationContext and validate with targeted profiler suites.
 
 ## Notes
 - DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Keep the static invoke-lane specialization slice. Override target lanes improved against the post-continue baseline (`shallow -1.78%`, `wide -4.26%`, `diamond -2.93%`) with minor solo variance (`+0.92%`); fast-lane drift is treated as environmental noise because this slice only changes override shape emission/runtime.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_static_invoke_flags_delta_vs_postcontinue_baseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_static_invoke_flags_baseline.txt:1-11
+  IMPACT: Retained override baseline moves down again on the priority lanes, and wave-1 can continue from this state.
+  NEXT: Re-rank remaining override hotspots from the retained state and select the next structural slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Validation for this slice is green: focused unit suites (`69 passed`) and deep override component suite (`48 passed`) passed before benchmark reruns.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_wave1_static_invoke_flags_slice.txt:1-7
+  IMPACT: Keeps correctness confidence while retaining this medium/high-risk emitter/runtime specialization patch.
+  NEXT: Continue from retained state and rerun normal cadence after the next code patch.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Phase12 override shape emission now accepts `spell_lookup` and binds static invoke metadata (`existing-unique` / `callable`) into per-step shape metadata, letting emitted `_phase12_executor` elide dynamic `is_existing_unique_creation` and `is_callable_spell` branch selection when compile-time metadata is known; CreationContext now passes `spell_lookup` through shape-source emission.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:232-258, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:690-736, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1462-1578, src/melder/aether/conduit/meld/creation_context/creation_context.py:1138-1190, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py:418-433, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:299-399
+  IMPACT: Cached override executors run less dynamic branch plumbing per step on hot lanes.
+  NEXT: Target next runtime hotspot now that invoke-type branch selection is partially static.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Next structural slice will statically bind callable/existing-creation invoke lanes in shape-emitted Phase12 overrides executors (using compile-time spell metadata) to remove per-step `step_is_callable_spell[...]` / `step_is_existing_unique_creation[...]` loads and dynamic invoke branching on cached hot paths.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:8-8, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1416-1567
+  IMPACT: Targets `_phase12_executor` runtime overhead directly without changing public meld/override API contracts.
+  NEXT: Implement emitter + CreationContext wiring, run focused unit suites, then rerun normal cadence for keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Post-continue normal cadence was rerun and captured as artifacts (`overrides x5`, `fast x3`). Versus the retained stepcount+multikey baseline, overrides deltas are `solo +1.00%`, `shallow -0.61%`, `wide -0.48%`, `diamond -3.90%`; fast reference deltas are `solo -0.58%`, `shallow -5.96%`, `wide -3.65%`, `diamond -5.04%`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_postcontinue_cadence_delta_vs_stepcount_multikey_baseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_postcontinue_cadence_baseline.txt:1-11
+  IMPACT: Current retained performance remains stable with override-lane wins on the target graphs; solo override variance is minor and tracked.
+  NEXT: Start the next structural codegen slice from this post-continue baseline and rerun the same cadence for keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Retain the combined per-step target-count + small multi-key patch-map cache slice. Bench windows improved across override lanes against the prior retained baseline with strongest gain on shallow (`-9.42%`) and additional wins on wide/diamond/solo.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_stepcount_and_multikey_cache_delta.txt:1-11, src/melder/aether/conduit/meld/creation_context/creation_context.py:1116-1180, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:231-334, src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:290-347
+  IMPACT: Establishes a lower retained override baseline while preserving deep-override correctness.
+  NEXT: Continue next wave from `wave1_stepcount_and_multikey_cache_baseline.txt` and target remaining `_phase12_executor` runtime hotspots.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Standard benchmark cadence completed (`overrides x5`, `fast x3`) with both suites green. Override 5-run averages vs prior retained baseline: `solo -0.22%`, `shallow -9.42%`, `wide -2.25%`, `diamond -1.46%`. Fast 3-run window also trended down (`solo -8.33%`, `shallow -9.65%`, `wide -8.66%`, `diamond -5.21%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:560-579, benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:370-381, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_stepcount_and_multikey_cache_delta.txt:1-11
+  IMPACT: New retained performance baseline captured with consistent wins on the target override lanes.
+  NEXT: Use `wave1_stepcount_and_multikey_cache_baseline.txt` as baseline for next optimization tranche.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Added per-step static target-count plumbing for shape emission by computing compile-time step counts from schema rows + prefilter logic; this restores safe static specialization opportunities even when one spell_id appears in multiple steps.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:231-334, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:600-642, src/melder/aether/conduit/meld/creation_context/creation_context.py:1116-1180, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py:446-479
+  IMPACT: Shape codegen now receives exact per-step counts and can specialize duplicate-spell graphs more precisely than spell-id-only fallbacks.
+  NEXT: Benchmark this slice once user clears heavy-suite reruns.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Added small multi-key payload cache in `OverridePatchMap.apply_with_socket_shape(...)` keyed by sorted `(raw_key, id(value))` signatures for payloads up to 4 entries, with focused unit coverage for hit/miss behavior.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:103-109, src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:290-347, tests/unit/melder/spellbook/spell_crafter/blueprints/test_patch_maps.py:104-180
+  IMPACT: Repeated identical small multi-key override payloads can bypass per-call resolution/merge work.
+  NEXT: Measure keep/revert with repeated override windows before retaining this slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Focused validation is green after the above slices and deep-override regression fix (`120 passed` across patch-maps, creation-context, phase12, and deep component override suites).
+  EVIDENCE: tests/unit/melder/spellbook/spell_crafter/blueprints/test_patch_maps.py:1-180, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:1-829, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py:1-1204, tests/component/melder/aether/conduit/test_conduit_component_meld_overrides_deep.py:1-1099
+  IMPACT: Runtime correctness is preserved on targeted lanes while we defer full benchmark reruns per user request.
+  NEXT: Pause before full suite; run benchmark windows only when user says go.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
   TYPE: FACT
   CLAIM: Fixed deep override regression caused by static per-spell target-count specialization on duplicated `spell_id` steps. Shape metadata now disables fixed count specialization (`-1` fallback) when a `spell_id` appears in multiple plan rows, preventing emitted `[0]` socket indexing on non-targeted sibling steps.
   EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1-3, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:536-617, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py:429-445

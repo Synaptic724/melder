@@ -12,6 +12,7 @@ from melder.spellbook.spell_crafter.blueprints.phase12_overrides_executor import
     compile_phase12_overrides_executor_code_object,
     compile_phase12_overrides_executor,
     _compile_phase12_overrides_executor_from_code_object_with_prefilter_cache,
+    build_phase12_override_step_target_counts_from_rows,
     emit_phase12_overrides_executor_shape_source,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
@@ -1123,13 +1124,25 @@ class CreationContext(Cleanable):
                 if targets
             )
         )
+        override_target_counts_by_step = (
+            build_phase12_override_step_target_counts_from_rows(
+                plan_rows=plan_rows,
+                override_targets_by_spell_id=override_targets_by_spell_id,
+                path_registry=path_registry,
+                prefilter_step_targets_cache=self._override_prefilter_step_targets_cache,
+                prefilter_cache_key=prefilter_cache_key,
+                prefilter_path_metadata_cache=self._override_prefilter_path_metadata_cache,
+            )
+        )
         has_root_positional_override = shape_key[2] >= 0
         source = self._get_or_build_override_executor_source(
             source_cache_key=shape_key,
             plan_rows=plan_rows,
             root_spell_id=root_spell_id,
+            spell_lookup=spell_lookup,
             override_targeted_spell_ids=targeted_spell_ids,
             override_target_counts_by_spell_id=override_target_counts_by_spell_id,
+            override_target_counts_by_step=override_target_counts_by_step,
             has_root_positional_override=has_root_positional_override,
         )
         code_object = self._get_or_build_override_executor_code_object(
@@ -1156,8 +1169,10 @@ class CreationContext(Cleanable):
             source_cache_key: Tuple[Any, ...],
             plan_rows: Sequence[Dict[str, Any]],
             root_spell_id: Optional[str],
+            spell_lookup: Optional[Dict[str, Any]],
             override_targeted_spell_ids: Tuple[str, ...],
             override_target_counts_by_spell_id: Tuple[Tuple[str, int], ...],
+            override_target_counts_by_step: Tuple[int, ...],
             has_root_positional_override: bool,
     ) -> str:
         """
@@ -1172,8 +1187,10 @@ class CreationContext(Cleanable):
         emitted_source = emit_phase12_overrides_executor_shape_source(
             plan_rows=plan_rows,
             root_spell_id=root_spell_id,
+            spell_lookup=spell_lookup,
             override_targeted_spell_ids=override_targeted_spell_ids,
             override_target_counts_by_spell_id=override_target_counts_by_spell_id,
+            override_target_counts_by_step=override_target_counts_by_step,
             has_root_positional_override=has_root_positional_override,
         )
         override_executor_source_cache[source_cache_key] = emitted_source

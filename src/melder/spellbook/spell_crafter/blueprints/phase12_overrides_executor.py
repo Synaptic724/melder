@@ -233,8 +233,10 @@ def emit_phase12_overrides_executor_shape_source(
         *,
         plan_rows: Sequence[Dict[str, Any]],
         root_spell_id: Optional[str],
+        spell_lookup: Optional[Dict[str, Any]] = None,
         override_targeted_spell_ids: Optional[Tuple[str, ...]] = None,
         override_target_counts_by_spell_id: Optional[Tuple[Tuple[str, int], ...]] = None,
+        override_target_counts_by_step: Optional[Tuple[int, ...]] = None,
         has_root_positional_override: bool = False,
 ) -> str:
     """
@@ -253,12 +255,82 @@ def emit_phase12_overrides_executor_shape_source(
     step_source_metadata = _build_shape_source_step_metadata(
         plan_rows=plan_rows,
         root_spell_id=root_spell_id,
+        spell_lookup=spell_lookup,
         override_targeted_spell_ids=override_targeted_spell_ids,
         override_target_counts_by_spell_id=override_target_counts_by_spell_id,
+        override_target_counts_by_step=override_target_counts_by_step,
         has_root_positional_override=has_root_positional_override,
     )
     return _build_phase12_overrides_executor_shape_source(
         step_source_metadata=step_source_metadata,
+    )
+
+
+def build_phase12_override_step_target_counts_from_rows(
+        *,
+        plan_rows: Sequence[Dict[str, Any]],
+        override_targets_by_spell_id: Dict[str, Tuple[Any, ...]],
+        path_registry: Optional[Any],
+        prefilter_step_targets_cache: Optional[Dict[Tuple[Any, ...], Tuple[Tuple[Any, ...], ...]]] = None,
+        prefilter_cache_key: Optional[Tuple[Any, ...]] = None,
+        prefilter_path_metadata_cache: Optional[Dict[Any, Tuple[Any, Any]]] = None,
+) -> Tuple[int, ...]:
+    """
+    Build deterministic per-step override target counts from schema rows.
+
+    Purpose:
+        Expose compile-time step target counts so shape-source emission can
+        specialize by exact per-step count (0/1/2/many) safely, including
+        graphs where one spell_id appears in multiple plan steps.
+
+    Contract:
+        - Uses the same prefilter logic as override executor compile flow.
+        - Requires only schema row fields used by step target filtering.
+        - Returns one count per input row in row order.
+    """
+    if plan_rows is None:
+        raise ValueError("plan_rows must not be None.")
+    if override_targets_by_spell_id is None:
+        raise ValueError("override_targets_by_spell_id must not be None.")
+
+    step_stubs = []
+    required_fields = (
+        "spell_id",
+        "shared_instance",
+        "override_match_prefix",
+        "override_match_prefix_len",
+    )
+    for row_index, row in enumerate(plan_rows):
+        for field_name in required_fields:
+            if field_name not in row:
+                raise RuntimeError(
+                    "Phase 12 overrides step schema is missing required field "
+                    f"'{field_name}' at index {row_index}."
+                )
+        step_stubs.append(
+            SimpleNamespace(
+                spell=SimpleNamespace(
+                    spell_index=SimpleNamespace(
+                        current=row["spell_id"],
+                    ),
+                ),
+                shared_instance=bool(row["shared_instance"]),
+                override_match_prefix=row["override_match_prefix"],
+                override_match_prefix_len=row["override_match_prefix_len"],
+            )
+        )
+
+    step_targets = _build_step_override_targets(
+        steps=tuple(step_stubs),
+        override_targets_by_spell_id=override_targets_by_spell_id,
+        path_registry=path_registry,
+        prefilter_step_targets_cache=prefilter_step_targets_cache,
+        prefilter_cache_key=prefilter_cache_key,
+        prefilter_path_metadata_cache=prefilter_path_metadata_cache,
+    )
+    return tuple(
+        len(step_target_matches)
+        for step_target_matches in step_targets
     )
 
 
@@ -538,8 +610,10 @@ def _build_shape_source_step_metadata(
         *,
         plan_rows: Sequence[Dict[str, Any]],
         root_spell_id: Optional[str],
+        spell_lookup: Optional[Dict[str, Any]],
         override_targeted_spell_ids: Optional[Tuple[str, ...]],
         override_target_counts_by_spell_id: Optional[Tuple[Tuple[str, int], ...]],
+        override_target_counts_by_step: Optional[Tuple[int, ...]],
         has_root_positional_override: bool,
 ) -> Tuple[Tuple[Any, ...], ...]:
     """
@@ -556,6 +630,10 @@ def _build_shape_source_step_metadata(
     target_counts_by_spell_id = dict(override_target_counts_by_spell_id or ())
     step_counts_by_spell_id = Counter(
         row["spell_id"] for row in plan_rows if "spell_id" in row
+    )
+    has_step_target_counts = (
+            override_target_counts_by_step is not None
+            and len(override_target_counts_by_step) == len(plan_rows)
     )
     step_metadata = []
     required_fields = (
@@ -599,6 +677,45 @@ def _build_shape_source_step_metadata(
                 (param_name, value)
                 for param_name, value in row["contract_payload_items"]
             )
+        if has_step_target_counts:
+            static_override_target_count = int(
+                override_target_counts_by_step[row_index]
+            )
+        else:
+            static_override_target_count = (
+                int(target_counts_by_spell_id.get(spell_id, 0))
+                if step_counts_by_spell_id.get(spell_id, 0) == 1
+                else -1
+            )
+        static_is_existing_unique_creation: Optional[bool] = None
+        static_is_callable_spell: Optional[bool] = None
+        if spell_lookup is not None:
+            spell = spell_lookup.get(spell_id)
+            if spell is not None:
+                try:
+                    spell_existence = spell.existence
+                    spell_is_existing_creation = spell.is_existing_creation
+                    spell_is_class_spell = spell.is_class_spell
+                    spell_is_method_spell = spell.is_method_spell
+                    spell_is_lambda_spell = spell.is_lambda_spell
+                except AttributeError:
+                    spell = None
+                if spell is not None:
+                    static_is_existing_unique_creation = (
+                        spell_existence is Existence.unique
+                        and bool(spell_is_existing_creation)
+                    )
+                    static_is_callable_spell = (
+                        bool(spell_is_class_spell)
+                        or bool(spell_is_method_spell)
+                        or bool(spell_is_lambda_spell)
+                    )
+        if static_is_existing_unique_creation is None and "is_existing_unique_creation" in row:
+            static_is_existing_unique_creation = bool(
+                row["is_existing_unique_creation"]
+            )
+        if static_is_callable_spell is None and "is_callable_spell" in row:
+            static_is_callable_spell = bool(row["is_callable_spell"])
         step_metadata.append(
             (
                 spell_id,
@@ -608,17 +725,15 @@ def _build_shape_source_step_metadata(
                 bool(row["must_register"]),
                 spell_id == root_spell_id,
                 spell_id in targeted_spell_ids,
-                (
-                    int(target_counts_by_spell_id.get(spell_id, 0))
-                    if step_counts_by_spell_id.get(spell_id, 0) == 1
-                    else -1
-                ),
+                static_override_target_count,
                 bool(row["uses_positional_override"]),
                 spell_id == root_spell_id and has_root_positional_override,
                 dependency_resolution_order,
                 row["contract_positional_override"],
                 bool(row["has_contract_payload"]),
                 contract_payload_items,
+                static_is_existing_unique_creation,
+                static_is_callable_spell,
             )
         )
     return tuple(step_metadata)
@@ -701,6 +816,8 @@ def _build_phase12_overrides_executor_shape_source(
             contract_positional_override,
             has_contract_payload,
             contract_payload_items,
+            static_is_existing_unique_creation,
+            static_is_callable_spell,
         ) = metadata
         _append_overrides_step_shape_source(
             lines=lines,
@@ -719,6 +836,8 @@ def _build_phase12_overrides_executor_shape_source(
             contract_positional_override=contract_positional_override,
             has_contract_payload=has_contract_payload,
             contract_payload_items=contract_payload_items,
+            static_is_existing_unique_creation=static_is_existing_unique_creation,
+            static_is_callable_spell=static_is_callable_spell,
         )
 
     lines.extend([
@@ -748,6 +867,8 @@ def _append_overrides_construct_inline_source(
         has_contract_payload: bool,
         contract_payload_items: Tuple[Tuple[str, Any], ...],
         uses_positional_override: bool,
+        static_is_existing_unique_creation: Optional[bool] = None,
+        static_is_callable_spell: Optional[bool] = None,
 ) -> None:
     """
     Append generated source lines to construct one override-aware step instance.
@@ -891,6 +1012,8 @@ def _append_overrides_construct_inline_source(
         step_index=step_index,
         indent=indent,
         positional_args_possible=positional_args_possible,
+        static_is_existing_unique_creation=static_is_existing_unique_creation,
+        static_is_callable_spell=static_is_callable_spell,
     )
 
 
@@ -1306,6 +1429,8 @@ def _append_overrides_construct_no_overrides_source(
         has_contract_payload: bool,
         contract_payload_items: Tuple[Tuple[str, Any], ...],
         uses_positional_override: bool,
+        static_is_existing_unique_creation: Optional[bool] = None,
+        static_is_callable_spell: Optional[bool] = None,
 ) -> None:
     """
     Append generated source lines for no-override kwargs materialization.
@@ -1329,6 +1454,8 @@ def _append_overrides_construct_no_overrides_source(
         step_index=step_index,
         indent=indent,
         positional_args_possible=positional_args_possible,
+        static_is_existing_unique_creation=static_is_existing_unique_creation,
+        static_is_callable_spell=static_is_callable_spell,
     )
 
 
@@ -1338,6 +1465,8 @@ def _append_overrides_invoke_source(
         step_index: int,
         indent: str,
         positional_args_possible: bool,
+        static_is_existing_unique_creation: Optional[bool] = None,
+        static_is_callable_spell: Optional[bool] = None,
 ) -> None:
     """
     Append generated source for step-level invoke dispatch.
@@ -1350,76 +1479,115 @@ def _append_overrides_invoke_source(
         - Keeps error translation in generated source for invalid args and
           invoke-time exceptions.
     """
-    lines.extend([
-        f"{indent}if is_existing_unique_creation_{step_index}:",
-        f"{indent}    instance_{step_index} = plan_step_{step_index}.spell.user_created_object",
-        f"{indent}    if instance_{step_index} is None:",
-        f"{indent}        raise RuntimeError(",
-        f"{indent}            \"[MELD] EXISTING_CREATION spell has no `user_created_object` \"",
-        f"{indent}            \"(spell_id=\" + spell_id_{step_index} + \").\"",
-        f"{indent}        )",
-        f"{indent}elif is_callable_spell_{step_index}:",
-    ])
-    if positional_args_possible:
+    def _append_existing_creation_body(body_indent: str) -> None:
         lines.extend([
-            f"{indent}    raw_args_{step_index} = kwargs_{step_index}.get(\"__args__\", _MISSING)",
-            f"{indent}    if raw_args_{step_index} is _MISSING:",
-            f"{indent}        args_{step_index} = []",
-            f"{indent}        call_kwargs_{step_index} = kwargs_{step_index}",
-            (
-                f"{indent}    elif isinstance(raw_args_{step_index}, Sequence) "
-                f"and not isinstance(raw_args_{step_index}, (str, bytes)):"
-            ),
-            f"{indent}        if isinstance(raw_args_{step_index}, tuple):",
-            f"{indent}            args_{step_index} = raw_args_{step_index}",
-            f"{indent}        else:",
-            f"{indent}            args_{step_index} = tuple(raw_args_{step_index})",
-            f"{indent}        call_kwargs_{step_index} = dict(kwargs_{step_index})",
-            f"{indent}        call_kwargs_{step_index}.pop(\"__args__\", None)",
-            f"{indent}    else:",
-            f"{indent}        raise MeldExecutionError(",
-            f"{indent}            spell_id=plan_step_{step_index}.spell.spell_index.current,",
-            f"{indent}            spell_name=plan_step_{step_index}.spell.spell_name,",
-            f"{indent}            message=\"__args__ override must be a list or tuple.\",",
-            f"{indent}        )",
-            f"{indent}    try:",
-            (
-                f"{indent}        instance_{step_index} = "
-                f"plan_step_{step_index}.spell.spell(*args_{step_index}, **call_kwargs_{step_index})"
-            ),
-            f"{indent}    except Exception as exc:",
-            f"{indent}        raise MeldExecutionError(",
-            f"{indent}            spell_id=plan_step_{step_index}.spell.spell_index.current,",
-            f"{indent}            spell_name=plan_step_{step_index}.spell.spell_name,",
-            (
-                f"{indent}            message=(\"Error invoking spell '\" + "
-                f"plan_step_{step_index}.spell.spell_name + \"'.\"),"
-            ),
-            f"{indent}            inner=exc,",
-            f"{indent}        ) from exc",
+            f"{body_indent}instance_{step_index} = plan_step_{step_index}.spell.user_created_object",
+            f"{body_indent}if instance_{step_index} is None:",
+            f"{body_indent}    raise RuntimeError(",
+            f"{body_indent}        \"[MELD] EXISTING_CREATION spell has no `user_created_object` \"",
+            f"{body_indent}        \"(spell_id=\" + spell_id_{step_index} + \").\"",
+            f"{body_indent}    )",
         ])
-    else:
+
+    def _append_callable_body(body_indent: str) -> None:
+        if positional_args_possible:
+            lines.extend([
+                f"{body_indent}raw_args_{step_index} = kwargs_{step_index}.get(\"__args__\", _MISSING)",
+                f"{body_indent}if raw_args_{step_index} is _MISSING:",
+                f"{body_indent}    args_{step_index} = []",
+                f"{body_indent}    call_kwargs_{step_index} = kwargs_{step_index}",
+                (
+                    f"{body_indent}elif isinstance(raw_args_{step_index}, Sequence) "
+                    f"and not isinstance(raw_args_{step_index}, (str, bytes)):"
+                ),
+                f"{body_indent}    if isinstance(raw_args_{step_index}, tuple):",
+                f"{body_indent}        args_{step_index} = raw_args_{step_index}",
+                f"{body_indent}    else:",
+                f"{body_indent}        args_{step_index} = tuple(raw_args_{step_index})",
+                f"{body_indent}    call_kwargs_{step_index} = dict(kwargs_{step_index})",
+                f"{body_indent}    call_kwargs_{step_index}.pop(\"__args__\", None)",
+                f"{body_indent}else:",
+                f"{body_indent}    raise MeldExecutionError(",
+                f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.current,",
+                f"{body_indent}        spell_name=plan_step_{step_index}.spell.spell_name,",
+                f"{body_indent}        message=\"__args__ override must be a list or tuple.\",",
+                f"{body_indent}    )",
+                f"{body_indent}try:",
+                (
+                    f"{body_indent}    instance_{step_index} = "
+                    f"plan_step_{step_index}.spell.spell(*args_{step_index}, **call_kwargs_{step_index})"
+                ),
+                f"{body_indent}except Exception as exc:",
+                f"{body_indent}    raise MeldExecutionError(",
+                f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.current,",
+                f"{body_indent}        spell_name=plan_step_{step_index}.spell.spell_name,",
+                (
+                    f"{body_indent}        message=(\"Error invoking spell '\" + "
+                    f"plan_step_{step_index}.spell.spell_name + \"'.\"),"
+                ),
+                f"{body_indent}        inner=exc,",
+                f"{body_indent}    ) from exc",
+            ])
+            return
         lines.extend([
-            f"{indent}    try:",
+            f"{body_indent}try:",
             (
-                f"{indent}        instance_{step_index} = "
+                f"{body_indent}    instance_{step_index} = "
                 f"plan_step_{step_index}.spell.spell(**kwargs_{step_index})"
             ),
-            f"{indent}    except Exception as exc:",
-            f"{indent}        raise MeldExecutionError(",
-            f"{indent}            spell_id=plan_step_{step_index}.spell.spell_index.current,",
-            f"{indent}            spell_name=plan_step_{step_index}.spell.spell_name,",
+            f"{body_indent}except Exception as exc:",
+            f"{body_indent}    raise MeldExecutionError(",
+            f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.current,",
+            f"{body_indent}        spell_name=plan_step_{step_index}.spell.spell_name,",
             (
-                f"{indent}            message=(\"Error invoking spell '\" + "
+                f"{body_indent}        message=(\"Error invoking spell '\" + "
                 f"plan_step_{step_index}.spell.spell_name + \"'.\"),"
             ),
-            f"{indent}            inner=exc,",
-            f"{indent}        ) from exc",
+            f"{body_indent}        inner=exc,",
+            f"{body_indent}    ) from exc",
         ])
-    lines.extend([
-        f"{indent}else:",
-        f"{indent}    instance_{step_index} = plan_step_{step_index}.spell.spell",
-    ])
+
+    def _append_raw_value_body(body_indent: str) -> None:
+        lines.append(
+            f"{body_indent}instance_{step_index} = plan_step_{step_index}.spell.spell"
+        )
+
+    if static_is_existing_unique_creation is True:
+        _append_existing_creation_body(indent)
+        return
+
+    has_existing_branch = static_is_existing_unique_creation is None
+    if has_existing_branch:
+        lines.append(f"{indent}if is_existing_unique_creation_{step_index}:")
+        _append_existing_creation_body(f"{indent}    ")
+
+    if static_is_callable_spell is True:
+        if has_existing_branch:
+            lines.append(f"{indent}elif is_callable_spell_{step_index}:")
+            _append_callable_body(f"{indent}    ")
+        else:
+            _append_callable_body(indent)
+        return
+
+    if static_is_callable_spell is False:
+        if has_existing_branch:
+            lines.append(f"{indent}else:")
+            _append_raw_value_body(f"{indent}    ")
+        else:
+            _append_raw_value_body(indent)
+        return
+
+    if has_existing_branch:
+        lines.append(f"{indent}elif is_callable_spell_{step_index}:")
+        _append_callable_body(f"{indent}    ")
+        lines.append(f"{indent}else:")
+        _append_raw_value_body(f"{indent}    ")
+        return
+
+    lines.append(f"{indent}if is_callable_spell_{step_index}:")
+    _append_callable_body(f"{indent}    ")
+    lines.append(f"{indent}else:")
+    _append_raw_value_body(f"{indent}    ")
 
 
 def _append_overrides_step_shape_source(
@@ -1440,6 +1608,8 @@ def _append_overrides_step_shape_source(
         contract_positional_override: Optional[Sequence[Any]],
         has_contract_payload: bool,
         contract_payload_items: Tuple[Tuple[str, Any], ...],
+        static_is_existing_unique_creation: Optional[bool],
+        static_is_callable_spell: Optional[bool],
 ) -> None:
     """
     Append one step block specialized by static target/existence metadata.
@@ -1466,26 +1636,31 @@ def _append_overrides_step_shape_source(
             f"    disposal_methods_{step_index} = "
             f"step_disposal_methods[{step_index}]"
         ),
-        (
-            f"    is_callable_spell_{step_index} = "
-            f"step_is_callable_spell[{step_index}]"
-        ),
     ])
+    if static_is_callable_spell is None:
+        lines.extend([
+            (
+                f"    is_callable_spell_{step_index} = "
+                f"step_is_callable_spell[{step_index}]"
+            ),
+        ])
+    effective_is_existing_unique_creation_static = static_is_existing_unique_creation
     if existence is Existence.many:
-        lines.append(
-            f"    is_existing_unique_creation_{step_index} = False"
-        )
+        effective_is_existing_unique_creation_static = False
     else:
         lines.extend([
             (
                 f"    has_targeted_overrides_{step_index} = "
                 f"step_has_targeted_overrides[{step_index}]"
             ),
-            (
-                f"    is_existing_unique_creation_{step_index} = "
-                f"step_is_existing_unique_creation[{step_index}]"
-            ),
         ])
+        if effective_is_existing_unique_creation_static is None:
+            lines.extend([
+                (
+                    f"    is_existing_unique_creation_{step_index} = "
+                    f"step_is_existing_unique_creation[{step_index}]"
+                ),
+            ])
     if not (existence is Existence.many and use_no_override_fast_path):
         lines.append(
             f"    override_targets_{step_index} = step_override_targets[{step_index}]"
@@ -1539,6 +1714,8 @@ def _append_overrides_step_shape_source(
                 has_contract_payload=has_contract_payload,
                 contract_payload_items=contract_payload_items,
                 uses_positional_override=use_positional_override,
+                static_is_existing_unique_creation=effective_is_existing_unique_creation_static,
+                static_is_callable_spell=static_is_callable_spell,
             )
         else:
             _append_overrides_construct_inline_source(
@@ -1552,6 +1729,8 @@ def _append_overrides_step_shape_source(
                 has_contract_payload=has_contract_payload,
                 contract_payload_items=contract_payload_items,
                 uses_positional_override=use_positional_override,
+                static_is_existing_unique_creation=effective_is_existing_unique_creation_static,
+                static_is_callable_spell=static_is_callable_spell,
             )
         if must_register:
             lines.extend([
@@ -1614,6 +1793,8 @@ def _append_overrides_step_shape_source(
                 has_contract_payload=has_contract_payload,
                 contract_payload_items=contract_payload_items,
                 uses_positional_override=use_positional_override,
+                static_is_existing_unique_creation=effective_is_existing_unique_creation_static,
+                static_is_callable_spell=static_is_callable_spell,
             )
         else:
             _append_overrides_construct_inline_source(
@@ -1627,6 +1808,8 @@ def _append_overrides_step_shape_source(
                 has_contract_payload=has_contract_payload,
                 contract_payload_items=contract_payload_items,
                 uses_positional_override=use_positional_override,
+                static_is_existing_unique_creation=effective_is_existing_unique_creation_static,
+                static_is_callable_spell=static_is_callable_spell,
             )
         lines.extend([
             (
@@ -1676,6 +1859,8 @@ def _append_overrides_step_shape_source(
                 has_contract_payload=has_contract_payload,
                 contract_payload_items=contract_payload_items,
                 uses_positional_override=use_positional_override,
+                static_is_existing_unique_creation=effective_is_existing_unique_creation_static,
+                static_is_callable_spell=static_is_callable_spell,
             )
         else:
             _append_overrides_construct_inline_source(
@@ -1689,6 +1874,8 @@ def _append_overrides_step_shape_source(
                 has_contract_payload=has_contract_payload,
                 contract_payload_items=contract_payload_items,
                 uses_positional_override=use_positional_override,
+                static_is_existing_unique_creation=effective_is_existing_unique_creation_static,
+                static_is_callable_spell=static_is_callable_spell,
             )
         lines.extend([
             f"                with creations_{step_index}._lock:",
@@ -1730,6 +1917,8 @@ def _append_overrides_step_shape_source(
                 has_contract_payload=has_contract_payload,
                 contract_payload_items=contract_payload_items,
                 uses_positional_override=use_positional_override,
+                static_is_existing_unique_creation=effective_is_existing_unique_creation_static,
+                static_is_callable_spell=static_is_callable_spell,
             )
         else:
             _append_overrides_construct_inline_source(
@@ -1743,6 +1932,8 @@ def _append_overrides_step_shape_source(
                 has_contract_payload=has_contract_payload,
                 contract_payload_items=contract_payload_items,
                 uses_positional_override=use_positional_override,
+                static_is_existing_unique_creation=effective_is_existing_unique_creation_static,
+                static_is_callable_spell=static_is_callable_spell,
             )
         lines.extend([
             (
@@ -1785,6 +1976,8 @@ def _append_overrides_step_shape_source(
                 has_contract_payload=has_contract_payload,
                 contract_payload_items=contract_payload_items,
                 uses_positional_override=use_positional_override,
+                static_is_existing_unique_creation=effective_is_existing_unique_creation_static,
+                static_is_callable_spell=static_is_callable_spell,
             )
         else:
             _append_overrides_construct_inline_source(
@@ -1798,6 +1991,8 @@ def _append_overrides_step_shape_source(
                 has_contract_payload=has_contract_payload,
                 contract_payload_items=contract_payload_items,
                 uses_positional_override=use_positional_override,
+                static_is_existing_unique_creation=effective_is_existing_unique_creation_static,
+                static_is_callable_spell=static_is_callable_spell,
             )
         lines.extend([
             (
