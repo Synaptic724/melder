@@ -336,7 +336,8 @@ class Meld(Cleanable, IMeld):
         # 3) SpellSystemState / SpellValidity gate + lazy revalidation.
         if self._spellbook._spellbook_validation_required:
             self._ensure_lineage_resolvable(target_spell)
-        self._ensure_runtime_resolution_ready(target_spell)
+        if target_spell.resolution_required:
+           self._ensure_runtime_resolution_ready(target_spell)
 
         creations = self._creations
         meld_hooks = self._meld_hooks
@@ -481,9 +482,6 @@ class Meld(Cleanable, IMeld):
             RuntimeError: If no resolution conduit id is available.
             Exception: Re-raises deferred resolution failures.
         """
-        if not spell.resolution_required:
-            return
-
         with spell._lock:
             if not spell.resolution_required:
                 return

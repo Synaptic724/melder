@@ -3,14 +3,15 @@
 set -euo pipefail
 
 manifest_path="context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt"
-emit_content=0
+emit_content=1
+metadata_only=0
 
 usage() {
   cat <<'EOF'
-Usage: run_onboarding_read.sh [--manifest <path>] [--emit-content]
+Usage: run_onboarding_read.sh [--manifest <path>] [--emit-content] [--metadata-only]
 
-Reads every path in the onboarding manifest and emits deterministic summary lines.
-Use --emit-content to print full file contents between BEGIN/END markers.
+Reads every path in the onboarding manifest and prints file contents by default.
+Use --metadata-only to print hashes/line counts without file contents.
 EOF
 }
 
@@ -23,6 +24,11 @@ while [[ $# -gt 0 ]]; do
       ;;
     --emit-content)
       emit_content=1
+      shift
+      ;;
+    --metadata-only)
+      metadata_only=1
+      emit_content=0
       shift
       ;;
     -h|--help)
@@ -74,7 +80,6 @@ manifest_resolved="$(resolve_existing_path \
   exit 1
 }
 
-manifest_hash="$(hash_file "$manifest_resolved")"
 mapfile -t manifest_entries < <(
   awk '
     {
@@ -91,7 +96,6 @@ if [[ ${#manifest_entries[@]} -eq 0 ]]; then
 fi
 
 echo "READSET_MANIFEST: $manifest_resolved"
-echo "READSET_MANIFEST_SHA256: $manifest_hash"
 echo "READSET_TOTAL_PATHS: ${#manifest_entries[@]}"
 
 index=0
@@ -105,11 +109,14 @@ for relative_path in "${manifest_entries[@]}"; do
     exit 1
   }
 
-  line_count="$(wc -l < "$resolved_path" | tr -d '[:space:]')"
-  byte_count="$(wc -c < "$resolved_path" | tr -d '[:space:]')"
-  file_hash="$(hash_file "$resolved_path")"
+  echo "READSET_ITEM[$index/${#manifest_entries[@]}]: $relative_path"
 
-  echo "READSET_ITEM[$index/${#manifest_entries[@]}]: $relative_path | lines=$line_count | bytes=$byte_count | sha256=$file_hash"
+  if [[ $metadata_only -eq 1 ]]; then
+    line_count="$(wc -l < "$resolved_path" | tr -d '[:space:]')"
+    byte_count="$(wc -c < "$resolved_path" | tr -d '[:space:]')"
+    file_hash="$(hash_file "$resolved_path")"
+    echo "READSET_META[$index/${#manifest_entries[@]}]: lines=$line_count | bytes=$byte_count | sha256=$file_hash"
+  fi
 
   if [[ $emit_content -eq 1 ]]; then
     echo "===== BEGIN FILE: $relative_path ====="

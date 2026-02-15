@@ -266,6 +266,7 @@ def _melder_run(s: PerfScenario, mode: str) -> PerfRow:
     cfg = Configuration()
     cfg.dynamic_defaults()
     cfg.set_property("phase_scheduler_workers_per_spellbook", 1)
+    cfg.set_property("full_ahead_of_time_compilation", True)  # compile everything at bind time to exclude JIT from timing
 
     existence = Existence.unique if mode == "singleton" else Existence.many
 

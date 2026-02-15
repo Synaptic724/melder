@@ -1,7 +1,6 @@
 param(
     [string]$ManifestPath = "context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt",
-    [switch]$EmitContent,
-    [switch]$MetadataOnly
+    [string]$OutputPath = "context_compass/agent_onboarding/agent/general/skills/onboarding_read_dump.txt"
 )
 
 Set-StrictMode -Version Latest
@@ -34,6 +33,18 @@ $manifestResolved = Resolve-ExistingPath -Candidates @(
     $ManifestPath
 )
 
+$outputResolved = if ([System.IO.Path]::IsPathRooted($OutputPath)) {
+    [System.IO.Path]::GetFullPath($OutputPath)
+}
+else {
+    Join-Path $repoRoot $OutputPath
+}
+
+$outputDir = Split-Path -Parent $outputResolved
+if (-not (Test-Path -LiteralPath $outputDir)) {
+    New-Item -ItemType Directory -Path $outputDir | Out-Null
+}
+
 $manifestEntries = @(Get-Content -LiteralPath $manifestResolved -Encoding UTF8 | ForEach-Object {
     $_.Trim()
 } | Where-Object {
@@ -44,14 +55,12 @@ if ($manifestEntries.Count -eq 0) {
     throw "Manifest '$manifestResolved' produced no readable entries."
 }
 
-Write-Output "READSET_MANIFEST: $manifestResolved"
-Write-Output "READSET_TOTAL_PATHS: $($manifestEntries.Count)"
+$builder = [System.Text.StringBuilder]::new()
+[void]$builder.AppendLine("ONBOARDING_DUMP_MANIFEST: $ManifestPath")
+[void]$builder.AppendLine("ONBOARDING_DUMP_SOURCE: $manifestResolved")
+[void]$builder.AppendLine("ONBOARDING_DUMP_TOTAL_PATHS: $($manifestEntries.Count)")
 
-$emitContentEffective = $EmitContent -or -not $MetadataOnly
-
-$index = 0
 foreach ($relativePath in $manifestEntries) {
-    $index += 1
     $resolvedPath = Resolve-ExistingPath -Candidates @(
         $(if ([System.IO.Path]::IsPathRooted($relativePath)) { $relativePath } else { "" }),
         (Join-Path $repoRoot $relativePath),
@@ -59,21 +68,22 @@ foreach ($relativePath in $manifestEntries) {
         $relativePath
     )
 
+    [void]$builder.AppendLine("===== BEGIN FILE: $relativePath =====")
     $content = Get-Content -Raw -LiteralPath $resolvedPath -Encoding UTF8
-    Write-Output ("READSET_ITEM[{0}/{1}]: {2}" -f $index, $manifestEntries.Count, $relativePath)
-
-    if ($MetadataOnly) {
-        $lineCount = if ($content.Length -eq 0) { 0 } else { ($content -split "`r?`n").Count }
-        $byteCount = [System.Text.Encoding]::UTF8.GetByteCount($content)
-        $fileHash = (Get-FileHash -LiteralPath $resolvedPath -Algorithm SHA256).Hash
-        Write-Output ("READSET_META[{0}/{1}]: lines={2} | bytes={3} | sha256={4}" -f $index, $manifestEntries.Count, $lineCount, $byteCount, $fileHash)
+    if ($content.Length -gt 0) {
+        [void]$builder.Append($content)
     }
 
-    if ($emitContentEffective) {
-        Write-Output ("===== BEGIN FILE: {0} =====" -f $relativePath)
-        Write-Output $content
-        Write-Output ("===== END FILE: {0} =====" -f $relativePath)
+    $endsWithNewline = $content.EndsWith("`n") -or $content.EndsWith("`r")
+    if (-not $endsWithNewline) {
+        [void]$builder.AppendLine()
     }
+
+    [void]$builder.AppendLine("===== END FILE: $relativePath =====")
 }
 
-Write-Output "READSET_COMPLETE: $($manifestEntries.Count) files processed."
+[void]$builder.AppendLine("ONBOARDING_DUMP_COMPLETE: $($manifestEntries.Count) files serialized.")
+Set-Content -LiteralPath $outputResolved -Value $builder.ToString() -Encoding UTF8
+
+Write-Output "ONBOARDING_DUMP_WRITTEN: $outputResolved"
+Write-Output "ONBOARDING_DUMP_FILES: $($manifestEntries.Count)"

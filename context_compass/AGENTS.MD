@@ -70,7 +70,11 @@ Before any tooling, edits, or execution:
 * Performative onboarding is forbidden: do real reads of required docs (parallel/bulk is allowed), and do not treat marker-only "reread" output as compliance.
 * Optional single-command onboarding bootstrap:
   - Windows/PowerShell: `powershell -NoProfile -ExecutionPolicy Bypass -File context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.ps1`
+  - Windows wrapper (no execution-policy friction): `context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.cmd`
   - Linux/Bash: `bash context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.sh`
+  - Build one dump file (Windows): `context_compass/agent_onboarding/agent/general/skills/build_onboarding_dump.cmd`
+  - Build one dump file (Linux): `bash context_compass/agent_onboarding/agent/general/skills/build_onboarding_dump.sh`
+  - Optional no-script dump read: `context_compass/agent_onboarding/agent/general/skills/onboarding_read_dump.txt`
 * The canonical onboarding readset for that command is `context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt`.
 * Obey certification gating from `agent_onboarding/agent/general/policies/policy_router.md` and `agent_onboarding/agent/general/skills/self_certification.md` (do not use tools or edit files until the user replies with the exact phrase `CERTIFY: APPROVED (inactive)` or `CERTIFY: APPROVED (active)` except the tools to properly read your documentation to onboard).
 * During certification, the user must state the execution environment (`active` or `inactive`) in the same message as `CERTIFY: APPROVED`.

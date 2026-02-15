@@ -114,6 +114,7 @@ def _configure_scheduler(spellbook: Spellbook) -> None:
         return
     cfg = spellbook.get_configuration()
     cfg.set_property("phase_scheduler_workers_per_spellbook", PROFILE_WORKERS)
+    cfg.set_property("full_ahead_of_time_compilation", True)
 
 
 def _build_depth9_spellbook(frame_name: str) -> tuple[Spellbook, str]:

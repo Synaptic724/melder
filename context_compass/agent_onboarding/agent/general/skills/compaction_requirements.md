@@ -31,10 +31,18 @@ Required post-compaction sequence
 6a) Optional bootstrap for onboarding docs: run one command
     - Windows/PowerShell:
       `powershell -NoProfile -ExecutionPolicy Bypass -File context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.ps1`
+    - Windows wrapper (no execution-policy friction):
+      `context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.cmd`
     - Linux/Bash:
       `bash context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.sh`
+    - Build dump once (Windows):
+      `context_compass/agent_onboarding/agent/general/skills/build_onboarding_dump.cmd`
+    - Build dump once (Linux):
+      `bash context_compass/agent_onboarding/agent/general/skills/build_onboarding_dump.sh`
     Both commands read the canonical readset in
     `context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt`.
+    Optional no-script path: read prebuilt dump
+    `context_compass/agent_onboarding/agent/general/skills/onboarding_read_dump.txt`.
 7) Re-open `attention_board.md` and process rows with `reread=REQUIRED`.
 8) Re-open active tickets and verify their `Notes` and `Context / Handoff Summary`.
 9) Request certification and wait for exact user approval phrase:

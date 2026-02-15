@@ -1,9 +1,13 @@
 # Task: Add Single-Command PowerShell Onboarding/Re-Onboarding Read Pattern
 
+- Completed: 2026-02-15
+- Summary: Added a manifest-driven single-command onboarding bootstrap with PowerShell and Linux Bash scripts.
+- Summary: Updated re-onboarding attestation policy to allow compact `FILES_REREAD` (ticket-focused) with `ONBOARDING_READSET` reference.
+
 ## Metadata
 - Task ID: TASK-2026-02-15-add-single-powershell-onboarding-reonboarding-read-command
 - Story: standalone
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
@@ -63,7 +67,7 @@ Add a manifest-driven single PowerShell onboarding/re-onboarding read command an
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
+- [x] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
 - DATE: 2026-02-15

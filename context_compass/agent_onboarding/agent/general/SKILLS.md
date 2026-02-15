@@ -49,10 +49,18 @@ Parallel reading allowance
 Single-command onboarding bootstrap (optional)
 - Canonical command (Windows/PowerShell):
   `powershell -NoProfile -ExecutionPolicy Bypass -File context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.ps1`
+- Windows no-policy wrapper:
+  `context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.cmd`
 - Canonical command (Linux/Bash):
   `bash context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.sh`
+- Build one dump file (Windows):
+  `context_compass/agent_onboarding/agent/general/skills/build_onboarding_dump.cmd`
+- Build one dump file (Linux):
+  `bash context_compass/agent_onboarding/agent/general/skills/build_onboarding_dump.sh`
 - Canonical readset manifest:
   `context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt`
+- Prebuilt single-file dump (no script execution required):
+  `context_compass/agent_onboarding/agent/general/skills/onboarding_read_dump.txt`
 - When this bootstrap is used, re-onboarding attestations can keep `FILES_REREAD`
   compact (active ticket paths only) and reference onboarding docs through the
   `ONBOARDING_READSET` manifest/script fields.

@@ -8,9 +8,17 @@ Required flow
 - Optional single-command bootstrap for onboarding docs:
   - Windows/PowerShell:
     `powershell -NoProfile -ExecutionPolicy Bypass -File context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.ps1`
+  - Windows wrapper (no execution-policy friction):
+    `context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.cmd`
   - Linux/Bash:
     `bash context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.sh`
+  - Build dump once (Windows):
+    `context_compass/agent_onboarding/agent/general/skills/build_onboarding_dump.cmd`
+  - Build dump once (Linux):
+    `bash context_compass/agent_onboarding/agent/general/skills/build_onboarding_dump.sh`
   using readset `context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt`.
+  - Optional no-script path: read
+    `context_compass/agent_onboarding/agent/general/skills/onboarding_read_dump.txt`.
 - Performative onboarding is forbidden: marker-only reread logs do not satisfy the read requirement.
 - Before requesting certification, provide concise read-integrity proof (concrete rule callouts from reread docs).
 - For re-onboarding attestation, keep `FILES_REREAD` compact (active ticket paths)
