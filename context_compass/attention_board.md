@@ -15,9 +15,27 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | shared registration-prechecked slice was rejected/reverted (`shallow +5.48%` regression vs retained baseline); continue next hotspot wave from retained patch-map prechecked baseline | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
+| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | empty-kwargs constant slice was rejected/reverted after pre/post cadence regression; continue from retained baseline and target a different structural hotspot | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Reject and revert the empty-kwargs constant slice. Initial pre/post window was mixed and a follow-up overrides-only rerun regressed on all override lanes versus pre-baseline (`solo +4.36%`, `shallow +7.18%`, `wide +1.16%`, `diamond +4.15%`), so the slice is not retained.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_emptykwargs_constant_delta_vs_prebaseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_emptykwargs_constant_overridesonly_delta_vs_prebaseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_emptykwargs_constant_overridesonly_postbaseline.txt:1-11
+  IMPACT: Runtime code remains on the prior retained baseline; no source-path optimization from this slice is carried forward.
+  NEXT: Re-rank hotspots and implement a different structural optimization.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Fresh pre-change baseline was captured first (`overrides x5`, `fast x3`) and two post-change windows were run in one continuous workflow. First post window showed mixed overrides (`shallow -1.27%`, `wide -1.37%`, `solo +3.67%`, `diamond +0.77%`) with fast regressions; second isolated rerun was worse and confirmed non-retention.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_emptykwargs_constant_prebaseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_emptykwargs_constant_postbaseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_emptykwargs_constant_overridesonly_postbaseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_emptykwargs_constant_pre_bench_runs.txt:1-981, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_emptykwargs_constant_overridesonly_post_bench_runs.txt:1-981
+  IMPACT: Provides clean pre/post evidence under user-requested baseline discipline and justifies rejecting this slice.
+  NEXT: Continue optimization from retained baseline with a different patch.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-15
   TYPE: DECISION
   CLAIM: Reject and revert the shared registration-prechecked experiment because override cadence regressed on priority lanes versus retained baseline (`shallow +5.48%`, `solo +2.17%`, `wide +1.39%`).

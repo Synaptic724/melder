@@ -65,6 +65,24 @@ Phase12/CreationContext and validate with targeted profiler suites.
 ## Notes
 - DATE: 2026-02-15
   TYPE: DECISION
+  CLAIM: Reject and revert the empty-kwargs constant slice (`_EMPTY_KWARGS` use in no-overrides runtime helper and overrides shape emission). A clean pre/post cadence from fresh baseline did not produce a stable win and the follow-up overrides-only rerun regressed all override lanes versus pre-baseline.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_emptykwargs_constant_delta_vs_prebaseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_emptykwargs_constant_overridesonly_delta_vs_prebaseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_emptykwargs_constant_overridesonly_postbaseline.txt:1-11
+  IMPACT: No optimization from this slice is retained; source files were restored to baseline behavior.
+  NEXT: Continue from retained baseline and target a different structural hotspot.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: User-requested workflow was executed in one go: fresh pre-baseline first (`overrides x5`, `fast x3`) then post runs. Initial post window was mixed (`overrides: shallow -1.27%, wide -1.37%, solo +3.67%, diamond +0.77%; fast all slower`), then an overrides-only isolation rerun worsened and confirmed reject.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_emptykwargs_constant_prebaseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_emptykwargs_constant_postbaseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_emptykwargs_constant_overridesonly_postbaseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_emptykwargs_constant_pre_bench_runs.txt:1-981, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_emptykwargs_constant_post_bench_runs.txt:1-981, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_emptykwargs_constant_overridesonly_post_bench_runs.txt:1-981
+  IMPACT: Baseline discipline is preserved and the keep/revert decision is evidence-backed.
+  NEXT: Move to the next optimization slice from retained state.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
   CLAIM: Reject and revert the shared registration-prechecked slice (`Creations` prechecked registration methods + `_register_spell_instance_prebound` reroute). Override lanes regressed versus the retained prechecked patch-map baseline (`shallow +5.48%`, `solo +2.17%`, `wide +1.39%`), so this slice is not retained despite neutral/slight fast-lane movement.
   EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_register_prechecked_shared_delta_vs_patchmaps_prechecked_entry_baseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_register_prechecked_shared_baseline.txt:1-11
   IMPACT: Active retained baseline remains the prior patch-map prechecked-entry slice.
