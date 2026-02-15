@@ -40,6 +40,7 @@ which keeps the performance plan contract-safe and reviewable.
 
 ## Tasks (Implementation Checklist)
 - [ ] Task: TASK-2026-02-15-profile-meld-hotpath-with-test-shallow-all - Add melder fast-graph cProfile pytest suite and validate targeted execution.
+- [ ] Task: TASK-2026-02-15-profile-melder-overrides-graph-callchain - Add melder overrides-graph cProfile suite with call-chain artifacts and validate targeted execution.
 - [ ] Enforce Ticket Microcycle across all linked tasks.
 - [ ] Require meaningful-finding note updates during discovery/implementation.
 

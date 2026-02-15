@@ -15,9 +15,45 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: melder fast-graph cprofile suite | in_progress | codex | none | rank top hotspots from generated `.prof` artifacts for creationcontext/phase12 targeting | `context_compass/tasks/2026-02-15_profile_meld_hotpath_with_test_shallow_all_task.md` | 2026-02-15 | REQUIRED |
+| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | implement first hotspot-led runtime helper optimization patch and rerun both cprofile suites | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-15
+  TYPE: PLAN
+  CLAIM: Active routing moved from profiling to implementation using a new wave-1 optimization task under the Phase12 runtime-tightening story.
+  EVIDENCE: context_compass/stories/2026-02-15_phase12_codegen_runtime_tightening_story.md:1-64, context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md:1-44
+  IMPACT: Execution is now authorized for direct hotspot optimization edits with measured validation.
+  NEXT: Read Phase12/CreationContext hotspot helper implementations and apply the first low-risk optimization patch.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Post-compaction reruns confirmed both cprofile suites pass with the new readable console summary format and persisted `.summary.txt` artifacts per lane.
+  EVIDENCE: benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:1-29, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:1-29, context_compass/tasks/2026-02-15_profile_melder_overrides_graph_callchain_task.md:69-84
+  IMPACT: Profiling output is now directly consumable without JSON parsing while preserving durable artifacts.
+  NEXT: Rank override-lane hotspots and compare against non-override fast-graph timings.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Overrides graph profiler is implemented and validated (`8 passed`) with durable artifacts under `profiles/overrides_graphs_melder`, including caller/callee chain JSON files.
+  EVIDENCE: benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py:1-603, context_compass/tasks/2026-02-15_profile_melder_overrides_graph_callchain_task.md:45-55
+  IMPACT: Override-path codegen call chains are now inspectable per graph lane with the same artifact model as non-override profiling.
+  NEXT: Build ranked override hotspot summary and identify first optimization targets.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: PLAN
+  CLAIM: User requested an overrides graph call-chain benchmark, so active routing moved to a new task that mirrors the artifact format used by the existing fast-graph profiler.
+  EVIDENCE: context_compass/tasks/2026-02-15_profile_melder_overrides_graph_callchain_task.md:1-36, benchmarks/testing_other_di/test_overrides_all.py:256-334
+  IMPACT: Discovery now expands to override-path call-chain evidence for codegen lanes.
+  NEXT: Implement `test_melder_overrides_graphs_cprofile.py` and validate artifact generation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-15
   TYPE: MEASURE
   CLAIM: Profiling suite now writes persistent `.prof`, `.pstats.txt`, and JSONL benchmark artifacts per fast graph lane under `profiles/fast_graphs_melder`.

@@ -33,6 +33,7 @@ first-lane routes on fast graphs only (`solo`, `shallow`, `wide`, `diamond`).
 - New cProfile benchmark pytest suite for melder fast graphs.
 - Validation output showing targeted suite execution status.
 - Persistent artifact logs (`.pstats.txt`) and benchmark rows (`benchmark_results.jsonl`).
+- Structured hotspot and call-chain artifacts (`*.hotspots.json`, `*.call_chain.json`).
 
 ## Files / Paths Impacted
 - `benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py`
@@ -59,6 +60,8 @@ first-lane routes on fast graphs only (`solo`, `shallow`, `wide`, `diamond`).
   - `benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl`
  - Hotspot artifacts:
    - `benchmarks/testing_other_di/profiles/fast_graphs_melder/*.hotspots.json`
+- Call-chain artifacts:
+  - `benchmarks/testing_other_di/profiles/fast_graphs_melder/*.call_chain.json`
 
 ## Risks / Rollback Notes
 - Risk: benchmark noise from graph/mode drift.
@@ -125,6 +128,15 @@ first-lane routes on fast graphs only (`solo`, `shallow`, `wide`, `diamond`).
   EVIDENCE: benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:9-16, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_solo.hotspots.json:1-211, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.hotspots.json:1-211, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_wide.hotspots.json:1-211, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_diamond.hotspots.json:1-211
   IMPACT: Optimization priority should focus inside spellspace timings lane, specifically CreationContext/Phase12 execution and spellspace entry/register helpers rather than smoke-path setup.
   NEXT: Produce rank-ordered candidate list for CreationContext and Phase12 callsites using the hotspot artifacts.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: The suite now exports codegen call-chain artifacts and confirms explicit edges `meld.meld -> creation_context executor -> phase12 executor -> phase12 helper` in timings lanes.
+  EVIDENCE: benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py:264-408, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.call_chain.json:1-611
+  IMPACT: We can inspect caller/callee chains for codegen functions directly without ad-hoc pstats commands.
+  NEXT: Use call-chain artifacts to isolate highest-leverage internal helper targets for the first optimization patch.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 

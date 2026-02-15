@@ -130,6 +130,15 @@ The MRP is a measurable, contract-safe optimization tranche:
 
 ## Notes
 - DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Opened the first implementation story (`STORY-2026-02-15-phase12-codegen-runtime-tightening`) and wave-1 task to move from profiling into hotspot-led runtime optimization.
+  EVIDENCE: context_compass/stories/2026-02-15_phase12_codegen_runtime_tightening_story.md:1-82, context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md:1-79
+  IMPACT: Epic execution has entered implementation mode with a scoped, measurable optimization lane.
+  NEXT: Route attention board to the wave-1 optimization task and implement the first patch.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
   TYPE: FACT
   CLAIM: Prior discovery and optimization artifacts already provide concrete baseline signals for this new epic: creation-context override preprocessing/caching costs and phase12 helper/runtime callpath tightening are evidenced and validated in prior lanes.
   EVIDENCE: context_compass/tasks/archive/2026-02-13_discovery_creation_context_codegen_task.md:4-4, context_compass/tasks/archive/2026-02-13_discovery_creation_context_codegen_task.md:90-90, context_compass/tasks/completed/2026-02-13_discovery_phase12_codegen_task.md:202-203, context_compass/tasks/archive/2026-02-14_optimize_phase12_override_helper_callpath_tightening_task.md:6-6, context_compass/tasks/archive/2026-02-14_optimize_phase12_override_helper_callpath_tightening_task.md:130-131
