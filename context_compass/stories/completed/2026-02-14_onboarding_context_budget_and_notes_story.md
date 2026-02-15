@@ -107,7 +107,7 @@ source of truth instead of fragile session memory.
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Story deliverables were implemented across policy/docs/templates, including board-first routing alignment and UNKNOWN-first + note-score enforcement.
-  EVIDENCE: context_compass/AGENTS.MD:437, context_compass/WORKFLOW.md:72, context_compass/agent_onboarding/agent/general/skills/context_window_budget.md:1, context_compass/agent_onboarding/agent/developer/skills/developer_execution.md:22, context_compass/templates/story_template.md:34
+  EVIDENCE: context_compass/AGENTS.MD:437, context_compass/WORKFLOW.md:72, context_compass/agent_onboarding/agent/general/skills/context_window_budget.md:1, context_compass/agent_onboarding/agent/engineer/skills/engineer_execution.md:22, context_compass/templates/story_template.md:34
   IMPACT: Onboarding and execution workflows now encode compaction-safe memory discipline as hard requirements.
   NEXT: Review the outcome with the user and confirm acceptance criteria.
   REREAD: REQUIRED

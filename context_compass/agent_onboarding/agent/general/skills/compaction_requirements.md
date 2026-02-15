@@ -22,9 +22,10 @@ External-memory-first rule
 Required post-compaction sequence
 1) Read `agent_onboarding/agent/SKILLS.md` and select career.
 2) Read `agent_onboarding/agent/general/README.md`.
-3) Read `agent_onboarding/agent/developer/README.md`.
+3) Read `agent_onboarding/agent/engineer/README.md`.
 4) Read `agent_onboarding/agent/general/SKILLS.md` in full order.
-5) Read `agent_onboarding/agent/developer/SKILLS.md` in full order.
+5) Read `agent_onboarding/agent/engineer/SKILLS.md` in full order.
+5a) Read `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md`.
 6) Re-read `AGENTS.MD`, `SKILLS.MD`, `WORKFLOW.md`, and `CONTEXT_COMPACTION.md`.
 7) Re-open `attention_board.md` and process rows with `reread=REQUIRED`.
 8) Re-open active tickets and verify their `Notes` and `Context / Handoff Summary`.

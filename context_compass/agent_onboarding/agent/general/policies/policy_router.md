@@ -22,6 +22,8 @@ Certification gate (mandatory)
 Required flow
 - Read `AGENTS.MD` and directory-local `AGENTS.MD` (if present).
 - Follow `agent_onboarding/agent/general/SKILLS.md` and career-specific additions.
+- Read `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md`
+  and apply its active-partner + performance-engineering rules.
 - Route active work from `attention_board.md` and keep detailed state in ticket `## Notes`.
 - Use the Ticket Microcycle with meaningful-finding note gates during execution.
 - Use `epics/`, `stories/`, and `tasks/` tickets for all planned work.

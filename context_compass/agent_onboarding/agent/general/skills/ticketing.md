@@ -54,7 +54,7 @@ Workflow rules
 Notes format requirement
 - New note entries should include:
   - `DATE`
-  - `TYPE` (`FACT` | `UNKNOWN` | `HYPOTHESIS` | `DECISION` | `PLAN` | `MEASURE` | `RISK`)
+  - `TYPE` (`FACT` | `UNKNOWN` | `HYPOTHESIS` | `DECISION` | `DECISION_REQUEST` | `PLAN` | `STRATEGY_DISCUSSION` | `ASSUMPTION_CHALLENGE` | `CONFLICT` | `TRADEOFF` | `BLOCKER` | `ALIGNMENT_CHECK` | `MEASURE` | `RISK` | `RAISE`)
   - `CLAIM`
   - `EVIDENCE` (`path:start_line-end_line`; use `start=end` for single-line evidence)
   - `IMPACT`
@@ -63,6 +63,8 @@ Notes format requirement
   - `SCORE_0_TO_10` (compaction usefulness score; improve entries below 8)
 - Keep notes append-only except when correcting factual errors.
 - Legacy entries may omit newer fields; do not rewrite history unless correcting factual errors.
+- Deep semantic meaning and collaboration behavior for each `TYPE` are defined in:
+  `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md`.
 
 Status discipline
 - Update Status and Updated fields on each state change.

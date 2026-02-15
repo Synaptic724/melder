@@ -30,9 +30,17 @@ Reactive capture protocol (mandatory)
    - `UNKNOWN`: not yet verified or ambiguous.
    - `HYPOTHESIS`: explicit idea/opinion awaiting evidence.
    - `DECISION`: explicit direction and rationale.
+   - `DECISION_REQUEST`: explicit Architect decision required before proceeding.
    - `PLAN`: concrete next implementation slice.
+   - `STRATEGY_DISCUSSION`: structured options analysis needed before implementation.
+   - `ASSUMPTION_CHALLENGE`: explicit challenge to an assumption with evidence.
+   - `CONFLICT`: evidence-backed contradiction between direction and mission outcomes.
+   - `TRADEOFF`: multiple viable options with meaningful pros/cons.
+   - `BLOCKER`: hard stop requiring external unblock action.
+   - `ALIGNMENT_CHECK`: explicit scope/intent confirmation checkpoint.
    - `MEASURE`: validation/profiling result.
    - `RISK`: risk that needs mitigation follow-up.
+   - `RAISE`: immediate generic escalation when a serious issue is detected and precise type is not yet clear.
 2) Record one broad claim line:
    - 1-2 sentences, general and scannable.
 3) Attach evidence pointers:
@@ -46,12 +54,15 @@ Reactive capture protocol (mandatory)
    - single step that moves verification or implementation forward.
 
 Entry template
-- `TYPE`: FACT | UNKNOWN | HYPOTHESIS | DECISION | PLAN | MEASURE | RISK
+- `TYPE`: FACT | UNKNOWN | HYPOTHESIS | DECISION | DECISION_REQUEST | PLAN | STRATEGY_DISCUSSION | ASSUMPTION_CHALLENGE | CONFLICT | TRADEOFF | BLOCKER | ALIGNMENT_CHECK | MEASURE | RISK | RAISE
 - `CLAIM`: <broad finding>
 - `EVIDENCE`: <path:start_line-end_line>, <path:start_line-end_line>
 - `REREAD`: REQUIRED | HELPFUL
 - `SCORE_0_TO_10`: <0-10>
 - `NEXT`: <single concrete step>
+- Detailed collaboration semantics for each `TYPE` are defined in:
+  `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md`.
+- `RAISE` notes must be recategorized to a concrete type within one microcycle.
 
 Quality bar
 - Prefer targeted claims over narrative replay.

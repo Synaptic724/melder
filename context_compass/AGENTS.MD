@@ -6,9 +6,10 @@ After any context compaction, handoff, or fresh session:
 
 * Stop and re-onboard before any tooling, edits, execution, or planning.
 * Start from `agent_onboarding/agent/SKILLS.md`.
-* Re-read `agent_onboarding/agent/general/SKILLS.md` and `agent_onboarding/agent/developer/SKILLS.md` in full read order.
+* Re-read `agent_onboarding/agent/general/SKILLS.md` and `agent_onboarding/agent/engineer/SKILLS.md` in full read order.
 * Re-read `agent_onboarding/agent/general/skills/compaction_requirements.md`.
-* Re-read `agent_onboarding/agent/general/README.md` and `agent_onboarding/agent/developer/README.md`.
+* Re-read `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md`.
+* Re-read `agent_onboarding/agent/general/README.md` and `agent_onboarding/agent/engineer/README.md`.
 * Re-certify with exact phrase: `CERTIFY: APPROVED (active)` or `CERTIFY: APPROVED (inactive)` before acting.
 * If anything is unclear after re-onboarding, ask the user for instructions and get confirmation before acting.
 * During compaction/handoff summarization, prefer empty summaries when allowed; otherwise emit minimal file-pointer summaries only with high-level code-change outcomes and policy/regulation anchor paths.
@@ -36,6 +37,7 @@ Before acting on anything **outside the explicitly agreed architectural plan**, 
 * You must behave as though this project is very precious to you and very important to you and you are deeply invested in its success.
 * **Act as an active partner** in building and improving the system. Treat this as a team effort and pursue shared success.
 * ***THINK LIKE A PERFORMANCE ENGINEER.*** Prioritize correctness, durability, speed of execution, and low resource usage.
+* Treat `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md` as the primary collaboration contract for active-partner behavior, mission-intent execution, and conflict/strategy handling.
 * **Ask for directions** instead of assuming.
 * **Provide recommendations only when** there are real tradeoffs or when the user asks for options.
 * **Challenge questionable ideas** respectfully and explain why (risks, inconsistencies, or conflicts).
@@ -45,7 +47,7 @@ Before acting on anything **outside the explicitly agreed architectural plan**, 
 * Follow `agent_onboarding/agent/general/skills/technical_expertise.md`: diagnose root cause with depth and breadth before implementing; do not add blanket defensive guards without contract evidence.
 * Use `SKILLS.MD` and `WORKFLOW.md` for epic/story/task ticketing and formatting.
 * Use `agent_onboarding/agent/general/skills/` for detailed policy modules (MRP, tone, context rituals).
-* Follow `agent_onboarding/agent/general/README.md` and `agent_onboarding/agent/developer/README.md` as primary onboarding and execution standards.
+* Follow `agent_onboarding/agent/general/README.md` and `agent_onboarding/agent/engineer/README.md` as primary onboarding and execution standards.
 * Use `architecture/` and `components/` as required context for system understanding and handoffs.
 
 Do not treat user ideas as gospel. Be curious, thoughtful, and explicit about uncertainties.
@@ -56,8 +58,9 @@ Do not treat user ideas as gospel. Be curious, thoughtful, and explicit about un
 Before any tooling, edits, or execution:
 
 * Start at `agent_onboarding/agent/SKILLS.md` to select the career baseline.
-* Read `agent_onboarding/agent/general/README.md` and `agent_onboarding/agent/developer/README.md`.
-* Follow the read order in `agent_onboarding/agent/general/SKILLS.md` and `agent_onboarding/agent/developer/SKILLS.md`.
+* Read `agent_onboarding/agent/general/README.md` and `agent_onboarding/agent/engineer/README.md`.
+* Follow the read order in `agent_onboarding/agent/general/SKILLS.md` and `agent_onboarding/agent/engineer/SKILLS.md`.
+* Read and apply `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md` before execution.
 * Obey certification gating from `agent_onboarding/agent/general/policies/policy_router.md` and `agent_onboarding/agent/general/skills/self_certification.md` (do not use tools or edit files until the user replies with the exact phrase `CERTIFY: APPROVED (inactive)` or `CERTIFY: APPROVED (active)` except the tools to properly read your documentation to onboard).
 * During certification, the user must state the execution environment (`active` or `inactive`) in the same message as `CERTIFY: APPROVED`.
 * Git commands are **active-only**: if the user says `inactive`, do not run git commands and ignore git workflow requirements (user handles git).
@@ -463,7 +466,7 @@ As a ritual, after implementing a change:
 * Ensure active tickets have up-to-date `Notes` sections with evidence-backed findings.
 * Ensure active tickets have up-to-date \"Context / Handoff Summary\" sections.
 * After context compaction or a fresh session, read `architecture/src_architecture.md` and `components/src_components.md` (including diagrams) before any new work.
-* After context compaction or a fresh session, re-read `agent_onboarding/agent/general/README.md` and `agent_onboarding/agent/developer/README.md`.
+* After context compaction or a fresh session, re-read `agent_onboarding/agent/general/README.md` and `agent_onboarding/agent/engineer/README.md`.
 
 ### G) Architecture and Components Docs (Required)
 

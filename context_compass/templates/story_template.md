@@ -54,7 +54,7 @@ As a <user/persona>, I want <capability>, so that <outcome>.
 
 ## Notes
 - DATE: YYYY-MM-DD
-  TYPE: FACT | UNKNOWN | HYPOTHESIS | DECISION | PLAN | MEASURE | RISK
+  TYPE: FACT | UNKNOWN | HYPOTHESIS | DECISION | DECISION_REQUEST | PLAN | STRATEGY_DISCUSSION | ASSUMPTION_CHALLENGE | CONFLICT | TRADEOFF | BLOCKER | ALIGNMENT_CHECK | MEASURE | RISK | RAISE
   CLAIM: <short finding>
   EVIDENCE: <path:start_line-end_line>, <path:start_line-end_line>
   IMPACT: <why this matters>

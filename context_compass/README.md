@@ -50,7 +50,7 @@ Files
 - `SKILLS.MD` - ticket-writing guidance and deep descriptive model.
 - `WORKFLOW.md` - epic/story/task lifecycle and tracking rules.
 - `CONTEXT_COMPACTION.md` - context compaction and handoff policy.
-- `agent_onboarding/` - required onboarding docs (general + developer) for agent behavior and execution standards.
+- `agent_onboarding/` - required onboarding docs (general + engineer) for agent behavior and execution standards.
 - `architecture/` - C4 architecture docs for src and tests.
 - `components/` - C3/C2/C1 component docs for src and tests.
 - `examples/` - example tickets and doc references for modeling new work.

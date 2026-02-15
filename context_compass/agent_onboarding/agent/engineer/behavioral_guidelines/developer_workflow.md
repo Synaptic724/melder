@@ -1,7 +1,7 @@
-# developer_workflow
+# engineer_workflow
 
 Purpose
-- Describe the expected execution flow for developer tasks.
+- Describe the expected execution flow for engineer tasks.
 
 Story steps
 1) Confirm the goal and constraints.

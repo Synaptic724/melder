@@ -81,7 +81,7 @@ Verify that documentation references remain coherent after the `codex_todo` ->
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Initial strict active-surface scan still over-reported 71 misses because onboarding docs use `context_compass`-local root references (for example `agent_onboarding/...` and `SKILLS.MD`) rather than repository root paths.
-  EVIDENCE: `context_compass/agent_onboarding/agent/developer/README.md:1`, `context_compass/agent_onboarding/agent/general/skills/ticketing.md:1`
+  EVIDENCE: `context_compass/agent_onboarding/agent/engineer/README.md:1`, `context_compass/agent_onboarding/agent/general/skills/ticketing.md:1`
   IMPACT: Path validator must resolve both repository-root and `context_compass/`-local root targets to avoid false break signals.
   NEXT: Re-run strict scan with dual-root path resolution and patch only real misses.
   REREAD: REQUIRED

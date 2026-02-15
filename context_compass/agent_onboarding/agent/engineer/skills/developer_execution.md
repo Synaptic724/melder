@@ -1,7 +1,7 @@
-# developer_execution
+# engineer_execution
 
 Purpose
-- Define how developer agents plan and implement code changes in this repository.
+- Define how engineer agents plan and implement code changes in this repository.
 
 Core rules
 - Follow `AGENTS.MD` and the shared baseline skills in `agent_onboarding/agent/general/`.
@@ -25,7 +25,7 @@ Preferred workflow
 5) Run tests (or report "Not run" with reasoning).
 6) Summarize changes and list follow-ups.
 
-Artifact discipline (developer)
+Artifact discipline (engineer)
 - Ideas/opinions/todo: `workspace/agent/` only.
 - Plans and scope control: use `templates/` and create tickets in `epics/`, `stories/`, `tasks/`.
 - Status updates: keep `attention_board.md` current and append detailed findings to ticket `## Notes`.
@@ -33,7 +33,7 @@ Artifact discipline (developer)
 - Convert approved todos into tickets instead of leaving them in scratch.
 
 Examples
-- `agent_onboarding/agent/developer/examples/artifact_workflow.md`
+- `agent_onboarding/agent/engineer/examples/artifact_workflow.md`
 
 References
 - `agent_onboarding/agent/general/skills/python/docstrings.md`

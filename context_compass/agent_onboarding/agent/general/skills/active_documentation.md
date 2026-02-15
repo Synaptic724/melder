@@ -25,13 +25,15 @@ Canonical storage
 Required note entry shape
 For new note entries (legacy entries may omit newer fields):
 - `DATE`: `YYYY-MM-DD`
-- `TYPE`: `FACT` | `UNKNOWN` | `HYPOTHESIS` | `DECISION` | `PLAN` | `MEASURE` | `RISK`
+- `TYPE`: `FACT` | `UNKNOWN` | `HYPOTHESIS` | `DECISION` | `DECISION_REQUEST` | `PLAN` | `STRATEGY_DISCUSSION` | `ASSUMPTION_CHALLENGE` | `CONFLICT` | `TRADEOFF` | `BLOCKER` | `ALIGNMENT_CHECK` | `MEASURE` | `RISK` | `RAISE`
 - `CLAIM`: short technical finding.
 - `EVIDENCE`: one or more `path:start_line-end_line` pointers.
 - `IMPACT`: why this matters for current work.
 - `NEXT`: one concrete next action.
 - `REREAD`: `REQUIRED` | `HELPFUL`.
 - `SCORE_0_TO_10`: compaction usefulness score; improve entries below 8.
+- `TYPE` semantics and conflict/strategy expectations are governed by:
+  `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md`.
 
 Example
 - `DATE`: 2026-02-14

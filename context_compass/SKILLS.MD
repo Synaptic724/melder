@@ -7,7 +7,7 @@ The goal is durable, high-context planning that survives compaction and handoffs
 ## Onboarding Docs (Required)
 Follow the onboarding standards in:
 - `agent_onboarding/agent/general/README.md`
-- `agent_onboarding/agent/developer/README.md`
+- `agent_onboarding/agent/engineer/README.md`
 These are mandatory alongside the local rules in this folder.
 Certification must include the execution environment (`active` or `inactive`); git commands are active-only.
 
@@ -106,12 +106,13 @@ Before any context compaction or major handoff:
 - Re-open `attention_board.md` and confirm active routing rows match ticket truth.
 - Update the "Context / Handoff Summary" section of active tickets.
 - Review `AGENTS.MD`, `WORKFLOW.md`, and `CONTEXT_COMPACTION.md`.
-- Re-read `agent_onboarding/agent/general/README.md` and `agent_onboarding/agent/developer/README.md`.
+- Re-read `agent_onboarding/agent/general/README.md` and `agent_onboarding/agent/engineer/README.md`.
 - Ensure open questions and next steps are captured in the tickets.
 
 ## Policy Extensions (Required Skills)
 These policy modules extend the core rules and must be followed:
 - `agent_onboarding/agent/general/skills/agent_stance.md` - team stance, tone, and professional baseline.
+- `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md` - architect/lead-engineer social contract, mission-intent collaboration model, and conflict/strategy protocol.
 - `agent_onboarding/agent/general/skills/mrp_policy.md` - MRP-only strategy with MLP for UI contexts.
 - `agent_onboarding/agent/general/skills/context_gold.md` - context-first ritual and compaction re-entry.
 - `agent_onboarding/agent/general/skills/documentation_standards.md` - deep, non-handwavy documentation rules.

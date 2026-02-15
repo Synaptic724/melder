@@ -1,18 +1,18 @@
-# Developer Career
+# Engineer Career
 
-This folder is reserved for developer-specific onboarding material that
+This folder is reserved for engineer-specific onboarding material that
 extends or overrides the shared general career content under
 `agent_onboarding/agent/general/`.
 
-Add only developer-specific skills, policies, or behavioral guidance here.
+Add only engineer-specific skills, policies, or behavioral guidance here.
 Shared defaults live in `agent_onboarding/agent/general/` and are
 indexed in `agent_onboarding/agent/general/SKILLS.md`.
 
 Key files
-- SKILLS.md: developer-specific read order
-- skills/developer_execution.md: developer execution rules
-- policies/developer_quality_policy.md: quality bar for code changes
-- behavioral_guidelines/developer_workflow.md: execution flow guidance
+- SKILLS.md: engineer-specific read order
+- skills/engineer_execution.md: engineer execution rules
+- policies/engineer_quality_policy.md: quality bar for code changes
+- behavioral_guidelines/engineer_workflow.md: execution flow guidance
 
 DO NOT ASSUME / Unknowns Gate
 Rule: No Unverified Claims.

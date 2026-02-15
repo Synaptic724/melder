@@ -1,7 +1,7 @@
 # ctx_autonomy_policy
 
 Purpose
-- Apply CTX Autonomy ranking to developer ctx work.
+- Apply CTX Autonomy ranking to engineer ctx work.
 - Keep file ctx strong enough to support downstream dir/component/architecture ctx.
 
 Policy
@@ -23,11 +23,11 @@ Unknowns Gate (No Unverified Claims)
 - No reasonable assumptions. Do not infer behavior from naming, patterns,
   conventions, or typical frameworks. Only the code/docs count.
 
-Developer emphasis
+Engineer emphasis
 - Fidelity: every listed behavior must map to actual code paths.
 - Coverage: include non-obvious error paths and side effects.
 - Depth: specify invariants, inputs/outputs, and dependency rules.
 
 References
 - agent_onboarding/agent/general/policies/ctx_autonomy_policy.md
-- agent_onboarding/agent/developer/policies/developer_quality_policy.md
+- agent_onboarding/agent/engineer/policies/engineer_quality_policy.md

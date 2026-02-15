@@ -210,7 +210,7 @@ configures Spectrum, and creates CommandCenter instances to orchestrate agents,
 activities, missions, and pools.
 
 External actors and systems:
-- Application developer integrating CommandOps into their process.
+- Application engineer integrating CommandOps into their process.
 - External services accessed via Arsenal connectors or services.
 - OS thread scheduler and Python runtime (no-GIL build required).
 

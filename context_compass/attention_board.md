@@ -9,14 +9,37 @@ Attention details rule
 - Capture evidence pointers while reading (do not wait for end-of-pass summaries).
 - Keep entries short using: `TYPE`, `CLAIM`, `EVIDENCE`, `REREAD`, `NEXT`.
 - Use evidence ranges in `EVIDENCE` (`path:start_line-end_line`); for single-line evidence use `start=end`.
+- Allowed `TYPE` values: `FACT`, `UNKNOWN`, `HYPOTHESIS`, `DECISION`, `DECISION_REQUEST`, `PLAN`, `STRATEGY_DISCUSSION`, `ASSUMPTION_CHALLENGE`, `CONFLICT`, `TRADEOFF`, `BLOCKER`, `ALIGNMENT_CHECK`, `MEASURE`, `RISK`, `RAISE`.
+- Deep semantic meaning for each `TYPE` is defined in `context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md`.
 - Append newest entries first under the matching active work item.
 - Promote durable conclusions into the linked ticket after verification.
 
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
+| social contract document | in_progress | codex | none | wire references and finalize user review pass | `context_compass/tasks/2026-02-14_social_contract_active_partner_performance_engineering_document_task.md` | 2026-02-14 | REQUIRED |
+| jit/aot phase split configuration | ready | codex | none | execute `TASK-2026-02-14-discovery-jit-aot-phase-order-contract` | `context_compass/epics/2026-02-14_jit_aot_phase_split_configuration_epic.md` | 2026-02-14 | REQUIRED |
+| snapshot ownership cleanup audit | ready | codex | none | waiting for user prioritization | `context_compass/epics/2026-02-14_snapshot_ownership_cleanup_audit_epic.md` | 2026-02-14 | HELPFUL |
 
 ## Active Attention Details
+- TYPE: DECISION
+- CLAIM: `TYPE` schema is expanded and documented with robust semantics for all base + new types, including generic escalation type `RAISE` and required recategorization behavior.
+- EVIDENCE: `context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md:544-713`, `context_compass/agent_onboarding/agent/general/skills/reactive_documentation.md:28-43`, `context_compass/agent_onboarding/agent/general/skills/reactive_documentation.md:57-65`, `context_compass/WORKFLOW.md:127-127`
+- REREAD: REQUIRED
+- NEXT: Apply the new types in active tickets when context-specific escalation/strategy signals are needed.
+
+- TYPE: DECISION
+- CLAIM: Added canonical collaboration contract at `general/social_contract/SOCIAL_CONTRACT.md` and began wiring mandatory references from AGENTS, onboarding read order, and policy router.
+- EVIDENCE: `context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md:1-883`, `context_compass/AGENTS.MD:11-11`, `context_compass/AGENTS.MD:40-40`, `context_compass/AGENTS.MD:63-63`, `context_compass/agent_onboarding/agent/general/SKILLS.md:40-40`, `context_compass/agent_onboarding/agent/general/policies/policy_router.md:25-26`
+- REREAD: REQUIRED
+- NEXT: Complete consistency pass and confirm acceptance criteria with user.
+
+- TYPE: DECISION
+- CLAIM: Added a new JIT/AOT split epic with linked discovery-first stories/tasks, including an explicit assumption-challenge task requested by user; snapshot-review epic remains available.
+- EVIDENCE: `context_compass/epics/2026-02-14_jit_aot_phase_split_configuration_epic.md:1-150`, `context_compass/stories/2026-02-14_jit_aot_split_discovery_and_viability_story.md:1-100`, `context_compass/tasks/2026-02-14_discovery_jit_aot_assumption_challenge_task.md:1-85`, `context_compass/epics/2026-02-14_snapshot_ownership_cleanup_audit_epic.md:1-140`
+- REREAD: REQUIRED
+- NEXT: Start `TASK-2026-02-14-discovery-jit-aot-phase-order-contract` and surface first challenge findings to user.
+
 - TYPE: MEASURE
 - CLAIM: `TASK-2026-02-14-optimize-phase9-injection-plan-warm-reuse` is implemented and rerun-validated (`3 passed` targeted slice, `1 passed` harness) with reduced phase9 warm slice (`phase_injection_plan_ms` `0.179 -> 0.164`, injection builds `17 -> 15`) and near-neutral total warm impact.
 - EVIDENCE: `context_compass/tasks/completed/2026-02-14_optimize_phase9_injection_plan_warm_reuse_task.md:6-98`, `context_compass/stories/completed/2026-02-14_phase_testing_optimization_backlog_story.md:6-58`, `context_compass/artifacts/2026-02-14_phase9_injection_plan_warm_reuse_targeted_unit_tests.txt:1-12`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase9_injection_plan_warm_reuse_output.txt:7-9`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase9_injection_plan_warm_reuse_output.txt:25-28`, `context_compass/artifacts/2026-02-14_phase_component_cprofile_harness_phase8_occurrence_plan_warm_reuse_output.txt:7-9`

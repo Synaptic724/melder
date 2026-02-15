@@ -11,8 +11,8 @@ Career selection (general-first)
 - Always start with the shared baseline:
   - agent_onboarding/agent/general/SKILLS.md
 - Ask the user which career to activate next.
-- Valid careers: developer.
-- If the user has no preference, use developer and state that explicitly.
+- Valid careers: engineer.
+- If the user has no preference, use engineer and state that explicitly.
 - After selection, read:
   - agent_onboarding/agent/<career>/SKILLS.md (career-specific additions)
 - Before explaining the system to the user, follow the required user-doc reading

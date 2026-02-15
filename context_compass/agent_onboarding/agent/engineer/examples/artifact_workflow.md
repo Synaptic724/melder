@@ -1,7 +1,7 @@
-# Developer Example: Artifact Workflow
+# Engineer Example: Artifact Workflow
 
 Context
-- A developer needs to refactor Spellbook cleanup to keep logger teardown last.
+- A engineer needs to refactor Spellbook cleanup to keep logger teardown last.
 - The agent wants to capture scratch thoughts before committing to a ticket.
 
 Scratch capture (workspace)

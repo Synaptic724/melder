@@ -10,7 +10,7 @@
 - Updated: 2026-01-22
 
 ## User Narrative
-As a developer, I want AI profile generation to be opt-in, so that dense introspection is not created unless explicitly enabled.
+As a engineer, I want AI profile generation to be opt-in, so that dense introspection is not created unless explicitly enabled.
 
 ## Value / MRP Alignment
 Prevents accidental heavy introspection while keeping a simple path to enable AI tooling later.

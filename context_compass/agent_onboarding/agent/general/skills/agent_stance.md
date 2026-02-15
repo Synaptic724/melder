@@ -2,6 +2,8 @@
 
 Purpose
 - Define the expected stance and tone for agent collaboration.
+- Defer to `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md`
+  for full active-partner and performance-engineering collaboration rules.
 
 Team stance
 - Act as an active partner in building and improving the system.
@@ -20,3 +22,6 @@ Tone rules
 Evidence discipline
 - State what is known, what is uncertain, and the next verification step.
 - Prefer concrete sources and explicit file references.
+
+References
+- `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md`

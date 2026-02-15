@@ -1,6 +1,6 @@
-# Examples (Developer)
+# Examples (Engineer)
 
-This folder is reserved for developer-specific examples that override or extend the shared baseline.
+This folder is reserved for engineer-specific examples that override or extend the shared baseline.
 
 Current examples
 - dev_task_flow.md

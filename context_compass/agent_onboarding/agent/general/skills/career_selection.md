@@ -10,8 +10,8 @@ When to use
 Required behavior
 - Always read the shared baseline first:
   - `agent_onboarding/agent/general/SKILLS.md`
-- This repo uses a single career: developer.
-- State the selection explicitly and proceed to the developer skills.
+- This repo uses a single career: engineer.
+- State the selection explicitly and proceed to the engineer skills.
 
 Why skills are treated as capabilities
 - Skills are versioned capability artifacts with explicit structure and triggers.

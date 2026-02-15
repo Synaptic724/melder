@@ -27,7 +27,7 @@ Expansion gate
 
 Required note payload per meaningful finding
 - `DATE`
-- `TYPE` (`FACT` | `UNKNOWN` | `HYPOTHESIS` | `DECISION` | `PLAN` | `MEASURE` | `RISK`)
+- `TYPE` (`FACT` | `UNKNOWN` | `HYPOTHESIS` | `DECISION` | `DECISION_REQUEST` | `PLAN` | `STRATEGY_DISCUSSION` | `ASSUMPTION_CHALLENGE` | `CONFLICT` | `TRADEOFF` | `BLOCKER` | `ALIGNMENT_CHECK` | `MEASURE` | `RISK` | `RAISE`)
 - `CLAIM`
 - `EVIDENCE` (`path:start_line-end_line`; use `start=end` for single-line evidence)
 - `IMPACT`

@@ -1,7 +1,7 @@
-# developer_quality_policy
+# engineer_quality_policy
 
 Purpose
-- Establish the quality bar for developer changes.
+- Establish the quality bar for engineer changes.
 
 Policy
 - Every touched function/class must have a rich docstring aligned with the behavior.

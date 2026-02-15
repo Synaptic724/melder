@@ -37,6 +37,7 @@ Read order (baseline)
 32) agent_onboarding/agent/general/skills/staleness_protocol.md
 33) agent_onboarding/agent/general/skills/self_certification.md
 34) agent_onboarding/agent/general/skills/user_approved_certification.md
+35) agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md
 
 Parallel reading allowance
 - The order above is canonical for reference, but parallel reading is allowed.
@@ -48,6 +49,7 @@ Certification timing
 
 When to read what
 - Any session start: read every skill (parallel reading allowed), then certify.
+- Any session start: read every skill (parallel reading allowed), then read the social contract (`agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md`), then certify.
 - Any compaction or handoff re-entry: start again at `compaction_requirements.md`, complete full re-onboarding, then certify.
 - Repo orientation: repo_topology_and_git, system_orientation.
 - Architecture/component work: architecture_contexts, context_protocol, documentation_standards.

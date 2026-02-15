@@ -56,12 +56,12 @@ compaction risk.
 - `context_compass/agent_onboarding/agent/general/skills/agent_lifecycle.md`
 - `context_compass/agent_onboarding/agent/general/skills/self_certification.md`
 - `context_compass/agent_onboarding/agent/general/policies/policy_router.md`
-- `context_compass/agent_onboarding/agent/developer/skills/developer_execution.md`
+- `context_compass/agent_onboarding/agent/engineer/skills/engineer_execution.md`
 - `context_compass/agent_onboarding/agent/general/behavioral_guidelines/onboarding_summary.md`
 - `context_compass/agent_onboarding/agent/general/behavioral_guidelines/agent_lifecycle_and_heartbeat.md`
 - `context_compass/agent_onboarding/agent/general/behavioral_guidelines/work_intake_and_execution.md`
 - `context_compass/agent_onboarding/agent/general/behavioral_guidelines/task_execution_and_validation.md`
-- `context_compass/agent_onboarding/agent/developer/examples/artifact_workflow.md`
+- `context_compass/agent_onboarding/agent/engineer/examples/artifact_workflow.md`
 - `context_compass/WORKFLOW.md`
 - `context_compass/SKILLS.MD`
 - `context_compass/CONTEXT_COMPACTION.md`
@@ -111,7 +111,7 @@ compaction risk.
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Re-entry guidance is inconsistent: several onboarding/behavioral docs still route through `00_overview.md` instead of board-first ticket routing.
-  EVIDENCE: context_compass/agent_onboarding/agent/general/skills/context_protocol.md:12, context_compass/agent_onboarding/agent/general/skills/agent_lifecycle.md:7, context_compass/agent_onboarding/agent/developer/skills/developer_execution.md:30, context_compass/agent_onboarding/agent/general/behavioral_guidelines/onboarding_summary.md:23
+  EVIDENCE: context_compass/agent_onboarding/agent/general/skills/context_protocol.md:12, context_compass/agent_onboarding/agent/general/skills/agent_lifecycle.md:7, context_compass/agent_onboarding/agent/engineer/skills/engineer_execution.md:30, context_compass/agent_onboarding/agent/general/behavioral_guidelines/onboarding_summary.md:23
   IMPACT: Blank-slate sessions can reopen stale summary context instead of canonical `attention_board` + ticket state.
   NEXT: Rewrite these references to make `attention_board.md` + active tickets canonical and `00_overview.md` optional.
   REREAD: HELPFUL

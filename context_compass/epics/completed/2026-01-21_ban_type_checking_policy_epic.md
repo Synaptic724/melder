@@ -39,7 +39,7 @@ explicit and predictable.
 
 ## Success Metrics
 - TYPE_CHECKING is explicitly banned in policy docs.
-- Guidance points developers to interfaces instead.
+- Guidance points engineers to interfaces instead.
 
 ## Requirements (Functional + Non-Functional)
 - Ban `typing.TYPE_CHECKING` in policy docs.
