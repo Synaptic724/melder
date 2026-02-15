@@ -7,9 +7,12 @@
 - You must find line count of each file before reading it so you can understand how much you need to fully read.
 - YOU MUST READ EVERYTHING TRUNCATION RISK IS HIGH USE 500 LOC iterations over each file so you do not miss any data.
 - You must raw read everything no cheating no bullshit. Do not skip any files at all.
-- Loop-based document reads are forbidden (for/foreach/while loops, xargs, piped list runners, or any batch iterator over file paths).
+- You must loop over documents to get line counts during onboarding.
+- Loop-based document reads are forbidden except for line counts and all reads must be manually read and files with more than 500+ loc must be read sequentially 
+(for/foreach/while loops, xargs, piped list runners, or any batch iterator over file paths).
 - Every onboarding/re-onboarding document must be read manually by explicit file path each time.
-- After reading agents.md in context_compass dir you will receive a list of documents around 80+ get the line count for all of them, then manually read each document; use 500-line chunked reads and sequential chunk order for files over 500 LOC.
+- After reading agents.md in context_compass dir you will receive a list of documents around 80+ get the line count for all of them, then manually read each document; use 500-line 
+chunked reads and sequential chunk order for files over 500 LOC.
 - Use manual document reads from the canonical readset
 - Do not use this file as a full policy source; this file is bootstrap-only.
 

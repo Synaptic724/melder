@@ -25,7 +25,6 @@ After any context compaction, handoff, or fresh session:
   * parallel/bulk reading is allowed only when document contents are actually read and surfaced with concrete evidence value.
   * onboarding claims are valid only when required source documents were actually read.
   * onboarding dump files are non-canonical artifacts and do not satisfy onboarding requirements.
-  * loop-based document-reading commands are forbidden (for/foreach/while loops, xargs-style runners, or piped file-list iterators).
   * onboarding/re-onboarding reads must be manual per file path, with explicit 500-line chunk reads for large files.
 
 This is the highest-priority adherence rule for continuity and policy retention.
@@ -76,7 +75,7 @@ Before any tooling, edits, or execution:
   - Use this default for both fresh sessions and post-compaction re-entry.
   - Read every document listed in the canonical readset with no skips before certification.
   - Direct manual reads are required, and full readset completion is still required.
-  - Do not use loop-based commands to read multiple documents automatically.
+  - Do not use loop-based commands to read multiple documents automatically as this truncates data, use loops to get line count and parallel read or iterate like that.
   - Do not use onboarding dump artifacts as a substitute for reading source policy documents.
 * The source onboarding readset is `context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt`.
 * Obey certification gating from `agent_onboarding/agent/general/policies/policy_router.md` and `agent_onboarding/agent/general/skills/self_certification.md` (do not use tools or edit files until the user replies with the exact phrase `CERTIFY: APPROVED (inactive)` or `CERTIFY: APPROVED (active)` except the tools to properly read your documentation to onboard).
