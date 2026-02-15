@@ -133,6 +133,7 @@ def _make_override_harness(
     context._override_executor_code_object_cache_by_plan_signature = {}
     context._override_prefilter_step_targets_cache = {}
     context._override_prefilter_path_metadata_cache = {}
+    context._override_socket_shape_cache = {}
     return context
 
 
@@ -292,6 +293,8 @@ def test_get_or_compile_override_executor_caches_compiled_executor(
             *,
             plan_rows: Sequence[Dict[str, Any]],
             root_spell_id: Optional[str],
+            override_targeted_spell_ids: Tuple[str, ...],
+            has_root_positional_override: bool,
     ) -> str:
         source_emit_count["value"] += 1
         return f"source:{len(plan_rows)}:{root_spell_id}"
@@ -350,7 +353,7 @@ def test_get_or_compile_override_executor_reuses_plan_signature_artifacts_across
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
-    Verify miss-path specializations reuse source/code artifacts for one plan signature.
+    Verify miss-path specializations emit artifacts per shape-key miss.
     """
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
@@ -367,6 +370,8 @@ def test_get_or_compile_override_executor_reuses_plan_signature_artifacts_across
             *,
             plan_rows: Sequence[Dict[str, Any]],
             root_spell_id: Optional[str],
+            override_targeted_spell_ids: Tuple[str, ...],
+            has_root_positional_override: bool,
     ) -> str:
         source_emit_count["value"] += 1
         return f"source:{len(plan_rows)}:{root_spell_id}"
@@ -418,8 +423,8 @@ def test_get_or_compile_override_executor_reuses_plan_signature_artifacts_across
 
     assert callable(first)
     assert callable(second)
-    assert source_emit_count["value"] == 1
-    assert code_compile_count["value"] == 1
+    assert source_emit_count["value"] == 2
+    assert code_compile_count["value"] == 2
     assert specialization_compile_count["value"] == 2
 
 
@@ -597,7 +602,20 @@ def test_execute_with_overrides_applies_payload_and_reuses_shape_cache(
     Verify override lane applies phase10 payload and caches phase12 specialization.
     """
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
-    patch_map = object()
+    class _PatchMap:
+        def apply_with_socket_shape(
+                self,
+                override_payload: Dict[str, Any],
+        ) -> Tuple[Dict[Any, Any], Tuple[Tuple[Any, ...], ...]]:
+            apply_calls.append(dict(override_payload))
+            return (
+                override_map,
+                CreationContext._collect_override_socket_shape(
+                    override_map=override_map,
+                ),
+            )
+
+    patch_map = _PatchMap()
     context = _make_override_harness(
         route_config_active=route_config,
         route_config_no_mutation=route_config,
@@ -605,16 +623,8 @@ def test_execute_with_overrides_applies_payload_and_reuses_shape_cache(
     )
     socket_ref = _SocketRef("s1", "dep", 7, "normal")
     override_map = {socket_ref: "value"}
-    apply_calls: list[tuple[Any, Dict[str, Any]]] = []
+    apply_calls: list[Dict[str, Any]] = []
     compile_count = {"value": 0}
-
-    def _apply_phase10_override_payload(
-            *,
-            override_patch_map: Any,
-            override_payload: Dict[str, Any],
-    ) -> Dict[Any, Any]:
-        apply_calls.append((override_patch_map, dict(override_payload)))
-        return override_map
 
     def _compile_phase12_overrides_executor_from_code_object_with_prefilter_cache_stub(**kwargs: Any) -> Any:
         compile_count["value"] += 1
@@ -633,11 +643,6 @@ def test_execute_with_overrides_applies_payload_and_reuses_shape_cache(
 
         return _executor
 
-    monkeypatch.setattr(
-        creation_context_module,
-        "apply_phase10_override_payload",
-        _apply_phase10_override_payload,
-    )
     def _unexpected_collect(**kwargs: Any) -> Any:
         raise AssertionError(
             "legacy grouped collector must not run in _execute_with_overrides",
@@ -659,8 +664,8 @@ def test_execute_with_overrides_applies_payload_and_reuses_shape_cache(
     assert context._execute_with_overrides(caller_creations, payload, False) == "ok"
     assert context._execute_with_overrides(caller_creations, payload, False) == "ok"
     assert apply_calls == [
-        (patch_map, {"dep": "payload"}),
-        (patch_map, {"dep": "payload"}),
+        {"dep": "payload"},
+        {"dep": "payload"},
     ]
     assert compile_count["value"] == 1
 
@@ -671,21 +676,26 @@ def test_execute_with_overrides_cache_hit_skips_grouping_and_compile(
     """
     Verify cache-hit override execution bypasses grouping and specialization compile.
     """
+    class _PatchMap:
+        def apply_with_socket_shape(
+                self,
+                override_payload: Dict[str, Any],
+        ) -> Tuple[Dict[Any, Any], Tuple[Tuple[Any, ...], ...]]:
+            return (
+                override_map,
+                CreationContext._collect_override_socket_shape(
+                    override_map=override_map,
+                ),
+            )
+
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
         route_config_active=route_config,
         route_config_no_mutation=route_config,
-        patch_map=object(),
+        patch_map=_PatchMap(),
     )
     socket_ref = _SocketRef("s1", "dep", 7, "normal")
     override_map = {socket_ref: "value"}
-
-    def _apply_phase10_override_payload(
-            *,
-            override_patch_map: Any,
-            override_payload: Dict[str, Any],
-    ) -> Dict[Any, Any]:
-        return override_map
 
     shape_key = CreationContext._build_override_shape_key(
         plan_signature=route_config.plan_signature,
@@ -710,19 +720,14 @@ def test_execute_with_overrides_cache_hit_skips_grouping_and_compile(
     context._override_specialization_cache[shape_key] = _cached_executor
 
     def _unexpected_collect(**kwargs: Any) -> Any:
-        raise AssertionError("grouped target collection must not run on cache hit")
+        raise AssertionError("target grouping must not run on cache hit")
 
     def _unexpected_compile(**kwargs: Any) -> Any:
         raise AssertionError("phase12 compile must not run on cache hit")
 
     monkeypatch.setattr(
-        creation_context_module,
-        "apply_phase10_override_payload",
-        _apply_phase10_override_payload,
-    )
-    monkeypatch.setattr(
         CreationContext,
-        "_collect_override_targets_and_socket_shape",
+        "_collect_override_targets_from_socket_shape",
         staticmethod(_unexpected_collect),
     )
     monkeypatch.setattr(
@@ -745,20 +750,18 @@ def test_execute_with_overrides_wraps_phase10_apply_failures(
     """
     Verify phase10 override-apply failures are wrapped as MeldExecutionError.
     """
+    class _PatchMap:
+        def apply_with_socket_shape(
+                self,
+                override_payload: Dict[str, Any],
+        ) -> Tuple[Dict[Any, Any], Tuple[Tuple[Any, ...], ...]]:
+            raise RuntimeError("apply-fail")
+
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
         route_config_active=route_config,
         route_config_no_mutation=route_config,
-        patch_map=object(),
-    )
-
-    def _raise_apply(**kwargs: Any) -> Dict[Any, Any]:
-        raise RuntimeError("apply-fail")
-
-    monkeypatch.setattr(
-        creation_context_module,
-        "apply_phase10_override_payload",
-        _raise_apply,
+        patch_map=_PatchMap(),
     )
 
     with pytest.raises(MeldExecutionError, match="Failed to apply overrides"):

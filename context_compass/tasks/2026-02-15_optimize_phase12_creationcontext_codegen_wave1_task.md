@@ -27,8 +27,8 @@ Phase12/CreationContext and validate with targeted profiler suites.
 - [x] Apply minimal optimization patch on selected helper path(s).
 - [x] Re-run targeted cprofile pytest suites and compare key lanes.
 - [x] Record measured deltas and behavior observations.
-- [ ] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Wave-1 runtime optimization code patch.
@@ -63,6 +63,96 @@ Phase12/CreationContext and validate with targeted profiler suites.
 - [ ] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Seventh runtime slice is retained: `_execute_with_overrides` now uses a no-`__args__` inline payload fast path, inlines the common no-positional-override shape key path, and defers `prefilter_cache_key` allocation until specialization compile miss; shallow repeated timings improved from prior avg `12.4212ms` (`12.8342, 12.3349, 12.4673, 12.1517, 12.3177`) to avg `11.3539ms` (`11.5941, 11.1827, 11.3196, 11.4174, 11.2555`) over five runs (~`8.59%` faster).
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context.py:586-646, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:286-290, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:293-296, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:302-302, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:38-58
+  IMPACT: Override dispatcher front-door overhead is lower on the cached lane while preserving correctness and suite stability.
+  NEXT: Re-rank remaining hotspots (`_phase12_executor` and `patch_maps.apply_with_socket_shape`) and choose the next structural optimization slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: `_execute_with_overrides` now avoids always calling `_split_override_payload(...)` for payloads without `__args__`, constructs shape keys inline for the common arity `-1` path, and only allocates `prefilter_cache_key` when specialization cache misses.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context.py:586-646
+  IMPACT: Removes avoidable per-call work from the most frequent override dispatcher path.
+  NEXT: Validate full fast/overrides cprofile suites from this retained state and capture updated hotspot ranking.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Next slice targets the remaining front-door overhead inside `CreationContext._execute_with_overrides` by removing avoidable always-on work on cache-hit calls: inline fast path for payloads without `__args__`, defer `prefilter_cache_key` tuple build until compile miss, and inline common shape-key assembly when positional arity is absent.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:38-43, src/melder/aether/conduit/meld/creation_context/creation_context.py:541-640
+  IMPACT: This keeps scope in one runtime method and should reduce per-call dispatcher overhead after the Phase10 handoff optimization.
+  NEXT: Apply the `_execute_with_overrides` fast-path patch and rerun targeted unit + cprofile measurements.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: The Phase10->CreationContext one-pass socket-shape handoff is retained and improves shallow repeated timings from prior avg `14.4771ms` (`14.4034, 14.4208, 14.4199, 14.5195, 14.6220`) to avg `12.4212ms` (`12.8342, 12.3349, 12.4673, 12.1517, 12.3177`) over five same-setting runs (~`14.20%` faster); current hotspot top list shows `patch_maps.apply_with_socket_shape` and no longer lists `creation_context._collect_override_socket_shape_cached`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:273-277, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:286-290, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:38-58
+  IMPACT: Cached override lane now avoids the duplicate socket-shape preprocessing pass and establishes a new lower steady-state baseline.
+  NEXT: Re-rank post-slice hotspots and target the remaining `creation_context._execute_with_overrides` runtime overhead (payload split + shape-key dispatch path).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Structural handoff patch is in place: `OverridePatchMap` now exposes `apply_with_socket_shape(...)` and caches deterministic shape rows per raw key; CreationContext override execution consumes `(override_map, socket_shape)` directly from Phase10 apply so the cached-lane path no longer rebuilds shape rows from `override_map`.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:203-287, src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:319-399, src/melder/aether/conduit/meld/creation_context/creation_context.py:557-617, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:606-763
+  IMPACT: Removes one duplicate per-call override preprocessing pass in the hot cached override route.
+  NEXT: Run targeted unit + cprofile benchmark validation and compare shallow override timing/call-chain deltas.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Current override hot path does two serial passes over override target sockets per call: `OverridePatchMap.apply(...)` resolves/builds the socket map, then `CreationContext._execute_with_overrides(...)` calls `_collect_override_socket_shape_cached(...)` to rebuild deterministic shape tuples from the same sockets before specialization-cache lookup.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:24-29, src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:178-240, src/melder/aether/conduit/meld/creation_context/creation_context.py:596-617, src/melder/aether/conduit/meld/creation_context/creation_context.py:697-760
+  IMPACT: Duplicate per-call socket-walk/shape-build work is a direct optimization target in the cached override lane.
+  NEXT: Implement a structural Phase10->CreationContext handoff that returns both `override_map` and precomputed socket shape in one call, then remeasure.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: The shape-emitted kwargs-inline slice is retained: repeated shallow timing runs improved to avg `14.4771ms` over 5 runs (`14.4034, 14.4208, 14.4199, 14.5195, 14.6220`) from the prior pre-slice sample `16.5078ms` (~`12.30%` faster), and call-chain highlights now route `_phase12_executor` through `phase12_no_overrides_executor._build_kwargs_no_overrides` (no `_build_kwargs_with_overrides` hop in top call-chain highlights).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:257-257, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:273-277, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:18-22, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:45-58
+  IMPACT: Override runtime drops another helper-dispatch cost in the hottest shape lane with a measurable steady-state improvement.
+  NEXT: Re-rank remaining hotspots (currently `patch_maps.apply` and CreationContext override-shape/runtime merge costs) and choose the next medium/high-risk structural slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Shape-source metadata now carries per-step dependency and contract payload schema, and shape-emitted override construct blocks inline kwargs assembly (`_append_overrides_kwargs_inline_source`) instead of calling `_build_kwargs_with_overrides(...)` for targeted/root-positional override paths.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:532-608, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:709-818, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:819-988, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1223-1448
+  IMPACT: Generated override execution now inlines override map build, kwargs build, and invoke dispatch in one emitted block for targeted steps.
+  NEXT: Validate regression surface continuously with unit modules + fast/override cprofile suites while iterating on the next hotspot.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Next structural slice will remove `_build_kwargs_with_overrides(...)` helper dispatch from shape-emitted override step blocks by emitting kwargs assembly inline using static Phase11 row metadata (`dependency_resolution_order`, contract payload items, positional contract override), while keeping existing no-overrides shape fast-path blocks unchanged.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:61-68, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:7-8, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:682-773, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1785-1921
+  IMPACT: This targets the remaining top Phase12 helper hotspot with another medium/high-risk structural codegen change, similar to prior retained inline slices.
+  NEXT: Extend shape-source metadata with per-step dependency/contract data, emit inline kwargs assembly for override-targeted shape blocks, then rerun unit + fast/overrides profiling suites and repeated shallow timing samples.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Current `test_creation_context.py` contains stale monkeypatch contracts against pre-refactor CreationContext internals: it patches `emit_phase12_overrides_executor_shape_source(...)` without the new shape kwargs, patches a removed module helper (`apply_phase10_override_payload`), and the object-level harness does not initialize `_override_socket_shape_cache` that cleanup now clears.
+  EVIDENCE: tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:291-298, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:611-639, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:99-132, src/melder/aether/conduit/meld/creation_context/creation_context.py:355-393, src/melder/aether/conduit/meld/creation_context/creation_context.py:596-596, src/melder/aether/conduit/meld/creation_context/creation_context.py:1130-1134
+  IMPACT: Unit failures are test-contract drift, not runtime regression in current override execution path.
+  NEXT: Update the unit test stubs/harness to current CreationContext contracts and rerun the targeted failing test set.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-15
   TYPE: MEASURE
   CLAIM: The follow-up structural inline override-values slice is retained; suites remain green and repeated shallow timings improved from the prior invoke-inline average `31.6620ms` to `31.2446ms` over five runs (`30.9785, 30.9828, 31.3584, 32.1545, 30.7487`) at `warmup=100`, `iters=2000`.

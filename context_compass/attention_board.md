@@ -15,9 +15,36 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | keep invoke + override-values inline slices; next medium/high-risk target is shape-emitted kwargs specialization (`_build_kwargs_with_overrides`) | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
+| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | continue from `11.35ms` shallow baseline; next medium/high-risk target is remaining override lane runtime in `_phase12_executor` + `patch_maps.apply_with_socket_shape` | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Seventh runtime slice is retained: `_execute_with_overrides` now fast-paths payloads without `__args__`, inlines common no-positional shape-key assembly, and defers miss-only `prefilter_cache_key` allocation; shallow repeated runs improved from prior avg `12.4212ms` (`12.8342, 12.3349, 12.4673, 12.1517, 12.3177`) to avg `11.3539ms` (`11.5941, 11.1827, 11.3196, 11.4174, 11.2555`) with full fast/override profile suites green.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context.py:586-646, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:286-290, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:293-296, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:302-302, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:38-58
+  IMPACT: Override dispatcher overhead is reduced again on the cached lane and establishes a lower steady-state baseline.
+  NEXT: Re-rank hotspots from this baseline and target remaining runtime cost in `_phase12_executor` and `patch_maps.apply_with_socket_shape`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Sixth structural codegen/runtime slice is retained: Phase10 override apply now returns `(override_map, socket_shape)` directly to CreationContext (`apply_with_socket_shape`), removing the duplicate `_collect_override_socket_shape_cached` pass in the cached override lane; repeated shallow runs improved from prior avg `14.4771ms` (`14.4034, 14.4208, 14.4199, 14.5195, 14.6220`) to avg `12.4212ms` (`12.8342, 12.3349, 12.4673, 12.1517, 12.3177`) with both profile suites and targeted units green.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:203-399, src/melder/aether/conduit/meld/creation_context/creation_context.py:557-617, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:606-763, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:273-277, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:286-290, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:38-58
+  IMPACT: Override cached runtime eliminates one preprocessing stage and lands a material steady-state reduction on the target shallow lane.
+  NEXT: Re-rank post-slice hotspots and implement the next structural optimization centered on `creation_context._execute_with_overrides` front-door overhead.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Fifth structural codegen slice is retained: shape-emitted override step blocks now inline kwargs assembly using static dependency/contract row metadata, removing `_build_kwargs_with_overrides(...)` dispatch from targeted lanes; shallow repeated runs improved from pre-slice `16.5078ms` to avg `14.4771ms` over five runs (`14.4034, 14.4208, 14.4199, 14.5195, 14.6220`) and call-chain highlights now show `_phase12_executor -> _build_kwargs_no_overrides` only.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:532-608, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:709-988, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:257-257, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:273-277, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:18-22
+  IMPACT: Override lane now executes one fewer helper hop in targeted shape blocks with a measured steady-state gain.
+  NEXT: Re-rank remaining hotspots and implement the next structural slice around `patch_maps.apply` / CreationContext override preprocessing.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-15
   TYPE: MEASURE
   CLAIM: Fourth structural codegen slice is retained: shape-emitted override blocks now inline override-values map construction (0/1/2/many target branches) in addition to invoke inlining; repeated shallow timings improved from prior invoke-inline avg `31.6620ms` to `31.2446ms` over five runs (`warmup=100`, `iters=2000`) with both profile suites green.

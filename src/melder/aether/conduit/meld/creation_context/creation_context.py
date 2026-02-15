@@ -554,6 +554,7 @@ class CreationContext(Cleanable):
         override_payload = overrides
         root_positional_override: Optional[Sequence[Any]] = None
         override_map: Dict[Any, Any] = {}
+        socket_shape: Tuple[Tuple[Any, ...], ...] = ()
         if override_payload is None:
             baseline_executor = override_route_config.baseline_executor
             if baseline_executor is not None:
@@ -582,10 +583,13 @@ class CreationContext(Cleanable):
                 caller_creations_lock_held=caller_creations_lock_held,
             )
         if override_payload:
-            target_payload, root_positional_override = self._split_override_payload(
-                spell=spell,
-                override_payload=override_payload,
-            )
+            if "__args__" in override_payload:
+                target_payload, root_positional_override = self._split_override_payload(
+                    spell=spell,
+                    override_payload=override_payload,
+                )
+            else:
+                target_payload = override_payload
             if target_payload:
                 override_patch_map_phase10 = self._override_patch_map_phase10
                 try:
@@ -593,7 +597,12 @@ class CreationContext(Cleanable):
                         raise RuntimeError(
                             "Phase 10 override patch map is required for meld execution."
                         )
-                    override_map = override_patch_map_phase10.apply(target_payload)
+                    (
+                        override_map,
+                        socket_shape,
+                    ) = override_patch_map_phase10.apply_with_socket_shape(
+                        target_payload,
+                    )
                 except MeldExecutionError:
                     raise
                 except Exception as exc:
@@ -606,22 +615,19 @@ class CreationContext(Cleanable):
                         inner=exc,
                     ) from exc
 
-        if override_map:
-            socket_shape = self._collect_override_socket_shape_cached(
-                override_map=override_map,
+        plan_signature = override_route_config.plan_signature
+        if root_positional_override is None:
+            shape_key = (
+                plan_signature,
+                socket_shape,
+                -1,
             )
         else:
-            socket_shape = ()
-        plan_signature = override_route_config.plan_signature
-        shape_key = self._build_override_shape_key(
-            plan_signature=plan_signature,
-            socket_shape=socket_shape,
-            root_positional_override=root_positional_override,
-        )
-        prefilter_cache_key = (
-            plan_signature,
-            socket_shape,
-        )
+            shape_key = (
+                plan_signature,
+                socket_shape,
+                len(root_positional_override),
+            )
         override_specialization_cache = self._override_specialization_cache
         executor = override_specialization_cache.get(shape_key)
         if executor is None:
@@ -635,6 +641,10 @@ class CreationContext(Cleanable):
             else:
                 override_targets_by_spell_id = {}
             any_overrides_present = overrides is not None
+            prefilter_cache_key = (
+                plan_signature,
+                socket_shape,
+            )
             executor = self._get_or_compile_override_executor(
                 shape_key=shape_key,
                 override_targets_by_spell_id=override_targets_by_spell_id,

@@ -135,7 +135,7 @@ class OverridePatchMap(Cleanable):
         self._specificity_by_spec = specificity_by_spec
         self._resolved_targets_by_raw_key: Dict[
             str,
-            tuple[tuple[SocketRef, ...], _Specificity],
+            tuple[tuple[SocketRef, ...], _Specificity, tuple[tuple[object, ...], ...]],
         ] = {}
 
     def cleanup(self) -> None:
@@ -200,27 +200,65 @@ class OverridePatchMap(Cleanable):
                 If no sockets match a key, if specificity is missing,
                 or if conflicting overrides share the same specificity.
         """
+        socket_map, _ = self.apply_with_socket_shape(
+            spell_override=spell_override,
+        )
+        return socket_map
+
+    def apply_with_socket_shape(
+            self,
+            spell_override: Dict[str, object],
+    ) -> tuple[Dict[SocketRef, object], tuple[tuple[object, ...], ...]]:
+        """
+        Compute override sockets and deterministic socket-shape rows together.
+
+        Contract:
+            - Preserves apply() conflict/precedence semantics.
+            - Returns deterministic socket shape rows for executor shape cache keys.
+            - Avoids duplicate socket-shape rebuilds in runtime callers.
+
+        Args:
+            spell_override:
+                Raw override payload keyed by TargetSpec-compatible strings.
+
+        Returns:
+            tuple[Dict[SocketRef, object], tuple[tuple[object, ...], ...]]:
+                Socket->value map plus deterministic socket-shape rows.
+
+        Raises:
+            ValueError:
+                If a TargetSpec key is invalid (from TargetSpec.parse).
+            RuntimeError:
+                If no sockets match a key, if specificity is missing,
+                or if conflicting overrides share the same specificity.
+        """
         self.check_cleaned()
         if spell_override is None:
-            return {}
+            return {}, ()
         if not spell_override:
-            return {}
+            return {}, ()
         if len(spell_override) == 1:
             raw_key, value = next(iter(spell_override.items()))
-            matches, _ = self._resolve_targets_for_raw_key(raw_key)
+            matches, _, socket_shape = self._resolve_targets_for_raw_key(raw_key)
             if len(matches) == 1:
-                return {
-                    matches[0]: value,
-                }
-            return {
-                socket_ref: value
-                for socket_ref in matches
-            }
+                return (
+                    {
+                        matches[0]: value,
+                    },
+                    socket_shape,
+                )
+            return (
+                {
+                    socket_ref: value
+                    for socket_ref in matches
+                },
+                socket_shape,
+            )
 
         per_socket: Dict[SocketRef, tuple[_Specificity, object]] = {}
 
         for raw_key, value in spell_override.items():
-            matches, level = self._resolve_targets_for_raw_key(raw_key)
+            matches, level, _ = self._resolve_targets_for_raw_key(raw_key)
 
             for socket_ref in matches:
                 existing = per_socket.get(socket_ref)
@@ -237,12 +275,22 @@ class OverridePatchMap(Cleanable):
                         f"with the same specificity."
                     )
 
-        return {socket: val for socket, (spec_level, val) in per_socket.items()}
+        override_map = {
+            socket: val
+            for socket, (spec_level, val) in per_socket.items()
+        }
+        socket_shape = self._build_socket_shape_from_matches(
+            matches=tuple(override_map),
+        )
+        return (
+            override_map,
+            socket_shape,
+        )
 
     def _resolve_targets_for_raw_key(
             self,
             raw_key: str,
-    ) -> tuple[tuple[SocketRef, ...], _Specificity]:
+    ) -> tuple[tuple[SocketRef, ...], _Specificity, tuple[tuple[object, ...], ...]]:
         """
         Resolve one raw override key to target sockets and specificity rank.
 
@@ -296,9 +344,73 @@ class OverridePatchMap(Cleanable):
         resolved = (
             tuple(matches),
             level,
+            self._build_socket_shape_from_matches(matches=tuple(matches)),
         )
         self._resolved_targets_by_raw_key[raw_key] = resolved
         return resolved
+
+    @staticmethod
+    def _build_socket_shape_from_matches(
+            *,
+            matches: tuple[SocketRef, ...],
+    ) -> tuple[tuple[object, ...], ...]:
+        """
+        Build deterministic socket-shape rows from socket matches.
+
+        Contract:
+            - Returns rows sorted by (node_id, param_path_id, param_name, socket_kind).
+            - Uses one/two-socket fast paths to avoid general sort overhead.
+        """
+        match_count = len(matches)
+        if match_count == 0:
+            return ()
+        if match_count == 1:
+            socket_ref = matches[0]
+            return (
+                (
+                    socket_ref.node_id,
+                    socket_ref.param_path_id,
+                    socket_ref.param_name,
+                    socket_ref.socket_kind.value,
+                ),
+            )
+        if match_count == 2:
+            first_ref = matches[0]
+            second_ref = matches[1]
+            first_row = (
+                first_ref.node_id,
+                first_ref.param_path_id,
+                first_ref.param_name,
+                first_ref.socket_kind.value,
+            )
+            second_row = (
+                second_ref.node_id,
+                second_ref.param_path_id,
+                second_ref.param_name,
+                second_ref.socket_kind.value,
+            )
+            if second_row < first_row:
+                return (
+                    second_row,
+                    first_row,
+                )
+            return (
+                first_row,
+                second_row,
+            )
+
+        shape_rows: list[tuple[object, ...]] = []
+        for socket_ref in matches:
+            shape_rows.append(
+                (
+                    socket_ref.node_id,
+                    socket_ref.param_path_id,
+                    socket_ref.param_name,
+                    socket_ref.socket_kind.value,
+                )
+            )
+        shape_rows.sort()
+        return tuple(shape_rows)
 
 
 class MutationPatchMap(Cleanable):
