@@ -16,16 +16,10 @@ workflow:
 
 codex:
   viewer_tool_read_limit: 500 # This is the current limit for codex reading tool
-  benefits:
-    - enhanced_context_understanding: true
-    - improved_decision_making: true
-    - increased_efficiency: true
-    - reduced_bias: true
-    - reduced_cognitive_load: true
-    - reduced_time_to_insight: true
-    - reduced_complexity: true
-    - reduced_context_switching: true
-  risks:
-    - performative_compliance: high
-    - deception_potential: medium
 
+
+# Commentary on the configuration file
+# This file contains settings for the Context Compass application, including profiles, workflow configurations, and Codex settings.
+# Profiles define different user contexts or roles within the application.
+# Workflow configurations control how tasks are managed and executed within the application.
+# Codex settings specify parameters for the Codex tool, which is used for code analysis and understanding.

@@ -64,6 +64,51 @@ Phase12/CreationContext and validate with targeted profiler suites.
 
 ## Notes
 - DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: The no-override shape-inline kwargs slice is rejected and reverted because repeated shallow runs did not improve from the retained baseline.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:991-1068, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:293-296, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:302-302, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:313-317
+  IMPACT: Keep the previous retained state (`11.3539ms` shallow avg) and avoid shipping a no-win structural change.
+  NEXT: Revert this slice and target the next medium/high-risk hotspot (`patch_maps.apply_with_socket_shape` or `_phase12_executor` update-path work).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: The no-override shape-inline kwargs patch passed focused units and both cprofile suites, but repeated shallow timing runs regressed from retained avg `11.3539ms` (`11.5941, 11.1827, 11.3196, 11.4174, 11.2555`) to avg `11.4214ms` (`11.7084, 11.2952, 11.3239, 11.2232, 11.5563`) over five same-setting runs.
+  EVIDENCE: tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py:1-1151, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:1-825, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:293-296, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:302-302, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:313-317
+  IMPACT: Structural helper-hop removal alone is not a net win on the shallow override lane.
+  NEXT: Revert this patch and continue optimization on a different hotspot slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: PLAN
+  CLAIM: Next retained structural slice is to remove the remaining non-targeted shape helper trampoline by replacing `_append_overrides_construct_no_overrides_source(...)` emission with static inline kwargs assembly and invoke dispatch in shape-source blocks.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:992-1013, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1110-1433, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:7-23
+  IMPACT: Removes one more helper dispatch from `_phase12_executor` on the dominant no-targeted-override lane.
+  NEXT: Patch shape-source emitters, run focused unit suites plus fast/overrides cprofile suites, and keep/revert by repeated shallow timings.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Current top internal Phase12 runtime cost is still a helper call from shape-emitted override executors into `phase12_no_overrides_executor._build_kwargs_no_overrides(...)` for non-targeted step blocks (`use_no_override_fast_path`), evidenced directly in latest shallow call-chain highlights.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:7-23, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:992-1013, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1208-1250
+  IMPACT: Remaining helper-dispatch overhead persists in `_phase12_executor` even after dispatcher/runtime front-door optimizations.
+  NEXT: Inline no-override kwargs assembly in shape-emitted blocks and remove `_build_kwargs_no_overrides(...)` helper calls from this lane.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Next structural slice is to replace `_append_overrides_construct_no_overrides_source(...)` helper emission with static inline kwargs assembly using existing per-step metadata (`dependency_resolution_order`, contract payload metadata), by emitting `override_values_{step}= {}` and routing through the same inline kwargs/invoke path already used for targeted overrides.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:819-989, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:992-1013, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1208-1440
+  IMPACT: Removes another helper trampoline from `_phase12_executor` on the dominant non-targeted step path.
+  NEXT: Patch shape-source emitters, rerun focused unit suites + cprofile benchmarks, and keep/revert by repeated shallow measurements.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
   TYPE: MEASURE
   CLAIM: Seventh runtime slice is retained: `_execute_with_overrides` now uses a no-`__args__` inline payload fast path, inlines the common no-positional-override shape key path, and defers `prefilter_cache_key` allocation until specialization compile miss; shallow repeated timings improved from prior avg `12.4212ms` (`12.8342, 12.3349, 12.4673, 12.1517, 12.3177`) to avg `11.3539ms` (`11.5941, 11.1827, 11.3196, 11.4174, 11.2555`) over five runs (~`8.59%` faster).
   EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context.py:586-646, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:286-290, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:293-296, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:302-302, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:38-58
