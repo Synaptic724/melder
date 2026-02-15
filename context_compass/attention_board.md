@@ -15,9 +15,27 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | static invoke-lane specialization retained (`overrides: shallow -1.78%, wide -4.26%, diamond -2.93%, solo +0.92%` vs post-continue baseline); continue next hotspot wave from new retained state | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
+| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | raw-key reuse patch-map slice was rejected/reverted (`shallow +3.00%` regression vs post-continue baseline); continue next hotspot wave from retained static-invoke baseline | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: The one-key raw-key reuse slice in `OverridePatchMap.apply_with_socket_shape(...)` is rejected and reverted because the cadence window regressed on the primary shallow lane (`+3.00%` vs post-continue baseline), even though wide/diamond improved.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_rawkey_reuse_delta_vs_postcontinue_baseline.txt:1-5, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_rawkey_reuse_baseline.txt:1-5
+  IMPACT: Retained baseline stays on the prior static invoke-lane slice; no patch-map behavior change is carried forward.
+  NEXT: Continue with the next structural hotspot outside this rejected path.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Raw-key reuse cadence reruns completed (`overrides x5`, `fast x3`) and produced mixed results: overrides `solo +0.31%`, `shallow +3.00%`, `wide -4.52%`, `diamond -1.53%` against the post-continue baseline.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_rawkey_reuse_baseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_rawkey_reuse_delta_vs_postcontinue_baseline.txt:1-11
+  IMPACT: The slice is measurable and correctness-safe but not a priority-lane win.
+  NEXT: Keep iterating from retained state with a different structural optimization target.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-15
   TYPE: DECISION
   CLAIM: Static invoke-lane specialization slice is retained. Override lanes improved vs post-continue baseline (`shallow -1.78%`, `wide -4.26%`, `diamond -2.93%`) with minor solo variance (`+0.92%`); fast drift is treated as environment noise because this slice only changes override emitter/runtime paths.

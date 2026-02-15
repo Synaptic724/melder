@@ -65,6 +65,51 @@ Phase12/CreationContext and validate with targeted profiler suites.
 ## Notes
 - DATE: 2026-02-15
   TYPE: DECISION
+  CLAIM: Reject and revert the one-key raw-key reuse slice in `OverridePatchMap.apply_with_socket_shape(...)`. The cadence window regressed on the primary shallow override lane (`+3.00%`) versus the retained post-continue baseline, so this patch does not meet the target objective despite wide/diamond gains.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_rawkey_reuse_delta_vs_postcontinue_baseline.txt:1-5, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_rawkey_reuse_baseline.txt:1-5
+  IMPACT: Keep the prior retained runtime state and avoid shipping a mixed-result patch that regresses the priority lane.
+  NEXT: Revert patch-map raw-key reuse changes and continue with the next structural hotspot slice outside this path.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Full cadence reruns for the raw-key reuse slice completed successfully (`overrides x5`, `fast x3`) and produced mixed results: overrides `solo +0.31%`, `shallow +3.00%`, `wide -4.52%`, `diamond -1.53%` versus post-continue baseline; fast reference was mixed with small regressions on shallow/wide/diamond.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_rawkey_reuse_baseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_rawkey_reuse_delta_vs_postcontinue_baseline.txt:1-11
+  IMPACT: The slice is measurable and correctness-safe but not a net win on the primary shallow override lane.
+  NEXT: Apply keep/revert decision using the primary-lane objective.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Focused validation for the raw-key reuse slice is green: patch-map unit module (`5 passed`) and CreationContext unit module (`17 passed`) both passed.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_patchmaps_rawkey_reuse_slice.txt:9-9, benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_patchmaps_rawkey_reuse_slice.txt:19-19
+  IMPACT: Runtime optimization patch is behavior-safe on the targeted override preprocessing path before benchmark cadence.
+  NEXT: Run normal cadence (`overrides x5`, `fast x3`) and compute delta vs current retained baseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: `OverridePatchMap.apply_with_socket_shape(...)` now caches one-key raw-key target metadata (`_last_single_matches` + shape) separately from value-identity cache. When the same raw key repeats with a different override object identity, it now skips `_resolve_targets_for_raw_key(...)` and only rebuilds the final socket->value map.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:104-104, src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:149-149, src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:276-300, tests/unit/melder/spellbook/spell_crafter/blueprints/test_patch_maps.py:121-150
+  IMPACT: Primary one-key override workload can bypass repeated raw-key resolution even when override instances are replaced each call.
+  NEXT: Run focused unit validation for patch-map behavior and then rerun normal benchmark cadence to decide keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Current benchmark override workload passes one-key payloads with a freshly allocated override instance per call, while `OverridePatchMap.apply_with_socket_shape(...)` only reuses its single-key fast cache when both raw key and `id(value)` match. This means the primary one-key lane still pays raw-key target resolution + override-map rebuild on most calls.
+  EVIDENCE: benchmarks/testing_other_di/test_overrides_all.py:577-577, src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:268-292, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:10-10
+  IMPACT: The retained one-key cache is underutilized on the dominant benchmark shape and remains a direct runtime optimization target.
+  NEXT: Add a raw-key reuse lane for one-key payloads in `apply_with_socket_shape(...)` so changing value identities can still skip repeated target-resolution work.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
   CLAIM: Keep the static invoke-lane specialization slice. Override target lanes improved against the post-continue baseline (`shallow -1.78%`, `wide -4.26%`, `diamond -2.93%`) with minor solo variance (`+0.92%`); fast-lane drift is treated as environmental noise because this slice only changes override shape emission/runtime.
   EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_static_invoke_flags_delta_vs_postcontinue_baseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_static_invoke_flags_baseline.txt:1-11
   IMPACT: Retained override baseline moves down again on the priority lanes, and wave-1 can continue from this state.
