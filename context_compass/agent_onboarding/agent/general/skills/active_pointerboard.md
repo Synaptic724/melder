@@ -34,11 +34,20 @@ Operating rules
 - Every row must map to exactly one canonical ticket path.
 - Keep row text short and operational.
 - If a claim is uncertain, mark it in the ticket `Unknowns`, not on this board.
+- Execution is blocked when active work has no matching board row; repair board routing before continuing implementation or validation.
 
 Re-entry protocol
 1) Open `context_compass/attention_board.md`.
 2) Read rows with `reread=REQUIRED`.
 3) Open linked ticket(s) and resume from `next`.
+
+Ticket closure sync protocol (mandatory)
+1) When a ticket is moved to a completed folder, update board rows in the same change pass.
+2) Remove/replace any `## Active Items` row referencing the closed ticket.
+3) Prune `## Active Attention Details` entries tied only to the closed ticket.
+4) Add one compact row to `## Recently Closed Anchors` for traceability.
+5) Keep anchors capped to 12 rows (drop oldest first).
+6) Keep active rows free of completed-ticket paths.
 
 Anti-patterns
 - Using board as a second ticket system.
@@ -51,3 +60,4 @@ References
 - `context_compass/agent_onboarding/agent/general/skills/memory_management.md`
 - `context_compass/agent_onboarding/agent/general/skills/reactive_documentation.md`
 - `context_compass/agent_onboarding/agent/general/skills/active_documentation.md`
+- `context_compass/agent_onboarding/agent/general/skills/ticket_closure_attention_sync.md`

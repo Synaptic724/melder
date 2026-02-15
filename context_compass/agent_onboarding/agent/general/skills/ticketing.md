@@ -50,6 +50,24 @@ Workflow rules
    - Add a completion summary + date.
    - Move the ticket to its matching completed folder (`epics/completed/`,
      `stories/completed/`, or `tasks/completed/`).
+11) Immediately run deterministic closure sync for `attention_board.md`:
+   - Remove/replace active row(s) that point to the closed ticket.
+   - Prune stale attention details tied only to the closed ticket.
+   - Add one compact row under `Recently Closed Anchors`.
+   - Keep anchor rows capped (oldest removed first).
+
+Mandatory execution gates
+- Active ticket gate:
+  - Do not implement or validate without an active ticket for the work.
+- Routing gate:
+  - Do not implement or validate unless `attention_board.md` has an active row
+    that points to the same active ticket.
+- Notes gate:
+  - Do not start another investigation/edit/validation tranche until the current
+    meaningful finding is appended to ticket `## Notes` with evidence pointers.
+- Repair gate:
+  - If any gate is broken or stale, stop and repair ticket/board/notes state
+    before continuing.
 
 Notes format requirement
 - New note entries should include:
@@ -80,3 +98,4 @@ References
 - `SKILLS.MD`
 - `CONTEXT_COMPACTION.md`
 - `agent_onboarding/agent/general/skills/active_documentation.md`
+- `agent_onboarding/agent/general/skills/ticket_closure_attention_sync.md`

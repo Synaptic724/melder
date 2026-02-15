@@ -15,6 +15,8 @@ Core rule
 - UNKNOWN is the default claim state until evidence promotes a claim to FACT.
 - Do not continue investigation to the next finding until the current finding
   is documented.
+- Do not continue to code edits or validation until the current meaningful
+  finding is documented in `## Notes` with evidence and next action.
 
 Canonical storage
 - Primary: `## Notes` in the active ticket being worked.

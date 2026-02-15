@@ -21,23 +21,24 @@ Read order (baseline)
 16) agent_onboarding/agent/general/skills/active_documentation.md
 17) agent_onboarding/agent/general/skills/context_window_budget.md
 18) agent_onboarding/agent/general/skills/active_pointerboard.md
-19) agent_onboarding/agent/general/skills/testing/testing_overview.md
-20) agent_onboarding/agent/general/skills/python/docstrings.md
-21) agent_onboarding/agent/general/skills/python/comments.md
-22) agent_onboarding/agent/general/skills/python/typing.md
-23) agent_onboarding/agent/general/skills/python/interfaces.md
-24) agent_onboarding/agent/general/skills/python/init_and_ownership.md
-25) agent_onboarding/agent/general/skills/python/cleanup_and_disposal.md
-26) agent_onboarding/agent/general/skills/python/logging.md
-27) agent_onboarding/agent/general/skills/python/error_model.md
-28) agent_onboarding/agent/general/skills/python/module_scope.md
-29) agent_onboarding/agent/general/skills/python/banned_patterns.md
-30) agent_onboarding/agent/general/skills/python/hot_path_attribute_aliasing.md
-31) agent_onboarding/agent/general/skills/python/refactor_limits.md
-32) agent_onboarding/agent/general/skills/staleness_protocol.md
-33) agent_onboarding/agent/general/skills/self_certification.md
-34) agent_onboarding/agent/general/skills/user_approved_certification.md
-35) agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md
+19) agent_onboarding/agent/general/skills/ticket_closure_attention_sync.md
+20) agent_onboarding/agent/general/skills/testing/testing_overview.md
+21) agent_onboarding/agent/general/skills/python/docstrings.md
+22) agent_onboarding/agent/general/skills/python/comments.md
+23) agent_onboarding/agent/general/skills/python/typing.md
+24) agent_onboarding/agent/general/skills/python/interfaces.md
+25) agent_onboarding/agent/general/skills/python/init_and_ownership.md
+26) agent_onboarding/agent/general/skills/python/cleanup_and_disposal.md
+27) agent_onboarding/agent/general/skills/python/logging.md
+28) agent_onboarding/agent/general/skills/python/error_model.md
+29) agent_onboarding/agent/general/skills/python/module_scope.md
+30) agent_onboarding/agent/general/skills/python/banned_patterns.md
+31) agent_onboarding/agent/general/skills/python/hot_path_attribute_aliasing.md
+32) agent_onboarding/agent/general/skills/python/refactor_limits.md
+33) agent_onboarding/agent/general/skills/staleness_protocol.md
+34) agent_onboarding/agent/general/skills/self_certification.md
+35) agent_onboarding/agent/general/skills/user_approved_certification.md
+36) agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md
 
 Parallel reading allowance
 - The order above is canonical for reference, but parallel reading is allowed.
@@ -56,13 +57,14 @@ When to read what
 - Failure triage/debugging: technical_expertise + banned_patterns before proposing fixes.
 - Planning and work intake: ticketing, memory_management, reactive_documentation, active_documentation, context_window_budget, policy_router.
 - Active investigations and long traces: reactive_documentation + active_documentation + context_window_budget + ticket handoff sections.
-- Active ticket routing and re-entry: active_pointerboard + ticket handoff sections.
+- Active ticket routing and re-entry: active_pointerboard + ticket_closure_attention_sync + ticket handoff sections.
 - Python code edits: policy_router + python/*.md
 - Test work: testing/*.md (plus policy_router)
 
 Policy and workflow
 - agent_onboarding/agent/general/policies/policy_router.md
 - agent_onboarding/agent/general/skills/ticketing.md
+- agent_onboarding/agent/general/skills/ticket_closure_attention_sync.md
 - agent_onboarding/agent/general/skills/context_protocol.md
 - agent_onboarding/agent/general/skills/staleness_protocol.md
 

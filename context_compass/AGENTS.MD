@@ -436,6 +436,11 @@ As a ritual, after implementing a change:
 
 * Before starting any planned work beyond answering questions, create a GitHub-style ticket (epic/story/task) in `epics/`, `stories/`, or `tasks/` using `templates/`.
 * Treat `attention_board.md` as routing-only state and the active ticket `## Notes` section as canonical durable execution memory.
+* Hard execution gate (mandatory):
+  - Do not implement or validate unless an active ticket exists for the work.
+  - Do not implement or validate unless `attention_board.md` has an active row routing to that ticket.
+  - Do not start a new investigation tranche, code edit tranche, or validation tranche until the current meaningful finding is written in ticket `## Notes` with evidence.
+  - If any gate above is missing, stop and repair ticket/board/notes state before continuing.
 * Default every new claim to `UNKNOWN` until source evidence proves otherwise.
 * Ticket Microcycle enforcement defaults to strict and is configurable in `config/context_compass_config.yaml`.
 * Follow a strict Ticket Microcycle while working:
@@ -458,6 +463,11 @@ As a ritual, after implementing a change:
 * Before closing any ticket, walk through what was achieved and ask if the acceptance criteria are met.
 * Only after explicit confirmation, move the ticket(s) to the matching completed folder
   (`epics/completed/`, `stories/completed/`, `tasks/completed/`) with a short summary and date (per `README.md`).
+* Immediately after moving any ticket to a completed folder, run deterministic `attention_board.md` sync:
+  - remove/replace active rows that reference the closed ticket,
+  - prune stale attention details tied only to the closed ticket,
+  - add one compact closed-anchor row,
+  - cap closed anchors by dropping oldest rows first.
 
 ### F) Context Compaction Policy (Required)
 

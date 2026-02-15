@@ -40,6 +40,11 @@ Provide a consistent planning and tracking workflow that uses GitHub-style ticke
     - Add a short completion summary with the date.
     - Move the file to its matching completed folder (`epics/completed/`,
       `stories/completed/`, or `tasks/completed/`).
+10. Immediately run deterministic board sync for closure:
+    - Remove/replace active rows that point to the closed ticket.
+    - Prune stale attention details tied only to the closed ticket.
+    - Add one compact closed anchor row.
+    - Keep closed anchors capped by dropping the oldest rows first.
 
 ## DO NOT ASSUME / Unknowns Gate
 Rule: No Unverified Claims.
@@ -104,6 +109,7 @@ This section exists to reduce “process drift” when the workflow is executed 
 
 ### Definition of Done (DoD) for a ticket
 Before moving a ticket to a completed folder:
+- [ ] `attention_board.md` is synchronized using deterministic closure-sync rules.
 - [ ] Acceptance criteria are explicitly met (not “mostly done”).
 - [ ] Any new/changed behavior has been documented in the relevant C4/C3 docs.
 - [ ] Unknowns introduced during work are either resolved (with evidence) or recorded as **UNKNOWN** with investigation pointers.
@@ -132,3 +138,5 @@ Even inside tickets:
   - `REREAD` (`REQUIRED` | `HELPFUL`)
   - `SCORE_0_TO_10` (compaction usefulness score)
 - Legacy entries may omit newer fields; do not rewrite history unless correcting factual errors.
+
+
