@@ -380,6 +380,39 @@ class _SpellSystemStateStub:
         return None
 
 
+class _ConduitResolutionStateStub:
+    """
+    Purpose:
+        Provide a conduit-resolution state stub with error gating semantics.
+    Contract:
+        Tracks whether the conduit currently reports resolution errors.
+    """
+
+    def __init__(self, *, has_errors: bool = False) -> None:
+        """
+        Purpose:
+            Initialize conduit-resolution error state.
+        Contract:
+            Stores one mutable boolean used by has_errors().
+        Args:
+            has_errors: Initial conduit-resolution error flag.
+        Returns:
+            None.
+        """
+        self._has_errors = has_errors
+
+    def has_errors(self) -> bool:
+        """
+        Purpose:
+            Return current conduit-resolution error state.
+        Contract:
+            True means foundational resolution reported errors.
+        Returns:
+            bool: Current conduit-resolution error state.
+        """
+        return self._has_errors
+
+
 class _SpellSystemStatesStub:
     """
     Purpose:
@@ -403,6 +436,7 @@ class _SpellSystemStatesStub:
         self._states = list(states or [])
         self._states_by_index_id = {state.spell_index_id: state for state in self._states}
         self._local_topologies: dict[str, object] = {}
+        self._resolution_state_by_conduit: dict[str, _ConduitResolutionStateStub] = {}
         self.update_calls: list[tuple[object, list[str]]] = []
         self.topology_calls: list[tuple[object, object]] = []
         self.unregistered_lineages: list[object] = []
@@ -506,6 +540,42 @@ class _SpellSystemStatesStub:
             None.
         """
         self._local_topologies[spell_id] = topology
+
+    def set_conduit_resolution_has_errors(self, conduit_id: str, has_errors: bool) -> None:
+        """
+        Purpose:
+            Set the conduit-resolution error flag for one conduit id.
+        Contract:
+            Creates state lazily when a conduit has no prior state.
+        Args:
+            conduit_id: Conduit id whose resolution state should be updated.
+            has_errors: Error flag to store.
+        Returns:
+            None.
+        """
+        state = self._resolution_state_by_conduit.get(conduit_id)
+        if state is None:
+            state = _ConduitResolutionStateStub(has_errors=has_errors)
+            self._resolution_state_by_conduit[conduit_id] = state
+            return
+        state._has_errors = has_errors
+
+    def get_conduit_resolution_state(self, conduit_id: str) -> _ConduitResolutionStateStub:
+        """
+        Purpose:
+            Return conduit-resolution state for the supplied conduit id.
+        Contract:
+            Returns a stable per-conduit state object; defaults to no errors.
+        Args:
+            conduit_id: Conduit id whose resolution state is requested.
+        Returns:
+            _ConduitResolutionStateStub: Conduit-resolution state object.
+        """
+        state = self._resolution_state_by_conduit.get(conduit_id)
+        if state is None:
+            state = _ConduitResolutionStateStub(has_errors=False)
+            self._resolution_state_by_conduit[conduit_id] = state
+        return state
 
 
 class _SpellStub:
@@ -1515,7 +1585,7 @@ def test_cleanup_idempotent() -> None:
     Raises:
         AssertionError: If cleanup repeats or raises on second call.
     """
-    crafter, _, _ = _build_spell_and_crafter()
+    crafter, _, _ = _build_spell_and_crafter(spell_system_states=_SpellSystemStatesStub())
     requirements = _CleanableStub()
     crafter._requirements = requirements
 
@@ -1591,7 +1661,7 @@ def test_properties_raise_after_cleanup(property_name: str) -> None:
     Raises:
         AssertionError: If any property does not enforce cleaned checks.
     """
-    crafter, _, _ = _build_spell_and_crafter()
+    crafter, _, _ = _build_spell_and_crafter(spell_system_states=_SpellSystemStatesStub())
     crafter.cleanup()
 
     with pytest.raises(RuntimeError, match="cleaned"):
@@ -3735,7 +3805,7 @@ def test_run_phase_root_blueprints_cancellation() -> None:
     Raises:
         AssertionError: If cancellation does not raise.
     """
-    crafter, _, _ = _build_spell_and_crafter()
+    crafter, _, _ = _build_spell_and_crafter(spell_system_states=_SpellSystemStatesStub())
     cancel = _CancelStub(is_set=True)
     crafter._spell_system_states = _SpellSystemStatesStub(
         states=[
@@ -3942,7 +4012,7 @@ def test_run_phase_change_control_cancellation() -> None:
     Raises:
         AssertionError: If cancellation does not raise.
     """
-    crafter, _, _ = _build_spell_and_crafter()
+    crafter, _, _ = _build_spell_and_crafter(spell_system_states=_SpellSystemStatesStub())
     crafter._entire_dag_blueprint_phase5 = {}
     cancel = _CancelStub(is_set=True)
     crafter.run_phase_change_control("cid", cancel_event=cancel)
@@ -4068,7 +4138,7 @@ def test_run_all_phases_order(monkeypatch: pytest.MonkeyPatch) -> None:
     Raises:
         AssertionError: If phases are called out of order.
     """
-    crafter, _, _ = _build_spell_and_crafter()
+    crafter, _, _ = _build_spell_and_crafter(spell_system_states=_SpellSystemStatesStub())
     calls: list[str] = []
 
     def _record(name: str):
@@ -4122,12 +4192,81 @@ def test_run_all_phases_order(monkeypatch: pytest.MonkeyPatch) -> None:
         "local_frame",
         "validation",
         "root_blueprints",
+        "system_validation",
+        "change_control",
         "occurrence_plan",
         "injection_plan",
         "patch_maps",
         "execution_plan",
+    ]
+
+
+def test_run_all_phases_skips_plan_phases_when_foundational_resolution_has_errors(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify run_all_phases skips phases 8-11 when foundational phases report conduit errors.
+    Contract:
+        Executes phases 1-7, then returns after cleanup when conduit resolution has errors.
+    Args:
+        monkeypatch: Pytest fixture for patching phase methods.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If plan phases run despite foundational conduit errors.
+    """
+    states = _SpellSystemStatesStub()
+    crafter, _, _ = _build_spell_and_crafter(spell_system_states=states)
+    calls: list[str] = []
+
+    def _record(name: str):
+        def _phase(
+                self: SpellCrafter,
+                *args: object,
+                cancel_event: Any = None,
+        ) -> None:
+            del self, args, cancel_event
+            calls.append(name)
+        return _phase
+
+    def _change_control_with_error(
+            self: SpellCrafter,
+            conduit_id: str,
+            cancel_event: Any = None,
+    ) -> None:
+        del self, cancel_event
+        calls.append("change_control")
+        states.set_conduit_resolution_has_errors(conduit_id, True)
+
+    def _cleanup(self: SpellCrafter) -> None:
+        del self
+        calls.append("cleanup_phase_artifacts")
+
+    monkeypatch.setattr(SpellCrafter, "run_phase_requirements", _record("requirements"))
+    monkeypatch.setattr(SpellCrafter, "run_phase_symbolic_graph", _record("symbolic"))
+    monkeypatch.setattr(SpellCrafter, "run_phase_local_frame", _record("local_frame"))
+    monkeypatch.setattr(SpellCrafter, "run_phase_validation", _record("validation"))
+    monkeypatch.setattr(SpellCrafter, "run_phase_root_blueprints", _record("root_blueprints"))
+    monkeypatch.setattr(SpellCrafter, "run_phase_system_validation", _record("system_validation"))
+    monkeypatch.setattr(SpellCrafter, "run_phase_change_control", _change_control_with_error)
+    monkeypatch.setattr(SpellCrafter, "run_phase_occurrence_plan", _record("occurrence_plan"))
+    monkeypatch.setattr(SpellCrafter, "run_phase_injection_plan", _record("injection_plan"))
+    monkeypatch.setattr(SpellCrafter, "run_phase_patch_maps", _record("patch_maps"))
+    monkeypatch.setattr(SpellCrafter, "run_phase_execution_plan", _record("execution_plan"))
+    monkeypatch.setattr(SpellCrafter, "cleanup_phase_artifacts", _cleanup)
+
+    crafter.run_all_phases("cid", cancel_event=None)
+
+    assert calls == [
+        "requirements",
+        "symbolic",
+        "local_frame",
+        "validation",
+        "root_blueprints",
         "system_validation",
         "change_control",
+        "cleanup_phase_artifacts",
     ]
 
 
@@ -4144,7 +4283,7 @@ def test_run_all_phases_passes_cancel_event(monkeypatch: pytest.MonkeyPatch) -> 
     Raises:
         AssertionError: If any phase does not receive the cancel event.
     """
-    crafter, _, _ = _build_spell_and_crafter()
+    crafter, _, _ = _build_spell_and_crafter(spell_system_states=_SpellSystemStatesStub())
     cancel = _CancelStub(is_set=False)
     received: list[object | None] = []
 

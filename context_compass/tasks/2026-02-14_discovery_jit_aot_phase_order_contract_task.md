@@ -3,11 +3,11 @@
 ## Metadata
 - Task ID: TASK-2026-02-14-discovery-jit-aot-phase-order-contract
 - Story: STORY-2026-02-14-jit-aot-split-discovery-and-viability
-- Status: ready
+- Status: in_progress
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
-- Updated: 2026-02-14
+- Updated: 2026-02-15
 
 ## Objective
 Establish whether the requested split shape (run phases 1-7 at conjure and defer
@@ -58,6 +58,14 @@ Establish whether the requested split shape (run phases 1-7 at conjure and defer
 - [ ] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Resolution ordering contracts currently drift across paths: `SpellbookCreationSystem` runs foundational phases (`5/6/7`) before plan phases (`8/9/10/11`), while `SpellCrafter.run_all_phases` still runs `5/8/9/10/11/6/7`.
+  EVIDENCE: src/melder/spellbook/spellbook_creation_system.py:852-905, src/melder/spellbook/spellbook_creation_system.py:1286-1459, src/melder/spellbook/spell_crafter/spell_crafter.py:5047-5094, src/melder/spellbook/spell.py:1299-1349
+  IMPACT: Revalidation can execute a different phase order than conjure-time resolution, which weakens split-mode contract consistency.
+  NEXT: Create a dedicated implementation task to align SpellCrafter/Spell ordering with SpellbookCreationSystem before continuing JIT/AOT scope expansion.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Current full-run path orders 8-11 before 6-7, while structural helper covers only 1-4.

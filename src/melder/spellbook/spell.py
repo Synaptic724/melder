@@ -1311,12 +1311,12 @@ class Spell(Cleanable, ISpell):
             - Phase 3: Local resolution frame / DAG construction.
             - Phase 4: Validation.
             - Phase 5: Root blueprint construction.
+            - Phase 6: System validation.
+            - Phase 7: Change-control wiring.
             - Phase 8: Occurrence plan compilation.
             - Phase 9: Injection plan compilation.
             - Phase 10: Patch map compilation.
             - Phase 11: Execution plan compilation.
-            - Phase 6: System validation.
-            - Phase 7: Change-control wiring.
 
         Each phase honours the optional :class:`CancellationEvent`. If the
         event is set, the underlying phase methods will raise via
@@ -1339,13 +1339,13 @@ class Spell(Cleanable, ISpell):
         crafter.run_phase_local_frame(cancel_event=cancel_event)
         crafter.run_phase_validation(cancel_event=cancel_event)
         crafter.run_phase_root_blueprints(conduit_id, cancel_event=cancel_event)
+        crafter.run_phase_system_validation(conduit_id, cancel_event=cancel_event)
+        crafter.run_phase_change_control(conduit_id, cancel_event=cancel_event)
         crafter.run_phase_occurrence_plan(conduit_id, cancel_event=cancel_event)
         crafter.run_phase_injection_plan(conduit_id, cancel_event=cancel_event)
         crafter.run_phase_patch_maps(conduit_id, cancel_event=cancel_event)
         crafter.run_phase_execution_plan(conduit_id, cancel_event=cancel_event)
         self._cleanup_creation_context()
-        crafter.run_phase_system_validation(conduit_id, cancel_event=cancel_event)
-        crafter.run_phase_change_control(conduit_id, cancel_event=cancel_event)
         crafter.cleanup_phase_artifacts()
 
 

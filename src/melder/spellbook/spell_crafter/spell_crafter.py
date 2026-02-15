@@ -5061,12 +5061,16 @@ class SpellCrafter(Cleanable):
             - Phase 3: Local frame / DAG
             - Phase 4: Validation
             - Phase 5: Root blueprints
+            - Phase 6: System validation
+            - Phase 7: Change control
             - Phase 8: Occurrence plan
             - Phase 9: Injection plan
             - Phase 10: Patch maps
             - Phase 11: Execution plan
-            - Phase 6: System validation
-            - Phase 7: Change control
+
+        Plan-phase gate:
+            - If conduit resolution state reports foundational errors after
+              phases 5/6/7, phases 8/9/10/11 are skipped for this run.
 
         Args:
             conduit_id:
@@ -5086,10 +5090,16 @@ class SpellCrafter(Cleanable):
         self.run_phase_local_frame(cancel_event=cancel_event)
         self.run_phase_validation(cancel_event=cancel_event)
         self.run_phase_root_blueprints(conduit_id, cancel_event=cancel_event)
+        self.run_phase_system_validation(conduit_id, cancel_event=cancel_event)
+        self.run_phase_change_control(conduit_id, cancel_event=cancel_event)
+
+        resolution_state = self._spell_system_states.get_conduit_resolution_state(conduit_id)
+        if resolution_state is not None and resolution_state.has_errors():
+            self.cleanup_phase_artifacts()
+            return
+
         self.run_phase_occurrence_plan(conduit_id, cancel_event=cancel_event)
         self.run_phase_injection_plan(conduit_id, cancel_event=cancel_event)
         self.run_phase_patch_maps(conduit_id, cancel_event=cancel_event)
         self.run_phase_execution_plan(conduit_id, cancel_event=cancel_event)
-        self.run_phase_system_validation(conduit_id, cancel_event=cancel_event)
-        self.run_phase_change_control(conduit_id, cancel_event=cancel_event)
         self.cleanup_phase_artifacts()

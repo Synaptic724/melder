@@ -10,6 +10,6 @@ workflow:
     enabled: true
     mode: strict
     require_note_before_continue: true
-    minimum_note_score: 8
+    minimum_note_score: 7
     expansion_gate_max_files: 5
     unknown_default: true

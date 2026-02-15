@@ -894,12 +894,12 @@ def test_run_all_phases_invokes_crafter_in_order():
         "local_frame",
         "validation",
         "root_blueprints",
+        "system_validation",
+        "change_control",
         "occurrence_plan",
         "injection_plan",
         "patch_maps",
         "execution_plan",
-        "system_validation",
-        "change_control",
         "cleanup_phase_artifacts",
     ]
     observed = [

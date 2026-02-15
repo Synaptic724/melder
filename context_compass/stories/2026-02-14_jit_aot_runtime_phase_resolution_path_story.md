@@ -3,11 +3,11 @@
 ## Metadata
 - Story ID: STORY-2026-02-14-jit-aot-runtime-phase-resolution-path
 - Epic: EPIC-2026-02-14-jit-aot-phase-split-configuration
-- Status: ready
+- Status: in_progress
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
-- Updated: 2026-02-14
+- Updated: 2026-02-15
 
 ## User Narrative
 As a runtime maintainer, I want a safe deferred-resolution runtime path for
@@ -43,6 +43,7 @@ opt-in flexibility.
 - `TASK-2026-02-14-discovery-jit-aot-phase-order-contract`
 
 ## Tasks (Implementation Checklist)
+- [ ] Task: TASK-2026-02-15-align-spellcrafter-phase-order-with-spellbook-creation-system - align runtime phase-order contract parity before broader split-mode changes.
 - [ ] Task: Use discovery outputs to define exact deferred-phase runtime triggers.
 - [ ] Task: Create implementation task for runtime phase-resolution path after discovery decision gate.
 - [ ] Task: Create validation task for split-mode regression matrix after implementation scope is approved.
@@ -73,6 +74,14 @@ opt-in flexibility.
 - 2026-02-14: Story created as runtime-implementation lane, explicitly gated by discovery and contract stories.
 
 ## Notes
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: User requested an immediate patch to align SpellCrafter phase ordering with SpellbookCreationSystem; a dedicated implementation task was opened to execute that change without waiting for broader split-mode rollout.
+  EVIDENCE: context_compass/tasks/2026-02-15_align_spellcrafter_phase_order_with_spellbook_creation_system_task.md:1-95, src/melder/spellbook/spellbook_creation_system.py:852-905, src/melder/spellbook/spell_crafter/spell_crafter.py:5047-5094
+  IMPACT: Runtime story moved from planning-ready to active implementation for a narrow contract-parity fix.
+  NEXT: Complete TASK-2026-02-15-align-spellcrafter-phase-order-with-spellbook-creation-system and report validation results.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Meld path currently uses spell-owned creation-context switch gating and resolves/builds context on demand through `_get_or_build_creation_context`.

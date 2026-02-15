@@ -2,11 +2,11 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-02-14-jit-aot-phase-split-configuration
-- Status: ready
+- Status: in_progress
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
-- Updated: 2026-02-14
+- Updated: 2026-02-15
 - Target Window: 2026-Q1
 - Related Program/Initiative: Runtime Resolution Flexibility
 
@@ -123,6 +123,14 @@ The MRP is a durable dual-mode contract:
 - 2026-02-14: Added explicit assumption-challenge task per user request to push back on weak ideas with evidence.
 
 ## Notes
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: User requested immediate implementation of the phase-order parity patch; epic execution moved from discovery-ready to in-progress with a dedicated alignment task.
+  EVIDENCE: context_compass/tasks/2026-02-15_align_spellcrafter_phase_order_with_spellbook_creation_system_task.md:1-95, context_compass/stories/2026-02-14_jit_aot_runtime_phase_resolution_path_story.md:1-83
+  IMPACT: Epic now includes an active narrow implementation lane ahead of broader split-mode rollout.
+  NEXT: Complete TASK-2026-02-15-align-spellcrafter-phase-order-with-spellbook-creation-system and reassess remaining discovery order.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Current spell-level phase sequence runs 8-11 before 6-7 in `run_all_phases`, while structural-only helper runs only 1-4.

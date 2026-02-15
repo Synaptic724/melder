@@ -18,10 +18,16 @@ Attention details rule
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
 | social contract document | in_progress | codex | none | wire references and finalize user review pass | `context_compass/tasks/2026-02-14_social_contract_active_partner_performance_engineering_document_task.md` | 2026-02-14 | REQUIRED |
-| jit/aot phase split configuration | ready | codex | none | execute `TASK-2026-02-14-discovery-jit-aot-phase-order-contract` | `context_compass/epics/2026-02-14_jit_aot_phase_split_configuration_epic.md` | 2026-02-14 | REQUIRED |
+| jit/aot phase split configuration | in_progress | codex | none | execute `TASK-2026-02-15-align-spellcrafter-phase-order-with-spellbook-creation-system` | `context_compass/tasks/2026-02-15_align_spellcrafter_phase_order_with_spellbook_creation_system_task.md` | 2026-02-15 | REQUIRED |
 | snapshot ownership cleanup audit | ready | codex | none | waiting for user prioritization | `context_compass/epics/2026-02-14_snapshot_ownership_cleanup_audit_epic.md` | 2026-02-14 | HELPFUL |
 
 ## Active Attention Details
+- TYPE: DECISION
+- CLAIM: User requested an immediate patch to align SpellCrafter resolution ordering with SpellbookCreationSystem, so work was rerouted to a dedicated implementation task before additional discovery expansion.
+- EVIDENCE: `context_compass/tasks/2026-02-15_align_spellcrafter_phase_order_with_spellbook_creation_system_task.md:1-95`, `context_compass/tasks/2026-02-14_discovery_jit_aot_phase_order_contract_task.md:67-73`, `src/melder/spellbook/spellbook_creation_system.py:852-905`, `src/melder/spellbook/spell_crafter/spell_crafter.py:5047-5094`
+- REREAD: REQUIRED
+- NEXT: Implement the phase-order alignment patch and validate targeted unit tests.
+
 - TYPE: DECISION
 - CLAIM: `TYPE` schema is expanded and documented with robust semantics for all base + new types, including generic escalation type `RAISE` and required recategorization behavior.
 - EVIDENCE: `context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md:544-713`, `context_compass/agent_onboarding/agent/general/skills/reactive_documentation.md:28-43`, `context_compass/agent_onboarding/agent/general/skills/reactive_documentation.md:57-65`, `context_compass/WORKFLOW.md:127-127`
