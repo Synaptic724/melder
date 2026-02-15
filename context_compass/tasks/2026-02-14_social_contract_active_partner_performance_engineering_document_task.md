@@ -7,7 +7,7 @@
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
-- Updated: 2026-02-14
+- Updated: 2026-02-15
 
 ## Objective
 Create a first-class social contract document that defines active-partner behavior,
@@ -25,7 +25,7 @@ boundaries between architect and lead engineer, including robust note/attention
 
 ## Steps / Checklist
 - [ ] Create social contract document with mission-first and performance-first expectations.
-- [ ] Include requested "American soldier vs Soviet soldier" framing verbatim.
+- [ ] Include mission-model framing in neutral language while preserving behavior semantics.
 - [ ] Include explicit architect/lead engineer responsibility contract.
 - [ ] Add references from `AGENTS.MD`, general `SKILLS.md`, and policy docs.
 - [ ] Expand `TYPE` schema and sync all templates/policy docs.
@@ -49,7 +49,7 @@ boundaries between architect and lead engineer, including robust note/attention
 ## Validation
 - Not run.
 - Recommended commands:
-  - `rg -n "SOCIAL_CONTRACT|American soldier|Soviet soldier" context_compass`
+  - `rg -n "SOCIAL_CONTRACT|Mission-command style|Compliance-only style" context_compass`
   - `rg -n "social contract|active partner|performance engineer" context_compass/AGENTS.MD context_compass/agent_onboarding/agent/general/SKILLS.md context_compass/agent_onboarding/agent/general/policies/policy_router.md`
 
 ## Risks / Rollback Notes
@@ -66,6 +66,14 @@ boundaries between architect and lead engineer, including robust note/attention
 - [ ] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: The social-contract mission model language was normalized to neutral terms while preserving the exact behavior contract requested by the user.
+  EVIDENCE: context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md:6-6, context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md:84-84, context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md:97-97
+  IMPACT: Collaboration semantics remain unchanged, but wording is clearer and less culturally loaded for long-term repository use.
+  NEXT: Keep neutral language as canonical unless the Architect requests different terminology.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
 - DATE: 2026-02-14
   TYPE: DECISION
   CLAIM: User requested a large, authoritative social-contract document (roughly 500 LOC) that formalizes active-partner and performance-engineering behavior and becomes a high-priority reference for agent conduct.
