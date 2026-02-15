@@ -64,6 +64,51 @@ Phase12/CreationContext and validate with targeted profiler suites.
 
 ## Notes
 - DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: The no-overrides shape-lane kwargs inline slice is retained: `_phase12_executor` no-targeted-override blocks now inline `_build_kwargs_no_overrides(...)` semantics directly, and repeated shallow overrides timings improved from baseline avg `16.1023ms` (`14.7660, 16.3306, 17.2102`) to post-change avg `14.4708ms` (`14.2484, 15.0098, 14.1543`) over matched 3-run windows while focused unit suites and both cprofile suites stayed green.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:989-1177, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1396-1644, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:337-357, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py:1-1151, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:1-825
+  IMPACT: Remaining no-targeted override helper dispatch is removed from shape-emitted Phase12 blocks and the primary override lane shows a double-digit steady-state improvement.
+  NEXT: Continue wave-1 with the next medium/high-risk slice on the cached override lane (`patch_maps.apply_with_socket_shape` and/or `_execute_with_overrides` front-door overhead), then remeasure with the same repeated sequence.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Next structural slice will target `_phase12_executor -> _build_kwargs_no_overrides` by adding a dedicated no-overrides inline kwargs emitter for shape-source blocks (not the override-aware inline builder), so no-target lanes can remove helper dispatch without paying override-membership/update overhead.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:18-23, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:991-1013, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:893-1024
+  IMPACT: If retained, this removes the remaining helper trampoline on the no-targeted-override shape path while preserving no-overrides semantics.
+  NEXT: Implement dedicated no-overrides kwargs inline emitter, validate unit/cprofile suites, and keep/revert by repeated shallow timing samples.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: The `OverridePatchMap.apply_with_socket_shape(...)` single-key metadata-cache slice is rejected and reverted.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:208-287, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:313-317, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:331-335
+  IMPACT: Keep prior patch-map implementation and avoid shipping a measured regression on the shallow override lane.
+  NEXT: Pivot the next slice to `_phase12_executor` runtime cost (`_build_kwargs_no_overrides` helper-hop path) instead of patch-map preprocessing.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: The patch-map single-key experiment regressed repeated shallow timings: pre-slice sample avg `11.4214ms` (`11.7084, 11.2952, 11.3239, 11.2232, 11.5563`) versus post-slice sample avg `12.0814ms` (`12.0543, 12.2585, 11.9193, 12.0721, 12.1026`) over same-setting 5-run samples.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:313-317, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:331-335
+  IMPACT: The cache-metadata micro-optimization did not improve end-to-end override execution and is not retained.
+  NEXT: Revert the patch-map slice and continue with a different hotspot target.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Next runtime slice targets `OverridePatchMap.apply_with_socket_shape(...)` single-key cached payload overhead by introducing a pre-decoded cache lane (`single_socket`/small-match metadata) and reducing per-call branching/object work in the dominant `len==1` path.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:9-10, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:47-54, src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:208-287
+  IMPACT: Keeps scope on the current top non-executor hotspot and can reduce cached override dispatcher overhead without changing public API.
+  NEXT: Patch `patch_maps.py`, run focused unit + profile suites, and keep/revert by repeated shallow timing samples.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
   TYPE: DECISION
   CLAIM: The no-override shape-inline kwargs slice is rejected and reverted because repeated shallow runs did not improve from the retained baseline.
   EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:991-1068, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:293-296, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:302-302, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:313-317

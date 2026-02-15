@@ -6,7 +6,6 @@ from melder.spellbook.spell_crafter.blueprints.execution_plan import (
     ExecutionPlanTargetKind,
 )
 from melder.spellbook.spell_crafter.blueprints.phase12_no_overrides_executor import (
-    _build_kwargs_no_overrides,
     _get_existing_creation,
     _register_spell_instance_prebound,
 )
@@ -383,7 +382,6 @@ def _build_phase12_overrides_executor_namespace(
         "_MISSING": _MISSING,
         "_construct_spell_instance_with_overrides": _construct_spell_instance_with_overrides,
         "_build_step_override_values": _build_step_override_values,
-        "_build_kwargs_no_overrides": _build_kwargs_no_overrides,
         "_build_kwargs_with_overrides": _build_kwargs_with_overrides,
         "_invoke_spell_with_kwargs": _invoke_spell_with_kwargs,
         "_EMPTY_OVERRIDE_VALUES": _EMPTY_OVERRIDE_VALUES,
@@ -645,7 +643,6 @@ def _build_phase12_overrides_executor_shape_source(
         "        root_instance_key=root_instance_key,",
         "        root_spell_id=root_spell_id,",
         "        any_overrides_present=any_overrides_present,",
-        "        _build_kwargs_no_overrides=_build_kwargs_no_overrides,",
         "        _EMPTY_OVERRIDE_VALUES=_EMPTY_OVERRIDE_VALUES,",
         "        _MISSING=_MISSING,",
         "        _get_existing_creation=_get_existing_creation,",
@@ -989,26 +986,214 @@ def _append_overrides_kwargs_inline_source(
     ])
 
 
+def _append_no_overrides_kwargs_inline_source(
+        *,
+        lines: list[str],
+        step_index: int,
+        indent: str,
+        dependency_resolution_order: Tuple[Tuple[str, Tuple[Tuple[str, Optional[int]], ...]], ...],
+        contract_positional_override: Optional[Sequence[Any]],
+        has_contract_payload: bool,
+        contract_payload_items: Tuple[Tuple[str, Any], ...],
+        uses_positional_override: bool,
+) -> None:
+    """
+    Append generated source lines for no-override kwargs assembly.
+
+    Contract:
+        - Mirrors `_build_kwargs_no_overrides(...)` dependency/contract behavior.
+        - Avoids override-membership/update work in shape lanes where overrides
+          are statically absent.
+        - Preserves missing-dependency error translation contract.
+    """
+    if (
+            not dependency_resolution_order
+            and contract_positional_override is None
+            and not has_contract_payload
+    ):
+        lines.append(f"{indent}kwargs_{step_index} = {{}}")
+        return
+
+    if (
+            not dependency_resolution_order
+            and contract_positional_override is None
+            and has_contract_payload
+    ):
+        if not contract_payload_items:
+            lines.append(f"{indent}kwargs_{step_index} = {{}}")
+            return
+        if not uses_positional_override:
+            lines.append(
+                f"{indent}kwargs_{step_index} = {dict(contract_payload_items)!r}"
+            )
+            return
+        lines.append(f"{indent}kwargs_{step_index} = {{}}")
+        for param_name, value in contract_payload_items:
+            if param_name == "__args__":
+                continue
+            lines.append(
+                f"{indent}kwargs_{step_index}[{param_name!r}] = {value!r}"
+            )
+        return
+
+    lines.append(f"{indent}kwargs_{step_index} = {{}}")
+
+    def _append_missing_dependency_raise(
+            *,
+            dependency_name_literal: str,
+            param_name_literal: str,
+            inner_indent: str,
+    ) -> None:
+        lines.extend([
+            f"{inner_indent}raise MeldExecutionError(",
+            f"{inner_indent}    spell_id=spell_id_{step_index},",
+            f"{inner_indent}    spell_name=spell_id_{step_index},",
+            f"{inner_indent}    node_id=spell_id_{step_index},",
+            f"{inner_indent}    param_name={param_name_literal},",
+            (
+                f"{inner_indent}    message=(\"Dependency \" + "
+                f"{dependency_name_literal} + \" missing while building args for '\" + "
+                f"spell_id_{step_index} + \"'.\"),"
+            ),
+            f"{inner_indent}) from exc",
+        ])
+
+    for param_index, dependency_entry in enumerate(dependency_resolution_order):
+        param_name, dependency_keys = dependency_entry
+        dependency_count = len(dependency_keys)
+        if dependency_count == 0:
+            continue
+        param_name_literal = repr(param_name)
+
+        if dependency_count == 1:
+            dependency_key = dependency_keys[0]
+            dependency_key_literal = repr(dependency_key)
+            dependency_name_literal = repr(dependency_key[0])
+            lines.extend([
+                f"{indent}try:",
+                (
+                    f"{indent}    kwargs_{step_index}[{param_name_literal}] = "
+                    f"instance_results[{dependency_key_literal}]"
+                ),
+                f"{indent}except KeyError as exc:",
+            ])
+            _append_missing_dependency_raise(
+                dependency_name_literal=dependency_name_literal,
+                param_name_literal=param_name_literal,
+                inner_indent=f"{indent}    ",
+            )
+            continue
+
+        if dependency_count == 2:
+            first_dependency_key = dependency_keys[0]
+            second_dependency_key = dependency_keys[1]
+            first_dependency_key_literal = repr(first_dependency_key)
+            second_dependency_key_literal = repr(second_dependency_key)
+            first_dependency_name_literal = repr(first_dependency_key[0])
+            second_dependency_name_literal = repr(second_dependency_key[0])
+            first_value_name = f"dep_value_{step_index}_{param_index}_0"
+            second_value_name = f"dep_value_{step_index}_{param_index}_1"
+            lines.extend([
+                f"{indent}try:",
+                (
+                    f"{indent}    {first_value_name} = "
+                    f"instance_results[{first_dependency_key_literal}]"
+                ),
+                f"{indent}except KeyError as exc:",
+            ])
+            _append_missing_dependency_raise(
+                dependency_name_literal=first_dependency_name_literal,
+                param_name_literal=param_name_literal,
+                inner_indent=f"{indent}    ",
+            )
+            lines.extend([
+                f"{indent}try:",
+                (
+                    f"{indent}    {second_value_name} = "
+                    f"instance_results[{second_dependency_key_literal}]"
+                ),
+                f"{indent}except KeyError as exc:",
+            ])
+            _append_missing_dependency_raise(
+                dependency_name_literal=second_dependency_name_literal,
+                param_name_literal=param_name_literal,
+                inner_indent=f"{indent}    ",
+            )
+            lines.append(
+                (
+                    f"{indent}kwargs_{step_index}[{param_name_literal}] = "
+                    f"[{first_value_name}, {second_value_name}]"
+                )
+            )
+            continue
+
+        values_name = f"dep_values_{step_index}_{param_index}"
+        lines.append(f"{indent}{values_name} = []")
+        for key_index, dependency_key in enumerate(dependency_keys):
+            dependency_key_literal = repr(dependency_key)
+            dependency_name_literal = repr(dependency_key[0])
+            value_name = f"dep_value_{step_index}_{param_index}_{key_index}"
+            lines.extend([
+                f"{indent}try:",
+                (
+                    f"{indent}    {value_name} = "
+                    f"instance_results[{dependency_key_literal}]"
+                ),
+                f"{indent}except KeyError as exc:",
+            ])
+            _append_missing_dependency_raise(
+                dependency_name_literal=dependency_name_literal,
+                param_name_literal=param_name_literal,
+                inner_indent=f"{indent}    ",
+            )
+            lines.append(f"{indent}{values_name}.append({value_name})")
+        lines.append(
+            f"{indent}kwargs_{step_index}[{param_name_literal}] = {values_name}"
+        )
+
+    if contract_positional_override is not None:
+        lines.append(
+            f"{indent}kwargs_{step_index}[\"__args__\"] = {contract_positional_override!r}"
+        )
+
+    if has_contract_payload and contract_payload_items:
+        for param_name, value in contract_payload_items:
+            if param_name == "__args__" and uses_positional_override:
+                continue
+            lines.append(
+                f"{indent}kwargs_{step_index}[{param_name!r}] = {value!r}"
+            )
+
+
 def _append_overrides_construct_no_overrides_source(
         *,
         lines: list[str],
         step_index: int,
         indent: str,
         positional_args_possible: bool,
+        dependency_resolution_order: Tuple[Tuple[str, Tuple[Tuple[str, Optional[int]], ...]], ...],
+        contract_positional_override: Optional[Sequence[Any]],
+        has_contract_payload: bool,
+        contract_payload_items: Tuple[Tuple[str, Any], ...],
+        uses_positional_override: bool,
 ) -> None:
     """
     Append generated source lines for no-override kwargs materialization.
 
     Contract:
-        - Uses `_build_kwargs_no_overrides` directly.
+        - Inlines `_build_kwargs_no_overrides(...)` semantics for shape lanes.
         - Preserves invoke semantics while inlining call dispatch.
     """
-    lines.extend([
-        f"{indent}kwargs_{step_index} = _build_kwargs_no_overrides(",
-        f"{indent}    plan_step=plan_step_{step_index},",
-        f"{indent}    instance_results=instance_results,",
-        f"{indent})",
-    ])
+    _append_no_overrides_kwargs_inline_source(
+        lines=lines,
+        step_index=step_index,
+        indent=indent,
+        dependency_resolution_order=dependency_resolution_order,
+        contract_positional_override=contract_positional_override,
+        has_contract_payload=has_contract_payload,
+        contract_payload_items=contract_payload_items,
+        uses_positional_override=uses_positional_override,
+    )
     _append_overrides_invoke_source(
         lines=lines,
         step_index=step_index,
@@ -1213,6 +1398,11 @@ def _append_overrides_step_shape_source(
                 step_index=step_index,
                 indent="    ",
                 positional_args_possible=positional_args_possible,
+                dependency_resolution_order=dependency_resolution_order,
+                contract_positional_override=contract_positional_override,
+                has_contract_payload=has_contract_payload,
+                contract_payload_items=contract_payload_items,
+                uses_positional_override=use_positional_override,
             )
         else:
             _append_overrides_construct_inline_source(
@@ -1282,6 +1472,11 @@ def _append_overrides_step_shape_source(
                 step_index=step_index,
                 indent="                ",
                 positional_args_possible=positional_args_possible,
+                dependency_resolution_order=dependency_resolution_order,
+                contract_positional_override=contract_positional_override,
+                has_contract_payload=has_contract_payload,
+                contract_payload_items=contract_payload_items,
+                uses_positional_override=use_positional_override,
             )
         else:
             _append_overrides_construct_inline_source(
@@ -1338,6 +1533,11 @@ def _append_overrides_step_shape_source(
                 step_index=step_index,
                 indent="                ",
                 positional_args_possible=positional_args_possible,
+                dependency_resolution_order=dependency_resolution_order,
+                contract_positional_override=contract_positional_override,
+                has_contract_payload=has_contract_payload,
+                contract_payload_items=contract_payload_items,
+                uses_positional_override=use_positional_override,
             )
         else:
             _append_overrides_construct_inline_source(
@@ -1386,6 +1586,11 @@ def _append_overrides_step_shape_source(
                 step_index=step_index,
                 indent="                ",
                 positional_args_possible=positional_args_possible,
+                dependency_resolution_order=dependency_resolution_order,
+                contract_positional_override=contract_positional_override,
+                has_contract_payload=has_contract_payload,
+                contract_payload_items=contract_payload_items,
+                uses_positional_override=use_positional_override,
             )
         else:
             _append_overrides_construct_inline_source(
@@ -1435,6 +1640,11 @@ def _append_overrides_step_shape_source(
                 step_index=step_index,
                 indent="            ",
                 positional_args_possible=positional_args_possible,
+                dependency_resolution_order=dependency_resolution_order,
+                contract_positional_override=contract_positional_override,
+                has_contract_payload=has_contract_payload,
+                contract_payload_items=contract_payload_items,
+                uses_positional_override=use_positional_override,
             )
         else:
             _append_overrides_construct_inline_source(
