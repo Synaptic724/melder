@@ -15,9 +15,54 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | implement first hotspot-led runtime helper optimization patch and rerun both cprofile suites | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
+| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | implement creation-context override-shape preprocessing cache and rerun targeted override timings + cprofile suites | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Shallow override timing was rerun 5 times with the same settings (`warmup=100`, `iters=2000`): `47.6779, 47.7133, 47.6709, 46.4154, 47.0055 ms` (avg `47.2966 ms`, std `0.5139 ms`), confirming stable high-40ms behavior and no material win from the recent shape-cache tweak.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:52-56
+  IMPACT: Further gains should target higher-cost override runtime paths instead of additional socket-shape caching.
+  NEXT: Implement and test a narrow single-key override fast path in patch-map apply logic.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: The CreationContext override-shape cache patch is runtime-safe but produced no clear shallow timing gain in same-setting high-iteration runs (`48.5444ms` pre vs `49.7372ms` post for the 2100-call lane); hotspot ranking still shows `apply_phase10_override_payload/apply_override_patch_map` and Phase12 override construct/kwargs helpers as dominant.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:42-43, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:61-68, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:96-110
+  IMPACT: Wave-2 should pivot to heavier override application/runtime merge hotspots for measurable gains.
+  NEXT: Implement a narrow single-key override fast path in Phase10 override apply and remeasure shallow timings.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Steady-state shallow override profile (`warmup=100`, `iters=2000`) is now captured and shows cached-codegen override runtime still spending measurable per-call time in override application + shape/kwargs plumbing (`apply_phase10_override_payload/apply_override_patch_map`, `_collect_override_socket_shape`, `_construct_spell_instance_with_overrides`, `_build_kwargs_with_overrides`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:4-10, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:61-68, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:96-124
+  IMPACT: Next optimization wave should target per-call override preprocessing/runtime merge overhead rather than first-call compile costs.
+  NEXT: Implement a minimal CreationContext override-shape preprocessing cache and remeasure shallow override lane.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Override profiling blocker from stale `_register_spell_instance` namespace export is fixed, and targeted shallow override timing profile test passes again.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:376-397, benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py:681-696
+  IMPACT: Active optimization work is unblocked and can proceed with wave-2 runtime edits.
+  NEXT: Apply minimal override-shape runtime caching in CreationContext, then rerun targeted profiling.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Wave-1 prebound-registration patch validated green; immediate pre/post fast-graph entries improved for shallow/wide/diamond no-overrides lanes, while override timings are mixed/slightly slower on latest sample.
+  EVIDENCE: context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md:68-75, benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:38-49, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:21-32
+  IMPACT: We have a validated first optimization win on primary no-overrides lanes and a clear next target for override-lane follow-up.
+  NEXT: Investigate override-lane hotspot changes and prepare wave-2 patch targeting override instance-construction helper overhead.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-15
   TYPE: PLAN
   CLAIM: Active routing moved from profiling to implementation using a new wave-1 optimization task under the Phase12 runtime-tightening story.

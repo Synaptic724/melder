@@ -263,6 +263,220 @@ def _write_disabled_hotspot_artifact(label: str, artifact_dir: Path) -> Path:
     return hotspot_path
 
 
+def _extract_codegen_call_chains(
+    profile: cProfile.Profile,
+    *,
+    top_edges: int,
+) -> List[Dict[str, Any]]:
+    """
+    Purpose:
+        Extract caller/callee edges for codegen-relevant functions from cProfile stats.
+    Contract:
+        - Targets function names that include creation-context or phase12 markers.
+        - Returns a list of function records with top caller/callee edges.
+    Args:
+        profile: Completed cProfile instance.
+        top_edges: Maximum caller/callee edges per function.
+    Returns:
+        Structured call-chain rows.
+    """
+    stats = pstats.Stats(profile).strip_dirs()
+    stats.calc_callees()
+    target_markers = (
+        "creation_context",
+        "phase12_no_overrides_executor.py",
+        "phase12_overrides_executor.py",
+        "melder_phase12_no_overrides",
+        "melder_phase12_overrides",
+    )
+    target_funcs = [f for f in stats.stats if any(marker in f[0] for marker in target_markers)]
+
+    rows: List[Dict[str, Any]] = []
+    for func in sorted(target_funcs):
+        file_path, line_no, func_name = func
+        callers = stats.stats[func][4]
+        caller_rows = []
+        for caller, values in sorted(callers.items(), key=lambda kv: kv[1][3], reverse=True)[:top_edges]:
+            c_file, c_line, c_name = caller
+            caller_rows.append(
+                {
+                    "function": f"{c_file}:{c_line}({c_name})",
+                    "cumtime_s": round(float(values[3]), 9),
+                    "tottime_s": round(float(values[2]), 9),
+                    "total_calls": values[1],
+                    "primitive_calls": values[0],
+                }
+            )
+
+        callees = stats.all_callees.get(func, {})
+        callee_rows = []
+        for callee, values in sorted(callees.items(), key=lambda kv: kv[1][3], reverse=True)[:top_edges]:
+            d_file, d_line, d_name = callee
+            callee_rows.append(
+                {
+                    "function": f"{d_file}:{d_line}({d_name})",
+                    "cumtime_s": round(float(values[3]), 9),
+                    "tottime_s": round(float(values[2]), 9),
+                    "total_calls": values[1],
+                    "primitive_calls": values[0],
+                }
+            )
+
+        rows.append(
+            {
+                "function": f"{file_path}:{line_no}({func_name})",
+                "callers": caller_rows,
+                "callees": callee_rows,
+            }
+        )
+    return rows
+
+
+def _write_call_chain_artifact(
+    label: str,
+    *,
+    profile_path: Path,
+    call_chain_rows: List[Dict[str, Any]],
+) -> Path:
+    """
+    Purpose:
+        Persist codegen call-chain rows to a JSON artifact.
+    Contract:
+        - Writes `<label>.call_chain.json` into `DI_CPROFILE_CALLCHAIN_DIR` when set,
+          else to the profile artifact directory.
+    Args:
+        label: Profile artifact label.
+        profile_path: Existing `.prof` artifact path.
+        call_chain_rows: Structured call-chain records.
+    Returns:
+        Path to written call-chain artifact.
+    """
+    configured = os.getenv("DI_CPROFILE_CALLCHAIN_DIR")
+    out_dir = Path(configured) if configured is not None else profile_path.parent
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / f"{label}.call_chain.json"
+    payload = {
+        "label": label,
+        "profile_path": str(profile_path),
+        "call_chain_rows": call_chain_rows,
+    }
+    out_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    return out_path
+
+
+def _write_disabled_call_chain_artifact(label: str, artifact_dir: Path) -> Path:
+    """
+    Purpose:
+        Persist an explicit call-chain artifact when cProfile is disabled.
+    Contract:
+        - Writes `<label>.call_chain.json` with `profile_enabled=false`.
+    Args:
+        label: Benchmark lane label.
+        artifact_dir: Base artifact directory.
+    Returns:
+        Path of written call-chain artifact.
+    """
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    out_path = artifact_dir / f"{label}.call_chain.json"
+    payload = {
+        "label": label,
+        "profile_enabled": False,
+        "call_chain_rows": [],
+    }
+    out_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    return out_path
+
+
+def _build_quick_summary_lines(
+    *,
+    label: str,
+    elapsed_seconds: float,
+    hotspots: List[Dict[str, Any]],
+    call_chain_rows: List[Dict[str, Any]],
+) -> List[str]:
+    """
+    Purpose:
+        Build concise, human-readable profiling summary lines.
+    Contract:
+        - Emits compact hotspot rows and call-chain highlights.
+        - Uses cumulative-time ordering from provided hotspot rows.
+    Args:
+        label: Benchmark label.
+        elapsed_seconds: End-to-end elapsed time.
+        hotspots: Structured hotspot rows.
+        call_chain_rows: Structured call-chain rows.
+    Returns:
+        Summary lines suitable for console output and text artifacts.
+    """
+    lines: List[str] = []
+    elapsed_ms = elapsed_seconds * 1000.0
+    lines.append(f"[{label}] profiled in {elapsed_ms:.3f}ms")
+
+    if not hotspots:
+        lines.append(f"[{label}] no hotspots collected")
+    else:
+        top_hotspots = hotspots[:8]
+        lines.append(f"[{label}] top {len(top_hotspots)} hotspots by cumtime")
+        for idx, row in enumerate(top_hotspots, start=1):
+            lines.append(
+                "  {0:02d}. {1} calls={2} cum={3:.6f}s".format(
+                    idx,
+                    row["function"],
+                    row["total_calls"],
+                    float(row["cumtime_s"]),
+                )
+            )
+
+    chain_focus = [
+        row
+        for row in call_chain_rows
+        if (
+            "_creation_context_execute_" in row["function"]
+            or "_phase12_executor" in row["function"]
+            or "phase12_" in row["function"]
+        )
+    ]
+    if not chain_focus:
+        lines.append(f"[{label}] no codegen chain rows collected")
+    else:
+        lines.append(f"[{label}] call-chain highlights")
+        for row in chain_focus[:6]:
+            caller = row["callers"][0]["function"] if row["callers"] else "<none>"
+            callee = row["callees"][0]["function"] if row["callees"] else "<none>"
+            lines.append(f"  func: {row['function']}")
+            lines.append(f"    caller: {caller}")
+            lines.append(f"    callee: {callee}")
+
+    return lines
+
+
+def _write_summary_artifact(
+    *,
+    label: str,
+    profile_path: Path,
+    lines: List[str],
+) -> Path:
+    """
+    Purpose:
+        Persist a concise text summary artifact for quick review.
+    Contract:
+        - Writes `<label>.summary.txt` into `DI_CPROFILE_SUMMARY_DIR` when set,
+          else to the profile artifact directory.
+    Args:
+        label: Benchmark label.
+        profile_path: Existing profile artifact path.
+        lines: Preformatted summary lines.
+    Returns:
+        Path of the written summary artifact.
+    """
+    configured = os.getenv("DI_CPROFILE_SUMMARY_DIR")
+    out_dir = Path(configured) if configured is not None else profile_path.parent
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / f"{label}.summary.txt"
+    out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return out_path
+
+
 def _append_benchmark_record(
     label: str,
     elapsed_seconds: float,
@@ -271,6 +485,8 @@ def _append_benchmark_record(
     profile_path: Path,
     log_path: Path,
     hotspot_path: Path,
+    call_chain_path: Path,
+    summary_path: Path,
 ) -> Path:
     """
     Purpose:
@@ -286,6 +502,8 @@ def _append_benchmark_record(
         profile_path: Persisted `.prof` path.
         log_path: Persisted `.pstats.txt` path.
         hotspot_path: Persisted structured hotspot artifact path.
+        call_chain_path: Persisted structured call-chain artifact path.
+        summary_path: Persisted human-readable summary artifact path.
     Returns:
         Path of the updated JSONL benchmark artifact.
     """
@@ -301,6 +519,8 @@ def _append_benchmark_record(
         "profile_path": str(profile_path),
         "log_path": str(log_path),
         "hotspot_path": str(hotspot_path),
+        "call_chain_path": str(call_chain_path),
+        "summary_path": str(summary_path),
     }
     with artifact_file.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(record, sort_keys=True) + "\n")
@@ -344,10 +564,33 @@ def _profile_execution(label: str, fn: Callable[[], None]) -> None:
                 sort=sort,
                 top=top,
             )
+            hotspot_rows = _extract_top_hotspots(profiler, sort=sort, top=top)
+            call_chain_rows = _extract_codegen_call_chains(
+                profiler,
+                top_edges=_env_int_nonneg("DI_CPROFILE_CALLCHAIN_TOP", 6),
+            )
             hotspot_path = _write_hotspot_artifact(
                 label,
                 profile_path=profile_path,
-                hotspots=_extract_top_hotspots(profiler, sort=sort, top=top),
+                hotspots=hotspot_rows,
+            )
+            call_chain_path = _write_call_chain_artifact(
+                label,
+                profile_path=profile_path,
+                call_chain_rows=call_chain_rows,
+            )
+            summary_lines = _build_quick_summary_lines(
+                label=label,
+                elapsed_seconds=elapsed,
+                hotspots=hotspot_rows,
+                call_chain_rows=call_chain_rows,
+            )
+            for line in summary_lines:
+                print(line)
+            summary_path = _write_summary_artifact(
+                label=label,
+                profile_path=profile_path,
+                lines=summary_lines,
             )
         else:
             artifact_dir = Path(
@@ -364,6 +607,18 @@ def _profile_execution(label: str, fn: Callable[[], None]) -> None:
                 encoding="utf-8",
             )
             hotspot_path = _write_disabled_hotspot_artifact(label, artifact_dir)
+            call_chain_path = _write_disabled_call_chain_artifact(label, artifact_dir)
+            summary_lines = [
+                f"[{label}] profiled in {elapsed * 1000.0:.3f}ms",
+                f"[{label}] profiling disabled (DI_CPROFILE=0)",
+            ]
+            for line in summary_lines:
+                print(line)
+            summary_path = _write_summary_artifact(
+                label=label,
+                profile_path=profile_path,
+                lines=summary_lines,
+            )
             print(f"[melder][benchmark] {label} profile_disabled elapsed_ms={elapsed * 1000.0:.3f}")
 
         benchmark_file = _append_benchmark_record(
@@ -373,6 +628,8 @@ def _profile_execution(label: str, fn: Callable[[], None]) -> None:
             profile_path=profile_path,
             log_path=log_path,
             hotspot_path=hotspot_path,
+            call_chain_path=call_chain_path,
+            summary_path=summary_path,
         )
         print(f"[melder][benchmark] {label} benchmark={benchmark_file} elapsed_ms={elapsed * 1000.0:.3f}")
 

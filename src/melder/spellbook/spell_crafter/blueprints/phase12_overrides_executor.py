@@ -7,7 +7,7 @@ from melder.spellbook.spell_crafter.blueprints.execution_plan import (
 )
 from melder.spellbook.spell_crafter.blueprints.phase12_no_overrides_executor import (
     _get_existing_creation,
-    _register_spell_instance,
+    _register_spell_instance_prebound,
 )
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
@@ -375,10 +375,22 @@ def _build_phase12_overrides_executor_namespace(
         "ExecutionPlanTargetKind": ExecutionPlanTargetKind,
         "_construct_spell_instance_with_overrides": _construct_spell_instance_with_overrides,
         "_get_existing_creation": _get_existing_creation,
-        "_register_spell_instance": _register_spell_instance,
+        "_register_spell_instance_prebound": _register_spell_instance_prebound,
         "_raise_override_on_existing_instance": _raise_override_on_existing_instance,
         "step_spells": tuple(
             plan_step.spell
+            for plan_step in steps
+        ),
+        "step_spell_ids": tuple(
+            plan_step.spell.spell_id
+            for plan_step in steps
+        ),
+        "step_has_disposal_methods": tuple(
+            plan_step.spell.has_disposal_methods
+            for plan_step in steps
+        ),
+        "step_disposal_methods": tuple(
+            plan_step.spell.disposal_method_names
             for plan_step in steps
         ),
         "step_existences": tuple(
@@ -443,6 +455,9 @@ def _build_phase12_overrides_executor_source(
         "        caller_creations_lock_held=False,",
         "        steps=steps,",
         "        step_spells=step_spells,",
+        "        step_spell_ids=step_spell_ids,",
+        "        step_has_disposal_methods=step_has_disposal_methods,",
+        "        step_disposal_methods=step_disposal_methods,",
         "        step_override_targets=step_override_targets,",
         "        step_existences=step_existences,",
         "        step_creations_target_kinds=step_creations_target_kinds,",
@@ -458,7 +473,7 @@ def _build_phase12_overrides_executor_source(
         "        ExecutionPlanTargetKind=ExecutionPlanTargetKind,",
         "        _construct_spell_instance_with_overrides=_construct_spell_instance_with_overrides,",
         "        _get_existing_creation=_get_existing_creation,",
-        "        _register_spell_instance=_register_spell_instance,",
+        "        _register_spell_instance_prebound=_register_spell_instance_prebound,",
         "        _raise_override_on_existing_instance=_raise_override_on_existing_instance,",
         "        MeldExecutionError=MeldExecutionError,",
         "    ):",
@@ -563,6 +578,9 @@ def _build_phase12_overrides_executor_shape_source(
         "        caller_creations_lock_held=False,",
         "        steps=steps,",
         "        step_spells=step_spells,",
+        "        step_spell_ids=step_spell_ids,",
+        "        step_has_disposal_methods=step_has_disposal_methods,",
+        "        step_disposal_methods=step_disposal_methods,",
         "        step_override_targets=step_override_targets,",
         "        step_has_targeted_overrides=step_has_targeted_overrides,",
         "        step_instance_keys=step_instance_keys,",
@@ -571,7 +589,7 @@ def _build_phase12_overrides_executor_shape_source(
         "        any_overrides_present=any_overrides_present,",
         "        _construct_spell_instance_with_overrides=_construct_spell_instance_with_overrides,",
         "        _get_existing_creation=_get_existing_creation,",
-        "        _register_spell_instance=_register_spell_instance,",
+        "        _register_spell_instance_prebound=_register_spell_instance_prebound,",
         "        _raise_override_on_existing_instance=_raise_override_on_existing_instance,",
         "        MeldExecutionError=MeldExecutionError,",
         "    ):",
@@ -634,6 +652,15 @@ def _append_overrides_step_shape_source(
     lines.extend([
         f"    plan_step_{step_index} = steps[{step_index}]",
         f"    spell_{step_index} = step_spells[{step_index}]",
+        f"    spell_id_{step_index} = step_spell_ids[{step_index}]",
+        (
+            f"    has_disposal_methods_{step_index} = "
+            f"step_has_disposal_methods[{step_index}]"
+        ),
+        (
+            f"    disposal_methods_{step_index} = "
+            f"step_disposal_methods[{step_index}]"
+        ),
         f"    override_targets_{step_index} = step_override_targets[{step_index}]",
         (
             f"    has_targeted_overrides_{step_index} = "
@@ -697,11 +724,13 @@ def _append_overrides_step_shape_source(
             lines.extend([
                 f"    with creations_{step_index}._lock:",
                 (
-                    f"        _register_spell_instance("
-                    f"spell=spell_{step_index}, "
+                    f"        _register_spell_instance_prebound("
+                    f"spell_id=spell_id_{step_index}, "
                     f"instance=instance_{step_index}, "
                     f"creations=creations_{step_index}, "
-                    f"existence=plan_step_{step_index}.existence)"
+                    f"existence=plan_step_{step_index}.existence, "
+                    f"has_disposal_methods=has_disposal_methods_{step_index}, "
+                    f"disposal_methods=disposal_methods_{step_index})"
                 ),
             ])
     elif existence in (
@@ -749,11 +778,13 @@ def _append_overrides_step_shape_source(
                 f"root_positional_override=step_root_positional_override_{step_index})"
             ),
             (
-                f"                _register_spell_instance("
-                f"spell=spell_{step_index}, "
+                f"                _register_spell_instance_prebound("
+                f"spell_id=spell_id_{step_index}, "
                 f"instance=instance_{step_index}, "
                 f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence)"
+                f"existence=plan_step_{step_index}.existence, "
+                f"has_disposal_methods=has_disposal_methods_{step_index}, "
+                f"disposal_methods=disposal_methods_{step_index})"
             ),
         ])
     elif use_spell_lock_hint:
@@ -791,11 +822,13 @@ def _append_overrides_step_shape_source(
             ),
             f"                with creations_{step_index}._lock:",
             (
-                f"                    _register_spell_instance("
-                f"spell=spell_{step_index}, "
+                f"                    _register_spell_instance_prebound("
+                f"spell_id=spell_id_{step_index}, "
                 f"instance=instance_{step_index}, "
                 f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence)"
+                f"existence=plan_step_{step_index}.existence, "
+                f"has_disposal_methods=has_disposal_methods_{step_index}, "
+                f"disposal_methods=disposal_methods_{step_index})"
             ),
             "    else:",
             f"        with creations_{step_index}._lock:",
@@ -823,11 +856,13 @@ def _append_overrides_step_shape_source(
                 f"root_positional_override=step_root_positional_override_{step_index})"
             ),
             (
-                f"                _register_spell_instance("
-                f"spell=spell_{step_index}, "
+                f"                _register_spell_instance_prebound("
+                f"spell_id=spell_id_{step_index}, "
                 f"instance=instance_{step_index}, "
                 f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence)"
+                f"existence=plan_step_{step_index}.existence, "
+                f"has_disposal_methods=has_disposal_methods_{step_index}, "
+                f"disposal_methods=disposal_methods_{step_index})"
             ),
         ])
     else:
@@ -857,11 +892,13 @@ def _append_overrides_step_shape_source(
                 f"root_positional_override=step_root_positional_override_{step_index})"
             ),
             (
-                f"            _register_spell_instance("
-                f"spell=spell_{step_index}, "
+                f"            _register_spell_instance_prebound("
+                f"spell_id=spell_id_{step_index}, "
                 f"instance=instance_{step_index}, "
                 f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence)"
+                f"existence=plan_step_{step_index}.existence, "
+                f"has_disposal_methods=has_disposal_methods_{step_index}, "
+                f"disposal_methods=disposal_methods_{step_index})"
             ),
         ])
 
@@ -885,6 +922,15 @@ def _append_overrides_step_source(
     lines.extend([
         f"    plan_step_{step_index} = steps[{step_index}]",
         f"    spell_{step_index} = step_spells[{step_index}]",
+        f"    spell_id_{step_index} = step_spell_ids[{step_index}]",
+        (
+            f"    has_disposal_methods_{step_index} = "
+            f"step_has_disposal_methods[{step_index}]"
+        ),
+        (
+            f"    disposal_methods_{step_index} = "
+            f"step_disposal_methods[{step_index}]"
+        ),
         f"    existence_{step_index} = step_existences[{step_index}]",
         f"    target_kind_{step_index} = step_creations_target_kinds[{step_index}]",
         (
@@ -935,11 +981,13 @@ def _append_overrides_step_source(
         f"        if must_register_{step_index}:",
         f"            with creations_{step_index}._lock:",
         (
-            f"                _register_spell_instance("
-            f"spell=spell_{step_index}, "
+            f"                _register_spell_instance_prebound("
+            f"spell_id=spell_id_{step_index}, "
             f"instance=instance_{step_index}, "
             f"creations=creations_{step_index}, "
-            f"existence=existence_{step_index})"
+            f"existence=existence_{step_index}, "
+            f"has_disposal_methods=has_disposal_methods_{step_index}, "
+            f"disposal_methods=disposal_methods_{step_index})"
         ),
         (
             f"    elif existence_{step_index} in ("
@@ -985,11 +1033,13 @@ def _append_overrides_step_source(
                     f"root_positional_override=step_root_positional_override_{step_index})"
         ),
         (
-            f"                    _register_spell_instance("
-            f"spell=spell_{step_index}, "
+            f"                    _register_spell_instance_prebound("
+            f"spell_id=spell_id_{step_index}, "
             f"instance=instance_{step_index}, "
             f"creations=creations_{step_index}, "
-            f"existence=existence_{step_index})"
+            f"existence=existence_{step_index}, "
+            f"has_disposal_methods=has_disposal_methods_{step_index}, "
+            f"disposal_methods=disposal_methods_{step_index})"
         ),
         "    else:",
         f"        use_spell_lock_{step_index} = step_use_spell_lock_hints[{step_index}]",
@@ -1026,13 +1076,15 @@ def _append_overrides_step_source(
                     f"root_positional_override=step_root_positional_override_{step_index})"
         ),
         f"                    with creations_{step_index}._lock:",
-        (
-            f"                        _register_spell_instance("
-            f"spell=spell_{step_index}, "
-            f"instance=instance_{step_index}, "
-            f"creations=creations_{step_index}, "
-            f"existence=existence_{step_index})"
-        ),
+            (
+                f"                        _register_spell_instance_prebound("
+                f"spell_id=spell_id_{step_index}, "
+                f"instance=instance_{step_index}, "
+                f"creations=creations_{step_index}, "
+                f"existence=existence_{step_index}, "
+                f"has_disposal_methods=has_disposal_methods_{step_index}, "
+                f"disposal_methods=disposal_methods_{step_index})"
+            ),
         "        else:",
         f"            with creations_{step_index}._lock:",
         (
@@ -1058,13 +1110,15 @@ def _append_overrides_step_source(
                     f"override_map=override_map, "
                     f"root_positional_override=step_root_positional_override_{step_index})"
         ),
-        (
-            f"                    _register_spell_instance("
-            f"spell=spell_{step_index}, "
-            f"instance=instance_{step_index}, "
-            f"creations=creations_{step_index}, "
-            f"existence=existence_{step_index})"
-        ),
+            (
+                f"                    _register_spell_instance_prebound("
+                f"spell_id=spell_id_{step_index}, "
+                f"instance=instance_{step_index}, "
+                f"creations=creations_{step_index}, "
+                f"existence=existence_{step_index}, "
+                f"has_disposal_methods=has_disposal_methods_{step_index}, "
+                f"disposal_methods=disposal_methods_{step_index})"
+            ),
         f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}",
     ])
 

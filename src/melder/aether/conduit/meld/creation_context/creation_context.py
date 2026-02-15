@@ -160,6 +160,7 @@ class CreationContext(Cleanable):
         "_override_executor_code_object_cache_by_plan_signature",
         "_override_prefilter_step_targets_cache",
         "_override_prefilter_path_metadata_cache",
+        "_override_socket_shape_cache",
     ]
 
     def __init__(
@@ -258,6 +259,10 @@ class CreationContext(Cleanable):
             Tuple[Tuple[Any, ...], ...],
         ] = {}
         self._override_prefilter_path_metadata_cache: Dict[Any, Tuple[Any, Any]] = {}
+        self._override_socket_shape_cache: Dict[
+            Tuple[Any, ...],
+            Tuple[Tuple[Any, ...], ...],
+        ] = {}
         self._seed_baseline_override_executor(override_route_config_no_mutation)
         self._seed_baseline_override_executor(override_route_config_mutation)
         self._execute_hooks_overrides_compiled: Callable[..., tuple[Any, bool]] = (
@@ -350,6 +355,8 @@ class CreationContext(Cleanable):
         override_prefilter_step_targets_cache.clear()
         override_prefilter_path_metadata_cache = self._override_prefilter_path_metadata_cache
         override_prefilter_path_metadata_cache.clear()
+        override_socket_shape_cache = self._override_socket_shape_cache
+        override_socket_shape_cache.clear()
 
         override_route_config_no_mutation = self._override_route_config_no_mutation
         if override_route_config_no_mutation is not None:
@@ -386,6 +393,7 @@ class CreationContext(Cleanable):
         self._override_executor_code_object_cache_by_plan_signature = None
         self._override_prefilter_step_targets_cache = None
         self._override_prefilter_path_metadata_cache = None
+        self._override_socket_shape_cache = None
 
     def execute(
             self,
@@ -601,7 +609,7 @@ class CreationContext(Cleanable):
                     ) from exc
 
         if override_map:
-            socket_shape = self._collect_override_socket_shape(
+            socket_shape = self._collect_override_socket_shape_cached(
                 override_map=override_map,
             )
         else:
@@ -687,6 +695,70 @@ class CreationContext(Cleanable):
                 continue
             normalized_payload[param_name] = value
         return normalized_payload, normalized_root_args
+
+    def _collect_override_socket_shape_cached(
+            self,
+            *,
+            override_map: Dict[Any, Any],
+    ) -> Tuple[Tuple[Any, ...], ...]:
+        """
+        Return deterministic socket-shape rows with context-local memoization.
+
+        Purpose:
+            Reuse shape tuples for repeated override socket sets so cached
+            specialization lookup avoids rebuilding shape rows on hot paths.
+
+        Contract:
+            - Output semantics match `_collect_override_socket_shape(...)`.
+            - Uses per-context cache keys derived from override socket refs.
+            - Returns an empty tuple for empty override maps.
+        """
+        if not override_map:
+            return ()
+
+        override_map_size = len(override_map)
+        if override_map_size == 1:
+            socket_ref = next(iter(override_map))
+            cache_key: Tuple[Any, ...] = ("single", socket_ref)
+        elif override_map_size == 2:
+            refs_iter = iter(override_map)
+            first_ref = next(refs_iter)
+            second_ref = next(refs_iter)
+            first_shape_row = (
+                first_ref.node_id,
+                first_ref.param_path_id,
+                first_ref.param_name,
+                first_ref.socket_kind.value,
+            )
+            second_shape_row = (
+                second_ref.node_id,
+                second_ref.param_path_id,
+                second_ref.param_name,
+                second_ref.socket_kind.value,
+            )
+            if second_shape_row < first_shape_row:
+                first_ref, second_ref = second_ref, first_ref
+            cache_key = (
+                "double",
+                first_ref,
+                second_ref,
+            )
+        else:
+            cache_key = (
+                "many",
+                frozenset(override_map),
+            )
+
+        override_socket_shape_cache = self._override_socket_shape_cache
+        cached_socket_shape = override_socket_shape_cache.get(cache_key)
+        if cached_socket_shape is not None:
+            return cached_socket_shape
+
+        socket_shape = self._collect_override_socket_shape(
+            override_map=override_map,
+        )
+        override_socket_shape_cache[cache_key] = socket_shape
+        return socket_shape
 
     @staticmethod
     def _collect_override_socket_shape(
