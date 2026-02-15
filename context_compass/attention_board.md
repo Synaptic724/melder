@@ -15,9 +15,18 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | continue from `11.35ms` shallow baseline; next medium/high-risk target is remaining override lane runtime in `_phase12_executor` + `patch_maps.apply_with_socket_shape` | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
+| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | continue from latest retained 3-run shallow override window `15.2360ms`; next medium/high-risk target is remaining override runtime in `creation_context._execute_with_overrides` + `patch_maps.apply_with_socket_shape` | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Latest retained slice prebinds `step_override_target_counts` into the shape-emitted Phase12 overrides executor and removes runtime `len(override_targets_*)` branching in construct blocks; 3-run override timing windows improved (`shallow` avg `16.2058ms` -> `15.2360ms`, `wide` avg `24.2553ms` -> `20.0001ms`, `diamond` avg `22.4362ms` -> `18.7904ms`) with focused units and both full cprofile suites green.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:423-423, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:644-644, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:737-770, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:369-391, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:9-20, benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:247-255, benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:263-263
+  IMPACT: Override lane keeps moving down while the no-overrides fast lane remains noisy this tranche (single high outlier run), so next work should stay on override runtime hotspots.
+  NEXT: Re-rank post-slice hotspots and implement the next structural optimization centered on `creation_context._execute_with_overrides` and `patch_maps.apply_with_socket_shape`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-15
   TYPE: MEASURE
   CLAIM: Seventh runtime slice is retained: `_execute_with_overrides` now fast-paths payloads without `__args__`, inlines common no-positional shape-key assembly, and defers miss-only `prefilter_cache_key` allocation; shallow repeated runs improved from prior avg `12.4212ms` (`12.8342, 12.3349, 12.4673, 12.1517, 12.3177`) to avg `11.3539ms` (`11.5941, 11.1827, 11.3196, 11.4174, 11.2555`) with full fast/override profile suites green.

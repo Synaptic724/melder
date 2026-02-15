@@ -420,6 +420,10 @@ def _build_phase12_overrides_executor_namespace(
             bool(override_targets)
             for override_targets in step_override_targets
         ),
+        "step_override_target_counts": tuple(
+            len(override_targets)
+            for override_targets in step_override_targets
+        ),
         "step_is_existing_unique_creation": tuple(
             (
                     plan_step.spell.existence is Existence.unique
@@ -637,6 +641,7 @@ def _build_phase12_overrides_executor_shape_source(
         "        step_disposal_methods=step_disposal_methods,",
         "        step_override_targets=step_override_targets,",
         "        step_has_targeted_overrides=step_has_targeted_overrides,",
+        "        step_override_target_counts=step_override_target_counts,",
         "        step_is_existing_unique_creation=step_is_existing_unique_creation,",
         "        step_is_callable_spell=step_is_callable_spell,",
         "        step_instance_keys=step_instance_keys,",
@@ -729,11 +734,20 @@ def _append_overrides_construct_inline_source(
     """
     lines.extend([
         (
-            f"{indent}if not override_targets_{step_index} and "
-            f"step_root_positional_override_{step_index} is None:"
+            f"{indent}override_target_count_{step_index} = "
+            f"step_override_target_counts[{step_index}]"
         ),
-        f"{indent}    override_values_{step_index} = _EMPTY_OVERRIDE_VALUES",
-        f"{indent}elif len(override_targets_{step_index}) == 1:",
+        f"{indent}if override_target_count_{step_index} == 0:",
+        f"{indent}    if step_root_positional_override_{step_index} is None:",
+        f"{indent}        override_values_{step_index} = _EMPTY_OVERRIDE_VALUES",
+        f"{indent}    else:",
+        f"{indent}        override_values_{step_index} = {{",
+        (
+            f"{indent}            \"__args__\": "
+            f"step_root_positional_override_{step_index},"
+        ),
+        f"{indent}        }}",
+        f"{indent}elif override_target_count_{step_index} == 1:",
         f"{indent}    single_override_socket_{step_index} = override_targets_{step_index}[0]",
         f"{indent}    if step_root_positional_override_{step_index} is None:",
         f"{indent}        override_values_{step_index} = {{",
@@ -753,7 +767,7 @@ def _append_overrides_construct_inline_source(
             f"step_root_positional_override_{step_index},"
         ),
         f"{indent}        }}",
-        f"{indent}elif len(override_targets_{step_index}) == 2:",
+        f"{indent}elif override_target_count_{step_index} == 2:",
         (
             f"{indent}    first_override_socket_{step_index} = "
             f"override_targets_{step_index}[0]"

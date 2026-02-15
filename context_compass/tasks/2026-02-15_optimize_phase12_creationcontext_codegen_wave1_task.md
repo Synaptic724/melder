@@ -64,6 +64,24 @@ Phase12/CreationContext and validate with targeted profiler suites.
 
 ## Notes
 - DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: The step-target-count specialization slice is retained: shape-emitted Phase12 override construct blocks now use prebound `step_override_target_counts` instead of runtime `len(override_targets_*)` branching, and 3-run override timing windows improved on the target lanes (`shallow` avg `16.2058ms` -> `15.2360ms`, `wide` avg `24.2553ms` -> `20.0001ms`, `diamond` avg `22.4362ms` -> `18.7904ms`).
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:423-423, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:644-644, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:737-770, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:369-391, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:9-20, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.call_chain.json:100-143
+  IMPACT: Override runtime reduces per-step target-count branching work in generated executors and lands a measurable steady-state gain on the primary override lanes.
+  NEXT: Continue from this retained baseline and target the next `_execute_with_overrides`/`patch_maps.apply_with_socket_shape` runtime slice; treat no-overrides fast-lane measurements as noisy this tranche due a single high outlier run (`249.8419ms`).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Next structural slice will prebind per-step override-target counts into the shape-emitted Phase12 overrides executor and remove runtime `len(override_targets_*)` branch checks in generated construct blocks.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:18-20, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.call_chain.json:93-143, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:732-756
+  IMPACT: Eliminates repeated tuple-length branching work from hot per-step runtime lanes while preserving shape-specialized override semantics.
+  NEXT: Patch override namespace/source emitters to provide `step_override_target_counts`, rerun focused unit suites, then run repeated fast/overrides timing windows and keep/revert by measured delta.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
   TYPE: FACT
   CLAIM: After the no-overrides inline lane landed, the shallow overrides hotspot profile still shows `creation_context._execute_with_overrides` and `patch_maps.apply_with_socket_shape` as top runtime overhead, and Phase12 call-chain highlights now point to `_phase12_executor` with `dict.update` as the dominant internal callee in targeted override lanes.
   EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:1-23, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:24-40, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:819-988
