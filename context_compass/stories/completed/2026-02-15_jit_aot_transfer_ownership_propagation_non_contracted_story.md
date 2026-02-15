@@ -1,9 +1,13 @@
-# Story: JIT/AOT Transfer Ownership Propagation (Non-Contracted)
+﻿# Story: JIT/AOT Transfer Ownership Propagation (Non-Contracted)
+
+Completed: 2026-02-15
+Summary: Closed after user acceptance; linked discovery/implementation tasks are complete and validated for this story scope.
+
 
 ## Metadata
 - Story ID: STORY-2026-02-15-jit-aot-transfer-ownership-propagation-non-contracted
 - Epic: EPIC-2026-02-14-jit-aot-phase-split-configuration
-- Status: ready
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
@@ -79,4 +83,5 @@ contracted-spell owner boundary.
 
 ## Context / Handoff Summary
 Ready transfer-lane story, explicitly scoped to non-contracted ownership flow.
+
 

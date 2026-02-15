@@ -1,9 +1,13 @@
-# Story: JIT/AOT Regression Matrix and Compatibility
+﻿# Story: JIT/AOT Regression Matrix and Compatibility
+
+Completed: 2026-02-15
+Summary: Closed after user acceptance; linked discovery/implementation tasks are complete and validated for this story scope.
+
 
 ## Metadata
 - Story ID: STORY-2026-02-15-jit-aot-regression-matrix-and-compatibility
 - Epic: EPIC-2026-02-14-jit-aot-phase-split-configuration
-- Status: ready
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
@@ -80,3 +84,4 @@ This protects backward compatibility while validating new opt-in behavior.
 
 ## Context / Handoff Summary
 Ready validation story that executes after implementation lanes merge.
+

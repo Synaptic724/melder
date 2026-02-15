@@ -1,9 +1,13 @@
-# Story: JIT/AOT Conjure Propagation
+﻿# Story: JIT/AOT Conjure Propagation
+
+Completed: 2026-02-15
+Summary: Closed after user acceptance; linked discovery/implementation tasks are complete and validated for this story scope.
+
 
 ## Metadata
 - Story ID: STORY-2026-02-15-jit-aot-conjure-propagation
 - Epic: EPIC-2026-02-14-jit-aot-phase-split-configuration
-- Status: ready
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
@@ -79,4 +83,5 @@ without changing contracted ownership behavior.
 
 ## Context / Handoff Summary
 Ready story with clear touchpoint. Waiting on discovery gate completion.
+
 

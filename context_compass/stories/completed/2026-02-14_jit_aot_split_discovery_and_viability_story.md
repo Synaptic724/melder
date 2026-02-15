@@ -1,9 +1,13 @@
-# Story: JIT/AOT Split Discovery and Viability
+﻿# Story: JIT/AOT Split Discovery and Viability
+
+Completed: 2026-02-15
+Summary: Closed after user acceptance; linked discovery/implementation tasks are complete and validated for this story scope.
+
 
 ## Metadata
 - Story ID: STORY-2026-02-14-jit-aot-split-discovery-and-viability
 - Epic: EPIC-2026-02-14-jit-aot-phase-split-configuration
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
@@ -114,3 +118,4 @@ validity semantics.
 ## Context / Handoff Summary
 Discovery story has completed option selection and propagation-surface mapping.
 Next active lane is implementation, starting with config/fluent API.
+

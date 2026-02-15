@@ -1,9 +1,13 @@
-# Story: JIT/AOT Runtime Deferred Phase Resolution Path
+﻿# Story: JIT/AOT Runtime Deferred Phase Resolution Path
+
+Completed: 2026-02-15
+Summary: Closed after user acceptance; linked discovery/implementation tasks are complete and validated for this story scope.
+
 
 ## Metadata
 - Story ID: STORY-2026-02-14-jit-aot-runtime-phase-resolution-path
 - Epic: EPIC-2026-02-14-jit-aot-phase-split-configuration
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
@@ -123,3 +127,4 @@ opt-in flexibility.
 Runtime story has discovery-backed trigger guidance and is awaiting user
 decision on `hybrid_rule_bound`. After decision, the next step is creating
 implementation and validation tasks for deferred runtime resolution.
+

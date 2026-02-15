@@ -1,8 +1,12 @@
-# Epic: Implement Configurable JIT/AOT Phase Split for Runtime Resolution
+﻿# Epic: Implement Configurable JIT/AOT Phase Split for Runtime Resolution
+
+Completed: 2026-02-15
+Summary: Closed after user acceptance; discovery, propagation, runtime gate lifecycle, and regression validation lanes are complete.
+
 
 ## Metadata
 - Epic ID: EPIC-2026-02-14-jit-aot-phase-split-configuration
-- Status: in_progress
+- Status: closed
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
@@ -212,3 +216,4 @@ Epic is in discovery-to-implementation transition. Option selection is resolved
 (`A hybrid_rule_bound`, non-breaking default), and the next immediate gate is
 `TASK-2026-02-15-discovery-jit-aot-propagation-contract-surfaces` before code
 implementation tasks begin.
+

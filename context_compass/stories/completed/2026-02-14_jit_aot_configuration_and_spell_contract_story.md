@@ -1,13 +1,17 @@
-# Story: JIT/AOT Configuration and Spell Contract
+﻿# Story: JIT/AOT Configuration and Spell Contract
+
+Completed: 2026-02-15
+Summary: Closed after user acceptance; linked discovery/implementation tasks are complete and validated for this story scope.
+
 
 ## Metadata
 - Story ID: STORY-2026-02-14-jit-aot-configuration-and-spell-contract
 - Epic: EPIC-2026-02-14-jit-aot-phase-split-configuration
-- Status: ready
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
-- Updated: 2026-02-14
+- Updated: 2026-02-15
 
 ## User Narrative
 As a spellbook integrator, I want a clear configuration mode and spell-level
@@ -98,3 +102,4 @@ split mode.
 ## Context / Handoff Summary
 Configuration/spell contract story is prepared and intentionally gated on
 discovery outputs to avoid speculative API design.
+

@@ -1,9 +1,13 @@
-# Story: JIT/AOT Runtime Resolution Gate Lifecycle
+﻿# Story: JIT/AOT Runtime Resolution Gate Lifecycle
+
+Completed: 2026-02-15
+Summary: Closed after user acceptance; linked discovery/implementation tasks are complete and validated for this story scope.
+
 
 ## Metadata
 - Story ID: STORY-2026-02-15-jit-aot-runtime-resolution-gate-lifecycle
 - Epic: EPIC-2026-02-14-jit-aot-phase-split-configuration
-- Status: ready
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
@@ -81,4 +85,5 @@ resolution through orchestration.
 
 ## Context / Handoff Summary
 Ready runtime-lifecycle story. Gated on discovery confirmation of final entrypoints.
+
 

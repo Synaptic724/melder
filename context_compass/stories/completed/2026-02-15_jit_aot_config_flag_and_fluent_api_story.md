@@ -1,9 +1,13 @@
-# Story: JIT/AOT Config Flag and Fluent API
+﻿# Story: JIT/AOT Config Flag and Fluent API
+
+Completed: 2026-02-15
+Summary: Closed after user acceptance; linked discovery/implementation tasks are complete and validated for this story scope.
+
 
 ## Metadata
 - Story ID: STORY-2026-02-15-jit-aot-config-flag-and-fluent-api
 - Epic: EPIC-2026-02-14-jit-aot-phase-split-configuration
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
@@ -88,3 +92,4 @@ stay safe and adoption remains explicit.
 
 ## Context / Handoff Summary
 Ready implementation story. Gated on propagation discovery task completion.
+
