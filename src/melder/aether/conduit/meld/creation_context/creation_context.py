@@ -158,6 +158,9 @@ class CreationContext(Cleanable):
         "_override_prefilter_step_targets_cache",
         "_override_prefilter_path_metadata_cache",
         "_override_socket_shape_cache",
+        "_override_last_socket_shape",
+        "_override_last_root_positional_arity",
+        "_override_last_executor",
     ]
 
     def __init__(
@@ -260,6 +263,9 @@ class CreationContext(Cleanable):
             Tuple[Any, ...],
             Tuple[Tuple[Any, ...], ...],
         ] = {}
+        self._override_last_socket_shape: Optional[Tuple[Tuple[Any, ...], ...]] = None
+        self._override_last_root_positional_arity: int = -2
+        self._override_last_executor: Optional[Callable[..., Any]] = None
         self._seed_baseline_override_executor(override_route_config_no_mutation)
         self._seed_baseline_override_executor(override_route_config_mutation)
         self._execute_hooks_overrides_compiled: Callable[..., tuple[Any, bool]] = (
@@ -354,6 +360,9 @@ class CreationContext(Cleanable):
         override_prefilter_path_metadata_cache.clear()
         override_socket_shape_cache = self._override_socket_shape_cache
         override_socket_shape_cache.clear()
+        self._override_last_socket_shape = None
+        self._override_last_root_positional_arity = -2
+        self._override_last_executor = None
 
         override_route_config_no_mutation = self._override_route_config_no_mutation
         if override_route_config_no_mutation is not None:
@@ -391,6 +400,9 @@ class CreationContext(Cleanable):
         self._override_prefilter_step_targets_cache = None
         self._override_prefilter_path_metadata_cache = None
         self._override_socket_shape_cache = None
+        self._override_last_socket_shape = None
+        self._override_last_root_positional_arity = None
+        self._override_last_executor = None
 
     def execute(
             self,
@@ -617,44 +629,52 @@ class CreationContext(Cleanable):
 
         plan_signature = override_route_config.plan_signature
         if root_positional_override is None:
-            shape_key = (
-                plan_signature,
-                socket_shape,
-                -1,
-            )
+            root_positional_arity = -1
         else:
+            root_positional_arity = len(root_positional_override)
+        if (
+                socket_shape is self._override_last_socket_shape
+                and root_positional_arity == self._override_last_root_positional_arity
+        ):
+            executor = self._override_last_executor
+        else:
+            executor = None
+        if executor is None:
             shape_key = (
                 plan_signature,
                 socket_shape,
-                len(root_positional_override),
+                root_positional_arity,
             )
-        override_specialization_cache = self._override_specialization_cache
-        executor = override_specialization_cache.get(shape_key)
-        if executor is None:
-            if override_map:
-                override_targets_by_spell_id = (
-                    self._collect_override_targets_from_socket_shape(
-                        override_map=override_map,
-                        socket_shape=socket_shape,
+            override_specialization_cache = self._override_specialization_cache
+            executor = override_specialization_cache.get(shape_key)
+            if executor is None:
+                if override_map:
+                    override_targets_by_spell_id = (
+                        self._collect_override_targets_from_socket_shape(
+                            override_map=override_map,
+                            socket_shape=socket_shape,
+                        )
                     )
+                else:
+                    override_targets_by_spell_id = {}
+                any_overrides_present = overrides is not None
+                prefilter_cache_key = (
+                    plan_signature,
+                    socket_shape,
                 )
-            else:
-                override_targets_by_spell_id = {}
-            any_overrides_present = overrides is not None
-            prefilter_cache_key = (
-                plan_signature,
-                socket_shape,
-            )
-            executor = self._get_or_compile_override_executor(
-                shape_key=shape_key,
-                override_targets_by_spell_id=override_targets_by_spell_id,
-                any_overrides_present=any_overrides_present,
-                path_registry=override_route_config.path_registry,
-                plan_rows=override_route_config.plan_rows,
-                root_spell_id=override_route_config.root_spell_id,
-                spell_lookup=override_route_config.spell_lookup,
-                prefilter_cache_key=prefilter_cache_key,
-            )
+                executor = self._get_or_compile_override_executor(
+                    shape_key=shape_key,
+                    override_targets_by_spell_id=override_targets_by_spell_id,
+                    any_overrides_present=any_overrides_present,
+                    path_registry=override_route_config.path_registry,
+                    plan_rows=override_route_config.plan_rows,
+                    root_spell_id=override_route_config.root_spell_id,
+                    spell_lookup=override_route_config.spell_lookup,
+                    prefilter_cache_key=prefilter_cache_key,
+                )
+            self._override_last_socket_shape = socket_shape
+            self._override_last_root_positional_arity = root_positional_arity
+            self._override_last_executor = executor
 
         result = executor(
             caller_creations,
@@ -1093,12 +1113,23 @@ class CreationContext(Cleanable):
             - Preserves runtime behavior of override executor compilation.
         """
         targeted_spell_ids = tuple(sorted(override_targets_by_spell_id.keys()))
+        override_target_counts_by_spell_id = tuple(
+            sorted(
+                (
+                    spell_id,
+                    len(targets),
+                )
+                for spell_id, targets in override_targets_by_spell_id.items()
+                if targets
+            )
+        )
         has_root_positional_override = shape_key[2] >= 0
         source = self._get_or_build_override_executor_source(
             source_cache_key=shape_key,
             plan_rows=plan_rows,
             root_spell_id=root_spell_id,
             override_targeted_spell_ids=targeted_spell_ids,
+            override_target_counts_by_spell_id=override_target_counts_by_spell_id,
             has_root_positional_override=has_root_positional_override,
         )
         code_object = self._get_or_build_override_executor_code_object(
@@ -1126,6 +1157,7 @@ class CreationContext(Cleanable):
             plan_rows: Sequence[Dict[str, Any]],
             root_spell_id: Optional[str],
             override_targeted_spell_ids: Tuple[str, ...],
+            override_target_counts_by_spell_id: Tuple[Tuple[str, int], ...],
             has_root_positional_override: bool,
     ) -> str:
         """
@@ -1141,6 +1173,7 @@ class CreationContext(Cleanable):
             plan_rows=plan_rows,
             root_spell_id=root_spell_id,
             override_targeted_spell_ids=override_targeted_spell_ids,
+            override_target_counts_by_spell_id=override_target_counts_by_spell_id,
             has_root_positional_override=has_root_positional_override,
         )
         override_executor_source_cache[source_cache_key] = emitted_source

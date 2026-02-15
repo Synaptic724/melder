@@ -1,3 +1,4 @@
+from collections import Counter
 from types import SimpleNamespace
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
@@ -233,6 +234,7 @@ def emit_phase12_overrides_executor_shape_source(
         plan_rows: Sequence[Dict[str, Any]],
         root_spell_id: Optional[str],
         override_targeted_spell_ids: Optional[Tuple[str, ...]] = None,
+        override_target_counts_by_spell_id: Optional[Tuple[Tuple[str, int], ...]] = None,
         has_root_positional_override: bool = False,
 ) -> str:
     """
@@ -252,6 +254,7 @@ def emit_phase12_overrides_executor_shape_source(
         plan_rows=plan_rows,
         root_spell_id=root_spell_id,
         override_targeted_spell_ids=override_targeted_spell_ids,
+        override_target_counts_by_spell_id=override_target_counts_by_spell_id,
         has_root_positional_override=has_root_positional_override,
     )
     return _build_phase12_overrides_executor_shape_source(
@@ -536,6 +539,7 @@ def _build_shape_source_step_metadata(
         plan_rows: Sequence[Dict[str, Any]],
         root_spell_id: Optional[str],
         override_targeted_spell_ids: Optional[Tuple[str, ...]],
+        override_target_counts_by_spell_id: Optional[Tuple[Tuple[str, int], ...]],
         has_root_positional_override: bool,
 ) -> Tuple[Tuple[Any, ...], ...]:
     """
@@ -549,6 +553,10 @@ def _build_shape_source_step_metadata(
     if plan_rows is None:
         raise ValueError("plan_rows must not be None.")
     targeted_spell_ids = set(override_targeted_spell_ids or ())
+    target_counts_by_spell_id = dict(override_target_counts_by_spell_id or ())
+    step_counts_by_spell_id = Counter(
+        row["spell_id"] for row in plan_rows if "spell_id" in row
+    )
     step_metadata = []
     required_fields = (
         "spell_id",
@@ -600,6 +608,11 @@ def _build_shape_source_step_metadata(
                 bool(row["must_register"]),
                 spell_id == root_spell_id,
                 spell_id in targeted_spell_ids,
+                (
+                    int(target_counts_by_spell_id.get(spell_id, 0))
+                    if step_counts_by_spell_id.get(spell_id, 0) == 1
+                    else -1
+                ),
                 bool(row["uses_positional_override"]),
                 spell_id == root_spell_id and has_root_positional_override,
                 dependency_resolution_order,
@@ -658,6 +671,19 @@ def _build_phase12_overrides_executor_shape_source(
         "    ):",
         "    instance_results = {}",
     ]
+    if any(
+            metadata[1] in (
+                ExecutionPlanTargetKind.CALLER,
+                ExecutionPlanTargetKind.SPELLSPACE,
+            )
+            for metadata in step_source_metadata
+    ):
+        lines.extend([
+            "    if caller_creations is None:",
+            "        raise RuntimeError(",
+            "            \"Phase 12 CALLER/SPELLSPACE execution requires caller_creations.\"",
+            "        )",
+        ])
 
     for step_index, metadata in enumerate(step_source_metadata):
         (
@@ -668,6 +694,7 @@ def _build_phase12_overrides_executor_shape_source(
             must_register,
             is_root_step,
             has_static_targeted_overrides,
+            static_override_target_count,
             use_positional_override,
             has_static_root_positional_override,
             dependency_resolution_order,
@@ -685,6 +712,7 @@ def _build_phase12_overrides_executor_shape_source(
             must_register=must_register,
             is_root_step=is_root_step,
             has_static_targeted_overrides=has_static_targeted_overrides,
+            static_override_target_count=static_override_target_count,
             use_positional_override=use_positional_override,
             has_static_root_positional_override=has_static_root_positional_override,
             dependency_resolution_order=dependency_resolution_order,
@@ -713,6 +741,7 @@ def _append_overrides_construct_inline_source(
         lines: list[str],
         step_index: int,
         indent: str,
+        static_override_target_count: int,
         positional_args_possible: bool,
         dependency_resolution_order: Tuple[Tuple[str, Tuple[Tuple[str, Optional[int]], ...]], ...],
         contract_positional_override: Optional[Sequence[Any]],
@@ -732,99 +761,125 @@ def _append_overrides_construct_inline_source(
         - Emits static dependency and contract assembly blocks from Phase11 row
           metadata to avoid `_build_kwargs_with_overrides(...)` dispatch.
     """
-    lines.extend([
-        (
-            f"{indent}override_target_count_{step_index} = "
-            f"step_override_target_counts[{step_index}]"
-        ),
-        f"{indent}if override_target_count_{step_index} == 0:",
-        f"{indent}    if step_root_positional_override_{step_index} is None:",
-        f"{indent}        override_values_{step_index} = _EMPTY_OVERRIDE_VALUES",
-        f"{indent}    else:",
-        f"{indent}        override_values_{step_index} = {{",
-        (
-            f"{indent}            \"__args__\": "
-            f"step_root_positional_override_{step_index},"
-        ),
-        f"{indent}        }}",
-        f"{indent}elif override_target_count_{step_index} == 1:",
-        f"{indent}    single_override_socket_{step_index} = override_targets_{step_index}[0]",
-        (
-            f"{indent}    single_override_value_{step_index} = "
-            f"override_map[single_override_socket_{step_index}]"
-        ),
-        f"{indent}    if step_root_positional_override_{step_index} is None:",
-        f"{indent}        override_values_{step_index} = {{",
-        (
-            f"{indent}            single_override_socket_{step_index}.param_name: "
-            f"single_override_value_{step_index},"
-        ),
-        f"{indent}        }}",
-        f"{indent}    else:",
-        f"{indent}        override_values_{step_index} = {{",
-        (
-            f"{indent}            single_override_socket_{step_index}.param_name: "
-            f"single_override_value_{step_index},"
-        ),
-        (
-            f"{indent}            \"__args__\": "
-            f"step_root_positional_override_{step_index},"
-        ),
-        f"{indent}        }}",
-        f"{indent}elif override_target_count_{step_index} == 2:",
-        (
-            f"{indent}    first_override_socket_{step_index} = "
-            f"override_targets_{step_index}[0]"
-        ),
-        (
-            f"{indent}    second_override_socket_{step_index} = "
-            f"override_targets_{step_index}[1]"
-        ),
-        (
-            f"{indent}    first_override_value_{step_index} = "
-            f"override_map[first_override_socket_{step_index}]"
-        ),
-        (
-            f"{indent}    second_override_value_{step_index} = "
-            f"override_map[second_override_socket_{step_index}]"
-        ),
-        f"{indent}    override_values_{step_index} = {{",
-        (
-            f"{indent}        first_override_socket_{step_index}.param_name: "
-            f"first_override_value_{step_index},"
-        ),
-        f"{indent}    }}",
-        (
-            f"{indent}    override_values_{step_index}["
-            f"second_override_socket_{step_index}.param_name] = "
-            f"second_override_value_{step_index}"
-        ),
-        f"{indent}    if step_root_positional_override_{step_index} is not None:",
-        (
-            f"{indent}        override_values_{step_index}[\"__args__\"] = "
-            f"step_root_positional_override_{step_index}"
-        ),
-        f"{indent}else:",
-        f"{indent}    override_values_{step_index} = {{}}",
-        (
-            f"{indent}    for override_socket_{step_index} in "
-            f"override_targets_{step_index}:"
-        ),
-        (
-            f"{indent}        override_values_{step_index}["
-            f"override_socket_{step_index}.param_name] = "
-            f"override_map[override_socket_{step_index}]"
-        ),
-        f"{indent}    if step_root_positional_override_{step_index} is not None:",
-        (
-            f"{indent}        override_values_{step_index}[\"__args__\"] = "
-            f"step_root_positional_override_{step_index}"
-        ),
-    ])
+    if static_override_target_count == 0:
+        if positional_args_possible:
+            lines.extend([
+                f"{indent}if step_root_positional_override_{step_index} is None:",
+                f"{indent}    override_values_{step_index} = _EMPTY_OVERRIDE_VALUES",
+                f"{indent}else:",
+                f"{indent}    override_values_{step_index} = {{",
+                (
+                    f"{indent}        \"__args__\": "
+                    f"step_root_positional_override_{step_index},"
+                ),
+                f"{indent}    }}",
+            ])
+        else:
+            lines.append(
+                f"{indent}override_values_{step_index} = _EMPTY_OVERRIDE_VALUES"
+            )
+    elif static_override_target_count == 1:
+        lines.extend([
+            f"{indent}single_override_socket_{step_index} = override_targets_{step_index}[0]",
+            (
+                f"{indent}single_override_value_{step_index} = "
+                f"override_map[single_override_socket_{step_index}]"
+            ),
+        ])
+        if positional_args_possible:
+            lines.extend([
+                f"{indent}if step_root_positional_override_{step_index} is None:",
+                f"{indent}    override_values_{step_index} = {{",
+                (
+                    f"{indent}        single_override_socket_{step_index}.param_name: "
+                    f"single_override_value_{step_index},"
+                ),
+                f"{indent}    }}",
+                f"{indent}else:",
+                f"{indent}    override_values_{step_index} = {{",
+                (
+                    f"{indent}        single_override_socket_{step_index}.param_name: "
+                    f"single_override_value_{step_index},"
+                ),
+                (
+                    f"{indent}        \"__args__\": "
+                    f"step_root_positional_override_{step_index},"
+                ),
+                f"{indent}    }}",
+            ])
+        else:
+            lines.extend([
+                f"{indent}override_values_{step_index} = {{",
+                (
+                    f"{indent}    single_override_socket_{step_index}.param_name: "
+                    f"single_override_value_{step_index},"
+                ),
+                f"{indent}}}",
+            ])
+    elif static_override_target_count == 2:
+        lines.extend([
+            (
+                f"{indent}first_override_socket_{step_index} = "
+                f"override_targets_{step_index}[0]"
+            ),
+            (
+                f"{indent}second_override_socket_{step_index} = "
+                f"override_targets_{step_index}[1]"
+            ),
+            (
+                f"{indent}first_override_value_{step_index} = "
+                f"override_map[first_override_socket_{step_index}]"
+            ),
+            (
+                f"{indent}second_override_value_{step_index} = "
+                f"override_map[second_override_socket_{step_index}]"
+            ),
+            f"{indent}override_values_{step_index} = {{",
+            (
+                f"{indent}    first_override_socket_{step_index}.param_name: "
+                f"first_override_value_{step_index},"
+            ),
+            (
+                f"{indent}    second_override_socket_{step_index}.param_name: "
+                f"second_override_value_{step_index},"
+            ),
+            f"{indent}}}",
+        ])
+        if positional_args_possible:
+            lines.extend([
+                f"{indent}if step_root_positional_override_{step_index} is not None:",
+                (
+                    f"{indent}    override_values_{step_index}[\"__args__\"] = "
+                    f"step_root_positional_override_{step_index}"
+                ),
+            ])
+    else:
+        lines.extend([
+            f"{indent}override_values_{step_index} = {{}}",
+            (
+                f"{indent}for override_socket_{step_index} in "
+                f"override_targets_{step_index}:"
+            ),
+            (
+                f"{indent}    override_values_{step_index}["
+                f"override_socket_{step_index}.param_name] = "
+                f"override_map[override_socket_{step_index}]"
+            ),
+        ])
+        if positional_args_possible:
+            lines.extend([
+                f"{indent}if step_root_positional_override_{step_index} is not None:",
+                (
+                    f"{indent}    override_values_{step_index}[\"__args__\"] = "
+                    f"step_root_positional_override_{step_index}"
+                ),
+            ])
     _append_overrides_kwargs_inline_source(
         lines=lines,
         step_index=step_index,
         indent=indent,
+        static_override_target_count=static_override_target_count,
+        positional_args_possible=positional_args_possible,
         dependency_resolution_order=dependency_resolution_order,
         contract_positional_override=contract_positional_override,
         has_contract_payload=has_contract_payload,
@@ -844,6 +899,8 @@ def _append_overrides_kwargs_inline_source(
         lines: list[str],
         step_index: int,
         indent: str,
+        static_override_target_count: int,
+        positional_args_possible: bool,
         dependency_resolution_order: Tuple[Tuple[str, Tuple[Tuple[str, Optional[int]], ...]], ...],
         contract_positional_override: Optional[Sequence[Any]],
         has_contract_payload: bool,
@@ -865,6 +922,9 @@ def _append_overrides_kwargs_inline_source(
             and contract_positional_override is None
             and not has_contract_payload
     ):
+        if static_override_target_count == 0 and not positional_args_possible:
+            lines.append(f"{indent}kwargs_{step_index} = {{}}")
+            return
         lines.append(
             f"{indent}kwargs_{step_index} = "
             f"override_values_{step_index} if override_values_{step_index} else {{}}"
@@ -1006,40 +1066,54 @@ def _append_overrides_kwargs_inline_source(
                 ),
             ])
 
-    lines.extend([
-        f"{indent}if override_target_count_{step_index} == 0:",
-        f"{indent}    if step_root_positional_override_{step_index} is not None:",
-        (
-            f"{indent}        kwargs_{step_index}[\"__args__\"] = "
-            f"step_root_positional_override_{step_index}"
-        ),
-        f"{indent}elif override_target_count_{step_index} == 1:",
-        (
-            f"{indent}    kwargs_{step_index}[single_override_socket_{step_index}.param_name] = "
-            f"single_override_value_{step_index}"
-        ),
-        f"{indent}    if step_root_positional_override_{step_index} is not None:",
-        (
-            f"{indent}        kwargs_{step_index}[\"__args__\"] = "
-            f"step_root_positional_override_{step_index}"
-        ),
-        f"{indent}elif override_target_count_{step_index} == 2:",
-        (
-            f"{indent}    kwargs_{step_index}[first_override_socket_{step_index}.param_name] = "
-            f"first_override_value_{step_index}"
-        ),
-        (
-            f"{indent}    kwargs_{step_index}[second_override_socket_{step_index}.param_name] = "
-            f"second_override_value_{step_index}"
-        ),
-        f"{indent}    if step_root_positional_override_{step_index} is not None:",
-        (
-            f"{indent}        kwargs_{step_index}[\"__args__\"] = "
-            f"step_root_positional_override_{step_index}"
-        ),
-        f"{indent}elif override_values_{step_index}:",
-        f"{indent}    kwargs_{step_index}.update(override_values_{step_index})",
-    ])
+    if static_override_target_count == 0:
+        if positional_args_possible:
+            lines.extend([
+                f"{indent}if step_root_positional_override_{step_index} is not None:",
+                (
+                    f"{indent}    kwargs_{step_index}[\"__args__\"] = "
+                    f"step_root_positional_override_{step_index}"
+                ),
+            ])
+    elif static_override_target_count == 1:
+        lines.append(
+            (
+                f"{indent}kwargs_{step_index}[single_override_socket_{step_index}.param_name] = "
+                f"single_override_value_{step_index}"
+            )
+        )
+        if positional_args_possible:
+            lines.extend([
+                f"{indent}if step_root_positional_override_{step_index} is not None:",
+                (
+                    f"{indent}    kwargs_{step_index}[\"__args__\"] = "
+                    f"step_root_positional_override_{step_index}"
+                ),
+            ])
+    elif static_override_target_count == 2:
+        lines.extend([
+            (
+                f"{indent}kwargs_{step_index}[first_override_socket_{step_index}.param_name] = "
+                f"first_override_value_{step_index}"
+            ),
+            (
+                f"{indent}kwargs_{step_index}[second_override_socket_{step_index}.param_name] = "
+                f"second_override_value_{step_index}"
+            ),
+        ])
+        if positional_args_possible:
+            lines.extend([
+                f"{indent}if step_root_positional_override_{step_index} is not None:",
+                (
+                    f"{indent}    kwargs_{step_index}[\"__args__\"] = "
+                    f"step_root_positional_override_{step_index}"
+                ),
+            ])
+    else:
+        lines.extend([
+            f"{indent}if override_values_{step_index}:",
+            f"{indent}    kwargs_{step_index}.update(override_values_{step_index})",
+        ])
 
 
 def _append_no_overrides_kwargs_inline_source(
@@ -1329,7 +1403,7 @@ def _append_overrides_invoke_source(
             f"{indent}    try:",
             (
                 f"{indent}        instance_{step_index} = "
-                f"plan_step_{step_index}.spell.spell(*(), **kwargs_{step_index})"
+                f"plan_step_{step_index}.spell.spell(**kwargs_{step_index})"
             ),
             f"{indent}    except Exception as exc:",
             f"{indent}        raise MeldExecutionError(",
@@ -1359,6 +1433,7 @@ def _append_overrides_step_shape_source(
         must_register: bool,
         is_root_step: bool,
         has_static_targeted_overrides: bool,
+        static_override_target_count: int,
         use_positional_override: bool,
         has_static_root_positional_override: bool,
         dependency_resolution_order: Tuple[Tuple[str, Tuple[Tuple[str, Optional[int]], ...]], ...],
@@ -1373,6 +1448,12 @@ def _append_overrides_step_shape_source(
         - Preserves existing override-reuse and registration semantics.
         - Removes runtime target-kind and existence branch selection.
     """
+    use_no_override_fast_path = (
+        not has_static_targeted_overrides and not has_static_root_positional_override
+    )
+    positional_args_possible = (
+        use_positional_override or has_static_root_positional_override
+    )
     lines.extend([
         f"    plan_step_{step_index} = steps[{step_index}]",
         f"    spell_{step_index} = step_spells[{step_index}]",
@@ -1385,46 +1466,45 @@ def _append_overrides_step_shape_source(
             f"    disposal_methods_{step_index} = "
             f"step_disposal_methods[{step_index}]"
         ),
-        f"    override_targets_{step_index} = step_override_targets[{step_index}]",
-        (
-            f"    has_targeted_overrides_{step_index} = "
-            f"step_has_targeted_overrides[{step_index}]"
-        ),
-        (
-            f"    is_existing_unique_creation_{step_index} = "
-            f"step_is_existing_unique_creation[{step_index}]"
-        ),
         (
             f"    is_callable_spell_{step_index} = "
             f"step_is_callable_spell[{step_index}]"
         ),
     ])
-    if is_root_step:
+    if existence is Existence.many:
         lines.append(
-            f"    step_root_positional_override_{step_index} = root_positional_override"
+            f"    is_existing_unique_creation_{step_index} = False"
         )
     else:
+        lines.extend([
+            (
+                f"    has_targeted_overrides_{step_index} = "
+                f"step_has_targeted_overrides[{step_index}]"
+            ),
+            (
+                f"    is_existing_unique_creation_{step_index} = "
+                f"step_is_existing_unique_creation[{step_index}]"
+            ),
+        ])
+    if not (existence is Existence.many and use_no_override_fast_path):
         lines.append(
-            f"    step_root_positional_override_{step_index} = None"
+            f"    override_targets_{step_index} = step_override_targets[{step_index}]"
         )
-    use_no_override_fast_path = (
-        not has_static_targeted_overrides and not has_static_root_positional_override
-    )
-    positional_args_possible = (
-        use_positional_override or has_static_root_positional_override
-    )
+    if positional_args_possible:
+        if is_root_step:
+            lines.append(
+                f"    step_root_positional_override_{step_index} = root_positional_override"
+            )
+        else:
+            lines.append(
+                f"    step_root_positional_override_{step_index} = None"
+            )
 
     if creations_target_kind in (
             ExecutionPlanTargetKind.CALLER,
             ExecutionPlanTargetKind.SPELLSPACE,
     ):
-        lines.extend([
-            "    if caller_creations is None:",
-            "        raise RuntimeError(",
-            "            \"Phase 12 CALLER/SPELLSPACE execution requires caller_creations.\"",
-            "        )",
-            f"    creations_{step_index} = caller_creations",
-        ])
+        lines.append(f"    creations_{step_index} = caller_creations")
     elif creations_target_kind == ExecutionPlanTargetKind.OWNER:
         lines.extend([
             f"    owner_creations_{step_index} = spell_{step_index}._owner_creations",
@@ -1465,6 +1545,7 @@ def _append_overrides_step_shape_source(
                 lines=lines,
                 step_index=step_index,
                 indent="    ",
+                static_override_target_count=static_override_target_count,
                 positional_args_possible=positional_args_possible,
                 dependency_resolution_order=dependency_resolution_order,
                 contract_positional_override=contract_positional_override,
@@ -1539,6 +1620,7 @@ def _append_overrides_step_shape_source(
                 lines=lines,
                 step_index=step_index,
                 indent="                ",
+                static_override_target_count=static_override_target_count,
                 positional_args_possible=positional_args_possible,
                 dependency_resolution_order=dependency_resolution_order,
                 contract_positional_override=contract_positional_override,
@@ -1600,6 +1682,7 @@ def _append_overrides_step_shape_source(
                 lines=lines,
                 step_index=step_index,
                 indent="                ",
+                static_override_target_count=static_override_target_count,
                 positional_args_possible=positional_args_possible,
                 dependency_resolution_order=dependency_resolution_order,
                 contract_positional_override=contract_positional_override,
@@ -1653,6 +1736,7 @@ def _append_overrides_step_shape_source(
                 lines=lines,
                 step_index=step_index,
                 indent="                ",
+                static_override_target_count=static_override_target_count,
                 positional_args_possible=positional_args_possible,
                 dependency_resolution_order=dependency_resolution_order,
                 contract_positional_override=contract_positional_override,
@@ -1707,6 +1791,7 @@ def _append_overrides_step_shape_source(
                 lines=lines,
                 step_index=step_index,
                 indent="            ",
+                static_override_target_count=static_override_target_count,
                 positional_args_possible=positional_args_possible,
                 dependency_resolution_order=dependency_resolution_order,
                 contract_positional_override=contract_positional_override,

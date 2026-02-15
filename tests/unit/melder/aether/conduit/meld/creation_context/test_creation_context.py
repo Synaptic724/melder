@@ -134,6 +134,9 @@ def _make_override_harness(
     context._override_prefilter_step_targets_cache = {}
     context._override_prefilter_path_metadata_cache = {}
     context._override_socket_shape_cache = {}
+    context._override_last_socket_shape = None
+    context._override_last_root_positional_arity = -1
+    context._override_last_executor = None
     return context
 
 
@@ -294,6 +297,7 @@ def test_get_or_compile_override_executor_caches_compiled_executor(
             plan_rows: Sequence[Dict[str, Any]],
             root_spell_id: Optional[str],
             override_targeted_spell_ids: Tuple[str, ...],
+            override_target_counts_by_spell_id: Tuple[Tuple[str, int], ...],
             has_root_positional_override: bool,
     ) -> str:
         source_emit_count["value"] += 1
@@ -371,6 +375,7 @@ def test_get_or_compile_override_executor_reuses_plan_signature_artifacts_across
             plan_rows: Sequence[Dict[str, Any]],
             root_spell_id: Optional[str],
             override_targeted_spell_ids: Tuple[str, ...],
+            override_target_counts_by_spell_id: Tuple[Tuple[str, int], ...],
             has_root_positional_override: bool,
     ) -> str:
         source_emit_count["value"] += 1

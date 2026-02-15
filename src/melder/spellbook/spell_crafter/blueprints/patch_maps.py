@@ -100,6 +100,10 @@ class OverridePatchMap(Cleanable):
         "_targets_by_spec",
         "_specificity_by_spec",
         "_resolved_targets_by_raw_key",
+        "_last_single_raw_key",
+        "_last_single_value_id",
+        "_last_single_override_map",
+        "_last_single_socket_shape",
     ]
 
     def __init__(
@@ -137,6 +141,10 @@ class OverridePatchMap(Cleanable):
             str,
             tuple[tuple[SocketRef, ...], _Specificity, tuple[tuple[object, ...], ...]],
         ] = {}
+        self._last_single_raw_key: Optional[str] = None
+        self._last_single_value_id: int = -1
+        self._last_single_override_map: Optional[Dict[SocketRef, object]] = None
+        self._last_single_socket_shape: Optional[tuple[tuple[object, ...], ...]] = None
 
     def cleanup(self) -> None:
         """
@@ -152,10 +160,18 @@ class OverridePatchMap(Cleanable):
         self._targets_by_spec.clear()
         self._specificity_by_spec.clear()
         self._resolved_targets_by_raw_key.clear()
+        self._last_single_raw_key = None
+        self._last_single_value_id = -1
+        self._last_single_override_map = None
+        self._last_single_socket_shape = None
         self._root_spell_id = None
         self._targets_by_spec = None
         self._specificity_by_spec = None
         self._resolved_targets_by_raw_key = None
+        self._last_single_raw_key = None
+        self._last_single_value_id = None
+        self._last_single_override_map = None
+        self._last_single_socket_shape = None
 
     @property
     def root_spell_id(self) -> str:
@@ -239,19 +255,33 @@ class OverridePatchMap(Cleanable):
             return {}, ()
         if len(spell_override) == 1:
             raw_key, value = next(iter(spell_override.items()))
+            if (
+                    raw_key == self._last_single_raw_key
+                    and id(value) == self._last_single_value_id
+            ):
+                cached_map = self._last_single_override_map
+                cached_shape = self._last_single_socket_shape
+                if cached_map is not None and cached_shape is not None:
+                    return (
+                        cached_map,
+                        cached_shape,
+                    )
             matches, _, socket_shape = self._resolve_targets_for_raw_key(raw_key)
             if len(matches) == 1:
-                return (
-                    {
-                        matches[0]: value,
-                    },
-                    socket_shape,
-                )
-            return (
-                {
+                override_map = {
+                    matches[0]: value,
+                }
+            else:
+                override_map = {
                     socket_ref: value
                     for socket_ref in matches
-                },
+                }
+            self._last_single_raw_key = raw_key
+            self._last_single_value_id = id(value)
+            self._last_single_override_map = override_map
+            self._last_single_socket_shape = socket_shape
+            return (
+                override_map,
                 socket_shape,
             )
 

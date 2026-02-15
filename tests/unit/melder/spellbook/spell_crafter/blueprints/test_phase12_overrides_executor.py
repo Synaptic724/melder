@@ -399,19 +399,50 @@ def test_emit_phase12_overrides_executor_shape_source_specializes_target_and_exi
     assert "step_existences" not in source
     assert "if target_kind_0 in (" not in source
     assert "existence_0 = step_existences[0]" not in source
-    assert "step_root_positional_override_0 = root_positional_override" in source
+    assert "step_root_positional_override_0 = root_positional_override" not in source
     assert "step_root_positional_override_0 = None" not in source
 
 
 def test_emit_phase12_overrides_executor_shape_source_prebinds_non_root_override_to_none() -> None:
-    """Shape emitter prebinds non-root positional override as None with no runtime root-branch."""
+    """Shape emitter elides positional locals when root positional overrides are impossible."""
     source = emit_phase12_overrides_executor_shape_source(
         plan_rows=(_make_plan_row("dep"),),
         root_spell_id="root",
     )
 
-    assert "step_root_positional_override_0 = None" in source
+    assert "step_root_positional_override_0 = None" not in source
     assert "root_positional_override if is_root_step_0 else None" not in source
+
+
+def test_emit_phase12_overrides_executor_shape_source_specializes_static_target_count() -> None:
+    """Shape emitter removes dynamic override-target-count branching for static shapes."""
+    source = emit_phase12_overrides_executor_shape_source(
+        plan_rows=(_make_plan_row("root"),),
+        root_spell_id="root",
+        override_targeted_spell_ids=("root",),
+        override_target_counts_by_spell_id=(("root", 1),),
+    )
+
+    assert "override_target_count_0 = step_override_target_counts[0]" not in source
+    assert "if override_target_count_0 == 0:" not in source
+
+
+def test_emit_phase12_overrides_executor_shape_source_duplicate_spell_id_skips_static_count_specialization() -> None:
+    """Shape emitter avoids fixed [0] indexing lanes when one spell_id maps to multiple steps."""
+    source = emit_phase12_overrides_executor_shape_source(
+        plan_rows=(
+            _make_plan_row("dup"),
+            _make_plan_row("dup"),
+        ),
+        root_spell_id="dup",
+        override_targeted_spell_ids=("dup",),
+        override_target_counts_by_spell_id=(("dup", 1),),
+    )
+
+    assert "single_override_socket_0 = override_targets_0[0]" not in source
+    assert "single_override_socket_1 = override_targets_1[0]" not in source
+    assert "for override_socket_0 in override_targets_0:" in source
+    assert "for override_socket_1 in override_targets_1:" in source
 
 
 def test_compile_phase12_overrides_executor_from_shape_source_supports_schema_rows_execution() -> None:
