@@ -6,6 +6,7 @@ from melder.spellbook.spell_crafter.blueprints.execution_plan import (
     ExecutionPlanTargetKind,
 )
 from melder.spellbook.spell_crafter.blueprints.phase12_no_overrides_executor import (
+    _build_kwargs_no_overrides,
     _get_existing_creation,
     _register_spell_instance_prebound,
 )
@@ -232,6 +233,8 @@ def emit_phase12_overrides_executor_shape_source(
         *,
         plan_rows: Sequence[Dict[str, Any]],
         root_spell_id: Optional[str],
+        override_targeted_spell_ids: Optional[Tuple[str, ...]] = None,
+        has_root_positional_override: bool = False,
 ) -> str:
     """
     Emit shape-specialized Phase12 override source from static plan rows.
@@ -249,6 +252,8 @@ def emit_phase12_overrides_executor_shape_source(
     step_source_metadata = _build_shape_source_step_metadata(
         plan_rows=plan_rows,
         root_spell_id=root_spell_id,
+        override_targeted_spell_ids=override_targeted_spell_ids,
+        has_root_positional_override=has_root_positional_override,
     )
     return _build_phase12_overrides_executor_shape_source(
         step_source_metadata=step_source_metadata,
@@ -372,9 +377,16 @@ def _build_phase12_overrides_executor_namespace(
     """
     return {
         "MeldExecutionError": MeldExecutionError,
+        "Sequence": Sequence,
         "Existence": Existence,
         "ExecutionPlanTargetKind": ExecutionPlanTargetKind,
+        "_MISSING": _MISSING,
         "_construct_spell_instance_with_overrides": _construct_spell_instance_with_overrides,
+        "_build_step_override_values": _build_step_override_values,
+        "_build_kwargs_no_overrides": _build_kwargs_no_overrides,
+        "_build_kwargs_with_overrides": _build_kwargs_with_overrides,
+        "_invoke_spell_with_kwargs": _invoke_spell_with_kwargs,
+        "_EMPTY_OVERRIDE_VALUES": _EMPTY_OVERRIDE_VALUES,
         "_get_existing_creation": _get_existing_creation,
         "_register_spell_instance_prebound": _register_spell_instance_prebound,
         "_raise_override_on_existing_instance": _raise_override_on_existing_instance,
@@ -409,6 +421,21 @@ def _build_phase12_overrides_executor_namespace(
         "step_has_targeted_overrides": tuple(
             bool(override_targets)
             for override_targets in step_override_targets
+        ),
+        "step_is_existing_unique_creation": tuple(
+            (
+                    plan_step.spell.existence is Existence.unique
+                    and plan_step.spell.is_existing_creation
+            )
+            for plan_step in steps
+        ),
+        "step_is_callable_spell": tuple(
+            (
+                    plan_step.spell.is_class_spell
+                    or plan_step.spell.is_method_spell
+                    or plan_step.spell.is_lambda_spell
+            )
+            for plan_step in steps
         ),
         "step_instance_keys": tuple(
             plan_step.instance_key
@@ -506,7 +533,9 @@ def _build_shape_source_step_metadata(
         *,
         plan_rows: Sequence[Dict[str, Any]],
         root_spell_id: Optional[str],
-) -> Tuple[Tuple[str, Any, Existence, bool, bool, bool], ...]:
+        override_targeted_spell_ids: Optional[Tuple[str, ...]],
+        has_root_positional_override: bool,
+) -> Tuple[Tuple[str, Any, Existence, bool, bool, bool, bool, bool, bool], ...]:
     """
     Build immutable per-step metadata used by shape-specialized source emission.
 
@@ -517,11 +546,13 @@ def _build_shape_source_step_metadata(
     """
     if plan_rows is None:
         raise ValueError("plan_rows must not be None.")
+    targeted_spell_ids = set(override_targeted_spell_ids or ())
     step_metadata = []
     required_fields = (
         "spell_id",
         "existence",
         "creations_target_kind",
+        "uses_positional_override",
         "use_spell_lock_hint",
         "must_register",
     )
@@ -549,6 +580,9 @@ def _build_shape_source_step_metadata(
                 bool(row["use_spell_lock_hint"]),
                 bool(row["must_register"]),
                 spell_id == root_spell_id,
+                spell_id in targeted_spell_ids,
+                bool(row["uses_positional_override"]),
+                spell_id == root_spell_id and has_root_positional_override,
             )
         )
     return tuple(step_metadata)
@@ -556,7 +590,7 @@ def _build_shape_source_step_metadata(
 
 def _build_phase12_overrides_executor_shape_source(
         *,
-        step_source_metadata: Sequence[Tuple[str, Any, Existence, bool, bool, bool]],
+        step_source_metadata: Sequence[Tuple[str, Any, Existence, bool, bool, bool, bool, bool, bool]],
 ) -> str:
     """
     Build generated override source specialized by static step metadata.
@@ -584,14 +618,21 @@ def _build_phase12_overrides_executor_shape_source(
         "        step_disposal_methods=step_disposal_methods,",
         "        step_override_targets=step_override_targets,",
         "        step_has_targeted_overrides=step_has_targeted_overrides,",
+        "        step_is_existing_unique_creation=step_is_existing_unique_creation,",
+        "        step_is_callable_spell=step_is_callable_spell,",
         "        step_instance_keys=step_instance_keys,",
         "        root_instance_key=root_instance_key,",
         "        root_spell_id=root_spell_id,",
         "        any_overrides_present=any_overrides_present,",
-        "        _construct_spell_instance_with_overrides=_construct_spell_instance_with_overrides,",
+        "        _build_step_override_values=_build_step_override_values,",
+        "        _build_kwargs_no_overrides=_build_kwargs_no_overrides,",
+        "        _build_kwargs_with_overrides=_build_kwargs_with_overrides,",
+        "        _EMPTY_OVERRIDE_VALUES=_EMPTY_OVERRIDE_VALUES,",
+        "        _MISSING=_MISSING,",
         "        _get_existing_creation=_get_existing_creation,",
         "        _register_spell_instance_prebound=_register_spell_instance_prebound,",
         "        _raise_override_on_existing_instance=_raise_override_on_existing_instance,",
+        "        Sequence=Sequence,",
         "        MeldExecutionError=MeldExecutionError,",
         "    ):",
         "    instance_results = {}",
@@ -605,6 +646,9 @@ def _build_phase12_overrides_executor_shape_source(
             use_spell_lock_hint,
             must_register,
             is_root_step,
+            has_static_targeted_overrides,
+            use_positional_override,
+            has_static_root_positional_override,
         ) = metadata
         _append_overrides_step_shape_source(
             lines=lines,
@@ -615,6 +659,9 @@ def _build_phase12_overrides_executor_shape_source(
             use_spell_lock_hint=use_spell_lock_hint,
             must_register=must_register,
             is_root_step=is_root_step,
+            has_static_targeted_overrides=has_static_targeted_overrides,
+            use_positional_override=use_positional_override,
+            has_static_root_positional_override=has_static_root_positional_override,
         )
 
     lines.extend([
@@ -632,6 +679,223 @@ def _build_phase12_overrides_executor_shape_source(
     return "\n".join(lines)
 
 
+def _append_overrides_construct_inline_source(
+        *,
+        lines: list[str],
+        step_index: int,
+        indent: str,
+        positional_args_possible: bool,
+) -> None:
+    """
+    Append generated source lines to construct one override-aware step instance.
+
+    Contract:
+        - Inlines override-value construction and kwargs materialization in the
+          generated executor to avoid helper trampoline overhead.
+        - Preserves existing helper semantics for single/two/many target
+          override-map construction.
+        - Continues to delegate kwargs materialization to
+          `_build_kwargs_with_overrides` while inlining invocation.
+    """
+    lines.extend([
+        (
+            f"{indent}if not override_targets_{step_index} and "
+            f"step_root_positional_override_{step_index} is None:"
+        ),
+        f"{indent}    override_values_{step_index} = _EMPTY_OVERRIDE_VALUES",
+        f"{indent}elif len(override_targets_{step_index}) == 1:",
+        f"{indent}    single_override_socket_{step_index} = override_targets_{step_index}[0]",
+        f"{indent}    if step_root_positional_override_{step_index} is None:",
+        f"{indent}        override_values_{step_index} = {{",
+        (
+            f"{indent}            single_override_socket_{step_index}.param_name: "
+            f"override_map[single_override_socket_{step_index}],"
+        ),
+        f"{indent}        }}",
+        f"{indent}    else:",
+        f"{indent}        override_values_{step_index} = {{",
+        (
+            f"{indent}            single_override_socket_{step_index}.param_name: "
+            f"override_map[single_override_socket_{step_index}],"
+        ),
+        (
+            f"{indent}            \"__args__\": "
+            f"step_root_positional_override_{step_index},"
+        ),
+        f"{indent}        }}",
+        f"{indent}elif len(override_targets_{step_index}) == 2:",
+        (
+            f"{indent}    first_override_socket_{step_index} = "
+            f"override_targets_{step_index}[0]"
+        ),
+        (
+            f"{indent}    second_override_socket_{step_index} = "
+            f"override_targets_{step_index}[1]"
+        ),
+        f"{indent}    override_values_{step_index} = {{",
+        (
+            f"{indent}        first_override_socket_{step_index}.param_name: "
+            f"override_map[first_override_socket_{step_index}],"
+        ),
+        f"{indent}    }}",
+        (
+            f"{indent}    override_values_{step_index}["
+            f"second_override_socket_{step_index}.param_name] = "
+            f"override_map[second_override_socket_{step_index}]"
+        ),
+        f"{indent}    if step_root_positional_override_{step_index} is not None:",
+        (
+            f"{indent}        override_values_{step_index}[\"__args__\"] = "
+            f"step_root_positional_override_{step_index}"
+        ),
+        f"{indent}else:",
+        f"{indent}    override_values_{step_index} = {{}}",
+        (
+            f"{indent}    for override_socket_{step_index} in "
+            f"override_targets_{step_index}:"
+        ),
+        (
+            f"{indent}        override_values_{step_index}["
+            f"override_socket_{step_index}.param_name] = "
+            f"override_map[override_socket_{step_index}]"
+        ),
+        f"{indent}    if step_root_positional_override_{step_index} is not None:",
+        (
+            f"{indent}        override_values_{step_index}[\"__args__\"] = "
+            f"step_root_positional_override_{step_index}"
+        ),
+        f"{indent}kwargs_{step_index} = _build_kwargs_with_overrides(",
+        f"{indent}    plan_step=plan_step_{step_index},",
+        f"{indent}    instance_results=instance_results,",
+        f"{indent}    override_values=override_values_{step_index},",
+        f"{indent})",
+    ])
+    _append_overrides_invoke_source(
+        lines=lines,
+        step_index=step_index,
+        indent=indent,
+        positional_args_possible=positional_args_possible,
+    )
+
+
+def _append_overrides_construct_no_overrides_source(
+        *,
+        lines: list[str],
+        step_index: int,
+        indent: str,
+        positional_args_possible: bool,
+) -> None:
+    """
+    Append generated source lines for no-override kwargs materialization.
+
+    Contract:
+        - Uses `_build_kwargs_no_overrides` directly.
+        - Preserves invoke semantics while inlining call dispatch.
+    """
+    lines.extend([
+        f"{indent}kwargs_{step_index} = _build_kwargs_no_overrides(",
+        f"{indent}    plan_step=plan_step_{step_index},",
+        f"{indent}    instance_results=instance_results,",
+        f"{indent})",
+    ])
+    _append_overrides_invoke_source(
+        lines=lines,
+        step_index=step_index,
+        indent=indent,
+        positional_args_possible=positional_args_possible,
+    )
+
+
+def _append_overrides_invoke_source(
+        *,
+        lines: list[str],
+        step_index: int,
+        indent: str,
+        positional_args_possible: bool,
+) -> None:
+    """
+    Append generated source for step-level invoke dispatch.
+
+    Contract:
+        - Preserves `_invoke_spell_with_kwargs(...)` behavior for existing
+          creation, callable, and raw-value spell variants.
+        - Supports `__args__` payload decoding only when the shape can carry
+          positional overrides.
+        - Keeps error translation in generated source for invalid args and
+          invoke-time exceptions.
+    """
+    lines.extend([
+        f"{indent}if is_existing_unique_creation_{step_index}:",
+        f"{indent}    instance_{step_index} = plan_step_{step_index}.spell.user_created_object",
+        f"{indent}    if instance_{step_index} is None:",
+        f"{indent}        raise RuntimeError(",
+        f"{indent}            \"[MELD] EXISTING_CREATION spell has no `user_created_object` \"",
+        f"{indent}            \"(spell_id=\" + spell_id_{step_index} + \").\"",
+        f"{indent}        )",
+        f"{indent}elif is_callable_spell_{step_index}:",
+    ])
+    if positional_args_possible:
+        lines.extend([
+            f"{indent}    raw_args_{step_index} = kwargs_{step_index}.get(\"__args__\", _MISSING)",
+            f"{indent}    if raw_args_{step_index} is _MISSING:",
+            f"{indent}        args_{step_index} = []",
+            f"{indent}        call_kwargs_{step_index} = kwargs_{step_index}",
+            (
+                f"{indent}    elif isinstance(raw_args_{step_index}, Sequence) "
+                f"and not isinstance(raw_args_{step_index}, (str, bytes)):"
+            ),
+            f"{indent}        if isinstance(raw_args_{step_index}, tuple):",
+            f"{indent}            args_{step_index} = raw_args_{step_index}",
+            f"{indent}        else:",
+            f"{indent}            args_{step_index} = tuple(raw_args_{step_index})",
+            f"{indent}        call_kwargs_{step_index} = dict(kwargs_{step_index})",
+            f"{indent}        call_kwargs_{step_index}.pop(\"__args__\", None)",
+            f"{indent}    else:",
+            f"{indent}        raise MeldExecutionError(",
+            f"{indent}            spell_id=plan_step_{step_index}.spell.spell_index.current,",
+            f"{indent}            spell_name=plan_step_{step_index}.spell.spell_name,",
+            f"{indent}            message=\"__args__ override must be a list or tuple.\",",
+            f"{indent}        )",
+            f"{indent}    try:",
+            (
+                f"{indent}        instance_{step_index} = "
+                f"plan_step_{step_index}.spell.spell(*args_{step_index}, **call_kwargs_{step_index})"
+            ),
+            f"{indent}    except Exception as exc:",
+            f"{indent}        raise MeldExecutionError(",
+            f"{indent}            spell_id=plan_step_{step_index}.spell.spell_index.current,",
+            f"{indent}            spell_name=plan_step_{step_index}.spell.spell_name,",
+            (
+                f"{indent}            message=(\"Error invoking spell '\" + "
+                f"plan_step_{step_index}.spell.spell_name + \"'.\"),"
+            ),
+            f"{indent}            inner=exc,",
+            f"{indent}        ) from exc",
+        ])
+    else:
+        lines.extend([
+            f"{indent}    try:",
+            (
+                f"{indent}        instance_{step_index} = "
+                f"plan_step_{step_index}.spell.spell(*(), **kwargs_{step_index})"
+            ),
+            f"{indent}    except Exception as exc:",
+            f"{indent}        raise MeldExecutionError(",
+            f"{indent}            spell_id=plan_step_{step_index}.spell.spell_index.current,",
+            f"{indent}            spell_name=plan_step_{step_index}.spell.spell_name,",
+            (
+                f"{indent}            message=(\"Error invoking spell '\" + "
+                f"plan_step_{step_index}.spell.spell_name + \"'.\"),"
+            ),
+            f"{indent}            inner=exc,",
+            f"{indent}        ) from exc",
+        ])
+    lines.extend([
+        f"{indent}else:",
+        f"{indent}    instance_{step_index} = plan_step_{step_index}.spell.spell",
+    ])
+
+
 def _append_overrides_step_shape_source(
         *,
         lines: list[str],
@@ -642,6 +906,9 @@ def _append_overrides_step_shape_source(
         use_spell_lock_hint: bool,
         must_register: bool,
         is_root_step: bool,
+        has_static_targeted_overrides: bool,
+        use_positional_override: bool,
+        has_static_root_positional_override: bool,
 ) -> None:
     """
     Append one step block specialized by static target/existence metadata.
@@ -667,6 +934,14 @@ def _append_overrides_step_shape_source(
             f"    has_targeted_overrides_{step_index} = "
             f"step_has_targeted_overrides[{step_index}]"
         ),
+        (
+            f"    is_existing_unique_creation_{step_index} = "
+            f"step_is_existing_unique_creation[{step_index}]"
+        ),
+        (
+            f"    is_callable_spell_{step_index} = "
+            f"step_is_callable_spell[{step_index}]"
+        ),
     ])
     if is_root_step:
         lines.append(
@@ -676,6 +951,12 @@ def _append_overrides_step_shape_source(
         lines.append(
             f"    step_root_positional_override_{step_index} = None"
         )
+    use_no_override_fast_path = (
+        not has_static_targeted_overrides and not has_static_root_positional_override
+    )
+    positional_args_possible = (
+        use_positional_override or has_static_root_positional_override
+    )
 
     if creations_target_kind in (
             ExecutionPlanTargetKind.CALLER,
@@ -711,16 +992,20 @@ def _append_overrides_step_shape_source(
         ])
 
     if existence is Existence.many:
-        lines.extend([
-            (
-                f"    instance_{step_index} = _construct_spell_instance_with_overrides("
-                f"plan_step=plan_step_{step_index}, "
-                f"instance_results=instance_results, "
-                f"override_targets=override_targets_{step_index}, "
-                f"override_map=override_map, "
-                f"root_positional_override=step_root_positional_override_{step_index})"
-            ),
-        ])
+        if use_no_override_fast_path:
+            _append_overrides_construct_no_overrides_source(
+                lines=lines,
+                step_index=step_index,
+                indent="    ",
+                positional_args_possible=positional_args_possible,
+            )
+        else:
+            _append_overrides_construct_inline_source(
+                lines=lines,
+                step_index=step_index,
+                indent="    ",
+                positional_args_possible=positional_args_possible,
+            )
         if must_register:
             lines.extend([
                 f"    with creations_{step_index}._lock:",
@@ -770,14 +1055,22 @@ def _append_overrides_step_shape_source(
                 f"root_spell_id=root_spell_id)"
             ),
             "            else:",
-            (
-                f"                instance_{step_index} = _construct_spell_instance_with_overrides("
-                f"plan_step=plan_step_{step_index}, "
-                f"instance_results=instance_results, "
-                f"override_targets=override_targets_{step_index}, "
-                f"override_map=override_map, "
-                f"root_positional_override=step_root_positional_override_{step_index})"
-            ),
+        ])
+        if use_no_override_fast_path:
+            _append_overrides_construct_no_overrides_source(
+                lines=lines,
+                step_index=step_index,
+                indent="                ",
+                positional_args_possible=positional_args_possible,
+            )
+        else:
+            _append_overrides_construct_inline_source(
+                lines=lines,
+                step_index=step_index,
+                indent="                ",
+                positional_args_possible=positional_args_possible,
+            )
+        lines.extend([
             (
                 f"                _register_spell_instance_prebound("
                 f"spell_id=spell_id_{step_index}, "
@@ -813,14 +1106,22 @@ def _append_overrides_step_shape_source(
                 f"root_spell_id=root_spell_id)"
             ),
             "            else:",
-            (
-                f"                instance_{step_index} = _construct_spell_instance_with_overrides("
-                f"plan_step=plan_step_{step_index}, "
-                f"instance_results=instance_results, "
-                f"override_targets=override_targets_{step_index}, "
-                f"override_map=override_map, "
-                f"root_positional_override=step_root_positional_override_{step_index})"
-            ),
+        ])
+        if use_no_override_fast_path:
+            _append_overrides_construct_no_overrides_source(
+                lines=lines,
+                step_index=step_index,
+                indent="                ",
+                positional_args_possible=positional_args_possible,
+            )
+        else:
+            _append_overrides_construct_inline_source(
+                lines=lines,
+                step_index=step_index,
+                indent="                ",
+                positional_args_possible=positional_args_possible,
+            )
+        lines.extend([
             f"                with creations_{step_index}._lock:",
             (
                 f"                    _register_spell_instance_prebound("
@@ -848,14 +1149,22 @@ def _append_overrides_step_shape_source(
                 f"root_spell_id=root_spell_id)"
             ),
             "            else:",
-            (
-                f"                instance_{step_index} = _construct_spell_instance_with_overrides("
-                f"plan_step=plan_step_{step_index}, "
-                f"instance_results=instance_results, "
-                f"override_targets=override_targets_{step_index}, "
-                f"override_map=override_map, "
-                f"root_positional_override=step_root_positional_override_{step_index})"
-            ),
+        ])
+        if use_no_override_fast_path:
+            _append_overrides_construct_no_overrides_source(
+                lines=lines,
+                step_index=step_index,
+                indent="                ",
+                positional_args_possible=positional_args_possible,
+            )
+        else:
+            _append_overrides_construct_inline_source(
+                lines=lines,
+                step_index=step_index,
+                indent="                ",
+                positional_args_possible=positional_args_possible,
+            )
+        lines.extend([
             (
                 f"                _register_spell_instance_prebound("
                 f"spell_id=spell_id_{step_index}, "
@@ -884,14 +1193,22 @@ def _append_overrides_step_shape_source(
                 f"root_spell_id=root_spell_id)"
             ),
             "        else:",
-            (
-                f"            instance_{step_index} = _construct_spell_instance_with_overrides("
-                f"plan_step=plan_step_{step_index}, "
-                f"instance_results=instance_results, "
-                f"override_targets=override_targets_{step_index}, "
-                f"override_map=override_map, "
-                f"root_positional_override=step_root_positional_override_{step_index})"
-            ),
+        ])
+        if use_no_override_fast_path:
+            _append_overrides_construct_no_overrides_source(
+                lines=lines,
+                step_index=step_index,
+                indent="            ",
+                positional_args_possible=positional_args_possible,
+            )
+        else:
+            _append_overrides_construct_inline_source(
+                lines=lines,
+                step_index=step_index,
+                indent="            ",
+                positional_args_possible=positional_args_possible,
+            )
+        lines.extend([
             (
                 f"            _register_spell_instance_prebound("
                 f"spell_id=spell_id_{step_index}, "

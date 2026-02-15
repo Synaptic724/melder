@@ -64,6 +64,42 @@ Phase12/CreationContext and validate with targeted profiler suites.
 
 ## Notes
 - DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: The follow-up structural inline override-values slice is retained; suites remain green and repeated shallow timings improved from the prior invoke-inline average `31.6620ms` to `31.2446ms` over five runs (`30.9785, 30.9828, 31.3584, 32.1545, 30.7487`) at `warmup=100`, `iters=2000`.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:682-766, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:247-251, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:260-264, benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:154-161, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:252-259
+  IMPACT: Shape-emitted override execution now removes both invoke and override-values helper trampolines with cumulative steady-state gain.
+  NEXT: Target the next structural hotspot (`_build_kwargs_with_overrides` remains top Phase12 helper in call-chain highlights) with shape-emitted kwargs specialization.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: A fourth structural slice is staged: shape-emitted override step blocks now inline `override_values` map construction (0/1/2/many socket target branches) instead of calling `_build_step_override_values` in this lane.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:682-766, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1003-1210
+  IMPACT: Removes another per-step helper call frame from generated override execution while preserving target-order semantics.
+  NEXT: Re-run fast/overrides suites and repeat shallow timings to decide keep-or-revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Structural invoke-inlining slice is retained; both profiling suites remain green and repeated shallow override timings improved from prior retained avg `35.7231ms` (10-run baseline) to `31.6620ms` across five repeated runs (`32.0415, 31.8599, 31.6673, 31.2232, 31.5181`) at `warmup=100`, `iters=2000`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:229-238, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:247-251, benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:146-153, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:1-20
+  IMPACT: Override hot path drops additional helper frame overhead while preserving current correctness and benchmark workflows.
+  NEXT: Re-rank post-slice hotspots (focus `_build_kwargs_with_overrides` / patch-map apply) and choose the next medium/high-risk structural optimization.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Next structural slice is implemented in shape-emitted Phase12 overrides source: invoke dispatch is now inlined per-step (existing-creation/callable/raw-value branches) with static step metadata (`is_existing_unique_creation`, `is_callable_spell`, `uses_positional_override`) and positional-args decoding emitted only for shapes that can carry `__args__`.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:575-665, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:682-843, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:846-1152
+  IMPACT: Override shape runtime removes one remaining helper trampoline (`_invoke_spell_with_kwargs`) from generated hot blocks and specializes invocation logic by static shape metadata.
+  NEXT: Run targeted fast/overrides cprofile suites and repeated shallow timing samples to validate correctness and measure net delta.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
   TYPE: DECISION
   CLAIM: Next isolated experiment targets `_invoke_spell_with_kwargs` no-args path by calling `spell.spell(**kwargs)` directly when `__args__` is absent, avoiding empty-args container setup and starred-args dispatch on the common path.
   EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1607-1644, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:68-75
@@ -276,6 +312,42 @@ Phase12/CreationContext and validate with targeted profiler suites.
   EVIDENCE: benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:114-121, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:162-169
   IMPACT: Retained state is stable after rejecting the no-args invoke experiment.
   NEXT: Start next isolated helper optimization slice from this validated baseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Medium/high-risk structural refactor is now in place for the override shape codegen path: generated step blocks inline construction logic (`override_values` -> `kwargs` -> spell invoke) instead of calling `_construct_spell_instance_with_overrides(...)` as a helper trampoline on every step.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:595-599, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:642-680, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:764-931
+  IMPACT: Runtime hotpath now executes fewer Python helper call frames per step in the overrides lane.
+  NEXT: Keep this structural codegen path and continue from the new lower baseline for the next medium-risk optimization.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Structural inlined-step codegen improves repeated shallow override timings from prior baseline avg `37.1777ms` (`37.1150, 37.1263, 37.3620, 37.3805, 36.9049`) to new repeated averages `36.0008ms` (`35.7693, 36.2755, 35.7085, 36.4967, 35.7540`) and `35.8607ms` (`35.3530, 35.4533, 35.8279, 35.8752, 36.7930`), with both profiling suites still green.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:157-161, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:211-220, benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:130-137, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:203-210
+  IMPACT: This is a material steady-state gain on the target override lane and validates the medium/high-risk direction.
+  NEXT: Profile new hotspots after helper-trampoline removal and choose the next structural slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Override plan-row specialization now emits shape-aware no-override fast paths and caches emitted source/code objects by full override `shape_key` instead of only `plan_signature`, enabling per-shape source variants that route statically non-targeted steps through `_build_kwargs_no_overrides(...)`.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context.py:1042-1134, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:232-255, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:515-557, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:701-1011
+  IMPACT: Generated executors can now specialize step construction more aggressively per override shape with lower generic helper overhead.
+  NEXT: Keep shape-aware specialization path and continue structural optimization from the new baseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Second structural slice (shape-keyed emission + static no-target step fast path) improved shallow repeated timings from prior retained avg `35.9306ms` (lines `211-220`) to avg `35.7231ms` over 10 runs (`35.9699, 35.5169, 35.3124, 34.9939, 36.5257, 35.3952, 35.5830, 35.3505, 36.0298, 36.5537`) with both suites still green.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:211-220, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:229-238, benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:138-145, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:221-228
+  IMPACT: Structural codegen changes continue to reduce override lane runtime cost; cumulative gain from the earlier `37.1777ms` baseline is now larger.
+  NEXT: Re-rank post-structure hotspots and target the next medium/high-risk slice (likely invoke-path specialization).
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 

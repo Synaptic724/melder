@@ -15,9 +15,45 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | keep retained direct Phase10 apply + patch-map cache wins, reject no-args invoke specialization, and continue on `_construct_spell_instance_with_overrides` / kwargs helper hotspots | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
+| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | keep invoke + override-values inline slices; next medium/high-risk target is shape-emitted kwargs specialization (`_build_kwargs_with_overrides`) | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Fourth structural codegen slice is retained: shape-emitted override blocks now inline override-values map construction (0/1/2/many target branches) in addition to invoke inlining; repeated shallow timings improved from prior invoke-inline avg `31.6620ms` to `31.2446ms` over five runs (`warmup=100`, `iters=2000`) with both profile suites green.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:682-766, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:247-251, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:260-264, benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:154-161, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:252-259
+  IMPACT: Generated override lane now removes two helper trampolines from per-step execution with cumulative measured gain.
+  NEXT: Implement shape-emitted kwargs specialization to reduce remaining `_build_kwargs_with_overrides` hotspot cost.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Third structural codegen slice is retained: shape-emitted overrides executor now inlines per-step invoke dispatch (existing-creation/callable/raw-value lanes) with static invocation metadata, and repeated shallow override timings improved from prior retained avg `35.7231ms` to `31.6620ms` over five runs (`warmup=100`, `iters=2000`) while fast/overrides suites remain green.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:575-665, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:682-843, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:846-1152, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:229-238, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:247-251, benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:146-153
+  IMPACT: Override hot lane now removes another helper trampoline from generated execution blocks with a material measured gain.
+  NEXT: Re-rank post-slice hotspots and implement the next structural optimization around kwargs assembly or patch-map apply overhead.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Second structural codegen slice is retained: source/code-object emission now keys by full override `shape_key` and shape-specific source routes statically non-targeted steps through `_build_kwargs_no_overrides(...)`; shallow repeated timing improved from prior retained avg `35.9306ms` to `35.7231ms` over 10 runs, with both suites green.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context.py:1042-1134, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:232-255, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:701-1011, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:211-220, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:229-238, benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:138-145, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:221-228
+  IMPACT: Override runtime is now structurally specialized by shape with additional steady-state gain.
+  NEXT: Target next medium/high-risk hotspot, likely invoke-path specialization in generated shape source.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Medium/high-risk structural codegen refactor is validated and retained: shape-emitted override step blocks now inline construction (`override_values` -> kwargs -> invoke) and repeated shallow timings improved from baseline avg `37.1777ms` to `36.0008ms` and `35.8607ms` across two 5-run samples (`warmup=100`, `iters=2000`), with both fast/overrides suites still green.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:595-680, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:764-931, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:157-161, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:211-220, benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:130-137, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:203-210
+  IMPACT: Runtime helper trampoline cost is materially lower in the target override lane.
+  NEXT: Re-rank post-refactor hotspots and take the next structural optimization slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-15
   TYPE: MEASURE
   CLAIM: The `_invoke_spell_with_kwargs` no-args direct-call experiment regressed and was rejected by same-setting A/B runs; changed path averaged `38.5584ms` over 5 runs, while reverted baseline averaged `37.1777ms` over the next 5 runs (`warmup=100`, `iters=2000`, shallow overrides lane).

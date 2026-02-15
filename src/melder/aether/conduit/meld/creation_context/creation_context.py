@@ -1038,9 +1038,8 @@ class CreationContext(Cleanable):
             return cached
 
         if plan_rows is not None:
-            plan_signature = shape_key[0]
             compiled = self._compile_override_executor_from_plan_rows(
-                plan_signature=plan_signature,
+                shape_key=shape_key,
                 override_targets_by_spell_id=override_targets_by_spell_id,
                 any_overrides_present=any_overrides_present,
                 path_registry=path_registry,
@@ -1066,7 +1065,7 @@ class CreationContext(Cleanable):
     def _compile_override_executor_from_plan_rows(
             self,
             *,
-            plan_signature: Tuple[Any, ...],
+            shape_key: Tuple[Any, ...],
             override_targets_by_spell_id: Dict[str, Tuple[Any, ...]],
             any_overrides_present: bool,
             path_registry: Optional[Any],
@@ -1076,20 +1075,24 @@ class CreationContext(Cleanable):
             prefilter_cache_key: Optional[Tuple[Any, ...]],
     ) -> Callable[..., Any]:
         """
-        Compile one override specialization using reusable plan-signature artifacts.
+        Compile one override specialization using reusable shape artifacts.
 
         Contract:
-            - Reuses emitted source and compiled code objects per plan signature.
+            - Reuses emitted source and compiled code objects per shape key.
             - Binds per-shape namespace constants for each specialization compile.
             - Preserves runtime behavior of override executor compilation.
         """
+        targeted_spell_ids = tuple(sorted(override_targets_by_spell_id.keys()))
+        has_root_positional_override = shape_key[2] >= 0
         source = self._get_or_build_override_executor_source(
-            source_cache_key=plan_signature,
+            source_cache_key=shape_key,
             plan_rows=plan_rows,
             root_spell_id=root_spell_id,
+            override_targeted_spell_ids=targeted_spell_ids,
+            has_root_positional_override=has_root_positional_override,
         )
         code_object = self._get_or_build_override_executor_code_object(
-            source_cache_key=plan_signature,
+            source_cache_key=shape_key,
             source=source,
         )
         return _compile_phase12_overrides_executor_from_code_object_with_prefilter_cache(
@@ -1112,9 +1115,11 @@ class CreationContext(Cleanable):
             source_cache_key: Tuple[Any, ...],
             plan_rows: Sequence[Dict[str, Any]],
             root_spell_id: Optional[str],
+            override_targeted_spell_ids: Tuple[str, ...],
+            has_root_positional_override: bool,
     ) -> str:
         """
-        Return cached emitted override source for one plan-signature shape.
+        Return cached emitted override source for one override specialization shape.
         """
         override_executor_source_cache = (
             self._override_executor_source_cache_by_plan_signature
@@ -1125,6 +1130,8 @@ class CreationContext(Cleanable):
         emitted_source = emit_phase12_overrides_executor_shape_source(
             plan_rows=plan_rows,
             root_spell_id=root_spell_id,
+            override_targeted_spell_ids=override_targeted_spell_ids,
+            has_root_positional_override=has_root_positional_override,
         )
         override_executor_source_cache[source_cache_key] = emitted_source
         return emitted_source
@@ -1136,7 +1143,7 @@ class CreationContext(Cleanable):
             source: str,
     ) -> Any:
         """
-        Return cached compiled override code object for one plan-signature shape.
+        Return cached compiled override code object for one specialization shape.
         """
         override_executor_code_object_cache = (
             self._override_executor_code_object_cache_by_plan_signature
