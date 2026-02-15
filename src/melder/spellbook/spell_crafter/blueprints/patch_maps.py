@@ -261,6 +261,36 @@ class OverridePatchMap(Cleanable):
                 or if conflicting overrides share the same specificity.
         """
         self.check_cleaned()
+        return self._apply_with_socket_shape_prechecked(
+            spell_override=spell_override,
+        )
+
+    def _apply_with_socket_shape_prechecked(
+            self,
+            *,
+            spell_override: Dict[str, object],
+    ) -> tuple[Dict[SocketRef, object], tuple[tuple[object, ...], ...]]:
+        """
+        Internal hot-path entry for socket-shape override application.
+
+        Purpose:
+            Execute the same override map + socket-shape logic as
+            `apply_with_socket_shape(...)` without repeating lifecycle checks
+            when callers already hold a validated, active map instance.
+
+        Contract:
+            - Semantics match `apply_with_socket_shape(...)`.
+            - Caller must ensure this map has not been cleaned.
+            - Preserves conflict/precedence behavior and deterministic shape rows.
+
+        Args:
+            spell_override:
+                Raw override payload keyed by TargetSpec-compatible strings.
+
+        Returns:
+            tuple[Dict[SocketRef, object], tuple[tuple[object, ...], ...]]:
+                Socket->value map plus deterministic socket-shape rows.
+        """
         if spell_override is None:
             return {}, ()
         if not spell_override:

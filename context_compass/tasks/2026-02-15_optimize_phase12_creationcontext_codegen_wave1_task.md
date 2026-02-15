@@ -65,6 +65,78 @@ Phase12/CreationContext and validate with targeted profiler suites.
 ## Notes
 - DATE: 2026-02-15
   TYPE: DECISION
+  CLAIM: Retain the patch-map prechecked-entry slice. Override lanes improved versus the retained count1/count2 baseline (`solo -0.53%`, `shallow -2.90%`, `wide -1.18%`, `diamond -0.76%`) with focused validation green after test-double alignment.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_prechecked_entry_delta_vs_phase12_count12_baseline.txt:1-11, tests/unit/melder/spellbook/spell_crafter/blueprints/test_patch_maps.py:1-163, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:614-786, tests/component/melder/aether/conduit/test_conduit_component_meld_overrides_deep.py:1-1099
+  IMPACT: Active wave-1 baseline now includes the prechecked patch-map hot-path entry and direct CreationContext callsite usage.
+  NEXT: Re-rank remaining override-lane hotspots and implement the next structural optimization slice from this retained state.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Full cadence reruns for the prechecked-entry slice (`overrides x5`, `fast x3`) produced consistent improvements versus the retained count1/count2 baseline: overrides `solo -0.53%`, `shallow -2.90%`, `wide -1.18%`, `diamond -0.76%`; fast reference also trended down on all lanes.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_prechecked_entry_baseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_prechecked_entry_delta_vs_phase12_count12_baseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_prechecked_entry_bench_runs.txt:1-981
+  IMPACT: This slice delivers measurable override-lane wins on the primary shallow lane and is a keep candidate.
+  NEXT: Record keep/revert decision and set this as the next retained baseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Override patch-map now exposes `_apply_with_socket_shape_prechecked(...)` so CreationContext can run the hot override-apply path without repeating lifecycle checks on every call, while public `apply_with_socket_shape(...)` keeps the existing checked contract.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:236-346, src/melder/aether/conduit/meld/creation_context/creation_context.py:612-619, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:40-55
+  IMPACT: Per-call overhead in override preprocessing is reduced on cached override lanes.
+  NEXT: Measure and retain/revert with full cadence.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Retain the count-1/count-2 no-`override_values` emission slice. Primary shallow lane delta versus the retained post-continue baseline is near-neutral (`+0.43%`) while wide/diamond improve (`-3.31%`/`-1.36%`), and no correctness failures appeared during cadence reruns.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_count12_no_override_values_delta_vs_postcontinue_baseline.txt:1-11, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:902-929, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1011-1284
+  IMPACT: Active retained baseline now includes the count-1/count-2 direct-local kwargs specialization; next optimization can target remaining `_phase12_executor`/`_execute_with_overrides` hotspots from this state.
+  NEXT: Re-rank post-slice hotspots and implement the next structural optimization patch.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Normal benchmark cadence reruns completed for this slice (`overrides x5`, `fast x3`): overrides deltas versus post-continue baseline are `solo -1.05%`, `shallow +0.43%`, `wide -3.31%`, `diamond -1.36%`; fast reference window is slower (`solo +2.50%`, `shallow +5.49%`, `wide +11.18%`, `diamond +6.33%`) and treated as non-blocking because this patch touches override-only paths.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_count12_no_override_values_baseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_count12_no_override_values_delta_vs_postcontinue_baseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_count12_no_override_values_bench_runs.txt:1-981
+  IMPACT: The slice is validated with mixed-but-net-positive override-lane results and is eligible for retention.
+  NEXT: Record keep/revert decision, then continue with the next hotspot tranche.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Focused validation for the count-1/count-2 no-`override_values` slice is green: unit suites (`69 passed`) and deep override component suite (`48 passed`) both passed.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_count12_no_override_values_slice.txt:9-9, benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_count12_no_override_values_slice.txt:19-19
+  IMPACT: Structural emitter changes are behavior-safe before benchmark cadence.
+  NEXT: Run normal cadence (`overrides x5`, `fast x3`) and evaluate keep/revert against the retained post-continue baseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Phase12 override source emission now avoids generating temporary `override_values_{step}` dicts on static count-1/count-2 lanes. It keeps direct socket/value locals and uses param-name equality guards for dependency/contract fallback assignment before writing final override kwargs directly.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:902-925, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1011-1039, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1085-1104, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1209-1238, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1258-1284
+  IMPACT: Reduces targeted-override dict allocation/hash work inside `_phase12_executor` on the hot cached path.
+  NEXT: Measure cadence deltas and keep/revert by primary-lane outcome.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Next structural slice will remove generated `override_values_{step}` dict construction and dict-membership probing on static count-1/count-2 targeted-override lanes. The emitter will keep direct socket/value locals and use param-name equality checks during kwargs assembly.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:904-973, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1085-1238, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:9-18
+  IMPACT: Targets `_phase12_executor` per-step dict allocation/hash overhead directly on the hot targeted-override lane without changing public API behavior.
+  NEXT: Patch count-1/count-2 construct+kwargs emission, run focused units, and re-run cadence for keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
   CLAIM: Reject and revert the one-key raw-key reuse slice in `OverridePatchMap.apply_with_socket_shape(...)`. The cadence window regressed on the primary shallow override lane (`+3.00%`) versus the retained post-continue baseline, so this patch does not meet the target objective despite wide/diamond gains.
   EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_rawkey_reuse_delta_vs_postcontinue_baseline.txt:1-5, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_rawkey_reuse_baseline.txt:1-5
   IMPACT: Keep the prior retained runtime state and avoid shipping a mixed-result patch that regresses the priority lane.
@@ -910,5 +982,7 @@ Phase12/CreationContext and validate with targeted profiler suites.
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary
-Wave-1 task is active and ready for code-level hotspot optimization and
-targeted profiler validation.
+Wave-1 task is active with the latest retained baseline set to the
+patch-map prechecked-entry slice (`wave1_patchmaps_prechecked_entry_baseline.txt`).
+Next action is to target the next structural override runtime hotspot
+(`_execute_with_overrides` / `_phase12_executor`) and rerun normal cadence.

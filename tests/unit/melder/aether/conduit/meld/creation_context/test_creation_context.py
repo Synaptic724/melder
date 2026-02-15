@@ -624,6 +624,13 @@ def test_execute_with_overrides_applies_payload_and_reuses_shape_cache(
                 ),
             )
 
+        def _apply_with_socket_shape_prechecked(
+                self,
+                *,
+                spell_override: Dict[str, Any],
+        ) -> Tuple[Dict[Any, Any], Tuple[Tuple[Any, ...], ...]]:
+            return self.apply_with_socket_shape(spell_override)
+
     patch_map = _PatchMap()
     context = _make_override_harness(
         route_config_active=route_config,
@@ -697,6 +704,13 @@ def test_execute_with_overrides_cache_hit_skips_grouping_and_compile(
                 ),
             )
 
+        def _apply_with_socket_shape_prechecked(
+                self,
+                *,
+                spell_override: Dict[str, Any],
+        ) -> Tuple[Dict[Any, Any], Tuple[Tuple[Any, ...], ...]]:
+            return self.apply_with_socket_shape(spell_override)
+
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(
         route_config_active=route_config,
@@ -765,6 +779,13 @@ def test_execute_with_overrides_wraps_phase10_apply_failures(
                 override_payload: Dict[str, Any],
         ) -> Tuple[Dict[Any, Any], Tuple[Tuple[Any, ...], ...]]:
             raise RuntimeError("apply-fail")
+
+        def _apply_with_socket_shape_prechecked(
+                self,
+                *,
+                spell_override: Dict[str, Any],
+        ) -> Tuple[Dict[Any, Any], Tuple[Tuple[Any, ...], ...]]:
+            return self.apply_with_socket_shape(spell_override)
 
     route_config = _make_route_config(plan_signature=("phase11", "sig", "rows"))
     context = _make_override_harness(

@@ -613,8 +613,8 @@ class CreationContext(Cleanable):
                     (
                         override_map,
                         socket_shape,
-                    ) = override_patch_map_phase10.apply_with_socket_shape(
-                        target_payload,
+                    ) = override_patch_map_phase10._apply_with_socket_shape_prechecked(
+                        spell_override=target_payload,
                     )
                 except MeldExecutionError:
                     raise

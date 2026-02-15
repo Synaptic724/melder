@@ -907,36 +907,6 @@ def _append_overrides_construct_inline_source(
                 f"override_map[single_override_socket_{step_index}]"
             ),
         ])
-        if positional_args_possible:
-            lines.extend([
-                f"{indent}if step_root_positional_override_{step_index} is None:",
-                f"{indent}    override_values_{step_index} = {{",
-                (
-                    f"{indent}        single_override_socket_{step_index}.param_name: "
-                    f"single_override_value_{step_index},"
-                ),
-                f"{indent}    }}",
-                f"{indent}else:",
-                f"{indent}    override_values_{step_index} = {{",
-                (
-                    f"{indent}        single_override_socket_{step_index}.param_name: "
-                    f"single_override_value_{step_index},"
-                ),
-                (
-                    f"{indent}        \"__args__\": "
-                    f"step_root_positional_override_{step_index},"
-                ),
-                f"{indent}    }}",
-            ])
-        else:
-            lines.extend([
-                f"{indent}override_values_{step_index} = {{",
-                (
-                    f"{indent}    single_override_socket_{step_index}.param_name: "
-                    f"single_override_value_{step_index},"
-                ),
-                f"{indent}}}",
-            ])
     elif static_override_target_count == 2:
         lines.extend([
             (
@@ -955,25 +925,7 @@ def _append_overrides_construct_inline_source(
                 f"{indent}second_override_value_{step_index} = "
                 f"override_map[second_override_socket_{step_index}]"
             ),
-            f"{indent}override_values_{step_index} = {{",
-            (
-                f"{indent}    first_override_socket_{step_index}.param_name: "
-                f"first_override_value_{step_index},"
-            ),
-            (
-                f"{indent}    second_override_socket_{step_index}.param_name: "
-                f"second_override_value_{step_index},"
-            ),
-            f"{indent}}}",
         ])
-        if positional_args_possible:
-            lines.extend([
-                f"{indent}if step_root_positional_override_{step_index} is not None:",
-                (
-                    f"{indent}    override_values_{step_index}[\"__args__\"] = "
-                    f"step_root_positional_override_{step_index}"
-                ),
-            ])
     else:
         lines.extend([
             f"{indent}override_values_{step_index} = {{}}",
@@ -1045,8 +997,56 @@ def _append_overrides_kwargs_inline_source(
             and contract_positional_override is None
             and not has_contract_payload
     ):
-        if static_override_target_count == 0 and not positional_args_possible:
+        if static_override_target_count == 0:
             lines.append(f"{indent}kwargs_{step_index} = {{}}")
+            if positional_args_possible:
+                lines.extend([
+                    f"{indent}if step_root_positional_override_{step_index} is not None:",
+                    (
+                        f"{indent}    kwargs_{step_index}[\"__args__\"] = "
+                        f"step_root_positional_override_{step_index}"
+                    ),
+                ])
+            return
+        if static_override_target_count == 1:
+            lines.extend([
+                f"{indent}kwargs_{step_index} = {{",
+                (
+                    f"{indent}    single_override_socket_{step_index}.param_name: "
+                    f"single_override_value_{step_index},"
+                ),
+                f"{indent}}}",
+            ])
+            if positional_args_possible:
+                lines.extend([
+                    f"{indent}if step_root_positional_override_{step_index} is not None:",
+                    (
+                        f"{indent}    kwargs_{step_index}[\"__args__\"] = "
+                        f"step_root_positional_override_{step_index}"
+                    ),
+                ])
+            return
+        if static_override_target_count == 2:
+            lines.extend([
+                f"{indent}kwargs_{step_index} = {{",
+                (
+                    f"{indent}    first_override_socket_{step_index}.param_name: "
+                    f"first_override_value_{step_index},"
+                ),
+                (
+                    f"{indent}    second_override_socket_{step_index}.param_name: "
+                    f"second_override_value_{step_index},"
+                ),
+                f"{indent}}}",
+            ])
+            if positional_args_possible:
+                lines.extend([
+                    f"{indent}if step_root_positional_override_{step_index} is not None:",
+                    (
+                        f"{indent}    kwargs_{step_index}[\"__args__\"] = "
+                        f"step_root_positional_override_{step_index}"
+                    ),
+                ])
             return
         lines.append(
             f"{indent}kwargs_{step_index} = "
@@ -1082,8 +1082,33 @@ def _append_overrides_kwargs_inline_source(
         if dependency_count == 0:
             continue
         param_name_literal = repr(param_name)
-        lines.append(f"{indent}if {param_name_literal} not in override_values_{step_index}:")
-        body_indent = f"{indent}    "
+        if static_override_target_count == 1:
+            lines.append(
+                (
+                    f"{indent}if single_override_socket_{step_index}.param_name != "
+                    f"{param_name_literal}:"
+                )
+            )
+            body_indent = f"{indent}    "
+        elif static_override_target_count == 2:
+            lines.extend([
+                f"{indent}if (",
+                (
+                    f"{indent}    first_override_socket_{step_index}.param_name != "
+                    f"{param_name_literal}"
+                ),
+                (
+                    f"{indent}    and second_override_socket_{step_index}.param_name != "
+                    f"{param_name_literal}"
+                ),
+                f"{indent}):",
+            ])
+            body_indent = f"{indent}    "
+        else:
+            lines.append(
+                f"{indent}if {param_name_literal} not in override_values_{step_index}:"
+            )
+            body_indent = f"{indent}    "
 
         if dependency_count == 1:
             dependency_key = dependency_keys[0]
@@ -1181,13 +1206,45 @@ def _append_overrides_kwargs_inline_source(
             if param_name == "__args__" and uses_positional_override:
                 continue
             param_name_literal = repr(param_name)
-            lines.extend([
-                f"{indent}if {param_name_literal} not in override_values_{step_index}:",
-                (
-                    f"{indent}    kwargs_{step_index}[{param_name_literal}] = "
-                    f"{repr(value)}"
-                ),
-            ])
+            if static_override_target_count == 1:
+                lines.extend([
+                    (
+                        f"{indent}if single_override_socket_{step_index}.param_name != "
+                        f"{param_name_literal}:"
+                    ),
+                    (
+                        f"{indent}    kwargs_{step_index}[{param_name_literal}] = "
+                        f"{repr(value)}"
+                    ),
+                ])
+            elif static_override_target_count == 2:
+                lines.extend([
+                    f"{indent}if (",
+                    (
+                        f"{indent}    first_override_socket_{step_index}.param_name != "
+                        f"{param_name_literal}"
+                    ),
+                    (
+                        f"{indent}    and second_override_socket_{step_index}.param_name != "
+                        f"{param_name_literal}"
+                    ),
+                    f"{indent}):",
+                    (
+                        f"{indent}    kwargs_{step_index}[{param_name_literal}] = "
+                        f"{repr(value)}"
+                    ),
+                ])
+            else:
+                lines.extend([
+                    (
+                        f"{indent}if {param_name_literal} not in "
+                        f"override_values_{step_index}:"
+                    ),
+                    (
+                        f"{indent}    kwargs_{step_index}[{param_name_literal}] = "
+                        f"{repr(value)}"
+                    ),
+                ])
 
     if static_override_target_count == 0:
         if positional_args_possible:

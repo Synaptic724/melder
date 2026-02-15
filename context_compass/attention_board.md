@@ -15,9 +15,54 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | raw-key reuse patch-map slice was rejected/reverted (`shallow +3.00%` regression vs post-continue baseline); continue next hotspot wave from retained static-invoke baseline | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
+| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | patch-map prechecked-entry slice retained (`shallow -2.90%`, `wide -1.18%`, `diamond -0.76%` vs prior retained baseline); continue next hotspot wave from this new retained baseline | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Retain the patch-map prechecked-entry slice. Override lanes improved versus the retained count1/count2 baseline (`solo -0.53%`, `shallow -2.90%`, `wide -1.18%`, `diamond -0.76%`) with focused validation green.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_prechecked_entry_delta_vs_phase12_count12_baseline.txt:1-11, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:614-786, tests/component/melder/aether/conduit/test_conduit_component_meld_overrides_deep.py:1-1099
+  IMPACT: Retained wave-1 baseline now includes prechecked patch-map apply from CreationContext.
+  NEXT: Re-rank remaining `_execute_with_overrides`/`_phase12_executor` hotspots and implement the next structural slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Cadence reruns for the prechecked-entry slice (`overrides x5`, `fast x3`) improved versus the prior retained count1/count2 baseline: overrides `solo -0.53%`, `shallow -2.90%`, `wide -1.18%`, `diamond -0.76%`; fast reference window also trended lower.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_prechecked_entry_baseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_prechecked_entry_delta_vs_phase12_count12_baseline.txt:1-11
+  IMPACT: Confirms this slice as a measurable keep and establishes the next optimization starting point.
+  NEXT: Continue optimization from the new retained baseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: CreationContext override execution now calls `OverridePatchMap._apply_with_socket_shape_prechecked(...)` on the hot path; public `apply_with_socket_shape(...)` remains checked and delegates to this internal method.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context.py:612-619, src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:236-346, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:54-55
+  IMPACT: Eliminates repeated lifecycle-check call overhead in override preprocessing for steady-state override workloads.
+  NEXT: Target next dominant runtime cost in `_execute_with_overrides` and `_phase12_executor`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Retain the Phase12 count-1/count-2 no-`override_values` emission slice. Shallow lane result is near-neutral (`+0.43%`) while wide/diamond improve (`-3.31%`/`-1.36%`) and cadence reruns remained green.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_count12_no_override_values_delta_vs_postcontinue_baseline.txt:1-11, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:902-929, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1011-1284
+  IMPACT: Retained wave-1 state now includes direct-local count1/count2 override kwargs emission.
+  NEXT: Re-rank remaining `_phase12_executor` and `_execute_with_overrides` hotspots and implement the next structural slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Cadence reruns completed for this slice (`overrides x5`, `fast x3`). Override deltas versus post-continue baseline: `solo -1.05%`, `shallow +0.43%`, `wide -3.31%`, `diamond -1.36%`; fast reference window is slower and treated as non-blocking for this override-only change.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_count12_no_override_values_baseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_count12_no_override_values_delta_vs_postcontinue_baseline.txt:1-11
+  IMPACT: Provides measured keep/revert evidence and establishes the next optimization starting point.
+  NEXT: Continue optimization from the retained baseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-15
   TYPE: DECISION
   CLAIM: The one-key raw-key reuse slice in `OverridePatchMap.apply_with_socket_shape(...)` is rejected and reverted because the cadence window regressed on the primary shallow lane (`+3.00%` vs post-continue baseline), even though wide/diamond improved.
