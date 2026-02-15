@@ -2,7 +2,7 @@
 
 Purpose
 - Define the expected stance and tone for agent collaboration.
-- Defer to `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md`
+- Defer to `context_compass/SOCIAL_CONTRACT.md`
   for full active-partner and performance-engineering collaboration rules.
 
 Team stance
@@ -24,4 +24,4 @@ Evidence discipline
 - Prefer concrete sources and explicit file references.
 
 References
-- `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md`
+- `context_compass/SOCIAL_CONTRACT.md`

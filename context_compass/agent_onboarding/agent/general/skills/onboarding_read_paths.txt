@@ -2,6 +2,8 @@
 # Dynamic active ticket paths are intentionally not listed here and should be
 # added to attestation `FILES_REREAD` separately.
 
+context_compass/AGENTS.MD
+context_compass/SOCIAL_CONTRACT.md
 context_compass/agent_onboarding/agent/SKILLS.md
 context_compass/agent_onboarding/agent/general/README.md
 context_compass/agent_onboarding/agent/engineer/README.md
@@ -57,7 +59,6 @@ context_compass/agent_onboarding/agent/general/behavioral_guidelines/work_intake
 context_compass/agent_onboarding/agent/general/behavioral_guidelines/task_execution_and_validation.md
 context_compass/agent_onboarding/agent/general/behavioral_guidelines/onboarding_summary.md
 context_compass/agent_onboarding/agent/general/examples/readme.md
-context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md
 context_compass/agent_onboarding/agent/engineer/skills/readme.md
 context_compass/agent_onboarding/agent/engineer/skills/engineer_execution.md
 context_compass/agent_onboarding/agent/engineer/policies/readme.md
@@ -68,7 +69,6 @@ context_compass/agent_onboarding/agent/engineer/behavioral_guidelines/engineer_w
 context_compass/agent_onboarding/agent/engineer/examples/readme.md
 context_compass/agent_onboarding/agent/engineer/examples/artifact_workflow.md
 context_compass/agent_onboarding/agent/engineer/examples/eng_task_flow.md
-context_compass/AGENTS.MD
 context_compass/SKILLS.MD
 context_compass/WORKFLOW.md
 context_compass/CONTEXT_COMPACTION.md

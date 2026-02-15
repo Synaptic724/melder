@@ -61,7 +61,7 @@ Entry template
 - `SCORE_0_TO_10`: <0-10>
 - `NEXT`: <single concrete step>
 - Detailed collaboration semantics for each `TYPE` are defined in:
-  `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md`.
+  `context_compass/SOCIAL_CONTRACT.md`.
 - `RAISE` notes must be recategorized to a concrete type within one microcycle.
 
 Quality bar

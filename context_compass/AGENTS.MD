@@ -5,10 +5,10 @@
 After any context compaction, handoff, or fresh session:
 
 * Stop and re-onboard before any tooling, edits, execution, or planning.
+* Re-read `SOCIAL_CONTRACT.md` in full immediately after `AGENTS.MD`.
 * Start from `agent_onboarding/agent/SKILLS.md`.
 * Re-read `agent_onboarding/agent/general/SKILLS.md` and `agent_onboarding/agent/engineer/SKILLS.md` in full read order.
 * Re-read `agent_onboarding/agent/general/skills/compaction_requirements.md`.
-* Re-read `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md`.
 * Re-read `agent_onboarding/agent/general/README.md` and `agent_onboarding/agent/engineer/README.md`.
 * Re-certify with exact phrase: `CERTIFY: APPROVED (active)` or `CERTIFY: APPROVED (inactive)` before acting.
 * If anything is unclear after re-onboarding, ask the user for instructions and get confirmation before acting.
@@ -18,14 +18,12 @@ After any context compaction, handoff, or fresh session:
   * certification state (`active` or `inactive`)
   * files re-read summary (active ticket paths and any non-readset docs only)
   * onboarding readset reference (manifest + script path) when using the canonical onboarding bootstrap flow
-  * dump chunk coverage proof when dump bootstrap is used (`chunk_size=500`, `total_chunks`, and consumed chunk-number range)
   * concise read-integrity proof (concrete rule callouts from reread docs)
   * `NO_ACTION_TAKEN_YET: true`
 * Performative compliance is forbidden during re-onboarding:
   * marker-only loops (for example, `$null = Get-Content ...` plus `REREAD:` output) do not count as re-reading.
   * parallel/bulk reading is allowed only when document contents are actually read and surfaced with concrete evidence value.
   * manifest-driven onboarding script runs are valid only when the script actually reads each file in the readset and the attestation references the manifest/script used.
-  * when using onboarding dump bootstrap, you must consume `onboarding_read_XX` chunks in sequential `500`-line order from chunk number `1` to the final chunk number before attesting.
 
 This is the highest-priority adherence rule for continuity and policy retention.
 
@@ -45,7 +43,7 @@ Before acting on anything **outside the explicitly agreed architectural plan**, 
 * You must behave as though this project is very precious to you and very important to you and you are deeply invested in its success.
 * **Act as an active partner** in building and improving the system. Treat this as a team effort and pursue shared success.
 * ***THINK LIKE A PERFORMANCE ENGINEER.*** Prioritize correctness, durability, speed of execution, and low resource usage.
-* Treat `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md` as the primary collaboration contract for active-partner behavior, mission-intent execution, and conflict/strategy handling.
+* Treat `context_compass/SOCIAL_CONTRACT.md` as the primary collaboration contract for active-partner behavior, mission-intent execution, and conflict/strategy handling.
 * **Ask for directions** instead of assuming.
 * **Provide recommendations only when** there are real tradeoffs or when the user asks for options.
 * **Challenge questionable ideas** respectfully and explain why (risks, inconsistencies, or conflicts).
@@ -65,30 +63,17 @@ Do not treat user ideas as gospel. Be curious, thoughtful, and explicit about un
 
 Before any tooling, edits, or execution:
 
+* Read `SOCIAL_CONTRACT.md` in full immediately after `AGENTS.MD`.
 * Start at `agent_onboarding/agent/SKILLS.md` to select the career baseline.
 * Read `agent_onboarding/agent/general/README.md` and `agent_onboarding/agent/engineer/README.md`.
 * Follow the read order in `agent_onboarding/agent/general/SKILLS.md` and `agent_onboarding/agent/engineer/SKILLS.md`.
-* Read and apply `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md` before execution.
+* Read and apply `context_compass/SOCIAL_CONTRACT.md` before execution.
 * Performative onboarding is forbidden: do real reads of required docs (parallel/bulk is allowed), and do not treat marker-only "reread" output as compliance.
-* Canonical onboarding bootstrap (default path): parallel read-list workflow
+* Canonical onboarding bootstrap (default path): direct readset completion.
   - Use this default for both fresh sessions and post-compaction re-entry.
-  - Build -> validate -> read chunks sequentially to consume the full onboarding readset.
-  - Build parallel chunk dump (Windows): `context_compass/agent_onboarding/agent/general/skills/build_parallel_read_onboarding_dump.cmd`
-  - Build parallel chunk dump (Linux/Bash): `bash context_compass/agent_onboarding/agent/general/skills/build_parallel_read_onboarding_dump.sh`
-  - Validate parallel chunk dump (Windows): `context_compass/agent_onboarding/agent/general/skills/validate_parallel_read_onboarding_dump.cmd`
-  - Validate parallel chunk dump (Linux/Bash): `bash context_compass/agent_onboarding/agent/general/skills/validate_parallel_read_onboarding_dump.sh`
-  - Read one chunk by ordinal (Windows): `context_compass/agent_onboarding/agent/general/skills/read_parallel_read_onboarding_chunk.cmd -ChunkNumber <N> -ValidateFirst`
-  - Read one chunk by ordinal (Linux/Bash): `bash context_compass/agent_onboarding/agent/general/skills/read_parallel_read_onboarding_chunk.sh --chunk-number <N> --validate-first`
-  - Windows/PowerShell (direct readset fallback): `powershell -NoProfile -ExecutionPolicy Bypass -File context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.ps1`
-  - Windows wrapper (direct readset fallback): `context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.cmd`
-  - Linux/Bash (direct readset fallback): `bash context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.sh`
-  - Parallel dump artifacts: `context_compass/agent_onboarding/parallel_read_onboarding_dump/manifest.txt` and `context_compass/agent_onboarding/parallel_read_onboarding_dump/onboarding_read_XX`
-* Validated dump reader policy:
-  - Validation must enforce timestamp freshness (`--max-age-minutes`, default 120) and SHA256 integrity checks (source manifest + source files + chunk files).
-  - If validation fails, rebuild via `build_parallel_read_onboarding_dump.*` and re-validate before onboarding attestation.
-  - After successful dump validation, dump consumption must proceed in sequential `500`-line chunks (`onboarding_read_01` ... `onboarding_read_N`) using chunk-reader helpers or equivalent evidence-backed commands.
-  - Direct readset fallback is allowed only when the parallel dump path is unavailable; the same full-readset completion requirement still applies.
-* The source onboarding readset for dump generation is `context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt`.
+  - Read every document listed in the canonical readset with no skips before certification.
+  - Direct manual reads are allowed, but full readset completion is still required.
+* The source onboarding readset is `context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt`.
 * Obey certification gating from `agent_onboarding/agent/general/policies/policy_router.md` and `agent_onboarding/agent/general/skills/self_certification.md` (do not use tools or edit files until the user replies with the exact phrase `CERTIFY: APPROVED (inactive)` or `CERTIFY: APPROVED (active)` except the tools to properly read your documentation to onboard).
 * During certification, the user must state the execution environment (`active` or `inactive`) in the same message as `CERTIFY: APPROVED`.
 * Git commands are **active-only**: if the user says `inactive`, do not run git commands and ignore git workflow requirements (user handles git).

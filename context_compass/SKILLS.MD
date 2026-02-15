@@ -112,7 +112,7 @@ Before any context compaction or major handoff:
 ## Policy Extensions (Required Skills)
 These policy modules extend the core rules and must be followed:
 - `agent_onboarding/agent/general/skills/agent_stance.md` - team stance, tone, and professional baseline.
-- `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md` - architect/lead-engineer social contract, mission-intent collaboration model, and conflict/strategy protocol.
+- `SOCIAL_CONTRACT.md` - architect/lead-engineer social contract, mission-intent collaboration model, and conflict/strategy protocol.
 - `agent_onboarding/agent/general/skills/mrp_policy.md` - MRP-only strategy with MLP for UI contexts.
 - `agent_onboarding/agent/general/skills/context_gold.md` - context-first ritual and compaction re-entry.
 - `agent_onboarding/agent/general/skills/documentation_standards.md` - deep, non-handwavy documentation rules.

@@ -10,9 +10,17 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
+| discovery: jit conjure skip phases 8-12 | in_progress | codex | none | document exact guard insertion plan for skipping 8-12 during conjure in jit mode | `context_compass/tasks/2026-02-15_discovery_jit_mode_skip_phase8_12_conjure_task.md` | 2026-02-15 | REQUIRED |
 
 ## Active Attention Details
-- none.
+- DATE: 2026-02-15
+  TYPE: PLAN
+  CLAIM: Discovery ticket is now the active route to analyze and document why JIT mode still performs conjure phase 8-12 work and where to apply gating.
+  EVIDENCE: context_compass/tasks/2026-02-15_discovery_jit_mode_skip_phase8_12_conjure_task.md:1-89
+  IMPACT: Compaction/handoff can resume directly into a focused evidence-backed discovery workflow for the JIT conjure behavior gap.
+  NEXT: Continue discovery notes in the ticket with file/symbol-level guard strategy and risk callouts.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
 
 ## Recently Closed Anchors
 | work_item | status | owner | blocker | next | ticket | updated | reread |
