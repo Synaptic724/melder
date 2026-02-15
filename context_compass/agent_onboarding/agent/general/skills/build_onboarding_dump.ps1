@@ -55,11 +55,11 @@ if ($manifestEntries.Count -eq 0) {
     throw "Manifest '$manifestResolved' produced no readable entries."
 }
 
-$builder = [System.Text.StringBuilder]::new()
-[void]$builder.AppendLine("ONBOARDING_DUMP_MANIFEST: $ManifestPath")
-[void]$builder.AppendLine("ONBOARDING_DUMP_SOURCE: $manifestResolved")
-[void]$builder.AppendLine("ONBOARDING_DUMP_TOTAL_PATHS: $($manifestEntries.Count)")
+$builtAtUtc = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+$builtAtEpoch = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+$manifestHash = (Get-FileHash -LiteralPath $manifestResolved -Algorithm SHA256).Hash
 
+$fileRecords = [System.Collections.Generic.List[object]]::new()
 foreach ($relativePath in $manifestEntries) {
     $resolvedPath = Resolve-ExistingPath -Candidates @(
         $(if ([System.IO.Path]::IsPathRooted($relativePath)) { $relativePath } else { "" }),
@@ -67,23 +67,54 @@ foreach ($relativePath in $manifestEntries) {
         (Join-Path $scriptDir $relativePath),
         $relativePath
     )
-
-    [void]$builder.AppendLine("===== BEGIN FILE: $relativePath =====")
     $content = Get-Content -Raw -LiteralPath $resolvedPath -Encoding UTF8
-    if ($content.Length -gt 0) {
-        [void]$builder.Append($content)
+    $hash = (Get-FileHash -LiteralPath $resolvedPath -Algorithm SHA256).Hash
+    $fileRecords.Add([PSCustomObject]@{
+            RelativePath = $relativePath
+            ResolvedPath = $resolvedPath
+            Content = $content
+            Hash = $hash
+        })
+}
+
+$builder = [System.Text.StringBuilder]::new()
+[void]$builder.AppendLine("ONBOARDING_DUMP_VERSION: 2")
+[void]$builder.AppendLine("ONBOARDING_DUMP_BUILT_AT_UTC: $builtAtUtc")
+[void]$builder.AppendLine("ONBOARDING_DUMP_BUILT_AT_EPOCH: $builtAtEpoch")
+[void]$builder.AppendLine("ONBOARDING_DUMP_MANIFEST: $ManifestPath")
+[void]$builder.AppendLine("ONBOARDING_DUMP_SOURCE: $manifestResolved")
+[void]$builder.AppendLine("ONBOARDING_DUMP_MANIFEST_SHA256: $manifestHash")
+[void]$builder.AppendLine("ONBOARDING_DUMP_HASH_ALGO: SHA256")
+[void]$builder.AppendLine("ONBOARDING_DUMP_TOTAL_PATHS: $($manifestEntries.Count)")
+[void]$builder.AppendLine("ONBOARDING_DUMP_FILE_HASHES_BEGIN")
+
+foreach ($record in $fileRecords) {
+    [void]$builder.AppendLine("ONBOARDING_DUMP_FILE_SHA256: $($record.RelativePath)|$($record.Hash)")
+}
+
+[void]$builder.AppendLine("ONBOARDING_DUMP_FILE_HASHES_END")
+[void]$builder.AppendLine("ONBOARDING_DUMP_CONTENT_BEGIN")
+
+foreach ($record in $fileRecords) {
+    [void]$builder.AppendLine("===== BEGIN FILE: $($record.RelativePath) =====")
+    if ($record.Content.Length -gt 0) {
+        [void]$builder.Append($record.Content)
     }
 
-    $endsWithNewline = $content.EndsWith("`n") -or $content.EndsWith("`r")
+    $endsWithNewline = $record.Content.EndsWith("`n") -or $record.Content.EndsWith("`r")
     if (-not $endsWithNewline) {
         [void]$builder.AppendLine()
     }
 
-    [void]$builder.AppendLine("===== END FILE: $relativePath =====")
+    [void]$builder.AppendLine("===== END FILE: $($record.RelativePath) =====")
 }
 
+[void]$builder.AppendLine("ONBOARDING_DUMP_CONTENT_END")
 [void]$builder.AppendLine("ONBOARDING_DUMP_COMPLETE: $($manifestEntries.Count) files serialized.")
-Set-Content -LiteralPath $outputResolved -Value $builder.ToString() -Encoding UTF8
 
+Set-Content -LiteralPath $outputResolved -Value $builder.ToString() -Encoding UTF8
+$dumpHash = (Get-FileHash -LiteralPath $outputResolved -Algorithm SHA256).Hash
 Write-Output "ONBOARDING_DUMP_WRITTEN: $outputResolved"
 Write-Output "ONBOARDING_DUMP_FILES: $($manifestEntries.Count)"
+Write-Output "ONBOARDING_DUMP_BUILT_AT_UTC: $builtAtUtc"
+Write-Output "ONBOARDING_DUMP_SHA256: $dumpHash"

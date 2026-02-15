@@ -46,21 +46,38 @@ Parallel reading allowance
 - Marker-only reread output (for example, `$null = Get-Content ...` + `REREAD:` lines) is not valid completion evidence.
 - Parallel/bulk reads must include substantive read integrity (concrete rule callouts) before certification.
 
-Single-command onboarding bootstrap (optional)
-- Canonical command (Windows/PowerShell):
-  `powershell -NoProfile -ExecutionPolicy Bypass -File context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.ps1`
-- Windows no-policy wrapper:
-  `context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.cmd`
-- Canonical command (Linux/Bash):
-  `bash context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.sh`
-- Build one dump file (Windows):
-  `context_compass/agent_onboarding/agent/general/skills/build_onboarding_dump.cmd`
-- Build one dump file (Linux):
-  `bash context_compass/agent_onboarding/agent/general/skills/build_onboarding_dump.sh`
-- Canonical readset manifest:
+Parallel-dump onboarding bootstrap (optional)
+- Build parallel chunk dump (Windows):
+  `context_compass/agent_onboarding/agent/general/skills/build_parallel_read_onboarding_dump.cmd`
+- Build parallel chunk dump (Linux/Bash):
+  `bash context_compass/agent_onboarding/agent/general/skills/build_parallel_read_onboarding_dump.sh`
+- Validate parallel dump manifest/chunks (Windows):
+  `context_compass/agent_onboarding/agent/general/skills/validate_parallel_read_onboarding_dump.cmd`
+- Validate parallel dump manifest/chunks (Linux/Bash):
+  `bash context_compass/agent_onboarding/agent/general/skills/validate_parallel_read_onboarding_dump.sh`
+- Read one chunk by ordinal (Windows):
+  `context_compass/agent_onboarding/agent/general/skills/read_parallel_read_onboarding_chunk.cmd -ChunkNumber <N> -ValidateFirst`
+- Read one chunk by ordinal (Linux/Bash):
+  `bash context_compass/agent_onboarding/agent/general/skills/read_parallel_read_onboarding_chunk.sh --chunk-number <N> --validate-first`
+- Parallel dump manifest/chunk path:
+  `context_compass/agent_onboarding/parallel_read_onboarding_dump/manifest.txt`
+  and `context_compass/agent_onboarding/parallel_read_onboarding_dump/onboarding_read_XX`
+- Source readset manifest:
   `context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt`
-- Prebuilt single-file dump (no script execution required):
-  `context_compass/agent_onboarding/agent/general/skills/onboarding_read_dump.txt`
+- Validation guarantees:
+  - checks build time freshness (`--max-age-minutes`)
+  - checks SHA256 for source manifest, source files, and chunk files
+  - requires rebuild + re-validate when stale/mismatched
+- Dump consumption guarantee (required when dump bootstrap is used):
+  - consume `onboarding_read_XX` in sequential fixed-size chunks (`500` lines),
+  - process chunk numbers `1..N` before certification,
+  - include chunk coverage proof in attestation/read-integrity evidence.
+- Direct readset fallback (Windows/PowerShell):
+  `powershell -NoProfile -ExecutionPolicy Bypass -File context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.ps1`
+- Direct readset fallback (Windows no-policy wrapper):
+  `context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.cmd`
+- Direct readset fallback (Linux/Bash):
+  `bash context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.sh`
 - When this bootstrap is used, re-onboarding attestations can keep `FILES_REREAD`
   compact (active ticket paths only) and reference onboarding docs through the
   `ONBOARDING_READSET` manifest/script fields.

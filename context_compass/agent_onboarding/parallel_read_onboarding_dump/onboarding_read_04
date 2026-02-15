@@ -1,0 +1,500 @@
+﻿- Board must remain compact; durable narrative belongs in ticket `## Notes`.
+
+Verification commands
+- `rg -n "context_compass/(epics|stories|tasks)/completed/" context_compass/attention_board.md`
+- `rg -n "## Active Items|## Active Attention Details|## Recently Closed Anchors" context_compass/attention_board.md`
+
+Anti-patterns
+- Leaving closed ticket rows in `## Active Items`.
+- Keeping deep historical narratives in board detail section.
+- Using board detail section as a duplicate of ticket notes.
+
+References
+- `context_compass/WORKFLOW.md`
+- `context_compass/agent_onboarding/agent/general/skills/ticketing.md`
+- `context_compass/agent_onboarding/agent/general/skills/active_pointerboard.md`
+===== END FILE: context_compass/agent_onboarding/agent/general/skills/ticket_closure_attention_sync.md =====
+===== BEGIN FILE: context_compass/agent_onboarding/agent/general/skills/testing/testing_overview.md =====
+# testing_overview
+
+Purpose
+- Define the testing taxonomy and value ranking.
+
+Testing Discipline (Pytest, Unit-First, Integration-Second)
+
+We are building confidence, not just coverage. All changes must be accompanied by tests unless explicitly exempted.
+
+Preferred Framework: pytest
+* Use pytest as the default test runner.
+* Use fixtures for setup/teardown and dependency injection.
+* Keep tests deterministic: no reliance on wall-clock time, network, or external services unless explicitly marked and scoped as integration tests.
+
+What We Value in Tests (Ranked)
+If you take nothing else from this section, take this:
+> A test is valuable if it would fail for a real regression and would not fail for a harmless refactor.
+
+Rank S - System Contract Tests (Highest Value)
+Signals:
+* Exercises real wiring across multiple components (minimal real set).
+* Catches regression in control flow, data flow, and lifecycle behavior.
+* Fails for real breakage, not for refactors.
+
+Examples:
+* A "root revalidation" flow that uses real blueprints and validates outcomes.
+* A concurrency primitive integration test that proves ordering/invariants.
+
+Use these sparingly and intentionally. They cost more to maintain.
+
+Rank A - Behavioral Unit Contract Tests (High Value)
+Signals:
+* Asserts behavior through public methods and documented outputs.
+* Validates meaningful branches and error paths.
+* Avoids coupling to private fields/implementation details.
+
+Examples:
+* "Given these inputs, return/raise exactly X."
+* "After cleanup, public methods raise or behave as documented."
+* "Last-write-wins semantics for a registry."
+
+Rank B - State Transition Tests (Medium-High Value)
+Signals:
+* Proves valid transitions and prevents illegal transitions.
+* Focuses on lifecycle invariants (cleaned vs active, idempotence, ordering).
+* Uses introspection APIs (describe(), snapshots) rather than poking raw private fields.
+
+Rank C - Collaboration/Boundary Mock Tests (Medium Value)
+Signals:
+* Mocks are used at real boundaries (I/O, network, filesystem, subprocess, time, OS).
+* Asserts calls that matter (ordering, arguments, exactly-once / at-most-once) when that is part of the contract.
+
+Warning:
+* These become brittle if you over-specify calls.
+
+Rank D - Regression Reproduction Tests (Targeted Value)
+Signals:
+* Title references the bug symptom.
+* Minimal reproduction.
+* Assertions match the corrected behavior.
+
+Rank E - Line-Coverage Fillers (Low Value)
+Signals:
+* Asserts "it did not crash" with no contract outcome.
+* Asserts values that are incidental.
+We avoid these unless they are stepping stones toward higher-rank tests.
+
+Rank F - Attribute/Existence Checks (Very Low Value)
+Examples (bad):
+* assert obj._some_private_field is not None (unless the field is part of a documented public contract, which is rare)
+* assert hasattr(obj, "x") / assert "x" in obj.__dict__ / assert isinstance(obj._pending_changes, dict)
+
+Why this is bad:
+* Does not prove correctness.
+* Over-couples tests to implementation.
+* Encourages "coverage mirage."
+
+Only acceptable when:
+* The attribute is explicitly part of a public, documented contract (rare), or
+* You are validating cleanup nulling as part of a lifecycle safety contract and there is no better public signal.
+
+Rules: Unit Tests First (Mock + Isolated)
+The default approach is mocked / isolated unit tests.
+
+* Mock external boundaries (I/O, filesystem, network, subprocesses, clocks, OS calls, databases, thread scheduling, random sources).
+* Validate contracts (inputs/outputs/raises), invariants, and side effects (including cleanup ordering) at the smallest reasonable unit.
+* Prefer contract-level assertions over implementation-detail assertions.
+* Avoid flakiness: tests must run reliably on repeated runs.
+
+Contract-level assertion checklist
+When writing a unit test, you should be able to answer "yes" to most of these:
+* Does the test assert an observable outcome (return, raise, snapshot, state transition)?
+* Would the test fail if a real regression happened?
+* Would the test still pass after a harmless refactor (renaming locals, reordering statements, changing internal data structures)?
+* Are mocks only used at true boundaries?
+* Are we asserting behavior rather than "internal shape"?
+If not, the test is probably Rank E/F.
+
+Integration Tests Second (Only When Needed)
+Integration tests are required when behavior cannot be proven safely via mocks/unit tests.
+
+Use integration tests when at least one is true:
+* Correctness depends on real interactions across multiple components (e.g., concurrency scheduling, orchestration behavior, serializer/codec correctness across layers).
+* Mocking would require re-implementing the system under test or would make the test meaningless.
+* The integration is the contract (e.g., plugin wiring, adapter boundaries, real concurrency primitives).
+
+Rules for integration tests:
+* Keep them scoped: integrate only the minimal set of real components needed.
+* Make them explicit: use clear naming and markers (e.g., @pytest.mark.integration) if the repo uses them.
+* Ensure they remain repeatable and not environment-dependent unless explicitly documented.
+
+Coverage Target: 95%+ (Non-Negotiable) Coverage is defined as method and attr coverage not the pytest definition. Use your discernment.
+
+Agent Execution Constraint (Read Carefully)
+AI agents cannot truthfully confirm repository-wide coverage levels (including the >=95% target) unless the user runs the test suite and reports the result.
+* Agents must not claim coverage numbers.
+* Agents must not imply pytest or pytest --cov was executed.
+* If the user asks "did you run tests/coverage?", the only valid answer is "Not run."
+
+Agent Policy: Prefer Test Density Now; Verify Coverage Later
+In the agent environment, coverage measurement is treated as a follow-up step that the user performs. Agents should default to producing a strong test suite using the density heuristic, and then ask the user to verify >=95% coverage later.
+
+Default Path - Test Density (Preferred for Agent Work):
+Use this path unless the user explicitly provides coverage output.
+* Baseline density: target >= 10 tests per 100 LOC for the changed/covered module(s).
+* Dense / high cyclomatic complexity code: increase target to >= 20 tests per 100 LOC when the code shows any of the following:
+  * high cyclomatic complexity (many branches/guards)
+  * heavy error-path logic
+  * concurrency / locking / ordering constraints
+  * lifecycle/cleanup state machines
+  * non-trivial invariants (dirty tracking, revalidation, promotion semantics)
+These are heuristics - not a license to create filler tests. Every test must still meet the quality criteria below.
+
+Follow-Up Path - Coverage Verification (User-Run, Later):
+* Target: >= 95% line coverage for the relevant package/module(s).
+* Requirement: the user runs the suite (e.g., pytest --cov) and reports the output.
+* Agent reporting: if the user has not run it, you must say "Not run." and you must not guess.
+
+If the user reports coverage below target, agents should add tests by increasing branch/error/lifecycle coverage - not by adding filler assertions.
+
+We target >= 95% line coverage across the library.
+* Heuristic: we want at least 10 tests per 100 LOC, but do not game it. If you have 95%+ coverage but fewer than 10 tests per 100 LOC, that is acceptable.
+* Coverage must not be "gamed" (no meaningless tests whose only purpose is to execute lines).
+
+Where we focus coverage:
+* Public API contracts
+* Critical branching logic
+* Error paths
+* Lifecycle/cleanup behavior
+* Concurrency-sensitive behavior (as testable)
+
+If a component cannot reasonably hit the coverage target (rare), document the reason and the mitigation (integration coverage, property tests, or explicit exclusion with rationale) and ask before applying exclusions.
+
+6) Truthful Validation Reporting
+When reporting validation status:
+* Only claim unit/integration/coverage runs if you actually ran them.
+* If not run, say "Not run."
+* If recommending commands, be specific and repo-consistent (e.g., pytest, pytest -q, pytest -m integration, pytest --cov). Do not invent a workflow that contradicts repository docs.
+
+7) Fixing Broken Base Code (While Writing Tests)
+If you find mistakes while writing tests (bugs, incorrect docstrings, missing cleanup, race conditions):
+* Raise them as issues rather than fixing them silently.
+* If you have explicit permission to fix them, follow all rules in this document (docstrings, cleanup, scope control, tests).
+* Do not fix unrelated mistakes outside your declared scope.
+* If the mistakes block your work, explain the situation and ask for guidance.
+
+Rules
+- pytest is the default framework.
+- Prefer unit tests; use integration when needed.
+- Use component tests for small slices of real wiring without external IO.
+- Tests must be deterministic and contract-driven.
+- Avoid tests that only assert internal attributes or existence.
+
+Value ranking (high to low)
+- Rank S: System contract tests
+- Rank A: Behavioral unit contract tests
+- Rank B: State transition tests
+- Component tests: real collaborators in a small slice (often Rank A/B)
+- Rank C: Collaboration/boundary mocks
+- Rank D: Regression reproduction tests
+- Rank E/F: Avoid low-value filler and existence checks
+
+Placement
+- Component tests: tests/component/
+- Integration tests: tests/integration/
+
+Examples
+- agent_onboarding/agent/general/examples/python/pytest_unit_examples.py
+- agent_onboarding/agent/general/examples/python/pytest_component_examples.py
+- agent_onboarding/agent/general/examples/python/pytest_integration_examples.py
+===== END FILE: context_compass/agent_onboarding/agent/general/skills/testing/testing_overview.md =====
+===== BEGIN FILE: context_compass/agent_onboarding/agent/general/skills/testing/pytest_unit.md =====
+# pytest_unit
+
+Purpose
+- Establish unit test expectations for python code.
+
+Rules: Unit Tests First (Mock + Isolated)
+The default approach is mocked / isolated unit tests.
+
+* Mock external boundaries (I/O, filesystem, network, subprocesses, clocks, OS calls, databases, thread scheduling, random sources).
+* Validate contracts (inputs/outputs/raises), invariants, and side effects (including cleanup ordering) at the smallest reasonable unit.
+* Prefer contract-level assertions over implementation-detail assertions.
+* Avoid flakiness: tests must run reliably on repeated runs.
+
+Contract-level assertion checklist
+When writing a unit test, you should be able to answer "yes" to most of these:
+* Does the test assert an observable outcome (return, raise, snapshot, state transition)?
+* Would the test fail if a real regression happened?
+* Would the test still pass after a harmless refactor (renaming locals, reordering statements, changing internal data structures)?
+* Are mocks only used at true boundaries?
+* Are we asserting behavior rather than "internal shape"?
+If not, the test is probably Rank E/F.
+
+Rules
+- Use fixtures for setup/teardown and dependency injection.
+- Mock only true boundaries (filesystem, OS, network, time).
+- Assert public behavior and contract outcomes.
+- Prefer contract-level assertions over private fields.
+- Include error-path coverage when documented in docstrings.
+
+Example assertions
+- Return values match documented contract.
+- Raises ValueError on invalid input.
+- Cleanup is idempotent.
+
+Examples
+- agent_onboarding/agent/general/examples/python/pytest_unit_examples.py
+===== END FILE: context_compass/agent_onboarding/agent/general/skills/testing/pytest_unit.md =====
+===== BEGIN FILE: context_compass/agent_onboarding/agent/general/skills/testing/pytest_integration.md =====
+# pytest_integration
+
+Purpose
+- Define when integration tests are required.
+
+Integration tests are required when behavior cannot be proven safely via mocks/unit tests.
+
+Use integration tests when at least one is true:
+* Correctness depends on real interactions across multiple components (e.g., concurrency scheduling, orchestration behavior, serializer/codec correctness across layers).
+* Mocking would require re-implementing the system under test or would make the test meaningless.
+* The integration is the contract (e.g., plugin wiring, adapter boundaries, real concurrency primitives).
+
+Rules for integration tests:
+* Keep them scoped: integrate only the minimal set of real components needed.
+* Make them explicit: use clear naming and markers (e.g., @pytest.mark.integration) if the repo uses them.
+* Ensure they remain repeatable and not environment-dependent unless explicitly documented.
+
+Rules
+- Use integration tests only when unit tests cannot prove correctness.
+- Prefer component tests first when a small slice of real wiring is enough.
+- Keep integration scopes minimal and explicit.
+- Mark integration tests clearly if the repo uses markers.
+- Avoid flaky environment dependencies unless explicitly required.
+
+Example uses
+- Concurrency behavior across multiple components.
+- Real serializer or adapter behavior across layers.
+
+Examples
+- agent_onboarding/agent/general/examples/python/pytest_integration_examples.py
+===== END FILE: context_compass/agent_onboarding/agent/general/skills/testing/pytest_integration.md =====
+===== BEGIN FILE: context_compass/agent_onboarding/agent/general/skills/testing/mocking.md =====
+# mocking
+
+Purpose
+- Keep mocks stable and aligned with real boundaries.
+
+Rules: Unit Tests First (Mock + Isolated)
+* Mock external boundaries (I/O, filesystem, network, subprocesses, clocks, OS calls, databases, thread scheduling, random sources).
+* Validate contracts (inputs/outputs/raises), invariants, and side effects (including cleanup ordering) at the smallest reasonable unit.
+* Prefer contract-level assertions over implementation-detail assertions.
+
+Test Mocks Skills
+For reusable test-only classes and helpers, see tests/mocks/SKILLS.MD.
+
+Rules
+- Mock OS, filesystem, subprocess, network, and time.
+- Avoid mocking internal logic or private fields.
+- Do not over-specify call order unless it is part of the contract.
+- Prefer asserting essential arguments and outcomes over full call sequences.
+
+Good vs bad
+- Good: assert a single boundary call with essential args.
+- Bad: assert a long sequence of incidental internal calls.
+
+Examples
+- agent_onboarding/agent/general/examples/python/pytest_unit_examples.py
+===== END FILE: context_compass/agent_onboarding/agent/general/skills/testing/mocking.md =====
+===== BEGIN FILE: context_compass/agent_onboarding/agent/general/skills/testing/regression_tests.md =====
+# regression_tests
+
+Purpose
+- Capture specific bug fixes with minimal repros.
+
+Regression Reproduction Tests
+
+Signals:
+* Title references the bug symptom.
+* Minimal reproduction.
+* Assertions match the corrected behavior.
+
+Rules
+- Name tests after the observed symptom.
+- Keep reproduction minimal and focused.
+- Assertions must match the corrected behavior.
+- Avoid overfitting to implementation details.
+
+Examples
+- agent_onboarding/agent/general/examples/python/pytest_unit_examples.py
+===== END FILE: context_compass/agent_onboarding/agent/general/skills/testing/regression_tests.md =====
+===== BEGIN FILE: context_compass/agent_onboarding/agent/general/skills/testing/evidence_reporting.md =====
+# evidence_reporting
+
+Purpose
+- Enforce truthful reporting of tests and checks.
+
+Validation Truthfulness
+* Never claim tests/lint/type-checks were run unless they were actually run.
+* If validation is skipped, say explicitly: "Not run."
+* If fast checks exist, recommend the exact commands - but do not pretend they happened.
+
+Truthful Validation Reporting
+When reporting validation status:
+* Only claim unit/integration/coverage runs if you actually ran them.
+* If not run, say "Not run."
+* If recommending commands, be specific and repo-consistent (e.g., pytest, pytest -q, pytest -m integration, pytest --cov). Do not invent a workflow that contradicts repository docs.
+
+Rules
+- Never claim tests ran unless they actually ran.
+- If tests were not run, report: "Not run."
+- Suggest repo-consistent commands when needed.
+- If coverage was not measured, say so explicitly.
+
+Example commands
+- pytest
+- pytest -q
+- pytest -m integration
+- pytest --cov
+
+References
+- agent_onboarding/agent/general/examples/readme.md
+===== END FILE: context_compass/agent_onboarding/agent/general/skills/testing/evidence_reporting.md =====
+===== BEGIN FILE: context_compass/agent_onboarding/agent/general/skills/python/docstrings.md =====
+# docstrings
+
+Purpose
+- Ensure docstrings are contract-first, not descriptive fluff.
+
+Prime Directive: Documentation-First Edits
+Whenever you add or modify code:
+* Every class must have a rich docstring.
+* Every method/function must have a rich docstring.
+* Comments must be preserved and improved when they are unclear or insufficient.
+* Treat docstrings + comments as part of the API: they must remain accurate.
+
+Non-Negotiables
+Rich Docstrings Required (No Fluff)
+This is not optional. For all public classes and public methods, write docstrings that include real contracts, not vibes.
+
+Docstring style: follow the repo's existing style (Google / NumPy / reST). If the repo has a pattern, match it exactly.
+
+Minimum content for public API:
+* Purpose: what it does and why it exists.
+* Contract: invariants / guarantees / side effects.
+* Parameters: meaning + constraints.
+* Returns: what is returned (or None).
+* Raises: what can be raised, and under what conditions.
+* Threading / Concurrency: locks, thread-safety, reentrancy, ordering (when relevant).
+* Lifecycle / Cleanup: ownership, idempotence, teardown ordering (when relevant).
+* Examples: only when it materially clarifies usage; keep short.
+* Typing: Always add typehints to signatures, and document complex types in the docstring if needed for clarity.
+
+No fluff rule: do not write marketing copy or filler sentences. If a docstring is "rich," it's because it contains precise guarantees.
+
+Rules
+- Every public class and function must have a rich docstring.
+- Docstrings must be rich and expressive; this is a public repository.
+- Match the repo's prevailing docstring style (Google/NumPy/reST).
+- Include purpose, contract, parameters, returns, raises, threading, and lifecycle when relevant.
+- Keep language precise, stable, and testable.
+- Document ownership and cleanup responsibilities when the code manages resources.
+
+Docstring rank ladder (highest to lowest)
+- Rank 5 (Gold): full contract narrative like Spellbook.bind in src/melder/spellbook/spellbook.py.
+  Includes purpose, responsibilities, invariants, workflows, args/returns/raises, and clear
+  failure modes with remediation guidance.
+- Rank 4 (Strong): complete args/returns/raises with invariants and side effects, but less
+  narrative or fewer workflow details.
+- Rank 3 (Adequate): purpose + args/returns/raises, but missing invariants or error semantics.
+- Rank 2 (Weak): short description with partial args/returns and vague error handling.
+- Rank 1 (Thin): minimal one-liner with no contract detail.
+- Rank 0 (Garbage): no docstring.
+
+Comment discipline
+- Comments must explain non-obvious logic and uphold the contract; they are part of the API.
+- Add moderate, targeted comments for future readers when behavior is not obvious from code + docstring alone.
+
+Template snippet
+```
+"""
+Purpose: One sentence on what this does and why.
+
+Contract:
+  - Invariants and guarantees.
+  - Side effects and ordering constraints.
+
+Args:
+  x (Type): Meaning and constraints.
+
+Returns:
+  Type: What is returned.
+
+Raises:
+  ValueError: When inputs violate invariants.
+"""
+```
+
+Good vs bad
+- Good: "Returns a validated FooModel; never mutates inputs."
+- Bad: "Does stuff with foo."
+
+Examples
+- agent_onboarding/agent/general/examples/python/docstrings.py
+===== END FILE: context_compass/agent_onboarding/agent/general/skills/python/docstrings.md =====
+===== BEGIN FILE: context_compass/agent_onboarding/agent/general/skills/python/comments.md =====
+# comments
+
+Purpose
+- Preserve and improve comments as part of the API contract.
+
+Prime Directive: Documentation-First Edits
+Whenever you add or modify code:
+* Every class must have a rich docstring.
+* Every method/function must have a rich docstring.
+* Comments must be preserved and improved when they are unclear or insufficient.
+* Treat docstrings + comments as part of the API: they must remain accurate.
+
+Non-Negotiables
+* Preserve Documentation and Comments
+* Never delete or strip docstrings.
+* Never delete comments. If a comment is wrong, stale, or misleading, update it rather than removing it.
+* Only rewrite docstrings/comments for code you touched unless an untouched doc/comment is provably wrong or dangerously misleading.
+
+Rules
+- Never delete comments; update them if stale or wrong.
+- Add comments only to clarify non-obvious logic.
+- Add moderate, targeted comments for future readers when intent or invariants are not obvious.
+- Avoid narrative or redundant comments.
+- Keep comments aligned with docstrings and invariants.
+- If a comment conflicts with behavior, fix the comment and the code together.
+
+Good vs bad
+- Good: "# Guard against re-entrancy during cleanup."
+- Bad: "# Set x to 1." when the code is self-explanatory.
+
+Examples
+- agent_onboarding/agent/general/examples/python/anti_patterns.py
+===== END FILE: context_compass/agent_onboarding/agent/general/skills/python/comments.md =====
+===== BEGIN FILE: context_compass/agent_onboarding/agent/general/skills/python/typing.md =====
+# typing
+
+Purpose
+- Keep type hints explicit and aligned with contracts.
+
+Minimum content for public API:
+* Typing: Always add typehints to signatures, and document complex types in the docstring if needed for clarity.
+
+Rules
+- Type hints are mandatory for all functions and methods (public and internal).
+- Use Protocol and ABC where needed (see interfaces).
+- Document complex types in the docstring.
+- Avoid dynamic typing when a precise type is known.
+- Do not add "from __future__ import annotations" in new files.
+- Use Optional/Union for nullable and multi-type hints (no PEP 604 unions).
+- Do not use "|" union syntax in annotations or docstring signatures.
+- Use string literals only when required for tools.
+- Do not use typing.TYPE_CHECKING for guarded imports; prefer interfaces for
+  dependency boundaries.
+
+Good vs bad
+- Good: "def load_config(path: Path) -> Config" with docstring describing Config fields.
+- Good: "def build(logger: Optional[Union[IChannelLogger, logging.Logger]]) -> SafeLogger"
+- Bad: "def load_config(path)" with no type hints.

@@ -1,0 +1,500 @@
+﻿## B8. Link and Sever Conduits
+1) `link(target)` verifies dynamic mode and delegates to ConduitWard.
+2) On success, `on_conduit_post_link` hook fires.
+3) `sever_link(target)` delegates to ConduitWard, then fires post-unlink hook.
+
+## B9. Transfer Spell Ownership
+1) `transfer_spell_ownership` preflights borrowers/deps/creations.
+2) Marks lineage disabled (transfer_in_progress), flips registries under lock.
+3) Moves/tears down creations and adjusts contracts/clusters.
+4) Marks lineage dirty/gated for revalidation.
+
+## B10. Change-Control Revalidation
+1) `ChangeControlManager.revalidate_dirty_roots(conduit_id, ...)` calls the conduit revalidator and clears dirty sets for that conduit.
+2) `Meld._gated_validation_required` checks `is_root_dirty(conduit_id, root_id)` and raises `MeldExecutionError` to gate execution when a root is dirty. EVIDENCE: src/melder/aether/conduit/meld/meld.py:_gated_validation_required + src/melder/aether/dev_ops/change_control_manager/change_control_manager.py:is_root_dirty.
+
+## B11. Cleanup Sequence (Conduit + Spellbook + Aether)
+1) Conduit cleanup fires hooks, tears down Meld/Ward/Creations, logger last.
+2) Spellbook cleanup unregisters local lineages from SpellSystemStates, then clears spells, configuration, and validators. EVIDENCE: src/melder/spellbook/spellbook.py:_cleanup_spells
+3) Aether cleanup cleans frames and resets singleton state.
+
+# Appendix C: Core File Inventory (Expanded)
+
+## C1. Package Root
+- `src/melder/__init__.py`: runtime warnings, version metadata, guard instantiation.
+- `src/melder/__melder_registration_guard__.py`: sentinel-based registration guard.
+
+## C2. Spellbook and Binding
+- `src/melder/spellbook/spellbook.py`: Spellbook core, conjure pipeline.
+- `src/melder/spellbook/spellbinder.py`: fluent binding adapter.
+- `src/melder/spellbook/bind/bind.py`: binding pipeline and validation.
+- `src/melder/spellbook/bind/spell_index.py`: lineage keys and version tracking.
+- `src/melder/spellbook/spell.py`: spell metadata and hooks.
+
+## C3. Configuration and Existence
+- `src/melder/spellbook/configuration/configuration.py`: configuration properties and hooks.
+- `src/melder/spellbook/configuration/system_state.py`: dynamic vs automatic mode.
+- `src/melder/spellbook/existence/existence.py`: lifecycle semantics.
+
+## C4. SpellCrafter and Validation
+- `src/melder/spellbook/spell_crafter/spell_crafter.py`: per-spell pipeline.
+- `src/melder/spellbook/spell_crafter/validation/validation_system.py`: phase 4 validation.
+- `src/melder/spellbook/spell_crafter/system/spell_system_validation_system.py`: system validation.
+
+## C5. Aether and Conduits
+- `src/melder/aether/aether.py`: global singleton and frame registry.
+- `src/melder/aether/aetheric_frame.py`: per-frame state and dev-ops hubs.
+- `src/melder/aether/conduit/conduit.py`: conduit runtime lifecycle.
+- `src/melder/aether/conduit_cloud.py`: dynamic conduit registry.
+- `src/melder/aether/conduit/conduit_cluster.py`: cluster sharing of spells.
+- `src/melder/spellbook/mutations/mutation_research.py`: mutation research hub.
+
+## C6. Resolution Runtime
+- `src/melder/aether/conduit/meld/meld.py`: resolution orchestration.
+- `src/melder/aether/conduit/meld/creation_context/creation_context.py`: compiled execution lanes and override specialization.
+- `src/melder/aether/conduit/creations/creations.py`: instance registry.
+- `src/melder/aether/conduit/creations/creation.py`: creation wrapper with disposal metadata.
+- `src/melder/aether/conduit/spell_space/spell_space.py`: spellspace scoping.
+
+## C7. Control Plane and Utilities
+- `src/melder/aether/dev_ops/dev_ops_manager.py`: dev-ops hub.
+- `src/melder/aether/dev_ops/spell_system_states/spell_system_states.py`: lineage state.
+- `src/melder/aether/dev_ops/change_control_manager/change_control_manager.py`: change tracking.
+- `src/melder/utilities/general_base/cleanable.py`: cleanup contract.
+- `src/melder/utilities/synchronization/phase_scheduler.py`: phase orchestration.
+- `src/melder/utilities/logger/safe_logger.py`: logging adapter.
+- `src/melder/utilities/helpers/id_builder.py`: id generation.
+===== END FILE: context_compass/architecture/src_architecture.md =====
+===== BEGIN FILE: context_compass/components/src_components.md =====
+# Src Components (C3/C2/C1)
+
+## Metadata
+- Doc ID: COMP-SRC-2026-01-17
+- Status: in_progress
+- Owner:
+- Created: 2026-01-17
+- Updated: 2026-02-14
+
+## Scope
+This document defines C3 components, C2 subcomponents, and C1 code references
+for the Melder core platform (`src/melder`). It complements
+`context_compass/architecture/src_architecture.md` by providing component-level
+responsibilities, contracts, and relationships.
+Melder is framed here as a Dependency Graph Runtime (DGR) with DI-style
+binding and resolution as a subset capability.
+
+Out of scope:
+- Tests and example docs.
+- JSON sidecar metadata files (`__*.json`).
+
+## Documentation Quality Standard
+This document is treated as durable context. It must be deep enough to recover
+system understanding from a blank slate without handwaving.
+
+Required rules:
+- No handwaving. Every claim must be grounded in source evidence or marked as UNKNOWN.
+- Explicit entrypoints and method-level call flows for core behavior.
+- Explicit ownership, lifecycle, and cleanup order for components.
+- Explicit invariants, failure modes, and concurrency constraints.
+- ASCII and Mermaid diagrams for core flows.
+- Update the information sources list when new files are used.
+
+## DO NOT ASSUME / Unknowns Gate
+Rule: No Unverified Claims.
+Any statement that is not directly supported by evidence must be treated as UNKNOWN.
+
+Evidence means at least one of:
+- A specific source file reference (preferred: file + symbol/method/class name).
+- A citation to an explicit, already-verified artifact (e.g., a prior approved doc section).
+
+If not evidenced => UNKNOWN.
+
+UNKNOWN items must be explicitly labeled UNKNOWN (or added to the Unknowns section).
+UNKNOWN items must be investigated by reading the relevant source(s).
+If investigation cannot be completed (missing source access, ambiguity, or time),
+the item must remain UNKNOWN and must not be promoted to fact.
+
+No reasonable assumptions.
+Do not infer behavior from naming, patterns, conventions, or typical frameworks.
+Only the code/docs count.
+
+When unsure:
+- Mark it UNKNOWN.
+- Identify the most likely evidence target (file + symbol).
+- Investigate, then update the doc (or leave it UNKNOWN).
+
+## Unknowns
+This section is a living list of claims currently not backed by evidence.
+Each item must include:
+- What is unknown.
+- Why it matters (impact).
+- Where to investigate (file(s) + symbol(s)).
+- Current status (uninvestigated / investigating / blocked).
+
+- UNKNOWN: Producer call sites for advanced mutation/contract state flags
+  (`SpellState.contract_violation`, `SpellState.mutation_candidate`,
+  `SpellState.mutation_quarantined`, `SpellState.mutation_failed`) remain
+  unresolved in runtime code.
+  Why it matters: Without explicit producers, mutation/contract diagnostics and
+  policy gating can drift from actual runtime behavior.
+  Clarification: SpellContract/MutationContract descriptor behavior is already
+  evidenced and no longer unknown. SpellContract contract-unvalidated wiring is
+  present via Phase 4 + `mark_contract_dependents_dirty` call paths; and
+  MutationContract sockets are explicitly blocked in Phase 4 with
+  `MUTATION_CONTRACT_DISABLED`, while mutation overlays still emit
+  `mutation_contract_set` / `mutation_contract_cleared` through
+  `Spell.apply_mutation_override` and `Spell.clear_mutation_override`.
+  Evidence from current sweep:
+  `SpellMutationNode.snapshot_from_spell` / `apply_to_blueprint` and
+  `CreationMutationNode.snapshot_from_creation` / `apply_to_creation` are
+  placeholder `NotImplementedError` hooks, and `Research.promote_spell_version`
+  documents runtime propagation as a surrounding-system hook.
+  Where to investigate: `src/melder/spellbook/mutations/research/research.py`
+  (`promote_spell_version`), `src/melder/spellbook/mutations/research/spell/node/spell_mutation_node.py`,
+  `src/melder/spellbook/mutations/research/creation/node/creation_mutation_node.py`,
+  `src/melder/aether/dev_ops/spell_system_states/spell_system_states.py`,
+  `src/melder/aether/dev_ops/spell_system_states/spell_state.py`,
+  `src/melder/aether/dev_ops/spell_system_states/spell_state_change_reason.py`.
+  Follow-up stories:
+  `STORY-2026-02-13-spellstate-advanced-flag-producers`,
+  `STORY-2026-02-13-mutation-research-runtime-wiring`.
+  Current status: blocked (mutation systems partially on hold; producer wiring
+  is tracked by follow-up stories).
+
+## Table of Contents
+- Metadata
+- Scope
+- Documentation Quality Standard
+- DO NOT ASSUME / Unknowns Gate
+- Unknowns
+- Table of Contents
+- Component Template
+- C3 Components Catalog
+- C2 Subcomponents Catalog
+- Method-Level Call Flows (C1)
+- C1 Code Map (Core)
+- Diagrams
+- Information Sources
+- DI Resolution Contract Notes (Spec vs Implementation)
+- Open Questions
+- Context / Handoff Summary
+
+## Component Template
+Each component entry includes:
+- Purpose
+- Responsibilities
+- Inputs
+- Outputs
+- Owned State
+- Lifecycle/Cleanup
+- Concurrency/Threading
+- Invariants/Guarantees
+- Failure Modes
+- Observability
+- Extension Points
+- Key Files (C1)
+
+## C3 Components Catalog
+
+### Component: Public API and Runtime Guardrails
+Purpose:
+- Provide the package entrypoint and import-time guardrails.
+
+Responsibilities:
+- Warn on Python < 3.13 and on GIL-enabled builds.
+- Instantiate the registration guard singleton.
+- Expose package metadata and version string.
+
+Inputs:
+- Python runtime version and `sys._is_gil_enabled()`.
+
+Outputs:
+- UserWarning messages.
+- Module-level `__melder_registration_guard__` instance.
+
+Owned State:
+- Package metadata (`__version__`, `__author__`, `__license__`, `__description__`).
+- `__melder_registration_guard__` singleton instance.
+
+Lifecycle/Cleanup:
+- Executes at import time; no explicit cleanup.
+
+Concurrency/Threading:
+- No explicit locks; import-time only.
+
+Invariants/Guarantees:
+- Guard singleton exists after package import.
+- Runtime warnings are emitted but do not block execution.
+
+Failure Modes:
+- `InternalRegistrationError` when a candidate tagged with the guard sentinel is
+  submitted through guarded registration paths.
+- Runtime guardrails are warning-only for Python version / GIL mode checks.
+
+Observability:
+- Warnings via `warnings.warn`.
+- Guard-block failures are surfaced as `InternalRegistrationError` exceptions in
+  guarded bind paths.
+
+Extension Points:
+- None.
+
+Key Files (C1):
+- `src/melder/__init__.py`
+- `src/melder/__melder_registration_guard__.py`
+
+### Component: Spellbook Core (Binding and Conjure)
+Purpose:
+- Provide the primary binding and conjure surface for the DGR.
+
+Responsibilities:
+- Manage configuration lifecycle and logger initialization.
+- Register spells into local maps and version caches.
+- Maintain spell_id maps for O(1) spell_id resolution.
+- Run phase pipelines before conjure.
+- Conjure exactly one Conduit per Spellbook instance.
+- Provide SpellBinder fluent adapter.
+- Scan user-supplied modules for `scan_bind` metadata and bind spells.
+
+Inputs:
+- User spell objects, configuration inputs, policy/automatic flags.
+- Module objects passed to `scan(...)`.
+
+Outputs:
+- Spell IDs from `bind()`.
+- Spell ID lists from `scan(...)`.
+- Conduit instances from `conjure()`.
+
+Owned State:
+- Spell registries (`_spells`, `_lookup_spells`, `_contracted_spells`).
+- Spell_id maps (`_spells_by_id`, `_contracted_spells_by_id`).
+- Version caches (`_spell_versions`, `_contracted_versions`).
+- `_spell_validator`, `_spell_system_states`.
+- `_configuration`, `_configuration_locked`.
+- `_conduit`, `_conjured`, `_bind`.
+
+Lifecycle/Cleanup:
+- Configuration is validated/frozen before conjure.
+- Cleanup is idempotent, unregisters local lineages from SpellSystemStates, and clears spells, configuration, validators, and logger. EVIDENCE: src/melder/spellbook/spellbook.py:_cleanup_spells
+
+Concurrency/Threading:
+- Internal RLock guards most mutable operations.
+
+Invariants/Guarantees:
+- Conjure allowed once per Spellbook instance.
+- Configuration must be frozen before Conduit creation.
+- Existing-object spells are registered into Creations on conjure/bind.
+
+Failure Modes:
+- `SpellbookValidationError` when Phase 1-4 produces broken spells.
+- RuntimeError for duplicate spell ids or lookup key collisions.
+
+Observability:
+- Logs via SafeLogger in Spellbook and related components.
+
+Extension Points:
+- Conduit lifecycle hooks pulled from Configuration.
+- Spell-level hooks (pre, activation, post).
+- SpellBinder fluent binding surface.
+
+Key Files (C1):
+- `src/melder/spellbook/spellbook.py`
+- `src/melder/spellbook/spellbinder.py`
+
+### Component: Binding Pipeline (Bind, Spell, SpellIndex)
+Purpose:
+- Convert user objects into registered spell metadata with stable lineage keys.
+
+Responsibilities:
+- Build binding profiles via SpellExaminer.
+- Compute fingerprints and create SpellIndex lineages.
+- Determine canonical SpellType from binding profile + name/spellframe.
+- Enforce Protocol and module binding constraints.
+- Reject module and Protocol concrete binding targets while allowing class,
+  callable, and existing-object bindings under profile/existence rules.
+- Enforce existence constraints for method/lambda spells.
+- Construct Spell objects with metadata and hooks.
+
+Inputs:
+- Spell object, spellframe, binding name, existence, permissions.
+
+Outputs:
+- Spell and SpellIndex instances.
+
+Owned State:
+- SpellIndex: immutable ULID + mutable version pointer.
+- Spell: metadata, hooks, dependency placeholders, ownership fields.
+
+Lifecycle/Cleanup:
+- SpellIndex and Spell are Cleanable and null references on cleanup.
+
+Concurrency/Threading:
+- SpellIndex and Spell use RLock to protect mutation and cleanup.
+
+Invariants/Guarantees:
+- SpellIndex hash identity is stable and never changes.
+- Protocols cannot be bound as concrete spells.
+- Method/lambda spells must use `Existence.unique`.
+- SpellType classification is stable for a given binding profile + metadata.
+- Resolution style policy is maintained in
+  `src/melder/spellbook/resolution_style_matrix.py`, where
+  `BINDING_FAMILY_POLICY` is canonical and SpellType rows are derived.
+
+Failure Modes:
+- TypeError for invalid binding targets or protocol misuse.
+- ValueError for invalid bindings (existence rules, binding name conflicts).
+- ValueError if method/lambda spells are bound with non-unique existence.
+
+Observability:
+- Errors surfaced via exceptions and Spellbook logger.
+
+Extension Points:
+- Binding profile strategies in SpellExaminer.
+
+Key Files (C1):
+- `src/melder/spellbook/bind/bind.py`
+- `src/melder/spellbook/bind/spell_index.py`
+- `src/melder/spellbook/spell.py`
+- `src/melder/spellbook/spell_types/spell_types.py`
+- `src/melder/spellbook/resolution_style_matrix.py`
+
+### Component: DI Descriptors and Contract Sockets
+Purpose:
+- Provide declarative DI placeholders and contract sockets for spell parameters.
+
+Responsibilities:
+- SpellMap encodes explicit DI intent and optional override payloads (dict/list/tuple).
+- SpellMap supports concrete spell, spellframe, and frame-only forms and supplies canonical keys via SpellInputUtils.
+- SpellContract declares late-bound sockets to be satisfied via conduit links.
+- MutationContract declares mutation sockets with early vs late binding semantics.
+- ParameterDIShape classification drives Phase 1 socket interpretation.
+
+Inputs:
+- Spell/frame/binding identifiers and optional override payloads (dict/list/tuple).
+- `late_binding` flag for MutationContract.
+
+Outputs:
+- Canonical keys (frame_key, binding_key) and lookup triplets consumed by SpellCrafter and validators.
+
+Owned State:
+- SpellMap/SpellContract/MutationContract fields (spell, spellframe, binding_name, override).
+
+Lifecycle/Cleanup:
+- Cleanable descriptors; cleanup clears overrides and references.
+
+Concurrency/Threading:
+- No internal locks; immutable intent objects after construction.
+
+Invariants/Guarantees:
+- At least one of `spell` or `spellframe` must be provided.
+- Binding names are normalized for case-insensitive matching and default to `__default__` when omitted.
+- SpellMap preserves override payloads as provided; when `None`, no override is attached.
+- SpellContract/MutationContract are intended for dynamic mode usage.
+
+Failure Modes:
+- ValueError when both `spell` and `spellframe` are None.
+- `ContractProviderPresenceStrategy.validate` emits errors for SpellContract
+  sockets in automatic mode; emits warnings for missing SpellContract providers;
+  emits errors for invalid or ambiguous SpellContract defaults.
+- `ContractProviderPresenceStrategy.validate` emits `MUTATION_CONTRACT_DISABLED`
+  errors for MutationContract sockets while mutation systems are on hold.
+
+Observability:
+- Exceptions on invalid construction; validation issues reported in Phase 4.
+
+Extension Points:
+- None (descriptor types are not intended for subclassing).
+
+Key Files (C1):
+- `src/melder/aether/conduit/meld/contracts/spell_map.py`
+- `src/melder/aether/conduit/meld/contracts/spell_contract.py`
+- `src/melder/aether/conduit/meld/contracts/mutation_contract.py`
+- `src/melder/spellbook/spell_crafter/spell_examiner/spell_requirements_finder/parameter_di_shape.py`
+
+### Component: Configuration and System State
+Purpose:
+- Provide validated, freezable configuration for the Melder runtime.
+
+Responsibilities:
+- Maintain configuration properties and hook registry.
+- Validate required properties and freeze mutation.
+- Provide logger factory for SafeLogger initialization.
+- Control system_state (automatic vs dynamic).
+
+Inputs:
+- Property values and hook registrations.
+
+Outputs:
+- Frozen configuration and hook maps.
+
+Owned State:
+- `_properties`, `available_properties`, `_idempotent_keys`.
+- `_hooks` and `_logger_factory`.
+
+Lifecycle/Cleanup:
+- `freeze()` locks property mutations.
+- Cleanup clears properties, hooks, and logger factory.
+
+Concurrency/Threading:
+- RLock guards property and hook mutations.
+
+Invariants/Guarantees:
+- Idempotent properties can be set once only.
+- Frozen configuration cannot be modified.
+
+Failure Modes:
+- RuntimeError when cleaned/frozen configuration is mutated.
+- ValueError when required properties are missing or semantically invalid.
+- TypeError for invalid key/factory/hook input types.
+- KeyError for unknown property lookup requests.
+
+Observability:
+- Exception-based reporting; no internal logging.
+
+Extension Points:
+- Additional properties and hook names.
+
+Key Files (C1):
+- `src/melder/spellbook/configuration/configuration.py`
+- `src/melder/spellbook/configuration/system_state.py`
+
+### Component: Aether Singleton (Global Runtime)
+Purpose:
+- Global singleton for all frames and shared registries.
+
+Responsibilities:
+- Create and manage AethericFrames.
+- Bind configuration to frames.
+- Register conduits and spell lineages.
+- Provide version registry for spell ids.
+
+Inputs:
+- Conduit objects, SpellIndex sets, Configuration.
+
+Outputs:
+- Frame-level registries and lookups.
+
+Owned State:
+- `_aetheric_frames`, `_default_frame`, `_logger`.
+- Singleton state (`_instance`, `_initialized`, `_lock`).
+
+Lifecycle/Cleanup:
+- `cleanup()` tears down frames and resets singleton state.
+
+Concurrency/Threading:
+- Class-level RLock guards singleton initialization and updates.
+
+Invariants/Guarantees:
+- One Aether instance per interpreter.
+- Default frame exists when needed.
+
+Failure Modes:
+- ValueError for missing frames, duplicate registry entries, or not-found lookups.
+- TypeError for invalid input types (e.g., non-string frame names).
+- RuntimeError when singleton/frame registries are cleaned or unavailable.
+
+Observability:
+- Logs via SafeLogger.
+
+Extension Points:
+- Additional frame behaviors or registries.

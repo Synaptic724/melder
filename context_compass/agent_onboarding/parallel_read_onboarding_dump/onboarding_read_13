@@ -1,0 +1,500 @@
+﻿- SpellIndex identity (ULID) is immutable; version pointer can change.
+- `automatic=True` conjure only allows `Policies.default`.
+- `automatic=False` conjure requires `system_state=dynamic`.
+- SpellSpace can only meld when it is the active spellspace for a Conduit.
+- Linking/severing conduits is only allowed in dynamic mode.
+- Method/lambda spells must use `Existence.unique`.
+- Ownership transfer is only allowed in dynamic mode.
+
+## Failure Modes and Error Paths
+- Duplicate binding keys or spell id collisions raise RuntimeError.
+- Conjure raises SpellbookValidationError when broken spells exist.
+- Meld raises SpellbookValidationError when spell validity is invalid/gated/disabled.
+- ChangeControl blocks roots marked dirty for the active conduit (`is_root_dirty(conduit_id, root_id)`).
+- SpellSpaceScopeError if a non-active SpellSpace is used for meld.
+- Cleanup errors are logged; Creations may raise ExceptionGroup.
+- Linking or severing in automatic mode raises RuntimeError.
+- upgrade_to_normal raises RuntimeError when called in non-dynamic mode.
+- SpellMap defaults that resolve to zero or multiple candidates raise RuntimeError.
+- SpellContract/MutationContract require at least `spell` or `spellframe` (ValueError).
+- Ownership transfer raises RuntimeError when dynamic mode is disabled.
+
+## Extension Points
+- Configuration hooks for conduit lifecycle and meld pipeline.
+- Logger factory supplied via Configuration.
+- Spellbook binding hooks (pre/activation/post).
+- Dynamic Conduit policies and ConduitCluster auto-sharing.
+- Validation strategies registered in SpellValidationSystem.
+
+## Data Flows and Sequences
+### Sequence: Import to Ready
+1. `import melder`:
+   - Runtime warnings for Python version and GIL mode.
+   - `__melder_registration_guard__` singleton instantiated.
+
+### Sequence: Spellbook Initialization
+1. `Spellbook.__init__`:
+   - `Aether._ensure_frame(aetheric_frame)`.
+   - `_initialize_configuration` (adopt or create Configuration).
+   - `_initialize_logging` (SafeLogger and optional factory).
+   - Initialize registries, validators, and SpellSystemStates.
+
+### Sequence: Bind Spell
+1. `Spellbook.bind(...)`:
+   - Enum conversion for permissions and existence.
+   - `Bind._bind_logic` produces SpellIndex and Spell.
+   - Spellbook registers spell maps and SpellSystemStates lineage.
+   - If Conduit exists, stamps ownership and registers existing objects.
+
+### Sequence: Conjure Conduit
+1. `Spellbook.conjure(...)`:
+   - Validate/freeze Configuration, bind to Aether.
+   - Run phases 1-4, then conduit foundational phases 5-7.
+   - Run conduit plan phases 8-11 only when foundational resolution has no errors.
+   - Construct Conduit and register it with Aether.
+   - Fire conjure hooks and wire Conduit into spells.
+
+### Sequence: Meld Resolution
+1. `Conduit.meld(...)`:
+   - In dynamic mode, enforce CreationGate checks/ticketing; delegate to `Meld.meld(...)`.
+2. `Meld.meld(...)`:
+   - Resolve spell by id or (spellframe, binding).
+   - Enforce structural/resolution validity gates and choose reuse vs instantiate.
+3. `CreationContext` compiled execution:
+   - Select no-hooks/hooks and no-overrides/overrides lanes.
+   - Execute compiled Phase 12 path and return the resolved instance.
+4. Creations registration/reuse occurs inside compiled execution per Existence.
+
+### Sequence: Meld-Time Validation Gate
+1. `Meld._ensure_lineage_resolvable(...)` checks SpellSystemState validity.
+2. If validity is UNKNOWN/GATED:
+   - Acquire `spell._lock` and run `spell.run_structural_phases()`.
+   - Raise SpellbookValidationError if validity stays invalid/gated.
+3. If per-conduit resolution validity is UNKNOWN/GATED:
+   - Run `spell._spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)`.
+   - Raise SpellbookValidationError if validity stays invalid/gated.
+
+### Sequence: Create Lesser Conduit
+1. Parent Conduit fires pre-create hook.
+2. Constructs lesser Conduit with same Spellbook/Configuration.
+3. Wires root-lineage pointers (`_root_conduit_id`, `_meld._resolution_conduit_id`) and root-conduit ward reference.
+4. Links lesser into ConduitWard lineage tree.
+5. Fires activated and post-create hooks.
+
+### Sequence: Upgrade Lesser to Normal
+1. `Conduit.upgrade_to_normal(name, hooks)` checks dynamic mode and lesser state.
+2. Preserves the existing `Creations` manager from the lesser conduit.
+3. Rewires Meld/ward state for normal-conduit ownership using the preserved manager.
+4. Rebinds lineage gates to the frame-level CreationGateController.
+5. Seeds per-conduit resolution state from root conduit (if available).
+6. Registers the conduit into Aether and ConduitCloud.
+7. Registers per-conduit hooks (optional).
+
+### Sequence: Link and Sever Conduits
+1. `Conduit.link(target_conduit)`:
+   - Requires dynamic mode and valid target.
+   - Delegates to `ConduitWard._link` to establish contract.
+   - Fires `on_conduit_post_link` hook on success.
+2. `Conduit.sever_link(target_conduit)`:
+   - Requires dynamic mode.
+   - Delegates to `ConduitWard._sever_link` to remove contract.
+   - Fires `on_conduit_post_unlink` hook on success.
+
+### Sequence: Transfer Spell Ownership
+1. `Conduit.transfer_spell_ownership(...)` validates dynamic mode.
+2. `TransferOfOwnership.preflight()` captures borrowers, deps, creations.
+3. `TransferOfOwnership.execute()`:
+   - Marks lineage disabled (transfer_in_progress) and flips registries under lock.
+   - Moves or tears down creations.
+   - Unshares or repoints contracts/clusters.
+   - Optionally transfers or dirties dependencies.
+   - Marks lineage dirty/gated for revalidation.
+
+### Sequence: Change-Control Revalidation
+1. `ChangeControlManager.revalidate_dirty_roots(conduit_id, ...)`:
+   - Copies dirty roots for the conduit and calls the registered revalidator outside the lock.
+   - On success, clears dirty sets and resets monitor state for that conduit.
+2. `Meld._gated_validation_required(...)` checks `is_root_dirty(conduit_id, root_id)` and raises `MeldExecutionError` for dirty roots.
+
+### Sequence: SpellSpace Usage
+1. `conduit.enter_spellspace()` creates and activates SpellSpace.
+2. `SpellSpace.meld(...)` enforces active scope and delegates to Conduit.
+3. `SpellSpace.reset()` clears spellspace-scoped instances and bumps version.
+
+### Sequence: Cleanup
+1. `Conduit.cleanup()` fires hooks, tears down Meld/Ward/Creations, logger last.
+2. `Spellbook.cleanup()` clears spells, configuration, and validators.
+3. `Aether.cleanup()` cleans frames and resets singleton state.
+
+## C3 and C2 Cross-Reference
+Detailed C3 and C2 component descriptions are maintained in:
+- `context_compass/components/src_components.md`
+
+## C1 Code Map (Core Only)
+Package root:
+- `src/melder/__init__.py` - runtime warnings, version metadata.
+- `src/melder/__melder_registration_guard__.py` - registration guard sentinel.
+
+Spellbook and binding:
+- `src/melder/spellbook/spellbook.py` - Spellbook core and conjure pipeline.
+- `src/melder/spellbook/spellbinder.py` - fluent binding adapter.
+- `src/melder/spellbook/bind/bind.py` - binding pipeline.
+- `src/melder/spellbook/bind/spell_index.py` - lineage key with version pointer.
+- `src/melder/spellbook/spell.py` - spell metadata and hooks.
+- `src/melder/spellbook/existence/existence.py` - existence modes.
+- `src/melder/spellbook/spell_types/spell_types.py` - spell type classification.
+
+Configuration and hooks:
+- `src/melder/spellbook/configuration/configuration.py` - properties, hooks, freeze.
+- `src/melder/spellbook/configuration/system_state.py` - automatic vs dynamic.
+
+SpellCrafter and validation:
+- `src/melder/spellbook/spell_crafter/spell_crafter.py` - per-spell phase artifacts.
+- `src/melder/spellbook/spell_crafter/validation/validation_system.py` - phase 4 validation.
+- `src/melder/spellbook/spell_crafter/system/spell_system_validation_system.py` - phase 6 validation.
+- `src/melder/spellbook/spell_crafter/spell_examiner/spell_requirements_finder/parameter_di_shape.py` - DI shape classification.
+
+Aether and frames:
+- `src/melder/aether/aether.py` - global singleton and frame registry.
+- `src/melder/aether/aetheric_frame.py` - per-frame state and control plane.
+- `src/melder/aether/conduit_cloud.py` - dynamic conduit registry.
+- `src/melder/aether/conduit/conduit_cluster.py` - cluster auto-sharing.
+- `src/melder/spellbook/mutations/mutation_research.py` - mutation research hub.
+
+Conduit runtime:
+- `src/melder/aether/conduit/conduit.py` - conduit lifecycle and meld facade.
+- `src/melder/aether/conduit/conduit_state/conduit_state.py` - conduit state enum.
+- `src/melder/aether/conduit/conduit_ward/conduit_ward.py` - contracts and lineage.
+- `src/melder/aether/conduit/conduit_ward/policies/policies.py` - policy enum.
+- `src/melder/aether/conduit/conduit_ward/permissions/permissions.py` - permission enum.
+- `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py` - ownership transfer.
+
+Resolution and creations:
+- `src/melder/aether/conduit/meld/meld.py` - meld orchestration.
+- `src/melder/aether/conduit/meld/creation_context/creation_context.py` - compiled execution lanes and runtime dispatch.
+- `src/melder/aether/conduit/meld/contracts/spell_map.py` - SpellMap descriptor.
+- `src/melder/aether/conduit/meld/contracts/spell_contract.py` - SpellContract descriptor.
+- `src/melder/aether/conduit/meld/contracts/mutation_contract.py` - MutationContract descriptor.
+- `src/melder/aether/conduit/creations/creations.py` - instance registry.
+- `src/melder/aether/conduit/creations/creation.py` - creation wrapper + disposal metadata.
+- `src/melder/aether/conduit/spell_space/spell_space.py` - spellspace scoping.
+
+Control plane:
+- `src/melder/aether/dev_ops/dev_ops_manager.py` - dev-ops hub.
+- `src/melder/aether/dev_ops/spell_system_states/spell_system_states.py` - lineage registry.
+- `src/melder/aether/dev_ops/spell_system_states/spell_system_state.py` - lineage state.
+- `src/melder/aether/dev_ops/spell_system_states/spell_state.py` - lineage flags.
+- `src/melder/aether/dev_ops/spell_system_states/spell_state_change_reason.py` - change reasons.
+- `src/melder/aether/dev_ops/change_control_manager/change_control_manager.py` - change control.
+- `src/melder/aether/dev_ops/risk_manager/risk_manager.py` - risk gating.
+
+Utilities:
+- `src/melder/utilities/general_base/cleanable.py` - cleanup contract.
+- `src/melder/utilities/synchronization/phase_scheduler.py` - phase orchestration.
+- `src/melder/utilities/logger/safe_logger.py` - logger adapter.
+- `src/melder/utilities/helpers/id_builder.py` - id generation.
+- `src/melder/utilities/helpers/init_helpers.py` - logger resolution.
+
+## Diagrams
+### ASCII Context Diagram (C4)
+```
+[User Code]
+    |
+    v
+[Spellbook] -> [Aether (global)] -> [AethericFrame]
+    |
+    v
+[Conduit] -> [Meld] -> [Creations]
+    |
+    v
+[Resolved Instances]
+```
+
+### Mermaid Context Diagram (C4)
+```mermaid
+graph TD
+  U[User Code] --> SB[Spellbook]
+  SB --> AE[Aether Singleton]
+  AE --> AF[AethericFrame]
+  SB --> C[Conduit]
+  C --> M[Meld]
+  M --> CR[Creations]
+  CR --> I[Resolved Instances]
+```
+
+### ASCII Conjure Pipeline Diagram
+```
+[Spellbook.conjure]
+  -> validate/freeze config
+  -> bind config to Aether
+  -> phases 1-4 (structural)
+  -> phases 5-7 (foundational resolution)
+  -> phases 8-11 (plan resolution, if no errors)
+  -> Conduit() + hooks
+  -> wire ownership into spells
+```
+
+### Mermaid Meld Flow
+```mermaid
+sequenceDiagram
+  participant C as Conduit
+  participant M as Meld
+  participant CC as CreationContext
+  participant P12 as Phase12 Compiled Executors
+  participant CR as Creations
+  C->>M: meld(spell_id/input)
+  M->>CC: get/build creation context
+  M->>CC: invoke _execute_*_compiled(...)
+  CC->>P12: dispatch compiled lane
+  P12->>CR: reuse/construct/register
+  P12-->>CC: instance
+  CC-->>M: instance
+  M-->>C: instance
+```
+
+### Mermaid Conduit Upgrade
+```mermaid
+sequenceDiagram
+  participant LC as Lesser Conduit
+  participant CR as Creations
+  participant M as Meld
+  participant W as ConduitWard
+  participant SB as Spellbook
+  participant AE as Aether
+  participant CC as ConduitCloud
+  LC->>LC: upgrade_to_normal()
+  LC->>CR: preserve + rebind current Creations
+  LC->>M: rewire meld creations/resolution root id
+  LC->>W: _convert_to_normal_conduit
+  LC->>SB: create_new_preset_spellbook()
+  LC->>AE: register conduit
+  LC->>CC: register conduit (if named/dynamic)
+```
+
+## Information Sources
+- `README.md`
+- `src/melder/__init__.py`
+- `src/melder/__melder_registration_guard__.py`
+- `src/melder/spellbook/spellbook.py`
+- `src/melder/spellbook/spellbinder.py`
+- `src/melder/spellbook/bind/bind.py`
+- `src/melder/spellbook/bind/spell_index.py`
+- `src/melder/spellbook/spell.py`
+- `src/melder/spellbook/configuration/configuration.py`
+- `src/melder/spellbook/existence/existence.py`
+- `src/melder/spellbook/spell_types/spell_types.py`
+- `src/melder/spellbook/resolution_style_matrix.py`
+- `src/melder/spellbook/spell_crafter/spell_examiner/spell_requirements_finder/parameter_di_shape.py`
+- `src/melder/spellbook/spell_crafter/spell_crafter.py`
+- `src/melder/spellbook/spell_crafter/validation/validation_system.py`
+- `src/melder/spellbook/spell_crafter/validation/strategies/circular_dependency_strategy.py`
+- `src/melder/spellbook/spell_crafter/validation/strategies/duplicate_spell_name_strategy.py`
+- `src/melder/spellbook/spell_crafter/validation/strategies/binding_resolution_cycle_strategy.py`
+- `src/melder/spellbook/spell_crafter/validation/strategies/contract_provider_presence_strategy.py`
+- `src/melder/spellbook/spell_crafter/system/spell_system_validation_system.py`
+- `src/melder/spellbook/spell_crafter/system/validation/cycle_detection_strategy.py`
+- `src/melder/spellbook/spell_crafter/system/validation/contract_graph_cycle_strategy.py`
+- `src/melder/aether/aether.py`
+- `src/melder/aether/aetheric_frame.py`
+- `src/melder/aether/conduit/conduit.py`
+- `src/melder/aether/conduit/conduit_cluster.py`
+- `src/melder/aether/conduit/creations/creations.py`
+- `src/melder/aether/conduit/meld/meld.py`
+- `src/melder/aether/conduit/meld/creation_context/creation_context.py`
+- `src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py`
+- `src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py`
+- `src/melder/aether/conduit/meld/contracts/spell_map.py`
+- `src/melder/aether/conduit/meld/contracts/spell_contract.py`
+- `src/melder/aether/conduit/meld/contracts/mutation_contract.py`
+- `src/melder/spellbook/spell_crafter/dag/resolution_frame/resolution_frame.py`
+- `src/melder/aether/conduit/conduit_ward/transfer/transfer_of_ownership.py`
+- `src/melder/aether/dev_ops/spell_system_states/spell_system_states.py`
+- `src/melder/aether/dev_ops/spell_system_states/spell_system_state.py`
+- `src/melder/aether/dev_ops/spell_system_states/spell_state.py`
+- `src/melder/aether/dev_ops/spell_system_states/spell_state_change_reason.py`
+- `src/melder/aether/dev_ops/dev_ops_manager.py`
+- `src/melder/aether/dev_ops/change_control_manager/change_control_manager.py`
+- `src/melder/aether/dev_ops/risk_manager/risk_manager.py`
+
+## Open Questions
+- SpellContract and MutationContract are now evidenced, not unknown:
+  SpellContract sockets are validated in Phase 4 (automatic mode -> error,
+  missing provider -> warning), and contract-dependent revalidation is wired by
+  `SpellSystemStates.mark_contract_dependents_dirty` callers plus meld-time
+  resolution gating. MutationContract sockets are explicitly blocked in Phase 4
+  with `MUTATION_CONTRACT_DISABLED`, while mutation overlays still emit
+  `mutation_contract_set` / `mutation_contract_cleared` reasons via
+  `Spell.apply_mutation_override` / `Spell.clear_mutation_override`.
+- Remaining unknown: producer call sites for `SpellState.contract_violation`,
+  `SpellState.mutation_candidate`, `SpellState.mutation_quarantined`, and
+  `SpellState.mutation_failed` are still not present in current `src/melder`
+  callsite sweeps.
+  Follow-up stories:
+  `STORY-2026-02-13-spellstate-advanced-flag-producers`,
+  `STORY-2026-02-13-mutation-research-runtime-wiring`.
+  Status: blocked (mutation systems partially on hold).
+
+## Context / Handoff Summary
+- Added DevOps scoping notes: DevOpsManager and ChangeControlManager are per-frame, per-conduit resolution state lives in SpellSystemStates, and RiskManager drives per-conduit gating.
+- Added resolution-style inventory (SpellType + Existence + DI shapes),
+  late-binding contract notes, lazy meld-time validation, and ownership transfer
+  sequences with updated evidence.
+- Deep scan is explicitly not planned; multi-entry meld contract remains
+  documented and docstrings aligned.
+- Clarified unique_per_conduit_cluster storage/sharing (owner Creations +
+  ConduitCluster contracts) and removed the stale README entrypoint mismatch.
+- Documented ConduitCluster cluster-scoped `root_spell_id` usage and default
+  permission behavior during auto-sharing.
+- Updated SpellContract automatic-mode validation to error and noted no deep
+  scan references in `src/melder`.
+- Marked MutationContract usage as blocked via Phase 4 validation while mutation
+  systems are on hold.
+- Reframed Melder as a Dependency Graph Runtime (DGR) and scoped DI-style
+  binding/resolution as a subset capability.
+- Documented Spellbook cleanup unregistering local lineages from SpellSystemStates. EVIDENCE: src/melder/spellbook/spellbook.py:_cleanup_spells
+- Documented SpellSystemStates unregister notifying RiskManager to force validation gating. EVIDENCE: src/melder/aether/dev_ops/spell_system_states/spell_system_states.py:unregister_lineage
+- Removed stale `meld_engine` references and updated source/evidence maps to
+  Phase 12 generated executor artifacts (`phase12_no_overrides_executor.py`,
+  `phase12_overrides_executor.py`) for the codegen-only runtime model.
+- Documented optimization-wave runtime updates: meld front-door spell-id
+  caching, inline creations-target dispatch in emitted Phase 12 executors, and
+  route-matrix benchmark reporting (`warm_root`, `spellspace`, `override_args`,
+  `override_targeted`, `mixed`) from
+  `benchmarks/testing_other_di/run_codegen_benchmark_deltas.py`.
+- Revalidated C4/C3 diagrams for the current codegen runtime: context/flow labels now
+  model `Meld -> CreationContext -> compiled execution lanes` and conjure phase gating
+  through plan phases 8-11.
+- Revalidated Information Sources + Open Questions: replaced stale `meld_runtime.py`
+  path with `creation_context.py`, and updated contract/mutation-flag unknowns to reflect
+  current `contract_unvalidated` call paths.
+- Resolved matrix source-of-truth ambiguity: `ResolutionStyleMatrix` now defines
+  canonical family policy (`BINDING_FAMILY_POLICY`) and derived SpellType view
+  (`MATRIX_BY_SPELL_TYPE`) with mapping/family drift checks in validation.
+
+# Appendix A: Deep Component Narratives (Core)
+
+## A1. Package Root and Runtime Guardrails
+- `melder/__init__.py` sets version metadata and warns on Python < 3.13.
+- `_detect_nogil_mode()` uses `sys._is_gil_enabled()` and warns if GIL is enabled.
+- `MelderRegistrationGuard` is instantiated at import time.
+
+## A2. MelderRegistrationGuard
+- Singleton with a sentinel object used to tag internal classes via
+  `__melder_internal__`.
+- `assert_allowed` raises InternalRegistrationError if the sentinel is present.
+
+## A3. Spellbook
+- Public binding and conjure surface for the DGR.
+- Owns spell registries and version caches.
+- Runs structural and resolution phases before Conduit creation.
+- Binds configuration into Aether and upgrades Aether logging when possible.
+- Fires conjure hooks and wires Conduit ownership into spells.
+
+## A4. Aether Singleton
+- Singleton root for AethericFrames.
+- Registers conduits, spell lineages, and configuration per frame.
+- Maintains a version registry by refreshing from SpellIndex sets.
+
+## A5. AethericFrame
+- Per-frame container for:
+  - Conduits and spell registries.
+  - ConduitCloud and ConduitClusters.
+  - MutationResearch and SpellSystemStates.
+  - DevOpsManager and frame configuration.
+
+## A6. Conduit (Normal and Lesser)
+- Normal conduit registers into Aether and owns full Creations.
+- Lesser conduits inherit Spellbook/Configuration and also use `Creations`;
+  lesser behavior is driven by conduit state + root-lineage id wiring.
+- ConduitWard manages contracts and lineage.
+- Conduit can spawn lesser conduits, link to peers in dynamic mode, and
+  can be upgraded to normal while preserving/rebinding its current Creations manager.
+
+## A7. Bind, Spell, and SpellIndex
+- Bind uses SpellExaminer to produce a binding profile and fingerprint.
+- SpellIndex provides stable lineage key with mutable version pointer.
+- Spell holds spell metadata, hooks, and references to SpellCrafter artifacts.
+
+## A8. SpellCrafter and PhaseScheduler
+- SpellCrafter owns per-spell artifacts across phases.
+- PhaseScheduler coordinates multi-phase execution with cancellation.
+- Broken spells raise SpellbookValidationError and block conjure.
+
+## A9. Meld Runtime
+- Meld resolves spells and enforces existence semantics via Creations.
+- Validation/change-control gating is enforced in `Meld` before compiled execution.
+- CreationContext compiled executor lanes perform actual construction/reuse/registration.
+
+## A10. ConduitWard and Contracts
+- ConduitWard owns the contract graph and lineage tree.
+- Policies define dynamic linking behavior.
+- Contracts update Spellbook contracted spell maps for cross-conduit sharing.
+
+## A11. Creations and SpellSpace
+- Creations stores instances by existence category and disposes on cleanup.
+- SpellSpace provides a scoped context for unique_per_spell_space.
+
+## A12. DevOps and SpellSystemStates
+- SpellSystemStates tracks lineage validity, dependencies, and dirty sets.
+- ChangeControlManager tracks pending changes and dirty roots.
+- DevOpsManager aggregates incident and change-control tools.
+- DevOpsManager and ChangeControlManager are per-frame; ConduitResolutionState is per-conduit via SpellSystemStates._resolution_by_conduit_id. EVIDENCE: src/melder/aether/aetheric_frame.py:__init__ + src/melder/aether/dev_ops/spell_system_states/spell_system_states.py:get_or_create_conduit_resolution_state.
+- RiskManager tracks per-conduit risk and toggles Spellbook validation gating based on per-conduit validity changes. EVIDENCE: src/melder/aether/dev_ops/risk_manager/risk_manager.py:register_conduit + on_resolution_validity_change.
+- SpellSystemStates.unregister_lineage notifies RiskManager with SpellValidity.cleaned to force validation gating for affected conduits. EVIDENCE: src/melder/aether/dev_ops/spell_system_states/spell_system_states.py:unregister_lineage
+
+## A13. Logging Infrastructure
+- SafeLogger wraps stdlib or channel loggers.
+- InitHelpers resolve SafeLogger during early initialization.
+- Spellbook upgrades Aether logger if configuration provides a factory.
+
+# Appendix B: Detailed Sequences and Data Flows
+
+## B1. Spellbook Initialization
+1) `Spellbook.__init__` sets IDs and locks.
+2) Ensures Aether frame exists and retrieves or creates Configuration.
+3) Initializes SafeLogger using Configuration factory if available.
+4) Initializes spell registries and SpellSystemStates.
+
+## B2. Bind Sequence (Local Spell)
+1) `Spellbook.bind` converts enums and delegates to `Bind._bind_logic`.
+2) Bind validates target type, creates binding profile and SpellIndex.
+3) Spellbook registers Spell and lookup keys.
+4) SpellSystemStates registers lineage and marks it dirty.
+
+## B3. Conjure Sequence (Normal Conduit)
+1) Validate and freeze Configuration.
+2) Bind Configuration to Aether frame.
+3) Run phases 1-4; abort if any spells are broken.
+4) Run phases 5-7 (foundational resolution) scoped to a new conduit id.
+5) Run phases 8-11 (plan resolution) only when 5-7 reports no resolution errors.
+6) Construct Conduit and register it into Aether.
+7) Wire conduit ownership metadata into all spells.
+
+## B4. Meld Sequence (Resolve Instance)
+1) Conduit fires pre-resolve hooks and delegates to Meld.
+2) Meld resolves spell identity and checks existence reuse rules.
+3) Meld enforces structural/resolution validity and change-control gates.
+4) Meld resolves/creates Spell-owned CreationContext and dispatches compiled execution lanes (`_execute_*_compiled`) that reuse/construct/register against Creations.
+5) Conduit fires post-resolve hooks.
+
+## B5. Meld-Time Validation Gate
+1) `Meld._ensure_lineage_resolvable` checks SpellSystemState validity.
+2) If validity is UNKNOWN/GATED:
+   - `spell.run_structural_phases()` runs under the per-spell lock.
+3) If per-conduit resolution validity is UNKNOWN/GATED:
+   - `spell._spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)` runs.
+
+## B6. Lesser Conduit Creation
+1) Parent Conduit fires pre-create hook.
+2) Constructs lesser Conduit with inherited Spellbook/Configuration.
+3) Wires root Creations and root conduit into lesser conduit.
+4) Links lesser into ConduitWard lineage tree.
+5) Fires activated and post-create hooks.
+
+## B7. Upgrade to Normal Conduit
+1) `upgrade_to_normal` verifies dynamic mode and lesser state.
+2) Preserves/rebinds the current Creations manager to the upgraded conduit state.
+3) Rewires Meld to the same Creations manager and converts ward state.
+4) Seeds resolution state from former root conduit.
+5) Registers conduit into Aether and ConduitCloud.
+

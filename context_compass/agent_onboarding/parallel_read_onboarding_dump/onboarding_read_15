@@ -1,0 +1,500 @@
+﻿
+Key Files (C1):
+- `src/melder/aether/aether.py`
+
+### Component: AethericFrame Services
+Purpose:
+- Per-frame container for conduits, registries, and control-plane services.
+
+Responsibilities:
+- Track conduits and spell registries.
+- Maintain version registry.
+- Provide ConduitCloud for named conduit lookup (dynamic mode).
+- Provide ConduitCluster for auto-sharing roots.
+- Own MutationResearch, SpellSystemStates, and DevOpsManager.
+- MutationResearch manages per-SpellIndex Research sessions and mutation entrypoints.
+
+Inputs:
+- Conduit objects and SpellIndex sets.
+
+Outputs:
+- Registry state and DevOps services.
+
+Owned State:
+- `_conduits`, `_spell_registry`, `_version_registry`.
+- `_conduit_cloud`, `_conduit_clusters`.
+- `_mutation_research`, `_spell_system_states`, `_dev_ops_manager`.
+- `_configuration` (bound by Spellbook).
+
+Lifecycle/Cleanup:
+- Cleanup cascades to conduits, clusters, cloud, and control plane.
+
+Concurrency/Threading:
+- Frame-level RLock.
+
+Invariants/Guarantees:
+- One SpellSystemStates and DevOpsManager per frame.
+
+Failure Modes:
+- Cleanup is best-effort; errors are suppressed to complete teardown.
+
+Observability:
+- Minimal internal logging; relies on caller logs.
+
+Extension Points:
+- Additional per-frame services.
+
+Key Files (C1):
+- `src/melder/aether/aetheric_frame.py`
+- `src/melder/aether/conduit_cloud.py`
+- `src/melder/aether/conduit/conduit_cluster.py`
+- `src/melder/spellbook/mutations/mutation_research.py`
+
+### Component: Conduit Runtime (Normal and Lesser)
+Purpose:
+- Execution scope for resolving spells and managing object lifecycles.
+
+Responsibilities:
+- Register normal conduits into Aether and ConduitCloud.
+- Manage Meld runtime and Creations.
+- Manage ConduitWard and hook wiring.
+- Create lesser conduits and manage lineage trees.
+- Upgrade lesser conduits to normal in dynamic mode by preserving/rebinding the
+  current Creations manager and rewiring Meld/ConduitWard state.
+- Manage peer link/sever flows and fire conduit hooks on success.
+- Transfer spell ownership between conduits in dynamic mode.
+- Gate meld execution per conduit via MeldGate and register gates in the
+  lineage MeldGateController for bulk enable/disable and close-and-drain.
+
+Inputs:
+- Spellbook, Configuration, policy and automatic flags, optional logger.
+- Optional name/hooks for `upgrade_to_normal`.
+- Target conduit for `link(...)` / `sever_link(...)`.
+- Target conduit and transfer options for `transfer_spell_ownership(...)`.
+
+Outputs:
+- Resolved instances via `meld()`.
+- Boolean link/sever results.
+- Ownership transfer preflight summary (dict).
+
+Owned State:
+- `_creations`, `_meld`, `_conduit_ward`, `_conduit_hooks`.
+- `_meld_gate` (per-conduit gate) and `_meld_gate_controller` registry.
+- `_spellspace_stack`, `_spellspace_registry`.
+- Conduit metadata (`_id`, `_name`, `_automatic`, `_aetheric_frame`).
+
+Lifecycle/Cleanup:
+- Cleanup fires hooks, tears down Meld, ConduitWard, Creations, then logger.
+- Upgrade rewires Creations/Meld and converts ConduitWard lineage state.
+
+Concurrency/Threading:
+- Internal RLock guards conduit operations.
+- MeldGate uses an internal RLock and Event to block/unblock meld calls and a
+  per-gate ticket deque for active meld tracking and close-and-drain.
+
+Invariants/Guarantees:
+- Normal conduits register with Aether; lesser conduits do not.
+- Lesser conduits cannot have names.
+- Existing-object spells must be Existence.unique when registered into Creations.
+- `upgrade_to_normal` requires dynamic mode and a lesser conduit state.
+- `link` and `sever_link` are only allowed in dynamic mode.
+- `upgrade_to_normal` rewires Meld to the currently owned Creations manager.
+- Ownership transfer is only allowed in dynamic mode.
+
+Failure Modes:
+- RuntimeError for invalid policies, missing root conduits, or illegal operations.
+- RuntimeError if `upgrade_to_normal` is called in non-dynamic mode or on a non-lesser conduit.
+- RuntimeError if `link`/`sever_link` is called in non-dynamic mode.
+- TypeError if `link` target is not an `IConduit`.
+- RuntimeError if `link` target lacks a valid creation context.
+- RuntimeError if `transfer_spell_ownership` is called in non-dynamic mode.
+- Meld calls block while the local MeldGate is disabled.
+
+Observability:
+- Logs via SafeLogger.
+
+Extension Points:
+- Per-conduit hooks via Configuration.
+- Dynamic policies and ConduitCloud registration.
+
+Key Files (C1):
+- `src/melder/aether/conduit/conduit.py`
+- `src/melder/aether/conduit/meld/meld_gate.py`
+- `src/melder/aether/conduit/meld/meld_gate_controller.py`
+
+### Component: ConduitWard and Contracts
+Purpose:
+- Control-plane manager for conduit contracts and lineage links.
+
+Responsibilities:
+- Maintain contract graph and linking indices.
+- Manage parent/child (lesser) lineage tree.
+- Apply policy rules for contract creation.
+- Update Spellbook contracted maps when links change.
+- Convert lesser lineage state to normal during conduit upgrade.
+
+Inputs:
+- Conduit objects, policies, and SpellIndex sets.
+
+Outputs:
+- Contract state and contracted spell visibility.
+
+Owned State:
+- `_contracts`, `_initiated_index`, `_received_index`.
+- `_lesser_conduits`, `_parent_conduit`, `_root_conduit`.
+- `_policy` and `_dynamic` flags.
+
+Lifecycle/Cleanup:
+- Cleanup severs contracts and cleans lesser conduits.
+
+Concurrency/Threading:
+- Internal RLock; contract creation uses ordered locking (per docstring).
+
+Invariants/Guarantees:
+- Ward owns and cleans all lesser conduits it links.
+- Peer links require dynamic mode and normal conduits.
+- `_convert_to_normal_conduit` requires a parent link and no children.
+
+Failure Modes:
+- RuntimeError for invalid policy or state transitions.
+- RuntimeError for self-linking, linking lesser conduits, or policy-gated links.
+- RuntimeError if `_sever_link` finds no contract to remove.
+
+Observability:
+- Logs via SafeLogger.
+
+Extension Points:
+- Policies and contract detail types.
+
+Key Files (C1):
+- `src/melder/aether/conduit/conduit_ward/conduit_ward.py`
+- `src/melder/aether/conduit/conduit_ward/policies/policies.py`
+- `src/melder/aether/conduit/conduit_ward/permissions/permissions.py`
+
+### Component: Creations and SpellSpace
+Purpose:
+- Instance lifecycle registry for Conduits and scoped spellspaces.
+
+Responsibilities:
+- Track instances by existence category.
+- Dispose instances during cleanup using a LIFO disposal stack.
+- Provide SpellSpace scoping for unique_per_spell_space.
+- Preserve/rebind the active Creations manager during lesser-to-normal upgrade.
+
+Inputs:
+- Instances created by Meld.
+
+Outputs:
+- Stored instances and cleanup errors (ExceptionGroup).
+
+Owned State:
+- Existence maps (unique, unique_per_scope, many, etc.).
+- Disposal stack (LIFO deque) and logger references.
+
+Lifecycle/Cleanup:
+- Cleanup drains the disposal stack (LIFO) and nulls internal maps.
+- SpellSpace cleanup resets scope and unregisters from owner.
+
+Concurrency/Threading:
+- RLock guarding instance maps.
+
+Invariants/Guarantees:
+- Creations is used by both normal and lesser conduits; behavior is driven by
+  conduit state and root-lineage wiring.
+- Disposal uses per-spell method lists in order (first method attempted).
+
+Failure Modes:
+- ExceptionGroup raised if any disposal errors occur.
+- SpellSpaceScopeError if scope is misused.
+- RuntimeError if conduit state is missing during Creations initialization.
+
+Observability:
+- Logs errors during cleanup and disposal attempts.
+
+Extension Points:
+- Disposal method names in Configuration.
+
+Key Files (C1):
+- `src/melder/aether/conduit/creations/creations.py`
+- `src/melder/aether/conduit/creations/creation.py`
+- `src/melder/aether/conduit/spell_space/spell_space.py`
+
+### Component: Meld Resolution Runtime
+Purpose:
+- Resolve and instantiate spells within a Conduit.
+
+Responsibilities:
+- Resolve spells by spell_id or by normalized (spell/spellframe/binding_name) keys.
+- Support root entry modes: spell_name (logical name), spell object, spellframe, or spell_id string.
+- Normalize per-call `spell_override` payloads (dict/list/tuple) into runtime-friendly maps.
+- Enforce reuse vs instantiate based on Existence, including EXISTING_CREATION spells returning stored objects.
+- Select creations container by Existence: shared lifetimes (unique, unique_per_conduit_cluster,
+  unique_per_conduit_lineage) use `spell._owner_creations`; per-conduit lifetimes
+  (unique_per_conduit, many, unique_per_spell_space) use caller creations.
+- Apply hooks and register instances into Creations.
+- Enforce spell validity and change-control gates.
+- Gate execution when ChangeControlManager marks a root dirty (if available).
+- Perform lazy structural/resolution validation when validity is UNKNOWN or GATED.
+
+Inputs:
+- Spellbook maps and spell identifiers (`spell_name`, `spell`, `spellframe`, `binding_name`).
+- Optional `spell_override` payloads (dict/list/tuple).
+
+Outputs:
+- Constructed instances.
+
+Owned State:
+- Spellbook map references and per-spell CreationContext caches/compiled lanes.
+
+Lifecycle/Cleanup:
+- Cleanup clears spellbook references and CreationContext caches.
+
+Concurrency/Threading:
+- Internal RLock guards Meld operations.
+
+Invariants/Guarantees:
+- At least one of `spell_name`, `spell`, or `spellframe` is required to resolve a target.
+- `spell` as a string is treated as a spell_id; `spell_name` is treated as a logical name key.
+- `spell_name` without an explicit spell/spellframe resolves via SpellInputUtils name normalization.
+- EXISTING_CREATION spells bypass the runtime and return the stored object.
+- Spells must be validated and not broken before execution.
+- Change control may block dirty roots.
+- Change-control checks are best-effort; failures to access change control do not block.
+- Gated validity triggers Phase 1-4 and Phase 5-11 reruns under spell lock.
+
+Failure Modes:
+- ValueError when no identity inputs are provided.
+- KeyError when a spell_id or lookup key cannot be resolved.
+- TypeError when `spell_override` has an unsupported shape.
+- RuntimeError for missing runtime state or EXISTING_CREATION spells without a backing instance.
+- SpellSpaceScopeError for unique_per_spell_space without an active spellspace.
+- MeldExecutionError for invalid spell state or dirty root gating.
+- HookExecutionError for hook failures.
+
+Observability:
+- Exceptions and SafeLogger errors.
+
+Extension Points:
+- Hook maps from Configuration.
+
+Key Files (C1):
+- `src/melder/aether/conduit/meld/meld.py`
+- `src/melder/aether/conduit/meld/creation_context/creation_context.py`
+
+### Component: SpellCrafter and Validation Pipeline
+Purpose:
+- Compile per-spell artifacts and validate correctness before resolution.
+
+Responsibilities:
+- Build requirements, symbolic graph, and local frames.
+- Classify ParameterDIShape for constructor sockets (single, collection, SpellMap, contracts).
+- Resolve SpellMap defaults and single/collection DI targets during Phase 3 graph construction.
+- Compile Phase 8-11 artifacts for spells with attached blueprints; existing-creation
+  spells bypass Phase 8-11 compilation.
+- Track `SpellCrafter._phase8_11_codegen_ir_dirty` as a spell-local export
+  freshness bit for phase8_11 IR snapshot updates.
+- Run validation strategies and record results.
+- Clean per-phase artifacts after resolution phases.
+- Register ChangeControlManager revalidator and rebuild component-of index.
+- Execute Phase 4 structural strategies (circular/self-dependency, SpellMap shape,
+  contract provider presence, binding resolution cycles, parameter policy).
+- Execute Phase 6 system strategies (cycle detection, graph consistency,
+  root reachability/coverage, contract graph cycles, root viability/scale).
+
+Inputs:
+- Spell objects and spellbook registries.
+
+Outputs:
+- Validation results and runtime artifacts on Spell.
+
+Owned State:
+- Per-spell artifacts (requirements, symbolic graph, resolution frame).
+- Validation results, root blueprints, and occurrence plans.
+
+Lifecycle/Cleanup:
+- Cleanup clears phase artifacts and detaches from Spell.
+
+Concurrency/Threading:
+- Internal RLock; PhaseScheduler coordinates parallel work items.
+
+Invariants/Guarantees:
+- Phase artifacts are keyed by `spell_index.current`.
+- Broken spells halt conjure via SpellbookValidationError.
+- Single-annotation DI resolves to exactly one class/creation spell (methods/lambdas excluded).
+- Collection DI (list[FrameType]) can resolve zero or more spells, including methods/lambdas.
+- SpellMap defaults must resolve to exactly one candidate.
+- `phase8_11` IR dirty state means "refresh export payload before read/compile",
+  not "runtime root requires revalidation."
+
+Failure Modes:
+- Validation errors captured in SpellValidationResult and SpellbookValidationError.
+- RuntimeError when single-annotation DI resolves to zero or multiple candidates.
+- RuntimeError when SpellMap defaults resolve to zero or multiple candidates.
+
+Observability:
+- Errors surfaced via exceptions and logger in Spellbook.
+
+Extension Points:
+- Custom validation strategies registered in SpellValidationSystem.
+
+Key Files (C1):
+- `src/melder/spellbook/spell_crafter/spell_crafter.py`
+- `src/melder/spellbook/spell_crafter/validation/validation_system.py`
+- `src/melder/spellbook/spell_crafter/system/spell_system_validation_system.py`
+
+### Component: DevOps Control Plane
+Purpose:
+- Track lineage validity, per-conduit resolution validity, dirty roots, and pending changes.
+
+Responsibilities:
+- Maintain SpellSystemStates registry, SpellSystemState entries, and per-conduit ConduitResolutionState.
+- Track dirty roots and pending changes in ChangeControlManager.
+- Aggregate incident/change control in DevOpsManager.
+- Revalidate dirty roots via registered callback outside the lock.
+- DevOpsManager and ChangeControlManager are per-frame; per-conduit resolution validity lives in SpellSystemStates._resolution_by_conduit_id. EVIDENCE: src/melder/aether/aetheric_frame.py:__init__ + src/melder/aether/dev_ops/spell_system_states/spell_system_states.py:get_or_create_conduit_resolution_state.
+- RiskManager tracks per-conduit risk and toggles Spellbook validation gating. EVIDENCE: src/melder/aether/dev_ops/risk_manager/risk_manager.py:register_conduit + on_resolution_validity_change.
+
+Inputs:
+- SpellIndex/Spell registrations and dependency updates.
+- Conduit ids, per-conduit validity updates, and system diagnostics (Phases 5-11).
+
+Outputs:
+- Lineage validity and dirty-root state used by Meld gates.
+- Per-conduit resolution validity and diagnostics surfaced by SpellSystemStates.
+
+Owned State:
+- `SpellSystemStates` indexes, dirty sets, and `_resolution_by_conduit_id`.
+- `ConduitResolutionState` validity maps, diagnostics, and dirty flags.
+- `ChangeControlManager` pending changes and dirty roots.
+- `DevOpsManager` incident and change control managers.
+- `RiskManager` per-conduit risk sets and spellbook gating state. EVIDENCE: src/melder/aether/dev_ops/risk_manager/risk_manager.py:__init__ + _conduit_states.
+
+Lifecycle/Cleanup:
+- Cleanup is idempotent and releases references.
+
+Concurrency/Threading:
+- RLocks guard state mutations.
+
+Invariants/Guarantees:
+- Registering a lineage marks it dirty.
+- Dirty roots for a conduit can block Meld execution.
+- `revalidate_dirty_roots(conduit_id, ...)` returns early without dirty roots or a revalidator for that conduit.
+- Successful revalidation clears dirty roots and disables monitoring for that conduit.
+- DevOps dirty roots are conduit-scoped revalidation state and are separate from
+  SpellCrafter `phase8_11` IR freshness dirty tracking.
+
+Failure Modes:
+- ValueError for invalid or missing ids.
+- RuntimeError when SpellSystemStates is cleaned/unavailable for state access.
+
+Observability:
+- Exceptions; minimal internal logging.
+
+Extension Points:
+- Revalidation hooks in ChangeControlManager.
+
+Key Files (C1):
+- `src/melder/aether/dev_ops/dev_ops_manager.py`
+- `src/melder/aether/dev_ops/spell_system_states/spell_system_states.py`
+- `src/melder/aether/dev_ops/spell_system_states/spell_system_state.py`
+- `src/melder/aether/dev_ops/spell_system_states/conduit_resolution_state.py`
+- `src/melder/aether/dev_ops/change_control_manager/change_control_manager.py`
+
+### Component: Logging and Initialization Helpers
+Purpose:
+- Provide safe logging adapters and early initialization helpers.
+
+Responsibilities:
+- Wrap stdlib or channel loggers in SafeLogger.
+- Resolve logger factories for Spellbook and Aether.
+
+Inputs:
+- Logger instances or logger factories.
+
+Outputs:
+- SafeLogger instances.
+
+Owned State:
+- SafeLogger holds raw logger reference and level.
+
+Lifecycle/Cleanup:
+- SafeLogger cleanup releases the wrapped logger reference.
+
+Concurrency/Threading:
+- SafeLogger uses no explicit locking; underlying logger handles threading.
+
+Invariants/Guarantees:
+- SafeLogger never raises during init for None logger.
+
+Failure Modes:
+- TypeError if logger is not a supported type.
+
+Observability:
+- SafeLogger routes messages with or without masking.
+
+Extension Points:
+- Configuration logger factory.
+
+Key Files (C1):
+- `src/melder/utilities/logger/safe_logger.py`
+- `src/melder/utilities/helpers/init_helpers.py`
+
+### Component: PhaseScheduler and UnitOfWork Orchestration
+Purpose:
+- Coordinate multi-phase execution across spells.
+
+Responsibilities:
+- Register phases with factories producing UnitOfWork.
+- Manage worker threads and a shared cancellation signal.
+- Enforce phase barriers and timeouts.
+
+Inputs:
+- Spellbook and Configuration.
+
+Outputs:
+- Phase results (UnitOfWork sequences).
+
+Owned State:
+- Worker threads, queue, cancellation signal.
+- Phase registry and order.
+
+Lifecycle/Cleanup:
+- Cleanup cancels workers, joins threads, and clears registries.
+
+Concurrency/Threading:
+- Dedicated worker threads and shared queue.
+
+Invariants/Guarantees:
+- One-shot usage; cleaned scheduler is unusable.
+
+Failure Modes:
+- PhaseTimeoutError or PhaseExecutionError on failures.
+
+Observability:
+- Exceptions raised to caller.
+
+Extension Points:
+- Additional phases or alternative UnitOfWork factories.
+
+Key Files (C1):
+- `src/melder/utilities/synchronization/phase_scheduler.py`
+
+## C2 Subcomponents Catalog
+
+### Subcomponent: Runtime Warning Guardrails
+Parent Component: Public API and Runtime Guardrails
+Purpose:
+- Warn on unsupported Python versions and GIL mode.
+Contract/Interface:
+- `warnings.warn` used for soft warnings.
+Data Structures:
+- None.
+Concurrency/Threading:
+- Import-time only.
+Key Files (C1):
+- `src/melder/__init__.py`
+
+### Subcomponent: Registration Guard Sentinel
+Parent Component: Public API and Runtime Guardrails
+Purpose:
+- Block internal objects from being bound as spells.

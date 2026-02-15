@@ -28,21 +28,37 @@ Required post-compaction sequence
 5) Read `agent_onboarding/agent/engineer/SKILLS.md` in full order.
 5a) Read `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md`.
 6) Re-read `AGENTS.MD`, `SKILLS.MD`, `WORKFLOW.md`, and `CONTEXT_COMPACTION.md`.
-6a) Optional bootstrap for onboarding docs: run one command
+6a) Optional bootstrap for onboarding docs: run the relevant command(s)
+    - Build parallel chunk dump (Windows):
+      `context_compass/agent_onboarding/agent/general/skills/build_parallel_read_onboarding_dump.cmd`
+    - Build parallel chunk dump (Linux/Bash):
+      `bash context_compass/agent_onboarding/agent/general/skills/build_parallel_read_onboarding_dump.sh`
+    - Validate parallel chunk dump (Windows):
+      `context_compass/agent_onboarding/agent/general/skills/validate_parallel_read_onboarding_dump.cmd`
+    - Validate parallel chunk dump (Linux/Bash):
+      `bash context_compass/agent_onboarding/agent/general/skills/validate_parallel_read_onboarding_dump.sh`
+    - Read one chunk by ordinal (Windows):
+      `context_compass/agent_onboarding/agent/general/skills/read_parallel_read_onboarding_chunk.cmd -ChunkNumber <N> -ValidateFirst`
+    - Read one chunk by ordinal (Linux/Bash):
+      `bash context_compass/agent_onboarding/agent/general/skills/read_parallel_read_onboarding_chunk.sh --chunk-number <N> --validate-first`
     - Windows/PowerShell:
       `powershell -NoProfile -ExecutionPolicy Bypass -File context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.ps1`
     - Windows wrapper (no execution-policy friction):
       `context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.cmd`
     - Linux/Bash:
       `bash context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.sh`
-    - Build dump once (Windows):
-      `context_compass/agent_onboarding/agent/general/skills/build_onboarding_dump.cmd`
-    - Build dump once (Linux):
-      `bash context_compass/agent_onboarding/agent/general/skills/build_onboarding_dump.sh`
-    Both commands read the canonical readset in
+    These commands read the canonical readset in
     `context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt`.
-    Optional no-script path: read prebuilt dump
-    `context_compass/agent_onboarding/agent/general/skills/onboarding_read_dump.txt`.
+    Parallel dump manifest/chunk artifacts live at:
+    `context_compass/agent_onboarding/parallel_read_onboarding_dump/manifest.txt`
+    and `context_compass/agent_onboarding/parallel_read_onboarding_dump/onboarding_read_XX`.
+    Validation must enforce `--max-age-minutes` freshness and
+    SHA256 matching for source manifest, source files, and chunk files.
+    Dump-consumption rule when using the dump bootstrap:
+    - read `onboarding_read_XX` in sequential `500`-line chunks
+      from chunk number `1` through final chunk (no skips),
+    - use `read_parallel_read_onboarding_chunk.*` helpers or equivalent chunked
+      commands that emit explicit chunk metadata/sentinels.
 7) Re-open `attention_board.md` and process rows with `reread=REQUIRED`.
 8) Re-open active tickets and verify their `Notes` and `Context / Handoff Summary`.
 9) Request certification and wait for exact user approval phrase:
@@ -59,8 +75,13 @@ FILES_REREAD:
 - <active ticket path>
 - <active ticket path>
 ONBOARDING_READSET:
-- manifest: context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt
-- script: <script used, e.g. context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.ps1 or context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.sh>
+- manifest: <context_compass/agent_onboarding/parallel_read_onboarding_dump/manifest.txt OR context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt for direct-readset fallback>
+- script: <script used, e.g. context_compass/agent_onboarding/agent/general/skills/validate_parallel_read_onboarding_dump.ps1 + read_parallel_read_onboarding_chunk.ps1, or context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.ps1>
+DUMP_CHUNK_COVERAGE:
+- mode: <parallel_dump|direct_readset>
+- chunk_size: <500 when mode=parallel_dump>
+- total_chunks: <N when mode=parallel_dump>
+- consumed_chunk_numbers: <1..N when mode=parallel_dump>
 READ_INTEGRITY_PROOF:
 - <path>: <concrete rule callout>
 - <path>: <concrete rule callout>
@@ -73,6 +94,7 @@ Attestation contract
 - If attestation cannot be completed, stop and ask the user for instructions.
 - Parallel/bulk reads are allowed, but files must be substantively read; marker-only loops are non-compliant.
 - When the onboarding readset script is used, do not enumerate every onboarding file in `FILES_REREAD`; list active ticket paths there and include the readset reference in `ONBOARDING_READSET`.
+- When dump bootstrap is used, attestation must include `DUMP_CHUNK_COVERAGE` proving sequential full coverage at chunk size `500`.
 
 Execution gate
 - If any required item above is incomplete, do not proceed.

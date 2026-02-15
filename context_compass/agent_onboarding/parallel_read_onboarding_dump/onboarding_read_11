@@ -1,0 +1,500 @@
+﻿- `profiles/` contains repository-specific policy overlays.
+- `config/` contains runtime-style policy switches (including microcycle mode).
+
+Rules
+- Finish TODOs here before starting new feature work.
+- Add new plans or decisions here as they arise.
+- Move finished items to the matching completed folder (`epics/completed/`,
+  `stories/completed/`, `tasks/completed/`) with a short summary and date.
+- Use `attention_board.md` as canonical routing state for active work.
+- Keep a `## Notes` section in active tickets and append evidence-backed
+  findings (`path:start_line-end_line`, use `start=end` for one-line evidence)
+  during execution as each meaningful finding occurs.
+- UNKNOWN is the default claim state until evidence promotes it to FACT.
+- Git commands are active-only; certification must include environment (`active` or `inactive`).
+
+DO NOT ASSUME / Unknowns Gate
+Rule: No Unverified Claims.
+Any statement that is not directly supported by evidence must be treated as UNKNOWN.
+
+Evidence means at least one of:
+- A specific source file reference (preferred: file + symbol/method/class name).
+- A citation to an explicit, already-verified artifact (e.g., a prior approved doc section).
+
+If not evidenced => UNKNOWN.
+
+UNKNOWN items must be explicitly labeled UNKNOWN (or added to an Unknowns section).
+UNKNOWN items must be investigated by reading the relevant source(s).
+If investigation cannot be completed (missing source access, ambiguity, or time),
+the item must remain UNKNOWN and must not be promoted to fact.
+
+No reasonable assumptions.
+Do not infer behavior from naming, patterns, conventions, or typical frameworks.
+Only the code/docs count.
+
+When unsure:
+- Mark it UNKNOWN.
+- Identify the most likely evidence target (file + symbol).
+- Investigate, then update the doc (or leave it UNKNOWN).
+
+Files
+- `attention_board.md` - canonical active routing board (`work_item/status/next/ticket/reread`).
+- `00_overview.md` - optional high-level summary pointer (not canonical execution memory).
+- `AGENTS.MD` - local agent rules for this directory.
+- `SKILLS.MD` - ticket-writing guidance and deep descriptive model.
+- `WORKFLOW.md` - epic/story/task lifecycle and tracking rules.
+- `CONTEXT_COMPACTION.md` - context compaction and handoff policy.
+- `agent_onboarding/` - required onboarding docs (general + engineer) for agent behavior and execution standards.
+- `architecture/` - C4 architecture docs for src and tests.
+- `components/` - C3/C2/C1 component docs for src and tests.
+- `examples/` - example tickets and doc references for modeling new work.
+- `templates/` - epic/story/task templates (GitHub-style).
+- `epics/` - active epic tickets.
+- `epics/completed/` - completed epic tickets with summary + date.
+- `stories/` - active story tickets.
+- `stories/completed/` - completed story tickets with summary + date.
+- `tasks/` - active task tickets.
+- `tasks/completed/` - completed task tickets with summary + date.
+- `completed/` - legacy completed ticket archive (pre-split).
+
+Packaging Model
+- `core/`:
+  - Canonical reusable mechanics that can be shared across repositories.
+  - Keep implementation-neutral language where possible.
+- `profiles/`:
+  - Local policy overlays, quality bars, and repo constraints.
+  - Keep profile notes pragmatic and override-focused.
+- `config/context_compass_config.yaml`:
+  - Toggle strict Ticket Microcycle enforcement on/off.
+  - Define relaxed mode behavior without deleting documentation discipline.
+
+Completed (legacy archive)
+- 2026-01-17 - Melder DI resolution contract docs (see `completed/2026-01-17_melder_di_resolution_contract_docs_task_completed.md`).
+- 2026-01-17 - Melder DI contract decision alignment (see `completed/2026-01-17_melder_di_contract_decisions_doc_alignment_task_completed.md`).
+- 2026-01-17 - Melder scan bind module work (see `completed/2026-01-17_melder_scan_bind_module_task_completed.md`).
+- 2026-01-18 - Melder src architecture doc (see `completed/2026-01-18_melder_src_architecture_doc_task_completed.md`).
+- 2026-01-18 - Melder src components doc (see `completed/2026-01-18_melder_src_components_doc_task_completed.md`).
+===== END FILE: context_compass/README.md =====
+===== BEGIN FILE: context_compass/skills/agent_stance.md =====
+# Agent Stance and Tone (Skill)
+
+## Team Stance
+- Act as an active partner in building and improving the system.
+- Speak as "we" when aligning on goals; avoid performative warmth.
+- Show diligence and real effort; avoid handwaving.
+
+## Recommendations (Conditional)
+- Provide pros/cons only when there are real tradeoffs or when the user asks for options.
+- Otherwise, keep responses short and execution-oriented.
+
+## Tone Rules
+- Be direct and technical. No polite padding, no motivational fluff.
+- Do not mirror insults; stay professional and blunt.
+- Professional baseline only when comparing quality or practice.
+
+## Evidence Discipline
+- State what is known, what is uncertain, and the next verification step.
+- Prefer concrete sources and explicit file references.
+===== END FILE: context_compass/skills/agent_stance.md =====
+===== BEGIN FILE: context_compass/skills/context_gold.md =====
+# Context Is Gold (Skill)
+
+## Priority
+- Treat durable context as the highest priority for this repo.
+- Preserve and enrich it before and after work.
+
+## Re-entry Ritual (Required)
+- After context compaction or a fresh session, read:
+  - `context_compass/architecture/src_architecture.md`
+  - `context_compass/components/src_components.md`
+- Review the diagrams and information sources before making changes.
+
+## Behavior
+- Update "Context / Handoff Summary" in active tickets.
+- Keep documentation grounded in source evidence.
+- Do not handwave; record unknowns and next verification step.
+===== END FILE: context_compass/skills/context_gold.md =====
+===== BEGIN FILE: context_compass/skills/documentation_standards.md =====
+# Documentation Standards (Skill)
+
+## Purpose
+Architecture and components docs must be deep enough to reorient from a blank slate
+without relying on memory.
+
+## Core Rules
+- No handwaving. Every claim must be grounded in source evidence or marked as unknown.
+- Use explicit entrypoints, flows, and ownership boundaries.
+- Record lifecycle and cleanup order for each core component.
+- Capture invariants, failure modes, and concurrency constraints.
+- Keep C4 (architecture) and C3/C2/C1 (components) consistent.
+- Maintain ASCII and Mermaid diagrams for key flows.
+
+## Required Sections (Architecture)
+- Scope and Intent
+- System Context and Boundaries
+- Entrypoints and Boot Sequence
+- Major component responsibilities and interactions
+- Invariants, failure modes, and cleanup rules
+- Evidence and information sources
+
+## Required Sections (Components)
+- C3 components with responsibilities and contracts
+- C2 subcomponents with wiring and data structures
+- C1 code map for entrypoints and core files
+- Method-level call flows for core behaviors
+
+## Evidence Discipline
+- Cite concrete file paths for claims.
+- Add "needs verification" for any assumption.
+- Update info sources when new files are used.
+===== END FILE: context_compass/skills/documentation_standards.md =====
+===== BEGIN FILE: context_compass/skills/mrp_policy.md =====
+# MRP Policy (Skill)
+
+## MRP (Most Reasonable Product)
+- **Definition:** the smallest *reasonable* product that is coherent and trustworthy as a system.
+- **Minimums:** minimum feature set **and** minimum system qualities to avoid a trap, but never at the cost of
+  durable architecture. "Reasonable" means we do the work once and avoid rework.
+- **Emphasis:** correctness of the core experience + durability (clear boundaries, predictable behavior, basic operability).
+- **Ship rule:** it works reliably for intended use, and future growth will not require rewriting the core.
+
+## MVP (Minimum Viable Product) - Disallowed
+- MVP is optimized for speed to validate demand, not robustness.
+- In this repo MVP is disallowed. Do not trade core quality for speed.
+
+## MLP (Most Lovable Product) - UI Only
+- MLP focuses on delight, polish, and adoption.
+- Allowed only for UI/UX tasks and only after the MRP core is solid.
+
+## Trade-offs at a Glance
+- MVP: fastest learning, highest internal-debt risk (not allowed here).
+- MRP: slower upfront than MVP, lowest chance of a dead-end core.
+- MLP: strong adoption, higher design/polish cost (UI only).
+
+## Decision Heuristic
+- If uncertainty is foundation reliability, choose MRP.
+- If success depends on love/retention/referrals, apply MLP after MRP.
+- Default to MRP when in doubt.
+===== END FILE: context_compass/skills/mrp_policy.md =====
+===== BEGIN FILE: context_compass/architecture/README.md =====
+# Architecture Docs (C4 Mapping)
+
+## Purpose
+This folder is the **system-level map** (C4) for the repo.
+It exists so a human or AI agent can:
+- re-orient from a blank slate,
+- rebuild the *correct* initialization + lifecycle ordering,
+- and avoid inventing behavior during refactors.
+
+These docs are intended to survive context compaction and handoffs.
+
+## Where to Start (Agent-Friendly)
+If you’re dropped into the repo with no context:
+1. `architecture/src_architecture.md` — **C4** system boundaries, boot sequence, invariants, failure modes.
+2. `components/src_components.md` — **C3/C2/C1** ownership map, wiring tables, call flows, code map.
+3. `WORKFLOW.md` — how work is tracked (epic/story/task) and handed off.
+4. `documentation_standards.md` — the hard rules for editing docs without degrading accuracy.
+
+## Reader Map
+Use this as a “jump list” instead of reading everything linearly.
+
+### If you are trying to…
+- **Bootstrap the runtime / bring the system up**
+    - Read: `src_architecture.md → Entrypoints and Runtime Guardrails`
+    - Then: `src_architecture.md → Boot and Configuration Sequence`
+    - Then: `src_components.md → Method-Level Call Flows (C1)`
+
+- **Find the real entrypoint and global singletons**
+    - Read: `src_architecture.md → Entrypoints and Runtime Guardrails`
+    - Then: `src_components.md → Public API + Spectrum Root`
+
+- **Understand lifecycle + cleanup (what owns what)**
+    - Read: `src_architecture.md → Ownership, Lifecycle, and Cleanup`
+    - Then: `src_components.md → Lifecycle/Cleanup per component`
+
+- **Debug why something “won’t run”**
+    - Read: `src_architecture.md → Failure Modes and Error Paths`
+    - Then: `src_components.md → Runtime Guardrails`
+
+- **Change / add a subsystem**
+    - Read: `src_architecture.md → System Boundary` + `Extension Points`
+    - Then: `src_components.md → Component Catalog` + `Wiring Tables`
+
+## Agent Rebuild Playbook (High-Level)
+This is the minimum *procedural* sequence an agent should follow to rebuild or simulate the runtime shape.
+
+**Important:** exact API names / signatures must be verified in code (Unknowns Gate). The safest anchors are:
+- `components/src_components.md → Method-Level Call Flows (C1)`
+- `components/src_components.md → C1 Code Map (Core)`
+
+### 1) Confirm runtime guardrails (don’t fight the runtime)
+Before doing anything else, find and read the runtime checks in the public entrypoint module(s).
+Typical checks include:
+- Python version gating
+- free-threaded / nogil gating
+
+### 2) Import the package and locate the root singleton (if any)
+Most systems define a root object responsible for configuration + singleton publication.
+If a global is created at import time, treat it as the boot boundary.
+
+### 3) Configure once (freeze config, publish singletons)
+- Build the configuration object(s).
+- Call the one-time configure pipeline.
+- Ensure singletons/resources/builders are published **only after** configuration completes.
+
+### 4) Create the primary orchestration node(s)
+Create the “top-level runtime container” (whatever owns groups/registries).
+This typically allocates registries and maintenance/default sub-scopes.
+
+### 5) Create a working scope and workers
+Within a scope (group/project/session):
+- create pools,
+- create agents/workers,
+- register jobs/tools/actions,
+- then submit work.
+
+### 6) Validate teardown order
+Rebuild isn’t “done” unless teardown works.
+Verify cleanup is ordered and idempotent:
+- stop/disable processing first,
+- detach/restore patches last,
+- clear registries,
+- then tear down logging.
+
+## C4 Mapping (User-Defined)
+- **C4:** Architecture (system-level view)
+- **C3:** Components (major subsystems)
+- **C2:** Subcomponents (internal building blocks)
+- **C1:** Code (key files and entry points)
+
+## Documents
+- `architecture/src_architecture.md` — system architecture for `src/`.
+- `architecture/tests_architecture.md` — system architecture for `tests/`.
+- `components/src_components.md` — component map for `src/`.
+- `components/tests_components.md` — component map for `tests/`.
+
+## How to Gather Architecture Information
+Use this sequence and record sources in the docs:
+1. Read project goals and constraints in `context_compass/README.md` and `context_compass/AGENTS.MD`.
+2. Identify entry points and public APIs (look for package `__init__`, CLI, or top-level modules).
+3. Scan folder structure for major subsystems (`src/` and `tests/`).
+4. Use `rg` to map key domains, names, and dependencies (search for class names, registries, or factory patterns).
+5. Identify data flows: inputs, outputs, persistence, and side effects.
+6. Identify lifecycle boundaries (init, cleanup, worker ownership, resource management).
+7. Capture invariants and error paths that define the architecture.
+
+## DO NOT ASSUME / Unknowns Gate
+Rule: No Unverified Claims.
+Any statement that is not directly supported by evidence must be treated as UNKNOWN.
+
+Evidence means at least one of:
+- A specific source file reference with line location (preferred: file + symbol/method/class name + line number).
+- A citation to an explicit, already-verified artifact (e.g., a prior approved doc section).
+
+If not evidenced => UNKNOWN.
+
+UNKNOWN items must be explicitly labeled UNKNOWN (or added to an Unknowns section).
+UNKNOWN items must be investigated by reading the relevant source(s).
+If investigation cannot be completed (missing source access, ambiguity, or time),
+the item must remain UNKNOWN and must not be promoted to fact.
+
+No reasonable assumptions.
+Do not infer behavior from naming, patterns, conventions, or typical frameworks.
+Only the code/docs count.
+
+When unsure:
+- Mark it UNKNOWN.
+- Identify the most likely evidence target (file + symbol).
+- Investigate, then update the doc (or leave it UNKNOWN).
+
+## Update Cadence
+Update architecture docs when:
+- A new subsystem is introduced.
+- Major ownership or lifecycle changes occur.
+- Public API shape or boundaries shift.
+
+## Diagram Guidance
+Each architecture doc should include:
+- **ASCII Diagram:** fast scanning in plain text.
+- **Mermaid Diagram:** higher fidelity visualization.
+
+Keep diagrams honest:
+- show ownership and lifecycle edges ("creates", "owns", "cleans up"),
+- mark optional subsystems clearly,
+- and prefer clarity over completeness.
+
+## Examples
+See `context_compass/examples/example_architecture/` for reference structure.
+===== END FILE: context_compass/architecture/README.md =====
+===== BEGIN FILE: context_compass/components/README.md =====
+# Components Docs (C3/C2/C1)
+
+## Purpose
+Define components and subcomponents for `src/` and `tests/` using a consistent, durable structure.
+This is the detailed view that sits **under** the C4 architecture docs.
+
+If you’re onboarding (or you’re an AI agent dropped into the repo mid-stream), the intent is:
+- **C4** tells you “what the system *is*” and where the boundaries are.
+- **C3/C2/C1** tells you “who owns what”, “how it works internally”, and “where the code lives”.
+
+## Where to Start (Agent-Friendly)
+1. `architecture/src_architecture.md` (C4): system boundaries, boot sequence, invariants.
+2. `components/src_components.md` (C3/C2/C1): component responsibilities, wiring, call flows, code map.
+3. `WORKFLOW.md`: how tickets and handoffs are tracked over time.
+4. `documentation_standards.md`: the rules for adding/changing docs without degrading quality.
+
+## Mapping
+- **C3:** Components (major subsystems)
+- **C2:** Subcomponents (internal building blocks)
+- **C1:** Code (key files, entry points, symbol-level references)
+
+## Examples
+See `context_compass/examples/example_components/` for reference structure and tone.
+
+## How to Gather Component Information (Practical Steps)
+1. Enumerate major directories and modules in `src/` and `tests/`.
+2. Identify **component boundaries** (ownership, responsibilities, lifecycle, cleanup).
+3. For each component, list subcomponents and their **contracts**.
+4. Record **data structures**, **concurrency primitives**, and **cleanup rules**.
+5. Map key files and public entry points (C1) — prefer `path:Class.method` precision.
+6. Capture **risks**, **invariants**, **failure modes**, and **error paths**.
+7. Keep diagrams updated when you change flows (ASCII + Mermaid).
+
+## DO NOT ASSUME / Unknowns Gate
+Rule: No Unverified Claims.
+Any statement that is not directly supported by evidence must be treated as UNKNOWN.
+
+Evidence means at least one of:
+- A specific source file reference with line location (preferred: file + symbol/method/class name + line number).
+- A citation to an explicit, already-verified artifact (e.g., a prior approved doc section).
+
+If not evidenced => UNKNOWN.
+
+UNKNOWN items must be explicitly labeled UNKNOWN (or added to an Unknowns section).
+UNKNOWN items must be investigated by reading the relevant source(s).
+If investigation cannot be completed (missing source access, ambiguity, or time),
+the item must remain UNKNOWN and must not be promoted to fact.
+
+No reasonable assumptions.
+Do not infer behavior from naming, patterns, conventions, or typical frameworks.
+Only the code/docs count.
+
+When unsure:
+- Mark it UNKNOWN.
+- Identify the most likely evidence target (file + symbol).
+- Investigate, then update the doc (or leave it UNKNOWN).
+
+## Documents
+- `architecture/src_architecture.md` - C4 architecture for src.
+- `components/src_components.md` - components for src.
+- `components/tests_components.md` - components for tests.
+
+## Diagram Guidance
+Each components doc includes two baseline diagrams:
+- **ASCII Diagram:** fast scanning in plain text; keep it readable in a terminal.
+- **Mermaid Diagram:** higher fidelity for visualization; keep node names stable.
+
+Optional but recommended diagrams for complex systems:
+- A boot/configuration sequence diagram.
+- A cleanup/teardown sequence diagram.
+- A work/request execution path diagram (task vs deployment, etc.).
+
+## Maintenance Checklist (Lightweight)
+When you edit a doc:
+- Update any **Metadata → Updated** fields (if present).
+- Keep the **Table of Contents** in sync.
+- Update **Information Sources** when new code files are used as evidence.
+- If you add a new claim that you can’t verify yet, add it to **Unknowns**.
+===== END FILE: context_compass/components/README.md =====
+===== BEGIN FILE: context_compass/architecture/src_architecture.md =====
+# Src Architecture (C4)
+
+## Metadata
+- Doc ID: ARCH-SRC-2026-01-17
+- Status: in_progress
+- Owner:
+- Created: 2026-01-17
+- Updated: 2026-02-14
+
+## Table of Contents
+- Metadata
+- Scope and Intent
+- Documentation Quality Standard
+- DO NOT ASSUME / Unknowns Gate
+- Unknowns
+- Source Coverage and Evidence
+- Glossary and Core Terms
+- System Context (C4)
+- System Boundary and External Interfaces
+- Architecture Summary (C4)
+- Entrypoints and Runtime Guardrails
+- Boot and Configuration Sequence
+- Spellbook Root Responsibilities
+- Aether Global Singleton Responsibilities
+- Aetheric Frame Responsibilities
+- Conduit Lifecycle (Normal and Lesser)
+- Binding and Registration Pipeline
+- Resolution Styles and DI Shapes
+- DI Resolution Contract (Spec)
+- SpellCrafter and Validation Pipeline
+- Resolution and Meld Pipeline
+- Contracts, Policies, and Permissions
+- Existence and Scoping Model
+- Logging and Observability
+- Ownership, Lifecycle, and Cleanup
+- Operational Invariants
+- Failure Modes and Error Paths
+- Extension Points
+- Data Flows and Sequences
+- C3 and C2 Cross-Reference
+- C1 Code Map (Core Only)
+- Diagrams
+- Information Sources
+- Open Questions
+- Context / Handoff Summary
+- Appendix A: Deep Component Narratives (Core)
+- Appendix B: Detailed Sequences and Data Flows
+- Appendix C: Core File Inventory (Expanded)
+
+## Scope and Intent
+This document describes the Melder core architecture at the C4 level for
+`src/melder`. It focuses on system boundaries, runtime entrypoints,
+boot/configuration sequencing, and execution lifecycle for dependency
+resolution and cleanup. It is intended to stand on its own after context
+compaction.
+Melder is framed here as a Dependency Graph Runtime (DGR) with DI-style
+binding and resolution as a subset capability.
+
+In scope (core runtime):
+- Spellbook binding and conjure pipeline.
+- Aether global singleton and per-frame state.
+- Conduit runtime (normal and lesser), contracts, and policies.
+- SpellCrafter phases and validation pipeline.
+- Meld resolution runtime and Creations lifecycle manager.
+- Control-plane state (SpellSystemStates, change control, incidents).
+- Logging and cleanup contracts.
+
+Out of scope:
+- Tests and examples.
+- JSON sidecar metadata files (`__*.json`).
+- External docs beyond the codebase.
+
+## Documentation Quality Standard
+This document is durable context and must stand on its own.
+
+Rules:
+- No handwaving. Every claim is grounded in source evidence or marked as unknown.
+- Entry points and boot sequences are explicit and ordered.
+- Ownership, lifecycle, and cleanup ordering are explicit for core components.
+- Invariants, failure modes, and concurrency constraints are stated.
+- ASCII and Mermaid diagrams included for core flows.
+- Evidence list updated when new sources are used.
+
+## DO NOT ASSUME / Unknowns Gate
+Rule: No Unverified Claims.
+Any statement that is not directly supported by evidence must be treated as UNKNOWN.
+
+Evidence means at least one of:
+- A specific source file reference (preferred: file + symbol/method/class name).
+- A citation to an explicit, already-verified artifact (e.g., a prior approved doc section).
+
