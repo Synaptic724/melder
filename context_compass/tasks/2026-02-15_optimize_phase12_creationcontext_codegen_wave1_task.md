@@ -64,6 +64,15 @@ Phase12/CreationContext and validate with targeted profiler suites.
 
 ## Notes
 - DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: After the no-overrides inline lane landed, the shallow overrides hotspot profile still shows `creation_context._execute_with_overrides` and `patch_maps.apply_with_socket_shape` as top runtime overhead, and Phase12 call-chain highlights now point to `_phase12_executor` with `dict.update` as the dominant internal callee in targeted override lanes.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:1-23, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:24-40, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:819-988
+  IMPACT: Next wins are likely in targeted-override kwargs merge/runtime plumbing, not in no-overrides helper removal.
+  NEXT: Implement a targeted kwargs-merge specialization in Phase12 override codegen to reduce `dict.update` cost, then rerun repeated baseline/after timings.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
   TYPE: MEASURE
   CLAIM: The no-overrides shape-lane kwargs inline slice is retained: `_phase12_executor` no-targeted-override blocks now inline `_build_kwargs_no_overrides(...)` semantics directly, and repeated shallow overrides timings improved from baseline avg `16.1023ms` (`14.7660, 16.3306, 17.2102`) to post-change avg `14.4708ms` (`14.2484, 15.0098, 14.1543`) over matched 3-run windows while focused unit suites and both cprofile suites stayed green.
   EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:989-1177, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1396-1644, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:337-357, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py:1-1151, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:1-825

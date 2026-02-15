@@ -841,7 +841,7 @@ def _append_overrides_kwargs_inline_source(
     ):
         lines.append(
             f"{indent}kwargs_{step_index} = "
-            f"dict(override_values_{step_index}) if override_values_{step_index} else {{}}"
+            f"override_values_{step_index} if override_values_{step_index} else {{}}"
         )
         return
 
@@ -982,7 +982,39 @@ def _append_overrides_kwargs_inline_source(
 
     lines.extend([
         f"{indent}if override_values_{step_index}:",
-        f"{indent}    kwargs_{step_index}.update(override_values_{step_index})",
+        f"{indent}    override_values_count_{step_index} = len(override_values_{step_index})",
+        f"{indent}    if override_values_count_{step_index} == 1:",
+        (
+            f"{indent}        override_item_{step_index} = "
+            f"next(iter(override_values_{step_index}.items()))"
+        ),
+        (
+            f"{indent}        kwargs_{step_index}[override_item_{step_index}[0]] = "
+            f"override_item_{step_index}[1]"
+        ),
+        f"{indent}    elif override_values_count_{step_index} == 2:",
+        (
+            f"{indent}        override_items_iter_{step_index} = "
+            f"iter(override_values_{step_index}.items())"
+        ),
+        (
+            f"{indent}        override_item_a_{step_index} = "
+            f"next(override_items_iter_{step_index})"
+        ),
+        (
+            f"{indent}        kwargs_{step_index}[override_item_a_{step_index}[0]] = "
+            f"override_item_a_{step_index}[1]"
+        ),
+        (
+            f"{indent}        override_item_b_{step_index} = "
+            f"next(override_items_iter_{step_index})"
+        ),
+        (
+            f"{indent}        kwargs_{step_index}[override_item_b_{step_index}[0]] = "
+            f"override_item_b_{step_index}[1]"
+        ),
+        f"{indent}    else:",
+        f"{indent}        kwargs_{step_index}.update(override_values_{step_index})",
     ])
 
 
