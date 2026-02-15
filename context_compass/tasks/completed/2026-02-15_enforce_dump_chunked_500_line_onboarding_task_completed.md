@@ -1,9 +1,14 @@
+Completed: 2026-02-15
+Summary: Implemented canonical parallel onboarding dump flow (`onboarding_read_XX`) with non-Python build/validate/read tooling.
+Summary: Wired onboarding policies to enforce parallel read-list defaults for fresh sessions and compaction re-entry, with fallback rules.
+Summary: Rebuilt and validated dump artifacts (`chunk_size=500`, `total_chunks=18`) with evidence captured in artifacts.
+
 # Task: Enforce Dump-First 500-Line Chunked Onboarding (Non-Performative)
 
 ## Metadata
 - Task ID: TASK-2026-02-15-enforce-dump-chunked-500-line-onboarding
 - Story: standalone
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-15
@@ -76,7 +81,7 @@ Make onboarding/re-onboarding dump consumption deterministic and non-performativ
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
+- [x] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
 - DATE: 2026-02-15
@@ -151,6 +156,30 @@ Make onboarding/re-onboarding dump consumption deterministic and non-performativ
   NEXT: Ask user to run the Bash command in a Linux-capable environment if cross-platform runtime confirmation is required.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Policy coverage still has a routing gap: `policy_router.md` and `user_approved_certification.md` do not explicitly require parallel dump read-list/chunk workflow for onboarding and post-compaction re-entry.
+  EVIDENCE: context_compass/agent_onboarding/agent/general/policies/policy_router.md:22-31, context_compass/agent_onboarding/agent/general/skills/user_approved_certification.md:6-15
+  IMPACT: Agents can follow certification gates without being forced through the canonical parallel read-list flow.
+  NEXT: Patch both policy files to mandate the parallel dump read-list workflow and compaction re-entry parity.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Policy wiring now enforces parallel read-list onboarding defaults and compaction parity across AGENTS/policy-router/certification docs, with direct-readset limited to explicit fallback conditions.
+  EVIDENCE: context_compass/AGENTS.MD:73-90, context_compass/agent_onboarding/agent/general/policies/policy_router.md:25-30, context_compass/agent_onboarding/agent/general/skills/user_approved_certification.md:15-20, context_compass/agent_onboarding/agent/general/skills/self_certification.md:8-32, context_compass/agent_onboarding/agent/general/SKILLS.md:49-75
+  IMPACT: Fresh sessions and post-compaction re-entry now share one explicit onboarding consumption contract: full sequential `onboarding_read_XX` coverage before certification.
+  NEXT: Rebuild/validate dump artifacts after policy text changes so manifest/chunk hashes remain current.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Post-policy-wiring rebuild/validate is successful with updated totals (`total_lines=8708`, `total_chunks=18`) and chunk boundary continuity (`chunk 1: 1-500`, `chunk 18: 8501-8708`).
+  EVIDENCE: context_compass/artifacts/2026-02-15_parallel_read_onboarding_validation.txt:48-76
+  IMPACT: Parallel dump artifacts remain valid after policy changes and are ready for canonical onboarding use.
+  NEXT: Request user acceptance for closure or continue with additional onboarding optimizations.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary
-Active: implementation and validation are complete for user-directed parallel-dump onboarding (`onboarding_read_XX`, non-Python validation); pending user acceptance/closure decision.
+Active: implementation and validation are complete for user-directed parallel-dump onboarding (`onboarding_read_XX`, non-Python validation) and policy wiring now enforces parallel read-list defaults for both fresh sessions and compaction re-entry; pending user acceptance/closure decision.

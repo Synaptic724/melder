@@ -1,5 +1,23 @@
-﻿| work_item | status | owner | blocker | next | ticket | updated | reread |
+﻿- Canonical detail lives in linked tickets.
+
+Attention details rule
+- Keep this board compact and operational.
+- Durable history belongs in ticket `## Notes`, not here.
+- Use evidence ranges in `EVIDENCE` (`path:start_line-end_line`).
+- Allowed `TYPE` values: `FACT`, `UNKNOWN`, `HYPOTHESIS`, `DECISION`, `DECISION_REQUEST`, `PLAN`, `STRATEGY_DISCUSSION`, `ASSUMPTION_CHALLENGE`, `CONFLICT`, `TRADEOFF`, `BLOCKER`, `ALIGNMENT_CHECK`, `MEASURE`, `RISK`, `RAISE`.
+- During ticket closure, run deterministic board sync (remove/replace active rows, prune stale details, add compact closed anchor, cap anchors).
+
+## Active Items
+| work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
+
+## Active Attention Details
+- none.
+
+## Recently Closed Anchors
+| work_item | status | owner | blocker | next | ticket | updated | reread |
+|---|---|---|---|---|---|---|---|
+| onboarding parallel dump enforcement | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_enforce_dump_chunked_500_line_onboarding_task_completed.md` | 2026-02-15 | REQUIRED |
 | onboarding dump missing docs expansion | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_add_missing_onboarding_skills_docs_to_onboarding_dump_task.md` | 2026-02-15 | REQUIRED |
 | onboarding single-command read bootstrap | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_add_single_powershell_onboarding_reonboarding_read_command_task.md` | 2026-02-15 | REQUIRED |
 | re-onboarding read integrity enforcement | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_enforce_reonboard_real_read_no_performative_compliance_task.md` | 2026-02-15 | REQUIRED |

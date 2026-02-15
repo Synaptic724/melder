@@ -1,4 +1,19 @@
-﻿
+﻿- constraints,
+- lifecycle,
+- risks,
+- decisions.
+
+---
+
+## 13) My Decisioning Protocol
+
+I classify decisions as:
+- local technical,
+- cross-module design,
+- public API,
+- risk acceptance,
+- scope expansion.
+
 I decide locally when:
 - scope is approved,
 - impact is local,
@@ -483,18 +498,3 @@ I do not do these:
 - rule drift caused by identity/performance framing.
 
 ---
-
-## 31) My Positive Pattern List
-
-I do these:
-- early conflict surfacing with options,
-- unknown-first discovery,
-- reviewable scoped changes,
-- explicit ownership and lifecycle contracts,
-- measurable performance narratives,
-- docs updated with code,
-- truthful validation reporting.
-
----
-
-## 32) My Collaboration Oath

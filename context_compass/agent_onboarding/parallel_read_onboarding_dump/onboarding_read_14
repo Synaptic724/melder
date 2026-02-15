@@ -1,4 +1,22 @@
-﻿## B8. Link and Sever Conduits
+﻿   - `spell.run_structural_phases()` runs under the per-spell lock.
+3) If per-conduit resolution validity is UNKNOWN/GATED:
+   - `spell._spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)` runs.
+
+## B6. Lesser Conduit Creation
+1) Parent Conduit fires pre-create hook.
+2) Constructs lesser Conduit with inherited Spellbook/Configuration.
+3) Wires root Creations and root conduit into lesser conduit.
+4) Links lesser into ConduitWard lineage tree.
+5) Fires activated and post-create hooks.
+
+## B7. Upgrade to Normal Conduit
+1) `upgrade_to_normal` verifies dynamic mode and lesser state.
+2) Preserves/rebinds the current Creations manager to the upgraded conduit state.
+3) Rewires Meld to the same Creations manager and converts ward state.
+4) Seeds resolution state from former root conduit.
+5) Registers conduit into Aether and ConduitCloud.
+
+## B8. Link and Sever Conduits
 1) `link(target)` verifies dynamic mode and delegates to ConduitWard.
 2) On success, `on_conduit_post_link` hook fires.
 3) `sever_link(target)` delegates to ConduitWard, then fires post-unlink hook.
@@ -480,21 +498,3 @@ Owned State:
 
 Lifecycle/Cleanup:
 - `cleanup()` tears down frames and resets singleton state.
-
-Concurrency/Threading:
-- Class-level RLock guards singleton initialization and updates.
-
-Invariants/Guarantees:
-- One Aether instance per interpreter.
-- Default frame exists when needed.
-
-Failure Modes:
-- ValueError for missing frames, duplicate registry entries, or not-found lookups.
-- TypeError for invalid input types (e.g., non-string frame names).
-- RuntimeError when singleton/frame registries are cleaned or unavailable.
-
-Observability:
-- Logs via SafeLogger.
-
-Extension Points:
-- Additional frame behaviors or registries.

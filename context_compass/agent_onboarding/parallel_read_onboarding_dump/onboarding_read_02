@@ -1,4 +1,11 @@
-﻿- Prevent low-quality ctx from cascading into higher-level summaries.
+﻿- agent_onboarding/agent/SKILLS.md
+===== END FILE: context_compass/agent_onboarding/agent/general/policies/policy_router.md =====
+===== BEGIN FILE: context_compass/agent_onboarding/agent/general/policies/ctx_autonomy_policy.md =====
+# ctx_autonomy_policy
+
+Purpose
+- Define how agents rank ctx quality across file, dir, component, and architecture layers.
+- Prevent low-quality ctx from cascading into higher-level summaries.
 
 Scope
 - Applies whenever an agent creates or refreshes file_ctx, dir_ctx, component_contexts, or architecture_context.
@@ -491,10 +498,3 @@ Repository layout
 - Repo root is the project root (this checkout).
 - Primary code lives under `src/` and tests under `tests/`.
 - Planning and onboarding live under `agent_onboarding/`, `epics/`, `stories/`,
-  `tasks/`, `templates/`, plus per-type archives in `epics/completed/`,
-  `stories/completed/`, and `tasks/completed/` (legacy `completed/` remains).
-
-Git handling (non-negotiable)
-- Git commands are allowed **only** when the user declares the session is `active` during certification.
-- If the user declares `inactive`, do not run git commands and ignore git workflow requirements (user handles git).
-- Certification must include the exact token `CERTIFY: APPROVED` and an explicit environment label (`active` or `inactive`).

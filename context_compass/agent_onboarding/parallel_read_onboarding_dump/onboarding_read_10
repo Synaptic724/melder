@@ -1,4 +1,22 @@
-﻿* Over-couples tests to implementation.
+﻿
+* Asserts “it didn’t crash” with no contract outcome.
+* Asserts values that are incidental.
+
+> We avoid these unless they are stepping stones toward higher-rank tests.
+
+#### Rank F — Attribute/Existence Checks (Very Low Value)
+
+This is the bottom. These tests almost always waste time and fail for harmless refactors.
+
+**Examples (bad):**
+
+* `assert obj._some_private_field is not None` (unless the field is part of a documented public contract, which is rare)
+* `assert hasattr(obj, "x")` / `assert "x" in obj.__dict__` / `assert isinstance(obj._pending_changes, dict)`
+
+**Why this is bad:**
+
+* Doesn’t prove correctness.
+* Over-couples tests to implementation.
 * Encourages “coverage mirage.”
 
 **Only acceptable when:**
@@ -480,21 +498,3 @@ Before compaction, review these files in order:
 - Current state and progress (what is done vs remaining).
 - Key decisions and rationale.
 - Known risks and active blockers.
-- Immediate next steps (1-3 concrete actions).
-- References to any critical files or paths.
-
-## Post-Compaction Verification
-After compaction, re-open the required review set and confirm:
-- `agent_onboarding/agent/general/skills/compaction_requirements.md` has been re-applied before any action.
-- A `REONBOARD: COMPLETE` attestation was posted before any action.
-- `attention_board.md` was re-opened and still matches active ticket state.
-- The active tickets still represent the correct plan.
-- The next steps are unambiguous.
-===== END FILE: context_compass/CONTEXT_COMPACTION.md =====
-===== BEGIN FILE: context_compass/README.md =====
-# context_compass
-
-Purpose
-- Central place for planning, refactor notes, and architectural decisions.
-- Capture new ideas from our discussions so they are easy to resume later.
-- `core/` contains reusable process mechanics.

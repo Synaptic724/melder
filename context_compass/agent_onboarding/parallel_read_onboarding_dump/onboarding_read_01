@@ -151,7 +151,7 @@ Parallel reading allowance
 - Marker-only reread output (for example, `$null = Get-Content ...` + `REREAD:` lines) is not valid completion evidence.
 - Parallel/bulk reads must include substantive read integrity (concrete rule callouts) before certification.
 
-Parallel-dump onboarding bootstrap (optional)
+Parallel-dump onboarding bootstrap (default)
 - Build parallel chunk dump (Windows):
   `context_compass/agent_onboarding/agent/general/skills/build_parallel_read_onboarding_dump.cmd`
 - Build parallel chunk dump (Linux/Bash):
@@ -177,6 +177,7 @@ Parallel-dump onboarding bootstrap (optional)
   - consume `onboarding_read_XX` in sequential fixed-size chunks (`500` lines),
   - process chunk numbers `1..N` before certification,
   - include chunk coverage proof in attestation/read-integrity evidence.
+- The same sequential chunk-consumption rule applies after compaction/handoff re-entry.
 - Direct readset fallback (Windows/PowerShell):
   `powershell -NoProfile -ExecutionPolicy Bypass -File context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.ps1`
 - Direct readset fallback (Windows no-policy wrapper):
@@ -385,6 +386,12 @@ Certification gate (mandatory)
 Required flow
 - Read `AGENTS.MD` and directory-local `AGENTS.MD` (if present).
 - Follow `agent_onboarding/agent/general/SKILLS.md` and career-specific additions.
+- For onboarding/re-onboarding, use the canonical parallel read-list workflow:
+  - build `parallel_read_onboarding_dump`,
+  - validate manifest/source/chunk integrity,
+  - consume `onboarding_read_XX` sequentially from chunk `1..N`.
+- After any compaction/handoff/fresh-session re-entry, apply the same parallel read-list workflow again before any non-onboarding action.
+- Only use direct readset fallback when the parallel dump path is unavailable; still complete the full readset before certification.
 - Read `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md`
   and apply its active-partner + performance-engineering rules.
 - Route active work from `attention_board.md` and keep detailed state in ticket `## Notes`.
@@ -491,10 +498,3 @@ Workflow
 
 References
 - agent_onboarding/agent/general/examples/readme.md
-- agent_onboarding/agent/SKILLS.md
-===== END FILE: context_compass/agent_onboarding/agent/general/policies/policy_router.md =====
-===== BEGIN FILE: context_compass/agent_onboarding/agent/general/policies/ctx_autonomy_policy.md =====
-# ctx_autonomy_policy
-
-Purpose
-- Define how agents rank ctx quality across file, dir, component, and architecture layers.

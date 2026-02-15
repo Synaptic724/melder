@@ -46,7 +46,7 @@ Parallel reading allowance
 - Marker-only reread output (for example, `$null = Get-Content ...` + `REREAD:` lines) is not valid completion evidence.
 - Parallel/bulk reads must include substantive read integrity (concrete rule callouts) before certification.
 
-Parallel-dump onboarding bootstrap (optional)
+Parallel-dump onboarding bootstrap (default)
 - Build parallel chunk dump (Windows):
   `context_compass/agent_onboarding/agent/general/skills/build_parallel_read_onboarding_dump.cmd`
 - Build parallel chunk dump (Linux/Bash):
@@ -72,6 +72,7 @@ Parallel-dump onboarding bootstrap (optional)
   - consume `onboarding_read_XX` in sequential fixed-size chunks (`500` lines),
   - process chunk numbers `1..N` before certification,
   - include chunk coverage proof in attestation/read-integrity evidence.
+- The same sequential chunk-consumption rule applies after compaction/handoff re-entry.
 - Direct readset fallback (Windows/PowerShell):
   `powershell -NoProfile -ExecutionPolicy Bypass -File context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.ps1`
 - Direct readset fallback (Windows no-policy wrapper):

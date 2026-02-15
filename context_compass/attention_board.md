@@ -15,14 +15,14 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| onboarding parallel dump enforcement | in_progress | codex | none | request user acceptance for closure after completed build/validate/doc alignment | `context_compass/tasks/2026-02-15_enforce_dump_chunked_500_line_onboarding_task.md` | 2026-02-15 | REQUIRED |
 
 ## Active Attention Details
-- DATE: 2026-02-15 | TYPE: FACT | CLAIM: Parallel dump onboarding implementation is complete: build/validate/read scripts are active, policy docs now reference `parallel_read_onboarding_dump` + `onboarding_read_XX`, and validation evidence confirms chunked coverage at `500` lines. | EVIDENCE: `context_compass/tasks/2026-02-15_enforce_dump_chunked_500_line_onboarding_task.md:27-34`, `context_compass/tasks/2026-02-15_enforce_dump_chunked_500_line_onboarding_task.md:61-66`, `context_compass/tasks/2026-02-15_enforce_dump_chunked_500_line_onboarding_task.md:130-144` | NEXT: get user acceptance; if approved, close ticket and run deterministic attention-board closure sync.
+- none.
 
 ## Recently Closed Anchors
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
+| onboarding parallel dump enforcement | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_enforce_dump_chunked_500_line_onboarding_task_completed.md` | 2026-02-15 | REQUIRED |
 | onboarding dump missing docs expansion | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_add_missing_onboarding_skills_docs_to_onboarding_dump_task.md` | 2026-02-15 | REQUIRED |
 | onboarding single-command read bootstrap | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_add_single_powershell_onboarding_reonboarding_read_command_task.md` | 2026-02-15 | REQUIRED |
 | re-onboarding read integrity enforcement | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_enforce_reonboard_real_read_no_performative_compliance_task.md` | 2026-02-15 | REQUIRED |

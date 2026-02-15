@@ -1,4 +1,22 @@
-﻿**Docstring style:** follow the repo’s existing style (Google / NumPy / reST). If the repo has a pattern, match it exactly.
+﻿
+### 1) Preserve Documentation and Comments
+
+* **Never delete or strip docstrings.**
+* **Never delete comments.** If a comment is wrong, stale, or misleading, **update it** rather than removing it.
+* Only rewrite docstrings/comments for code you touched **unless** an untouched doc/comment is provably wrong or dangerously misleading.
+
+### 1a) `__init__.py` Policy (No Export Wiring)
+
+* Do **not** add or modify package `__init__.py` files to re-export symbols.
+* Do **not** add `__all__` export lists in `__init__.py` files.
+* Import from concrete module paths directly.
+* Keep `__init__.py` files empty unless package discovery requires the file to exist.
+
+### 2) Rich Docstrings Required (No Fluff)
+
+This is not optional. For **all public classes and public methods**, write docstrings that include **real contracts**, not vibes.
+
+**Docstring style:** follow the repo’s existing style (Google / NumPy / reST). If the repo has a pattern, match it exactly.
 
 **Minimum content for public API:**
 
@@ -480,21 +498,3 @@ A test that exists to lock down a specific bug. Great when it’s truly a regres
 Tests that exist mainly to execute lines but don’t assert meaningful behavior.
 
 **Signals:**
-
-* Asserts “it didn’t crash” with no contract outcome.
-* Asserts values that are incidental.
-
-> We avoid these unless they are stepping stones toward higher-rank tests.
-
-#### Rank F — Attribute/Existence Checks (Very Low Value)
-
-This is the bottom. These tests almost always waste time and fail for harmless refactors.
-
-**Examples (bad):**
-
-* `assert obj._some_private_field is not None` (unless the field is part of a documented public contract, which is rare)
-* `assert hasattr(obj, "x")` / `assert "x" in obj.__dict__` / `assert isinstance(obj._pending_changes, dict)`
-
-**Why this is bad:**
-
-* Doesn’t prove correctness.

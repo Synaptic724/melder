@@ -1,4 +1,19 @@
-﻿- Convert approved scratch notes into tickets; do not leave work in scratch.
+﻿- After compaction/handoff/fresh-session re-entry, the same parallel read-list requirement applies again before requesting approval.
+- Direct readset fallback is allowed only when the parallel dump path is unavailable, and still requires full readset completion.
+
+References
+- `agent_onboarding/agent/general/skills/self_certification.md`
+===== END FILE: context_compass/agent_onboarding/agent/general/skills/user_approved_certification.md =====
+===== BEGIN FILE: context_compass/agent_onboarding/agent/general/skills/work_management.md =====
+# work_management
+
+Purpose
+- Define how work is tracked and executed in this repo.
+
+Policy
+- Use `epics/`, `stories/`, and `tasks/` tickets for all planned work.
+- Follow `WORKFLOW.md` and `SKILLS.MD`.
+- Convert approved scratch notes into tickets; do not leave work in scratch.
 
 Ticket flow
 1) Create a ticket from the templates.
@@ -483,18 +498,3 @@ I improve comments when stale or unclear.
 I capture:
 - intent,
 - contract,
-- constraints,
-- lifecycle,
-- risks,
-- decisions.
-
----
-
-## 13) My Decisioning Protocol
-
-I classify decisions as:
-- local technical,
-- cross-module design,
-- public API,
-- risk acceptance,
-- scope expansion.

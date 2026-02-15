@@ -70,7 +70,9 @@ Before any tooling, edits, or execution:
 * Follow the read order in `agent_onboarding/agent/general/SKILLS.md` and `agent_onboarding/agent/engineer/SKILLS.md`.
 * Read and apply `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md` before execution.
 * Performative onboarding is forbidden: do real reads of required docs (parallel/bulk is allowed), and do not treat marker-only "reread" output as compliance.
-* Optional onboarding bootstrap commands:
+* Canonical onboarding bootstrap (default path): parallel read-list workflow
+  - Use this default for both fresh sessions and post-compaction re-entry.
+  - Build -> validate -> read chunks sequentially to consume the full onboarding readset.
   - Build parallel chunk dump (Windows): `context_compass/agent_onboarding/agent/general/skills/build_parallel_read_onboarding_dump.cmd`
   - Build parallel chunk dump (Linux/Bash): `bash context_compass/agent_onboarding/agent/general/skills/build_parallel_read_onboarding_dump.sh`
   - Validate parallel chunk dump (Windows): `context_compass/agent_onboarding/agent/general/skills/validate_parallel_read_onboarding_dump.cmd`
@@ -85,6 +87,7 @@ Before any tooling, edits, or execution:
   - Validation must enforce timestamp freshness (`--max-age-minutes`, default 120) and SHA256 integrity checks (source manifest + source files + chunk files).
   - If validation fails, rebuild via `build_parallel_read_onboarding_dump.*` and re-validate before onboarding attestation.
   - After successful dump validation, dump consumption must proceed in sequential `500`-line chunks (`onboarding_read_01` ... `onboarding_read_N`) using chunk-reader helpers or equivalent evidence-backed commands.
+  - Direct readset fallback is allowed only when the parallel dump path is unavailable; the same full-readset completion requirement still applies.
 * The source onboarding readset for dump generation is `context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt`.
 * Obey certification gating from `agent_onboarding/agent/general/policies/policy_router.md` and `agent_onboarding/agent/general/skills/self_certification.md` (do not use tools or edit files until the user replies with the exact phrase `CERTIFY: APPROVED (inactive)` or `CERTIFY: APPROVED (active)` except the tools to properly read your documentation to onboard).
 * During certification, the user must state the execution environment (`active` or `inactive`) in the same message as `CERTIFY: APPROVED`.

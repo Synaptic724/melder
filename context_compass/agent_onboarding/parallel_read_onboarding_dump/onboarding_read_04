@@ -1,4 +1,11 @@
-﻿- Board must remain compact; durable narrative belongs in ticket `## Notes`.
+﻿6) Verify board invariants before saving.
+
+Board invariants (must hold)
+- `## Active Items` rows must only reference non-completed tickets.
+- Every active row must map to one canonical ticket path.
+- `next` text must be one concrete action.
+- `## Active Attention Details` must only contain active-routing details.
+- Board must remain compact; durable narrative belongs in ticket `## Notes`.
 
 Verification commands
 - `rg -n "context_compass/(epics|stories|tasks)/completed/" context_compass/attention_board.md`
@@ -491,10 +498,3 @@ Rules
 - Use Optional/Union for nullable and multi-type hints (no PEP 604 unions).
 - Do not use "|" union syntax in annotations or docstring signatures.
 - Use string literals only when required for tools.
-- Do not use typing.TYPE_CHECKING for guarded imports; prefer interfaces for
-  dependency boundaries.
-
-Good vs bad
-- Good: "def load_config(path: Path) -> Config" with docstring describing Config fields.
-- Good: "def build(logger: Optional[Union[IChannelLogger, logging.Logger]]) -> SafeLogger"
-- Bad: "def load_config(path)" with no type hints.

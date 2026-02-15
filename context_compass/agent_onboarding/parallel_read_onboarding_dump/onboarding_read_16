@@ -1,4 +1,22 @@
-﻿Contract/Interface:
+﻿
+### Subcomponent: Runtime Warning Guardrails
+Parent Component: Public API and Runtime Guardrails
+Purpose:
+- Warn on unsupported Python versions and GIL mode.
+Contract/Interface:
+- `warnings.warn` used for soft warnings.
+Data Structures:
+- None.
+Concurrency/Threading:
+- Import-time only.
+Key Files (C1):
+- `src/melder/__init__.py`
+
+### Subcomponent: Registration Guard Sentinel
+Parent Component: Public API and Runtime Guardrails
+Purpose:
+- Block internal objects from being bound as spells.
+Contract/Interface:
 - `assert_allowed(candidate, context)` raises on internal sentinel.
 Data Structures:
 - `_SENTINEL` identity object.
@@ -480,21 +498,3 @@ Key Files (C1):
 - `src/melder/aether/dev_ops/spell_system_states/conduit_resolution_state.py`
 
 ### Subcomponent: ChangeControl Dirty Roots
-Parent Component: DevOps Control Plane
-Purpose:
-- Track pending changes and dirty roots for revalidation.
-Contract/Interface:
-- `register_pending_change`, `is_root_dirty(conduit_id, root_id)`, `revalidate_dirty_roots(conduit_id, ...)`.
-Scope:
-- Per-conduit dirty roots and component-of mapping keyed by conduit_id within a frame. EVIDENCE: src/melder/aether/dev_ops/change_control_manager/change_control_manager.py:__init__ + rebuild_component_of.
-Data Structures:
-- `_pending_changes`, `_dirty_roots_by_conduit`, `_component_of_by_conduit`.
-Concurrency/Threading:
-- RLock.
-Key Files (C1):
-- `src/melder/aether/dev_ops/change_control_manager/change_control_manager.py`
-
-### Subcomponent: Change-Control Revalidation
-Parent Component: DevOps Control Plane
-Purpose:
-- Invoke revalidator for dirty roots and clear dirty flags on success.

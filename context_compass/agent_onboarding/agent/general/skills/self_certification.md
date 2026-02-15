@@ -5,7 +5,7 @@ Purpose
 
 Required flow
 - Read every skill listed in `agent_onboarding/agent/SKILLS.md` and `agent_onboarding/agent/general/SKILLS.md` (parallel reading allowed).
-- Optional parallel-dump bootstrap for onboarding docs:
+- Canonical parallel-dump bootstrap for onboarding docs (default path):
   - Build chunked dump (Windows):
     `context_compass/agent_onboarding/agent/general/skills/build_parallel_read_onboarding_dump.cmd`
   - Build chunked dump (Linux/Bash):
@@ -28,6 +28,8 @@ Required flow
   - If validation fails, rebuild and re-validate before certification.
   - When dump bootstrap is used, consume `onboarding_read_XX` sequentially
     from chunk number `1` through final chunk before requesting certification.
+  - Apply the same full-sequence chunk consumption rule after compaction/handoff re-entry.
+  - Use direct readset fallback only when parallel dump build/validation is unavailable.
   - Windows/PowerShell direct readset fallback:
     `powershell -NoProfile -ExecutionPolicy Bypass -File context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.ps1`
   - Windows wrapper direct readset fallback:

@@ -1,4 +1,22 @@
 ﻿
+Concurrency/Threading:
+- Class-level RLock guards singleton initialization and updates.
+
+Invariants/Guarantees:
+- One Aether instance per interpreter.
+- Default frame exists when needed.
+
+Failure Modes:
+- ValueError for missing frames, duplicate registry entries, or not-found lookups.
+- TypeError for invalid input types (e.g., non-string frame names).
+- RuntimeError when singleton/frame registries are cleaned or unavailable.
+
+Observability:
+- Logs via SafeLogger.
+
+Extension Points:
+- Additional frame behaviors or registries.
+
 Key Files (C1):
 - `src/melder/aether/aether.py`
 
@@ -480,21 +498,3 @@ Key Files (C1):
 - `src/melder/utilities/synchronization/phase_scheduler.py`
 
 ## C2 Subcomponents Catalog
-
-### Subcomponent: Runtime Warning Guardrails
-Parent Component: Public API and Runtime Guardrails
-Purpose:
-- Warn on unsupported Python versions and GIL mode.
-Contract/Interface:
-- `warnings.warn` used for soft warnings.
-Data Structures:
-- None.
-Concurrency/Threading:
-- Import-time only.
-Key Files (C1):
-- `src/melder/__init__.py`
-
-### Subcomponent: Registration Guard Sentinel
-Parent Component: Public API and Runtime Guardrails
-Purpose:
-- Block internal objects from being bound as spells.

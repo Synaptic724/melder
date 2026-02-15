@@ -1,4 +1,11 @@
-﻿- Do not edit `.git/config`, hooks, or `.gitattributes` unless explicitly requested.
+﻿  `tasks/`, `templates/`, plus per-type archives in `epics/completed/`,
+  `stories/completed/`, and `tasks/completed/` (legacy `completed/` remains).
+
+Git handling (non-negotiable)
+- Git commands are allowed **only** when the user declares the session is `active` during certification.
+- If the user declares `inactive`, do not run git commands and ignore git workflow requirements (user handles git).
+- Certification must include the exact token `CERTIFY: APPROVED` and an explicit environment label (`active` or `inactive`).
+- Do not edit `.git/config`, hooks, or `.gitattributes` unless explicitly requested.
 - Do not assume git is available; if missing, report it and proceed without git metadata.
 
 Branching workflow (active-only)
@@ -491,10 +498,3 @@ Deterministic closure sync protocol (mandatory)
 5) In `## Recently Closed Anchors`:
    - Add one compact anchor row for `old_ticket` with status `done` and `next=none`.
    - Keep at most 12 anchor rows; remove oldest rows first when adding a new one.
-6) Verify board invariants before saving.
-
-Board invariants (must hold)
-- `## Active Items` rows must only reference non-completed tickets.
-- Every active row must map to one canonical ticket path.
-- `next` text must be one concrete action.
-- `## Active Attention Details` must only contain active-routing details.

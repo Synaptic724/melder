@@ -1,4 +1,22 @@
-﻿- SpellIndex identity (ULID) is immutable; version pointer can change.
+﻿- Cleanable defines the idempotent cleanup contract.
+- Spellbook cleanup:
+  - Cleans spells and SpellIndex keys.
+  - Cleans configuration and validators.
+  - Nulls references and cleans logger last.
+- Conduit cleanup:
+  - Fires hooks, tears down Meld, ConduitWard, and Creations.
+  - Clears hooks and logger last.
+- Aether cleanup:
+  - Cleans frames, resets singleton state, and cleans logger.
+- Creations cleanup:
+  - Calls configured disposal methods; may raise ExceptionGroup.
+
+## Operational Invariants
+- Aether is a singleton with explicit reset for tests.
+- Spellbook can conjure only one Conduit instance.
+- Configuration must be frozen before Conduit creation.
+- Existing-object spells must use `Existence.unique` for Creations registration.
+- SpellIndex identity (ULID) is immutable; version pointer can change.
 - `automatic=True` conjure only allows `Policies.default`.
 - `automatic=False` conjure requires `system_state=dynamic`.
 - SpellSpace can only meld when it is the active spellspace for a Conduit.
@@ -480,21 +498,3 @@ sequenceDiagram
 ## B5. Meld-Time Validation Gate
 1) `Meld._ensure_lineage_resolvable` checks SpellSystemState validity.
 2) If validity is UNKNOWN/GATED:
-   - `spell.run_structural_phases()` runs under the per-spell lock.
-3) If per-conduit resolution validity is UNKNOWN/GATED:
-   - `spell._spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)` runs.
-
-## B6. Lesser Conduit Creation
-1) Parent Conduit fires pre-create hook.
-2) Constructs lesser Conduit with inherited Spellbook/Configuration.
-3) Wires root Creations and root conduit into lesser conduit.
-4) Links lesser into ConduitWard lineage tree.
-5) Fires activated and post-create hooks.
-
-## B7. Upgrade to Normal Conduit
-1) `upgrade_to_normal` verifies dynamic mode and lesser state.
-2) Preserves/rebinds the current Creations manager to the upgraded conduit state.
-3) Rewires Meld to the same Creations manager and converts ward state.
-4) Seeds resolution state from former root conduit.
-5) Registers conduit into Aether and ConduitCloud.
-

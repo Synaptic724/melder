@@ -1,4 +1,22 @@
-﻿Contract/Interface:
+﻿Parent Component: DevOps Control Plane
+Purpose:
+- Track pending changes and dirty roots for revalidation.
+Contract/Interface:
+- `register_pending_change`, `is_root_dirty(conduit_id, root_id)`, `revalidate_dirty_roots(conduit_id, ...)`.
+Scope:
+- Per-conduit dirty roots and component-of mapping keyed by conduit_id within a frame. EVIDENCE: src/melder/aether/dev_ops/change_control_manager/change_control_manager.py:__init__ + rebuild_component_of.
+Data Structures:
+- `_pending_changes`, `_dirty_roots_by_conduit`, `_component_of_by_conduit`.
+Concurrency/Threading:
+- RLock.
+Key Files (C1):
+- `src/melder/aether/dev_ops/change_control_manager/change_control_manager.py`
+
+### Subcomponent: Change-Control Revalidation
+Parent Component: DevOps Control Plane
+Purpose:
+- Invoke revalidator for dirty roots and clear dirty flags on success.
+Contract/Interface:
 - `revalidate_dirty_roots(conduit_id, ...)` and `is_root_dirty(conduit_id, root_id)`.
 Scope:
 - Conduit-scoped revalidator invoked by ChangeControlManager; meld gating reads
@@ -480,21 +498,3 @@ graph TD
 Purpose
 - Active-work routing board.
 - Attention-only summary for fast re-entry.
-- Canonical detail lives in linked tickets.
-
-Attention details rule
-- Keep this board compact and operational.
-- Durable history belongs in ticket `## Notes`, not here.
-- Use evidence ranges in `EVIDENCE` (`path:start_line-end_line`).
-- Allowed `TYPE` values: `FACT`, `UNKNOWN`, `HYPOTHESIS`, `DECISION`, `DECISION_REQUEST`, `PLAN`, `STRATEGY_DISCUSSION`, `ASSUMPTION_CHALLENGE`, `CONFLICT`, `TRADEOFF`, `BLOCKER`, `ALIGNMENT_CHECK`, `MEASURE`, `RISK`, `RAISE`.
-- During ticket closure, run deterministic board sync (remove/replace active rows, prune stale details, add compact closed anchor, cap anchors).
-
-## Active Items
-| work_item | status | owner | blocker | next | ticket | updated | reread |
-|---|---|---|---|---|---|---|---|
-| onboarding parallel dump enforcement | in_progress | codex | none | implement `onboarding_read_XX` artifacts + non-python manifest validation | `context_compass/tasks/2026-02-15_enforce_dump_chunked_500_line_onboarding_task.md` | 2026-02-15 | REQUIRED |
-
-## Active Attention Details
-- DATE: 2026-02-15 | TYPE: DECISION | CLAIM: Canonical onboarding format changed to `context_compass/agent_onboarding/parallel_read_onboarding_dump/` with chunk names `onboarding_read_01`, `onboarding_read_02`, ... and no Python validator. | EVIDENCE: `context_compass/tasks/2026-02-15_enforce_dump_chunked_500_line_onboarding_task.md:97-108` | NEXT: implement build/validate/read scripts and policy references for new structure.
-
-## Recently Closed Anchors

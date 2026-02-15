@@ -1,4 +1,22 @@
-﻿- `profiles/` contains repository-specific policy overlays.
+﻿- Immediate next steps (1-3 concrete actions).
+- References to any critical files or paths.
+
+## Post-Compaction Verification
+After compaction, re-open the required review set and confirm:
+- `agent_onboarding/agent/general/skills/compaction_requirements.md` has been re-applied before any action.
+- A `REONBOARD: COMPLETE` attestation was posted before any action.
+- `attention_board.md` was re-opened and still matches active ticket state.
+- The active tickets still represent the correct plan.
+- The next steps are unambiguous.
+===== END FILE: context_compass/CONTEXT_COMPACTION.md =====
+===== BEGIN FILE: context_compass/README.md =====
+# context_compass
+
+Purpose
+- Central place for planning, refactor notes, and architectural decisions.
+- Capture new ideas from our discussions so they are easy to resume later.
+- `core/` contains reusable process mechanics.
+- `profiles/` contains repository-specific policy overlays.
 - `config/` contains runtime-style policy switches (including microcycle mode).
 
 Rules
@@ -480,21 +498,3 @@ Out of scope:
 - External docs beyond the codebase.
 
 ## Documentation Quality Standard
-This document is durable context and must stand on its own.
-
-Rules:
-- No handwaving. Every claim is grounded in source evidence or marked as unknown.
-- Entry points and boot sequences are explicit and ordered.
-- Ownership, lifecycle, and cleanup ordering are explicit for core components.
-- Invariants, failure modes, and concurrency constraints are stated.
-- ASCII and Mermaid diagrams included for core flows.
-- Evidence list updated when new sources are used.
-
-## DO NOT ASSUME / Unknowns Gate
-Rule: No Unverified Claims.
-Any statement that is not directly supported by evidence must be treated as UNKNOWN.
-
-Evidence means at least one of:
-- A specific source file reference (preferred: file + symbol/method/class name).
-- A citation to an explicit, already-verified artifact (e.g., a prior approved doc section).
-

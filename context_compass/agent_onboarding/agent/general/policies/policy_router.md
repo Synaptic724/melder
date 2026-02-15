@@ -22,6 +22,12 @@ Certification gate (mandatory)
 Required flow
 - Read `AGENTS.MD` and directory-local `AGENTS.MD` (if present).
 - Follow `agent_onboarding/agent/general/SKILLS.md` and career-specific additions.
+- For onboarding/re-onboarding, use the canonical parallel read-list workflow:
+  - build `parallel_read_onboarding_dump`,
+  - validate manifest/source/chunk integrity,
+  - consume `onboarding_read_XX` sequentially from chunk `1..N`.
+- After any compaction/handoff/fresh-session re-entry, apply the same parallel read-list workflow again before any non-onboarding action.
+- Only use direct readset fallback when the parallel dump path is unavailable; still complete the full readset before certification.
 - Read `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md`
   and apply its active-partner + performance-engineering rules.
 - Route active work from `attention_board.md` and keep detailed state in ticket `## Notes`.
