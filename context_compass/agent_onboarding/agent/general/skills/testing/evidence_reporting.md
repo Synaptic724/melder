@@ -27,4 +27,4 @@ Example commands
 - pytest --cov
 
 References
-- agent_onboarding/agent/general/examples/readme.md
+- agent_onboarding/agent/general/README.md

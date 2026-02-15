@@ -2,6 +2,8 @@
 # Dynamic active ticket paths are intentionally not listed here and should be
 # added to attestation `FILES_REREAD` separately.
 # Read these source documents directly; do not substitute onboarding dump files.
+# Product root `README.md` is optional context and not part of the mandatory
+# onboarding gate.
 
 context_compass/AGENTS.MD
 context_compass/SOCIAL_CONTRACT.md
@@ -55,20 +57,14 @@ context_compass/agent_onboarding/agent/general/skills/staleness_protocol.md
 context_compass/agent_onboarding/agent/general/skills/self_certification.md
 context_compass/agent_onboarding/agent/general/skills/user_approved_certification.md
 context_compass/agent_onboarding/agent/general/skills/work_management.md
-context_compass/agent_onboarding/agent/general/behavioral_guidelines/readme.md
 context_compass/agent_onboarding/agent/general/behavioral_guidelines/agent_lifecycle_and_heartbeat.md
 context_compass/agent_onboarding/agent/general/behavioral_guidelines/work_intake_and_execution.md
 context_compass/agent_onboarding/agent/general/behavioral_guidelines/task_execution_and_validation.md
 context_compass/agent_onboarding/agent/general/behavioral_guidelines/onboarding_summary.md
-context_compass/agent_onboarding/agent/general/examples/readme.md
-context_compass/agent_onboarding/agent/engineer/skills/readme.md
 context_compass/agent_onboarding/agent/engineer/skills/engineer_execution.md
-context_compass/agent_onboarding/agent/engineer/policies/readme.md
 context_compass/agent_onboarding/agent/engineer/policies/engineer_quality_policy.md
 context_compass/agent_onboarding/agent/engineer/policies/ctx_autonomy_policy.md
-context_compass/agent_onboarding/agent/engineer/behavioral_guidelines/readme.md
 context_compass/agent_onboarding/agent/engineer/behavioral_guidelines/engineer_workflow.md
-context_compass/agent_onboarding/agent/engineer/examples/readme.md
 context_compass/agent_onboarding/agent/engineer/examples/artifact_workflow.md
 context_compass/agent_onboarding/agent/engineer/examples/eng_task_flow.md
 context_compass/SKILLS.MD
@@ -84,4 +80,3 @@ context_compass/components/README.md
 context_compass/architecture/src_architecture.md
 context_compass/components/src_components.md
 context_compass/attention_board.md
-README.md

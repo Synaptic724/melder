@@ -124,5 +124,5 @@ Workflow
 5) Use architecture/components docs before opening code.
 
 References
-- agent_onboarding/agent/general/examples/readme.md
+- agent_onboarding/agent/general/README.md
 - agent_onboarding/agent/SKILLS.md

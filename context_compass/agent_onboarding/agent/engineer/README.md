@@ -1,18 +1,21 @@
 # Engineer Career
 
-This folder is reserved for engineer-specific onboarding material that
-extends or overrides the shared general career content under
-`agent_onboarding/agent/general/`.
+Purpose
+- Engineer-specific onboarding deltas on top of the shared general baseline.
 
-Add only engineer-specific skills, policies, or behavioral guidance here.
-Shared defaults live in `agent_onboarding/agent/general/` and are
-indexed in `agent_onboarding/agent/general/SKILLS.md`.
+Scope rule
+- Keep only engineer-specific policy/behavior here.
+- Shared rules remain in `agent_onboarding/agent/general/` and are indexed in
+  `agent_onboarding/agent/general/SKILLS.md`.
 
-Key files
-- SKILLS.md: engineer-specific read order
-- skills/engineer_execution.md: engineer execution rules
-- policies/engineer_quality_policy.md: quality bar for code changes
-- behavioral_guidelines/engineer_workflow.md: execution flow guidance
+Engineer inventory
+- `SKILLS.md`: engineer-specific read sequence.
+- `skills/engineer_execution.md`: execution discipline for engineering work.
+- `policies/engineer_quality_policy.md`: quality and evidence bar.
+- `policies/ctx_autonomy_policy.md`: engineer context-quality constraints.
+- `behavioral_guidelines/engineer_workflow.md`: engineer execution flow.
+- `examples/eng_task_flow.md`: concise engineer task flow.
+- `examples/artifact_workflow.md`: scratch-to-ticket artifact promotion pattern.
 
 Unknowns Gate
 - Apply the canonical policy in

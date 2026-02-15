@@ -1,22 +1,31 @@
 # General Career (Shared)
 
-This folder holds onboarding materials shared by all agent careers.
+Purpose
+- Shared onboarding baseline for all careers.
+- Defines where execution policy, narrative workflow, and examples live.
 
-Contents
-- behavioral_guidelines/: narrative flow and execution guidance
-- policies/: policy router and enforcement references
-- skills/: skill docs and certification materials
-- SKILLS.md: shared skill index and read order for all careers
-- agent_onboarding/agent/general/examples/: canonical JSON and workflow examples
-- examples/: ticket and doc examples (within context_compass)
+Primary entrypoints
+- `agent_onboarding/agent/general/SKILLS.md`: canonical read order.
+- `agent_onboarding/agent/general/policies/policy_router.md`: policy chain and execution gates.
 
-Role-specific overrides should live under their career directory and only include
-material that differs from these shared defaults.
+Folder map
+- `behavioral_guidelines/`: descriptive execution stories.
+  - `onboarding_summary.md`
+  - `agent_lifecycle_and_heartbeat.md`
+  - `work_intake_and_execution.md`
+  - `task_execution_and_validation.md`
+- `policies/`: operational policy modules.
+- `skills/`: enforceable behavior and certification docs.
+- `examples/`: copy-first examples for ticketing and coding patterns.
+  - `agent_onboarding/agent/general/examples/python/` for docstrings, cleanup, logging, and pytest patterns.
+  - `context_compass/examples/` for ticket/doc structure references.
+
+Override rule
+- Career-specific docs should contain only true deltas from this shared baseline.
+- If content is shared across careers, keep it here instead of duplicating.
 
 Unknowns Gate
 - Apply the canonical policy in
   `agent_onboarding/agent/general/skills/unknowns_gate_reference.md`.
-- Local onboarding guidance must treat any unevidenced claim as UNKNOWN,
-  including read-order assumptions and certification assertions.
-- When summarizing onboarding status, include evidence-backed pointers to the
-  source docs used for the claim.
+- Local onboarding guidance must treat unevidenced claims as UNKNOWN.
+- Onboarding summaries must include concrete source pointers for promoted FACT claims.
