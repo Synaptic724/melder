@@ -1,9 +1,13 @@
 # Task: Implement JIT/AOT Runtime Resolution Gate Lifecycle
 
+- Completed: 2026-02-15
+- Summary: Completed runtime `resolution_required` gate lifecycle coverage with explicit tests for skip/already-complete/success/failure/missing-conduit-id branches.
+- Summary: Added meld entrypoint ordering assertions proving deferred runtime gate execution occurs before CreationContext build and context execution.
+
 ## Metadata
 - Task ID: TASK-2026-02-15-implement-jit-aot-runtime-resolution-gate-lifecycle
 - Story: STORY-2026-02-15-jit-aot-runtime-resolution-gate-lifecycle
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
@@ -46,11 +50,11 @@ resolution and context build.
 ## Done Checklist
 - [x] Steps complete and checked off
 - [x] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
+- [x] Documentation updated (if needed)
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
+- [x] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
 - DATE: 2026-02-15

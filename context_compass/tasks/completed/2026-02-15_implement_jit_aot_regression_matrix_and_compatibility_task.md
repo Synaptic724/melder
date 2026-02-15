@@ -1,9 +1,13 @@
 # Task: Implement JIT/AOT Regression Matrix and Compatibility Validation
 
+- Completed: 2026-02-15
+- Summary: Built and validated a focused AOT/JIT regression matrix across config defaults, conjure/bind propagation, transfer owned-only propagation, contracted-map exclusion, and runtime gate lifecycle.
+- Summary: Added contracted-map exclusion transfer test and recorded targeted pytest evidence artifacts for compatibility review.
+
 ## Metadata
 - Task ID: TASK-2026-02-15-implement-jit-aot-regression-matrix-and-compatibility
 - Story: STORY-2026-02-15-jit-aot-regression-matrix-and-compatibility
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
@@ -54,7 +58,7 @@ and runtime lifecycle behavior.
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
+- [x] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
 - DATE: 2026-02-15

@@ -1,9 +1,13 @@
 # Task: Implement JIT/AOT Transfer Propagation (Non-Contracted)
 
+- Completed: 2026-02-15
+- Summary: Implemented owned-lineage transfer propagation for `resolution_required` defaults on flip and rollback paths.
+- Summary: Kept contracted spell ownership semantics untouched and validated with transfer ownership and contract-focused suites.
+
 ## Metadata
 - Task ID: TASK-2026-02-15-implement-jit-aot-transfer-ownership-propagation-non-contracted
 - Story: STORY-2026-02-15-jit-aot-transfer-ownership-propagation-non-contracted
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
@@ -49,11 +53,11 @@ keeping contracted spells under their existing owner semantics.
 ## Done Checklist
 - [x] Steps complete and checked off
 - [x] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
+- [x] Documentation updated (if needed)
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
+- [x] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
 - DATE: 2026-02-15

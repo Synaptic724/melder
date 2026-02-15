@@ -1,9 +1,13 @@
 # Task: Implement JIT/AOT Config Flag and Fluent API
 
+- Completed: 2026-02-15
+- Summary: Added `full_ahead_of_time_compilation` configuration defaulting/validation and fluent setter support.
+- Summary: Extended configuration tests to cover default value, type enforcement, and fluent overrides.
+
 ## Metadata
 - Task ID: TASK-2026-02-15-implement-jit-aot-config-flag-and-fluent-api
 - Story: STORY-2026-02-15-jit-aot-config-flag-and-fluent-api
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
@@ -48,11 +52,11 @@ fluent API support.
 ## Done Checklist
 - [x] Steps complete and checked off
 - [x] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
+- [x] Documentation updated (if needed)
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
+- [x] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
 - DATE: 2026-02-15

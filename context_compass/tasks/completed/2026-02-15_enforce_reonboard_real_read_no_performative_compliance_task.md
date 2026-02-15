@@ -1,9 +1,13 @@
 # Task: Enforce Real Re-Onboarding Reads and Ban Performative Compliance
 
+- Completed: 2026-02-15
+- Summary: Added explicit anti-performative onboarding and re-onboarding policy language requiring substantive read integrity proof.
+- Summary: Updated AGENTS and onboarding skill docs to preserve parallel reading while forbidding marker-only compliance loops.
+
 ## Metadata
 - Task ID: TASK-2026-02-15-enforce-reonboard-real-read-no-performative-compliance
 - Story: standalone
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-15
@@ -46,13 +50,13 @@ compliance is prohibited.
 - Mitigation: keep explicit allowance for parallel/bulk reads while banning marker-only proof.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
+- [x] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
 - DATE: 2026-02-15

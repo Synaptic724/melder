@@ -1,0 +1,6 @@
+DATE: 2026-02-15
+POWERSHELL_COMMAND: powershell -NoProfile -ExecutionPolicy Bypass -File context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.ps1
+POWERSHELL_RESULT: PASS (READSET_COMPLETE: 61 files processed.)
+BASH_COMMAND: bash context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.sh
+BASH_BINARY: C:\Windows\System32\bash.exe
+BASH_RESULT: NOT RUN - environment launcher denied access (Bash/Service/CreateInstance/E_ACCESSDENIED).

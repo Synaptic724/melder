@@ -28,6 +28,13 @@ Required post-compaction sequence
 5) Read `agent_onboarding/agent/engineer/SKILLS.md` in full order.
 5a) Read `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md`.
 6) Re-read `AGENTS.MD`, `SKILLS.MD`, `WORKFLOW.md`, and `CONTEXT_COMPACTION.md`.
+6a) Optional bootstrap for onboarding docs: run one command
+    - Windows/PowerShell:
+      `powershell -NoProfile -ExecutionPolicy Bypass -File context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.ps1`
+    - Linux/Bash:
+      `bash context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.sh`
+    Both commands read the canonical readset in
+    `context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt`.
 7) Re-open `attention_board.md` and process rows with `reread=REQUIRED`.
 8) Re-open active tickets and verify their `Notes` and `Context / Handoff Summary`.
 9) Request certification and wait for exact user approval phrase:
@@ -41,8 +48,11 @@ Mandatory attestation format
 REONBOARD: COMPLETE
 ENVIRONMENT: <active|inactive>
 FILES_REREAD:
-- <path>
-- <path>
+- <active ticket path>
+- <active ticket path>
+ONBOARDING_READSET:
+- manifest: context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt
+- script: <script used, e.g. context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.ps1 or context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.sh>
 READ_INTEGRITY_PROOF:
 - <path>: <concrete rule callout>
 - <path>: <concrete rule callout>
@@ -54,6 +64,7 @@ Attestation contract
 - Do not run tools, edit files, or execute plans before posting the attestation.
 - If attestation cannot be completed, stop and ask the user for instructions.
 - Parallel/bulk reads are allowed, but files must be substantively read; marker-only loops are non-compliant.
+- When the onboarding readset script is used, do not enumerate every onboarding file in `FILES_REREAD`; list active ticket paths there and include the readset reference in `ONBOARDING_READSET`.
 
 Execution gate
 - If any required item above is incomplete, do not proceed.

@@ -16,12 +16,14 @@ After any context compaction, handoff, or fresh session:
 * Before any action, publish a **Re-Onboarding Attestation** message to the user with:
   * `REONBOARD: COMPLETE`
   * certification state (`active` or `inactive`)
-  * files re-read (paths)
+  * files re-read summary (active ticket paths and any non-readset docs only)
+  * onboarding readset reference (manifest + script path) when using the canonical single-command onboarding run
   * concise read-integrity proof (concrete rule callouts from reread docs)
   * `NO_ACTION_TAKEN_YET: true`
 * Performative compliance is forbidden during re-onboarding:
   * marker-only loops (for example, `$null = Get-Content ...` plus `REREAD:` output) do not count as re-reading.
   * parallel/bulk reading is allowed only when document contents are actually read and surfaced with concrete evidence value.
+  * manifest-driven onboarding script runs are valid only when the script actually reads each file in the readset and the attestation references the manifest/script used.
 
 This is the highest-priority adherence rule for continuity and policy retention.
 
@@ -66,6 +68,10 @@ Before any tooling, edits, or execution:
 * Follow the read order in `agent_onboarding/agent/general/SKILLS.md` and `agent_onboarding/agent/engineer/SKILLS.md`.
 * Read and apply `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md` before execution.
 * Performative onboarding is forbidden: do real reads of required docs (parallel/bulk is allowed), and do not treat marker-only "reread" output as compliance.
+* Optional single-command onboarding bootstrap:
+  - Windows/PowerShell: `powershell -NoProfile -ExecutionPolicy Bypass -File context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.ps1`
+  - Linux/Bash: `bash context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.sh`
+* The canonical onboarding readset for that command is `context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt`.
 * Obey certification gating from `agent_onboarding/agent/general/policies/policy_router.md` and `agent_onboarding/agent/general/skills/self_certification.md` (do not use tools or edit files until the user replies with the exact phrase `CERTIFY: APPROVED (inactive)` or `CERTIFY: APPROVED (active)` except the tools to properly read your documentation to onboard).
 * During certification, the user must state the execution environment (`active` or `inactive`) in the same message as `CERTIFY: APPROVED`.
 * Git commands are **active-only**: if the user says `inactive`, do not run git commands and ignore git workflow requirements (user handles git).

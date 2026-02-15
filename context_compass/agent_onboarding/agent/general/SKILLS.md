@@ -46,6 +46,17 @@ Parallel reading allowance
 - Marker-only reread output (for example, `$null = Get-Content ...` + `REREAD:` lines) is not valid completion evidence.
 - Parallel/bulk reads must include substantive read integrity (concrete rule callouts) before certification.
 
+Single-command onboarding bootstrap (optional)
+- Canonical command (Windows/PowerShell):
+  `powershell -NoProfile -ExecutionPolicy Bypass -File context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.ps1`
+- Canonical command (Linux/Bash):
+  `bash context_compass/agent_onboarding/agent/general/skills/run_onboarding_read.sh`
+- Canonical readset manifest:
+  `context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt`
+- When this bootstrap is used, re-onboarding attestations can keep `FILES_REREAD`
+  compact (active ticket paths only) and reference onboarding docs through the
+  `ONBOARDING_READSET` manifest/script fields.
+
 Certification timing
 - Do not request certification until every skill above has been read.
 - Require the approval message to include `CERTIFY: APPROVED` and the execution environment (`active` or `inactive`).
