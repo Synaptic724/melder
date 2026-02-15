@@ -99,6 +99,7 @@ class OverridePatchMap(Cleanable):
         "_root_spell_id",
         "_targets_by_spec",
         "_specificity_by_spec",
+        "_resolved_targets_by_raw_key",
     ]
 
     def __init__(
@@ -132,6 +133,10 @@ class OverridePatchMap(Cleanable):
         self._root_spell_id = root_spell_id
         self._targets_by_spec = targets_by_spec
         self._specificity_by_spec = specificity_by_spec
+        self._resolved_targets_by_raw_key: Dict[
+            str,
+            tuple[tuple[SocketRef, ...], _Specificity],
+        ] = {}
 
     def cleanup(self) -> None:
         """
@@ -146,9 +151,11 @@ class OverridePatchMap(Cleanable):
         self._cleaned = True
         self._targets_by_spec.clear()
         self._specificity_by_spec.clear()
+        self._resolved_targets_by_raw_key.clear()
         self._root_spell_id = None
         self._targets_by_spec = None
         self._specificity_by_spec = None
+        self._resolved_targets_by_raw_key = None
 
     @property
     def root_spell_id(self) -> str:
@@ -173,7 +180,8 @@ class OverridePatchMap(Cleanable):
         Compute the socket->value mapping using cached targets.
 
         Contract:
-            - Does not mutate internal maps.
+            - Does not mutate phase10 target/specificity maps.
+            - Memoizes raw-key target resolution for repeated runtime payloads.
             - Applies specificity rules to resolve competing overrides.
             - Mirrors DagTargetingEngine error semantics for unique/broadcast/path.
 
@@ -195,42 +203,24 @@ class OverridePatchMap(Cleanable):
         self.check_cleaned()
         if spell_override is None:
             return {}
+        if not spell_override:
+            return {}
+        if len(spell_override) == 1:
+            raw_key, value = next(iter(spell_override.items()))
+            matches, _ = self._resolve_targets_for_raw_key(raw_key)
+            if len(matches) == 1:
+                return {
+                    matches[0]: value,
+                }
+            return {
+                socket_ref: value
+                for socket_ref in matches
+            }
 
         per_socket: Dict[SocketRef, tuple[_Specificity, object]] = {}
 
         for raw_key, value in spell_override.items():
-            spec = TargetSpec.parse(raw_key)
-            spec_key = _spec_key(spec)
-            matches = self._targets_by_spec.get(spec_key)
-            if spec.kind is TargetSpecKind.PATH:
-                if not matches:
-                    path_str = ">".join(spec.path or ())
-                    raise RuntimeError(
-                        f"No sockets found for override path '{path_str}'."
-                    )
-            elif spec.kind is TargetSpecKind.UNIQUE:
-                count = 0 if not matches else len(matches)
-                if count == 0:
-                    raise RuntimeError(
-                        f"No sockets found for unique override '*{spec.param_name}'."
-                    )
-                if count > 1:
-                    raise RuntimeError(
-                        f"Unique override '*{spec.param_name}' matched {count} sockets; "
-                        f"expected exactly one."
-                    )
-            elif spec.kind is TargetSpecKind.BROADCAST:
-                if not matches:
-                    raise RuntimeError(
-                        f"No sockets found for broadcast override '**{spec.param_name}'."
-                    )
-            else:
-                raise RuntimeError(f"Unsupported TargetSpecKind: {spec.kind!r}")
-            level = self._specificity_by_spec.get(spec_key)
-            if level is None:
-                raise RuntimeError(
-                    f"Specificity missing for override key '{raw_key}'."
-                )
+            matches, level = self._resolve_targets_for_raw_key(raw_key)
 
             for socket_ref in matches:
                 existing = per_socket.get(socket_ref)
@@ -248,6 +238,67 @@ class OverridePatchMap(Cleanable):
                     )
 
         return {socket: val for socket, (spec_level, val) in per_socket.items()}
+
+    def _resolve_targets_for_raw_key(
+            self,
+            raw_key: str,
+    ) -> tuple[tuple[SocketRef, ...], _Specificity]:
+        """
+        Resolve one raw override key to target sockets and specificity rank.
+
+        Purpose:
+            Cache TargetSpec parse + lookup results for repeated runtime override
+            keys so hot-path apply calls avoid repeated key parsing work.
+
+        Contract:
+            - Raises the same validation errors as the previous inline apply path.
+            - Caches successful resolutions by exact raw-key string.
+            - Does not mutate phase10 target/specificity source maps.
+        """
+        cached = self._resolved_targets_by_raw_key.get(raw_key)
+        if cached is not None:
+            return cached
+
+        spec = TargetSpec.parse(raw_key)
+        spec_key = _spec_key(spec)
+        matches = self._targets_by_spec.get(spec_key)
+        if spec.kind is TargetSpecKind.PATH:
+            if not matches:
+                path_str = ">".join(spec.path or ())
+                raise RuntimeError(
+                    f"No sockets found for override path '{path_str}'."
+                )
+        elif spec.kind is TargetSpecKind.UNIQUE:
+            count = 0 if not matches else len(matches)
+            if count == 0:
+                raise RuntimeError(
+                    f"No sockets found for unique override '*{spec.param_name}'."
+                )
+            if count > 1:
+                raise RuntimeError(
+                    f"Unique override '*{spec.param_name}' matched {count} sockets; "
+                    f"expected exactly one."
+                )
+        elif spec.kind is TargetSpecKind.BROADCAST:
+            if not matches:
+                raise RuntimeError(
+                    f"No sockets found for broadcast override '**{spec.param_name}'."
+                )
+        else:
+            raise RuntimeError(f"Unsupported TargetSpecKind: {spec.kind!r}")
+
+        level = self._specificity_by_spec.get(spec_key)
+        if level is None:
+            raise RuntimeError(
+                f"Specificity missing for override key '{raw_key}'."
+            )
+
+        resolved = (
+            tuple(matches),
+            level,
+        )
+        self._resolved_targets_by_raw_key[raw_key] = resolved
+        return resolved
 
 
 class MutationPatchMap(Cleanable):

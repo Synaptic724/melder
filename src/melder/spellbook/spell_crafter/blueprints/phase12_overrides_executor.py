@@ -12,6 +12,7 @@ from melder.spellbook.spell_crafter.blueprints.phase12_no_overrides_executor imp
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
 
 _MISSING = object()
+_EMPTY_OVERRIDE_VALUES: Dict[str, Any] = {}
 
 
 def compile_phase12_overrides_executor(
@@ -1372,7 +1373,7 @@ def _construct_spell_instance_with_overrides(
           overrides are present.
     """
     if not override_targets and root_positional_override is None:
-        override_values: Dict[str, Any] = {}
+        override_values = _EMPTY_OVERRIDE_VALUES
     else:
         override_values = _build_step_override_values(
             override_targets=override_targets,

@@ -15,9 +15,63 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | implement creation-context override-shape preprocessing cache and rerun targeted override timings + cprofile suites | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
+| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | keep retained direct Phase10 apply + patch-map cache wins, reject no-args invoke specialization, and continue on `_construct_spell_instance_with_overrides` / kwargs helper hotspots | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: The `_invoke_spell_with_kwargs` no-args direct-call experiment regressed and was rejected by same-setting A/B runs; changed path averaged `38.5584ms` over 5 runs, while reverted baseline averaged `37.1777ms` over the next 5 runs (`warmup=100`, `iters=2000`, shallow overrides lane).
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1633-1640, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:152-161
+  IMPACT: Keep prior invoke path and avoid no-args specialization in Phase12 overrides executor.
+  NEXT: Continue isolated optimization on remaining dominant helper costs (`_construct_spell_instance_with_overrides` / kwargs assembly).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: After reverting the no-args invoke experiment, both profiling suites are green again (`8 passed` fast, `8 passed` overrides) with updated artifacts persisted.
+  EVIDENCE: benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:114-121, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:162-169
+  IMPACT: Retained optimization baseline remains stable for the next iteration tranche.
+  NEXT: Begin next helper-level experiment from this baseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: The latest empty-override kwargs short-circuit experiment regressed on repeated shallow timings (`37.9463ms` and `38.2707ms` sample averages), so it was reverted and not retained.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:111-115, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:124-133
+  IMPACT: Current retained performance remains from the direct Phase10 apply and cached patch-map path; no new helper shortcut is kept.
+  NEXT: Continue with a different isolated experiment focused on `_invoke_spell_with_kwargs`/call-site specialization.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Final retained optimization state is validated (`8 passed` fast suite, `8 passed` overrides suite) and keeps shallow repeated timings below pre-wrapper baseline (`avg 37.5374ms` vs prior `38.7638ms`) after reverting non-winning helper tweaks.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:52-56, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:111-123, benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:90-97
+  IMPACT: We have a stable, measured win and a clean starting point for the next optimization tranche.
+  NEXT: Target remaining dominant Phase12 helper runtime (`_construct_spell_instance_with_overrides` / `_invoke_spell_with_kwargs`) with isolate-and-revert loops.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: A follow-up helper micro-patch (gating override-membership checks in `_build_kwargs_with_overrides`) did not improve over the current best baseline and was reverted after two repeated 5-run shallow timing samples (`37.2902ms`, `37.3784ms` vs baseline `37.0468ms`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:88-92, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:101-110
+  IMPACT: Keep the direct Phase10 apply optimization only; next iterations should focus on larger remaining Phase12 helper costs.
+  NEXT: Target `_construct_spell_instance_with_overrides` / `_invoke_spell_with_kwargs` with isolate-and-measure workflow.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Replacing wrapper-based Phase10 application with direct `OverridePatchMap.apply(...)` in `CreationContext._execute_with_overrides` improved shallow override repeated timings from prior baseline avg `38.7638ms` to avg `37.0468ms` (5 runs each; same `warmup=100`, `iters=2000`), and both profiling suites remain green.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context.py:541-596, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:52-56, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:88-92, benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:82-89, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:93-100
+  IMPACT: Phase10 wrapper overhead is reduced; next gains should focus on remaining Phase12 helper runtime costs.
+  NEXT: Re-rank shallow override hotspots and patch the highest-value Phase12 helper path.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-15
   TYPE: MEASURE
   CLAIM: Shallow override timing was rerun 5 times with the same settings (`warmup=100`, `iters=2000`): `47.6779, 47.7133, 47.6709, 46.4154, 47.0055 ms` (avg `47.2966 ms`, std `0.5139 ms`), confirming stable high-40ms behavior and no material win from the recent shape-cache tweak.

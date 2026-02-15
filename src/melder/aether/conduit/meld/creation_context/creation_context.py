@@ -8,9 +8,6 @@ from melder.aether.conduit.meld.creation_context.creation_context_codegen import
     compile_creation_context_instance_overrides_only_executor,
     compile_creation_context_instance_no_overrides_executor,
 )
-from melder.spellbook.spell_crafter.blueprints.patch_maps import (
-    apply_phase10_override_payload,
-)
 from melder.spellbook.spell_crafter.blueprints.phase12_overrides_executor import (
     compile_phase12_overrides_executor_code_object,
     compile_phase12_overrides_executor,
@@ -592,10 +589,11 @@ class CreationContext(Cleanable):
             if target_payload:
                 override_patch_map_phase10 = self._override_patch_map_phase10
                 try:
-                    override_map = apply_phase10_override_payload(
-                        override_patch_map=override_patch_map_phase10,
-                        override_payload=target_payload,
-                    )
+                    if override_patch_map_phase10 is None:
+                        raise RuntimeError(
+                            "Phase 10 override patch map is required for meld execution."
+                        )
+                    override_map = override_patch_map_phase10.apply(target_payload)
                 except MeldExecutionError:
                     raise
                 except Exception as exc:
