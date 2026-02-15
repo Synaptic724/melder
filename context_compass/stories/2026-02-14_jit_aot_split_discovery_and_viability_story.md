@@ -3,11 +3,11 @@
 ## Metadata
 - Story ID: STORY-2026-02-14-jit-aot-split-discovery-and-viability
 - Epic: EPIC-2026-02-14-jit-aot-phase-split-configuration
-- Status: ready
+- Status: in_progress
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
-- Updated: 2026-02-14
+- Updated: 2026-02-15
 
 ## User Narrative
 As a runtime-platform maintainer, I want proof of phase-order and lifecycle
@@ -42,10 +42,11 @@ validity semantics.
 - `src/melder/aether/conduit/meld/creation_context/creation_context_builder.py`
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: TASK-2026-02-14-discovery-jit-aot-phase-order-contract - map and assess phase split feasibility.
-- [ ] Task: TASK-2026-02-14-discovery-jit-aot-creation-context-builder-runtime-contract - map builder/factory runtime behavior with deferred artifacts.
-- [ ] Task: TASK-2026-02-14-discovery-jit-aot-resolution-required-spell-contract - define spell-level lifecycle contract.
-- [ ] Task: TASK-2026-02-14-discovery-jit-aot-assumption-challenge - present explicit pushback and discussion options.
+- [x] Task: TASK-2026-02-14-discovery-jit-aot-phase-order-contract - map and assess phase split feasibility.
+- [x] Task: TASK-2026-02-14-discovery-jit-aot-creation-context-builder-runtime-contract - map builder/factory runtime behavior with deferred artifacts.
+- [x] Task: TASK-2026-02-14-discovery-jit-aot-resolution-required-spell-contract - define spell-level lifecycle contract.
+- [x] Task: TASK-2026-02-14-discovery-jit-aot-assumption-challenge - present explicit pushback and discussion options.
+- [x] Task: TASK-2026-02-15-discovery-jit-aot-propagation-contract-surfaces - map final config/bind/transfer/runtime propagation touchpoints before implementation.
 - [ ] Enforce Ticket Microcycle across all linked tasks.
 - [ ] Require meaningful-finding note updates during discovery/implementation.
 
@@ -73,6 +74,30 @@ validity semantics.
 - 2026-02-14: Discovery story created as mandatory gate before implementation stories proceed.
 
 ## Notes
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Final discovery gate is complete; propagation map and implementation order are now evidence-backed and ready for execution.
+  EVIDENCE: context_compass/tasks/2026-02-15_discovery_jit_aot_propagation_contract_surfaces_task.md:31-88
+  IMPACT: Story can transition from discovery to implementation execution lanes without additional broad repo reads.
+  NEXT: Route active work to `TASK-2026-02-15-implement-jit-aot-config-flag-and-fluent-api`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: User selected the `A hybrid_rule_bound` implementation lane with non-breaking default behavior (`full_ahead_of_time_compilation=true`) and propagation requirements for conjure bind, late bind, and transfer (owned spells only).
+  EVIDENCE: context_compass/tasks/2026-02-14_discovery_jit_aot_assumption_challenge_task.md:31-53, context_compass/tasks/2026-02-15_discovery_jit_aot_propagation_contract_surfaces_task.md:1-88
+  IMPACT: Discovery lane now focuses on one final propagation-surface mapping task rather than option selection.
+  NEXT: Execute `TASK-2026-02-15-discovery-jit-aot-propagation-contract-surfaces` and then promote detailed implementation stories/tasks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATE: 2026-02-15
+  TYPE: DECISION_REQUEST
+  CLAIM: Discovery package is complete and now requires user option selection (`A hybrid_rule_bound` / `B deferred_optional_builder` / `C strict_aot_only`) to close this story and open implementation planning.
+  EVIDENCE: context_compass/tasks/2026-02-14_discovery_jit_aot_phase_order_contract_task.md:31-39, context_compass/tasks/2026-02-14_discovery_jit_aot_creation_context_builder_runtime_contract_task.md:34-44, context_compass/tasks/2026-02-14_discovery_jit_aot_resolution_required_spell_contract_task.md:31-45, context_compass/tasks/2026-02-14_discovery_jit_aot_assumption_challenge_task.md:31-53
+  IMPACT: Story is no longer blocked by evidence gathering; only decision capture remains.
+  NEXT: Record user choice and convert approved path into implementation tasks in configuration/runtime stories.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Existing helper methods expose structural-only and full-run pathways, but full run order currently places 8-11 before 6-7.
@@ -87,5 +112,5 @@ validity semantics.
 - [ ] Acceptance criteria confirmed by user
 
 ## Context / Handoff Summary
-Discovery story is ready with four concrete tasks, including explicit assumption
-challenge output requested by the user.
+Discovery story has completed option selection and propagation-surface mapping.
+Next active lane is implementation, starting with config/fluent API.

@@ -529,6 +529,9 @@ class TransferOfOwnership:
             spell_obj._owner_conduit_id = self.source_conduit._id
         except Exception:
             pass
+        source_resolution_required = self._get_resolution_required_for_spellbook(src_book)
+        spell_obj.resolution_required = source_resolution_required
+        spell_obj.resolution_complete = not source_resolution_required
         src_states = src_book._spell_system_states
         tgt_states = tgt_book._spell_system_states
         if src_states is None:
@@ -536,6 +539,32 @@ class TransferOfOwnership:
         if tgt_states is not None and tgt_states is not src_states:
             tgt_states.unregister_lineage(spell_obj.spell_index)
         src_states.register_lineage(spell_obj.spell_index, spell_obj)
+
+    def _get_resolution_required_for_spellbook(self, spellbook: Any) -> bool:
+        """
+        Compute transfer-time runtime-resolution gating for a spellbook owner.
+
+        Contract:
+            - Returns False when the owner has no configuration object (test-stub fallback).
+            - Otherwise trusts `full_ahead_of_time_compilation` from configuration
+              and returns the inverse runtime gate flag.
+        Args:
+            spellbook: Owning spellbook for the post-transfer spell.
+        Returns:
+            bool: True when runtime resolution is required for this owner.
+        Raises:
+            Any exception from `configuration.get_property` when configuration exists.
+        """
+        try:
+            configuration = spellbook._configuration
+        except AttributeError:
+            return False
+        if configuration is None:
+            return False
+        full_ahead_of_time_compilation = configuration.get_property(
+            "full_ahead_of_time_compilation"
+        )
+        return not full_ahead_of_time_compilation
 
     def _unshare_target_conduit_contract(self, spell_obj: Any) -> None:
         """
@@ -953,6 +982,11 @@ class TransferOfOwnership:
                 dynamic_environment=self.target_conduit.__dynamic_environment__,
                 creation_gate_controller=self.target_conduit._creation_gate_controller,
             )
+            target_resolution_required = self._get_resolution_required_for_spellbook(
+                tgt_book
+            )
+            spell_obj.resolution_required = target_resolution_required
+            spell_obj.resolution_complete = not target_resolution_required
         except Exception as e:
             raise RuntimeError(f"Failed to flip spellbooks: {e}")
 

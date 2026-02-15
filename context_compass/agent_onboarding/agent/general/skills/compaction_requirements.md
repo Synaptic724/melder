@@ -7,6 +7,7 @@ Purpose
 Highest-priority rule
 - After any context compaction, handoff, or fresh session, stop and re-onboard before any tooling, edits, execution, or planning.
 - Do not trust memory from before compaction as authoritative context.
+- Performative compliance is forbidden: marker-only "REREAD" logs without substantive reading do not satisfy re-onboarding.
 
 External-memory-first rule
 - Treat repository files as the single durable memory source.
@@ -33,6 +34,7 @@ Required post-compaction sequence
    - `CERTIFY: APPROVED (active)` or
    - `CERTIFY: APPROVED (inactive)`
 10) Publish a re-onboarding attestation message before any action.
+11) Include a concise read-integrity proof in the attestation (concrete rule callouts from reread docs).
 
 Mandatory attestation format
 ```text
@@ -41,6 +43,9 @@ ENVIRONMENT: <active|inactive>
 FILES_REREAD:
 - <path>
 - <path>
+READ_INTEGRITY_PROOF:
+- <path>: <concrete rule callout>
+- <path>: <concrete rule callout>
 NO_ACTION_TAKEN_YET: true
 ```
 
@@ -48,6 +53,7 @@ Attestation contract
 - Emit the attestation immediately after re-onboarding and certification.
 - Do not run tools, edit files, or execute plans before posting the attestation.
 - If attestation cannot be completed, stop and ask the user for instructions.
+- Parallel/bulk reads are allowed, but files must be substantively read; marker-only loops are non-compliant.
 
 Execution gate
 - If any required item above is incomplete, do not proceed.

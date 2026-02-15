@@ -56,6 +56,7 @@ class DummySpell:
         self.spellframe = None
         self.binding_name = None
         self.profile = None
+        self.resolution_required = False
 
     def cleanup(self):
         """
@@ -375,7 +376,15 @@ class DummyConfig:
     Contract:
         Implements the configuration methods used by Spellbook.
     """
-    def __init__(self, hooks=None, logger_factory=None, system_state=None, frozen=False, validate_ok=True):
+    def __init__(
+            self,
+            hooks=None,
+            logger_factory=None,
+            system_state=None,
+            frozen=False,
+            validate_ok=True,
+            full_ahead_of_time_compilation: bool = True,
+    ):
         """
         Purpose:
             Initialize the configuration stub.
@@ -387,6 +396,8 @@ class DummyConfig:
             system_state: Optional SystemState override.
             frozen: Initial frozen flag.
             validate_ok: Whether validate() should succeed.
+            full_ahead_of_time_compilation: Optional runtime mode flag returned by
+                get_property("full_ahead_of_time_compilation").
         Returns:
             None.
         """
@@ -394,6 +405,7 @@ class DummyConfig:
         self._logger_factory = logger_factory
         self._logger_for = {}
         self._system_state = system_state or SystemState.automatic
+        self._full_ahead_of_time_compilation = full_ahead_of_time_compilation
         self.cleaned = False
         self._aether_frame = "default"
         self._frozen = frozen
@@ -442,7 +454,8 @@ class DummyConfig:
         Purpose:
             Provide access to configuration properties.
         Contract:
-            Returns system_state or disposal_method_names when requested, otherwise None.
+            Returns system_state, disposal_method_names, or
+            full_ahead_of_time_compilation when requested, otherwise None.
         Args:
             name: Property name to fetch.
         Returns:
@@ -452,6 +465,8 @@ class DummyConfig:
             return self._system_state
         if name == "disposal_method_names":
             return []
+        if name == "full_ahead_of_time_compilation":
+            return self._full_ahead_of_time_compilation
         return None
 
     def validate(self):
@@ -1301,6 +1316,154 @@ def test_define_conduit_stamps_owner_and_primes_existing():
     SpellbookCreationSystem.define_conduit_into_spells(sb, conduit)
     assert spell_existing._owner[0] == conduit._id
     assert conduit.registered[0][1] == "obj"
+    assert spell_existing.resolution_required is False
+    assert spell_normal.resolution_required is False
+
+
+def test_define_conduit_sets_resolution_required_when_jit_enabled():
+    """
+    Purpose:
+        Verify conjure ownership wiring marks spells as runtime-resolution-required
+        when full AOT compilation is disabled.
+    Contract:
+        SpellbookCreationSystem.define_conduit_into_spells sets
+        `resolution_required=True` for local spells when
+        full_ahead_of_time_compilation=False.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If propagation is not applied.
+    """
+    frame_name = "jit_propagation_test_frame"
+    cfg = DummyConfig(full_ahead_of_time_compilation=False)
+    cfg._aether_frame = frame_name
+    sb = Spellbook(aetheric_frame=frame_name, configuration=cfg)
+    conduit = DummyConduit()
+    spell = DummySpell()
+    idx = DummySpellIndex()
+    spell.spell_index = idx
+    sb._spells = {idx: spell}
+    sb._logger = DummySafeLogger()
+
+    SpellbookCreationSystem.define_conduit_into_spells(sb, conduit)
+
+    assert spell.resolution_required is True
+
+
+def test_bind_after_conjure_sets_resolution_required_when_jit_enabled(monkeypatch):
+    """
+    Purpose:
+        Verify late binds inherit JIT runtime-resolution requirements.
+    Contract:
+        When a conduit already exists and full AOT is disabled, `bind()` stamps
+        `resolution_required=True` while preserving ownership, creations
+        registration, lineage registration, and risk-manager registration.
+    Args:
+        monkeypatch: Pytest fixture for patching Aether helpers.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If propagation or existing side effects are missing.
+    """
+    frame_name = "bind_post_conjure_jit_frame"
+    cfg = DummyConfig(full_ahead_of_time_compilation=False)
+    cfg._aether_frame = frame_name
+    sb = Spellbook(aetheric_frame=frame_name, configuration=cfg)
+    sb._logger = DummySafeLogger()
+    sb._conjured = True
+    sb._conduit = DummyConduit(cid="jit-cid", name="jit-conduit")
+    sb._ensure_binding_transaction_active = lambda action: None
+    sb._assert_lookup_key_available = lambda **kwargs: None
+    sb._add_hooks_to_spell = lambda spell, **kwargs: None
+
+    lineage_calls = []
+    risk_calls = []
+    register_single_calls = []
+    sb._spell_system_states = types.SimpleNamespace(
+        register_lineage=lambda spell_index, spell: lineage_calls.append((spell_index, spell))
+    )
+    sb._register_spell_with_risk_manager = (
+        lambda conduit_id, spell: risk_calls.append((conduit_id, spell))
+    )
+
+    monkeypatch.setattr(Spellbook._aether, "_check_for_spell", lambda *a, **k: False)
+    monkeypatch.setattr(
+        Spellbook._aether,
+        "_register_single_spell_index",
+        lambda conduit_id, spell_index, frame: register_single_calls.append(
+            (conduit_id, spell_index, frame)
+        ),
+    )
+
+    idx = DummySpellIndex(sid="jit-sid", current="jit-sid")
+    idx._attach_owner = lambda owner, spell: setattr(idx, "_attached_owner", owner)
+    new_spell = DummySpell(spell_id="jit-sid", existing_object="existing")
+    new_spell.spell_index = idx
+    new_spell._key = ("jit-frame", "jit-binding")
+    new_spell.key = new_spell._key
+    sb._bind = types.SimpleNamespace(bind=lambda **kwargs: new_spell)
+
+    result = sb.bind(spell=object(), existence=Existence.unique, permissions="create")
+
+    assert result == "jit-sid"
+    assert new_spell.resolution_required is True
+    assert new_spell._owner[0] == "jit-cid"
+    assert sb._conduit.registered == [(new_spell, "existing")]
+    assert len(lineage_calls) == 1
+    assert lineage_calls[0][1] is new_spell
+    assert risk_calls == [("jit-cid", new_spell)]
+    assert register_single_calls == [("jit-cid", idx, frame_name)]
+
+
+def test_bind_after_conjure_keeps_resolution_required_false_when_aot_enabled(monkeypatch):
+    """
+    Purpose:
+        Verify late binds preserve default AOT runtime-resolution semantics.
+    Contract:
+        When full AOT remains enabled, `bind()` stamps
+        `resolution_required=False` for newly bound spells after conjure.
+    Args:
+        monkeypatch: Pytest fixture for patching Aether helpers.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If default AOT propagation is not preserved.
+    """
+    frame_name = "bind_post_conjure_aot_frame"
+    cfg = DummyConfig(full_ahead_of_time_compilation=True)
+    cfg._aether_frame = frame_name
+    sb = Spellbook(aetheric_frame=frame_name, configuration=cfg)
+    sb._logger = DummySafeLogger()
+    sb._conjured = True
+    sb._conduit = DummyConduit(cid="aot-cid", name="aot-conduit")
+    sb._ensure_binding_transaction_active = lambda action: None
+    sb._assert_lookup_key_available = lambda **kwargs: None
+    sb._add_hooks_to_spell = lambda spell, **kwargs: None
+    sb._spell_system_states = types.SimpleNamespace(
+        register_lineage=lambda spell_index, spell: None
+    )
+    sb._register_spell_with_risk_manager = lambda conduit_id, spell: None
+
+    monkeypatch.setattr(Spellbook._aether, "_check_for_spell", lambda *a, **k: False)
+    monkeypatch.setattr(
+        Spellbook._aether,
+        "_register_single_spell_index",
+        lambda conduit_id, spell_index, frame: None,
+    )
+
+    idx = DummySpellIndex(sid="aot-sid", current="aot-sid")
+    idx._attach_owner = lambda owner, spell: None
+    new_spell = DummySpell(spell_id="aot-sid")
+    new_spell.spell_index = idx
+    new_spell._key = ("aot-frame", "aot-binding")
+    new_spell.key = new_spell._key
+    new_spell.resolution_required = True
+    sb._bind = types.SimpleNamespace(bind=lambda **kwargs: new_spell)
+
+    result = sb.bind(spell=object(), existence=Existence.unique, permissions="create")
+
+    assert result == "aot-sid"
+    assert new_spell.resolution_required is False
 
 
 def test_define_conduit_handles_errors():

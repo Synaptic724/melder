@@ -3,7 +3,7 @@
 ## Metadata
 - Task ID: TASK-2026-02-14-discovery-jit-aot-phase-order-contract
 - Story: STORY-2026-02-14-jit-aot-split-discovery-and-viability
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
@@ -21,16 +21,24 @@ Establish whether the requested split shape (run phases 1-7 at conjure and defer
 - Runtime code changes.
 
 ## Steps / Checklist
-- [ ] Map current phase execution order for structural and full-run helpers.
-- [ ] Trace where conduit-scoped resolution phases are invoked and what they depend on.
-- [ ] Record compatibility verdict for requested split with evidence-backed rationale.
-- [ ] If incompatible, propose 2-3 alternative split models for user review.
-- [ ] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Map current phase execution order for structural and full-run helpers.
+- [x] Trace where conduit-scoped resolution phases are invoked and what they depend on.
+- [x] Record compatibility verdict for requested split with evidence-backed rationale.
+- [x] If incompatible, propose 2-3 alternative split models for user review.
+- [x] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - One phase-order contract note set with explicit viability verdict.
 - One decision-ready alternatives list (if requested split is incompatible).
+
+## Viability Verdict (2026-02-15)
+Verdict: requested split shape is now contract-viable at ordering level after parity alignment.
+
+Rationale:
+- `Spell.run_all_phases` now runs `5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11`.
+- `SpellbookCreationSystem` target resolution path registers local foundational phases before local plan phases.
+- Residual risk moved from ordering mismatch to runtime orchestration/flag lifecycle (`resolution_required`) and builder-contract policy.
 
 ## Files / Paths Impacted
 - `src/melder/spellbook/spell_crafter/spell_crafter.py`
@@ -49,15 +57,23 @@ Establish whether the requested split shape (run phases 1-7 at conjure and defer
 - Rollback: Keep this task discovery-only; no runtime changes occur here.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
 - [ ] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Phase-order parity is now aligned: full-run spell path executes foundational phases before plan phases, matching resolution-system ordering direction.
+  EVIDENCE: src/melder/spellbook/spell.py:1337-1348, src/melder/spellbook/spellbook_creation_system.py:1315-1331, src/melder/spellbook/spellbook_creation_system.py:1398-1426, context_compass/tasks/2026-02-15_align_spellcrafter_phase_order_with_spellbook_creation_system_task.md:1-110
+  IMPACT: Original ordering conflict risk is reduced; split feasibility now depends primarily on runtime gating contracts.
+  NEXT: Route decisions through builder/flag/assumption-challenge tasks for implementation planning.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
 - DATE: 2026-02-15
   TYPE: FACT
   CLAIM: Resolution ordering contracts currently drift across paths: `SpellbookCreationSystem` runs foundational phases (`5/6/7`) before plan phases (`8/9/10/11`), while `SpellCrafter.run_all_phases` still runs `5/8/9/10/11/6/7`.
@@ -76,5 +92,6 @@ Establish whether the requested split shape (run phases 1-7 at conjure and defer
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary
-Task is ready; first action is dependency validation for 6-7 relative to 8-11
-to confirm whether requested split can be used as-is or needs redesign.
+Phase-order discovery is complete and in review; ordering-level mismatch has
+been addressed via parity alignment. Next gating work is assumption decision +
+implementation planning for runtime resolution orchestration.

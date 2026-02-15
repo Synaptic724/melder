@@ -336,6 +336,7 @@ class Meld(Cleanable, IMeld):
         # 3) SpellSystemState / SpellValidity gate + lazy revalidation.
         if self._spellbook._spellbook_validation_required:
             self._ensure_lineage_resolvable(target_spell)
+        self._ensure_runtime_resolution_ready(target_spell)
 
         creations = self._creations
         meld_hooks = self._meld_hooks
@@ -455,7 +456,60 @@ class Meld(Cleanable, IMeld):
         self._check_contracts_and_force_revalidation(spell)
 
         # Resolution gating (per-conduit)
-        self._ensure_resolution_resolvable(spell)
+        if not spell.resolution_required:
+            self._ensure_resolution_resolvable(spell)
+
+    def _ensure_runtime_resolution_ready(self, spell: ISpell) -> None:
+        """
+        Ensure deferred runtime resolution is complete before context build.
+
+        Contract:
+            - Fast-path no-op when `resolution_required` is False.
+            - When required, runs exactly one deferred target-local plan pass
+              (`8-11`) under the spell lock.
+            - On success: sets `resolution_complete=True` and
+              `resolution_required=False`.
+            - On failure: preserves `resolution_required=True` and
+              `resolution_complete=False`, then re-raises.
+            - Hard-fails when deferred resolution is required but no active
+              resolution conduit id exists.
+
+        Args:
+            spell: Spell about to resolve through meld.
+
+        Raises:
+            RuntimeError: If no resolution conduit id is available.
+            Exception: Re-raises deferred resolution failures.
+        """
+        if not spell.resolution_required:
+            return
+
+        with spell._lock:
+            if not spell.resolution_required:
+                return
+            if spell.resolution_complete:
+                spell.resolution_required = False
+                return
+
+            conduit_id = self._resolution_conduit_id
+            if not conduit_id:
+                raise RuntimeError(
+                    "Deferred runtime resolution requires a resolution conduit id."
+                )
+
+            spellbook = spell._spellbook
+            try:
+                spellbook._run_deferred_resolution_phases_for_target_spell(
+                    conduit_id,
+                    spell,
+                )
+            except Exception:
+                spell.resolution_complete = False
+                spell.resolution_required = True
+                raise
+
+            spell.resolution_complete = True
+            spell.resolution_required = False
 
     def _get_cached_change_control_manager(
             self,

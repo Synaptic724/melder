@@ -226,6 +226,8 @@ class _SpellStub:
         validity_after_run: SpellValidity | None = None,
         broken_after_run: bool | None = None,
         creation_context: Any | None = None,
+        resolution_required: bool = False,
+        resolution_complete: bool = True,
     ) -> None:
         """
         Initialize a stub spell with the requested properties.
@@ -257,6 +259,8 @@ class _SpellStub:
             validity_after_run: Validity to assign after structural phases.
             broken_after_run: Broken state to assign after structural phases.
             creation_context: Optional spell-owned creation context cache.
+            resolution_required: Deferred runtime-resolution requirement flag.
+            resolution_complete: Deferred runtime-resolution completion flag.
         """
         self.spell_id = spell_id
         self.spell_name = spell_name
@@ -300,6 +304,8 @@ class _SpellStub:
         self._activation_hooks: list[Callable[..., Any]] = []
         self._post_hooks: list[Callable[..., Any]] = []
         self._hooks_enabled: bool = False
+        self.resolution_required = bool(resolution_required)
+        self.resolution_complete = bool(resolution_complete)
         self.run_all_phases_calls = 0
         self.run_structural_phases_calls = 0
         self._validity_after_run = validity_after_run
@@ -414,6 +420,20 @@ class _SpellbookStub:
     ) -> None:
         """
         Local resolution-phase hook used by Meld tests.
+
+        Contract:
+            - Default stub behavior is a no-op.
+            - Tests may replace this method with a MagicMock side effect.
+        """
+        return None
+
+    def _run_deferred_resolution_phases_for_target_spell(
+        self,
+        conduit_id: str,
+        target_spell: Any,
+    ) -> None:
+        """
+        Local deferred resolution hook used by Meld runtime gate tests.
 
         Contract:
             - Default stub behavior is a no-op.
@@ -1670,6 +1690,244 @@ def test_ensure_resolution_resolvable_blocks_invalid_disabled_cleaned(
 
     with pytest.raises(SpellbookValidationError):
         meld._ensure_resolution_resolvable(spell)
+
+
+def test_ensure_runtime_resolution_ready_skips_when_not_required() -> None:
+    """
+    Verify deferred runtime-resolution gate is a no-op when not required.
+
+    Contract:
+        - `resolution_required=False` performs no deferred phase call.
+        - Existing completion state remains unchanged.
+    """
+    spellbook = _SpellbookStub()
+    spellbook._run_deferred_resolution_phases_for_target_spell = MagicMock()
+    meld = _make_meld(spellbook=spellbook)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        spellbook=spellbook,
+        resolution_required=False,
+        resolution_complete=False,
+    )
+
+    meld._ensure_runtime_resolution_ready(spell)
+
+    spellbook._run_deferred_resolution_phases_for_target_spell.assert_not_called()
+    assert spell.resolution_required is False
+    assert spell.resolution_complete is False
+
+
+def test_ensure_runtime_resolution_ready_marks_not_required_when_complete() -> None:
+    """
+    Verify already-complete deferred resolution clears required flag without rerun.
+
+    Contract:
+        - `resolution_required=True` and `resolution_complete=True` does not call
+          deferred phases.
+        - Runtime gate normalizes state to `required=False`.
+    """
+    spellbook = _SpellbookStub()
+    spellbook._run_deferred_resolution_phases_for_target_spell = MagicMock()
+    meld = _make_meld(spellbook=spellbook)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        spellbook=spellbook,
+        resolution_required=True,
+        resolution_complete=True,
+    )
+
+    meld._ensure_runtime_resolution_ready(spell)
+
+    spellbook._run_deferred_resolution_phases_for_target_spell.assert_not_called()
+    assert spell.resolution_required is False
+    assert spell.resolution_complete is True
+
+
+def test_ensure_runtime_resolution_ready_runs_deferred_and_marks_complete() -> None:
+    """
+    Verify runtime gate executes deferred phases and marks resolution complete.
+
+    Contract:
+        - Deferred phase hook runs once for the active resolution conduit id.
+        - Success flips flags to `resolution_complete=True` and
+          `resolution_required=False`.
+    """
+    spellbook = _SpellbookStub()
+    spellbook._run_deferred_resolution_phases_for_target_spell = MagicMock()
+    meld = _make_meld(spellbook=spellbook)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        spellbook=spellbook,
+        resolution_required=True,
+        resolution_complete=False,
+    )
+
+    meld._ensure_runtime_resolution_ready(spell)
+
+    expected_conduit_id = meld._resolution_conduit_id
+    spellbook._run_deferred_resolution_phases_for_target_spell.assert_called_once_with(
+        expected_conduit_id,
+        spell,
+    )
+    assert spell.resolution_complete is True
+    assert spell.resolution_required is False
+
+
+def test_ensure_runtime_resolution_ready_failure_reflags_and_reraises() -> None:
+    """
+    Verify deferred-resolution failures keep runtime gate required and incomplete.
+
+    Contract:
+        - Deferred phase exceptions propagate to caller.
+        - Failure preserves `resolution_required=True` and
+          `resolution_complete=False`.
+    """
+    spellbook = _SpellbookStub()
+    spellbook._run_deferred_resolution_phases_for_target_spell = MagicMock(
+        side_effect=RuntimeError("deferred resolution failed"),
+    )
+    meld = _make_meld(spellbook=spellbook)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        spellbook=spellbook,
+        resolution_required=True,
+        resolution_complete=False,
+    )
+
+    with pytest.raises(RuntimeError, match="deferred resolution failed"):
+        meld._ensure_runtime_resolution_ready(spell)
+
+    expected_conduit_id = meld._resolution_conduit_id
+    spellbook._run_deferred_resolution_phases_for_target_spell.assert_called_once_with(
+        expected_conduit_id,
+        spell,
+    )
+    assert spell.resolution_complete is False
+    assert spell.resolution_required is True
+
+
+def test_ensure_runtime_resolution_ready_requires_conduit_id() -> None:
+    """
+    Verify runtime gate hard-fails when no resolution conduit id is available.
+
+    Contract:
+        - Missing conduit id raises RuntimeError before deferred phases run.
+        - Gate flags are left unchanged on this setup error.
+    """
+    spellbook = _SpellbookStub()
+    spellbook._run_deferred_resolution_phases_for_target_spell = MagicMock()
+    meld = _make_meld(spellbook=spellbook)
+    meld._resolution_conduit_id = None
+    spell = _SpellStub(
+        spell_id="spell-1",
+        spellbook=spellbook,
+        resolution_required=True,
+        resolution_complete=False,
+    )
+
+    with pytest.raises(RuntimeError, match="resolution conduit id"):
+        meld._ensure_runtime_resolution_ready(spell)
+
+    spellbook._run_deferred_resolution_phases_for_target_spell.assert_not_called()
+    assert spell.resolution_required is True
+    assert spell.resolution_complete is False
+
+
+def test_meld_runs_deferred_runtime_resolution_before_context_build() -> None:
+    """
+    Verify meld executes deferred runtime gate before creation-context build.
+
+    Contract:
+        - Deferred phase hook executes before context build/execution.
+        - Successful deferred pass allows compiled door execution.
+        - Runtime flags normalize to complete/not-required.
+    """
+    creations, _ = _make_creations()
+    spellbook = _SpellbookStub()
+    spellbook._spellbook_validation_required = False
+    call_order: list[str] = []
+
+    def _run_deferred_resolution(conduit_id: str, target_spell: _SpellStub) -> None:
+        """
+        Record deferred phase invocation for ordering assertions.
+        """
+        assert conduit_id == "conduit-1"
+        assert target_spell.spell_id == "spell-1"
+        call_order.append("deferred")
+
+    spellbook._run_deferred_resolution_phases_for_target_spell = MagicMock(
+        side_effect=_run_deferred_resolution,
+    )
+    context = _CreationContextStub(no_hooks_no_overrides_result="resolved")
+
+    def _execute_no_hooks_no_overrides(caller_creations: Any) -> Any:
+        """
+        Record compiled execution invocation after deferred runtime gate.
+        """
+        assert caller_creations is creations
+        call_order.append("context")
+        return "resolved"
+
+    context._execute_no_hooks_no_overrides_compiled = _execute_no_hooks_no_overrides
+    spell = _SpellStub(
+        spell_id="spell-1",
+        owner_creations=creations,
+        spellbook=spellbook,
+        resolution_required=True,
+        resolution_complete=False,
+    )
+    spell._get_or_build_creation_context = MagicMock(return_value=context)
+
+    meld = _make_meld(creations=creations, spellbook=spellbook)
+    meld._resolve_spell_by_id = MagicMock(return_value=spell)
+
+    assert meld.meld(spell="spell-1") == "resolved"
+    spellbook._run_deferred_resolution_phases_for_target_spell.assert_called_once_with(
+        "conduit-1",
+        spell,
+    )
+    spell._get_or_build_creation_context.assert_called_once()
+    assert call_order == ["deferred", "context"]
+    assert spell.resolution_complete is True
+    assert spell.resolution_required is False
+
+
+def test_meld_skips_context_build_when_deferred_runtime_resolution_fails() -> None:
+    """
+    Verify meld does not build context when deferred runtime gate fails.
+
+    Contract:
+        - Deferred runtime phase errors propagate from `meld`.
+        - Context-build path is not entered after deferred failure.
+        - Runtime flags remain required/incomplete.
+    """
+    spellbook = _SpellbookStub()
+    spellbook._spellbook_validation_required = False
+    spellbook._run_deferred_resolution_phases_for_target_spell = MagicMock(
+        side_effect=RuntimeError("deferred gate failure"),
+    )
+    spell = _SpellStub(
+        spell_id="spell-1",
+        spellbook=spellbook,
+        resolution_required=True,
+        resolution_complete=False,
+    )
+    spell._get_or_build_creation_context = MagicMock()
+
+    meld = _make_meld(spellbook=spellbook)
+    meld._resolve_spell_by_id = MagicMock(return_value=spell)
+
+    with pytest.raises(RuntimeError, match="deferred gate failure"):
+        meld.meld(spell="spell-1")
+
+    expected_conduit_id = meld._resolution_conduit_id
+    spellbook._run_deferred_resolution_phases_for_target_spell.assert_called_once_with(
+        expected_conduit_id,
+        spell,
+    )
+    spell._get_or_build_creation_context.assert_not_called()
+    assert spell.resolution_complete is False
+    assert spell.resolution_required is True
 
 
 def test_gated_validation_required_unknown_without_dirty_raises() -> None:

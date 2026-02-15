@@ -46,6 +46,7 @@ class Spell(Cleanable, ISpell):
     - Enables hook-based lifecycle support (pre, activation, post).
     - Acts as a source of truth for spell identity and access.
     - Stores conjure-time disposal metadata (matched method names + boolean flag).
+    - Tracks whether runtime resolution is still required before first context build.
     - Caches Phase 11 execution-plan metrics (node count, max depth, etc.) for
       runtime path selection.
 
@@ -160,6 +161,8 @@ class Spell(Cleanable, ISpell):
         "permissions",
         "profile",
         "resolution_profile",
+        "resolution_required",
+        "resolution_complete",
         "execution_plan_step_count",
         "execution_plan_unique_spell_count",
         "execution_plan_max_occurrence_depth",
@@ -315,6 +318,10 @@ class Spell(Cleanable, ISpell):
         self._creation_context_switch: CounterSwitch = CounterSwitch(state=0)
         # Runtime mode carried from owning conduit for context factory wiring.
         self._dynamic_environment: bool = False
+        # Runtime resolution gate flag (False for full AOT by default).
+        self.resolution_required: bool = False
+        # Runtime deferred-resolution completion flag (True for full AOT by default).
+        self.resolution_complete: bool = True
 
         # Created after Conduit made (ownership / scope integration)
         self._owner_conduit_id: Optional[str] = None
@@ -619,6 +626,8 @@ class Spell(Cleanable, ISpell):
             self._creation_context_factory = None
             self._creation_context_switch = None
             self._dynamic_environment = None
+            self.resolution_required = None
+            self.resolution_complete = None
             self.aetheric_frame = None
             self.spell_index = None
 

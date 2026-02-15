@@ -2531,9 +2531,14 @@ class Spellbook(Cleanable, ISpellbook):
                 else:
                     self._spell_versions.add(new_spell.spell_id)
 
-            # If a Conduit already exists, stamp ownership metadata for the new spell.
-            # Existing-object spells are also eagerly registered into Creations.
+            # If a Conduit already exists, stamp ownership metadata and runtime
+            # resolution defaults for the new spell. Existing-object spells are
+            # also eagerly registered into Creations.
             if self._conjured and self._conduit is not None:
+                full_ahead_of_time_compilation = self._configuration.get_property(
+                    "full_ahead_of_time_compilation"
+                )
+
                 new_spell._add_owned_conduit(
                     self._conduit._id,
                     self._conduit._name,
@@ -2542,6 +2547,8 @@ class Spellbook(Cleanable, ISpellbook):
                     creation_gate_controller=self._conduit._creation_gate_controller,
                 )
                 new_spell.spell_index._set_owner_conduit_id(self._conduit._id)
+                new_spell.resolution_required = not full_ahead_of_time_compilation
+                new_spell.resolution_complete = full_ahead_of_time_compilation
                 if new_spell.user_created_object is not None:
                     try:
                         self._conduit._register_to_creations(
@@ -3175,6 +3182,39 @@ class Spellbook(Cleanable, ISpellbook):
             PhaseExecutionError: On non-visibility execution failures.
         """
         return SpellbookCreationSystem.run_resolution_phases_for_target_spell(
+            spellbook=self,
+            conduit_id=conduit_id,
+            target_spell=target_spell,
+            phase_scheduler_cls=PhaseScheduler,
+        )
+
+    def _run_deferred_resolution_phases_for_target_spell(
+            self,
+            conduit_id: str,
+            target_spell: ISpell,
+    ) -> Dict[str, Sequence[IUnitOfWork]]:
+        """
+        Internal
+
+        Purpose:
+            Execute local deferred plan phases (8-11) for one target spell.
+        Contract:
+            - Delegates orchestration to `SpellbookCreationSystem`.
+            - Uses Spellbook's `PhaseScheduler` symbol to preserve patch points.
+            - Restricts execution/cleanup to target-local deferred scope.
+        Threading:
+            Caller must hold target spell synchronization for deterministic
+            deferred runtime gating.
+        Args:
+            conduit_id: Conduit id for deferred-resolution scope.
+            target_spell: Spell being resolved in deferred mode.
+        Returns:
+            Dict[str, Sequence[IUnitOfWork]]: Phase execution result mapping.
+        Raises:
+            ValueError: If conduit_id is empty or target_spell is None.
+            PhaseExecutionError: On non-visibility execution failures.
+        """
+        return SpellbookCreationSystem.run_deferred_resolution_phases_for_target_spell(
             spellbook=self,
             conduit_id=conduit_id,
             target_spell=target_spell,

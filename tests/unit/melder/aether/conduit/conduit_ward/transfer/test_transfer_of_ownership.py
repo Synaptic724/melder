@@ -2310,6 +2310,38 @@ def test_rollback_spellbook_move_restores_source_ownership() -> None:
     assert env.spell._owner_conduit_id == SOURCE_ID
 
 
+def test_rollback_spellbook_move_restores_source_resolution_required_default() -> None:
+    """
+    Verify rollback reapplies source runtime-resolution defaults.
+
+    Contract:
+    - `resolution_required` is recomputed from source spellbook config.
+    """
+    env = build_environment()
+    env.source._spellbook._configuration = SimpleNamespace(
+        get_property=lambda name: True
+    )
+    env.target._spellbook._configuration = SimpleNamespace(
+        get_property=lambda name: False
+    )
+    with env.source._spellbook._lock, env.target._spellbook._lock:
+        env.source._spellbook._spells.pop(env.spell_index, None)
+        env.source._spellbook._lookup_spells.pop(env.spell._key, None)
+        env.target._spellbook._spells[env.spell_index] = env.spell
+        env.target._spellbook._lookup_spells[env.spell._key] = env.spell_index
+    env.spell._owner_conduit_id = TARGET_ID
+    env.spell.resolution_required = True
+    transfer = TransferOfOwnership(
+        source_conduit=env.source,
+        target_conduit=env.target,
+        spell=env.spell,
+    )
+
+    transfer._rollback_spellbook_move(env.spell, env.source._spellbook, env.target._spellbook)
+
+    assert env.spell.resolution_required is False
+
+
 def test_rollback_move_creation_restores_to_source() -> None:
     """
     Verify rollback_move_creation restores a creation to the source.
@@ -2716,6 +2748,80 @@ def test_flip_registry_and_spellbooks_moves_spell_id_map() -> None:
     assert env.target._spellbook._spells_by_id[spell_id] is env.spell
     assert env.spell.spell_index._owner_spellbook is env.target._spellbook
     assert env.spell.spell_index._owner_spell is env.spell
+
+
+def test_flip_registry_and_spellbooks_stamps_resolution_required_from_target_defaults() -> None:
+    """
+    Verify ownership flip reapplies target runtime-resolution defaults.
+
+    Contract:
+    - `resolution_required` is recomputed from target spellbook config.
+    """
+    env = build_environment()
+    env.spell.resolution_required = False
+    env.source._spellbook._configuration = SimpleNamespace(
+        get_property=lambda name: True
+    )
+    env.target._spellbook._configuration = SimpleNamespace(
+        get_property=lambda name: False
+    )
+    transfer = TransferOfOwnership(
+        source_conduit=env.source,
+        target_conduit=env.target,
+        spell=env.spell,
+    )
+
+    transfer._flip_registry_and_spellbooks(env.spell)
+
+    assert env.spell.resolution_required is True
+
+
+def test_transfer_flip_and_rollback_keep_contracted_maps_unchanged() -> None:
+    """
+    Verify owned transfer propagation does not mutate contracted spell maps.
+
+    Contract:
+    - `_flip_registry_and_spellbooks` updates owned spellbook maps only.
+    - `_rollback_spellbook_move` restores owned maps without mutating contracted maps.
+    - Existing contracted map entries and map identities remain unchanged.
+    """
+    env = build_environment()
+    source_peer_id = "peer-source"
+    target_peer_id = "peer-target"
+
+    source_contracted_index = SpellIndex("contracted-source")
+    target_contracted_index = SpellIndex("contracted-target")
+    source_contracted_spell = build_spell(
+        spell_id="contracted-source",
+        owner_id=PEER_ID,
+        spell_index=source_contracted_index,
+    )
+    target_contracted_spell = build_spell(
+        spell_id="contracted-target",
+        owner_id=PEER_ID,
+        spell_index=target_contracted_index,
+    )
+
+    source_contracted_map = {source_contracted_index: source_contracted_spell}
+    target_contracted_map = {target_contracted_index: target_contracted_spell}
+    env.source._spellbook._contracted_spells[source_peer_id] = source_contracted_map
+    env.target._spellbook._contracted_spells[target_peer_id] = target_contracted_map
+
+    transfer = TransferOfOwnership(
+        source_conduit=env.source,
+        target_conduit=env.target,
+        spell=env.spell,
+    )
+
+    transfer._flip_registry_and_spellbooks(env.spell)
+    transfer._rollback_spellbook_move(env.spell, env.source._spellbook, env.target._spellbook)
+
+    assert env.source._spellbook._contracted_spells[source_peer_id] is source_contracted_map
+    assert env.target._spellbook._contracted_spells[target_peer_id] is target_contracted_map
+    assert source_contracted_map[source_contracted_index] is source_contracted_spell
+    assert target_contracted_map[target_contracted_index] is target_contracted_spell
+    assert env.spell.spell_index not in source_contracted_map
+    assert env.spell.spell_index not in target_contracted_map
 
 
 def test_flip_registry_and_spellbooks_raises_on_registry_failure() -> None:

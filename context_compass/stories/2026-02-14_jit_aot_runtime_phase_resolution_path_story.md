@@ -44,9 +44,9 @@ opt-in flexibility.
 
 ## Tasks (Implementation Checklist)
 - [x] Task: TASK-2026-02-15-align-spellcrafter-phase-order-with-spellbook-creation-system - align runtime phase-order contract parity before broader split-mode changes.
-- [ ] Task: Use discovery outputs to define exact deferred-phase runtime triggers.
-- [ ] Task: Create implementation task for runtime phase-resolution path after discovery decision gate.
-- [ ] Task: Create validation task for split-mode regression matrix after implementation scope is approved.
+- [x] Task: Use discovery outputs to define exact deferred-phase runtime triggers.
+- [ ] Task: Execute story `STORY-2026-02-15-jit-aot-runtime-resolution-gate-lifecycle`.
+- [ ] Task: Execute story `STORY-2026-02-15-jit-aot-regression-matrix-and-compatibility`.
 - [ ] Enforce Ticket Microcycle across all linked tasks.
 - [ ] Require meaningful-finding note updates during discovery/implementation.
 
@@ -74,6 +74,22 @@ opt-in flexibility.
 - 2026-02-14: Story created as runtime-implementation lane, explicitly gated by discovery and contract stories.
 
 ## Notes
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Runtime lane has been decomposed into a dedicated runtime-gate story and a dedicated regression-matrix story so propagation requirements can be validated independently.
+  EVIDENCE: context_compass/stories/2026-02-15_jit_aot_runtime_resolution_gate_lifecycle_story.md:1-84, context_compass/stories/2026-02-15_jit_aot_regression_matrix_and_compatibility_story.md:1-83
+  IMPACT: Runtime execution and validation responsibilities are now independently scoped and easier to track.
+  NEXT: Complete propagation contract-surface discovery task, then execute runtime gate story before regression matrix story.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Runtime trigger recommendation is now explicit: use a pre-build runtime resolution gate (`hybrid_rule_bound`) when `resolution_required` is true, then build context through existing strict builder/factory contracts.
+  EVIDENCE: context_compass/tasks/2026-02-14_discovery_jit_aot_creation_context_builder_runtime_contract_task.md:31-44, context_compass/tasks/2026-02-14_discovery_jit_aot_creation_context_builder_runtime_contract_task.md:77-92
+  IMPACT: Story can proceed to concrete implementation task creation immediately after user decision on the recommendation.
+  NEXT: Request user decision on `hybrid_rule_bound` and open runtime implementation + validation tasks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
 - DATE: 2026-02-15
   TYPE: DECISION
   CLAIM: User requested an immediate patch to align SpellCrafter phase ordering with SpellbookCreationSystem; a dedicated implementation task was opened to execute that change without waiting for broader split-mode rollout.
@@ -104,6 +120,6 @@ opt-in flexibility.
 - [ ] Acceptance criteria confirmed by user
 
 ## Context / Handoff Summary
-Runtime story is staged and blocked on discovery + contract decisions. It will
-translate approved split semantics into implementation tasks once feasibility is
-proven.
+Runtime story has discovery-backed trigger guidance and is awaiting user
+decision on `hybrid_rule_bound`. After decision, the next step is creating
+implementation and validation tasks for deferred runtime resolution.

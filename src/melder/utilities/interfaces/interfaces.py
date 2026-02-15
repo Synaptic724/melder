@@ -436,6 +436,8 @@ class ISpell(ICleanable, Protocol):
     _creation_context: Optional[Any]
     _creation_context_factory: Optional[Any]
     _dynamic_environment: bool
+    resolution_required: bool
+    resolution_complete: bool
 
     # Phase 11 execution-plan metrics (populated during conjure)
     execution_plan_step_count: Optional[int]

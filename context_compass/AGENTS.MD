@@ -17,7 +17,11 @@ After any context compaction, handoff, or fresh session:
   * `REONBOARD: COMPLETE`
   * certification state (`active` or `inactive`)
   * files re-read (paths)
+  * concise read-integrity proof (concrete rule callouts from reread docs)
   * `NO_ACTION_TAKEN_YET: true`
+* Performative compliance is forbidden during re-onboarding:
+  * marker-only loops (for example, `$null = Get-Content ...` plus `REREAD:` output) do not count as re-reading.
+  * parallel/bulk reading is allowed only when document contents are actually read and surfaced with concrete evidence value.
 
 This is the highest-priority adherence rule for continuity and policy retention.
 
@@ -61,6 +65,7 @@ Before any tooling, edits, or execution:
 * Read `agent_onboarding/agent/general/README.md` and `agent_onboarding/agent/engineer/README.md`.
 * Follow the read order in `agent_onboarding/agent/general/SKILLS.md` and `agent_onboarding/agent/engineer/SKILLS.md`.
 * Read and apply `agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md` before execution.
+* Performative onboarding is forbidden: do real reads of required docs (parallel/bulk is allowed), and do not treat marker-only "reread" output as compliance.
 * Obey certification gating from `agent_onboarding/agent/general/policies/policy_router.md` and `agent_onboarding/agent/general/skills/self_certification.md` (do not use tools or edit files until the user replies with the exact phrase `CERTIFY: APPROVED (inactive)` or `CERTIFY: APPROVED (active)` except the tools to properly read your documentation to onboard).
 * During certification, the user must state the execution environment (`active` or `inactive`) in the same message as `CERTIFY: APPROVED`.
 * Git commands are **active-only**: if the user says `inactive`, do not run git commands and ignore git workflow requirements (user handles git).

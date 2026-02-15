@@ -43,6 +43,8 @@ Read order (baseline)
 Parallel reading allowance
 - The order above is canonical for reference, but parallel reading is allowed.
 - All items must still be completed before certification.
+- Marker-only reread output (for example, `$null = Get-Content ...` + `REREAD:` lines) is not valid completion evidence.
+- Parallel/bulk reads must include substantive read integrity (concrete rule callouts) before certification.
 
 Certification timing
 - Do not request certification until every skill above has been read.

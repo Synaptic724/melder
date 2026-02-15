@@ -3,11 +3,11 @@
 ## Metadata
 - Task ID: TASK-2026-02-14-discovery-jit-aot-assumption-challenge
 - Story: STORY-2026-02-14-jit-aot-split-discovery-and-viability
-- Status: ready
+- Status: review
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
-- Updated: 2026-02-14
+- Updated: 2026-02-15
 
 ## Objective
 Perform explicit pushback review on the requested split model, surface weak
@@ -22,16 +22,40 @@ task deliverable.
 - Implementation changes.
 
 ## Steps / Checklist
-- [ ] Aggregate discovery outputs from phase-order, builder-contract, and spell-flag tasks.
-- [ ] Identify assumptions that are invalid, risky, or under-specified.
-- [ ] Prepare concise alternatives with tradeoffs and recommendation.
-- [ ] Discuss findings with user and record decision in story/epic notes.
-- [ ] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Aggregate discovery outputs from phase-order, builder-contract, and spell-flag tasks.
+- [x] Identify assumptions that are invalid, risky, or under-specified.
+- [x] Prepare concise alternatives with tradeoffs and recommendation.
+- [x] Discuss findings with user and record decision in story/epic notes.
+- [x] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - One explicit assumption-challenge summary with evidence.
 - One user-reviewed decision entry: accept, adjust, or reject requested split shape.
+
+## Assumption-Challenge Summary (2026-02-15)
+### Assumptions Challenged
+1. Assumption: split mode requires deferred/partial CreationContext builder behavior.
+   Result: challenged.
+   Why: current runtime path expects compiled execution callables from context and strict switch-based readiness; partial-context mutation is higher-risk than orchestration gating.
+   Evidence: `src/melder/aether/conduit/meld/creation_context/creation_context_builder.py:82-118`, `src/melder/aether/conduit/meld/creation_context/creation_context_factory.py:230-264`, `src/melder/aether/conduit/meld/meld.py:345-373`, `context_compass/tasks/2026-02-14_discovery_jit_aot_creation_context_builder_runtime_contract_task.md:34-44`
+
+2. Assumption: `resolution_required` should become a second validity system.
+   Result: challenged.
+   Why: validity ownership already exists in `SpellSystemState` + `ConduitResolutionState`; duplicating truth increases drift risk.
+   Evidence: `src/melder/aether/dev_ops/spell_system_states/spell_system_state.py:400-424`, `src/melder/aether/dev_ops/spell_system_states/conduit_resolution_state.py:17-51`, `src/melder/aether/conduit/meld/meld.py:569-619`, `context_compass/tasks/2026-02-14_discovery_jit_aot_resolution_required_spell_contract_task.md:31-45`
+
+3. Assumption: requested split is blocked by phase-order mismatch.
+   Result: now reduced risk after parity alignment.
+   Why: full-run path now executes 6/7 before 8/9/10/11, matching resolution-system ordering direction.
+   Evidence: `src/melder/spellbook/spell.py:1337-1348`, `src/melder/spellbook/spellbook_creation_system.py:1315-1331`, `src/melder/spellbook/spellbook_creation_system.py:1398-1426`, `context_compass/tasks/2026-02-15_align_spellcrafter_phase_order_with_spellbook_creation_system_task.md:1-110`
+
+### Alternatives
+| Option | Description | Tradeoff |
+|---|---|---|
+| `A - hybrid_rule_bound` (recommended) | Keep strict builder/factory contracts; gate runtime with `resolution_required` before first context build; clear flag when validity gate passes. | Lowest regression risk; adds orchestration wiring work. |
+| `B - deferred_optional_builder` | Allow partial context build and patch/mutate later at runtime. | Highest flexibility, highest contract/lifecycle risk. |
+| `C - strict_aot_only` | Keep current behavior and reject split mode scope. | Safest technically, does not satisfy requested flexibility goal. |
 
 ## Files / Paths Impacted
 - `context_compass/epics/2026-02-14_jit_aot_phase_split_configuration_epic.md`
@@ -59,6 +83,30 @@ task deliverable.
 - [ ] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: User accepted the `A hybrid_rule_bound` direction with one scope refinement: keep `full_ahead_of_time_compilation=true` as default and require propagation behavior for conjure bind, late bind, and transfer ownership while excluding contracted-spell owner rewrites.
+  EVIDENCE: context_compass/tasks/2026-02-14_discovery_jit_aot_assumption_challenge_task.md:31-53, context_compass/tasks/2026-02-15_discovery_jit_aot_propagation_contract_surfaces_task.md:1-88
+  IMPACT: Decision gate is resolved; remaining work is execution-surface discovery plus implementation ticket execution.
+  NEXT: Run `TASK-2026-02-15-discovery-jit-aot-propagation-contract-surfaces` before implementation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Discovery outputs now provide an evidence-backed challenge package: builder/factory recommendation (`hybrid_rule_bound`) plus `resolution_required` lifecycle table, with phase-order parity aligned.
+  EVIDENCE: context_compass/tasks/2026-02-14_discovery_jit_aot_creation_context_builder_runtime_contract_task.md:34-44, context_compass/tasks/2026-02-14_discovery_jit_aot_resolution_required_spell_contract_task.md:31-45, context_compass/tasks/2026-02-15_align_spellcrafter_phase_order_with_spellbook_creation_system_task.md:1-110
+  IMPACT: We can request an explicit user decision now instead of continuing speculative discovery.
+  NEXT: Present challenge summary and alternatives to user; record decision in story/epic notes.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATE: 2026-02-15
+  TYPE: DECISION_REQUEST
+  CLAIM: Need user decision on assumption challenge outcome: choose `A hybrid_rule_bound`, `B deferred_optional_builder`, or `C strict_aot_only`.
+  EVIDENCE: context_compass/tasks/2026-02-14_discovery_jit_aot_assumption_challenge_task.md:31-53
+  IMPACT: Decision unblocks implementation-task generation and prevents further drift from speculative scope.
+  NEXT: Await user choice, then create implementation tasks aligned to selected option.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
 - DATE: 2026-02-14
   TYPE: PLAN
   CLAIM: This task is the dedicated lane for explicit pushback, including surfacing whether "phases 1-7 now, 8-12 later" conflicts with current ordering and build contracts.
@@ -69,5 +117,7 @@ task deliverable.
   SCORE_0_TO_10: 9
 
 ## Context / Handoff Summary
-Task is ready and intentionally mandatory before implementation planning proceeds.
-It operationalizes the user's request for direct technical pushback when needed.
+Task deliverables are complete and option selection is resolved (`A` with
+non-breaking default). Follow-on work has moved to
+`TASK-2026-02-15-discovery-jit-aot-propagation-contract-surfaces` before
+implementation starts.

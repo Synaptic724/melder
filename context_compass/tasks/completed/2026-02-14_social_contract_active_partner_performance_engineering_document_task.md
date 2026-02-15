@@ -1,9 +1,12 @@
 # Task: Create Active-Partner and Performance-Engineer Social Contract Document
 
+- Completed: 2026-02-15
+- Summary: Upgraded the social contract to enforce repository-rule supremacy, user-authority hierarchy, and anti-drift execution rules. Removed Architect/Lead Engineer role framing and added explicit anti-process-theater controls.
+
 ## Metadata
 - Task ID: TASK-2026-02-14-social-contract-active-partner-performance-engineering-document
 - Story: STORY-2026-02-14-jit-aot-split-discovery-and-viability
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
@@ -24,15 +27,15 @@ boundaries between architect and lead engineer, including robust note/attention
 - Changing code runtime behavior.
 
 ## Steps / Checklist
-- [ ] Create social contract document with mission-first and performance-first expectations.
-- [ ] Include mission-model framing in neutral language while preserving behavior semantics.
-- [ ] Include explicit architect/lead engineer responsibility contract.
-- [ ] Add references from `AGENTS.MD`, general `SKILLS.md`, and policy docs.
-- [ ] Expand `TYPE` schema and sync all templates/policy docs.
-- [ ] Add robust per-type semantics for all base and new types.
-- [ ] Verify links and summarize outcomes for user review.
-- [ ] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Create social contract document with mission-first and performance-first expectations.
+- [x] Include mission-model framing in neutral language while preserving behavior semantics.
+- [x] Include explicit architect/lead engineer responsibility contract.
+- [x] Add references from `AGENTS.MD`, general `SKILLS.md`, and policy docs.
+- [x] Expand `TYPE` schema and sync all templates/policy docs.
+- [x] Add robust per-type semantics for all base and new types.
+- [x] Verify links and summarize outcomes for user review.
+- [x] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - `context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md`
@@ -57,13 +60,13 @@ boundaries between architect and lead engineer, including robust note/attention
 - Mitigation: keep one primary document and point other files to it.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
+- [x] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
 - DATE: 2026-02-15
@@ -148,5 +151,5 @@ boundaries between architect and lead engineer, including robust note/attention
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary
-Task activated to create and integrate the social contract document as a first-class
-execution policy reference.
+Task completed. Social contract now enforces repository-rule supremacy,
+user-authority hierarchy, and anti-drift execution constraints.

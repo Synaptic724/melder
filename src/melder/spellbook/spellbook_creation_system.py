@@ -460,6 +460,7 @@ class SpellbookCreationSystem(Cleanable):
             Stamp conduit ownership metadata and existing-object registrations.
         Contract:
             - Sets owner conduit metadata and SpellIndex owner conduit id.
+            - Stamps spell runtime resolution gate defaults from configuration.
             - Eagerly registers existing-object spells into conduit creations.
             - Logs and suppresses per-spell failures so one spell does not block
               ownership wiring for the rest.
@@ -471,6 +472,30 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             None.
         """
+        full_ahead_of_time_compilation: bool = True
+        configuration = spellbook._configuration
+        if configuration is not None:
+            try:
+                configured_value = configuration.get_property("full_ahead_of_time_compilation")
+                if configured_value is not None:
+                    if not isinstance(configured_value, bool):
+                        raise TypeError(
+                            "full_ahead_of_time_compilation must be a bool. "
+                            f"Got {type(configured_value).__name__}."
+                        )
+                    full_ahead_of_time_compilation = configured_value
+            except KeyError:
+                full_ahead_of_time_compilation = True
+            except Exception as exc:
+                spellbook._logger.error(
+                    f"Failed to read full_ahead_of_time_compilation; defaulting to True: {exc}",
+                    "_define_conduit_into_spells",
+                    exc_info=True,
+                )
+                full_ahead_of_time_compilation = True
+
+        resolution_required: bool = not full_ahead_of_time_compilation
+        resolution_complete: bool = full_ahead_of_time_compilation
         with spellbook._lock:
             for spell in spellbook._spells.values():
                 try:
@@ -482,6 +507,8 @@ class SpellbookCreationSystem(Cleanable):
                         creation_gate_controller=conduit._creation_gate_controller,
                     )
                     spell.spell_index._set_owner_conduit_id(conduit._id)
+                    spell.resolution_required = resolution_required
+                    spell.resolution_complete = resolution_complete
 
                     if spell.user_created_object is not None:
                         try:
@@ -842,6 +869,77 @@ class SpellbookCreationSystem(Cleanable):
                 spell_ids=scoped_spell_ids,
             )
             return results
+        SpellbookCreationSystem.cleanup_phase_artifacts_after_resolution(
+            spellbook=spellbook,
+            spell_ids=scoped_spell_ids,
+        )
+        return results
+
+    @staticmethod
+    def run_deferred_resolution_phases_for_target_spell(
+            spellbook: Any,
+            conduit_id: str,
+            target_spell: ISpell,
+            phase_scheduler_cls: Type[PhaseScheduler] = PhaseScheduler,
+    ) -> Dict[str, Sequence[IUnitOfWork]]:
+        """
+        Purpose:
+            Run target-local deferred plan phases (8/9/10/11) for one spell.
+        Contract:
+            - Requires non-empty conduit id and non-null target spell.
+            - Executes only local plan phases for the target spell.
+            - Converts local KeyError dependency misses into deterministic
+              visibility diagnostics.
+            - Cleans scoped phase artifacts before returning.
+        Args:
+            spellbook: Owning Spellbook instance.
+            conduit_id: Conduit id used for deferred-resolution scope.
+            target_spell: Target spell for local deferred resolution.
+            phase_scheduler_cls: Phase scheduler class to instantiate.
+        Returns:
+            Dict[str, Sequence[IUnitOfWork]]: Phase result mapping.
+        Raises:
+            ValueError: If conduit_id is empty or target_spell is None.
+            PhaseExecutionError: When non-visibility phase errors occur.
+        """
+        spellbook.check_cleaned()
+        if not conduit_id:
+            raise ValueError("conduit_id must not be empty.")
+        if target_spell is None:
+            raise ValueError("target_spell must not be None.")
+
+        target_spell_id = target_spell.spell_id
+        scoped_spell_ids, scoped_root_ids = (
+            SpellbookCreationSystem._collect_target_resolution_scope(
+                target_spell=target_spell,
+                target_spell_id=target_spell_id,
+            )
+        )
+        try:
+            results = SpellbookCreationSystem._run_target_plan_resolution_phases(
+                spellbook=spellbook,
+                conduit_id=conduit_id,
+                target_spell=target_spell,
+                target_spell_id=target_spell_id,
+                phase_scheduler_cls=phase_scheduler_cls,
+            )
+        except PhaseExecutionError as exc:
+            missing_dependency_ids = SpellbookCreationSystem._extract_missing_dependency_ids(exc)
+            if not missing_dependency_ids:
+                raise
+            SpellbookCreationSystem.record_local_resolution_visibility_failure(
+                spellbook=spellbook,
+                conduit_id=conduit_id,
+                scoped_spell_ids=scoped_spell_ids,
+                scoped_root_ids=scoped_root_ids,
+                missing_dependency_ids=missing_dependency_ids,
+            )
+            SpellbookCreationSystem.cleanup_phase_artifacts_after_resolution(
+                spellbook=spellbook,
+                spell_ids=scoped_spell_ids,
+            )
+            return {}
+
         SpellbookCreationSystem.cleanup_phase_artifacts_after_resolution(
             spellbook=spellbook,
             spell_ids=scoped_spell_ids,

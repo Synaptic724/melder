@@ -43,8 +43,10 @@ split mode.
 
 ## Tasks (Implementation Checklist)
 - [ ] Task: Use discovery outputs from `TASK-2026-02-14-discovery-jit-aot-resolution-required-spell-contract` as design baseline.
-- [ ] Task: Create implementation task for configuration switch wiring after discovery decision log approval.
-- [ ] Task: Create implementation task for `resolution_required` field lifecycle after discovery decision log approval.
+- [ ] Task: Execute story `STORY-2026-02-15-jit-aot-config-flag-and-fluent-api`.
+- [ ] Task: Execute story `STORY-2026-02-15-jit-aot-conjure-propagation`.
+- [ ] Task: Execute story `STORY-2026-02-15-jit-aot-post-conjure-bind-propagation`.
+- [ ] Task: Execute story `STORY-2026-02-15-jit-aot-transfer-ownership-propagation-non-contracted`.
 - [ ] Enforce Ticket Microcycle across all linked tasks.
 - [ ] Require meaningful-finding note updates during discovery/implementation.
 
@@ -72,6 +74,14 @@ split mode.
 - 2026-02-14: Story created to isolate configuration/spell-state contract before runtime execution changes.
 
 ## Notes
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: This umbrella story has been decomposed into focused implementation stories covering config/fluent API plus three propagation surfaces (conjure, late bind, transfer owned-only).
+  EVIDENCE: context_compass/stories/2026-02-15_jit_aot_config_flag_and_fluent_api_story.md:1-83, context_compass/stories/2026-02-15_jit_aot_conjure_propagation_story.md:1-82, context_compass/stories/2026-02-15_jit_aot_post_conjure_bind_propagation_story.md:1-79, context_compass/stories/2026-02-15_jit_aot_transfer_ownership_propagation_non_contracted_story.md:1-82
+  IMPACT: Scope is clearer and each propagation requirement now has a dedicated acceptance surface.
+  NEXT: Complete propagation contract-surface discovery task, then execute decomposed stories in order.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Spell runtime context retrieval currently routes through spell-owned switch/factory paths and can bypass rebuild when context is already open.

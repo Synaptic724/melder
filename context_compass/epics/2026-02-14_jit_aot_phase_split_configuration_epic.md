@@ -78,17 +78,31 @@ The MRP is a durable dual-mode contract:
 - [ ] Milestone 1: Discovery confirms viable split contract and phase-order constraints.
 - [ ] Milestone 2: Implementation stories approved for config + spell-state + runtime path.
 - [ ] Milestone 3: Explicit assumption challenge discussed with user and logged as decision.
+- [x] Milestone 4: Propagation contract-surface discovery completed for config/bind/transfer/runtime gates.
 
 ## Stories (Required to Complete)
 - [ ] Story: STORY-2026-02-14-jit-aot-split-discovery-and-viability - Discovery and feasibility gates.
 - [ ] Story: STORY-2026-02-14-jit-aot-configuration-and-spell-contract - Config and spell-state implementation scope.
 - [ ] Story: STORY-2026-02-14-jit-aot-runtime-phase-resolution-path - Runtime deferred-resolution implementation scope.
+- [ ] Story: STORY-2026-02-15-jit-aot-config-flag-and-fluent-api - Add `full_ahead_of_time_compilation` config + fluent API.
+- [ ] Story: STORY-2026-02-15-jit-aot-conjure-propagation - Stamp mode + `resolution_required` during conjure ownership wiring.
+- [ ] Story: STORY-2026-02-15-jit-aot-post-conjure-bind-propagation - Apply same defaults to late binds after conduit exists.
+- [ ] Story: STORY-2026-02-15-jit-aot-transfer-ownership-propagation-non-contracted - Re-stamp transfer defaults for owned spells only.
+- [ ] Story: STORY-2026-02-15-jit-aot-runtime-resolution-gate-lifecycle - Runtime gate + flag set/clear behavior.
+- [ ] Story: STORY-2026-02-15-jit-aot-regression-matrix-and-compatibility - Validate AOT default and JIT opt-in propagation.
 
 ## Tasks (Cross-Cutting or Epic-Level)
 - [ ] Task: Complete story STORY-2026-02-14-jit-aot-split-discovery-and-viability.
 - [ ] Task: Complete story STORY-2026-02-14-jit-aot-configuration-and-spell-contract.
 - [ ] Task: Complete story STORY-2026-02-14-jit-aot-runtime-phase-resolution-path.
 - [ ] Task: Execute explicit user-facing assumption challenge discussion task.
+- [ ] Task: TASK-2026-02-15-discovery-jit-aot-propagation-contract-surfaces - map final config/bind/transfer/runtime touchpoints before implementation.
+- [ ] Task: Complete story STORY-2026-02-15-jit-aot-config-flag-and-fluent-api.
+- [ ] Task: Complete story STORY-2026-02-15-jit-aot-conjure-propagation.
+- [ ] Task: Complete story STORY-2026-02-15-jit-aot-post-conjure-bind-propagation.
+- [ ] Task: Complete story STORY-2026-02-15-jit-aot-transfer-ownership-propagation-non-contracted.
+- [ ] Task: Complete story STORY-2026-02-15-jit-aot-runtime-resolution-gate-lifecycle.
+- [ ] Task: Complete story STORY-2026-02-15-jit-aot-regression-matrix-and-compatibility.
 - [ ] Task: Verify Ticket Microcycle enforcement across active stories/tasks.
 
 ## Acceptance Criteria (Epic Done)
@@ -114,15 +128,48 @@ The MRP is a durable dual-mode contract:
 - Only then create/execute implementation tasks under linked stories.
 
 ## Open Questions
-- Can phase 6-7 contracts run safely if 8-11 are deferred?
+- Can phase 6-7 contracts run safely if 8-11 are deferred? (ordering alignment now indicates yes at sequence level; remaining risk is runtime gating semantics)
 - Where should `resolution_required` flip from true to false in runtime flow?
 - Should phase 12 be treated as part of deferred runtime set or separate lane?
+- Which exact transfer touchpoints should re-stamp JIT/AOT mode for owned spells while preserving contracted spell ownership semantics?
 
 ## Decision Log
 - 2026-02-14: Epic created from user request to add configurable JIT/AOT split with runtime deferred resolution and a spell-level `resolution_required` flag.
 - 2026-02-14: Added explicit assumption-challenge task per user request to push back on weak ideas with evidence.
 
 ## Notes
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Propagation contract-surface discovery is complete and documented; execution can move directly into config/fluent API implementation.
+  EVIDENCE: context_compass/tasks/2026-02-15_discovery_jit_aot_propagation_contract_surfaces_task.md:31-88, context_compass/stories/2026-02-14_jit_aot_split_discovery_and_viability_story.md:44-90
+  IMPACT: Epic is no longer discovery-gated for propagation-surface uncertainty.
+  NEXT: Activate `TASK-2026-02-15-implement-jit-aot-config-flag-and-fluent-api`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: User-approved direction is `A hybrid_rule_bound` with non-breaking defaults: `full_ahead_of_time_compilation` remains `true` by default, JIT is opt-in, and propagation must cover conjure bind, late bind, and transfer-of-ownership for owned spells only (contracted spells retain their owner semantics).
+  EVIDENCE: context_compass/tasks/2026-02-14_discovery_jit_aot_assumption_challenge_task.md:31-53, context_compass/tasks/2026-02-15_discovery_jit_aot_propagation_contract_surfaces_task.md:1-88
+  IMPACT: Epic moves from option-selection gate to discovery-then-implementation sequencing with explicit propagation scope.
+  NEXT: Complete propagation contract-surface discovery task, then execute implementation stories in dependency order.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATE: 2026-02-15
+  TYPE: DECISION_REQUEST
+  CLAIM: Discovery package now needs explicit user option selection to move into implementation planning: `A hybrid_rule_bound`, `B deferred_optional_builder`, or `C strict_aot_only`.
+  EVIDENCE: context_compass/tasks/2026-02-14_discovery_jit_aot_assumption_challenge_task.md:31-53, context_compass/stories/2026-02-14_jit_aot_split_discovery_and_viability_story.md:43-50
+  IMPACT: Epic is decision-gated, not evidence-gated.
+  NEXT: Record user choice and create implementation tasks under configuration/runtime stories.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Creation-context contract discovery produced a three-option matrix and recommends `hybrid_rule_bound` (strict builder/factory contracts plus a pre-build runtime resolution gate when `resolution_required` is true).
+  EVIDENCE: context_compass/tasks/2026-02-14_discovery_jit_aot_creation_context_builder_runtime_contract_task.md:31-44, context_compass/tasks/2026-02-14_discovery_jit_aot_creation_context_builder_runtime_contract_task.md:77-92
+  IMPACT: Epic has a concrete low-regression contract direction and is ready for user decision before implementation breakdown.
+  NEXT: Get user approval/revision on `hybrid_rule_bound`, then generate implementation tasks for runtime gate insertion and `resolution_required` lifecycle transitions.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
 - DATE: 2026-02-15
   TYPE: DECISION
   CLAIM: User requested immediate implementation of the phase-order parity patch; epic execution moved from discovery-ready to in-progress with a dedicated alignment task.
@@ -161,6 +208,7 @@ The MRP is a durable dual-mode contract:
 - [ ] Acceptance criteria confirmed by user
 
 ## Context / Handoff Summary
-Epic created and routed to discovery-first execution. No implementation has
-started. Next step is phase-order feasibility discovery, followed by builder
-contract discovery and explicit assumption challenge discussion.
+Epic is in discovery-to-implementation transition. Option selection is resolved
+(`A hybrid_rule_bound`, non-breaking default), and the next immediate gate is
+`TASK-2026-02-15-discovery-jit-aot-propagation-contract-surfaces` before code
+implementation tasks begin.

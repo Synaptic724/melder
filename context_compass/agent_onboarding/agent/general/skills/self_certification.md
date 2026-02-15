@@ -5,6 +5,8 @@ Purpose
 
 Required flow
 - Read every skill listed in `agent_onboarding/agent/SKILLS.md` and `agent_onboarding/agent/general/SKILLS.md` (parallel reading allowed).
+- Performative onboarding is forbidden: marker-only reread logs do not satisfy the read requirement.
+- Before requesting certification, provide concise read-integrity proof (concrete rule callouts from reread docs).
 - Summarize that onboarding is complete and request approval.
 - Require the approval message to include the exact token `CERTIFY: APPROVED` **and** the execution environment (`active` or `inactive`).
 - Do not use tools or edit files until the user provides both the approval token and the environment.

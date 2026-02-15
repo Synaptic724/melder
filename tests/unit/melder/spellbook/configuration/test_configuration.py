@@ -27,6 +27,7 @@ def test_load_defaults_populates_all_required_properties():
     assert cfg.get_property("system_state") == SystemState.automatic
     assert cfg.get_property("debugging") is False
     assert cfg.get_property("disposal_method_names") == []
+    assert cfg.get_property("full_ahead_of_time_compilation") is True
 
 
 def test_set_property_converts_enum_strings():
@@ -118,6 +119,14 @@ def test_validate_ai_native_enabled_type():
     cfg = Configuration()
     cfg.load_default_dictionary()
     cfg.set_property("ai_native_enabled", "yes")
+    with pytest.raises(ValueError):
+        cfg.validate()
+
+
+def test_validate_full_ahead_of_time_compilation_type():
+    cfg = Configuration()
+    cfg.load_default_dictionary()
+    cfg.set_property("full_ahead_of_time_compilation", "yes")
     with pytest.raises(ValueError):
         cfg.validate()
 
@@ -368,6 +377,7 @@ def test_validate_disposal_method_names_type():
     cfg.set_property("debugging", False)
     cfg.set_property("disposal", False)
     cfg.set_property("disposal_method_names", "not-a-list")
+    cfg.set_property("full_ahead_of_time_compilation", True)
     cfg.set_property("phase_scheduler_workers_per_spellbook", 1)
     cfg.set_property("ai_native_enabled", False)
     cfg.set_property("ai_profiles_enabled", False)
@@ -473,6 +483,25 @@ def test_with_disposal_method_names_rejects_non_list():
     cfg = Configuration()
     with pytest.raises(TypeError):
         cfg.with_disposal_method_names("not-list")  # type: ignore[arg-type]
+
+
+def test_with_full_ahead_of_time_compilation_sets_value():
+    cfg = Configuration()
+    returned = cfg.with_full_ahead_of_time_compilation(False)
+    assert returned is cfg
+    assert cfg.get_property("full_ahead_of_time_compilation") is False
+
+
+def test_with_full_ahead_of_time_compilation_rejects_non_bool():
+    cfg = Configuration()
+    with pytest.raises(TypeError):
+        cfg.with_full_ahead_of_time_compilation("false")  # type: ignore[arg-type]
+
+
+def test_with_defaults_allows_overriding_full_ahead_of_time_compilation():
+    cfg = Configuration().with_defaults()
+    cfg.with_full_ahead_of_time_compilation(False)
+    assert cfg.get_property("full_ahead_of_time_compilation") is False
 
 
 def test_finalize_twice_is_idempotent():

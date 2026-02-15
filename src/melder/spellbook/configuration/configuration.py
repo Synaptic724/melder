@@ -78,6 +78,7 @@ class Configuration(Cleanable, IConfiguration):
             "debugging": bool,
             "disposal": bool,
             "disposal_method_names": list,
+            "full_ahead_of_time_compilation": bool,
             "phase_scheduler_workers_per_spellbook": int,
             "ai_native_enabled": bool,
             "ai_profiles_enabled": bool,
@@ -438,6 +439,7 @@ class Configuration(Cleanable, IConfiguration):
             "debugging": False,
             "disposal": False,
             "disposal_method_names": [],
+            "full_ahead_of_time_compilation": True,
             "phase_scheduler_workers_per_spellbook": 5,
             "ai_native_enabled": False,
             "ai_profiles_enabled": False,
@@ -697,6 +699,32 @@ class Configuration(Cleanable, IConfiguration):
         self.set_property("ai_profiles_enabled", enabled)
         return self
 
+    def with_full_ahead_of_time_compilation(self, enabled: bool = True) -> IConfiguration:
+        """
+        Fluent
+
+        Set whether spells should be fully ahead-of-time compiled at conjure.
+
+        Semantics:
+        - ``True``: Full AOT mode. Conjure/runtime behavior follows current eager
+          compilation flow.
+        - ``False``: JIT mode. Downstream runtime gates may defer selected
+          resolution work until first runtime use.
+
+        Args:
+            enabled (bool): Desired compilation mode flag.
+
+        Returns:
+            IConfiguration: This same configuration instance (for chaining).
+
+        Raises:
+            TypeError: If ``enabled`` is not a bool.
+        """
+        if not isinstance(enabled, bool):
+            raise TypeError("full_ahead_of_time_compilation must be a bool.")
+        self.set_property("full_ahead_of_time_compilation", enabled)
+        return self
+
 
     def with_hook(self, spellbook_id: str, hook_name: str, hook: Callable[..., Any]) -> IConfiguration:
         """
@@ -773,7 +801,7 @@ class Configuration(Cleanable, IConfiguration):
 
         Behavior:
         - Sets: system_state="automatic", debugging=False, disposal=False,
-          disposal_method_names=[].
+          disposal_method_names=[], full_ahead_of_time_compilation=True.
         - Respects idempotency and immutability rules (raises if frozen or cleaned).
 
         Returns:
