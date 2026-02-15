@@ -3,7 +3,7 @@
 ## Metadata
 - Task ID: TASK-2026-02-15-align-spellcrafter-phase-order-with-spellbook-creation-system
 - Story: STORY-2026-02-14-jit-aot-runtime-phase-resolution-path
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
@@ -24,13 +24,13 @@ the same foundational-first resolution ordering contract used by
 - Broad refactors outside phase-order alignment.
 
 ## Steps / Checklist
-- [ ] Update `SpellCrafter.run_all_phases` ordering to foundational-first.
-- [ ] Add/retain foundational-error plan-skip behavior consistent with `SpellbookCreationSystem`.
-- [ ] Align `Spell.run_all_phases` facade ordering contract with `SpellCrafter`.
-- [ ] Update targeted unit tests for `SpellCrafter` and `Spell` phase-order expectations.
-- [ ] Run targeted unit tests for updated phase-order paths.
-- [ ] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Update `SpellCrafter.run_all_phases` ordering to foundational-first.
+- [x] Add/retain foundational-error plan-skip behavior consistent with `SpellbookCreationSystem`.
+- [x] Align `Spell.run_all_phases` facade ordering contract with `SpellCrafter`.
+- [x] Update targeted unit tests for `SpellCrafter` and `Spell` phase-order expectations.
+- [x] Run targeted unit tests for updated phase-order paths.
+- [x] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Updated phase-order implementation in:
@@ -47,10 +47,12 @@ the same foundational-first resolution ordering contract used by
 - `tests/unit/melder/spellbook/test_spell.py`
 
 ## Validation
-- Not run.
-- Recommended commands:
-  - `python -m pytest tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py -k run_all_phases -q`
-  - `python -m pytest tests/unit/melder/spellbook/test_spell.py -k run_all_phases -q`
+- Ran:
+  - `python -m pytest tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py -k run_all_phases -q` -> `3 passed`
+  - `python -m pytest tests/unit/melder/spellbook/test_spell.py -k run_all_phases -q` -> `2 passed`
+- Notes:
+  - Non-blocking warning: Python 3.13 GIL-enabled mode warning from `src/melder/__init__.py`.
+  - Non-blocking warning: pytest cache permission warning on `.pytest_cache` (WinError 5).
 
 ## Risks / Rollback Notes
 - Risk: Existing tests or runtime callers may depend on old order.
@@ -58,12 +60,12 @@ the same foundational-first resolution ordering contract used by
 - Rollback: revert this task's code/test deltas only.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
 - [ ] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
@@ -83,7 +85,24 @@ the same foundational-first resolution ordering contract used by
   NEXT: Apply code changes and run targeted phase-order unit tests.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Alignment patch is implemented: SpellCrafter/Spell `run_all_phases` now execute foundational phases (`5/6/7`) before plan phases (`8/9/10/11`), and SpellCrafter skips plan phases when foundational conduit resolution has errors.
+  EVIDENCE: src/melder/spellbook/spell_crafter/spell_crafter.py:5047-5105, src/melder/spellbook/spell.py:1299-1349
+  IMPACT: Runtime revalidation ordering now matches conjure-system contract expectations for this lane.
+  NEXT: Confirm acceptance, then move this task to completed and keep epic discovery flow active.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Targeted phase-order tests pass after patch (`3 passed` spell_crafter slice, `2 passed` spell facade slice), including explicit skip behavior when foundational resolution has conduit errors.
+  EVIDENCE: tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py:4128-4201, tests/unit/melder/spellbook/spell_crafter/test_spell_crafter.py:4204-4270, tests/unit/melder/spellbook/test_spell.py:883-904
+  IMPACT: Confirms contract behavior at unit scope before broader JIT/AOT discovery continues.
+  NEXT: Continue epic by activating `TASK-2026-02-14-discovery-jit-aot-creation-context-builder-runtime-contract`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary
 User requested an immediate patch to make SpellCrafter follow the same contract
-as SpellbookCreationSystem. This task tracks that narrow implementation.
+as SpellbookCreationSystem. Implementation and targeted validation are complete;
+task is in review pending acceptance before completed-folder move.

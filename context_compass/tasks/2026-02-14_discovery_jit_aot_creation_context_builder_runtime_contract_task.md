@@ -3,7 +3,7 @@
 ## Metadata
 - Task ID: TASK-2026-02-14-discovery-jit-aot-creation-context-builder-runtime-contract
 - Story: STORY-2026-02-14-jit-aot-split-discovery-and-viability
-- Status: ready
+- Status: in_progress
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-14
@@ -57,6 +57,14 @@ strict) when late-phase artifacts are intentionally deferred in split mode.
 - [ ] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Task is activated as the next epic step after phase-order parity patch validation; deliverable is a decision-ready builder/factory contract options matrix for deferred-runtime mode.
+  EVIDENCE: context_compass/tasks/2026-02-15_align_spellcrafter_phase_order_with_spellbook_creation_system_task.md:1-110, context_compass/epics/2026-02-14_jit_aot_phase_split_configuration_epic.md:132-143
+  IMPACT: Discovery flow resumes with concrete runtime-contract decision shaping, not code implementation.
+  NEXT: Extract builder/factory/meld contract facts from source and produce strict vs deferred vs hybrid options with recommendation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Builder currently fails for non-existing creations when crafter artifacts are absent, while runtime consumers rely on spell/factory switch-based get-or-build behavior.

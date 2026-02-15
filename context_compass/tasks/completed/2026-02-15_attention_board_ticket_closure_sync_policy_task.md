@@ -1,9 +1,13 @@
 # Task: Enforce Deterministic Ticket-Closure Sync with Attention Board
 
+- Completed: 2026-02-15
+- Summary: Added hard execution gates for ticket/attention-board/notes discipline across AGENTS and onboarding skills, including a dedicated closure-sync skill.
+- Summary: Added social-contract enforcement language for AGENTS + core execution artifacts and pruned `attention_board.md` to active-routing state.
+
 ## Metadata
 - Task ID: TASK-2026-02-15-attention-board-ticket-closure-sync-policy
 - Story: none (standalone)
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
@@ -78,7 +82,7 @@ in sync whenever tickets are closed or moved to completed folders.
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
+- [x] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
 - DATE: 2026-02-15
@@ -135,6 +139,14 @@ in sync whenever tickets are closed or moved to completed folders.
   EVIDENCE: context_compass/attention_board.md:1-45
   IMPACT: Re-entry routing is now compact and current; board drift risk is reduced.
   NEXT: Keep board compact by enforcing closure sync after each completed-ticket move.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: User explicitly requested cleanup for AGENTS/skills-revision tickets; this ticket is accepted and ready to move to `tasks/completed/`.
+  EVIDENCE: context_compass/tasks/2026-02-15_attention_board_ticket_closure_sync_policy_task.md:1-137
+  IMPACT: Closure can proceed with deterministic board-sync in the same change pass.
+  NEXT: Move ticket to completed and remove active board routing for this work item.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 

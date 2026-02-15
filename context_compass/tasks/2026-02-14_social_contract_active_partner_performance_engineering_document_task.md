@@ -67,6 +67,22 @@ boundaries between architect and lead engineer, including robust note/attention
 
 ## Notes
 - DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Social contract was upgraded to enforce repository-rule supremacy, explicit user authority hierarchy, rule-bound 3.1 model (including rigid obedience to repo rules), drift-focused 3.2 disallow rules, and explicit anti-process-theater mechanics while removing Architect/Lead Engineer terminology.
+  EVIDENCE: context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md:10-28, context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md:50-54, context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md:68-92, context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md:186-205, context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md:788-801, context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md:887-895
+  IMPACT: Contract now prioritizes deterministic rule adherence and user authority over identity-heavy framing, reducing drift risk and compliance theater.
+  NEXT: Review wording with the user, then decide if downstream docs should be aligned to replace any remaining Architect/Lead Engineer phrasing outside this contract.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Social contract needs a hierarchy-first rewrite because identity-heavy role language and ambiguous precedence are causing drift toward process theater instead of instruction-first rule execution.
+  EVIDENCE: context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md:10-35, context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md:56-64, context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md:80-103, context_compass/AGENTS.MD:24-27, context_compass/AGENTS.MD:40-46
+  IMPACT: Without a rule-supremacy hierarchy and explicit anti-drift clauses, collaboration behavior can overfit persona/process tokens and underperform explicit repo rules.
+  NEXT: Rewrite social contract sections 0, 2, 3.1, 3.2, and role/hierarchy language to enforce user authority and AGENTS/policy supremacy while keeping pushback and initiative inside rules.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+- DATE: 2026-02-15
   TYPE: DECISION
   CLAIM: The social-contract mission model language was normalized to neutral terms while preserving the exact behavior contract requested by the user.
   EVIDENCE: context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md:6-6, context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md:84-84, context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md:97-97

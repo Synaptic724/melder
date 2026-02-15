@@ -15,23 +15,16 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| attention board closure sync policy | review | codex | none | waiting for user acceptance; hard gates and social-contract enforcement are implemented | `context_compass/tasks/2026-02-15_attention_board_ticket_closure_sync_policy_task.md` | 2026-02-15 | REQUIRED |
-| jit/aot phase split configuration | in_progress | codex | none | close alignment task notes, then execute creation-context builder/factory contract discovery | `context_compass/tasks/2026-02-15_align_spellcrafter_phase_order_with_spellbook_creation_system_task.md` | 2026-02-15 | REQUIRED |
+| jit/aot phase split configuration | in_progress | codex | none | execute creation-context builder/factory deferred-runtime contract matrix and recommendation | `context_compass/tasks/2026-02-14_discovery_jit_aot_creation_context_builder_runtime_contract_task.md` | 2026-02-15 | REQUIRED |
 | social contract document | in_progress | codex | none | run final acceptance/closure sync with user direction | `context_compass/tasks/2026-02-14_social_contract_active_partner_performance_engineering_document_task.md` | 2026-02-15 | REQUIRED |
 | snapshot ownership cleanup audit | ready | codex | none | waiting for user prioritization | `context_compass/epics/2026-02-14_snapshot_ownership_cleanup_audit_epic.md` | 2026-02-14 | HELPFUL |
 
 ## Active Attention Details
-- TYPE: DECISION
-  CLAIM: User-requested deterministic ticket-closure behavior is now formalized with hard execution gates in AGENTS/skills plus social-contract enforcement language.
-  EVIDENCE: `context_compass/tasks/2026-02-15_attention_board_ticket_closure_sync_policy_task.md:1-125`, `context_compass/agent_onboarding/agent/general/skills/ticket_closure_attention_sync.md:1-46`, `context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md:216-231`
-  REREAD: REQUIRED
-  NEXT: Get user acceptance, then enforce these gates on every ticket closure and active work tranche.
-
 - TYPE: FACT
   CLAIM: JIT/AOT lane currently has a completed phase-order implementation patch in code, and the next epic step is creation-context builder/factory discovery.
-  EVIDENCE: `src/melder/spellbook/spell_crafter/spell_crafter.py:5047-5105`, `src/melder/spellbook/spell.py:1299-1349`, `context_compass/tasks/2026-02-14_discovery_jit_aot_creation_context_builder_runtime_contract_task.md:1-78`
+  EVIDENCE: `src/melder/spellbook/spell_crafter/spell_crafter.py:5047-5105`, `src/melder/spellbook/spell.py:1299-1349`, `context_compass/tasks/2026-02-14_discovery_jit_aot_creation_context_builder_runtime_contract_task.md:1-87`
   REREAD: REQUIRED
-  NEXT: Finish alignment-task closure notes/checklists, then advance discovery output matrix.
+  NEXT: Complete discovery options matrix and recommended contract path.
 
 - TYPE: DECISION
   CLAIM: Snapshot ownership cleanup epic remains available but unstarted per user direction.
@@ -42,4 +35,4 @@ Attention details rule
 ## Recently Closed Anchors
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| none in current pruning window | done | codex | none | none | `n/a` | 2026-02-15 | HELPFUL |
+| attention board closure sync policy | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_attention_board_ticket_closure_sync_policy_task.md` | 2026-02-15 | HELPFUL |

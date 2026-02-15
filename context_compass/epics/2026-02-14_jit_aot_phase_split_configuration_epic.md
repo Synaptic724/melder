@@ -131,6 +131,14 @@ The MRP is a durable dual-mode contract:
   NEXT: Complete TASK-2026-02-15-align-spellcrafter-phase-order-with-spellbook-creation-system and reassess remaining discovery order.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Phase-order parity task is implemented and validated; epic focus now shifts back to deferred-runtime discovery tasks, starting with creation-context builder/factory contract options.
+  EVIDENCE: context_compass/tasks/2026-02-15_align_spellcrafter_phase_order_with_spellbook_creation_system_task.md:1-110, context_compass/tasks/2026-02-14_discovery_jit_aot_creation_context_builder_runtime_contract_task.md:1-78
+  IMPACT: Epic sequencing is unblocked for contract viability mapping on deferred runtime behavior.
+  NEXT: Execute `TASK-2026-02-14-discovery-jit-aot-creation-context-builder-runtime-contract`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
 - DATE: 2026-02-14
   TYPE: FACT
   CLAIM: Current spell-level phase sequence runs 8-11 before 6-7 in `run_all_phases`, while structural-only helper runs only 1-4.
