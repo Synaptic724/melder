@@ -472,28 +472,12 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             None.
         """
-        full_ahead_of_time_compilation: bool = True
-        configuration = spellbook._configuration
-        if configuration is not None:
-            try:
-                configured_value = configuration.get_property("full_ahead_of_time_compilation")
-                if configured_value is not None:
-                    if not isinstance(configured_value, bool):
-                        raise TypeError(
-                            "full_ahead_of_time_compilation must be a bool. "
-                            f"Got {type(configured_value).__name__}."
-                        )
-                    full_ahead_of_time_compilation = configured_value
-            except KeyError:
-                full_ahead_of_time_compilation = True
-            except Exception as exc:
-                spellbook._logger.error(
-                    f"Failed to read full_ahead_of_time_compilation; defaulting to True: {exc}",
-                    "_define_conduit_into_spells",
-                    exc_info=True,
-                )
-                full_ahead_of_time_compilation = True
-
+        full_ahead_of_time_compilation = (
+            SpellbookCreationSystem._read_full_ahead_of_time_compilation(
+                spellbook=spellbook,
+                context_name="_define_conduit_into_spells",
+            )
+        )
         resolution_required: bool = not full_ahead_of_time_compilation
         resolution_complete: bool = full_ahead_of_time_compilation
         with spellbook._lock:
@@ -525,6 +509,53 @@ class SpellbookCreationSystem(Cleanable):
                         "_define_conduit_into_spells",
                         exc_info=True,
                     )
+
+    @staticmethod
+    def _read_full_ahead_of_time_compilation(
+            *,
+            spellbook: Any,
+            context_name: str,
+    ) -> bool:
+        """
+        Purpose:
+            Read `full_ahead_of_time_compilation` from configuration.
+        Contract:
+            - Defaults to `True` when configuration does not expose a value.
+            - Accepts only boolean configuration values.
+            - Logs retrieval failures and falls back to `True`.
+        Args:
+            spellbook: Owning Spellbook instance.
+            context_name: Logging context for fallback diagnostics.
+        Returns:
+            bool: True for AOT mode; False for JIT/deferred mode.
+        Raises:
+            None.
+        """
+        full_ahead_of_time_compilation: bool = True
+        configuration = spellbook._configuration
+        if configuration is None:
+            return full_ahead_of_time_compilation
+        try:
+            configured_value = configuration.get_property(
+                "full_ahead_of_time_compilation"
+            )
+            if configured_value is None:
+                return full_ahead_of_time_compilation
+            if not isinstance(configured_value, bool):
+                raise TypeError(
+                    "full_ahead_of_time_compilation must be a bool. "
+                    f"Got {type(configured_value).__name__}."
+                )
+            return configured_value
+        except KeyError:
+            return full_ahead_of_time_compilation
+        except Exception as exc:
+            spellbook._logger.error(
+                f"Failed to read full_ahead_of_time_compilation; defaulting to True: {exc}",
+                context_name,
+                exc_info=True,
+            )
+            return full_ahead_of_time_compilation
 
     @staticmethod
     def get_conjure_hook_map(spellbook: Any) -> Optional[Mapping[str, List[Callable]]]:
@@ -749,7 +780,9 @@ class SpellbookCreationSystem(Cleanable):
             Run conduit-scoped resolution phases for a single conduit id.
         Contract:
             - Requires a non-empty conduit id.
-            - Runs foundational phases first, then plan phases when no errors exist.
+            - Runs foundational phases first.
+            - Runs plan phases only when foundational phases have no errors and
+              `full_ahead_of_time_compilation` is enabled.
             - Cleans per-spell phase artifacts before returning.
         Args:
             spellbook: Owning Spellbook instance.
@@ -764,6 +797,12 @@ class SpellbookCreationSystem(Cleanable):
         if not conduit_id:
             raise ValueError("conduit_id must not be empty.")
 
+        full_ahead_of_time_compilation = (
+            SpellbookCreationSystem._read_full_ahead_of_time_compilation(
+                spellbook=spellbook,
+                context_name="_run_resolution_phases_for_conduit",
+            )
+        )
         plan_skip_state: List[Optional[bool]] = [None]
         results = SpellbookCreationSystem._run_scheduler_with_phases(
             spellbook=spellbook,
@@ -774,6 +813,7 @@ class SpellbookCreationSystem(Cleanable):
                 scheduler=scheduler,
                 conduit_id=conduit_id,
                 plan_skip_state=plan_skip_state,
+                force_skip_plan_phases=not full_ahead_of_time_compilation,
             ),
         )
         if plan_skip_state[0]:
@@ -953,6 +993,7 @@ class SpellbookCreationSystem(Cleanable):
             scheduler: PhaseScheduler,
             conduit_id: str,
             plan_skip_state: List[Optional[bool]],
+            force_skip_plan_phases: bool = False,
     ) -> None:
         """
         Purpose:
@@ -962,6 +1003,8 @@ class SpellbookCreationSystem(Cleanable):
             - Samples conduit error state exactly once at the plan boundary and
               skips all plan phases when foundational phases already produced
               conduit-resolution errors.
+            - Skips all plan phases when `force_skip_plan_phases` is True
+              (used by deferred/JIT conjure mode).
             - Does not suppress plan phases due to errors introduced inside the
               plan group itself, preserving previous two-pass semantics.
         Args:
@@ -971,6 +1014,8 @@ class SpellbookCreationSystem(Cleanable):
             plan_skip_state:
                 Single-slot mutable state updated to indicate whether plan phases
                 were skipped due to foundational errors.
+            force_skip_plan_phases:
+                Whether plan phases should be skipped unconditionally.
         Returns:
             None.
         Raises:
@@ -996,6 +1041,9 @@ class SpellbookCreationSystem(Cleanable):
         )
 
         def _should_skip_plan_phases() -> bool:
+            if force_skip_plan_phases:
+                plan_skip_state[0] = True
+                return True
             sampled_skip = plan_skip_state[0]
             if sampled_skip is None:
                 sampled_skip = SpellbookCreationSystem._conduit_resolution_has_errors(

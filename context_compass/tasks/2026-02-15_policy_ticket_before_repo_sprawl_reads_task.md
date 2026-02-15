@@ -22,7 +22,7 @@ read sweeps that can trigger compaction risk.
 ## Steps / Checklist
 - [ ] Add explicit rule in `context_compass/AGENTS.MD` under ticketing/execution gates.
 - [ ] Add matching rule in ticketing/active documentation skills.
-- [ ] Add concise guidance in social contract execution hygiene section.
+- [ ] Add concise guidance in execution contract hygiene section.
 - [ ] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
 - [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
 
@@ -33,12 +33,12 @@ read sweeps that can trigger compaction risk.
 - `context_compass/AGENTS.MD`
 - `context_compass/agent_onboarding/agent/general/skills/ticketing.md`
 - `context_compass/agent_onboarding/agent/general/skills/active_documentation.md`
-- `context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md`
+- `context_compass/EXECUTION_CONTRACT.md`
 
 ## Validation
 - Not run.
 - Recommended commands:
-  - `rg -n "ticket|sprawl|read|compaction" context_compass/AGENTS.MD context_compass/agent_onboarding/agent/general/skills/ticketing.md context_compass/agent_onboarding/agent/general/skills/active_documentation.md context_compass/agent_onboarding/agent/general/social_contract/SOCIAL_CONTRACT.md`
+  - `rg -n "ticket|sprawl|read|compaction" context_compass/AGENTS.MD context_compass/agent_onboarding/agent/general/skills/ticketing.md context_compass/agent_onboarding/agent/general/skills/active_documentation.md context_compass/EXECUTION_CONTRACT.md`
 
 ## Risks / Rollback Notes
 - Risk: rule duplication conflicts across docs.
@@ -66,4 +66,3 @@ read sweeps that can trigger compaction risk.
 ## Context / Handoff Summary
 Policy maintenance task queued per user direction; not active while JIT/AOT
 discovery gate is in progress.
-

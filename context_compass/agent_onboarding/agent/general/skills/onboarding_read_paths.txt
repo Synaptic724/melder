@@ -6,7 +6,7 @@
 # onboarding gate.
 
 context_compass/AGENTS.MD
-context_compass/SOCIAL_CONTRACT.md
+context_compass/EXECUTION_CONTRACT.md
 context_compass/agent_onboarding/agent/SKILLS.md
 context_compass/agent_onboarding/agent/general/README.md
 context_compass/agent_onboarding/agent/engineer/README.md
@@ -80,3 +80,4 @@ context_compass/components/README.md
 context_compass/architecture/src_architecture.md
 context_compass/components/src_components.md
 context_compass/attention_board.md
+

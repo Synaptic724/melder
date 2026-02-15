@@ -9,6 +9,8 @@ Highest-priority rule
 - Do not trust memory from before compaction as authoritative context.
 - Performative compliance is forbidden: marker-only "REREAD" logs without substantive reading do not satisfy re-onboarding.
 - Manual source-document reading is canonical; onboarding dump files are non-canonical and do not satisfy re-onboarding.
+- Loop-based/batch document-reading commands are forbidden (for/foreach/while loops, xargs-style runners, or piped file-list iterators).
+- Re-onboarding reads must be manual per file path; for files over 500 LOC, read explicit 500-line chunks in sequential order.
 
 External-memory-first rule
 - Treat repository files as the single durable memory source.
@@ -23,7 +25,7 @@ External-memory-first rule
 
 Required post-compaction sequence
 1) Read `AGENTS.MD`.
-2) Read `SOCIAL_CONTRACT.md` in full immediately after `AGENTS.MD`.
+2) Read `EXECUTION_CONTRACT.md` in full immediately after `AGENTS.MD`.
 3) Read `agent_onboarding/agent/SKILLS.md` and select career.
 4) Read `agent_onboarding/agent/general/README.md`.
 5) Read `agent_onboarding/agent/engineer/README.md`.
@@ -60,6 +62,7 @@ Attestation contract
 - Do not run tools, edit files, or execute plans before posting the attestation.
 - If attestation cannot be completed, stop and ask the user for instructions.
 - Parallel/bulk reads are allowed, but files must be substantively read; marker-only loops are non-compliant.
+- Manual per-file-path reads are required even when parallel reads are used; loop-based file-list iterators are not allowed.
 - Do not enumerate every onboarding file in `FILES_REREAD`; list active ticket paths there and include the readset reference in `ONBOARDING_READSET`.
 
 Execution gate
@@ -77,3 +80,4 @@ References
 - `CONTEXT_COMPACTION.md`
 - `agent_onboarding/agent/general/skills/self_certification.md`
 - `agent_onboarding/agent/general/skills/user_approved_certification.md`
+

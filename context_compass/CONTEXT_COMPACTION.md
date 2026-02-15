@@ -33,6 +33,10 @@ Before compaction, review these files in order:
 - `components/tests_components.md`
 - `attention_board.md`
 - Active epic/story/task tickets in `epics/`, `stories/`, `tasks/`
+- Review-set document reads must be manual per file path.
+- Loop-based/batch document-reading commands are forbidden (for/foreach/while
+  loops, xargs-style runners, or piped file-list iterators).
+- For files over 500 LOC, read in explicit 500-line chunks in sequential order.
 
 ## Required Updates
 - Update `attention_board.md` during work so active items, status, blockers, and
@@ -67,3 +71,4 @@ After compaction, re-open the required review set and confirm:
 - `attention_board.md` was re-opened and still matches active ticket state.
 - The active tickets still represent the correct plan.
 - The next steps are unambiguous.
+- Re-onboarding document reads were performed manually per file path (no loop-based/batch document reads).

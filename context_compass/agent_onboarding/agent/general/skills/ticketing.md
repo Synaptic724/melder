@@ -82,7 +82,7 @@ Notes format requirement
 - Keep notes append-only except when correcting factual errors.
 - Legacy entries may omit newer fields; do not rewrite history unless correcting factual errors.
 - Deep semantic meaning and collaboration behavior for each `TYPE` are defined in:
-  `context_compass/SOCIAL_CONTRACT.md`.
+  `context_compass/EXECUTION_CONTRACT.md`.
 
 Status discipline
 - Update Status and Updated fields on each state change.
@@ -99,3 +99,4 @@ References
 - `CONTEXT_COMPACTION.md`
 - `agent_onboarding/agent/general/skills/active_documentation.md`
 - `agent_onboarding/agent/general/skills/ticket_closure_attention_sync.md`
+

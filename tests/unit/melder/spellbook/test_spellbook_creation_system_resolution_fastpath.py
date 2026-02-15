@@ -69,16 +69,30 @@ class _StubSpellbook:
         - Test-only helper with no cleanup requirements.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+            self,
+            *,
+            full_ahead_of_time_compilation: bool = True,
+    ) -> None:
         """
         Purpose:
             Initialize invocation counters for Spellbook surface probes.
         Contract:
             - Starts with zero check_cleaned invocations.
+            - Exposes minimal configuration/logging surfaces required by the
+              tested runtime-mode gate.
+        Args:
+            full_ahead_of_time_compilation:
+                Runtime mode flag returned by
+                `get_property("full_ahead_of_time_compilation")`.
         Returns:
             None.
         """
         self.check_cleaned_calls = 0
+        self._configuration = _StubConfiguration(
+            full_ahead_of_time_compilation=full_ahead_of_time_compilation,
+        )
+        self._logger = _StubLogger()
 
     def check_cleaned(self) -> None:
         """
@@ -90,6 +104,87 @@ class _StubSpellbook:
             None.
         """
         self.check_cleaned_calls += 1
+
+
+class _StubConfiguration:
+    """
+    Purpose:
+        Provide minimal configuration property access for runtime-mode tests.
+    Contract:
+        - Returns the configured full-AOT boolean for the expected property key.
+        - Raises KeyError for unknown property names.
+    Lifecycle:
+        - Test-only helper with immutable configuration value.
+    """
+
+    def __init__(self, *, full_ahead_of_time_compilation: bool) -> None:
+        """
+        Purpose:
+            Initialize the test configuration state.
+        Contract:
+            - Stores one boolean mode flag for property lookup.
+        Args:
+            full_ahead_of_time_compilation:
+                Runtime mode flag exposed through `get_property`.
+        Returns:
+            None.
+        """
+        self._full_ahead_of_time_compilation = full_ahead_of_time_compilation
+
+    def get_property(self, name: str) -> Any:
+        """
+        Purpose:
+            Return the requested test configuration property value.
+        Contract:
+            - Supports `full_ahead_of_time_compilation` only.
+            - Raises KeyError for unknown keys.
+        Args:
+            name: Requested property key.
+        Returns:
+            Any: Requested property value.
+        Raises:
+            KeyError: If `name` is unsupported.
+        """
+        if name == "full_ahead_of_time_compilation":
+            return self._full_ahead_of_time_compilation
+        raise KeyError(name)
+
+
+class _StubLogger:
+    """
+    Purpose:
+        Provide minimal logger surface for fallback-path compatibility.
+    Contract:
+        - Accepts `.error(...)` calls from tested code paths.
+        - Stores error invocations for optional assertions.
+    Lifecycle:
+        - Test-only helper with append-only call log.
+    """
+
+    def __init__(self) -> None:
+        """
+        Purpose:
+            Initialize logger call capture storage.
+        Contract:
+            - Starts with an empty error call list.
+        Returns:
+            None.
+        """
+        self.error_calls: List[tuple[Any, ...]] = []
+
+    def error(self, *args: Any, **kwargs: Any) -> None:
+        """
+        Purpose:
+            Capture logger error calls issued by the tested code.
+        Contract:
+            - Appends call payload for later inspection.
+        Args:
+            *args: Positional logger arguments.
+            **kwargs: Keyword logger arguments.
+        Returns:
+            None.
+        """
+        self.error_calls.append(args + (kwargs,))
 
 
 def _install_stub_phase_factories(
@@ -284,6 +379,87 @@ def test_run_resolution_phases_for_conduit_skips_plan_group_when_foundational_er
     results = SpellbookCreationSystem.run_resolution_phases_for_conduit(
         spellbook=spellbook,
         conduit_id="cid-2",
+    )
+
+    assert spellbook.check_cleaned_calls == 1
+    assert scheduler_run_calls["count"] == 1
+    assert cleanup_calls["count"] == 1
+    assert list(results.keys()) == [
+        "root_blueprints",
+        "system_validation",
+        "change_control",
+    ]
+    assert results["root_blueprints"] == ["root_blueprints"]
+    assert results["system_validation"] == ["system_validation"]
+    assert results["change_control"] == ["change_control"]
+    assert phase_calls == {
+        "root_blueprints": 1,
+        "system_validation": 1,
+        "change_control": 1,
+        "occurrence_plan": 0,
+        "injection_plan": 0,
+        "patch_maps": 0,
+        "execution_plan": 0,
+    }
+
+
+def test_run_resolution_phases_for_conduit_skips_plan_group_when_jit_mode_is_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify runtime JIT mode skips conduit plan phases during conjure prep.
+    Contract:
+        - Foundational factories still execute once in JIT mode.
+        - Plan factories do not execute when full-AOT compilation is disabled.
+        - Returned results include only foundational phase outputs.
+    Returns:
+        None.
+    """
+    spellbook = _StubSpellbook(full_ahead_of_time_compilation=False)
+    scheduler_run_calls = {"count": 0}
+    cleanup_calls = {"count": 0}
+    phase_calls: Dict[str, int] = {}
+
+    def _fake_run_scheduler_with_phases(
+        *,
+        spellbook: Any,
+        phase_scheduler_cls: Any,
+        context_name: str,
+        register_phases: Callable[[Any], None],
+    ) -> Dict[str, Sequence[Any]]:
+        scheduler_run_calls["count"] += 1
+        scheduler = _SchedulerProbe()
+        register_phases(scheduler)
+        return scheduler.execute_registered_phases()
+
+    def _fake_cleanup_phase_artifacts_after_resolution(
+        *,
+        spellbook: Any,
+        spell_ids: Optional[Sequence[str]] = None,
+    ) -> None:
+        cleanup_calls["count"] += 1
+
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_run_scheduler_with_phases",
+        staticmethod(_fake_run_scheduler_with_phases),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_conduit_resolution_has_errors",
+        staticmethod(lambda *, spellbook, conduit_id: False),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "cleanup_phase_artifacts_after_resolution",
+        staticmethod(_fake_cleanup_phase_artifacts_after_resolution),
+    )
+    _install_stub_phase_factories(monkeypatch, calls=phase_calls)
+
+    results = SpellbookCreationSystem.run_resolution_phases_for_conduit(
+        spellbook=spellbook,
+        conduit_id="cid-jit",
     )
 
     assert spellbook.check_cleaned_calls == 1

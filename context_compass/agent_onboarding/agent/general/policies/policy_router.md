@@ -21,13 +21,13 @@ Certification gate (mandatory)
 
 Required flow
 - Read `AGENTS.MD` and directory-local `AGENTS.MD` (if present).
-- Read `SOCIAL_CONTRACT.md` in full immediately after `AGENTS.MD`.
+- Read `EXECUTION_CONTRACT.md` in full immediately after `AGENTS.MD`.
 - Follow `agent_onboarding/agent/general/SKILLS.md` and career-specific additions.
 - For onboarding/re-onboarding, complete the canonical direct readset listed in:
   - `context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt`
 - Use manual source-document reads for onboarding; do not use onboarding dump artifacts as policy input.
 - After any compaction/handoff/fresh-session re-entry, complete the same full readset before any non-onboarding action.
-- Read `context_compass/SOCIAL_CONTRACT.md`
+- Read `context_compass/EXECUTION_CONTRACT.md`
   and apply its active-partner + performance-engineering rules.
 - Route active work from `attention_board.md` and keep detailed state in ticket `## Notes`.
 - Use the Ticket Microcycle with meaningful-finding note gates during execution.
@@ -126,3 +126,4 @@ Workflow
 References
 - agent_onboarding/agent/general/README.md
 - agent_onboarding/agent/SKILLS.md
+

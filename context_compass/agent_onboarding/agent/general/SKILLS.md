@@ -3,7 +3,7 @@
 Index of onboarding skills and when to apply them for this repository.
 
 Read order (baseline)
-1) context_compass/SOCIAL_CONTRACT.md
+1) context_compass/EXECUTION_CONTRACT.md
 2) agent_onboarding/agent/general/skills/compaction_requirements.md
 3) agent_onboarding/agent/general/policies/policy_router.md
 4) agent_onboarding/agent/general/skills/agent_stance.md
@@ -59,7 +59,7 @@ Certification timing
 - Require the approval message to include `CERTIFY: APPROVED` and the execution environment (`active` or `inactive`).
 
 When to read what
-- Any session start: read `AGENTS.MD`, then `context_compass/SOCIAL_CONTRACT.md`, then complete the full readset, then certify.
+- Any session start: read `AGENTS.MD`, then `context_compass/EXECUTION_CONTRACT.md`, then complete the full readset, then certify.
 - Any compaction or handoff re-entry: start again at `compaction_requirements.md`, complete full re-onboarding, then certify.
 - Repo orientation: repo_topology_and_git, system_orientation.
 - Architecture/component work: architecture_contexts, context_protocol, documentation_standards.
@@ -98,3 +98,4 @@ Testing discipline
 - agent_onboarding/agent/general/skills/testing/mocking.md
 - agent_onboarding/agent/general/skills/testing/regression_tests.md
 - agent_onboarding/agent/general/skills/testing/evidence_reporting.md
+

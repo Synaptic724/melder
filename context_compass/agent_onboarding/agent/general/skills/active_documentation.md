@@ -35,7 +35,7 @@ For new note entries (legacy entries may omit newer fields):
 - `REREAD`: `REQUIRED` | `HELPFUL`.
 - `SCORE_0_TO_10`: compaction usefulness score; improve entries below 8.
 - `TYPE` semantics and conflict/strategy expectations are governed by:
-  `context_compass/SOCIAL_CONTRACT.md`.
+  `context_compass/EXECUTION_CONTRACT.md`.
 
 Example
 - `DATE`: 2026-02-14
@@ -66,3 +66,4 @@ References
 - `agent_onboarding/agent/general/skills/active_pointerboard.md`
 - `agent_onboarding/agent/general/skills/ticketing.md`
 - `WORKFLOW.md`
+

@@ -5,7 +5,7 @@
 After any context compaction, handoff, or fresh session:
 
 * Stop and re-onboard before any tooling, edits, execution, or planning.
-* Re-read `SOCIAL_CONTRACT.md` in full immediately after `AGENTS.MD`.
+* Re-read `EXECUTION_CONTRACT.md` in full immediately after `AGENTS.MD`.
 * Start from `agent_onboarding/agent/SKILLS.md`.
 * Re-read `agent_onboarding/agent/general/SKILLS.md` and `agent_onboarding/agent/engineer/SKILLS.md` in full read order.
 * Re-read `agent_onboarding/agent/general/skills/compaction_requirements.md`.
@@ -25,6 +25,8 @@ After any context compaction, handoff, or fresh session:
   * parallel/bulk reading is allowed only when document contents are actually read and surfaced with concrete evidence value.
   * onboarding claims are valid only when required source documents were actually read.
   * onboarding dump files are non-canonical artifacts and do not satisfy onboarding requirements.
+  * loop-based document-reading commands are forbidden (for/foreach/while loops, xargs-style runners, or piped file-list iterators).
+  * onboarding/re-onboarding reads must be manual per file path, with explicit 500-line chunk reads for large files.
 
 This is the highest-priority adherence rule for continuity and policy retention.
 
@@ -44,7 +46,7 @@ Before acting on anything **outside the explicitly agreed architectural plan**, 
 * You must behave as though this project is very precious to you and very important to you and you are deeply invested in its success.
 * **Act as an active partner** in building and improving the system. Treat this as a team effort and pursue shared success.
 * ***THINK LIKE A PERFORMANCE ENGINEER.*** Prioritize correctness, durability, speed of execution, and low resource usage.
-* Treat `context_compass/SOCIAL_CONTRACT.md` as the primary collaboration contract for active-partner behavior, mission-intent execution, and conflict/strategy handling.
+* Treat `context_compass/EXECUTION_CONTRACT.md` as the primary collaboration contract for subordinate execution behavior, mission-intent execution, and conflict/strategy handling.
 * **Ask for directions** instead of assuming.
 * **Provide recommendations only when** there are real tradeoffs or when the user asks for options.
 * **Challenge questionable ideas** respectfully and explain why (risks, inconsistencies, or conflicts).
@@ -64,16 +66,17 @@ Do not treat user ideas as gospel. Be curious, thoughtful, and explicit about un
 
 Before any tooling, edits, or execution:
 
-* Read `SOCIAL_CONTRACT.md` in full immediately after `AGENTS.MD`.
+* Read `EXECUTION_CONTRACT.md` in full immediately after `AGENTS.MD`.
 * Start at `agent_onboarding/agent/SKILLS.md` to select the career baseline.
 * Read `agent_onboarding/agent/general/README.md` and `agent_onboarding/agent/engineer/README.md`.
 * Follow the read order in `agent_onboarding/agent/general/SKILLS.md` and `agent_onboarding/agent/engineer/SKILLS.md`.
-* Read and apply `context_compass/SOCIAL_CONTRACT.md` before execution.
+* Read and apply `context_compass/EXECUTION_CONTRACT.md` before execution.
 * Performative onboarding is forbidden: do real reads of required docs (parallel/bulk is allowed), and do not treat marker-only "reread" output as compliance.
 * Canonical onboarding bootstrap (default path): direct readset completion.
   - Use this default for both fresh sessions and post-compaction re-entry.
   - Read every document listed in the canonical readset with no skips before certification.
-  - Direct manual reads are allowed, but full readset completion is still required.
+  - Direct manual reads are required, and full readset completion is still required.
+  - Do not use loop-based commands to read multiple documents automatically.
   - Do not use onboarding dump artifacts as a substitute for reading source policy documents.
 * The source onboarding readset is `context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt`.
 * Obey certification gating from `agent_onboarding/agent/general/policies/policy_router.md` and `agent_onboarding/agent/general/skills/self_certification.md` (do not use tools or edit files until the user replies with the exact phrase `CERTIFY: APPROVED (inactive)` or `CERTIFY: APPROVED (active)` except the tools to properly read your documentation to onboard).
@@ -754,3 +757,4 @@ If you find mistakes while writing tests (bugs, incorrect docstrings, missing cl
 ## Test Mocks Skills
 
 For reusable test-only classes and helpers, see `tests/mocks/SKILLS.MD`.
+

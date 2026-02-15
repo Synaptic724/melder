@@ -15,21 +15,22 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| onboarding: readme compaction and readset reduction | review | codex | none | share reduction metrics and get user acceptance to close task | `context_compass/tasks/2026-02-15_onboarding_readme_compaction_task.md` | 2026-02-15 | REQUIRED |
+| discovery: jit conjure skip phases 8-12 | in_progress | codex | none | continue discovery and document concrete guard insertion plan for skipping 8-12 during conjure in jit mode | `context_compass/tasks/2026-02-15_discovery_jit_mode_skip_phase8_12_conjure_task.md` | 2026-02-15 | REQUIRED |
 
 ## Active Attention Details
 - DATE: 2026-02-15
   TYPE: PLAN
-  CLAIM: Active routing switched to user-requested onboarding README reduction and compaction work.
-  EVIDENCE: context_compass/tasks/2026-02-15_onboarding_readme_compaction_task.md:1-38, context_compass/tasks/2026-02-15_onboarding_readme_compaction_task.md:79-96
-  IMPACT: Execution focus is now documentation-context reduction instead of JIT runtime discovery.
-  NEXT: Present implemented reductions and request acceptance for closure.
+  CLAIM: Active routing returns to JIT conjure discovery after closing README compaction work.
+  EVIDENCE: context_compass/tasks/2026-02-15_discovery_jit_mode_skip_phase8_12_conjure_task.md:12-35, context_compass/tasks/2026-02-15_discovery_jit_mode_skip_phase8_12_conjure_task.md:59-88
+  IMPACT: Work focus is restored to unresolved runtime behavior discovery.
+  NEXT: Continue discovery notes with concrete guard insertion strategy and risks.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
 ## Recently Closed Anchors
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
+| onboarding: readme compaction and readset reduction | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_onboarding_readme_compaction_task_completed.md` | 2026-02-15 | REQUIRED |
 | docs revalidation: src components epic | done | codex | none | none | `context_compass/epics/completed/2026-02-13_revalidate_src_components_document_epic.md` | 2026-02-15 | REQUIRED |
 | docs revalidation: src architecture epic | done | codex | none | none | `context_compass/epics/completed/2026-02-13_revalidate_src_architecture_document_epic.md` | 2026-02-15 | REQUIRED |
 | onboarding hardening: manual-read path no dump lookup drift | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_harden_manual_onboarding_no_dump_path_task_completed.md` | 2026-02-15 | REQUIRED |
@@ -41,4 +42,3 @@ Attention details rule
 | jit/aot transfer propagation (non-contracted) | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_implement_jit_aot_transfer_ownership_propagation_non_contracted_task.md` | 2026-02-15 | REQUIRED |
 | jit/aot post-conjure bind propagation | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_implement_jit_aot_post_conjure_bind_propagation_task.md` | 2026-02-15 | REQUIRED |
 | jit/aot conjure propagation | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_implement_jit_aot_conjure_propagation_task.md` | 2026-02-15 | REQUIRED |
-| jit/aot config flag and fluent api | done | codex | none | none | `context_compass/tasks/completed/2026-02-15_implement_jit_aot_config_flag_and_fluent_api_task.md` | 2026-02-15 | REQUIRED |

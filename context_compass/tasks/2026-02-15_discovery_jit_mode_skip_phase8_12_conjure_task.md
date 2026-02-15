@@ -84,5 +84,23 @@ Run focused discovery to verify and document why JIT mode currently executes con
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: Conjure uses a single 5-11 scheduler path that only skips 8-11 for foundational resolution errors, while dedicated foundational-only (5-7) and deferred target-local plan (8-11) paths already exist and can be composed for JIT behavior.
+  EVIDENCE: src/melder/spellbook/spellbook_creation_system.py:230-255, src/melder/spellbook/spellbook_creation_system.py:742-786, src/melder/spellbook/spellbook_creation_system.py:998-1031, src/melder/spellbook/spellbook_creation_system.py:1241-1340, src/melder/spellbook/spellbook_creation_system.py:879-947, src/melder/aether/conduit/meld/meld.py:463-510
+  IMPACT: A low-risk JIT fix can likely be implemented at conjure orchestration level by choosing foundational-only 5-7 during conjure when AOT is disabled, while preserving existing first-meld deferred 8-11 behavior.
+  NEXT: Validate exact symbol-level change set and draft implementation patch plan (including docstring contract updates) before code edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATE: 2026-02-15
+  TYPE: PLAN
+  CLAIM: Implement JIT conjure skip by branching in `run_resolution_phases_for_conduit`: always run foundational phases (5-7), then run plan phases (8-11) only when configuration indicates full AOT compilation and foundational phases reported no resolution errors.
+  EVIDENCE: src/melder/spellbook/spellbook_creation_system.py:742-786, src/melder/spellbook/spellbook_creation_system.py:1241-1340, src/melder/spellbook/spellbook_creation_system.py:475-511, src/melder/spellbook/spellbook_creation_system.py:879-947
+  IMPACT: JIT mode will defer 8-11/phase12 compile work to runtime target-local deferred resolution, while AOT mode retains current eager behavior.
+  NEXT: Request approval for code edits in `src/melder/spellbook/spellbook_creation_system.py` and targeted tests; then implement with docstring updates and validation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
 Discovery task created to analyze and document the JIT-mode conjure gap (phases 8-12 not skipped). Initial evidence shows conjure still schedules phase 8-11 and reaches Phase 12 compile; next step is to produce a concrete guard-insertion plan before implementation.

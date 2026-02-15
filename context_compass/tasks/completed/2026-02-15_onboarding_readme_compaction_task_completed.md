@@ -1,9 +1,12 @@
 # Task: Onboarding README Compaction and Readset Reduction
 
+Completed: 2026-02-15
+Summary: Reduced onboarding README overhead by deleting stub readmes, compacting high-traffic README hubs, and repairing readset/reference paths.
+
 ## Metadata
 - Task ID: TASK-2026-02-15-onboarding-readme-compaction
 - Story: none
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-15
@@ -36,7 +39,7 @@ Reduce onboarding context load by removing low-value README stubs, merging index
 - Line-count delta summary for removed/compacted README docs.
 
 ## Files / Paths Impacted
-- `context_compass/tasks/2026-02-15_onboarding_readme_compaction_task.md`
+- `context_compass/tasks/completed/2026-02-15_onboarding_readme_compaction_task_completed.md`
 - `context_compass/attention_board.md`
 - `context_compass/agent_onboarding/agent/general/README.md`
 - `context_compass/agent_onboarding/agent/general/examples/readme.md`
@@ -70,7 +73,7 @@ Reduce onboarding context load by removing low-value README stubs, merging index
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
+- [x] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
 - DATE: 2026-02-15
@@ -100,5 +103,14 @@ Reduce onboarding context load by removing low-value README stubs, merging index
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: User accepted the README compaction results and approved task closure.
+  EVIDENCE: context_compass/tasks/completed/2026-02-15_onboarding_readme_compaction_task_completed.md:1-37, context_compass/attention_board.md:17-31
+  IMPACT: Task can move to completed and board routing should return to active runtime discovery work.
+  NEXT: Move ticket to `tasks/completed/` and run deterministic attention-board closure sync.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
-README-focused onboarding reduction is implemented and staged for review: six onboarding README stubs removed, three major README hubs compacted, and readset/reference paths repaired. Awaiting user acceptance to close.
+README-focused onboarding reduction is complete and user-accepted. Next action is closure move to `tasks/completed/` and board reroute to the active discovery task.

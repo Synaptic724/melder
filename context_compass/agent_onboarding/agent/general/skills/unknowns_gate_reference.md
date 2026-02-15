@@ -41,4 +41,5 @@ Disallowed shortcuts
 
 References
 - `context_compass/AGENTS.MD`
-- `context_compass/SOCIAL_CONTRACT.md`
+- `context_compass/EXECUTION_CONTRACT.md`
+
