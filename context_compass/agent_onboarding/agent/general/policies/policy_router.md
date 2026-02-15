@@ -25,6 +25,7 @@ Required flow
 - Follow `agent_onboarding/agent/general/SKILLS.md` and career-specific additions.
 - For onboarding/re-onboarding, complete the canonical direct readset listed in:
   - `context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt`
+- Use manual source-document reads for onboarding; do not use onboarding dump artifacts as policy input.
 - After any compaction/handoff/fresh-session re-entry, complete the same full readset before any non-onboarding action.
 - Read `context_compass/SOCIAL_CONTRACT.md`
   and apply its active-partner + performance-engineering rules.
@@ -55,23 +56,15 @@ Documentation and Convention Precedence
 - Do not invent new conventions if the repo already has a pattern.
 - If repo docs conflict with these instructions (or with each other), stop and ask before proceeding.
 
-Unknowns Gate (No Unverified Claims)
-- Any statement not supported by evidence is UNKNOWN.
-- UNKNOWN is the default claim state for new findings.
-- Evidence means at least one of:
-  - A specific source file reference (preferred: file + symbol/method/class name).
-  - A citation to an explicit, already-verified artifact (e.g., a prior approved doc section).
-- If not evidenced => UNKNOWN.
-- UNKNOWN items must be labeled UNKNOWN (or added to an Unknowns section).
-- UNKNOWN items must be investigated by reading the relevant source(s).
-- If investigation cannot be completed (missing source access, ambiguity, or time),
-  the item must remain UNKNOWN and must not be promoted to fact.
-- No reasonable assumptions. Do not infer behavior from naming, patterns,
-  conventions, or typical frameworks. Only the code/docs count.
-- When unsure:
-  - Mark it UNKNOWN.
-  - Identify the most likely evidence target (file + symbol).
-  - Investigate, then update the doc (or leave it UNKNOWN).
+Unknowns Gate
+- Apply the canonical policy in
+  `agent_onboarding/agent/general/skills/unknowns_gate_reference.md`.
+- UNKNOWN remains the default for unevidenced claims in this policy.
+- Routing decisions (scope, onboarding completeness, stale-doc status) must be
+  evidence-backed; if verification is incomplete, route as UNKNOWN and block
+  downstream synthesis until verified.
+- Policy conflicts must include explicit evidence and impact statements before
+  requesting user resolution.
 
 Operating Protocol (How You Should Work)
 A) Propose - Confirm - Implement

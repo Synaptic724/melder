@@ -50,6 +50,7 @@ Canonical onboarding bootstrap (default)
 - Canonical readset manifest:
   `context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt`
 - Full readset completion is mandatory before certification.
+- Manual source-document reading is canonical; onboarding dump artifacts are non-canonical.
 - Re-onboarding attestations can keep `FILES_REREAD` compact (active ticket paths only)
   and reference onboarding docs via `ONBOARDING_READSET`.
 

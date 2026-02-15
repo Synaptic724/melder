@@ -17,13 +17,14 @@ After any context compaction, handoff, or fresh session:
   * `REONBOARD: COMPLETE`
   * certification state (`active` or `inactive`)
   * files re-read summary (active ticket paths and any non-readset docs only)
-  * onboarding readset reference (manifest + script path) when using the canonical onboarding bootstrap flow
+  * onboarding readset reference (manifest path)
   * concise read-integrity proof (concrete rule callouts from reread docs)
   * `NO_ACTION_TAKEN_YET: true`
 * Performative compliance is forbidden during re-onboarding:
   * marker-only loops (for example, `$null = Get-Content ...` plus `REREAD:` output) do not count as re-reading.
   * parallel/bulk reading is allowed only when document contents are actually read and surfaced with concrete evidence value.
-  * manifest-driven onboarding script runs are valid only when the script actually reads each file in the readset and the attestation references the manifest/script used.
+  * onboarding claims are valid only when required source documents were actually read.
+  * onboarding dump files are non-canonical artifacts and do not satisfy onboarding requirements.
 
 This is the highest-priority adherence rule for continuity and policy retention.
 
@@ -73,6 +74,7 @@ Before any tooling, edits, or execution:
   - Use this default for both fresh sessions and post-compaction re-entry.
   - Read every document listed in the canonical readset with no skips before certification.
   - Direct manual reads are allowed, but full readset completion is still required.
+  - Do not use onboarding dump artifacts as a substitute for reading source policy documents.
 * The source onboarding readset is `context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt`.
 * Obey certification gating from `agent_onboarding/agent/general/policies/policy_router.md` and `agent_onboarding/agent/general/skills/self_certification.md` (do not use tools or edit files until the user replies with the exact phrase `CERTIFY: APPROVED (inactive)` or `CERTIFY: APPROVED (active)` except the tools to properly read your documentation to onboard).
 * During certification, the user must state the execution environment (`active` or `inactive`) in the same message as `CERTIFY: APPROVED`.

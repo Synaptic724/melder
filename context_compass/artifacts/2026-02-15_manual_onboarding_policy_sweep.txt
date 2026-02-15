@@ -1,0 +1,4 @@
+DATE=2026-02-15
+CHECK=entrypoint_docs_no_dump_commands
+COMMAND=rg -n "build_parallel_read_onboarding_dump|validate_parallel_read_onboarding_dump|read_parallel_read_onboarding_chunk|parallel_read_onboarding_dump|onboarding_read_XX|run_onboarding_read\.(ps1|cmd|sh)|manifest \+ script path|manifest-driven onboarding script runs" agents.md context_compass/AGENTS.MD context_compass/agent_onboarding/agent/SKILLS.md context_compass/agent_onboarding/agent/general/SKILLS.md context_compass/agent_onboarding/agent/general/skills/compaction_requirements.md context_compass/agent_onboarding/agent/general/skills/self_certification.md context_compass/agent_onboarding/agent/general/skills/user_approved_certification.md context_compass/agent_onboarding/agent/general/policies/policy_router.md context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt
+RESULT=NO_MATCHES

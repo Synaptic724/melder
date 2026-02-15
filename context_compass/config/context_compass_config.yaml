@@ -13,3 +13,19 @@ workflow:
     minimum_note_score: 7
     expansion_gate_max_files: 5
     unknown_default: true
+
+codex:
+  viewer_tool_read_limit: 500 # This is the current limit for codex reading tool
+  benefits:
+    - enhanced_context_understanding: true
+    - improved_decision_making: true
+    - increased_efficiency: true
+    - reduced_bias: true
+    - reduced_cognitive_load: true
+    - reduced_time_to_insight: true
+    - reduced_complexity: true
+    - reduced_context_switching: true
+  risks:
+    - performative_compliance: high
+    - deception_potential: medium
+

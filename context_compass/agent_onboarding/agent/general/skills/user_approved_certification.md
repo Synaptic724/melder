@@ -15,6 +15,7 @@ Rules
 - Before requesting approval, complete canonical onboarding readset consumption from:
   - `context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt`
   - include read-integrity proof in the re-onboarding attestation.
+- Do not request approval based on onboarding dump artifacts; approval requires source-document read completion.
 - After compaction/handoff/fresh-session re-entry, the same full-readset requirement applies again before requesting approval.
 
 References

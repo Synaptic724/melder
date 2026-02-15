@@ -8,18 +8,13 @@ Policy
 - Tests must be added or updated for behavioral changes.
 - Avoid drive-by refactors; limit edits to the requested scope.
 
-Unknowns Gate (No Unverified Claims)
-- Any statement not supported by evidence is UNKNOWN.
-- Evidence means at least one of:
-  - A specific source file reference (preferred: file + symbol/method/class name).
-  - A citation to an explicit, already-verified artifact (e.g., a prior approved doc section).
-- If not evidenced => UNKNOWN.
-- UNKNOWN items must be labeled UNKNOWN (or added to an Unknowns section).
-- UNKNOWN items must be investigated by reading the relevant source(s).
-- If investigation cannot be completed (missing source access, ambiguity, or time),
-  the item must remain UNKNOWN and must not be promoted to fact.
-- No reasonable assumptions. Do not infer behavior from naming, patterns,
-  conventions, or typical frameworks. Only the code/docs count.
+Unknowns Gate
+- Apply the canonical policy in
+  `agent_onboarding/agent/general/skills/unknowns_gate_reference.md`.
+- UNKNOWN is still the default for unevidenced claims in engineer quality reviews.
+- Quality findings must cite concrete file/symbol evidence or remain UNKNOWN.
+- Do not treat failing tests, naming patterns, or historical assumptions as
+  contract evidence without direct source verification.
 
 Exceptions
 - Only allowed with explicit user approval, documented in the response.

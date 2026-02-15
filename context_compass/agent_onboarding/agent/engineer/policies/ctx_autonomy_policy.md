@@ -10,18 +10,14 @@ Policy
 - Ensure file ctx captures public surface, dependencies, error model, invariants, lifecycle, and testing.
 - If code changed, refresh file ctx first, then regenerate dir ctx and resurvey higher layers.
 
-Unknowns Gate (No Unverified Claims)
-- Any statement not supported by evidence is UNKNOWN.
-- Evidence means at least one of:
-  - A specific source file reference (preferred: file + symbol/method/class name).
-  - A citation to an explicit, already-verified artifact (e.g., a prior approved doc section).
-- If not evidenced => UNKNOWN.
-- UNKNOWN items must be labeled UNKNOWN (or added to an Unknowns section).
-- UNKNOWN items must be investigated by reading the relevant source(s).
-- If investigation cannot be completed (missing source access, ambiguity, or time),
-  the item must remain UNKNOWN and must not be promoted to fact.
-- No reasonable assumptions. Do not infer behavior from naming, patterns,
-  conventions, or typical frameworks. Only the code/docs count.
+Unknowns Gate
+- Apply the canonical policy in
+  `agent_onboarding/agent/general/skills/unknowns_gate_reference.md`.
+- Engineer ctx updates must not promote claims without evidence.
+- Engineer file-ctx updates must preserve UNKNOWN status for unresolved behavior
+  so dir/component/architecture layers do not inherit inferred claims.
+- Before accepting ctx quality >= 75, verify that key responsibilities and
+  failure-path claims are traceable to concrete evidence.
 
 Engineer emphasis
 - Fidelity: every listed behavior must map to actual code paths.

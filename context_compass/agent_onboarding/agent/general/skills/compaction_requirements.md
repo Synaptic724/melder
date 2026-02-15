@@ -8,6 +8,7 @@ Highest-priority rule
 - After any context compaction, handoff, or fresh session, stop and re-onboard before any tooling, edits, execution, or planning.
 - Do not trust memory from before compaction as authoritative context.
 - Performative compliance is forbidden: marker-only "REREAD" logs without substantive reading do not satisfy re-onboarding.
+- Manual source-document reading is canonical; onboarding dump files are non-canonical and do not satisfy re-onboarding.
 
 External-memory-first rule
 - Treat repository files as the single durable memory source.

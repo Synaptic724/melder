@@ -1,6 +1,7 @@
 # Canonical onboarding/re-onboarding readset (repo-relative paths).
 # Dynamic active ticket paths are intentionally not listed here and should be
 # added to attestation `FILES_REREAD` separately.
+# Read these source documents directly; do not substitute onboarding dump files.
 
 context_compass/AGENTS.MD
 context_compass/SOCIAL_CONTRACT.md
@@ -16,6 +17,7 @@ context_compass/agent_onboarding/agent/general/skills/agent_stance.md
 context_compass/agent_onboarding/agent/general/skills/agent_lifecycle.md
 context_compass/agent_onboarding/agent/general/skills/career_selection.md
 context_compass/agent_onboarding/agent/general/skills/technical_expertise.md
+context_compass/agent_onboarding/agent/general/skills/unknowns_gate_reference.md
 context_compass/agent_onboarding/agent/general/skills/mrp_policy.md
 context_compass/agent_onboarding/agent/general/skills/documentation_standards.md
 context_compass/agent_onboarding/agent/general/skills/context_gold.md

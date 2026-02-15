@@ -19,18 +19,15 @@ Policy
 - If a ctx scores 75+, it is trusted for downstream synthesis.
 - Do not generate higher-level ctx from lower-quality inputs.
 
-Unknowns Gate (No Unverified Claims)
-- Any statement not supported by evidence is UNKNOWN.
-- Evidence means at least one of:
-  - A specific source file reference (preferred: file + symbol/method/class name).
-  - A citation to an explicit, already-verified artifact (e.g., a prior approved doc section).
-- If not evidenced => UNKNOWN.
-- UNKNOWN items must be labeled UNKNOWN (or added to an Unknowns section).
-- UNKNOWN items must be investigated by reading the relevant source(s).
-- If investigation cannot be completed (missing source access, ambiguity, or time),
-  the item must remain UNKNOWN and must not be promoted to fact.
-- No reasonable assumptions. Do not infer behavior from naming, patterns,
-  conventions, or typical frameworks. Only the code/docs count.
+Unknowns Gate
+- Apply the canonical policy in
+  `agent_onboarding/agent/general/skills/unknowns_gate_reference.md`.
+- Do not promote ctx claims to FACT without evidence.
+- CTX quality scoring inputs must be evidence-backed at each layer
+  (file -> dir -> component -> architecture); otherwise mark UNKNOWN and
+  halt higher-layer synthesis.
+- If a source ctx claim is ambiguous, preserve UNKNOWN in downstream ctx
+  instead of normalizing it into an inferred FACT.
 
 Meaningful data definition
 - Accurate: statements match the source of truth (code or lower-level ctx).
