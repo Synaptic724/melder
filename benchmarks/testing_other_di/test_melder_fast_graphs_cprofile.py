@@ -10,9 +10,25 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import pytest
 
 from benchmarks.testing_other_di import test_shallow_all as shallow_all
+from benchmarks.p_core_affinity.p_core_affinity import (
+    get_or_apply_p_core_affinity_from_env,
+)
 
 
 _FAST_GRAPH_NAMES: Tuple[str, ...] = ("solo", "shallow", "wide", "diamond")
+
+
+def _resolve_affinity_status() -> Dict[str, Any]:
+    """
+    Purpose:
+        Resolve optional P-core affinity status for the current process.
+    Contract:
+        - Delegates to shared affinity utility cache.
+        - Returns status payload for artifact traceability on every run.
+    Returns:
+        Structured affinity status dictionary.
+    """
+    return get_or_apply_p_core_affinity_from_env()
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -585,6 +601,7 @@ def _append_benchmark_record(
     call_chain_path: Path,
     summary_path: Path,
     sample_metadata: Optional[Dict[str, Any]] = None,
+    affinity_metadata: Optional[Dict[str, Any]] = None,
 ) -> Path:
     """
     Purpose:
@@ -628,6 +645,18 @@ def _append_benchmark_record(
         "sample_actual_duration_s": (
             None if sample_metadata is None else sample_metadata.get("sample_actual_duration_s")
         ),
+        "affinity_requested": (
+            None if affinity_metadata is None else affinity_metadata.get("requested")
+        ),
+        "affinity_applied": (
+            None if affinity_metadata is None else affinity_metadata.get("applied")
+        ),
+        "affinity_reason": (
+            None if affinity_metadata is None else affinity_metadata.get("reason")
+        ),
+        "affinity_selected": (
+            None if affinity_metadata is None else affinity_metadata.get("selected_affinity")
+        ),
     }
     with artifact_file.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(record, sort_keys=True) + "\n")
@@ -656,6 +685,7 @@ def _profile_execution(
     profile_enabled = _env_bool("DI_CPROFILE", True)
     sort = os.getenv("DI_CPROFILE_SORT", "cumtime")
     top = _env_int_nonneg("DI_CPROFILE_TOP", 30)
+    affinity_metadata = _resolve_affinity_status()
 
     start = time.perf_counter()
     if profile_enabled:
@@ -768,6 +798,7 @@ def _profile_execution(
             call_chain_path=call_chain_path,
             summary_path=summary_path,
             sample_metadata=normalized_sample_metadata,
+            affinity_metadata=affinity_metadata,
         )
         sample_suffix = ""
         if normalized_sample_metadata is not None:

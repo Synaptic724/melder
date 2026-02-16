@@ -354,6 +354,14 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--allow-gate-failure", action="store_true")
     parser.add_argument("--allow-baseline-regression", action="store_true")
     parser.add_argument("--print-json", action="store_true")
+    parser.add_argument(
+        "--pin-p-cores",
+        action="store_true",
+        help=(
+            "Enable optional P-core process affinity pinning "
+            "(equivalent to DI_PIN_P_CORES=1)."
+        ),
+    )
     return parser
 
 
@@ -933,6 +941,13 @@ def run_codegen_benchmark_report(arguments: argparse.Namespace) -> Dict[str, Any
             Combined benchmark report with samples, gate report, and optional
             baseline delta report.
     """
+    if bool(arguments.pin_p_cores):
+        os.environ["DI_PIN_P_CORES"] = "1"
+    from benchmarks.p_core_affinity.p_core_affinity import (
+        get_or_apply_p_core_affinity_from_env,
+    )
+
+    affinity_status = get_or_apply_p_core_affinity_from_env()
     _reset_aether_singleton_for_benchmark()
     warm_session = CodegenBenchmarkSession(
         frame_name=_build_unique_session_name("codegen-warm"),
@@ -974,6 +989,7 @@ def run_codegen_benchmark_report(arguments: argparse.Namespace) -> Dict[str, Any
         "generated_at_unix": time.time(),
         "sample_count": arguments.sample_count,
         "warmup_count": arguments.warmup_count,
+        "affinity": affinity_status,
         "samples_ns": samples,
         "gate_report": gate_report,
         "route_samples_ns": route_samples_ns,

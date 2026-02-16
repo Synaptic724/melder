@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 import statistics
 import sys
 import time
@@ -160,6 +161,14 @@ def _build_parser() -> argparse.ArgumentParser:
         help=(
             "Optional regression threshold for baseline comparison; "
             "if any comparable metric exceeds this percent, exit code is 2."
+        ),
+    )
+    parser.add_argument(
+        "--pin-p-cores",
+        action="store_true",
+        help=(
+            "Enable optional P-core process affinity pinning "
+            "(equivalent to DI_PIN_P_CORES=1)."
         ),
     )
     return parser
@@ -565,6 +574,15 @@ def _render_summary_lines(
                 )
             lines.append("")
 
+    affinity = payload.get("affinity")
+    if isinstance(affinity, dict):
+        lines.append("[affinity]")
+        lines.append("- requested: {0}".format(affinity.get("requested")))
+        lines.append("- applied: {0}".format(affinity.get("applied")))
+        lines.append("- reason: {0}".format(affinity.get("reason")))
+        lines.append("- selected_affinity: {0}".format(affinity.get("selected_affinity")))
+        lines.append("")
+
     return lines
 
 
@@ -605,10 +623,16 @@ def run_snapshot(arguments: argparse.Namespace) -> Tuple[Dict[str, Any], Path, P
     """
     repo_root = _resolve_repo_root()
     _ensure_import_paths(repo_root)
+    if bool(arguments.pin_p_cores):
+        os.environ["DI_PIN_P_CORES"] = "1"
 
+    from benchmarks.p_core_affinity.p_core_affinity import (
+        get_or_apply_p_core_affinity_from_env,
+    )
     from benchmarks.testing_other_di import test_melder_fast_graphs_cprofile as fast_cprofile
     from benchmarks.testing_other_di import test_melder_overrides_graphs_cprofile as overrides_cprofile
 
+    affinity_status = get_or_apply_p_core_affinity_from_env()
     fast_graphs = _parse_csv(arguments.fast_graphs)
     override_graphs = _parse_csv(arguments.override_graphs)
 
@@ -649,9 +673,11 @@ def run_snapshot(arguments: argparse.Namespace) -> Tuple[Dict[str, Any], Path, P
             "warmup_iters": arguments.warmup_iters,
             "fast_graphs": list(fast_graphs),
             "override_graphs": list(override_graphs),
+            "pin_p_cores": bool(arguments.pin_p_cores),
         },
         "fast": fast_snapshot,
         "overrides": overrides_snapshot,
+        "affinity": affinity_status,
         "lane_summary": {
             "fast_cycle_mean_ns": fast_lane_mean_ns,
             "overrides_root_mean_ns": overrides_lane_mean_ns,

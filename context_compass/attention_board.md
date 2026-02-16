@@ -15,9 +15,27 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12 no-overrides high-risk discovery | in_progress | codex | none | run NO-H4 10k prebaseline and continue with 10k before/after decision gate | `context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md` | 2026-02-16 | REQUIRED |
+| task: benchmark p-core affinity integration | review | codex | none | review implementation and confirm acceptance | `context_compass/tasks/2026-02-16_benchmark_p_core_affinity_integration_task.md` | 2026-02-16 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: P-core affinity integration is implemented and validated; snapshot/codegen artifacts report `reason: pinned` when enabled, and fast/overrides smoke benchmark tests pass with pinning toggled on.
+  EVIDENCE: context_compass/tasks/2026-02-16_benchmark_p_core_affinity_integration_task.md:75-83, benchmarks/testing_other_di/profiles/overrides_graphs_melder/affinity_smoke_snapshot_summary_2026-02-16_20-57-20.txt:20-24, benchmarks/testing_other_di/profiles/fast_graphs_melder/benchmark_results.jsonl:1432-1432, benchmarks/testing_other_di/profiles/overrides_graphs_melder/benchmark_results.jsonl:1866-1866
+  IMPACT: Benchmark runs now have an opt-in stabilization control for hybrid Intel scheduling variance.
+  NEXT: Await user acceptance; on approval, move task to completed folder and sync board closure anchor.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Active routing switched to user-requested benchmark affinity work to add optional P-core process pinning support.
+  EVIDENCE: context_compass/tasks/2026-02-16_benchmark_p_core_affinity_integration_task.md:1-88, benchmarks/testing_other_di/run_snapshot_timings.py:597-676
+  IMPACT: Benchmark stability controls can be implemented without changing default runtime behavior.
+  NEXT: Add `benchmarks/p_core_affinity` and integrate env-driven activation in benchmark suites.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: RESULT: REVERTED - user selected option `1` for NO-H1; transient vectorized runtime changes were removed and rollback validation was completed.
