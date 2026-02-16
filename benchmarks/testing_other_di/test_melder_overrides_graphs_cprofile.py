@@ -5,7 +5,7 @@ import os
 import pstats
 import time
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import pytest
 
@@ -95,6 +95,92 @@ def _env_int_nonneg(name: str, default: int) -> int:
     if value < 0:
         raise AssertionError(f"{name} must be >= 0; got {value}.")
     return value
+
+
+def _env_float_nonneg(name: str, default: float) -> float:
+    """
+    Purpose:
+        Parse a non-negative float environment variable.
+    Contract:
+        - Uses `default` when missing.
+        - Raises AssertionError when value is not a float or is negative.
+    Args:
+        name: Environment variable name.
+        default: Fallback float.
+    Returns:
+        Parsed non-negative float.
+    Raises:
+        AssertionError: If parsing fails or value is negative.
+    """
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        value = float(raw)
+    except ValueError as exc:
+        raise AssertionError(f"{name} must be a float; got {raw!r}.") from exc
+    if value < 0:
+        raise AssertionError(f"{name} must be >= 0; got {value}.")
+    return value
+
+
+def _resolve_override_duration_seconds() -> float:
+    """
+    Purpose:
+        Resolve optional duration-budget mode for override benchmark lanes.
+    Contract:
+        - `DI_OVERRIDE_CPROFILE_DURATION_S` takes precedence for this suite.
+        - Falls back to shared `DI_BENCHMARK_DURATION_S`.
+        - `0.0` disables duration mode (default behavior).
+    Returns:
+        Duration budget in seconds.
+    """
+    shared = _env_float_nonneg("DI_BENCHMARK_DURATION_S", 0.0)
+    return _env_float_nonneg("DI_OVERRIDE_CPROFILE_DURATION_S", shared)
+
+
+def _run_for_duration_budget(
+    *,
+    run_once: Callable[[], None],
+    duration_s: float,
+    check_interval: int = 8,
+) -> Tuple[int, float]:
+    """
+    Purpose:
+        Execute one benchmark sample repeatedly for at least a target duration.
+    Contract:
+        - Executes at least one sample.
+        - Uses periodic clock checks to keep overhead low.
+    Args:
+        run_once: One benchmark sample operation.
+        duration_s: Target runtime budget in seconds.
+        check_interval: Clock-check interval in iterations.
+    Returns:
+        Tuple `(sample_count, elapsed_seconds)`.
+    Raises:
+        AssertionError: If duration is non-positive or check interval is invalid.
+    """
+    if duration_s <= 0:
+        raise AssertionError("duration_s must be > 0 for duration mode")
+    if check_interval <= 0:
+        raise AssertionError("check_interval must be > 0")
+
+    start = time.perf_counter()
+    deadline = start + duration_s
+    sample_count = 0
+
+    while True:
+        run_once()
+        sample_count += 1
+        if sample_count == 1:
+            if time.perf_counter() >= deadline:
+                break
+            continue
+        if sample_count % check_interval == 0 and time.perf_counter() >= deadline:
+            break
+
+    elapsed = time.perf_counter() - start
+    return sample_count, elapsed
 
 
 def _selected_override_graphs() -> Tuple[str, ...]:
@@ -381,6 +467,7 @@ def _build_quick_summary_lines(
     elapsed_seconds: float,
     hotspots: List[Dict[str, Any]],
     call_chain_rows: List[Dict[str, Any]],
+    sample_metadata: Optional[Dict[str, Any]] = None,
 ) -> List[str]:
     """
     Purpose:
@@ -398,6 +485,16 @@ def _build_quick_summary_lines(
     lines: List[str] = []
     elapsed_ms = elapsed_seconds * 1000.0
     lines.append(f"[{label}] profiled in {elapsed_ms:.3f}ms")
+    if sample_metadata is not None:
+        sample_count = sample_metadata.get("sample_count")
+        sample_avg_ms = sample_metadata.get("sample_avg_ms")
+        sample_mode = sample_metadata.get("sample_mode")
+        if sample_count is not None and sample_avg_ms is not None:
+            lines.append(
+                f"[{label}] samples={sample_count} sample_avg_ms={float(sample_avg_ms):.6f} mode={sample_mode}"
+            )
+        elif sample_count is not None:
+            lines.append(f"[{label}] samples={sample_count} mode={sample_mode}")
 
     if not hotspots:
         lines.append(f"[{label}] no hotspots collected")
@@ -473,6 +570,7 @@ def _append_benchmark_record(
     hotspot_path: Path,
     call_chain_path: Path,
     summary_path: Path,
+    sample_metadata: Optional[Dict[str, Any]] = None,
 ) -> Path:
     """
     Purpose:
@@ -504,13 +602,27 @@ def _append_benchmark_record(
         "hotspot_path": str(hotspot_path),
         "call_chain_path": str(call_chain_path),
         "summary_path": str(summary_path),
+        "sample_mode": None if sample_metadata is None else sample_metadata.get("sample_mode"),
+        "sample_count": None if sample_metadata is None else sample_metadata.get("sample_count"),
+        "sample_avg_ms": None if sample_metadata is None else sample_metadata.get("sample_avg_ms"),
+        "sample_target_duration_s": (
+            None if sample_metadata is None else sample_metadata.get("sample_target_duration_s")
+        ),
+        "sample_actual_duration_s": (
+            None if sample_metadata is None else sample_metadata.get("sample_actual_duration_s")
+        ),
     }
     with out_path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(payload, sort_keys=True) + "\n")
     return out_path
 
 
-def _profile_execution(label: str, fn: Callable[[], None]) -> None:
+def _profile_execution(
+    label: str,
+    fn: Callable[[], None],
+    *,
+    sample_metadata: Optional[Dict[str, Any]] = None,
+) -> None:
     """
     Purpose:
         Execute a benchmark lane with cProfile and write durable artifacts.
@@ -536,6 +648,22 @@ def _profile_execution(label: str, fn: Callable[[], None]) -> None:
         fn()
     finally:
         elapsed = time.perf_counter() - start
+        normalized_sample_metadata = None if sample_metadata is None else dict(sample_metadata)
+        if normalized_sample_metadata is not None:
+            sample_count = normalized_sample_metadata.get("sample_count")
+            if (
+                sample_count is not None
+                and float(sample_count) > 0
+                and normalized_sample_metadata.get("sample_avg_ms") is None
+            ):
+                normalized_sample_metadata["sample_avg_ms"] = (
+                    elapsed * 1000.0
+                ) / float(sample_count)
+            if (
+                normalized_sample_metadata.get("sample_mode") == "duration"
+                and normalized_sample_metadata.get("sample_actual_duration_s") is None
+            ):
+                normalized_sample_metadata["sample_actual_duration_s"] = elapsed
         if profile_enabled:
             profiler.disable()
             profile_path = _dump_profile(label, profiler)
@@ -557,6 +685,7 @@ def _profile_execution(label: str, fn: Callable[[], None]) -> None:
                 elapsed_seconds=elapsed,
                 hotspots=hotspot_rows,
                 call_chain_rows=call_chain_rows,
+                sample_metadata=normalized_sample_metadata,
             )
             for line in summary_lines:
                 print(line)
@@ -593,6 +722,14 @@ def _profile_execution(label: str, fn: Callable[[], None]) -> None:
                 f"[{label}] profiled in {elapsed * 1000.0:.3f}ms",
                 f"[{label}] profiling disabled (DI_OVERRIDE_CPROFILE=0)",
             ]
+            if normalized_sample_metadata is not None:
+                sample_count = normalized_sample_metadata.get("sample_count")
+                sample_avg_ms = normalized_sample_metadata.get("sample_avg_ms")
+                sample_mode = normalized_sample_metadata.get("sample_mode")
+                if sample_count is not None and sample_avg_ms is not None:
+                    summary_lines.append(
+                        f"[{label}] samples={sample_count} sample_avg_ms={float(sample_avg_ms):.6f} mode={sample_mode}"
+                    )
             for line in summary_lines:
                 print(line)
             summary_path = _write_summary_artifact(
@@ -609,8 +746,21 @@ def _profile_execution(label: str, fn: Callable[[], None]) -> None:
             hotspot_path=hotspot_path,
             call_chain_path=call_chain_path,
             summary_path=summary_path,
+            sample_metadata=normalized_sample_metadata,
         )
-        print(f"[melder][override-benchmark] {label} benchmark={benchmark_path} elapsed_ms={elapsed * 1000.0:.3f}")
+        sample_suffix = ""
+        if normalized_sample_metadata is not None:
+            sample_count = normalized_sample_metadata.get("sample_count")
+            sample_avg_ms = normalized_sample_metadata.get("sample_avg_ms")
+            sample_mode = normalized_sample_metadata.get("sample_mode")
+            if sample_count is not None and sample_avg_ms is not None:
+                sample_suffix = (
+                    f" sample_count={sample_count} sample_avg_ms={float(sample_avg_ms):.6f} mode={sample_mode}"
+                )
+        print(
+            f"[melder][override-benchmark] {label} benchmark={benchmark_path} "
+            f"elapsed_ms={elapsed * 1000.0:.3f}{sample_suffix}"
+        )
 
 
 def _assert_override_applied(graph_spec: Any, ops: Any, root: Any) -> None:
@@ -649,12 +799,33 @@ def test_melder_overrides_graph_smoke_cprofile(graph: str) -> None:
         None.
     """
     graph_spec, ops = _build_melder_override_ops(graph)
+    duration_s = _resolve_override_duration_seconds()
+    sample_metadata: Dict[str, Any] = {
+        "sample_mode": "duration" if duration_s > 0 else "single",
+        "sample_target_duration_s": duration_s if duration_s > 0 else None,
+    }
     try:
-        def _run() -> None:
+        def _run_once() -> None:
             root = ops.get_root()
             _assert_override_applied(graph_spec, ops, root)
 
-        _profile_execution(f"melder_overrides_smoke_{graph}", _run)
+        def _run() -> None:
+            if duration_s > 0:
+                sample_count, sample_elapsed = _run_for_duration_budget(
+                    run_once=_run_once,
+                    duration_s=duration_s,
+                )
+                sample_metadata["sample_count"] = sample_count
+                sample_metadata["sample_actual_duration_s"] = sample_elapsed
+                return
+            _run_once()
+            sample_metadata["sample_count"] = 1
+
+        _profile_execution(
+            f"melder_overrides_smoke_{graph}",
+            _run,
+            sample_metadata=sample_metadata,
+        )
     finally:
         ops.cleanup()
 
@@ -679,20 +850,41 @@ def test_melder_overrides_graph_timings_cprofile(graph: str) -> None:
         pytest.skip("DI_OVERRIDE_RUN_SINGLE not enabled")
 
     warmup_iters = _env_int_nonneg("DI_OVERRIDE_PROFILE_WARMUP_ITERS", _env_int_nonneg("DI_OVERRIDE_WARMUP_ITERS", 50))
+    duration_s = _resolve_override_duration_seconds()
     profile_iters = _env_int_nonneg("DI_OVERRIDE_PROFILE_ITERS", 1000)
-    if profile_iters <= 0:
-        raise AssertionError("DI_OVERRIDE_PROFILE_ITERS must be > 0")
+    if duration_s <= 0 and profile_iters <= 0:
+        raise AssertionError("DI_OVERRIDE_PROFILE_ITERS must be > 0 when duration mode is disabled")
 
     graph_spec, ops = _build_melder_override_ops(graph)
+    sample_metadata: Dict[str, Any] = {
+        "sample_mode": "duration" if duration_s > 0 else "iterations",
+        "sample_target_duration_s": duration_s if duration_s > 0 else None,
+    }
     try:
+        def _run_iteration() -> None:
+            root = ops.get_root()
+            _assert_override_applied(graph_spec, ops, root)
+
         def _run() -> None:
             for _ in range(warmup_iters):
-                root = ops.get_root()
-                _assert_override_applied(graph_spec, ops, root)
-            for _ in range(profile_iters):
-                root = ops.get_root()
-                _assert_override_applied(graph_spec, ops, root)
+                _run_iteration()
+            if duration_s > 0:
+                sample_count, sample_elapsed = _run_for_duration_budget(
+                    run_once=_run_iteration,
+                    duration_s=duration_s,
+                )
+                sample_metadata["sample_count"] = sample_count
+                sample_metadata["sample_actual_duration_s"] = sample_elapsed
+                return
 
-        _profile_execution(f"melder_overrides_timings_{graph}", _run)
+            for _ in range(profile_iters):
+                _run_iteration()
+            sample_metadata["sample_count"] = profile_iters
+
+        _profile_execution(
+            f"melder_overrides_timings_{graph}",
+            _run,
+            sample_metadata=sample_metadata,
+        )
     finally:
         ops.cleanup()

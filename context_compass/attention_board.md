@@ -15,24 +15,24 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12 overrides OV-H1 slice2 | blocked | codex | decision required (`keep` or `revert`) | user chooses keep/revert for `RESULT: DECISION_REQUEST` | `context_compass/tasks/2026-02-16_phase12_overrides_high_risk_segmented_shape_helpers_slice2_task.md` | 2026-02-16 | REQUIRED |
+| task: phase12 no-overrides high-risk discovery | ready | codex | none | await user kickoff for first promoted high-risk candidate (`NO-H2`) | `context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md` | 2026-02-16 | REQUIRED |
 
 ## Active Attention Details
 - DATE: 2026-02-16
-  TYPE: DECISION_REQUEST
-  CLAIM: RESULT: DECISION_REQUEST - OV-H1 slice 2 is validation-green but non-winning on combined timings mean versus prebaseline (`delta_pct=+0.5312`), so explicit keep/revert direction is required.
-  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_high_risk_segmented_shape_helpers_slice2_task.md:88-141, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_phase12_overrides_highrisk_ovh1_slice2_posttest_compare_2026-02-16.txt:25-27
-  IMPACT: Active optimization routing is paused at decision gate and should not auto-retain or auto-revert.
-  NEXT: User chooses keep or revert for OV-H1 slice 2 (recommended: revert).
+  TYPE: DECISION
+  CLAIM: RESULT: RETAINED - user accepted OV-H1 slice 2 after decision-gate review; ticket is closed as done.
+  EVIDENCE: context_compass/tasks/completed/2026-02-16_phase12_overrides_high_risk_segmented_shape_helpers_slice2_task.md:6-13, context_compass/tasks/completed/2026-02-16_phase12_overrides_high_risk_segmented_shape_helpers_slice2_task.md:112-122
+  IMPACT: High-risk slice2 is no longer blocked and retained in current code shape.
+  NEXT: Continue with benchmark-process hardening work.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
 - DATE: 2026-02-16
-  TYPE: MEASURE
-  CLAIM: OV-H1 slice 2 post-test cadence completed (`57 passed` unit; fast cprofile x2 pass; overrides cprofile x2 pass) and compare artifact shows mixed lanes (fast timings mean `+0.9351%`, overrides timings mean `-4.2706%`, combined timings mean `+0.5312%`).
-  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_phase12_overrides_highrisk_ovh1_slice2_posttest_2026-02-16.txt:1-1950, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_phase12_overrides_highrisk_ovh1_slice2_posttest_compare_2026-02-16.txt:25-27
-  IMPACT: Candidate is benchmark-mixed with non-winning combined mean under current gate policy.
-  NEXT: Raise/hold `RESULT: DECISION_REQUEST` until user keep/revert direction.
+  TYPE: DECISION
+  CLAIM: Duration-window benchmarking is implemented with baseline-folder workflow; fixed-duration mode can now run per lane and emit sample averages for baseline and pre/post comparisons.
+  EVIDENCE: benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py:530-729, benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py:513-698, benchmarks/testing_other_di/profiles/baselines/README.md:1-33, context_compass/tasks/completed/2026-02-16_codegen_snapshot_high_repeat_average_task.md:1-102
+  IMPACT: Benchmark process now supports stronger, reusable 60-second reference baselines.
+  NEXT: Capture canonical idle-machine baseline artifacts and continue normal before/after gate checks against that baseline.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
@@ -723,6 +723,8 @@ Attention details rule
 ## Recently Closed Anchors
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
+| task: phase12 overrides OV-H1 slice2 | done | codex | none | none | `context_compass/tasks/completed/2026-02-16_phase12_overrides_high_risk_segmented_shape_helpers_slice2_task.md` | 2026-02-16 | REQUIRED |
+| task: codegen snapshot high-repeat average | done | codex | none | none | `context_compass/tasks/completed/2026-02-16_codegen_snapshot_high_repeat_average_task.md` | 2026-02-16 | REQUIRED |
 | task: creationcontext codegen high-risk discovery | done | codex | none | none | `context_compass/tasks/completed/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md` | 2026-02-16 | REQUIRED |
 | task: codegen snapshot average process | done | codex | none | none | `context_compass/tasks/completed/2026-02-16_codegen_snapshot_average_process_task.md` | 2026-02-16 | REQUIRED |
 | task: creationcontext codegen low-risk discovery | done | codex | none | none | `context_compass/tasks/completed/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md` | 2026-02-16 | REQUIRED |

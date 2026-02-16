@@ -3,7 +3,7 @@
 ## Metadata
 - Task ID: TASK-2026-02-16-phase12-overrides-high-risk-segmented-shape-helpers-slice2
 - Story: STORY-2026-02-16-deep-phase12-overrides-codegen-strategy-discovery
-- Status: blocked
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-16
@@ -28,9 +28,9 @@ invoke text contracts that failed in slice 1.
 - [x] Implement OV-H1 slice 2: segment owner-creations shape blocks into helper call sites.
 - [x] Run post-test cadence and compare against retained checkpoint.
 - [x] Raise `DECISION_REQUEST` on failing/non-winning outcomes; run post-revert validation only if user selects revert.
-- [ ] Publish explicit outcome note (`RESULT: RETAINED` or `RESULT: REVERTED`) with artifact path.
-- [ ] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Publish explicit outcome note (`RESULT: RETAINED` or `RESULT: REVERTED`) with artifact path.
+- [x] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - One narrowed high-risk implementation slice for OV-H1.
@@ -83,15 +83,24 @@ invoke text contracts that failed in slice 1.
 - Rollback: execute revert only when user selects revert after a `DECISION_REQUEST` note.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
+- [x] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: RETAINED - user explicitly accepted/kept OV-H1 slice 2 after reviewing mixed benchmark deltas.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_high_risk_segmented_shape_helpers_slice2_task.md:30-37, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_phase12_overrides_highrisk_ovh1_slice2_posttest_compare_2026-02-16.txt:25-27
+  IMPACT: Decision gate is closed; this slice can be turned in as done and retained in the active code shape.
+  NEXT: Move to benchmark-process hardening with optional duration-window sampling per category.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-16
   TYPE: DECISION_REQUEST
   CLAIM: RESULT: DECISION_REQUEST - slice 2 validates functionally but is non-winning on combined timing means versus prebaseline (`COMBINED_TIMINGS_MEAN delta_pct=+0.5312`), so explicit keep/revert direction is required before any rollback action.
@@ -149,6 +158,6 @@ invoke text contracts that failed in slice 1.
 ## Context / Handoff Summary
 This task is the second OV-H1 high-risk slice. Owner-target shape-source
 segmentation is implemented and validated green on unit + required cprofile
-passes, with post-test artifacts captured. Combined timing means are
-non-winning versus prebaseline (`+0.5312%`), so the task is blocked at
-`RESULT: DECISION_REQUEST` pending explicit keep/revert direction.
+passes, with post-test artifacts captured. Combined timing means were
+non-winning versus prebaseline (`+0.5312%`), then user accepted retention.
+Task decision gate is closed as `RESULT: RETAINED`.
