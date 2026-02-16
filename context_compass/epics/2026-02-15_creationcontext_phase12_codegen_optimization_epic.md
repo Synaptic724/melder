@@ -126,6 +126,7 @@ The MRP is a measurable, contract-safe optimization tranche:
 - Every optimization slice under this epic must follow:
   - Pre-test baseline cadence (before edit):
     - targeted unit suite(s) for touched module,
+    - pinned benchmark mode enabled by default (`DI_PIN_P_CORES=1` for benchmark pytest runs; `--pin-p-cores` for snapshot/codegen benchmark runners when used),
     - `benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py` run twice sequentially,
     - `benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py` run twice sequentially.
   - Post-test cadence (after edit): rerun the same suites.

@@ -119,8 +119,18 @@ reduce Intel P/E scheduling variance during benchmark runs.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: User direction is now codified in codegen planning docs: benchmark commands in the deep creationcontext/no-overrides/overrides stories default to pinned runs (`DI_PIN_P_CORES=1`), and the epic benchmark gate explicitly marks pinned mode as the default for benchmark pytest/snapshot runners.
+  EVIDENCE: context_compass/epics/2026-02-15_creationcontext_phase12_codegen_optimization_epic.md:129-129, context_compass/stories/2026-02-16_deep_creation_context_codegen_strategy_discovery_story.md:65-74, context_compass/stories/2026-02-16_deep_phase12_no_overrides_codegen_strategy_discovery_story.md:64-73, context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md:65-74
+  IMPACT: Future codegen benchmark iterations now have one documented default execution mode for reduced scheduling variance.
+  NEXT: Keep using pinned mode for codegen benchmark runs unless a ticket explicitly asks for unpinned comparison.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 Task is implemented and validated with opt-in toggles:
 - Env toggle: `DI_PIN_P_CORES=1`
 - CLI toggle: `--pin-p-cores` for snapshot/codegen runners
 Default behavior remains unchanged when toggles are not enabled.
+Codegen epic/story benchmark gates now document pinned execution as the default mode.

@@ -61,16 +61,16 @@ This lane targets emitter architecture and generated function shape:
 - Discovery-only in this story.
 - Follow-on validation lanes (for implementation):
   - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py -q`
-  - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py -q -s`
-  - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py -q -s`
+  - `$env:PYTHONPATH='src'; $env:DI_PIN_P_CORES='1'; .\.venv_new\Scripts\python.exe -m pytest benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py -q -s`
+  - `$env:PYTHONPATH='src'; $env:DI_PIN_P_CORES='1'; .\.venv_new\Scripts\python.exe -m pytest benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py -q -s`
 
 ## Benchmark Gate (Mandatory)
 - Pre-test baseline (before any code edit):
   - Run unit suite:
     - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py -q`
   - Run benchmark cadence using the same suites used throughout wave-1:
-    - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py -q -s` (run twice sequentially)
-    - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py -q -s` (run twice sequentially)
+    - `$env:PYTHONPATH='src'; $env:DI_PIN_P_CORES='1'; .\.venv_new\Scripts\python.exe -m pytest benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py -q -s` (run twice sequentially)
+    - `$env:PYTHONPATH='src'; $env:DI_PIN_P_CORES='1'; .\.venv_new\Scripts\python.exe -m pytest benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py -q -s` (run twice sequentially)
   - Capture medians and write baseline artifact/delta context against:
     - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_retained_baseline_checkpoint_2026-02-16.txt`
 - Post-test (after each candidate edit):

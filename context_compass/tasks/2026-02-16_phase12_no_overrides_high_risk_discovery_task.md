@@ -207,6 +207,71 @@ Execution order:
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Execution resumes on NO-H4 as the next queued high-risk candidate, and this lane will run benchmark commands in pinned mode by default (`DI_PIN_P_CORES=1`) per updated epic/story benchmark policy.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:53-58, context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:197-206, context_compass/epics/2026-02-15_creationcontext_phase12_codegen_optimization_epic.md:126-133
+  IMPACT: NO-H4 can proceed immediately with deterministic-enough pre/post gate inputs and no policy ambiguity.
+  NEXT: Capture NO-H4 10k prebaseline artifacts for fast/overrides before code edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-H4 pre-edit baseline cadence is captured in pinned mode: unit suite is green (`27 passed, 1 warning`) and 10k fast/overrides benchmark artifacts are recorded for the NO-H4 checkpoint.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_h4_prebaseline_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_h4_prebaseline_2026-02-16.jsonl:1-8
+  IMPACT: NO-H4 implementation can now be evaluated against a fresh pinned 10k before-state baseline.
+  NEXT: Apply one compact NO-H4 slice and run post-test unit + 10k compare gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Implemented NO-H4 compact slice by adding an AST/code-object transient executor path (`_build_phase12_executor_ast` + `_build_unrolled_call_ast` + `_compile_ast_no_overrides_executor`) and routing transient compile entrypoints to this path.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:56-128, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:154-221, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:474-511, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:1296-1710
+  IMPACT: Transient no-overrides executor compilation now has a non-source parser path for this high-risk candidate.
+  NEXT: Validate unit/benchmark deltas and decide keep/revert at the gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-H4 post-test validation is unit-green (`27 passed, 1 warning`) but benchmark-regressive versus the pinned 10k prebaseline (`fast +8.107%`, `overrides +13.838%`, `combined +10.972%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h4_posttest_validation_2026-02-16.txt:1-32, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_h4_prebaseline_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_h4_posttest_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_h4_prebaseline_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_h4_posttest_2026-02-16.jsonl:1-8
+  IMPACT: NO-H4 does not satisfy the lane keep criteria and cannot be retained without explicit override direction.
+  NEXT: Escalate `DECISION_REQUEST` with recommendation to revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - NO-H4 AST/code-object transient compile slice is functionally valid but benchmark-non-winning at the 10k pinned gate; recommended action is revert.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h4_posttest_validation_2026-02-16.txt:14-16, benchmarks/testing_other_di/profiles/baselines/no_h4_posttest_validation_2026-02-16.txt:19-32
+  IMPACT: High-risk no-overrides lane is now blocked on explicit user keep/revert choice.
+  NEXT: User chooses keep or revert for NO-H4.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user directed revert for NO-H4; AST/code-object transient compile changes were removed and no-overrides executor/test modules are restored to the pre-NO-H4 structure.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:55-151, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:177-353
+  IMPACT: NO-H4 is no longer in the active checkpoint and the high-risk lane is unblocked.
+  NEXT: Capture NO-H3 10k prebaseline artifacts before implementing the next candidate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-H4 rollback validation rerun is complete in pinned/no-cProfile mode with unit green (`27 passed, 1 warning`) and postrevert 10k artifacts recorded for both fast and overrides lanes.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h4_revert_validation_2026-02-16.txt:1-16, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_h4_postrevert_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_h4_postrevert_2026-02-16.jsonl:1-8
+  IMPACT: Revert evidence is captured and traceable for keep/revert audit history.
+  NEXT: Continue queue order at NO-H3 using the same pinned 10k pre/post gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-This task is the high-risk lane for no-overrides strategy discovery. It should
-capture deep options and decision criteria before any implementation work.
+NO-H4 is now reverted per user direction, rollback validation is captured in
+`benchmarks/testing_other_di/profiles/baselines/no_h4_revert_validation_2026-02-16.txt`,
+and the lane is unblocked. Next queued candidate is NO-H3, starting with a new
+pinned 10k prebaseline before any edits.

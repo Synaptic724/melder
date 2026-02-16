@@ -15,9 +15,45 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: benchmark p-core affinity integration | review | codex | none | review implementation and confirm acceptance | `context_compass/tasks/2026-02-16_benchmark_p_core_affinity_integration_task.md` | 2026-02-16 | REQUIRED |
+| task: phase12 no-overrides high-risk discovery | in_progress | codex | none | capture NO-H3 pinned 10k prebaseline artifacts | `context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md` | 2026-02-16 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user directed revert for NO-H4; AST/code-object transient compile changes were removed and the active checkpoint returned to pre-NO-H4 code shape.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:257-264, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:55-151
+  IMPACT: No-overrides high-risk lane is unblocked and can continue queue order.
+  NEXT: Start NO-H3 from a fresh pinned 10k prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-H4 rollback validation is complete with pinned/no-cProfile reruns and a dedicated summary artifact (`unit: 27 passed, 1 warning`; deltas vs prebaseline: `fast +1.124%`, `overrides +9.584%`, `combined +5.354%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h4_revert_validation_2026-02-16.txt:1-16, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_h4_postrevert_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_h4_postrevert_2026-02-16.jsonl:1-8
+  IMPACT: Revert evidence is preserved for audit and future comparisons.
+  NEXT: Keep pinned/no-cProfile settings for upcoming NO-H3 measurements.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Active no-overrides high-risk routing now advances to NO-H3 after NO-H4 revert closure.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:47-51, context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:273-273
+  IMPACT: Queue continuity is preserved with no blocked decision gate.
+  NEXT: Capture `benchmark_results_10k_no_h3_prebaseline_2026-02-16.jsonl` artifacts for fast and overrides.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Active routing returns to codegen execution: no-overrides high-risk lane is now the active ticket, starting from NO-H4 under the established 10k pre/post gate with pinned benchmark mode defaults.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:3-8, context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:197-206, context_compass/tasks/2026-02-16_benchmark_p_core_affinity_integration_task.md:122-136
+  IMPACT: Implementation flow is unblocked and aligned with both the high-risk queue order and pinned benchmark policy.
+  NEXT: Capture NO-H4 10k prebaseline artifacts before any code edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-16
   TYPE: MEASURE
   CLAIM: P-core affinity integration is implemented and validated; snapshot/codegen artifacts report `reason: pinned` when enabled, and fast/overrides smoke benchmark tests pass with pinning toggled on.
