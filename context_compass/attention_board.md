@@ -15,9 +15,27 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12 no-overrides high-risk discovery | ready | codex | none | await user kickoff for first promoted high-risk candidate (`NO-H2`) | `context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md` | 2026-02-16 | REQUIRED |
+| task: phase12 no-overrides high-risk discovery | in_progress | codex | none | run NO-H1 10k prebaseline and continue with 10k before/after decision gate | `context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md` | 2026-02-16 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - NO-H2 segmented-helper slice is reverted after repeated fast baseline regressions; lane advances to NO-H1.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h2_postfix_validation_2026-02-16.txt:13-32, benchmarks/testing_other_di/profiles/baselines/no_h2_fast_extra_run_summary_2026-02-16.txt:1-24, benchmarks/testing_other_di/profiles/baselines/no_h2_revert_validation_2026-02-16.txt:1-10
+  IMPACT: Active no-overrides high-risk checkpoint is restored and no longer blocked on NO-H2 keep/revert.
+  NEXT: Execute NO-H1 with 10k pre/post comparison gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Benchmark gate for upcoming no-overrides high-risk candidates is standardized to 10k before/after comparisons.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h2_revert_validation_2026-02-16.txt:12-15
+  IMPACT: Reduces short-window variance sensitivity for keep/revert outcomes.
+  NEXT: Apply this gate to NO-H1 and subsequent candidates.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: RESULT: RETAINED - user accepted OV-H1 slice 2 after decision-gate review; ticket is closed as done.
