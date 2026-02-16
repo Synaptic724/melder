@@ -191,12 +191,12 @@ def test_compile_phase12_no_overrides_executor_raises_on_transient_compile_error
     monkeypatch.setattr(
         phase12_module,
         "_build_phase12_executor_source",
-        lambda transient_schema: "def _phase12_executor(:\n    pass",
+        lambda transient_schema, use_native_dispatch=False: "def _phase12_executor(:\n    pass",
     )
     monkeypatch.setattr(
         phase12_module,
         "_build_executor_namespace",
-        lambda transient_schema, steps: {},
+        lambda transient_schema, steps, native_dispatch=None: {},
     )
 
     with pytest.raises(RuntimeError, match="code generation failed"):
@@ -223,12 +223,12 @@ def test_compile_phase12_no_overrides_executor_raises_when_callable_missing(
     monkeypatch.setattr(
         phase12_module,
         "_build_phase12_executor_source",
-        lambda transient_schema: "x = 1",
+        lambda transient_schema, use_native_dispatch=False: "x = 1",
     )
     monkeypatch.setattr(
         phase12_module,
         "_build_executor_namespace",
-        lambda transient_schema, steps: {},
+        lambda transient_schema, steps, native_dispatch=None: {},
     )
 
     with pytest.raises(RuntimeError, match="did not define a callable _phase12_executor"):
@@ -255,7 +255,7 @@ def test_compile_phase12_no_overrides_executor_uses_emitted_step_source_when_tra
     monkeypatch.setattr(
         phase12_module,
         "_build_phase12_executor_source",
-        lambda transient_schema: None,
+        lambda transient_schema, use_native_dispatch=False: None,
     )
 
     executor = phase12_module.compile_phase12_no_overrides_executor(
@@ -265,6 +265,80 @@ def test_compile_phase12_no_overrides_executor_uses_emitted_step_source_when_tra
 
     assert callable(executor)
     assert executor.__code__.co_filename == "<melder_phase12_no_overrides_step_executor>"
+
+
+def test_compile_phase12_no_overrides_executor_transient_native_dispatch_enabled_uses_dispatcher(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Transient executor routes through native dispatcher when gate is enabled.
+
+    Contract:
+        - Env-gated dispatcher wiring invokes native dispatcher for transient
+          call modes.
+        - Dispatcher receives call mode and resolved positional args tuple.
+    """
+    dispatch_calls: list[tuple[int, tuple[Any, ...]]] = []
+
+    def _native_dispatch(target: Any, call_mode: int, args: tuple[Any, ...]) -> Any:
+        dispatch_calls.append((call_mode, args))
+        return target(*args)
+
+    monkeypatch.setenv("MELDER_ENABLE_NATIVE_TRANSIENT_DISPATCH", "1")
+    monkeypatch.setattr(phase12_module, "_NATIVE_TRANSIENT_DISPATCHER", _native_dispatch)
+
+    codegen_ir = {
+        "steps_rows": (_make_step_row("root"),),
+        "root_spell_id": "root",
+        "transient_schema": _make_transient_schema(),
+    }
+
+    executor = phase12_module.compile_phase12_no_overrides_executor(
+        codegen_ir=codegen_ir,
+        spell_lookup={"root": _make_spell("root")},
+    )
+
+    assert callable(executor)
+    assert executor.__code__.co_filename == "<melder_phase12_no_overrides_transient_executor>"
+    assert executor() == "value:root"
+    assert dispatch_calls == [
+        (ExecutionPlanCallMode.CALL0, ()),
+    ]
+
+
+def test_compile_phase12_no_overrides_executor_transient_native_dispatch_disabled_by_default(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Transient executor keeps direct call path when native gate is disabled.
+
+    Contract:
+        - Native dispatcher is ignored unless env gate is explicitly enabled.
+    """
+    dispatch_calls: list[tuple[int, tuple[Any, ...]]] = []
+
+    def _native_dispatch(target: Any, call_mode: int, args: tuple[Any, ...]) -> Any:
+        dispatch_calls.append((call_mode, args))
+        return target(*args)
+
+    monkeypatch.delenv("MELDER_ENABLE_NATIVE_TRANSIENT_DISPATCH", raising=False)
+    monkeypatch.setattr(phase12_module, "_NATIVE_TRANSIENT_DISPATCHER", _native_dispatch)
+
+    codegen_ir = {
+        "steps_rows": (_make_step_row("root"),),
+        "root_spell_id": "root",
+        "transient_schema": _make_transient_schema(),
+    }
+
+    executor = phase12_module.compile_phase12_no_overrides_executor(
+        codegen_ir=codegen_ir,
+        spell_lookup={"root": _make_spell("root")},
+    )
+
+    assert callable(executor)
+    assert executor.__code__.co_filename == "<melder_phase12_no_overrides_transient_executor>"
+    assert executor() == "value:root"
+    assert dispatch_calls == []
 
 
 def test_compile_phase12_no_overrides_executor_supports_steps_rows_schema() -> None:

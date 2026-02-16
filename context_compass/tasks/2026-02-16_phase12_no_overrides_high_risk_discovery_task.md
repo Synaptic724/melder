@@ -351,6 +351,42 @@ Execution order:
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: NO-H5 compact slice will add optional transient native call dispatch wiring behind an explicit env gate, preserving current direct CALL0..CALL8 emission as the default fallback path.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:1259-1530, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:1536-1594
+  IMPACT: Enables native-dispatch experimentation without changing default runtime behavior when native dispatcher is unavailable or disabled.
+  NEXT: Implement wiring + unit tests, then run pinned 10k post-test gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: BLOCKER
+  CLAIM: NO-H5 unit validation is currently blocked by one stale transient-source fallback monkeypatch signature; `_build_phase12_executor_source` now receives `use_native_dispatch`, but one test lambda still only accepts `transient_schema`.
+  EVIDENCE: tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:261-261, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:177-177
+  IMPACT: Post-slice validation cannot pass until the test shim signature matches the updated compile call contract.
+  NEXT: Update the remaining monkeypatch lambda to accept `use_native_dispatch` and rerun the no-overrides executor unit suite.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-H5 post-test gate is complete in pinned/no-cProfile mode with unit green (`29 passed, 1 warning`) and aggregate-winning 10k deltas versus prebaseline (`fast -3.666%`, `overrides -2.972%`, `combined -3.319%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h5_posttest_validation_2026-02-16.txt:1-34, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_h5_posttest_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_h5_posttest_2026-02-16.jsonl:1-8
+  IMPACT: NO-H5 is benchmark-winning at the lane decision gate and is eligible for retention pending user confirmation.
+  NEXT: Escalate explicit keep/revert decision request for NO-H5 (recommended: keep).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - NO-H5 optional transient native-dispatch wiring is functionally valid and benchmark-winning at the pinned 10k gate; recommended action is keep.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h5_posttest_validation_2026-02-16.txt:14-34
+  IMPACT: High-risk no-overrides lane is paused at explicit user keep/revert decision before queue advancement.
+  NEXT: User chooses keep or revert for NO-H5.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 NO-H4 is reverted and rollback validation is captured in
 `benchmarks/testing_other_di/profiles/baselines/no_h4_revert_validation_2026-02-16.txt`.
@@ -362,4 +398,7 @@ NO-H3 is now reverted per user direction after observed slowdown in
 `benchmarks/testing_other_di/profiles/baselines/no_h3_revert_validation_2026-02-16.txt`.
 NO-H5 prebaseline is now captured in
 `benchmarks/testing_other_di/profiles/baselines/no_h5_prebaseline_validation_2026-02-16.txt`.
-The lane is unblocked and ready for NO-H5 compact implementation plus post-test gate.
+NO-H5 implementation/unit fix is complete and post-test validation is captured in
+`benchmarks/testing_other_di/profiles/baselines/no_h5_posttest_validation_2026-02-16.txt`
+with aggregate-winning 10k deltas versus prebaseline.
+Lane is currently paused at explicit keep/revert decision for NO-H5 (recommended keep).

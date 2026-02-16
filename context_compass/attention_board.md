@@ -15,9 +15,27 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12 no-overrides high-risk discovery | in_progress | codex | none | implement NO-H5 compact slice and run pinned 10k post-test compare | `context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md` | 2026-02-16 | REQUIRED |
+| task: phase12 no-overrides high-risk discovery | review | codex | awaiting user NO-H5 keep/revert decision | user chooses keep or revert for NO-H5 (recommended keep), then advance queue | `context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md` | 2026-02-16 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - NO-H5 optional transient native-dispatch wiring is functionally valid and benchmark-winning at the pinned 10k gate; recommended action is keep.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h5_posttest_validation_2026-02-16.txt:14-34
+  IMPACT: No-overrides high-risk lane is paused until explicit user keep/revert direction is provided for NO-H5.
+  NEXT: User chooses keep or revert for NO-H5.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-H5 post-test gate is complete in pinned/no-cProfile mode with unit green (`29 passed, 1 warning`) and aggregate-winning 10k deltas versus prebaseline (`fast -3.666%`, `overrides -2.972%`, `combined -3.319%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h5_posttest_validation_2026-02-16.txt:1-34, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_h5_posttest_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_h5_posttest_2026-02-16.jsonl:1-8
+  IMPACT: NO-H5 now has complete post-test evidence for keep/revert gate review.
+  NEXT: Escalate explicit user decision before further high-risk queue advancement.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-16
   TYPE: MEASURE
   CLAIM: NO-H5 pre-edit baseline capture is complete in pinned/no-cProfile mode with unit green (`27 passed, 1 warning`) and fresh 10k fast/overrides artifacts.
