@@ -50,7 +50,7 @@ This discovery lane targets generator architecture quality:
 - [ ] Enforce benchmark gate for every follow-on optimization slice (pre-test baseline, post-test cadence, and mandatory `DECISION_REQUEST` escalation on failed/non-winning deltas).
 - [ ] Execute `TASK-2026-02-16-codegen-snapshot-average-process` to standardize averaged snapshot measurements (1000 default, 10000 optional) before next code slice.
 - [ ] Execute `TASK-2026-02-16-creationcontext-codegen-low-risk-discovery`.
-- [ ] Execute `TASK-2026-02-16-creationcontext-codegen-medium-risk-discovery`.
+- [x] Execute `TASK-2026-02-16-creationcontext-codegen-medium-risk-discovery`.
 - [ ] Execute `TASK-2026-02-16-creationcontext-codegen-high-risk-discovery`.
 
 ## Acceptance Criteria
@@ -97,7 +97,7 @@ Process rule:
 | Risk lane | Status | Task | Focus |
 |---|---|---|---|
 | low | ready | `context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md` | contract-safe micro and compile-prep efficiency candidates |
-| medium | ready | `context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md` | medium-reward template/compile strategy candidates |
+| medium | done | `context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md` | medium-reward template/compile strategy candidates |
 | high | ready | `context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md` | architectural redesign discovery with explicit guardrails |
 
 ## Risks / Mitigations
@@ -186,4 +186,4 @@ Deep discovery opened for `creation_context_codegen.py` focusing on compile
 topology, template fan-out, and emitted-source strategy. Next step is option
 design with measurable hypotheses before implementation. Low/medium/high
 risk-lane discovery tasks are now opened and must be used as the iteration
-entry queue.
+entry queue. Medium-risk ticket is turned in and marked done.

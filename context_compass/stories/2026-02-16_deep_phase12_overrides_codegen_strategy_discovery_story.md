@@ -50,7 +50,7 @@ This discovery lane targets deeper generator decisions:
 - [x] Open first implementation task from rank-1 strategy with benchmark gate copied verbatim.
 - [x] Open and maintain low/medium/high risk-lane discovery tasks for this story.
 - [ ] Execute `TASK-2026-02-16-phase12-overrides-low-risk-discovery`.
-- [ ] Execute `TASK-2026-02-16-phase12-overrides-medium-risk-discovery`.
+- [x] Execute `TASK-2026-02-16-phase12-overrides-medium-risk-discovery`.
 - [ ] Execute `TASK-2026-02-16-phase12-overrides-high-risk-discovery`.
 
 ## Acceptance Criteria
@@ -97,7 +97,7 @@ Process rule:
 | Risk lane | Status | Task | Focus |
 |---|---|---|---|
 | low | ready | `context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md` | compact, contract-safe override efficiency candidates |
-| medium | ready | `context_compass/tasks/2026-02-16_phase12_overrides_medium_risk_discovery_task.md` | medium-reward compile/source strategy candidates |
+| medium | done | `context_compass/tasks/2026-02-16_phase12_overrides_medium_risk_discovery_task.md` | medium-reward compile/source strategy candidates |
 | high | ready | `context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md` | high-risk override generator redesign discovery |
 
 ## Strategy Candidates (Ranked)
@@ -329,4 +329,5 @@ executed and reverted as non-winning (with full post-revert validation
 artifacts captured). Benchmark gate wording is standardized across all deep
 codegen stories, including explicit `RESULT` announcement requirements for
 user-directed keep/revert decisions. Low/medium/high risk-lane discovery tasks are now
-opened and required as the iteration entry queue.
+opened and required as the iteration entry queue. Medium-risk ticket is turned
+in and marked done.

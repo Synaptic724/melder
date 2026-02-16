@@ -99,6 +99,19 @@ _TEMPLATE_EXISTING_OVERRIDES_ONLY = (
   - `python -m pytest tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py -q` -> pass after CC-L2 patch (17 passed, 3 warnings).
   - `python benchmarks/testing_other_di/run_snapshot_timings.py --iterations 1000 --warmup-iters 100 --snapshot-label wave3_creationcontext_cc_l2_posttest_2026-02-16 --baseline-json benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_snapshot_process_baseline_2026-02-16_snapshot_2026-02-16_12-16-23.json` -> pass.
   - `python benchmarks/testing_other_di/run_snapshot_timings.py --iterations 10000 --warmup-iters 200 --snapshot-label wave3_creationcontext_cc_l2_posttest_10k_2026-02-16 --baseline-json benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_snapshot_process_10k_2026-02-16_snapshot_2026-02-16_12-16-31.json` -> pass.
+  - `python -m pytest tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py -q` -> pass after CC-L3 patch (17 passed, 3 warnings).
+  - `python benchmarks/testing_other_di/run_snapshot_timings.py --iterations 10000 --warmup-iters 200 --snapshot-label wave3_creationcontext_cc_l3_posttest_10k_2026-02-16 --baseline-json benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_prebaseline_2026-02-16_snapshot_2026-02-16_12-47-25.json` -> pass.
+  - `python benchmarks/testing_other_di/run_snapshot_timings.py --iterations 10000 --warmup-iters 200 --snapshot-label wave3_creationcontext_cc_l3_posttest_10k_repeat1_2026-02-16 --baseline-json benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_prebaseline_2026-02-16_snapshot_2026-02-16_12-47-25.json` -> pass.
+  - `python benchmarks/testing_other_di/run_snapshot_timings.py --iterations 10000 --warmup-iters 200 --snapshot-label wave3_creationcontext_cc_l3_posttest_10k_repeat2_2026-02-16 --baseline-json benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_prebaseline_2026-02-16_snapshot_2026-02-16_12-47-25.json` -> pass.
+  - `python benchmarks/testing_other_di/run_snapshot_timings.py --iterations 10000 --warmup-iters 200 --snapshot-label wave3_creationcontext_cc_l3_postrevert_10k_2026-02-16 --baseline-json benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_prebaseline_2026-02-16_snapshot_2026-02-16_12-47-25.json` -> pass.
+  - `python benchmarks/testing_other_di/run_snapshot_timings.py --iterations 10000 --warmup-iters 200 --snapshot-label wave3_creationcontext_cc_l4_prebaseline_2026-02-16` -> pass.
+  - `python -m pytest tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py -q` -> pass after CC-L4 patch (17 passed, 3 warnings).
+  - `python benchmarks/testing_other_di/run_snapshot_timings.py --iterations 10000 --warmup-iters 200 --snapshot-label wave3_creationcontext_cc_l4_posttest_10k_2026-02-16 --baseline-json benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l4_prebaseline_2026-02-16_snapshot_2026-02-16_12-53-40.json` -> pass.
+  - `python benchmarks/testing_other_di/run_snapshot_timings.py --iterations 10000 --warmup-iters 200 --snapshot-label wave3_creationcontext_cc_l4_posttest_10k_repeat1_2026-02-16 --baseline-json benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l4_prebaseline_2026-02-16_snapshot_2026-02-16_12-53-40.json` -> pass.
+  - `python benchmarks/testing_other_di/run_snapshot_timings.py --iterations 10000 --warmup-iters 200 --snapshot-label wave3_creationcontext_cc_l5_prebaseline_2026-02-16` -> pass.
+  - `python -m pytest tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py -q` -> pass after CC-L5 patch (17 passed, 3 warnings).
+  - `python benchmarks/testing_other_di/run_snapshot_timings.py --iterations 10000 --warmup-iters 200 --snapshot-label wave3_creationcontext_cc_l5_posttest_10k_2026-02-16 --baseline-json benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l5_prebaseline_2026-02-16_snapshot_2026-02-16_12-55-49.json` -> pass.
+  - `python benchmarks/testing_other_di/run_snapshot_timings.py --iterations 10000 --warmup-iters 200 --snapshot-label wave3_creationcontext_cc_l5_posttest_10k_repeat1_2026-02-16 --baseline-json benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l5_prebaseline_2026-02-16_snapshot_2026-02-16_12-55-49.json` -> pass.
 - Artifacts:
   - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l1_prebaseline_2026-02-16.txt`
   - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l1_prebaseline_summary_2026-02-16.txt`
@@ -110,6 +123,28 @@ _TEMPLATE_EXISTING_OVERRIDES_ONLY = (
   - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l2_posttest_2026-02-16_snapshot_summary_2026-02-16_12-26-35.txt`
   - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l2_posttest_10k_2026-02-16_snapshot_2026-02-16_12-26-53.json`
   - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l2_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_12-26-53.txt`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_prebaseline_2026-02-16_snapshot_2026-02-16_12-47-25.json`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_prebaseline_2026-02-16_snapshot_summary_2026-02-16_12-47-25.txt`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_posttest_10k_2026-02-16_snapshot_2026-02-16_12-49-06.json`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_12-49-06.txt`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_posttest_10k_repeat1_2026-02-16_snapshot_2026-02-16_12-49-29.json`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_12-49-29.txt`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_posttest_10k_repeat2_2026-02-16_snapshot_2026-02-16_12-49-44.json`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_posttest_10k_repeat2_2026-02-16_snapshot_summary_2026-02-16_12-49-44.txt`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_postrevert_10k_2026-02-16_snapshot_2026-02-16_12-52-24.json`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_postrevert_10k_2026-02-16_snapshot_summary_2026-02-16_12-52-24.txt`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l4_prebaseline_2026-02-16_snapshot_2026-02-16_12-53-40.json`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l4_prebaseline_2026-02-16_snapshot_summary_2026-02-16_12-53-40.txt`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l4_posttest_10k_2026-02-16_snapshot_2026-02-16_12-54-40.json`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l4_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_12-54-40.txt`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l4_posttest_10k_repeat1_2026-02-16_snapshot_2026-02-16_12-54-53.json`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l4_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_12-54-53.txt`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l5_prebaseline_2026-02-16_snapshot_2026-02-16_12-55-49.json`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l5_prebaseline_2026-02-16_snapshot_summary_2026-02-16_12-55-49.txt`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l5_posttest_10k_2026-02-16_snapshot_2026-02-16_12-57-07.json`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l5_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_12-57-07.txt`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l5_posttest_10k_repeat1_2026-02-16_snapshot_2026-02-16_12-57-20.json`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l5_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_12-57-20.txt`
 
 ## Risks / Rollback Notes
 - Risk: low-risk label can hide behavior-coupled assumptions.
@@ -265,7 +300,171 @@ _TEMPLATE_EXISTING_OVERRIDES_ONLY = (
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Low-risk execution advances to candidate `CC-L3` (source assembly allocation trimming) with CC-L2 retained as the working checkpoint.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:47-52, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:392-444
+  IMPACT: The lane is unblocked and ready for a fresh benchmark-gated pre/post cycle on the next non-override-friendly compact candidate.
+  NEXT: Run `python benchmarks/testing_other_di/run_snapshot_timings.py --iterations 10000 --warmup-iters 200 --snapshot-label wave3_creationcontext_cc_l3_prebaseline_2026-02-16` before any code edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: CC-L3 10k prebaseline snapshot completed successfully and established the checkpoint artifact set for this candidate cycle.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_prebaseline_2026-02-16_snapshot_2026-02-16_12-47-25.json:1-290, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_prebaseline_2026-02-16_snapshot_summary_2026-02-16_12-47-25.txt:1-33
+  IMPACT: We now have a stable pre-edit baseline for direct post-test delta comparison on CC-L3.
+  NEXT: Apply the CC-L3 static source-fragment reuse patch in `creation_context_codegen.py`, then run unit + post-test 10k compare.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Both template-source builders currently allocate fresh header lists and an additional indented body list on every compile call, so CC-L3 can reduce compile-path allocation churn by switching to reusable header fragments and iterator-based body emission.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:399-413, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:423-440, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:887-891
+  IMPACT: A compact helper can cut intermediate list allocations while keeping emitted source text identical.
+  NEXT: Implement `_join_template_source_lines(...)` and route both builder functions through it.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: CC-L3 is implemented by routing both template-source builders through `_join_template_source_lines(...)` and using `_iter_indented_lines(...)` for one-pass indented emission; `_indent_lines(...)` now reuses the same iterator path.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:393-416, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:419-445, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:876-921
+  IMPACT: Compile-path source assembly avoids extra per-call header/body list churn while preserving emitted-source ordering and semantics.
+  NEXT: Run CreationContext unit tests and 10k post-test snapshot compare against CC-L3 prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: CC-L3 validation is green (`17 passed`) and the first 10k post-test compare versus CC-L3 prebaseline shows uniform regressions across all tracked metrics (combined +8.94%, fast lane +8.98%, overrides lane +8.50%).
+  EVIDENCE: tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:1-30, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_12-49-06.txt:42-52
+  IMPACT: Single-run post-test appears non-winning, but the all-metrics-uniform delta suggests measurement noise is possible.
+  NEXT: Run additional 10k compares against the same prebaseline to determine stability before deciding keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: CC-L3 repeat compares reduced drift substantially (repeat1 combined +1.32%, repeat2 combined +0.05%, fast lane -0.27% on repeat2) while overrides remained mildly positive in both repeats.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_12-49-29.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_posttest_10k_repeat2_2026-02-16_snapshot_summary_2026-02-16_12-49-44.txt:42-52
+  IMPACT: Candidate currently reads as neutral-to-slight-regression under repeated 10k runs rather than a clear performance win.
+  NEXT: Raise `RESULT: DECISION_REQUEST` for explicit keep/revert direction on CC-L3.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - CC-L3 is functionally valid but does not show a clear benchmark win on repeated 10k compares; explicit keep/revert direction is required.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_12-49-06.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_12-49-29.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_posttest_10k_repeat2_2026-02-16_snapshot_summary_2026-02-16_12-49-44.txt:42-52
+  IMPACT: Execution pauses at the benchmark decision gate to avoid autonomous retain/revert on a non-winning candidate.
+  NEXT: User chooses one:
+    1) keep CC-L3 and continue to CC-L4,
+    2) revert CC-L3 and capture one post-revert snapshot.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - User directed revert for CC-L3; source-assembly helper/iterator changes were removed from `creation_context_codegen.py`.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:399-413, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:423-440
+  IMPACT: Candidate CC-L3 is closed as reverted and the lane returns to the retained CC-L2 checkpoint shape.
+  NEXT: Run one 10k post-revert snapshot compare and then advance to CC-L4.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: CC-L3 post-revert 10k compare completed and returned near-baseline deltas (combined +0.63%, fast +0.65%, overrides +0.36%), confirming the reverted shape is stable.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_postrevert_10k_2026-02-16_snapshot_summary_2026-02-16_12-52-24.txt:42-52
+  IMPACT: Revert closure is validated; low-risk execution can proceed to CC-L4.
+  NEXT: Start CC-L4 with a fresh 10k prebaseline snapshot before code edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Next candidate is CC-L4, targeting source-name formatting churn in template compile paths (`source_name` construction in both compile helpers).
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:305-312, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:340-348
+  IMPACT: Keeps iteration momentum with another compact compile-path-only optimization attempt.
+  NEXT: Run `python benchmarks/testing_other_di/run_snapshot_timings.py --iterations 10000 --warmup-iters 200 --snapshot-label wave3_creationcontext_cc_l4_prebaseline_2026-02-16` before patching.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: CC-L4 prebaseline 10k snapshot completed and established the new comparison checkpoint before any CC-L4 code edits.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l4_prebaseline_2026-02-16_snapshot_2026-02-16_12-53-40.json:1-290, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l4_prebaseline_2026-02-16_snapshot_summary_2026-02-16_12-53-40.txt:1-33
+  IMPACT: CC-L4 can be evaluated with direct post-test delta comparisons on the same benchmark lanes.
+  NEXT: Implement CC-L4 source-name formatting helper and run post-test compare.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: CC-L4 is implemented by extracting source-name construction into `_build_creation_context_template_source_name(...)` and routing both compile helpers through it, removing duplicated string-format blocks.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:305-309, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:341-346, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:393-409
+  IMPACT: Compile-path source-name formatting is centralized and deterministic with lower duplication risk.
+  NEXT: Run unit validation and 10k post-test snapshot compare against the CC-L4 prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: CC-L4 validation is green (`17 passed`) and 10k post-test compares against CC-L4 prebaseline show slight aggregate non-overrides improvement/near-neutrality (combined -1.22% on run1, -0.13% on repeat1) with mixed tiny-lane deltas.
+  EVIDENCE: tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:1-30, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l4_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_12-54-40.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l4_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_12-54-53.txt:42-52
+  IMPACT: Candidate is acceptable for non-overrides-forward progression but not a strong standalone win.
+  NEXT: Proceed to CC-L5 compact iteration per queue order.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Following user direction to move on after CC-L3 revert, execution advances to CC-L5 while keeping CC-L4 changes in the working checkpoint.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:47-52, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:305-309, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:341-346
+  IMPACT: Low-risk lane momentum continues without waiting for an additional CC-L4 keep/revert gate.
+  NEXT: Capture CC-L5 prebaseline and implement route-selector dispatch compaction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: CC-L5 prebaseline 10k snapshot completed and checkpoint artifacts are ready for post-test comparison.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l5_prebaseline_2026-02-16_snapshot_2026-02-16_12-55-49.json:1-290, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l5_prebaseline_2026-02-16_snapshot_summary_2026-02-16_12-55-49.txt:1-33
+  IMPACT: CC-L5 can be validated on the same 10k lane summaries and per-lane deltas as prior candidates.
+  NEXT: Implement CC-L5 selector dispatch compaction for route-key template selection.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: CC-L5 is implemented by replacing selector if/elif ladders with precomputed route lookup maps (`route` and `(route, fast_flag)`), leaving error behavior unchanged on unsupported keys.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:202-207, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:233-240, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:1035-1071
+  IMPACT: Selector dispatch now uses constant-time table lookups with less branch code in the compile-frontdoor path.
+  NEXT: Run unit validation and 10k post-test compare versus CC-L5 prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: CC-L5 validation is green (`17 passed`) and both 10k post-test compares show slight fast/combined aggregate improvement (combined -0.44% and -0.41%, fast -0.60% and -0.46%) with overrides near-flat to mildly positive (+1.27% then +0.09%).
+  EVIDENCE: tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:1-30, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l5_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_12-57-07.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l5_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_12-57-20.txt:42-52
+  IMPACT: Candidate appears directionally favorable for the non-overrides lane while not materially improving overrides.
+  NEXT: Retain CC-L5 in working checkpoint and advance beyond the low-risk queue.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: RETAINED - CC-L5 remains in the working checkpoint and completes the low-risk CreationContext queue in this story branch.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:47-52, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:202-207, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:1035-1071
+  IMPACT: Subsequent iterations can move to the medium-risk CreationContext lane without revisiting remaining low-risk items.
+  NEXT: Route active work to `2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 This task is the low-risk lane in the CreationContext discovery queue. It
 should produce implementation-ready candidates that preserve current contracts
-and use the existing benchmark decision gate (`DECISION_REQUEST` on non-winning/failing outcomes) if code changes are attempted. Current state: `CC-L2` is implemented and validated with averaged snapshots; waiting on explicit keep/revert direction.
+and use the existing benchmark decision gate (`DECISION_REQUEST` on non-winning/failing outcomes) if code changes are attempted. Current state: `CC-L3` is reverted, `CC-L4` and `CC-L5` are retained in working checkpoint, and low-risk queue is complete.

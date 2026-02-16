@@ -15,9 +15,441 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: creationcontext low-risk CC-L2 iteration | blocked | codex | pending keep/revert decision | CC-L2 is implemented and validated; user decision required on mixed but non-overrides-favorable averaged deltas before continuing to CC-L3 | `context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md` | 2026-02-16 | REQUIRED |
+| task: creationcontext high-risk lane kickoff | in_progress | codex | none | Medium tickets are turned in; begin `CC-H2` discovery tranche with the existing benchmark gate | `context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md` | 2026-02-16 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Per user direction, all medium discovery tickets were turned in (`creationcontext`, `phase12 no-overrides`, `phase12 overrides`) and tracked as complete in the epic task checklist where medium turn-in entries were added.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:1-132, context_compass/tasks/2026-02-16_phase12_no_overrides_medium_risk_discovery_task.md:1-90, context_compass/tasks/2026-02-16_phase12_overrides_medium_risk_discovery_task.md:1-99, context_compass/epics/2026-02-15_creationcontext_phase12_codegen_optimization_epic.md:103-114
+  IMPACT: Medium-lane closure is complete and active routing is now high-risk-first.
+  NEXT: Execute `TASK-2026-02-16-creationcontext-codegen-high-risk-discovery`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected revert for `CC-M10`; no-overrides spellspace `active_spellspace_id` pass-through was removed from CreationContext emission and phase12 no-overrides step execution.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:121-136, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:505-543, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:477-724
+  IMPACT: Medium-risk lane is unblocked and returns to next-candidate selection.
+  NEXT: Continue queue with the next non-override candidate under the same pre/post benchmark gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: `CC-M10` rollback validation is green (`17 passed`) and captured a fresh 10k rollback checkpoint (`wave3_creationcontext_cc_m10_postrevert_10k_2026-02-16`).
+  EVIDENCE: tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:1-30, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m10_postrevert_10k_2026-02-16_snapshot_summary_2026-02-16_14-50-45.txt:1-52
+  IMPACT: Reverted checkpoint is validated for immediate forward iteration.
+  NEXT: Pick next medium-risk non-override candidate and run prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - `CC-M10` is functionally green (`17 passed`) but non-winning on repeated clean sequential 10k compares vs prebaseline; median lane deltas are regressive (`combined +1.0710%`, `fast +1.2140%`) with mixed overrides lane (`-1.4015%`, `-0.2775%`, `+3.2895%`).
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:121-157, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m10_posttest_10k_seq1_2026-02-16_snapshot_summary_2026-02-16_14-47-04.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m10_posttest_10k_seq2_2026-02-16_snapshot_summary_2026-02-16_14-47-12.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m10_posttest_10k_seq3_2026-02-16_snapshot_summary_2026-02-16_14-47-21.txt:42-52
+  IMPACT: Active medium-risk routing is paused at decision gate per keep/revert policy.
+  NEXT: User chooses keep or revert for `CC-M10` (recommended: revert).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: `CC-M10` repeated clean sequential 10k deltas vs prebaseline were mixed: seq1 (`combined -0.4211%`, `fast -0.3171%`, `overrides -1.4015%`), seq2 (`combined +1.0710%`, `fast +1.2140%`, `overrides -0.2775%`), seq3 (`combined +1.4310%`, `fast +1.2339%`, `overrides +3.2895%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m10_posttest_10k_seq1_2026-02-16_snapshot_summary_2026-02-16_14-47-04.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m10_posttest_10k_seq2_2026-02-16_snapshot_summary_2026-02-16_14-47-12.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m10_posttest_10k_seq3_2026-02-16_snapshot_summary_2026-02-16_14-47-21.txt:42-52
+  IMPACT: Candidate does not currently meet retention confidence on aggregate lane summaries.
+  NEXT: Pair with cProfile context and escalate keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Fresh cProfile summaries keep the same dominant shallow chains (`_creation_context_execute_no_overrides_only -> <melder_phase12_no_overrides_step_executor> -> register_spellspace_creation` in fast and `_creation_context_execute_overrides_only -> _execute_with_overrides` in overrides), with no hotspot displacement suggesting a durable win.
+  EVIDENCE: benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:1-29, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:1-29
+  IMPACT: Profiler evidence aligns with averaged-snapshot non-winning signal.
+  NEXT: Hold branch state until explicit keep/revert decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Implemented `CC-M10` by passing pre-resolved `spellspace_id` from the no-overrides spellspace CreationContext lane into phase12 no-overrides step execution via optional `active_spellspace_id`, with caller-lane fast-path usage and fallback validation retained.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:505-543, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:852-878, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:477-724, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:781-833, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:1143-1188
+  IMPACT: Attempts to reduce spellspace no-overrides runtime lookup overhead without altering lock contracts or eager compile strategy.
+  NEXT: Hold patch state until keep/revert direction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected revert for `CC-M9`; no-overrides spellspace emitted checks were restored from strict `type(...) is dict` to `isinstance(..., dict)`.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:121-136, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:519-539
+  IMPACT: Medium-risk lane is unblocked and returns to next-candidate selection.
+  NEXT: Continue queue with the next non-override candidate under the same pre/post benchmark gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: `CC-M9` rollback validation is green (`17 passed`) and captured a fresh 10k rollback checkpoint (`wave3_creationcontext_cc_m9_postrevert_10k_2026-02-16`).
+  EVIDENCE: tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:1-30, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m9_postrevert_10k_2026-02-16_snapshot_summary_2026-02-16_14-40-01.txt:1-52
+  IMPACT: Reverted checkpoint is validated for immediate forward iteration.
+  NEXT: Pick next medium-risk non-override candidate and run prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - `CC-M9` is functionally green (`17 passed`) but non-winning on repeated clean sequential 10k compares vs prebaseline (median lane deltas: `combined +1.0652%`, `fast +0.8332%`, `overrides +3.3037%`), with overrides `shallow` regressing in all three runs.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:121-148, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m9_posttest_10k_seq1_2026-02-16_snapshot_summary_2026-02-16_14-34-53.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m9_posttest_10k_seq2_2026-02-16_snapshot_summary_2026-02-16_14-35-02.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m9_posttest_10k_seq3_2026-02-16_snapshot_summary_2026-02-16_14-35-23.txt:42-52
+  IMPACT: Active medium-risk routing is paused at decision gate per keep/revert policy.
+  NEXT: User chooses keep or revert for `CC-M9` (recommended: revert).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: `CC-M9` repeated clean sequential 10k deltas vs prebaseline were mixed-to-regressive: seq1 (`combined -0.2907%`, `fast -0.5231%`, `overrides +1.9519%`), seq2 (`combined +2.2274%`, `fast +1.7522%`, `overrides +6.8123%`), seq3 (`combined +1.0652%`, `fast +0.8332%`, `overrides +3.3037%`); overrides `shallow` regressed in all three (`+9.9524%`, `+2.0959%`, `+5.2633%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m9_posttest_10k_seq1_2026-02-16_snapshot_summary_2026-02-16_14-34-53.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m9_posttest_10k_seq2_2026-02-16_snapshot_summary_2026-02-16_14-35-02.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m9_posttest_10k_seq3_2026-02-16_snapshot_summary_2026-02-16_14-35-23.txt:42-52
+  IMPACT: Candidate does not currently meet retention confidence on aggregate lane summaries.
+  NEXT: Pair with cProfile context and escalate keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Fresh cProfile summaries on `shallow` keep the same dominant chains (`_creation_context_execute_no_overrides_only` in fast and `_creation_context_execute_overrides_only -> _execute_with_overrides` in overrides), with no hotspot displacement indicating hidden `CC-M9` wins.
+  EVIDENCE: benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:1-29, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:1-29
+  IMPACT: Profiler evidence aligns with averaged-snapshot regression signal.
+  NEXT: Hold branch state until explicit keep/revert decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user-approved rollback removed `CC-M8`; spellspace with-overrides emitted lines are restored to helper-call form and rollback validation is complete.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:123-138, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:705-720, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:737-760
+  IMPACT: Active lane is unblocked and ready for the next candidate.
+  NEXT: Continue medium-risk queue with next non-override candidate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - additional clean 10k rechecks moved `CC-M8` to aggregate-regressive territory, and cProfile confirms the same dominant shallow override chain without hotspot displacement; recommended decision is revert.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:123-148, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m8_posttest_10k_recheck1_2026-02-16_snapshot_summary_2026-02-16_14-25-28.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m8_posttest_10k_recheck_seq2_2026-02-16_snapshot_summary_2026-02-16_14-26-31.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m8_posttest_10k_recheck_seq3_2026-02-16_snapshot_summary_2026-02-16_14-26-37.txt:42-52
+  IMPACT: Active lane should not retain `CC-M8` by default.
+  NEXT: User confirms revert/keep for `CC-M8` (recommended: revert).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - `CC-M8` is functionally green and repeat-run winning, but run1 is near-neutral and includes one overrides `shallow` regression (`+14.29%`), so explicit keep/revert direction is required.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:120-126, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m8_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_14-14-13.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m8_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_14-14-19.txt:42-52
+  IMPACT: Medium-risk lane is paused at the decision gate before retain/revert.
+  NEXT: User chooses keep or revert for `CC-M8`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: `CC-M8` lane summaries: run1 `combined -0.05%`, `fast -0.01%`, `overrides -0.37%`; repeat1 `combined -2.05%`, `fast -2.03%`, `overrides -2.28%`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m8_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_14-14-13.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m8_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_14-14-19.txt:42-52
+  IMPACT: Candidate is mixed-positive with a stronger second run.
+  NEXT: Present keep/revert options.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Implemented `CC-M8` spellspace with-overrides optimization by replacing emitted `get_spellspace_creation(...)` helper calls with direct bucket lookups in both branch variants.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:704-720, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:736-754
+  IMPACT: Removes helper/check overhead in spellspace overrides paths while keeping eager template strategy.
+  NEXT: Hold branch state until keep/revert decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Selected `CC-M8` as the next non-lazy medium-risk candidate, mirroring the retained `CC-M7` spellspace no-overrides optimization into spellspace with-overrides emitted paths.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:48-57, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:698-760, src/melder/aether/conduit/creations/creations.py:501-524
+  IMPACT: Keeps eager template compilation unchanged while targeting spellspace overrides-lane helper overhead.
+  NEXT: Run `CC-M8` prebaseline, implement compact patch, and gate on repeated 10k snapshot compares.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: RETAINED - `CC-M7` is kept after green unit validation and repeated 10k compares that are aggregate-winning versus prebaseline.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:120-126, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m7_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_13-52-54.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m7_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_13-53-01.txt:42-52
+  IMPACT: Medium-risk checkpoint now contains `CC-M3` and `CC-M7`; queue routing returns to next-candidate selection.
+  NEXT: Continue with next non-lazy candidate under the same benchmark gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - `CC-M7` is functionally green and aggregate-winning on repeated 10k compares, but one run shows an overrides-lane regression (`+1.82%`), so explicit keep/revert direction is required.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:120-126, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m7_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_13-52-54.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m7_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_13-53-01.txt:42-52
+  IMPACT: Medium-risk lane is paused at the decision gate before retain/revert.
+  NEXT: User chooses keep or revert for `CC-M7`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: `CC-M7` deltas: run1 `combined -1.23%`, `fast -1.51%`, `overrides +1.82%`; repeat1 `combined -0.50%`, `fast -0.38%`, `overrides -1.84%`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m7_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_13-52-54.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m7_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_13-53-01.txt:42-52
+  IMPACT: Aggregate-lane signal is positive with one mixed overrides run.
+  NEXT: Present keep/revert options with this caveat.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Implemented `CC-M7` no-overrides spellspace optimization by replacing emitted `get_spellspace_creation(...)` calls with direct bucket lookups on `caller_creations._creations`.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:524-538, src/melder/aether/conduit/creations/creations.py:501-524
+  IMPACT: Removes one helper/check layer in the spellspace no-overrides lane while preserving eager compile strategy.
+  NEXT: Hold branch state until keep/revert decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Selected `CC-M7` as the next non-lazy medium-risk candidate, targeting spellspace no-overrides emitted lines by replacing `get_spellspace_creation(...)` helper calls with direct bucket lookups on `caller_creations._creations`.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:47-55, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:519-537, src/melder/aether/conduit/creations/creations.py:501-524
+  IMPACT: Keeps eager import-time template compilation unchanged while targeting one concrete no-overrides runtime overhead source.
+  NEXT: Run `CC-M7` prebaseline, implement compact patch, and gate on repeated 10k snapshot compares.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - User selected revert for `CC-M6`; experimental line-block map changes were removed.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:119-125, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:464-485, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:596-629
+  IMPACT: Medium-risk queue is unblocked and returns to candidate selection.
+  NEXT: Continue with next candidate selection under eager-template constraint.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: `CC-M6` post-revert compares vs prebaseline are slightly positive in aggregate lanes (run1: combined +0.64%, fast +0.57%, overrides +1.31%; repeat1: combined +1.53%, fast +1.47%, overrides +2.21%).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m6_postrevert_10k_2026-02-16_snapshot_summary_2026-02-16_13-33-38.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m6_postrevert_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_13-33-52.txt:42-52
+  IMPACT: Revert completion is validated; no retention decision is attached to these post-revert drifts.
+  NEXT: Move to next candidate gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - `CC-M6` is functionally green but benchmark-mixed on repeat, with overrides-lane aggregate regression, so keep/revert direction is required.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:119-133, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m6_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_13-30-15.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m6_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_13-30-25.txt:42-52
+  IMPACT: Active medium-risk routing is paused at the decision gate.
+  NEXT: User chooses keep or revert for `CC-M6`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: `CC-M6` lane summaries are mixed/near-neutral for combined/fast but regressive in overrides aggregate on both runs.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m6_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_13-30-15.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m6_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_13-30-25.txt:42-52
+  IMPACT: Candidate is not a clear retention win under aggregate weighting.
+  NEXT: Hold patch state until explicit keep/revert direction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - User selected revert for `CC-M4`; active routing advances to `CC-M6` as the next non-lazy medium-risk candidate.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:48-54, context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:119-125
+  IMPACT: Medium-risk queue continues after removing a consistently regressing candidate.
+  NEXT: Run `wave3_creationcontext_cc_m6_prebaseline_2026-02-16` before code edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: `CC-M4` post-revert compare is near baseline with mild aggregate improvement and small overrides-lane drift, indicating rollback stability.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m4_postrevert_10k_2026-02-16_snapshot_summary_2026-02-16_13-28-00.txt:42-52
+  IMPACT: Reverted checkpoint is validated for the next medium-risk iteration.
+  NEXT: Continue to `CC-M6`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - `CC-M4` is functionally green but benchmark-non-winning on both 10k post runs; keep/revert direction is required.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:116-130, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m4_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_13-25-26.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m4_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_13-25-34.txt:42-52
+  IMPACT: Active medium-risk routing is paused at the decision gate.
+  NEXT: User chooses keep or revert for `CC-M4`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: `CC-M4` aggregate lane summaries regressed on both runs (run1: combined +4.04%, fast +4.19%, overrides +2.42%; repeat1: combined +4.07%, fast +4.00%, overrides +4.79%).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m4_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_13-25-26.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m4_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_13-25-34.txt:42-52
+  IMPACT: Regression signal is not limited to solo-format noise.
+  NEXT: Hold patch state until explicit keep/revert decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - User selected revert for `CC-M2`; active routing moves forward to `CC-M4`.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:116-130, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:905-1071
+  IMPACT: Medium-risk queue is unblocked and continues after removing the non-winning candidate.
+  NEXT: Run `wave3_creationcontext_cc_m4_prebaseline_2026-02-16` before code edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: For this lane, aggregate lane/combined deltas are primary keep/revert signals; solo-only movement is treated as high-variance.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m2_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_13-15-48.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m2_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_13-16-04.txt:42-52
+  IMPACT: Decision quality improves by reducing overreaction to the noisiest format.
+  NEXT: Apply this weighting during `CC-M4` evaluation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - `CC-M2` is functionally green but benchmark-non-winning on repeated 10k compares, so keep/revert direction is required.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:116-130, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m2_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_13-15-48.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m2_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_13-16-04.txt:42-52
+  IMPACT: Active medium-risk routing is paused at decision gate per keep/revert policy.
+  NEXT: User chooses keep or revert for `CC-M2`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: `CC-M2` repeated deltas are regressive in lane summaries (run1: combined +0.69%, fast +0.55%, overrides +2.23%; repeat1: combined +1.94%, fast +1.96%, overrides +1.72%).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m2_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_13-15-48.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m2_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_13-16-04.txt:42-52
+  IMPACT: Candidate currently trends slower and should not auto-retain.
+  NEXT: Hold patch state until explicit user decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: RETAINED - `CC-M3` stays in the checkpoint, and medium-risk routing advances to `CC-M2`.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:48-52, context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:116-139
+  IMPACT: CreationContext medium-risk queue keeps momentum with one retained non-lazy candidate and immediate next-step routing.
+  NEXT: Run `wave3_creationcontext_cc_m2_prebaseline_2026-02-16` before code edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: `CC-M3` post-test compares were near-neutral on first run and mildly positive on repeat (combined/fast slight gains, overrides lane gain).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m3_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_13-13-16.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_m3_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_13-13-30.txt:42-52
+  IMPACT: `CC-M3` does not show a benchmark-gate regression signature and is acceptable to retain.
+  NEXT: Continue to `CC-M2`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: User direction keeps eager import-time template compilation, so medium-risk routing defers lazy candidates (`CC-M1`, `CC-M5`) and pivots to `CC-M3`.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:885-1027, context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:47-53
+  IMPACT: Active optimization continues in medium-risk lane without changing eager template strategy.
+  NEXT: Run `wave3_creationcontext_cc_m3_prebaseline_2026-02-16` before any CC-M3 code edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: CreationContext low-risk queue completed through CC-L5 and active routing moved to medium-risk `CC-M1`.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:47-52, context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:47-53
+  IMPACT: Execution now targets higher-upside medium-risk candidates with the same benchmark gate policy.
+  NEXT: Run `wave3_creationcontext_cc_m1_prebaseline_2026-02-16` before code edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: CC-L5 post-test repeats show slight fast/combined aggregate wins with overrides near-flat, and unit validation stays green (`17 passed`).
+  EVIDENCE: tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:1-30, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l5_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_12-57-07.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l5_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_12-57-20.txt:42-52
+  IMPACT: CC-L5 remains retained while we move to medium-risk work.
+  NEXT: Continue with CC-M1.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Per user move-on direction, low-risk execution advanced from CC-L4 to CC-L5 while keeping CC-L4 code in the active checkpoint.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:47-52, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:305-309, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:341-346
+  IMPACT: Queue momentum continues immediately after CC-L3 rollback closure.
+  NEXT: Run CC-L5 prebaseline before code edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: CC-L4 post-test repeats are mild aggregate wins/near-neutral (combined -1.22% and -0.13%; fast lane -1.32% and -0.16%; overrides lane -0.10% and +0.15%) with mixed tiny-lane movement.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l4_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_12-54-40.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l4_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_12-54-53.txt:42-52
+  IMPACT: Candidate is acceptable for continued forward iteration but not a high-confidence standalone optimization.
+  NEXT: Continue with CC-L5 for another compact attempt.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: CC-L3 was reverted per user direction and execution has advanced to CC-L4 (source-name formatting churn reduction) under the same 10k pre/post snapshot gate.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:47-52, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:305-312, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:340-348
+  IMPACT: Low-risk lane is unblocked and continues without retaining non-winning CC-L3 changes.
+  NEXT: Run `wave3_creationcontext_cc_l4_prebaseline_2026-02-16` before code edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: CC-L3 post-revert 10k snapshot compare is near baseline (combined +0.63%, fast +0.65%, overrides +0.36%), confirming stable rollback before moving on.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_postrevert_10k_2026-02-16_snapshot_summary_2026-02-16_12-52-24.txt:42-52
+  IMPACT: Revert closure is validated and does not leave a large performance drift relative to CC-L3 prebaseline.
+  NEXT: Start CC-L4 candidate cycle.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected revert for CC-L3 and the code was restored to the retained checkpoint shape.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:399-413, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:423-440
+  IMPACT: Non-winning CC-L3 patch is removed; lane proceeds to next queued candidate.
+  NEXT: Continue with CC-L4.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - CC-L3 source-assembly optimization validates functionally but does not produce a clear performance win on repeated 10k snapshot compares against its prebaseline.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_12-49-06.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_12-49-29.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_posttest_10k_repeat2_2026-02-16_snapshot_summary_2026-02-16_12-49-44.txt:42-52
+  IMPACT: Execution is paused at the benchmark gate to avoid autonomous retain/revert on a non-winning candidate.
+  NEXT: User selects keep or revert for CC-L3.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: CC-L3 post-test series drifted from +8.94% combined (first run) to +1.32% (repeat1) and +0.05% (repeat2), indicating no stable win and mild overrides-lane pressure.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_12-49-06.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_posttest_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_12-49-29.txt:42-52, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_l3_posttest_10k_repeat2_2026-02-16_snapshot_summary_2026-02-16_12-49-44.txt:42-52
+  IMPACT: Results are now treated as neutral-to-slight-regression rather than a retained optimization.
+  NEXT: Hold branch state and wait for explicit keep/revert direction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: CC-L2 remains retained in the pushed checkpoint and low-risk execution advances to CC-L3 by the predefined queue order.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:47-52, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:360-390
+  IMPACT: The prior decision gate is resolved in practice and non-override-focused compact iteration can continue.
+  NEXT: Capture `wave3_creationcontext_cc_l3_prebaseline_2026-02-16` (10k) before any code edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-16
   TYPE: MEASURE
   CLAIM: Clean 10k rerun after external benchmark contention shows CC-L2 fast-cycle deltas all improved versus baseline and `overrides/solo` flipped from prior regression to improvement; override lane remains mixed in very small absolute-time slices.

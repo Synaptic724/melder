@@ -49,7 +49,7 @@ This lane targets emitter architecture and generated function shape:
 - [ ] Produce validation experiment plan and user-decision criteria (`DECISION_REQUEST` triggers + keep/revert options).
 - [ ] Enforce benchmark gate for every follow-on optimization slice (pre-test baseline, post-test cadence, and mandatory `DECISION_REQUEST` escalation on failed/non-winning deltas).
 - [ ] Execute `TASK-2026-02-16-phase12-no-overrides-low-risk-discovery`.
-- [ ] Execute `TASK-2026-02-16-phase12-no-overrides-medium-risk-discovery`.
+- [x] Execute `TASK-2026-02-16-phase12-no-overrides-medium-risk-discovery`.
 - [ ] Execute `TASK-2026-02-16-phase12-no-overrides-high-risk-discovery`.
 
 ## Acceptance Criteria
@@ -96,7 +96,7 @@ Process rule:
 | Risk lane | Status | Task | Focus |
 |---|---|---|---|
 | low | ready | `context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md` | contract-safe no-overrides emitter candidates |
-| medium | ready | `context_compass/tasks/2026-02-16_phase12_no_overrides_medium_risk_discovery_task.md` | medium-reward generated-shape and compile-lifecycle candidates |
+| medium | done | `context_compass/tasks/2026-02-16_phase12_no_overrides_medium_risk_discovery_task.md` | medium-reward generated-shape and compile-lifecycle candidates |
 | high | ready | `context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md` | architectural no-overrides redesign discovery |
 
 ## Risks / Mitigations
@@ -176,3 +176,4 @@ Deep no-overrides discovery opened with initial evidence on compile path, step
 emitter size/branch density, and transient unrolled signature strategy. Next
 step is option ranking with measurable hypotheses. Low/medium/high risk-lane
 discovery tasks are now opened and serve as the required iteration queue.
+Medium-risk ticket is turned in and marked done.

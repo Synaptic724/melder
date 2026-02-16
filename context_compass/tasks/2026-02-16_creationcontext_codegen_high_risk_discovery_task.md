@@ -3,7 +3,7 @@
 ## Metadata
 - Task ID: TASK-2026-02-16-creationcontext-codegen-high-risk-discovery
 - Story: STORY-2026-02-16-deep-creation-context-codegen-strategy-discovery
-- Status: ready
+- Status: in_progress
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-16
@@ -114,6 +114,15 @@ _TEMPLATE_EXISTING_NO_OVERRIDES_ONLY = (
 - [ ] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Medium discovery tickets were turned in per user direction, so active CreationContext routing now starts this high-risk lane.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:1-132, context_compass/attention_board.md:16-28
+  IMPACT: High-risk exploration is now the primary execution lane.
+  NEXT: Start with `CC-H2` pre-tranche analysis and benchmark gate planning.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-16
   TYPE: PLAN
   CLAIM: Opened high-risk discovery lane for CreationContext codegen to isolate architectural options from low/medium implementation loops.
