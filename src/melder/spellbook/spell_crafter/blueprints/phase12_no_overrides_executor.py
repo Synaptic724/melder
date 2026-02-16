@@ -498,6 +498,7 @@ def _build_step_plan_executor_source(
         "        _get_existing_creation=_get_existing_creation,",
         "        _register_spell_instance_prebound=_register_spell_instance_prebound,",
         "        MeldExecutionError=MeldExecutionError,",
+        "        SpellSpaceScopeError=SpellSpaceScopeError,",
         "    ):",
         "    instance_results = {}",
     ]
@@ -581,18 +582,13 @@ def _append_step_resolution_source(
             f"instance_results=instance_results)"
         )
         if plan_step.must_register:
-            lines.extend([
-                f"    with creations_{step_index}._lock:",
-                (
-                    f"        _register_spell_instance_prebound("
-                    f"spell_id=spell_id_{step_index}, "
-                    f"instance=instance_{step_index}, "
-                    f"creations=creations_{step_index}, "
-                    f"existence=plan_step_{step_index}.existence, "
-                    f"has_disposal_methods=has_disposal_methods_{step_index}, "
-                    f"disposal_methods=disposal_methods_{step_index})"
-                ),
-            ])
+            lines.append(f"    with creations_{step_index}._lock:")
+            _append_step_register_source(
+                lines=lines,
+                step_index=step_index,
+                indent="        ",
+                existence=existence,
+            )
         lines.append(f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}")
         return
 
@@ -621,17 +617,16 @@ def _append_step_resolution_source(
                 f"plan_step=plan_step_{step_index}, "
                 f"instance_results=instance_results)"
             ),
-            (
-                f"                _register_spell_instance_prebound("
-                f"spell_id=spell_id_{step_index}, "
-                f"instance=instance_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=existence_{step_index}, "
-                f"has_disposal_methods=has_disposal_methods_{step_index}, "
-                f"disposal_methods=disposal_methods_{step_index})"
-            ),
-            f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}",
         ])
+        _append_step_register_source(
+            lines=lines,
+            step_index=step_index,
+            indent="                ",
+            existence=existence,
+        )
+        lines.append(
+            f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
+        )
         return
 
     if plan_step.use_spell_lock_hint:
@@ -652,11 +647,11 @@ def _append_step_resolution_source(
             f"        if use_spell_lock_{step_index}:",
             f"            with spell_{step_index}._lock:",
             f"                with creations_{step_index}._lock:",
-                (
-                    f"                    instance_{step_index} = _get_existing_creation("
-                    f"spell=spell_{step_index}, "
-                    f"creations=creations_{step_index}, "
-                    f"existence=existence_{step_index})"
+            (
+                f"                    instance_{step_index} = _get_existing_creation("
+                f"spell=spell_{step_index}, "
+                f"creations=creations_{step_index}, "
+                f"existence=existence_{step_index})"
             ),
             f"                if instance_{step_index} is None:",
             (
@@ -665,15 +660,14 @@ def _append_step_resolution_source(
                 f"instance_results=instance_results)"
             ),
             f"                    with creations_{step_index}._lock:",
-            (
-                f"                        _register_spell_instance_prebound("
-                f"spell_id=spell_id_{step_index}, "
-                f"instance=instance_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=existence_{step_index}, "
-                f"has_disposal_methods=has_disposal_methods_{step_index}, "
-                f"disposal_methods=disposal_methods_{step_index})"
-            ),
+        ])
+        _append_step_register_source(
+            lines=lines,
+            step_index=step_index,
+            indent="                        ",
+            existence=existence,
+        )
+        lines.extend([
             "        else:",
             f"            with creations_{step_index}._lock:",
             (
@@ -688,17 +682,14 @@ def _append_step_resolution_source(
                 f"plan_step=plan_step_{step_index}, "
                 f"instance_results=instance_results)"
             ),
-            (
-                f"                    _register_spell_instance_prebound("
-                f"spell_id=spell_id_{step_index}, "
-                f"instance=instance_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=existence_{step_index}, "
-                f"has_disposal_methods=has_disposal_methods_{step_index}, "
-                f"disposal_methods=disposal_methods_{step_index})"
-            ),
-            f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}",
         ])
+        _append_step_register_source(
+            lines=lines,
+            step_index=step_index,
+            indent="                    ",
+            existence=existence,
+        )
+        lines.append(f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}")
         return
 
     lines.extend([
@@ -722,17 +713,114 @@ def _append_step_resolution_source(
             f"plan_step=plan_step_{step_index}, "
             f"instance_results=instance_results)"
         ),
-        (
-            f"                _register_spell_instance_prebound("
-            f"spell_id=spell_id_{step_index}, "
-            f"instance=instance_{step_index}, "
-            f"creations=creations_{step_index}, "
-            f"existence=existence_{step_index}, "
-            f"has_disposal_methods=has_disposal_methods_{step_index}, "
-            f"disposal_methods=disposal_methods_{step_index})"
-        ),
-        f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}",
     ])
+    _append_step_register_source(
+        lines=lines,
+        step_index=step_index,
+        indent="                ",
+        existence=existence,
+    )
+    lines.append(
+        f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
+    )
+
+
+def _append_step_register_source(
+        *,
+        lines: list[str],
+        step_index: int,
+        indent: str,
+        existence: Existence,
+) -> None:
+    """
+    Append emitted registration lines specialized for one step existence mode.
+
+    Contract:
+        - Preserves `_register_spell_instance_prebound(...)` routing semantics.
+        - Emits direct creations method calls to avoid per-registration helper
+          dispatch and existence branching at runtime.
+        - Assumes caller has already emitted any required lock context.
+    """
+    if existence in (
+            Existence.unique,
+            Existence.unique_per_conduit,
+            Existence.unique_per_conduit_cluster,
+            Existence.unique_per_conduit_lineage,
+    ):
+        lines.extend([
+            f"{indent}creations_{step_index}.add_creation(",
+            f"{indent}    spell_id_{step_index},",
+            f"{indent}    instance_{step_index},",
+            (
+                f"{indent}    has_disposal_methods="
+                f"has_disposal_methods_{step_index},"
+            ),
+            f"{indent}    disposal_methods=disposal_methods_{step_index},",
+            f"{indent})",
+        ])
+        return
+
+    if existence is Existence.many:
+        lines.extend([
+            f"{indent}if has_disposal_methods_{step_index}:",
+            f"{indent}    creations_{step_index}.add_many_creations(",
+            f"{indent}        spell_id_{step_index},",
+            f"{indent}        instance_{step_index},",
+            (
+                f"{indent}        has_disposal_methods="
+                f"has_disposal_methods_{step_index},"
+            ),
+            (
+                f"{indent}        disposal_methods="
+                f"disposal_methods_{step_index},"
+            ),
+            f"{indent}    )",
+        ])
+        return
+
+    if existence is Existence.unique_per_spell_space:
+        lines.extend([
+            (
+                f"{indent}spellspace_{step_index} = "
+                f"creations_{step_index}._conduit.get_active_spellspace()"
+            ),
+            f"{indent}if spellspace_{step_index} is None:",
+            f"{indent}    raise SpellSpaceScopeError(",
+            (
+                f"{indent}        \"Existence.unique_per_spell_space requires an "
+                f"active SpellSpace. \""
+            ),
+            (
+                f"{indent}        \"Use 'with conduit.enter_spellspace()' when "
+                f"melding.\""
+            ),
+            f"{indent}    )",
+            (
+                f"{indent}if spellspace_{step_index}.owner_conduit is not "
+                f"creations_{step_index}._conduit:"
+            ),
+            f"{indent}    raise SpellSpaceScopeError(",
+            (
+                f"{indent}        \"Active SpellSpace belongs to a different "
+                f"conduit.\""
+            ),
+            f"{indent}    )",
+            f"{indent}creations_{step_index}.register_spellspace_creation(",
+            f"{indent}    spellspace_{step_index}.id,",
+            f"{indent}    spell_id_{step_index},",
+            f"{indent}    instance_{step_index},",
+            (
+                f"{indent}    has_disposal_methods="
+                f"has_disposal_methods_{step_index},"
+            ),
+            f"{indent}    disposal_methods=disposal_methods_{step_index},",
+            f"{indent})",
+        ])
+        return
+
+    raise RuntimeError(
+        f"Unsupported emitted existence registration mode: {existence!r}"
+    )
 
 
 def _build_step_executor_namespace(
@@ -749,6 +837,7 @@ def _build_step_executor_namespace(
     """
     return {
         "MeldExecutionError": MeldExecutionError,
+        "SpellSpaceScopeError": SpellSpaceScopeError,
         "ExecutionPlanTargetKind": ExecutionPlanTargetKind,
         "_construct_spell_instance": _construct_spell_instance,
         "_get_existing_creation": _get_existing_creation,
