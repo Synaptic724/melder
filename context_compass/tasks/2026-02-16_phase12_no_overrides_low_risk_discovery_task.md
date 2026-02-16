@@ -145,9 +145,118 @@ Execution order:
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: RETAINED - user accepted NO-L1 by committing and pushing; static creations-target emission remains active in the checkpoint.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:550-668, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:391-409, benchmarks/testing_other_di/profiles/baselines/no_l1_posttest_validation_2026-02-16.txt:1-34
+  IMPACT: NO-L1 decision gate is closed as kept and low-risk queue can continue to NO-L4.
+  NEXT: Capture NO-L4 prebaseline artifacts (unit + pinned 10k fast/overrides) before NO-L4 implementation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-L4 prebaseline capture is complete in pinned/no-cProfile mode with unit green (`29 passed, 1 warning`) and fresh 10k fast/overrides artifact pairs.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l4_prebaseline_validation_2026-02-16.txt:1-9, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_l4_prebaseline_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_l4_prebaseline_2026-02-16.jsonl:1-8
+  IMPACT: NO-L4 now has a locked before-state checkpoint for post-test keep/revert evaluation.
+  NEXT: Implement NO-L4 compile-path dedupe and run post-test gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Implemented NO-L4 by introducing `_compile_no_overrides_executor_from_entry_inputs(...)` so both public no-overrides compile entrypoints share one root-resolution + transient/step-plan compile handoff path.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:112-171, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:174-227, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:230-282
+  IMPACT: Removes duplicated entry orchestration logic and keeps compile behavior centralized for future no-overrides lane changes.
+  NEXT: Run unit + pinned 10k fast/overrides post-test gate and compare with NO-L4 prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Added targeted unit coverage proving both public compile entrypoints delegate to the shared NO-L4 helper and that helper root-resolution behavior preserves caller-specific failure semantics.
+  EVIDENCE: tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:366-420, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:423-476, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:479-516, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:519-534
+  IMPACT: NO-L4 behavior is now explicitly regression-guarded at the entrypoint boundary.
+  NEXT: Evaluate benchmark gate outcome for keep/revert decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-L4 post-test gate is complete in pinned/no-cProfile mode with unit green (`33 passed, 1 warning`) and aggregate-winning 10k deltas versus prebaseline (`fast -7.541%`, `overrides -3.198%`, `combined -5.370%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l4_posttest_validation_2026-02-16.txt:1-34, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_l4_posttest_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_l4_posttest_2026-02-16.jsonl:1-8
+  IMPACT: NO-L4 currently meets lane benchmark keep criteria with expanded unit coverage.
+  NEXT: Escalate explicit keep/revert decision request for NO-L4 (recommended keep).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - NO-L4 shared entry-input compile-path dedupe is functionally valid and benchmark-winning at the pinned 10k gate; recommended action is keep.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l4_posttest_validation_2026-02-16.txt:16-34
+  IMPACT: Low-risk no-overrides lane is paused at explicit user keep/revert confirmation before advancing to NO-L2.
+  NEXT: User chooses keep or revert for NO-L4.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: RETAINED - user accepted NO-L4; shared entry-input compile-path dedupe remains active.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:112-282, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:366-534, benchmarks/testing_other_di/profiles/baselines/no_l4_posttest_validation_2026-02-16.txt:1-34
+  IMPACT: NO-L4 decision gate is closed and low-risk queue advances to NO-L2.
+  NEXT: Capture NO-L2 prebaseline artifacts (unit + pinned 10k fast/overrides) before NO-L2 implementation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-L2 prebaseline capture is complete in pinned/no-cProfile mode with unit green (`33 passed, 1 warning`) and fresh 10k fast/overrides artifact pairs.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l2_prebaseline_validation_2026-02-16.txt:1-9, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_l2_prebaseline_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_l2_prebaseline_2026-02-16.jsonl:1-8
+  IMPACT: NO-L2 now has a locked before-state checkpoint for post-test keep/revert evaluation.
+  NEXT: Implement NO-L2 registration-emission gating and run post-test gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Implemented NO-L2 by gating emitted non-`many` registration blocks on compile-time `plan_step.must_register`, extending existing `many`-lane gating to all emitted construct/register paths.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:724-860
+  IMPACT: Emitted step source now honors per-step registration metadata consistently across non-overrides lanes.
+  NEXT: Validate with targeted unit coverage and pinned 10k benchmark compare.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Added targeted NO-L2 unit coverage proving non-`many` steps with `must_register=False` do not persist creations and therefore reconstruct on repeated execution.
+  EVIDENCE: tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:583-624
+  IMPACT: NO-L2 behavior is explicitly regression-guarded at emitted runtime semantics level.
+  NEXT: Evaluate benchmark gate outcome for keep/revert decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-L2 post-test gate is complete in pinned/no-cProfile mode with unit green (`34 passed, 1 warning`) but aggregate-regressive 10k deltas versus prebaseline (`fast +0.551%`, `overrides +2.971%`, `combined +1.761%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l2_posttest_validation_2026-02-16.txt:1-34, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_l2_posttest_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_l2_posttest_2026-02-16.jsonl:1-8
+  IMPACT: NO-L2 currently fails lane keep criteria on aggregate means.
+  NEXT: Escalate explicit keep/revert decision request for NO-L2 (recommended revert).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - NO-L2 registration-emission gating is functionally valid but benchmark-non-winning at the pinned 10k gate; recommended action is revert.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l2_posttest_validation_2026-02-16.txt:16-34
+  IMPACT: Low-risk no-overrides lane is paused at explicit user keep/revert confirmation before advancing to NO-L3.
+  NEXT: User chooses keep or revert for NO-L2.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 This task is the low-risk lane for no-overrides codegen strategy work. It
 now has NO-L1 implemented and validated with post-test evidence in
 `benchmarks/testing_other_di/profiles/baselines/no_l1_posttest_validation_2026-02-16.txt`.
-Lane is currently paused at explicit NO-L1 keep/revert decision (recommended keep)
-before advancing to NO-L4.
+NO-L1 and NO-L4 are retained. NO-L2 is implemented and validated in
+`benchmarks/testing_other_di/profiles/baselines/no_l2_posttest_validation_2026-02-16.txt`,
+but currently paused at keep/revert decision request (recommended revert).

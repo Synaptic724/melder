@@ -160,52 +160,13 @@ def compile_phase12_no_overrides_executor(
         )
     if not steps:
         return None
-    root_spell_id = codegen_ir.get("root_spell_id")
-    root_instance_key = _resolve_root_instance_key(
+    return _compile_no_overrides_executor_from_entry_inputs(
         steps=steps,
-        root_spell_id=root_spell_id,
-    )
-    if root_instance_key is None:
-        raise RuntimeError("Phase 12 IR is missing a resolvable root instance key.")
-
-    transient_schema = codegen_ir.get("transient_schema")
-    if transient_schema is not None and _supports_transient_unrolled_plan(steps):
-        normalized_transient_schema = _normalize_transient_schema(
-            transient_schema=transient_schema,
-        )
-        native_dispatch = _resolve_native_transient_dispatcher()
-        source = _build_phase12_executor_source(
-            transient_schema=normalized_transient_schema,
-            use_native_dispatch=native_dispatch is not None,
-        )
-        if source is not None:
-            namespace = _build_executor_namespace(
-                transient_schema=normalized_transient_schema,
-                steps=steps,
-                native_dispatch=native_dispatch,
-            )
-            return _compile_emitted_no_overrides_executor(
-                source=source,
-                namespace=namespace,
-                source_name="<melder_phase12_no_overrides_transient_executor>",
-                compile_failure_message=(
-                    "Phase 12 no-overrides transient executor code generation failed."
-                ),
-            )
-
-    step_source = _build_step_plan_executor_source(
-        steps=steps,
-    )
-    step_namespace = _build_step_executor_namespace(
-        steps=steps,
-        root_instance_key=root_instance_key,
-    )
-    return _compile_emitted_no_overrides_executor(
-        source=step_source,
-        namespace=step_namespace,
-        source_name="<melder_phase12_no_overrides_step_executor>",
-        compile_failure_message=(
-            "Phase 12 no-overrides executor code generation failed."
+        root_instance_key=None,
+        root_spell_id=codegen_ir.get("root_spell_id"),
+        transient_schema=codegen_ir.get("transient_schema"),
+        missing_root_instance_key_message=(
+            "Phase 12 IR is missing a resolvable root instance key."
         ),
     )
 
@@ -255,16 +216,102 @@ def compile_phase12_no_overrides_executor_from_plan(
     steps = plan.steps
     if not steps:
         return None
+    return _compile_no_overrides_executor_from_entry_inputs(
+        steps=steps,
+        root_instance_key=plan.root_instance_key,
+        root_spell_id=plan.root_spell_id,
+        transient_schema=transient_schema,
+        missing_root_instance_key_message=(
+            "Phase 12 plan is missing a resolvable root instance key."
+        ),
+    )
 
-    root_instance_key = plan.root_instance_key
-    if root_instance_key is None:
-        root_instance_key = _resolve_root_instance_key(
+
+def _compile_no_overrides_executor_from_entry_inputs(
+        *,
+        steps: Tuple[Any, ...],
+        root_instance_key: Optional[Tuple[str, Optional[int]]],
+        root_spell_id: Optional[str],
+        transient_schema: Optional[Dict[str, Any]],
+        missing_root_instance_key_message: str,
+) -> Callable[..., Any]:
+    """
+    Resolve shared entrypoint inputs, then compile no-overrides executor source.
+
+    Contract:
+        - Reuses caller-provided `root_instance_key` when present.
+        - Resolves missing root keys from `root_spell_id` using plan-step
+          metadata.
+        - Raises RuntimeError using caller-provided message when no root key is
+          resolvable.
+        - Delegates transient-vs-step-plan source selection to
+          `_compile_no_overrides_executor_from_steps`.
+
+    Args:
+        steps:
+            Hydrated Phase 12 plan steps.
+        root_instance_key:
+            Optional pre-resolved root instance key from entrypoint payload.
+        root_spell_id:
+            Root spell id used for fallback root key resolution.
+        transient_schema:
+            Optional transient schema used by transient codegen path.
+        missing_root_instance_key_message:
+            Entrypoint-specific error message when root resolution fails.
+
+    Returns:
+        Callable[..., Any]:
+            Compiled no-overrides executor for the provided entrypoint payload.
+
+    Raises:
+        RuntimeError:
+            If root instance key cannot be resolved from the provided inputs.
+    """
+    resolved_root_instance_key = root_instance_key
+    if resolved_root_instance_key is None:
+        resolved_root_instance_key = _resolve_root_instance_key(
             steps=steps,
-            root_spell_id=plan.root_spell_id,
+            root_spell_id=root_spell_id,
         )
-    if root_instance_key is None:
-        raise RuntimeError("Phase 12 plan is missing a resolvable root instance key.")
+    if resolved_root_instance_key is None:
+        raise RuntimeError(missing_root_instance_key_message)
+    return _compile_no_overrides_executor_from_steps(
+        steps=steps,
+        root_instance_key=resolved_root_instance_key,
+        transient_schema=transient_schema,
+    )
 
+
+def _compile_no_overrides_executor_from_steps(
+        *,
+        steps: Tuple[Any, ...],
+        root_instance_key: Tuple[str, Optional[int]],
+        transient_schema: Optional[Dict[str, Any]],
+) -> Callable[..., Any]:
+    """
+    Compile a no-overrides executor from hydrated steps plus optional transient schema.
+
+    Contract:
+        - Tries transient unrolled source emission when transient schema is
+          provided and the plan supports transient unrolling.
+        - Falls back to emitted step-plan source when transient source is
+          unavailable or plan support checks fail.
+        - Preserves compile source names and failure message semantics for both
+          transient and step-plan compilation paths.
+
+    Args:
+        steps:
+            Hydrated Phase 12 plan steps.
+        root_instance_key:
+            Root instance lookup key used by emitted step-plan executors.
+        transient_schema:
+            Optional transient-only schema payload for unrolled transient
+            execution codegen.
+
+    Returns:
+        Callable[..., Any]:
+            Compiled no-overrides executor for the provided plan shape.
+    """
     if transient_schema is not None and _supports_transient_unrolled_plan(steps):
         normalized_transient_schema = _normalize_transient_schema(
             transient_schema=transient_schema,
@@ -674,14 +721,13 @@ def _append_step_resolution_source(
             f"plan_step=plan_step_{step_index}, "
             f"instance_results=instance_results)"
         )
-        if plan_step.must_register:
-            lines.append(f"    with creations_{step_index}._lock:")
-            _append_step_register_source(
-                lines=lines,
-                step_index=step_index,
-                indent="        ",
-                existence=existence,
-            )
+        lines.append(f"    with creations_{step_index}._lock:")
+        _append_step_register_source(
+            lines=lines,
+            step_index=step_index,
+            indent="        ",
+            existence=existence,
+        )
         lines.append(f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}")
         return
 
@@ -752,8 +798,8 @@ def _append_step_resolution_source(
                 f"plan_step=plan_step_{step_index}, "
                 f"instance_results=instance_results)"
             ),
-            f"                    with creations_{step_index}._lock:",
         ])
+        lines.append(f"                    with creations_{step_index}._lock:")
         _append_step_register_source(
             lines=lines,
             step_index=step_index,

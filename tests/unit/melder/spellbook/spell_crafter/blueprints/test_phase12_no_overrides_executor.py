@@ -363,6 +363,177 @@ def test_compile_phase12_no_overrides_executor_supports_steps_rows_schema() -> N
     assert executor.__code__.co_filename == "<melder_phase12_no_overrides_step_executor>"
 
 
+def test_compile_phase12_no_overrides_executor_delegates_to_shared_entry_input_compiler(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Ensure the IR entrypoint routes through shared entry-input compilation.
+
+    Contract:
+        - `compile_phase12_no_overrides_executor(...)` delegates to
+          `_compile_no_overrides_executor_from_entry_inputs(...)`.
+        - Delegation includes entrypoint-specific missing-root error text.
+    """
+    captured: dict[str, Any] = {}
+    expected_executor = lambda: None
+
+    def _fake_shared_compile(
+            *,
+            steps: tuple[Any, ...],
+            root_instance_key: Any,
+            root_spell_id: Any,
+            transient_schema: Any,
+            missing_root_instance_key_message: str,
+    ) -> Any:
+        captured["steps"] = steps
+        captured["root_instance_key"] = root_instance_key
+        captured["root_spell_id"] = root_spell_id
+        captured["transient_schema"] = transient_schema
+        captured["missing_root_instance_key_message"] = missing_root_instance_key_message
+        return expected_executor
+
+    monkeypatch.setattr(
+        phase12_module,
+        "_compile_no_overrides_executor_from_entry_inputs",
+        _fake_shared_compile,
+    )
+
+    codegen_ir = {
+        "steps_rows": (_make_step_row("root"),),
+        "root_spell_id": "root",
+        "transient_schema": None,
+    }
+
+    executor = phase12_module.compile_phase12_no_overrides_executor(
+        codegen_ir=codegen_ir,
+        spell_lookup={"root": _make_spell("root")},
+    )
+
+    assert executor is expected_executor
+    assert len(captured["steps"]) == 1
+    assert captured["steps"][0].instance_key == ("root", None)
+    assert captured["root_instance_key"] is None
+    assert captured["root_spell_id"] == "root"
+    assert captured["transient_schema"] is None
+    assert captured["missing_root_instance_key_message"] == (
+        "Phase 12 IR is missing a resolvable root instance key."
+    )
+
+
+def test_compile_phase12_no_overrides_executor_from_plan_delegates_to_shared_entry_input_compiler(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Ensure plan entrypoint routes through shared entry-input compilation.
+
+    Contract:
+        - `compile_phase12_no_overrides_executor_from_plan(...)` delegates to
+          `_compile_no_overrides_executor_from_entry_inputs(...)`.
+        - Delegation includes entrypoint-specific missing-root error text.
+    """
+    captured: dict[str, Any] = {}
+    expected_executor = lambda: None
+
+    def _fake_shared_compile(
+            *,
+            steps: tuple[Any, ...],
+            root_instance_key: Any,
+            root_spell_id: Any,
+            transient_schema: Any,
+            missing_root_instance_key_message: str,
+    ) -> Any:
+        captured["steps"] = steps
+        captured["root_instance_key"] = root_instance_key
+        captured["root_spell_id"] = root_spell_id
+        captured["transient_schema"] = transient_schema
+        captured["missing_root_instance_key_message"] = missing_root_instance_key_message
+        return expected_executor
+
+    monkeypatch.setattr(
+        phase12_module,
+        "_compile_no_overrides_executor_from_entry_inputs",
+        _fake_shared_compile,
+    )
+
+    plan = SimpleNamespace(
+        steps=("step",),
+        root_instance_key=("root", None),
+        root_spell_id="root",
+    )
+
+    executor = phase12_module.compile_phase12_no_overrides_executor_from_plan(
+        plan=plan,
+        transient_schema={"step_count": 0, "root_step_index": 0},
+    )
+
+    assert executor is expected_executor
+    assert captured["steps"] == ("step",)
+    assert captured["root_instance_key"] == ("root", None)
+    assert captured["root_spell_id"] == "root"
+    assert captured["transient_schema"] == {"step_count": 0, "root_step_index": 0}
+    assert captured["missing_root_instance_key_message"] == (
+        "Phase 12 plan is missing a resolvable root instance key."
+    )
+
+
+def test_compile_no_overrides_executor_from_entry_inputs_resolves_missing_root_key() -> None:
+    """
+    Shared entry-input helper resolves root key from root spell id fallback.
+
+    Contract:
+        - Missing root instance key resolves through `_resolve_root_instance_key`.
+        - Resolved key is forwarded into the shared compile path.
+    """
+    captured: dict[str, Any] = {}
+    expected_executor = lambda: None
+
+    def _fake_compile_from_steps(
+            *,
+            steps: tuple[Any, ...],
+            root_instance_key: Any,
+            transient_schema: Any,
+    ) -> Any:
+        captured["steps"] = steps
+        captured["root_instance_key"] = root_instance_key
+        captured["transient_schema"] = transient_schema
+        return expected_executor
+
+    original_compile_from_steps = phase12_module._compile_no_overrides_executor_from_steps
+    phase12_module._compile_no_overrides_executor_from_steps = _fake_compile_from_steps
+    try:
+        result = phase12_module._compile_no_overrides_executor_from_entry_inputs(
+            steps=(SimpleNamespace(instance_key=("root", None)),),
+            root_instance_key=None,
+            root_spell_id="root",
+            transient_schema=None,
+            missing_root_instance_key_message="missing root key",
+        )
+    finally:
+        phase12_module._compile_no_overrides_executor_from_steps = original_compile_from_steps
+
+    assert result is expected_executor
+    assert captured["root_instance_key"] == ("root", None)
+    assert captured["transient_schema"] is None
+
+
+def test_compile_no_overrides_executor_from_entry_inputs_raises_with_entry_message() -> None:
+    """
+    Shared entry-input helper preserves caller-specific root-resolution errors.
+
+    Contract:
+        - Missing fallback root resolution raises RuntimeError with the caller
+          message provided by the entrypoint.
+    """
+    with pytest.raises(RuntimeError, match="entrypoint root message"):
+        phase12_module._compile_no_overrides_executor_from_entry_inputs(
+            steps=(SimpleNamespace(instance_key=("other", None)),),
+            root_instance_key=None,
+            root_spell_id="root",
+            transient_schema=None,
+            missing_root_instance_key_message="entrypoint root message",
+        )
+
+
 def test_compile_phase12_no_overrides_executor_inlines_creations_target_routing() -> None:
     """
     Ensure emitted step executors route creations targets without helper dispatch.
