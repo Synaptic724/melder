@@ -270,8 +270,96 @@ Execution order:
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-H3 pre-edit baseline is captured in pinned/no-cProfile mode with unit green (`27 passed, 1 warning`) plus fresh 10k fast/overrides prebaseline artifacts.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h3_prebaseline_validation_2026-02-16.txt:1-13, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_h3_prebaseline_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_h3_prebaseline_2026-02-16.jsonl:1-8
+  IMPACT: NO-H3 now has a locked before-state for post-test keep/revert evaluation.
+  NEXT: Implement one compact NO-H3 slice and run post-test unit + pinned 10k compare.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Implemented a compact NO-H3 slice by expanding transient-lane eligibility to include reusable existences (`unique_per_conduit`, `unique_per_spell_space`) with prebound reusable-lane state carriers, creations-target routing helper, and transient registration/reuse logic.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:421-451, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:934-975, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:1313-1660, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:1662-1740
+  IMPACT: Transient unrolled codegen path can now preserve reusable-lane semantics for two non-`many` existences without switching to the emitted step executor by default.
+  NEXT: Run post-test benchmark gate and compare against NO-H3 prebaseline artifacts.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Post-implementation no-overrides executor unit suite is green (`30 passed, 1 warning`), including three new transient reusable-lane tests.
+  EVIDENCE: tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:270-385
+  IMPACT: NO-H3 slice is functionally validated before running the pinned 10k performance decision gate.
+  NEXT: Capture NO-H3 pinned/no-cProfile 10k post-test fast + overrides artifacts and compute deltas.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-H3 post-test benchmark validation is captured in pinned/no-cProfile mode with latest-per-label deltas versus prebaseline showing `fast -5.205%`, `overrides +7.894%`, and `combined +1.344%`, while unit validation remains green (`30 passed, 1 warning`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h3_posttest_validation_2026-02-16.txt:3-39
+  IMPACT: Candidate is functionally valid but aggregate benchmark signal is non-winning versus the 10k prebaseline gate.
+  NEXT: Escalate decision gate with explicit keep/revert request and recommendation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - NO-H3 is benchmark-non-winning at the pinned 10k gate (`combined +1.344%`) with significant overrides smoke-lane regressions; recommended action is revert.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h3_posttest_validation_2026-02-16.txt:16-39
+  IMPACT: High-risk no-overrides lane is blocked at keep/revert decision and should not auto-advance.
+  NEXT: User chooses keep or revert for NO-H3.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: A direct NO-H3 overrides rerun under the same pinned 10k configuration flipped the overrides mean delta from `+7.894%` (run1) to `-1.360%` (rerun1) versus prebaseline, confirming large run-to-run variance in this lane.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h3_overrides_rerun1_compare_2026-02-16.txt:1-21
+  IMPACT: The original overrides regression signal is not stable by itself; keep/revert should use a fresh paired fast+overrides rerun if we need a higher-confidence decision.
+  NEXT: Keep the decision gate open and request explicit user direction (revert now vs paired rerun before deciding).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user-directed validation on `shallow_test_all` reported clear slowdown with NO-H3 unreverted state, so NO-H3 code/test changes were reverted.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:423-423, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:267-267
+  IMPACT: NO-H3 decision gate is closed and no-overrides high-risk lane is unblocked.
+  NEXT: Advance queue order to NO-H5 with a fresh pinned 10k prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-H3 rollback validation is complete with unit green (`27 passed, 1 warning`) and pinned 10k postrevert artifacts; deltas versus NO-H3 prebaseline are aggregate-winning (`fast -7.457%`, `overrides -2.957%`, `combined -5.207%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h3_revert_validation_2026-02-16.txt:1-32
+  IMPACT: Revert checkpoint is benchmark-validated and ready for next-candidate iteration.
+  NEXT: Capture NO-H5 pre-edit 10k baseline artifacts before implementation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-H5 pre-edit baseline capture is complete in pinned/no-cProfile mode with unit green (`27 passed, 1 warning`) and fresh 10k fast/overrides artifact pairs.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h5_prebaseline_validation_2026-02-16.txt:1-9
+  IMPACT: NO-H5 now has a locked before-state checkpoint for the post-test keep/revert gate.
+  NEXT: Implement one compact NO-H5 slice and run unit + pinned 10k post-test compares.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-NO-H4 is now reverted per user direction, rollback validation is captured in
-`benchmarks/testing_other_di/profiles/baselines/no_h4_revert_validation_2026-02-16.txt`,
-and the lane is unblocked. Next queued candidate is NO-H3, starting with a new
-pinned 10k prebaseline before any edits.
+NO-H4 is reverted and rollback validation is captured in
+`benchmarks/testing_other_di/profiles/baselines/no_h4_revert_validation_2026-02-16.txt`.
+NO-H3 prebaseline and post-test validation are now both captured:
+`benchmarks/testing_other_di/profiles/baselines/no_h3_prebaseline_validation_2026-02-16.txt`
+and `benchmarks/testing_other_di/profiles/baselines/no_h3_posttest_validation_2026-02-16.txt`.
+NO-H3 is now reverted per user direction after observed slowdown in
+`shallow_test_all` under unreverted state. Rollback validation is captured in
+`benchmarks/testing_other_di/profiles/baselines/no_h3_revert_validation_2026-02-16.txt`.
+NO-H5 prebaseline is now captured in
+`benchmarks/testing_other_di/profiles/baselines/no_h5_prebaseline_validation_2026-02-16.txt`.
+The lane is unblocked and ready for NO-H5 compact implementation plus post-test gate.

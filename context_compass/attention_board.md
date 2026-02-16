@@ -15,9 +15,36 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12 no-overrides high-risk discovery | in_progress | codex | none | capture NO-H3 pinned 10k prebaseline artifacts | `context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md` | 2026-02-16 | REQUIRED |
+| task: phase12 no-overrides high-risk discovery | in_progress | codex | none | implement NO-H5 compact slice and run pinned 10k post-test compare | `context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md` | 2026-02-16 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-H5 pre-edit baseline capture is complete in pinned/no-cProfile mode with unit green (`27 passed, 1 warning`) and fresh 10k fast/overrides artifacts.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h5_prebaseline_validation_2026-02-16.txt:1-9
+  IMPACT: High-risk queue is ready to execute NO-H5 under the standard pre/post decision gate.
+  NEXT: Implement one compact NO-H5 slice and run post-test unit + pinned 10k compare.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user confirmed NO-H3 is slower in `shallow_test_all` unreverted state, and NO-H3 code/test changes were reverted.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:327-334, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:423-423
+  IMPACT: NO-H3 decision gate is closed and lane progression is unblocked.
+  NEXT: Continue queue at NO-H5 with a fresh pinned 10k prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-H3 rollback validation is complete with unit green (`27 passed, 1 warning`) and pinned 10k postrevert deltas versus prebaseline showing `fast -7.457%`, `overrides -2.957%`, `combined -5.207%`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h3_revert_validation_2026-02-16.txt:1-32
+  IMPACT: Reverted checkpoint is validated and ready for next-candidate execution.
+  NEXT: Capture NO-H5 pre-edit baseline artifacts.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: RESULT: REVERTED - user directed revert for NO-H4; AST/code-object transient compile changes were removed and the active checkpoint returned to pre-NO-H4 code shape.
@@ -42,6 +69,15 @@ Attention details rule
   EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:47-51, context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:273-273
   IMPACT: Queue continuity is preserved with no blocked decision gate.
   NEXT: Capture `benchmark_results_10k_no_h3_prebaseline_2026-02-16.jsonl` artifacts for fast and overrides.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-H3 prebaseline capture is complete in pinned/no-cProfile mode with unit green and fresh 10k fast/overrides artifact pairs.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:273-281, benchmarks/testing_other_di/profiles/baselines/no_h3_prebaseline_validation_2026-02-16.txt:1-13
+  IMPACT: Before-state evidence is ready for NO-H3 post-test keep/revert evaluation.
+  NEXT: Implement one compact NO-H3 slice and run unit + pinned 10k post-test compares.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
