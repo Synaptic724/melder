@@ -48,8 +48,8 @@ This discovery lane targets generator architecture quality:
 - [ ] Propose 2-3 deep strategy options with tradeoffs (lazy compile, merged templates, code-object caching).
 - [ ] Define validation experiment plan for selected option.
 - [ ] Enforce benchmark gate for every follow-on optimization slice (pre-test baseline, post-test cadence, and mandatory `DECISION_REQUEST` escalation on failed/non-winning deltas).
-- [ ] Execute `TASK-2026-02-16-codegen-snapshot-average-process` to standardize averaged snapshot measurements (1000 default, 10000 optional) before next code slice.
-- [ ] Execute `TASK-2026-02-16-creationcontext-codegen-low-risk-discovery`.
+- [x] Execute `TASK-2026-02-16-codegen-snapshot-average-process` to standardize averaged snapshot measurements (1000 default, 10000 optional) before next code slice.
+- [x] Execute `TASK-2026-02-16-creationcontext-codegen-low-risk-discovery`.
 - [x] Execute `TASK-2026-02-16-creationcontext-codegen-medium-risk-discovery`.
 - [ ] Execute `TASK-2026-02-16-creationcontext-codegen-high-risk-discovery`.
 
@@ -96,8 +96,8 @@ Process rule:
 
 | Risk lane | Status | Task | Focus |
 |---|---|---|---|
-| low | ready | `context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md` | contract-safe micro and compile-prep efficiency candidates |
-| medium | done | `context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md` | medium-reward template/compile strategy candidates |
+| low | done | `context_compass/tasks/completed/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md` | contract-safe micro and compile-prep efficiency candidates |
+| medium | done | `context_compass/tasks/completed/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md` | medium-reward template/compile strategy candidates |
 | high | ready | `context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md` | architectural redesign discovery with explicit guardrails |
 
 ## Risks / Mitigations
@@ -153,7 +153,7 @@ Process rule:
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: Created a mandatory low/medium/high risk-lane task queue for this story and required each iteration to start from one queued task ID.
-  EVIDENCE: context_compass/stories/2026-02-16_deep_creation_context_codegen_strategy_discovery_story.md:85-96, context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:1-78, context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:1-78, context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md:1-77
+  EVIDENCE: context_compass/stories/2026-02-16_deep_creation_context_codegen_strategy_discovery_story.md:85-96, context_compass/tasks/completed/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:1-78, context_compass/tasks/completed/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:1-78, context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md:1-77
   IMPACT: Iterations are now deterministic and no longer depend on hunt-and-seek rediscovery.
   NEXT: Select one queued task and record its task ID in notes before the next investigation tranche.
   REREAD: REQUIRED
@@ -162,7 +162,7 @@ Process rule:
 - DATE: 2026-02-16
   TYPE: PLAN
   CLAIM: All three CreationContext risk-lane tasks now include expanded candidate backlogs plus reusable ops-reference steps so future iterations can run directly from ticket ops.
-  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:38-86, context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:38-85, context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md:38-85
+  EVIDENCE: context_compass/tasks/completed/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:38-86, context_compass/tasks/completed/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:38-85, context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md:38-85
   IMPACT: CreationContext lane can execute multiple iterations without repeating strategy setup.
   NEXT: Start with `CC-L1` or `CC-M1` depending on risk preference and publish `RESULT` note after first run.
   REREAD: REQUIRED
@@ -171,7 +171,7 @@ Process rule:
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: Before additional CreationContext code slices, the story now requires a dedicated non-cProfile snapshot process task so pre/post decisions use averaged outcomes with high-repeat support.
-  EVIDENCE: context_compass/stories/2026-02-16_deep_creation_context_codegen_strategy_discovery_story.md:45-53, context_compass/tasks/2026-02-16_codegen_snapshot_average_process_task.md:1-102
+  EVIDENCE: context_compass/stories/2026-02-16_deep_creation_context_codegen_strategy_discovery_story.md:45-53, context_compass/tasks/completed/2026-02-16_codegen_snapshot_average_process_task.md:1-102
   IMPACT: Candidate keep/revert decisions will be based on stable average metrics rather than single-run variance.
   NEXT: Complete the snapshot-process task and apply it as the default benchmark gate for the next candidate iteration.
   REREAD: REQUIRED

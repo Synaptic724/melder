@@ -97,7 +97,7 @@ Process rule:
 | Risk lane | Status | Task | Focus |
 |---|---|---|---|
 | low | ready | `context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md` | compact, contract-safe override efficiency candidates |
-| medium | done | `context_compass/tasks/2026-02-16_phase12_overrides_medium_risk_discovery_task.md` | medium-reward compile/source strategy candidates |
+| medium | done | `context_compass/tasks/completed/2026-02-16_phase12_overrides_medium_risk_discovery_task.md` | medium-reward compile/source strategy candidates |
 | high | ready | `context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md` | high-risk override generator redesign discovery |
 
 ## Strategy Candidates (Ranked)
@@ -221,7 +221,7 @@ Process rule:
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: Opened `TASK-2026-02-16-phase12-overrides-cold-path-helper-extraction` as the first compact implementation slice for the rank-1 strategy.
-  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_cold_path_helper_extraction_task.md:1-104, context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md:87-108
+  EVIDENCE: context_compass/tasks/completed/2026-02-16_phase12_overrides_cold_path_helper_extraction_task.md:1-104, context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md:87-108
   IMPACT: Discovery is now connected to a single actionable implementation lane with benchmark/revert/announce requirements pre-encoded.
   NEXT: Route active attention to the new task and run pre-test baseline cadence before code edits.
   REREAD: REQUIRED
@@ -230,7 +230,7 @@ Process rule:
 - DATE: 2026-02-16
   TYPE: MEASURE
   CLAIM: First compact rank-1 implementation slice completed full pre-test and post-test cadence; checkpoint comparison was non-winning due fast-lane regression.
-  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_cold_path_helper_extraction_task.md:101-117, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave2_phase12_overrides_coldpath_slice1_posttest_summary_2026-02-16.txt:1-25
+  EVIDENCE: context_compass/tasks/completed/2026-02-16_phase12_overrides_cold_path_helper_extraction_task.md:101-117, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave2_phase12_overrides_coldpath_slice1_posttest_summary_2026-02-16.txt:1-25
   IMPACT: Candidate cannot be retained under mandatory keep/revert policy.
   NEXT: Record explicit revert announcement and complete post-revert validation evidence.
   REREAD: REQUIRED
@@ -239,7 +239,7 @@ Process rule:
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: RESULT: REVERTED - `TASK-2026-02-16-phase12-overrides-cold-path-helper-extraction` candidate was reverted after non-winning checkpoint deltas; post-revert validation completed.
-  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_cold_path_helper_extraction_task.md:119-135, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave2_phase12_overrides_coldpath_slice1_postrevert_summary_2026-02-16.txt:1-25
+  EVIDENCE: context_compass/tasks/completed/2026-02-16_phase12_overrides_cold_path_helper_extraction_task.md:119-135, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave2_phase12_overrides_coldpath_slice1_postrevert_summary_2026-02-16.txt:1-25
   IMPACT: Overrides executor runtime is restored to pre-candidate behavior with compliance artifacts captured.
   NEXT: Choose next compact slice (narrower rank-1 variant or rank-2 metadata snapshot caching) under the same benchmark gate.
   REREAD: REQUIRED
@@ -248,7 +248,7 @@ Process rule:
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: Created a mandatory low/medium/high risk-lane queue for overrides discovery and required future iterations to start from queued task IDs.
-  EVIDENCE: context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md:85-96, context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md:1-77, context_compass/tasks/2026-02-16_phase12_overrides_medium_risk_discovery_task.md:1-77, context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:1-77
+  EVIDENCE: context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md:85-96, context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md:1-77, context_compass/tasks/completed/2026-02-16_phase12_overrides_medium_risk_discovery_task.md:1-77, context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:1-77
   IMPACT: Next override iterations now run from a fixed risk-lane backlog instead of rediscovery-based path selection.
   NEXT: Start the next iteration from `TASK-2026-02-16-phase12-overrides-medium-risk-discovery` unless user reprioritizes.
   REREAD: REQUIRED
@@ -257,7 +257,7 @@ Process rule:
 - DATE: 2026-02-16
   TYPE: PLAN
   CLAIM: Overrides low/medium/high tasks are now loaded with multi-candidate backlogs and reusable ops-reference steps so we can iterate directly from task ops.
-  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md:34-84, context_compass/tasks/2026-02-16_phase12_overrides_medium_risk_discovery_task.md:35-85, context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:34-83
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md:34-84, context_compass/tasks/completed/2026-02-16_phase12_overrides_medium_risk_discovery_task.md:35-85, context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:34-83
   IMPACT: Overrides lane can execute repeated attempts without redoing candidate discovery setup.
   NEXT: Begin with `OV-M1` for medium-risk pass; keep strict result/revert gate.
   REREAD: REQUIRED
@@ -266,7 +266,7 @@ Process rule:
 - DATE: 2026-02-16
   TYPE: STRATEGY_DISCUSSION
   CLAIM: Discovery iteration 2 expanded the overrides medium-risk queue to eight candidates, adding deeper compile-miss preprocessing reuse options while keeping `OV-M1` as first execution pick.
-  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_medium_risk_discovery_task.md:38-55, src/melder/aether/conduit/meld/creation_context/creation_context.py:653-675, src/melder/aether/conduit/meld/creation_context/creation_context.py:875-924, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:269-334, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:609-748, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2397-2486
+  EVIDENCE: context_compass/tasks/completed/2026-02-16_phase12_overrides_medium_risk_discovery_task.md:38-55, src/melder/aether/conduit/meld/creation_context/creation_context.py:653-675, src/melder/aether/conduit/meld/creation_context/creation_context.py:875-924, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:269-334, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:609-748, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2397-2486
   IMPACT: Medium-risk lane now supports several additional iterations without fresh backlog work.
   NEXT: Execute `OV-M1`; if reverted, continue with `OV-M6` then `OV-M2` under the same benchmark gate.
   REREAD: REQUIRED
@@ -275,7 +275,7 @@ Process rule:
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: Execution order was switched to high-risk-first; opened OV-H1 implementation task slice 1 for benchmark-gated execution.
-  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:34-54, context_compass/tasks/2026-02-16_phase12_overrides_high_risk_segmented_shape_helpers_slice1_task.md:1-112
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:34-54, context_compass/tasks/completed/2026-02-16_phase12_overrides_high_risk_segmented_shape_helpers_slice1_task.md:1-112
   IMPACT: Overrides lane now begins implementation from high-risk queue while preserving mandatory keep/revert controls.
   NEXT: Run pre-test baseline cadence in the OV-H1 slice task, then implement one compact high-risk change.
   REREAD: REQUIRED
@@ -284,7 +284,7 @@ Process rule:
 - DATE: 2026-02-16
   TYPE: MEASURE
   CLAIM: OV-H1 slice 1 failed the post-test unit gate before benchmark comparison; the shape-source emission no longer matched existing direct-callable-invoke test expectations.
-  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_high_risk_segmented_shape_helpers_slice1_task.md:121-128, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_phase12_overrides_highrisk_ovh1_slice1_posttest_2026-02-16.txt:4-68
+  EVIDENCE: context_compass/tasks/completed/2026-02-16_phase12_overrides_high_risk_segmented_shape_helpers_slice1_task.md:121-128, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_phase12_overrides_highrisk_ovh1_slice1_posttest_2026-02-16.txt:4-68
   IMPACT: Candidate cannot be retained and must be reverted per standardized gate.
   NEXT: Complete mandatory revert + post-revert validation and record explicit RESULT note.
   REREAD: REQUIRED
@@ -293,7 +293,7 @@ Process rule:
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: RESULT: REVERTED - OV-H1 slice 1 was reverted after unit failure; post-revert validation passed and runtime code returned to pre-slice behavior.
-  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_high_risk_segmented_shape_helpers_slice1_task.md:130-137, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_phase12_overrides_highrisk_ovh1_slice1_postrevert_2026-02-16.txt:1-986
+  EVIDENCE: context_compass/tasks/completed/2026-02-16_phase12_overrides_high_risk_segmented_shape_helpers_slice1_task.md:130-137, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_phase12_overrides_highrisk_ovh1_slice1_postrevert_2026-02-16.txt:1-986
   IMPACT: High-risk lane remains open, but next attempt should narrow helper segmentation to preserve shape-source text contracts.
   NEXT: Open OV-H1 slice 2 task and continue high-risk-first iteration.
   REREAD: REQUIRED

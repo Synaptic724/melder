@@ -1,9 +1,13 @@
 # Task: CreationContext Codegen Low-Risk Discovery Lane
 
+Completed: 2026-02-16
+Summary: Completed the low-risk CreationContext queue through CC-L5 with
+benchmark-gated retain/revert outcomes recorded for each compact slice.
+
 ## Metadata
 - Task ID: TASK-2026-02-16-creationcontext-codegen-low-risk-discovery
 - Story: STORY-2026-02-16-deep-creation-context-codegen-strategy-discovery
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-16
@@ -152,13 +156,13 @@ _TEMPLATE_EXISTING_OVERRIDES_ONLY = (
 - Rollback: if implemented candidate is non-winning, raise `DECISION_REQUEST` per story gate and wait for user keep/revert direction.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
+- [x] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
 - DATE: 2026-02-16
@@ -182,7 +186,7 @@ _TEMPLATE_EXISTING_OVERRIDES_ONLY = (
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: User approved one compact low-risk CreationContext iteration; this tranche selects candidate `CC-L1` (route-key selector dispatch maps) for implementation-first validation.
-  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:38-46, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:185-283
+  EVIDENCE: context_compass/tasks/completed/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:38-46, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:185-283
   IMPACT: Active execution scope is now one bounded code patch plus full pre/post benchmark cadence.
   NEXT: Capture pre-test baseline cadence, patch `CC-L1`, then run post-test and publish `RESULT` or `RESULT: DECISION_REQUEST`.
   REREAD: REQUIRED
@@ -220,7 +224,7 @@ _TEMPLATE_EXISTING_OVERRIDES_ONLY = (
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: RESULT: REVERTED - User directed revert of CC-L1; selector-dispatch map changes were removed from `creation_context_codegen.py`.
-  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:195-283, context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:162-171
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:195-283, context_compass/tasks/completed/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:162-171
   IMPACT: Runtime returns to pre-CC-L1 code shape and this candidate is closed as reverted.
   NEXT: Run one-pass post-revert validation and record artifact before proceeding to the next process improvement track.
   REREAD: REQUIRED
@@ -238,7 +242,7 @@ _TEMPLATE_EXISTING_OVERRIDES_ONLY = (
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: Active execution for benchmark process improvements has moved to `TASK-2026-02-16-codegen-snapshot-average-process` so this low-risk code lane can pause while we establish averaged pre/post snapshots.
-  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:188-193, context_compass/tasks/2026-02-16_codegen_snapshot_average_process_task.md:1-102, context_compass/attention_board.md:16-28
+  EVIDENCE: context_compass/tasks/completed/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:188-193, context_compass/tasks/completed/2026-02-16_codegen_snapshot_average_process_task.md:1-102, context_compass/attention_board.md:16-28
   IMPACT: Subsequent codegen keep/revert decisions can use stable averaged snapshots (including 10000-run optional mode) instead of single-run variance.
   NEXT: Implement and validate the new snapshot runner, then resume this lane with averaged pre/post comparisons.
   REREAD: REQUIRED
@@ -247,7 +251,7 @@ _TEMPLATE_EXISTING_OVERRIDES_ONLY = (
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: Resuming this low-risk lane on candidate `CC-L2` (compile+exec helper dedupe) with the averaged snapshot process as the mandatory pre/post gate.
-  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:39-46, benchmarks/testing_other_di/run_snapshot_timings.py:240-342, benchmarks/testing_other_di/run_snapshot_timings.py:592-682
+  EVIDENCE: context_compass/tasks/completed/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:39-46, benchmarks/testing_other_di/run_snapshot_timings.py:240-342, benchmarks/testing_other_di/run_snapshot_timings.py:592-682
   IMPACT: Next candidate evaluation will use stable averaged metrics instead of cProfile single-run variance while keeping the same fast/override lane coverage.
   NEXT: Record one evidence note for CC-L2 duplication pattern, then apply compact code patch and run pre/post averaged snapshots.
   REREAD: REQUIRED
@@ -303,7 +307,7 @@ _TEMPLATE_EXISTING_OVERRIDES_ONLY = (
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: Low-risk execution advances to candidate `CC-L3` (source assembly allocation trimming) with CC-L2 retained as the working checkpoint.
-  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:47-52, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:392-444
+  EVIDENCE: context_compass/tasks/completed/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:47-52, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:392-444
   IMPACT: The lane is unblocked and ready for a fresh benchmark-gated pre/post cycle on the next non-override-friendly compact candidate.
   NEXT: Run `python benchmarks/testing_other_di/run_snapshot_timings.py --iterations 10000 --warmup-iters 200 --snapshot-label wave3_creationcontext_cc_l3_prebaseline_2026-02-16` before any code edits.
   REREAD: REQUIRED
@@ -422,7 +426,7 @@ _TEMPLATE_EXISTING_OVERRIDES_ONLY = (
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: Following user direction to move on after CC-L3 revert, execution advances to CC-L5 while keeping CC-L4 changes in the working checkpoint.
-  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:47-52, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:305-309, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:341-346
+  EVIDENCE: context_compass/tasks/completed/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:47-52, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:305-309, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:341-346
   IMPACT: Low-risk lane momentum continues without waiting for an additional CC-L4 keep/revert gate.
   NEXT: Capture CC-L5 prebaseline and implement route-selector dispatch compaction.
   REREAD: REQUIRED
@@ -458,7 +462,7 @@ _TEMPLATE_EXISTING_OVERRIDES_ONLY = (
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: RESULT: RETAINED - CC-L5 remains in the working checkpoint and completes the low-risk CreationContext queue in this story branch.
-  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:47-52, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:202-207, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:1035-1071
+  EVIDENCE: context_compass/tasks/completed/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:47-52, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:202-207, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:1035-1071
   IMPACT: Subsequent iterations can move to the medium-risk CreationContext lane without revisiting remaining low-risk items.
   NEXT: Route active work to `2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md`.
   REREAD: REQUIRED

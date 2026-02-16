@@ -40,7 +40,7 @@ graph lanes.
 ## Files / Paths Impacted
 - `benchmarks/testing_other_di/run_codegen_snapshot_averages.py`
 - `context_compass/attention_board.md`
-- `context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md`
+- `context_compass/tasks/completed/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md`
 
 ## Validation
 - Not run.
@@ -68,7 +68,7 @@ graph lanes.
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: User directed a process shift from cProfile timing snapshots to high-repeat average snapshots; 1000 iterations is required and 10000 should be supported.
-  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:169-177, benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py:634-662, benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py:603-631
+  EVIDENCE: context_compass/tasks/completed/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:169-177, benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py:634-662, benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py:603-631
   IMPACT: Benchmark gating will have a lower-noise timing signal for retain/revert decisions.
   NEXT: Implement `run_codegen_snapshot_averages.py` with repeat-count CLI and output artifacts.
   REREAD: REQUIRED

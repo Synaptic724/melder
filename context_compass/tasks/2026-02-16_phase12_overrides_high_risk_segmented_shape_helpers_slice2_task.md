@@ -3,7 +3,7 @@
 ## Metadata
 - Task ID: TASK-2026-02-16-phase12-overrides-high-risk-segmented-shape-helpers-slice2
 - Story: STORY-2026-02-16-deep-phase12-overrides-codegen-strategy-discovery
-- Status: in_progress
+- Status: blocked
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-16
@@ -25,9 +25,9 @@ invoke text contracts that failed in slice 1.
 
 ## Steps / Checklist
 - [x] Capture pre-test baseline (unit + fast/overrides benchmark cadence).
-- [ ] Implement OV-H1 slice 2: segment owner-creations shape blocks into helper call sites.
-- [ ] Run post-test cadence and compare against retained checkpoint.
-- [ ] Raise `DECISION_REQUEST` on failing/non-winning outcomes; run post-revert validation only if user selects revert.
+- [x] Implement OV-H1 slice 2: segment owner-creations shape blocks into helper call sites.
+- [x] Run post-test cadence and compare against retained checkpoint.
+- [x] Raise `DECISION_REQUEST` on failing/non-winning outcomes; run post-revert validation only if user selects revert.
 - [ ] Publish explicit outcome note (`RESULT: RETAINED` or `RESULT: REVERTED`) with artifact path.
 - [ ] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
 - [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
@@ -43,7 +43,13 @@ invoke text contracts that failed in slice 1.
 - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/`
 
 ## Validation
-- Not run yet.
+- Completed.
+- Unit: `57 passed, 1 warning`.
+- Fast cprofile: pass x2 (`8 passed, 1 warning` each pass).
+- Overrides cprofile: pass x2 (`8 passed, 1 warning` each pass).
+- Artifacts:
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_phase12_overrides_highrisk_ovh1_slice2_posttest_2026-02-16.txt`
+  - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_phase12_overrides_highrisk_ovh1_slice2_posttest_compare_2026-02-16.txt`
 - Required commands:
   - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py -q`
   - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py -q -s` (twice)
@@ -87,9 +93,36 @@ invoke text contracts that failed in slice 1.
 
 ## Notes
 - DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - slice 2 validates functionally but is non-winning on combined timing means versus prebaseline (`COMBINED_TIMINGS_MEAN delta_pct=+0.5312`), so explicit keep/revert direction is required before any rollback action.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_phase12_overrides_highrisk_ovh1_slice2_posttest_compare_2026-02-16.txt:25-27, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_phase12_overrides_highrisk_ovh1_slice2_posttest_2026-02-16.txt:1-1950
+  IMPACT: Task is blocked at benchmark decision gate and should not auto-retain or auto-revert.
+  NEXT: User chooses keep or revert for OV-H1 slice 2 (recommended: revert).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Post-test compare shows mixed lane movement versus prebaseline: fast timings mean regressed (`delta_pct=+0.9351`), overrides timings mean improved (`delta_pct=-4.2706`), and combined timings mean regressed (`delta_pct=+0.5312`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_phase12_overrides_highrisk_ovh1_slice2_posttest_compare_2026-02-16.txt:25-27, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_phase12_overrides_highrisk_ovh1_slice2_posttest_compare_2026-02-16.txt:12-23
+  IMPACT: Candidate does not meet non-winning gate criteria for autonomous retention.
+  NEXT: Raise `RESULT: DECISION_REQUEST` and wait for keep/revert direction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Implemented OV-H1 slice 2 by extracting OWNER-target shape-source creations resolution lines into `_append_overrides_shape_owner_creations_source(...)` and replacing the inline block with this helper call.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1691-1715, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1831-1834
+  IMPACT: Owner-target segmentation is isolated without changing emitted callable-invoke text contracts.
+  NEXT: Run post-test cadence and compare against prebaseline checkpoint.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: Slice 1 reverted due unit failure in shape-source callable invoke contract; slice 2 narrows segmentation target to avoid changing emitted callable invoke blocks.
-  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_high_risk_segmented_shape_helpers_slice1_task.md:121-137
+  EVIDENCE: context_compass/tasks/completed/2026-02-16_phase12_overrides_high_risk_segmented_shape_helpers_slice1_task.md:121-137
   IMPACT: Follow-on high-risk iteration remains active but constrained to a safer sub-surface of OV-H1.
   NEXT: Capture fresh pre-test baseline for slice 2 before code edits.
   REREAD: REQUIRED
@@ -114,8 +147,8 @@ invoke text contracts that failed in slice 1.
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary
-This task is the second OV-H1 high-risk slice. It keeps the same benchmark
-decision gate (`DECISION_REQUEST` before keep/revert actions) while narrowing helper segmentation scope to owner-target
-resolution blocks so prior shape-source callable-invoke text contracts remain
-unchanged. Prebaseline cadence is complete and artifacted, so the next step is
-the narrowed code patch followed by post-test decision-request execution.
+This task is the second OV-H1 high-risk slice. Owner-target shape-source
+segmentation is implemented and validated green on unit + required cprofile
+passes, with post-test artifacts captured. Combined timing means are
+non-winning versus prebaseline (`+0.5312%`), so the task is blocked at
+`RESULT: DECISION_REQUEST` pending explicit keep/revert direction.

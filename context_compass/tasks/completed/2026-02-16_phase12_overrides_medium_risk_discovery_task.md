@@ -95,7 +95,7 @@ Execution order:
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: RESULT: TURNED_IN - phase12 overrides medium-risk discovery ticket is closed per user direction.
-  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_medium_risk_discovery_task.md:1-95, context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md:42-53, context_compass/epics/2026-02-15_creationcontext_phase12_codegen_optimization_epic.md:90-111
+  EVIDENCE: context_compass/tasks/completed/2026-02-16_phase12_overrides_medium_risk_discovery_task.md:1-95, context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md:42-53, context_compass/epics/2026-02-15_creationcontext_phase12_codegen_optimization_epic.md:90-111
   IMPACT: Medium overrides queue remains documented for reuse while active routing can continue in high-risk lanes.
   NEXT: Continue high-risk overrides/creationcontext execution with the same benchmark gate.
   REREAD: REQUIRED

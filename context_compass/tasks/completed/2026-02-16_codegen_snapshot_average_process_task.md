@@ -1,9 +1,13 @@
 # Task: Build Average-Based Snapshot Benchmark Process (Non-cProfile)
 
+Completed: 2026-02-16
+Summary: Implemented and validated the non-cProfile averaged snapshot runner
+for fast/overrides lanes, including baseline-compare output and durable artifacts.
+
 ## Metadata
 - Task ID: TASK-2026-02-16-codegen-snapshot-average-process
 - Story: STORY-2026-02-16-deep-creation-context-codegen-strategy-discovery
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-16
@@ -49,8 +53,8 @@ Implement a dedicated benchmark snapshot process that is separate from cProfile 
 
 ## Files / Paths Impacted
 - `context_compass/attention_board.md`
-- `context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md`
-- `context_compass/tasks/2026-02-16_codegen_snapshot_average_process_task.md`
+- `context_compass/tasks/completed/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md`
+- `context_compass/tasks/completed/2026-02-16_codegen_snapshot_average_process_task.md`
 - `benchmarks/testing_other_di/run_snapshot_timings.py`
 
 ## Validation
@@ -79,13 +83,13 @@ Implement a dedicated benchmark snapshot process that is separate from cProfile 
 - Rollback: script-only change; safe to revert file and board/ticket routing if needed.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
+- [x] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
 - DATE: 2026-02-16

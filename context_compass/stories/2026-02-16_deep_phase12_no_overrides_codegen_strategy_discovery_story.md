@@ -96,7 +96,7 @@ Process rule:
 | Risk lane | Status | Task | Focus |
 |---|---|---|---|
 | low | ready | `context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md` | contract-safe no-overrides emitter candidates |
-| medium | done | `context_compass/tasks/2026-02-16_phase12_no_overrides_medium_risk_discovery_task.md` | medium-reward generated-shape and compile-lifecycle candidates |
+| medium | done | `context_compass/tasks/completed/2026-02-16_phase12_no_overrides_medium_risk_discovery_task.md` | medium-reward generated-shape and compile-lifecycle candidates |
 | high | ready | `context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md` | architectural no-overrides redesign discovery |
 
 ## Risks / Mitigations
@@ -152,7 +152,7 @@ Process rule:
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: Created a mandatory low/medium/high risk-lane queue for no-overrides discovery and required iterations to begin from a queued task ID.
-  EVIDENCE: context_compass/stories/2026-02-16_deep_phase12_no_overrides_codegen_strategy_discovery_story.md:85-96, context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md:1-78, context_compass/tasks/2026-02-16_phase12_no_overrides_medium_risk_discovery_task.md:1-78, context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:1-77
+  EVIDENCE: context_compass/stories/2026-02-16_deep_phase12_no_overrides_codegen_strategy_discovery_story.md:85-96, context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md:1-78, context_compass/tasks/completed/2026-02-16_phase12_no_overrides_medium_risk_discovery_task.md:1-78, context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:1-77
   IMPACT: Future no-overrides iterations can run from a persistent, risk-labeled queue rather than ad-hoc path hunting.
   NEXT: Choose the next queued task and log the task ID before starting the next tranche.
   REREAD: REQUIRED
@@ -161,7 +161,7 @@ Process rule:
 - DATE: 2026-02-16
   TYPE: PLAN
   CLAIM: No-overrides low/medium/high tasks are now fully loaded with candidate backlogs and reusable ops-reference sections for repeated execution loops.
-  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md:35-84, context_compass/tasks/2026-02-16_phase12_no_overrides_medium_risk_discovery_task.md:35-85, context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:35-84
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md:35-84, context_compass/tasks/completed/2026-02-16_phase12_no_overrides_medium_risk_discovery_task.md:35-85, context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:35-84
   IMPACT: Iteration setup is now externalized in tickets, reducing repeated planning overhead.
   NEXT: Execute `NO-L1` first, then `NO-M1` if low-risk deltas plateau.
   REREAD: REQUIRED

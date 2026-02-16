@@ -163,7 +163,7 @@ The MRP is a measurable, contract-safe optimization tranche:
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: Per user direction, all medium-risk discovery tickets were turned in and marked done (`creationcontext`, `phase12-no-overrides`, `phase12-overrides`), and epic task checkboxes were updated for those ticket IDs.
-  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:1-132, context_compass/tasks/2026-02-16_phase12_no_overrides_medium_risk_discovery_task.md:1-90, context_compass/tasks/2026-02-16_phase12_overrides_medium_risk_discovery_task.md:1-99, context_compass/epics/2026-02-15_creationcontext_phase12_codegen_optimization_epic.md:103-114
+  EVIDENCE: context_compass/tasks/completed/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:1-132, context_compass/tasks/completed/2026-02-16_phase12_no_overrides_medium_risk_discovery_task.md:1-90, context_compass/tasks/completed/2026-02-16_phase12_overrides_medium_risk_discovery_task.md:1-99, context_compass/epics/2026-02-15_creationcontext_phase12_codegen_optimization_epic.md:103-114
   IMPACT: Epic tracking now reflects medium-ticket turn-in completion while deep stories remain open for remaining low/high execution work.
   NEXT: Continue execution from high-risk queue.
   REREAD: REQUIRED

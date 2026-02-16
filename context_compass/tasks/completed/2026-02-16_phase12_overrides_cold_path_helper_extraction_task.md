@@ -1,9 +1,13 @@
 # Task: Phase12 Overrides Cold-Path Helper Extraction (Compact Slice 1)
 
+Completed: 2026-02-16
+Summary: Completed the compact rank-1 slice, benchmarked it against checkpoint
+cadence, then reverted after non-winning deltas with post-revert validation.
+
 ## Metadata
 - Task ID: TASK-2026-02-16-phase12-overrides-cold-path-helper-extraction
 - Story: STORY-2026-02-16-deep-phase12-overrides-codegen-strategy-discovery
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-16
@@ -93,13 +97,13 @@ helpers while preserving inline fast paths and existing runtime contracts.
 - Rollback: raise `DECISION_REQUEST` when validation fails or deltas are non-winning; revert only on user decision.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
+- [x] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
 - DATE: 2026-02-16

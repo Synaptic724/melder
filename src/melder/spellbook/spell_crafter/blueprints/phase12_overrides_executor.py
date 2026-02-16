@@ -1688,6 +1688,32 @@ def _append_overrides_invoke_source(
     _append_raw_value_body(f"{indent}    ")
 
 
+def _append_overrides_shape_owner_creations_source(
+        *,
+        lines: list[str],
+        step_index: int,
+) -> None:
+    """
+    Append emitted source lines for OWNER-target creations resolution.
+
+    Contract:
+        - Uses spell-owned creations when available.
+        - Falls back to `owner_creations` when spell-owned creations are missing.
+        - Raises when neither owner creations source is available.
+    """
+    lines.extend([
+        f"    owner_creations_{step_index} = spell_{step_index}._owner_creations",
+        f"    if owner_creations_{step_index} is not None:",
+        f"        creations_{step_index} = owner_creations_{step_index}",
+        "    elif owner_creations is None:",
+        "        raise RuntimeError(",
+        "            \"Phase 12 OWNER execution requires owner_creations.\"",
+        "        )",
+        "    else:",
+        f"        creations_{step_index} = owner_creations",
+    ])
+
+
 def _append_overrides_step_shape_source(
         *,
         lines: list[str],
@@ -1803,17 +1829,10 @@ def _append_overrides_step_shape_source(
     ):
         lines.append(f"    creations_{step_index} = caller_creations")
     elif creations_target_kind == ExecutionPlanTargetKind.OWNER:
-        lines.extend([
-            f"    owner_creations_{step_index} = spell_{step_index}._owner_creations",
-            f"    if owner_creations_{step_index} is not None:",
-            f"        creations_{step_index} = owner_creations_{step_index}",
-            "    elif owner_creations is None:",
-            "        raise RuntimeError(",
-            "            \"Phase 12 OWNER execution requires owner_creations.\"",
-            "        )",
-            "    else:",
-            f"        creations_{step_index} = owner_creations",
-        ])
+        _append_overrides_shape_owner_creations_source(
+            lines=lines,
+            step_index=step_index,
+        )
     else:
         lines.extend([
             "    raise RuntimeError(",

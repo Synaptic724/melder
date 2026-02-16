@@ -125,7 +125,7 @@ _TEMPLATE_MANY_INSTANCE_NO_OVERRIDES_ONLY_FAST = (
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: RESULT: TURNED_IN - medium-risk CreationContext discovery ticket is closed per user direction; lazy-route variants remain dropped and non-override execution is ready to continue in high-risk lane.
-  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:1-113, context_compass/stories/2026-02-16_deep_creation_context_codegen_strategy_discovery_story.md:43-54, context_compass/epics/2026-02-15_creationcontext_phase12_codegen_optimization_epic.md:90-111
+  EVIDENCE: context_compass/tasks/completed/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:1-113, context_compass/stories/2026-02-16_deep_creation_context_codegen_strategy_discovery_story.md:43-54, context_compass/epics/2026-02-15_creationcontext_phase12_codegen_optimization_epic.md:90-111
   IMPACT: Medium lane is formally turned in and no longer the active routing target.
   NEXT: Route active work to the CreationContext high-risk discovery task.
   REREAD: REQUIRED
@@ -539,7 +539,7 @@ _TEMPLATE_MANY_INSTANCE_NO_OVERRIDES_ONLY_FAST = (
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: User direction is to keep eager import-time template compilation, so lazy-compile candidates `CC-M1` and `CC-M5` are deferred and active medium-risk execution pivots to `CC-M3`.
-  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:885-1027, context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:41-46
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:885-1027, context_compass/tasks/completed/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:41-46
   IMPACT: We keep the accepted eager template strategy while continuing medium-risk optimization work on non-lazy source-generation paths.
   NEXT: Capture `wave3_creationcontext_cc_m3_prebaseline_2026-02-16` (10k), implement a compact CC-M3 slice, then run post-test compare.
   REREAD: REQUIRED
@@ -566,7 +566,7 @@ _TEMPLATE_MANY_INSTANCE_NO_OVERRIDES_ONLY_FAST = (
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: Low-risk CreationContext queue is now complete through CC-L5; active execution advances to medium-risk candidate `CC-M1` (lazy-on-first-use compile/cache).
-  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:47-52, context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:47-53
+  EVIDENCE: context_compass/tasks/completed/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:47-52, context_compass/tasks/completed/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:47-53
   IMPACT: CreationContext optimization continues at higher leverage while preserving benchmark gate discipline.
   NEXT: Run `wave3_creationcontext_cc_m1_prebaseline_2026-02-16` (10k) before any CC-M1 code edits.
   REREAD: REQUIRED
