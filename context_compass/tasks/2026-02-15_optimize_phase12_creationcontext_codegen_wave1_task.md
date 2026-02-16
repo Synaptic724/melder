@@ -333,6 +333,231 @@ Phase12/CreationContext and validate with targeted profiler suites.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Fast-graph hotspot summaries still concentrate on no-overrides `_phase12_executor` work, with repeated helper time in `_get_existing_creation` and `_construct_spell_instance`; next slice will target no-overrides emitted step structure (creations-target routing) instead of override executors.
+  EVIDENCE: benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:7-10, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_wide.summary.txt:7-10, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:483-607
+  IMPACT: Aligns this tranche to the requested non-override target while keeping the same benchmark cadence and evidence style.
+  NEXT: Specialize no-overrides emitted creations-target routing by static target kind, run unit + cprofile suites, and keep/revert based on measured deltas.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: The no-overrides static target-kind routing slice (emit-time specialization for CALLER/SPELLSPACE/OWNER) regressed both fast and override medians versus retained baseline, despite passing targeted unit and cprofile suites.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:550-576, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_static_target_routing_delta_vs_direct_callable_baseline.txt:15-41
+  IMPACT: Candidate does not meet the wave retention bar.
+  NEXT: Reject and revert this no-overrides slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Reject and revert the no-overrides static target-kind routing specialization.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_static_target_routing_delta_vs_direct_callable_baseline.txt:23-31, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_static_target_routing_delta_vs_direct_callable_baseline.txt:38-41
+  IMPACT: Preserves retained baseline behavior and avoids carrying measured regressions.
+  NEXT: Revert code changes and continue from retained baseline with a different non-override structural target.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Post-revert validation is green and timing profiles return to retained-baseline shape (no-overrides hotspot remains `_phase12_executor` with `_construct_spell_instance`/`_build_kwargs_no_overrides` in call-chain highlights; override lanes back near retained baseline magnitudes).
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:493-572, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:1-29, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_wide.summary.txt:1-29, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:1-10, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_wide.summary.txt:1-10
+  IMPACT: Confirms baseline restoration after rejecting the candidate.
+  NEXT: Target a different no-overrides structural cost center.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Next no-overrides slice will optimize `_construct_spell_instance` invocation when kwargs are statically/operationally empty (direct `spell.spell()` path) to reduce helper overhead without changing executor shape routing.
+  EVIDENCE: benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:24-29, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_wide.summary.txt:24-29, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:919-981
+  IMPACT: Keeps focus on no-overrides hotspot internals while minimizing semantic risk.
+  NEXT: Implement direct empty-kwargs invoke path, run unit + cprofile cadence, and keep/revert by measured deltas.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: ALIGNMENT_CHECK
+  CLAIM: Results will be explicitly announced in-ticket and in user-facing updates for each optimization slice.
+  EVIDENCE: context_compass/AGENTS.MD:54-54, context_compass/AGENTS.MD:450-450
+  IMPACT: Keeps execution status and keep/revert outcomes visible without requiring artifact deep-dives.
+  NEXT: Announce current no-overrides slice results immediately after validation completes.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: The no-overrides empty-kwargs direct-call candidate remains rejected (strong fast-lane regressions versus retained baseline), and post-revert validation is green with hotspot shape restored to `_construct_spell_instance` -> `_build_kwargs_no_overrides`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_empty_kwargs_direct_call_delta_vs_direct_callable_baseline.txt:3-3, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_empty_kwargs_direct_call_delta_vs_direct_callable_baseline.txt:23-31, benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_empty_kwargs_direct_call_slice_reverted.txt:10-13, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:24-28, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_wide.summary.txt:24-28
+  IMPACT: Confirms baseline restoration after unwind and preserves the keep/revert gate for no-overrides work.
+  NEXT: Continue with a different no-overrides structural target.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: ALIGNMENT_CHECK
+  CLAIM: Results are now explicitly announced in-ticket for this no-overrides slice (reject + revert + validated baseline).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_empty_kwargs_direct_call_slice_reverted.txt:19-20, context_compass/AGENTS.MD:54-54
+  IMPACT: Satisfies explicit visibility requirement without requiring users to inspect raw benchmark outputs first.
+  NEXT: Keep announcing each slice outcome immediately after validation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Next no-overrides slice will remove eager `spell.spell_index.current` fetch in `_build_kwargs_no_overrides` and only resolve spell id on error paths (missing dependency), reducing hot-path attribute access with no runtime-contract change.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:1021-1023, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:24-28, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_wide.summary.txt:24-28
+  IMPACT: Targets a repeated no-overrides helper cost center while keeping semantics and error surface intact.
+  NEXT: Implement the lazy spell-id retrieval change, run no-overrides unit tests, then rerun fast+override cprofile cadence for keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: The no-overrides lazy error-path spell-id slice is semantically correct but non-winning versus retained baseline (mixed overrides and consistent fast-lane regressions).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_lazy_error_spell_id_delta_vs_direct_callable_baseline.txt:3-3, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_lazy_error_spell_id_delta_vs_direct_callable_baseline.txt:23-31, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_lazy_error_spell_id_delta_vs_direct_callable_baseline.txt:39-41
+  IMPACT: Candidate does not satisfy retained-wave criteria for no-overrides optimization.
+  NEXT: Reject and revert this slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Reject and revert the no-overrides lazy error-path spell-id slice.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_lazy_error_spell_id_delta_vs_direct_callable_baseline.txt:28-31, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_lazy_error_spell_id_delta_vs_direct_callable_baseline.txt:40-41
+  IMPACT: Keeps retained baseline unchanged and prevents carrying measured regressions.
+  NEXT: Run post-revert validation and continue with a different non-override structural target.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Post-revert validation is green and hotspot shape remains baseline (`_construct_spell_instance` -> `_build_kwargs_no_overrides` on fast lanes; `_execute_with_overrides` -> override executor on override lanes).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_lazy_error_spell_id_slice_reverted.txt:10-17, benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_lazy_error_spell_id_slice_reverted.txt:19-20
+  IMPACT: Confirms no-overrides baseline restoration after candidate rejection.
+  NEXT: Continue no-overrides optimization from restored baseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: ALIGNMENT_CHECK
+  CLAIM: Results for the lazy spell-id no-overrides slice were explicitly announced in-ticket at rejection/revert time.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_lazy_error_spell_id_slice_reverted.txt:19-20, context_compass/AGENTS.MD:54-54
+  IMPACT: Keeps execution outcomes visible per request and policy.
+  NEXT: Continue the same announce-on-each-slice pattern.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Next no-overrides slice will bypass trivial `ExecutionPlanStep` property wrappers in `_build_kwargs_no_overrides` by reading precomputed step fields directly (dependency order + contract flags/payload), removing repeated property-call overhead on the hot path.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/execution_plan.py:255-259, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:995-996, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:1000-1103, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:24-28
+  IMPACT: Targets the remaining no-overrides helper hotspot with minimal semantic risk because fields are precomputed at phase-build time.
+  NEXT: Implement direct-field reads in `_build_kwargs_no_overrides`, run no-overrides unit tests, then rerun fast+override benchmark cadence for keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Next no-overrides slice will replace hot-path `spell.spell_index.current` reads in `_build_kwargs_no_overrides` with direct `spell.spell_id` reads to remove per-call SpellIndex property overhead without changing dependency resolution behavior.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:982-1103, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.call_chain.json:938-947, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:24-29
+  IMPACT: Targets a measured helper hotspot where `spell_index.current` currently appears as a repeated callee.
+  NEXT: Implement the substitution, run no-overrides unit tests, then rerun fast/override cprofile cadence for keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: The no-overrides spell-id attribute slice (`spell.spell_id` in `_build_kwargs_no_overrides`) removes the `spell_index.current` call-chain edge but regresses retained-baseline medians across all fast lanes and most override lanes.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_spell_id_attr_lookup_delta_vs_direct_callable_baseline.txt:1-34, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:24-29
+  IMPACT: Candidate fails the retained-wave performance bar.
+  NEXT: Reject and revert this slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Reject and revert the no-overrides spell-id attribute slice.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_spell_id_attr_lookup_delta_vs_direct_callable_baseline.txt:23-31, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_spell_id_attr_lookup_delta_vs_direct_callable_baseline.txt:33-34
+  IMPACT: Keeps retained baseline intact and prevents carrying a measured regression.
+  NEXT: Revert code change, run post-revert validation, and announce the result.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Post-revert validation is green and no-overrides hotspot call-chain is restored with `_build_kwargs_no_overrides` again calling `spell_index.current`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_spell_id_attr_lookup_slice_reverted.txt:1-10, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:24-29
+  IMPACT: Confirms baseline restoration after rejecting the candidate.
+  NEXT: Continue from retained baseline with a different no-overrides structural target.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: ALIGNMENT_CHECK
+  CLAIM: Slice outcome was explicitly announced in artifacts (rejected + reverted + baseline restored).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_spell_id_attr_lookup_slice_reverted.txt:8-10, context_compass/AGENTS.MD:54-54
+  IMPACT: Maintains explicit result visibility as requested.
+  NEXT: Keep announce-on-slice behavior for subsequent non-override targets.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Next no-overrides slice will reorder `_get_existing_creation` existence branching to fast-path `Existence.unique_per_spell_space` first (current benchmark hotspot) before shared-scope tuple checks.
+  EVIDENCE: benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.hotspots.json:150-157, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.call_chain.json:1033-1040, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:1114-1164
+  IMPACT: Targets the largest remaining no-overrides helper hotspot with a minimal structural change.
+  NEXT: Implement branch reordering, run unit + fast/override cprofile cadence, and keep/revert by measured deltas.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: The `_get_existing_creation` spellspace-branch-first candidate is functionally correct but regresses retained-baseline medians, with severe fast-lane regressions (especially shallow/wide/diamond).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_spellspace_branch_order_delta_vs_direct_callable_baseline.txt:1-34
+  IMPACT: Candidate fails the non-override retention criteria.
+  NEXT: Reject and revert this slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Reject and revert the `_get_existing_creation` spellspace-branch-first slice.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_spellspace_branch_order_delta_vs_direct_callable_baseline.txt:23-31, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_spellspace_branch_order_delta_vs_direct_callable_baseline.txt:33-34
+  IMPACT: Prevents carrying a large fast-lane regression into the retained baseline.
+  NEXT: Revert code change, run post-revert validation, and announce result.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Post-revert validation is green and no-overrides hotspot call-chain is back on retained baseline behavior.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_spellspace_branch_order_slice_reverted.txt:1-10, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:24-29
+  IMPACT: Confirms branch-order candidate rollback and baseline restoration.
+  NEXT: Continue no-overrides optimization from retained baseline with a different structural target.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: ALIGNMENT_CHECK
+  CLAIM: Branch-order slice outcome was explicitly announced (reject + revert + baseline restored).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_spellspace_branch_order_slice_reverted.txt:8-10, context_compass/AGENTS.MD:54-54
+  IMPACT: Keeps per-slice result visibility explicit as requested.
+  NEXT: Preserve this announcement pattern for subsequent non-override slices.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Next no-overrides slice will remove unreachable list-shape branches from `_build_kwargs_no_overrides` when `dependency_count > 2` (values list always length >= 3 if no KeyError), reducing per-step branch overhead without changing emitted semantics.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:1068-1103, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:24-29
+  IMPACT: Applies a minimal structural cleanup in a measured helper hotspot.
+  NEXT: Implement branch cleanup, run no-overrides unit tests, then rerun fast/override benchmark cadence for keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 Wave-1 task is active with the latest retained baseline set to the
 CreationContext prebound Phase10 apply-callable slice
