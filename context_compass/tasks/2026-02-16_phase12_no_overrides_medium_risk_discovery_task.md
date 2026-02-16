@@ -24,7 +24,7 @@ efficiency without changing external behavior.
 
 ## Steps / Checklist
 - [x] Produce at least 3 medium-risk candidates with tradeoff analysis.
-- [x] For each candidate, define expected benchmark impact and revert thresholds.
+- [x] For each candidate, define expected benchmark impact and `DECISION_REQUEST` triggers.
 - [x] Rank candidates by reward potential and contract risk.
 - [ ] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
 - [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
@@ -53,7 +53,7 @@ Execution order:
 2. Implement one candidate only.
 3. Post-test: same cadence.
 4. Compare against retained checkpoint.
-5. If non-winning or failing: immediate revert + post-revert validation pass.
+5. If non-winning or failing: raise `DECISION_REQUEST`; if user selects revert, run post-revert validation pass.
 6. Publish explicit `RESULT: RETAINED` or `RESULT: REVERTED` note with artifact path.
 
 ## Files / Paths Impacted
@@ -70,8 +70,8 @@ Execution order:
 
 ## Risks / Rollback Notes
 - Risk: medium-risk changes can alter generated function shape significantly.
-- Mitigation: compact slices and strict benchmark keep/revert gate.
-- Rollback: immediate revert on any non-winning or failing run.
+- Mitigation: compact slices and strict benchmark decision gate (`DECISION_REQUEST` on non-winning/failing outcomes).
+- Rollback: revert only on user decision after a `DECISION_REQUEST` note.
 
 ## Done Checklist
 - [ ] Steps complete and checked off

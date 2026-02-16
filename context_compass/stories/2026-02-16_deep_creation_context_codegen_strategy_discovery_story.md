@@ -47,7 +47,8 @@ This discovery lane targets generator architecture quality:
 - [ ] Quantify compile-time template fan-out and identify dedupe opportunities.
 - [ ] Propose 2-3 deep strategy options with tradeoffs (lazy compile, merged templates, code-object caching).
 - [ ] Define validation experiment plan for selected option.
-- [ ] Enforce benchmark gate for every follow-on optimization slice (pre-test baseline, post-test cadence, and mandatory revert on failed/non-winning deltas).
+- [ ] Enforce benchmark gate for every follow-on optimization slice (pre-test baseline, post-test cadence, and mandatory `DECISION_REQUEST` escalation on failed/non-winning deltas).
+- [ ] Execute `TASK-2026-02-16-codegen-snapshot-average-process` to standardize averaged snapshot measurements (1000 default, 10000 optional) before next code slice.
 - [ ] Execute `TASK-2026-02-16-creationcontext-codegen-low-risk-discovery`.
 - [ ] Execute `TASK-2026-02-16-creationcontext-codegen-medium-risk-discovery`.
 - [ ] Execute `TASK-2026-02-16-creationcontext-codegen-high-risk-discovery`.
@@ -77,14 +78,15 @@ This discovery lane targets generator architecture quality:
   - Re-run the same unit + benchmark cadence.
   - Emit a candidate delta artifact under:
     - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/`
-- Revert gate (non-negotiable):
-  - If unit or benchmark command fails, revert candidate immediately.
-  - If measured delta is non-winning versus retained checkpoint, revert candidate immediately.
-  - After revert, run one full post-revert validation pass:
+- Decision gate (non-negotiable):
+  - If unit or benchmark command fails, raise `DECISION_REQUEST` and wait for user keep/revert direction.
+  - If measured delta is non-winning versus retained checkpoint, raise `DECISION_REQUEST` and wait for user keep/revert direction.
+  - Emit `RESULT: DECISION_REQUEST` with failure/non-winning evidence and explicit keep/revert options before any state change.
+  - If user selects revert, run one full post-revert validation pass:
     - unit suite once, fast cprofile once, overrides cprofile once.
   - Emit post-revert validation artifact and explicit result-announce note (`RESULT: REVERTED` + reason + artifact path).
 - Retain gate:
-  - Retain only candidates that pass validation and satisfy checkpoint comparison criteria.
+  - Retain only candidates that pass validation, satisfy checkpoint comparison criteria, and have explicit user keep direction.
   - Emit explicit result-announce note (`RESULT: RETAINED` + median deltas + artifact path).
 
 ## Risk-Lane Discovery Queue (Required Reference)
@@ -163,6 +165,15 @@ Process rule:
   EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:38-86, context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:38-85, context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md:38-85
   IMPACT: CreationContext lane can execute multiple iterations without repeating strategy setup.
   NEXT: Start with `CC-L1` or `CC-M1` depending on risk preference and publish `RESULT` note after first run.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Before additional CreationContext code slices, the story now requires a dedicated non-cProfile snapshot process task so pre/post decisions use averaged outcomes with high-repeat support.
+  EVIDENCE: context_compass/stories/2026-02-16_deep_creation_context_codegen_strategy_discovery_story.md:45-53, context_compass/tasks/2026-02-16_codegen_snapshot_average_process_task.md:1-102
+  IMPACT: Candidate keep/revert decisions will be based on stable average metrics rather than single-run variance.
+  NEXT: Complete the snapshot-process task and apply it as the default benchmark gate for the next candidate iteration.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 

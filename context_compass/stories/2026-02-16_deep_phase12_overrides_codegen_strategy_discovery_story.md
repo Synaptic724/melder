@@ -46,7 +46,7 @@ This discovery lane targets deeper generator decisions:
 - [x] Quantify complexity of shape-metadata and inline kwargs/invoke emitters.
 - [x] Define strategy candidates (shape-family partitioning, generated-function size control, metadata precomputation lanes).
 - [x] Define benchmark/validation plan for follow-on implementation.
-- [x] Enforce benchmark gate for every follow-on optimization slice (pre-test, post-test, and mandatory revert on failure/non-winning delta).
+- [x] Enforce benchmark gate for every follow-on optimization slice (pre-test, post-test, and mandatory `DECISION_REQUEST` escalation on failure/non-winning delta).
 - [x] Open first implementation task from rank-1 strategy with benchmark gate copied verbatim.
 - [x] Open and maintain low/medium/high risk-lane discovery tasks for this story.
 - [ ] Execute `TASK-2026-02-16-phase12-overrides-low-risk-discovery`.
@@ -78,14 +78,15 @@ This discovery lane targets deeper generator decisions:
   - Re-run the same unit + benchmark cadence.
   - Emit a candidate delta artifact under:
     - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/`
-- Revert gate (non-negotiable):
-  - If unit or benchmark command fails, revert candidate immediately.
-  - If measured delta is non-winning versus retained checkpoint, revert candidate immediately.
-  - After revert, run one full post-revert validation pass:
+- Decision gate (non-negotiable):
+  - If unit or benchmark command fails, raise `DECISION_REQUEST` and wait for user keep/revert direction.
+  - If measured delta is non-winning versus retained checkpoint, raise `DECISION_REQUEST` and wait for user keep/revert direction.
+  - Emit `RESULT: DECISION_REQUEST` with failure/non-winning evidence and explicit keep/revert options before any state change.
+  - If user selects revert, run one full post-revert validation pass:
     - unit suite once, fast cprofile once, overrides cprofile once.
   - Emit post-revert validation artifact and explicit result-announce note (`RESULT: REVERTED` + reason + artifact path).
 - Retain gate:
-  - Retain only candidates that pass validation and satisfy checkpoint comparison criteria.
+  - Retain only candidates that pass validation, satisfy checkpoint comparison criteria, and have explicit user keep direction.
   - Emit explicit result-announce note (`RESULT: RETAINED` + median deltas + artifact path).
 
 ## Risk-Lane Discovery Queue (Required Reference)
@@ -183,7 +184,7 @@ Process rule:
 
 - DATE: 2026-02-16
   TYPE: DECISION
-  CLAIM: Follow-on implementation from this story is gated by mandatory benchmark discipline: pre-test baseline, post-test comparison, and immediate revert on failing tests or non-winning deltas.
+  CLAIM: Follow-on implementation from this story is gated by mandatory benchmark discipline: pre-test baseline, post-test comparison, and `DECISION_REQUEST` escalation on failing tests or non-winning deltas.
   EVIDENCE: context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md:48-80, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_retained_baseline_checkpoint_2026-02-16.txt:1-20
   IMPACT: Enforces consistent keep/revert behavior with the same benchmark suites used in wave-1.
   NEXT: Apply this gate to every generated-code optimization slice from this story.
@@ -271,6 +272,51 @@ Process rule:
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Execution order was switched to high-risk-first; opened OV-H1 implementation task slice 1 for benchmark-gated execution.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:34-54, context_compass/tasks/2026-02-16_phase12_overrides_high_risk_segmented_shape_helpers_slice1_task.md:1-112
+  IMPACT: Overrides lane now begins implementation from high-risk queue while preserving mandatory keep/revert controls.
+  NEXT: Run pre-test baseline cadence in the OV-H1 slice task, then implement one compact high-risk change.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: OV-H1 slice 1 failed the post-test unit gate before benchmark comparison; the shape-source emission no longer matched existing direct-callable-invoke test expectations.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_high_risk_segmented_shape_helpers_slice1_task.md:121-128, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_phase12_overrides_highrisk_ovh1_slice1_posttest_2026-02-16.txt:4-68
+  IMPACT: Candidate cannot be retained and must be reverted per standardized gate.
+  NEXT: Complete mandatory revert + post-revert validation and record explicit RESULT note.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - OV-H1 slice 1 was reverted after unit failure; post-revert validation passed and runtime code returned to pre-slice behavior.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_high_risk_segmented_shape_helpers_slice1_task.md:130-137, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_phase12_overrides_highrisk_ovh1_slice1_postrevert_2026-02-16.txt:1-986
+  IMPACT: High-risk lane remains open, but next attempt should narrow helper segmentation to preserve shape-source text contracts.
+  NEXT: Open OV-H1 slice 2 task and continue high-risk-first iteration.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: OV-H1 slice 2 is opened and prebaseline cadence is complete, enabling immediate post-edit keep/revert evaluation on the next patch.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_high_risk_segmented_shape_helpers_slice2_task.md:1-115, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_phase12_overrides_highrisk_ovh1_slice2_prebaseline_2026-02-16.txt:1-1954
+  IMPACT: High-risk-first iteration resumes without additional discovery/setup delay.
+  NEXT: Implement slice-2 owner-target helper segmentation and run post-test cadence.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Active overrides execution now requires `RESULT: DECISION_REQUEST` and explicit user keep/revert direction for failing/non-winning benchmark outcomes.
+  EVIDENCE: context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md:80-91, context_compass/tasks/2026-02-16_phase12_overrides_high_risk_segmented_shape_helpers_slice2_task.md:61-72
+  IMPACT: The agent no longer performs autonomous keep/revert decisions in this story lane.
+  NEXT: If OV-H1 slice 2 fails/non-wins post-test, publish `RESULT: DECISION_REQUEST` and pause for user choice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -282,5 +328,5 @@ is selecting the next compact candidate after the first rank-1 slice was
 executed and reverted as non-winning (with full post-revert validation
 artifacts captured). Benchmark gate wording is standardized across all deep
 codegen stories, including explicit `RESULT` announcement requirements for
-retain/revert decisions. Low/medium/high risk-lane discovery tasks are now
+user-directed keep/revert decisions. Low/medium/high risk-lane discovery tasks are now
 opened and required as the iteration entry queue.

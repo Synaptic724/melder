@@ -28,7 +28,7 @@ helpers while preserving inline fast paths and existing runtime contracts.
 - [x] Capture pre-test baseline (unit + fast/overrides benchmark cadence).
 - [x] Implement compact cold/error-path extraction in override shape emitter.
 - [x] Run post-test cadence and compare median deltas vs retained checkpoint.
-- [x] If validation fails or delta is non-winning, revert immediately and run post-revert validation pass.
+- [x] If validation fails or delta is non-winning, raise `DECISION_REQUEST`; run post-revert validation only when user selected revert.
 - [x] Publish explicit outcome note (`RESULT: RETAINED` or `RESULT: REVERTED`) with artifact path.
 - [x] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
 - [x] Document each meaningful finding immediately in `## Notes` before further investigation.
@@ -74,10 +74,11 @@ helpers while preserving inline fast paths and existing runtime contracts.
   - Re-run the same unit + benchmark cadence.
   - Emit a candidate delta artifact under:
     - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/`
-- Revert gate (non-negotiable):
-  - If unit or benchmark command fails, revert candidate immediately.
-  - If measured delta is non-winning versus retained checkpoint, revert candidate immediately.
-  - After revert, run one full post-revert validation pass:
+- Decision gate (non-negotiable):
+  - If unit or benchmark command fails, raise `DECISION_REQUEST` and wait for user keep/revert direction.
+  - If measured delta is non-winning versus retained checkpoint, raise `DECISION_REQUEST` and wait for user keep/revert direction.
+  - Emit `RESULT: DECISION_REQUEST` with failure/non-winning evidence and explicit keep/revert options before any state change.
+  - If user selects revert, run one full post-revert validation pass:
     - unit suite once, fast cprofile once, overrides cprofile once.
   - Emit post-revert validation artifact and explicit result-announce note
     (`RESULT: REVERTED` + reason + artifact path).
@@ -89,7 +90,7 @@ helpers while preserving inline fast paths and existing runtime contracts.
 ## Risks / Rollback Notes
 - Risk: helper extraction can accidentally shift hot-path behavior.
 - Mitigation: keep inline fast path logic intact and move only cold/error branches.
-- Rollback: immediate revert if validation fails or non-winning deltas are observed.
+- Rollback: raise `DECISION_REQUEST` when validation fails or deltas are non-winning; revert only on user decision.
 
 ## Done Checklist
 - [ ] Steps complete and checked off

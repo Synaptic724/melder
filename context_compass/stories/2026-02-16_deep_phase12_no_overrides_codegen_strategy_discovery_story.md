@@ -46,8 +46,8 @@ This lane targets emitter architecture and generated function shape:
 - [ ] Quantify step-plan generated function growth versus plan size.
 - [ ] Evaluate transient unrolled signature strategy and dependency-array prebind model.
 - [ ] Define candidate generator strategies (shape-family split, cold-path extraction, selective helper fallback).
-- [ ] Produce validation experiment plan and keep/revert criteria.
-- [ ] Enforce benchmark gate for every follow-on optimization slice (pre-test baseline, post-test cadence, and mandatory revert on failed/non-winning deltas).
+- [ ] Produce validation experiment plan and user-decision criteria (`DECISION_REQUEST` triggers + keep/revert options).
+- [ ] Enforce benchmark gate for every follow-on optimization slice (pre-test baseline, post-test cadence, and mandatory `DECISION_REQUEST` escalation on failed/non-winning deltas).
 - [ ] Execute `TASK-2026-02-16-phase12-no-overrides-low-risk-discovery`.
 - [ ] Execute `TASK-2026-02-16-phase12-no-overrides-medium-risk-discovery`.
 - [ ] Execute `TASK-2026-02-16-phase12-no-overrides-high-risk-discovery`.
@@ -77,14 +77,15 @@ This lane targets emitter architecture and generated function shape:
   - Re-run the same unit + benchmark cadence.
   - Emit a candidate delta artifact under:
     - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/`
-- Revert gate (non-negotiable):
-  - If unit or benchmark command fails, revert candidate immediately.
-  - If measured delta is non-winning versus retained checkpoint, revert candidate immediately.
-  - After revert, run one full post-revert validation pass:
+- Decision gate (non-negotiable):
+  - If unit or benchmark command fails, raise `DECISION_REQUEST` and wait for user keep/revert direction.
+  - If measured delta is non-winning versus retained checkpoint, raise `DECISION_REQUEST` and wait for user keep/revert direction.
+  - Emit `RESULT: DECISION_REQUEST` with failure/non-winning evidence and explicit keep/revert options before any state change.
+  - If user selects revert, run one full post-revert validation pass:
     - unit suite once, fast cprofile once, overrides cprofile once.
   - Emit post-revert validation artifact and explicit result-announce note (`RESULT: REVERTED` + reason + artifact path).
 - Retain gate:
-  - Retain only candidates that pass validation and satisfy checkpoint comparison criteria.
+  - Retain only candidates that pass validation, satisfy checkpoint comparison criteria, and have explicit user keep direction.
   - Emit explicit result-announce note (`RESULT: RETAINED` + median deltas + artifact path).
 
 ## Risk-Lane Discovery Queue (Required Reference)

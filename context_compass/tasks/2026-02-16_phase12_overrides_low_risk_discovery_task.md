@@ -69,7 +69,7 @@ Execution order:
 ## Risks / Rollback Notes
 - Risk: even low-risk edits can regress fast lanes.
 - Mitigation: keep compact and benchmark-gated with checkpoint comparisons.
-- Rollback: immediate revert on non-winning or failing deltas.
+- Rollback: raise `DECISION_REQUEST` on non-winning/failing deltas; revert only on user decision.
 
 ## Done Checklist
 - [ ] Steps complete and checked off

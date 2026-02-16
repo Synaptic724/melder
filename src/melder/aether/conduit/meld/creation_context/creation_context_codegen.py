@@ -302,27 +302,21 @@ def _compile_creation_context_overrides_only_template(
     source = _build_overrides_only_template_source(
         with_overrides_lines=with_overrides_lines,
     )
-    local_namespace: dict[str, Any] = {}
     source_name = (
         "<creation_context_overrides_only_template:"
         f"{resolve_route_key}:{int(return_created)}>"
     )
-    try:
-        exec(
-            compile(source, source_name, "exec"),
-            {},
-            local_namespace,
-        )
-    except Exception as exc:
-        raise RuntimeError(
+    return _compile_creation_context_template_source(
+        source=source,
+        source_name=source_name,
+        expected_callable_name="_creation_context_overrides_only_template",
+        compile_error_message=(
             "Failed to compile CreationContext overrides-only template source."
-        ) from exc
-    template = local_namespace.get("_creation_context_overrides_only_template")
-    if callable(template):
-        return template
-    raise RuntimeError(
-        "CreationContext overrides-only template source did not define callable "
-        "_creation_context_overrides_only_template."
+        ),
+        missing_callable_message=(
+            "CreationContext overrides-only template source did not define callable "
+            "_creation_context_overrides_only_template."
+        ),
     )
 
 
@@ -343,13 +337,44 @@ def _compile_creation_context_no_overrides_only_template(
     source = _build_no_overrides_only_template_source(
         no_overrides_lines=no_overrides_lines,
     )
-    local_namespace: dict[str, Any] = {}
     source_name = (
         "<creation_context_no_overrides_only_template:"
         f"{resolve_route_key}:"
         f"{int(fast_transient_no_overrides_enabled)}:"
         f"{int(return_created)}>"
     )
+    return _compile_creation_context_template_source(
+        source=source,
+        source_name=source_name,
+        expected_callable_name="_creation_context_no_overrides_only_template",
+        compile_error_message=(
+            "Failed to compile CreationContext no-overrides-only template source."
+        ),
+        missing_callable_message=(
+            "CreationContext no-overrides-only template source did not define callable "
+            "_creation_context_no_overrides_only_template."
+        ),
+    )
+
+
+def _compile_creation_context_template_source(
+        *,
+        source: str,
+        source_name: str,
+        expected_callable_name: str,
+        compile_error_message: str,
+        missing_callable_message: str,
+) -> Callable[..., Any]:
+    """
+    Compile emitted template source and resolve one expected callable export.
+
+    Contract:
+        - Executes compiled `source` in an isolated local namespace.
+        - Returns the callable named by `expected_callable_name`.
+        - Raises RuntimeError with caller-provided messages for compile or export
+          contract failures.
+    """
+    local_namespace: dict[str, Any] = {}
     try:
         exec(
             compile(source, source_name, "exec"),
@@ -357,16 +382,11 @@ def _compile_creation_context_no_overrides_only_template(
             local_namespace,
         )
     except Exception as exc:
-        raise RuntimeError(
-            "Failed to compile CreationContext no-overrides-only template source."
-        ) from exc
-    template = local_namespace.get("_creation_context_no_overrides_only_template")
+        raise RuntimeError(compile_error_message) from exc
+    template = local_namespace.get(expected_callable_name)
     if callable(template):
         return template
-    raise RuntimeError(
-        "CreationContext no-overrides-only template source did not define callable "
-        "_creation_context_no_overrides_only_template."
-    )
+    raise RuntimeError(missing_callable_message)
 
 
 def _build_no_overrides_only_template_source(

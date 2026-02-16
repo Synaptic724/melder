@@ -33,7 +33,7 @@ overhead without changing public runtime contracts.
 - Ranked medium-risk candidate list with:
   - implementation boundaries,
   - expected impact,
-  - revert triggers.
+  - `DECISION_REQUEST` triggers.
 
 ## Candidate Backlog (Initial Fill)
 | Candidate ID | Proposal | Evidence | Expected Upside |
@@ -55,7 +55,7 @@ Execution order:
 1. Pre-test: unit + fast cprofile x2 + overrides cprofile x2.
 2. Execute one medium-risk candidate per tranche.
 3. Post-test with same cadence.
-4. Revert immediately if candidate is non-winning or any validation fails.
+4. Raise `DECISION_REQUEST` if candidate is non-winning or any validation fails; wait for user decision.
 5. Record `RESULT` note and artifact path before selecting next candidate.
 
 ## Code-Line Evidence (Initial)
@@ -93,7 +93,7 @@ _TEMPLATE_MANY_INSTANCE_NO_OVERRIDES_ONLY_FAST = (
 
 ## Validation
 - Not run.
-- If implementation is attempted, run story benchmark gate and revert on non-winning deltas.
+- If implementation is attempted, run story benchmark gate and raise `DECISION_REQUEST` on non-winning deltas.
 - Recommended commands:
   - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py -q`
   - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py -q -s` (twice)
@@ -102,7 +102,7 @@ _TEMPLATE_MANY_INSTANCE_NO_OVERRIDES_ONLY_FAST = (
 ## Risks / Rollback Notes
 - Risk: medium-risk candidates may alter compile-time architecture assumptions.
 - Mitigation: keep slices compact and benchmark-gated before retention.
-- Rollback: immediate revert on failing tests or non-winning deltas.
+- Rollback: execute revert only when user selects revert after a `DECISION_REQUEST` note.
 
 ## Done Checklist
 - [ ] Steps complete and checked off
@@ -135,4 +135,4 @@ _TEMPLATE_MANY_INSTANCE_NO_OVERRIDES_ONLY_FAST = (
 ## Context / Handoff Summary
 This task is the medium-risk lane in the CreationContext discovery queue.
 Outputs here should be implementable as compact slices with full benchmark
-gates and explicit keep/revert outcomes.
+gates and explicit user-directed decision outcomes.

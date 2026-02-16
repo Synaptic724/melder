@@ -1,4 +1,4 @@
-﻿# Epic: Optimize CreationContext and Phase12 Codegen Runtime
+# Epic: Optimize CreationContext and Phase12 Codegen Runtime
 
 ## Metadata
 - Epic ID: EPIC-2026-02-15-creationcontext-phase12-codegen-optimization
@@ -128,14 +128,16 @@ The MRP is a measurable, contract-safe optimization tranche:
   - Post-test cadence (after edit): rerun the same suites.
   - Delta comparison against retained checkpoint:
     - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_retained_baseline_checkpoint_2026-02-16.txt`
-- Revert rule:
-  - If validation command fails, revert candidate immediately.
-  - If candidate delta is non-winning versus retained checkpoint, revert candidate immediately.
-  - After revert, run one full post-revert validation pass and emit a validation artifact.
+- Decision rule:
+  - If any validation command fails, raise `DECISION_REQUEST` and wait for user keep/revert direction.
+  - If candidate delta is non-winning versus retained checkpoint, raise `DECISION_REQUEST` and wait for user keep/revert direction.
+  - Emit `RESULT: DECISION_REQUEST` with failing/non-winning evidence and explicit keep/revert options before any state change.
+  - If user selects revert, run one full post-revert validation pass and emit a validation artifact.
 - Keep rule:
-  - Retain only candidates that are validation-green and checkpoint-winning per lane criteria.
+  - Retain only candidates that are validation-green, checkpoint-winning per lane criteria, and explicitly approved by user direction.
 - Announcement rule:
   - Every optimization slice must publish one explicit outcome note in the active task/story:
+    - `RESULT: DECISION_REQUEST` + reason + evidence + keep/revert options,
     - `RESULT: RETAINED` + median deltas + artifact path, or
     - `RESULT: REVERTED` + reason + artifact path.
 
@@ -229,10 +231,19 @@ The MRP is a measurable, contract-safe optimization tranche:
 
 - DATE: 2026-02-16
   TYPE: DECISION
-  CLAIM: Enforced a mandatory benchmark gate for all optimization slices under this epic: pre-test baseline, post-test comparison, and immediate revert on failing tests or non-winning deltas.
+  CLAIM: Enforced a mandatory benchmark gate for all optimization slices under this epic: pre-test baseline, post-test comparison, and `DECISION_REQUEST` escalation on failing tests or non-winning deltas.
   EVIDENCE: context_compass/epics/2026-02-15_creationcontext_phase12_codegen_optimization_epic.md:132-147, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_retained_baseline_checkpoint_2026-02-16.txt:1-20
-  IMPACT: Keeps future codegen optimization work aligned with the same benchmark cadence and keep/revert behavior used in wave-1.
+  IMPACT: Keeps future codegen optimization work aligned with the same benchmark cadence while moving keep/revert decisions to explicit user direction.
   NEXT: Apply this gate in every new implementation task opened under the epic.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: User-direction policy is encoded into active optimization tickets: failures/non-winning deltas now require `RESULT: DECISION_REQUEST` and explicit user keep/revert direction before any rollback/retain action.
+  EVIDENCE: context_compass/epics/2026-02-15_creationcontext_phase12_codegen_optimization_epic.md:131-141, context_compass/stories/2026-02-16_deep_creation_context_codegen_strategy_discovery_story.md:80-90, context_compass/stories/2026-02-16_deep_phase12_no_overrides_codegen_strategy_discovery_story.md:80-90, context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md:81-91, context_compass/tasks/2026-02-16_phase12_overrides_high_risk_segmented_shape_helpers_slice2_task.md:61-72
+  IMPACT: Autonomous keep/revert decisions are removed from active codegen optimization execution flow.
+  NEXT: For the next post-test outcome, publish `RESULT: DECISION_REQUEST` when failure/non-win is detected and pause for user decision.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 

@@ -50,7 +50,7 @@ Execution order:
 
 ## Ops Reference (Reuse)
 1. Keep this lane discovery-first; implementation only after explicit decision.
-2. If promoted, run full benchmark gate (pre/post/revert).
+2. If promoted, run full benchmark gate (pre/post + decision-request).
 3. Run one candidate per tranche.
 4. Record `RESULT` and artifact path in notes before moving to next candidate.
 
@@ -60,7 +60,7 @@ Execution order:
 
 ## Validation
 - Not run.
-- If high-risk experiments are implemented, enforce story benchmark gate and revert policy.
+- If high-risk experiments are implemented, enforce story benchmark gate and `DECISION_REQUEST` policy.
 - Recommended commands:
   - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py -q`
   - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py -q -s` (twice)
@@ -69,7 +69,7 @@ Execution order:
 ## Risks / Rollback Notes
 - Risk: high-risk redesign can destabilize generated executor contracts.
 - Mitigation: keep this lane discovery-only until explicit promotion decision.
-- Rollback: design-stage only; code-stage uses immediate revert on failure/non-win.
+- Rollback: design-stage only; code-stage uses `DECISION_REQUEST` escalation on failure/non-win.
 
 ## Done Checklist
 - [ ] Steps complete and checked off

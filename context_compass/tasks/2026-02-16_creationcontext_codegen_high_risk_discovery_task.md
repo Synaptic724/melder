@@ -53,7 +53,7 @@ Execution order:
 
 ## Ops Reference (Reuse)
 1. Keep this lane discovery-first until explicitly promoted.
-2. If promoted, run full pre/post/revert benchmark gate.
+2. If promoted, run full pre/post benchmark gate and raise `DECISION_REQUEST` for keep/revert decision.
 3. Execute one high-risk candidate per tranche.
 4. Publish explicit `RESULT` note before moving to next candidate.
 
@@ -93,7 +93,7 @@ _TEMPLATE_EXISTING_NO_OVERRIDES_ONLY = (
 
 ## Validation
 - Not run.
-- If experimentation becomes implementation, enforce the story benchmark gate and revert rules.
+- If experimentation becomes implementation, enforce the story benchmark gate and `DECISION_REQUEST` rules.
 - Recommended commands:
   - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py -q`
   - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py -q -s` (twice)
@@ -102,7 +102,7 @@ _TEMPLATE_EXISTING_NO_OVERRIDES_ONLY = (
 ## Risks / Rollback Notes
 - Risk: large redesign can break codegen contracts and raise regression odds.
 - Mitigation: discovery only until explicit approval for bounded experiments.
-- Rollback: design-stage only; if coded, immediate revert on first gate failure.
+- Rollback: design-stage only; if coded and gate fails, raise `DECISION_REQUEST` and wait for user decision.
 
 ## Done Checklist
 - [ ] Steps complete and checked off

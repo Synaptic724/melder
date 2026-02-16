@@ -24,7 +24,7 @@ benchmark criteria.
 
 ## Steps / Checklist
 - [x] Produce at least 3 medium-risk candidates with tradeoff analysis.
-- [x] Define measurable hypotheses and non-winning revert conditions per candidate.
+- [x] Define measurable hypotheses and non-winning `DECISION_REQUEST` conditions per candidate.
 - [x] Rank candidates for execution order under current benchmark gate.
 - [ ] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
 - [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
@@ -58,7 +58,7 @@ Execution order:
 1. Pre-test (unit + fast x2 + overrides x2).
 2. Execute one medium-risk candidate per tranche.
 3. Post-test same cadence; compare checkpoint.
-4. Revert immediately on any non-winning delta or test failure.
+4. On any non-winning delta or test failure, raise `DECISION_REQUEST` and wait for user keep/revert direction.
 5. Publish `RESULT` note and artifact path before moving to next candidate.
 
 ## Files / Paths Impacted
@@ -75,8 +75,8 @@ Execution order:
 
 ## Risks / Rollback Notes
 - Risk: medium-risk candidates may shift compile/runtime balance unexpectedly.
-- Mitigation: strict checkpoint comparison and mandatory revert on non-winning deltas.
-- Rollback: immediate revert if validation fails or delta loses.
+- Mitigation: strict checkpoint comparison and mandatory `DECISION_REQUEST` escalation on non-winning deltas.
+- Rollback: if validation fails or delta loses, raise `DECISION_REQUEST`; revert only on user decision.
 
 ## Done Checklist
 - [ ] Steps complete and checked off

@@ -50,7 +50,7 @@ Execution order:
 ## Ops Reference (Reuse)
 1. Keep lane discovery-first until explicit promotion.
 2. If promoted, execute one high-risk candidate at a time.
-3. Full pre/post/revert benchmark gate is mandatory.
+3. Full pre/post benchmark gate is mandatory; keep/revert is user-decided via `DECISION_REQUEST`.
 4. Do not proceed to next high-risk candidate without explicit `RESULT` note.
 
 ## Files / Paths Impacted
@@ -68,7 +68,7 @@ Execution order:
 ## Risks / Rollback Notes
 - Risk: high-risk changes can regress both fast and override lanes.
 - Mitigation: discovery-first, bounded experiments only after explicit decision.
-- Rollback: if coded, revert immediately on first failing/non-winning gate.
+- Rollback: if coded and failed/non-winning, raise `DECISION_REQUEST`; revert only on user decision.
 
 ## Done Checklist
 - [ ] Steps complete and checked off

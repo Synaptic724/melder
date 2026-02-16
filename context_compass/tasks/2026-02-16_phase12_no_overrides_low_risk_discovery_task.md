@@ -70,7 +70,7 @@ Execution order:
 ## Risks / Rollback Notes
 - Risk: low-risk candidates can still leak into hot-path semantics.
 - Mitigation: keep strict evidence + benchmark gating before retain decisions.
-- Rollback: immediate revert if candidate is non-winning or fails validation.
+- Rollback: raise `DECISION_REQUEST` on non-winning/failing outcomes; revert only on user decision.
 
 ## Done Checklist
 - [ ] Steps complete and checked off
@@ -102,4 +102,4 @@ Execution order:
 
 ## Context / Handoff Summary
 This task is the low-risk lane for no-overrides codegen strategy work. It
-should feed compact implementation attempts with clear keep/revert criteria.
+should feed compact implementation attempts with clear user-directed decision criteria (`DECISION_REQUEST` on non-winning/failing outcomes).
