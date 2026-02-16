@@ -1,4 +1,4 @@
-# Epic: Optimize CreationContext and Phase12 Codegen Runtime
+﻿# Epic: Optimize CreationContext and Phase12 Codegen Runtime
 
 ## Metadata
 - Epic ID: EPIC-2026-02-15-creationcontext-phase12-codegen-optimization
@@ -6,7 +6,7 @@
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
-- Updated: 2026-02-15
+- Updated: 2026-02-16
 - Target Window: 2026-Q1
 - Related Program/Initiative: Runtime Performance and Hot-Path Efficiency
 
@@ -74,23 +74,29 @@ The MRP is a measurable, contract-safe optimization tranche:
 - `context_compass/tasks/archive/2026-02-14_optimize_phase12_override_helper_callpath_tightening_task.md`
 
 ## Milestones (Track Progress)
-- [ ] Milestone 1: Current-head hotspot inventory refreshed and ranked.
-- [ ] Milestone 2: Rank-1 optimization lane implemented and validated.
+- [x] Milestone 1: Current-head hotspot inventory refreshed and ranked.
+- [x] Milestone 2: Rank-1 optimization lane implemented and validated.
 - [ ] Milestone 3: Rank-2 optimization lane implemented and validated.
 - [ ] Milestone 4: Benchmark + regression summary published with acceptance review.
 
 ## Stories (Required to Complete)
-- [ ] Story: STORY-2026-02-15-creationcontext-phase12-codegen-discovery-refresh - Revalidate and rank current-head hotspots (including meld `cProfile` on `test_shallow_all` Melder fast graphs: `solo,shallow,wide,diamond`).
+- [x] Story: STORY-2026-02-15-creationcontext-phase12-codegen-discovery-refresh - Revalidate and rank current-head hotspots (including meld `cProfile` on `test_shallow_all` Melder fast graphs: `solo,shallow,wide,diamond`).
 - [ ] Story: STORY-2026-02-15-creationcontext-codegen-runtime-tightening - Implement ranked `CreationContext` runtime optimizations.
-- [ ] Story: STORY-2026-02-15-phase12-codegen-runtime-tightening - Implement ranked `Phase12` runtime/helper optimizations.
+- [x] Story: STORY-2026-02-15-phase12-codegen-runtime-tightening - Implement ranked `Phase12` runtime/helper optimizations.
 - [ ] Story: STORY-2026-02-15-creationcontext-phase12-benchmark-regression-validation - Validate performance and contract compatibility.
+- [ ] Story: STORY-2026-02-16-deep-creation-context-codegen-strategy-discovery - Deep generator strategy discovery for `creation_context_codegen.py`.
+- [ ] Story: STORY-2026-02-16-deep-phase12-no-overrides-codegen-strategy-discovery - Deep generator strategy discovery for `phase12_no_overrides_executor.py`.
+- [ ] Story: STORY-2026-02-16-deep-phase12-overrides-codegen-strategy-discovery - Deep generator strategy discovery for `phase12_overrides_executor.py`.
 
 ## Tasks (Cross-Cutting or Epic-Level)
-- [ ] Task: Complete story STORY-2026-02-15-creationcontext-phase12-codegen-discovery-refresh.
+- [x] Task: Complete story STORY-2026-02-15-creationcontext-phase12-codegen-discovery-refresh.
 - [ ] Task: Complete story STORY-2026-02-15-creationcontext-codegen-runtime-tightening.
-- [ ] Task: Complete story STORY-2026-02-15-phase12-codegen-runtime-tightening.
+- [x] Task: Complete story STORY-2026-02-15-phase12-codegen-runtime-tightening.
 - [ ] Task: Complete story STORY-2026-02-15-creationcontext-phase12-benchmark-regression-validation.
 - [ ] Task: Verify Ticket Microcycle enforcement across active stories/tasks.
+- [ ] Task: Complete story STORY-2026-02-16-deep-creation-context-codegen-strategy-discovery.
+- [ ] Task: Complete story STORY-2026-02-16-deep-phase12-no-overrides-codegen-strategy-discovery.
+- [ ] Task: Complete story STORY-2026-02-16-deep-phase12-overrides-codegen-strategy-discovery.
 
 ## Acceptance Criteria (Epic Done)
 - Discovery refresh produces ranked, evidence-backed candidate list.
@@ -132,7 +138,7 @@ The MRP is a measurable, contract-safe optimization tranche:
 - DATE: 2026-02-15
   TYPE: DECISION
   CLAIM: Opened the first implementation story (`STORY-2026-02-15-phase12-codegen-runtime-tightening`) and wave-1 task to move from profiling into hotspot-led runtime optimization.
-  EVIDENCE: context_compass/stories/2026-02-15_phase12_codegen_runtime_tightening_story.md:1-82, context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md:1-79
+  EVIDENCE: context_compass/stories/2026-02-15_phase12_codegen_runtime_tightening_story.md:1-82, context_compass/tasks/completed/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md:1-79
   IMPACT: Epic execution has entered implementation mode with a scoped, measurable optimization lane.
   NEXT: Route attention board to the wave-1 optimization task and implement the first patch.
   REREAD: REQUIRED
@@ -174,11 +180,41 @@ The MRP is a measurable, contract-safe optimization tranche:
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Three finished in-progress tasks were closed and moved to `tasks/completed` (`profile_meld_hotpath_with_test_shallow_all`, `profile_melder_overrides_graph_callchain`, `optimize_phase12_creationcontext_codegen_wave1`).
+  EVIDENCE: context_compass/tasks/completed/2026-02-15_profile_meld_hotpath_with_test_shallow_all_task.md:1-20, context_compass/tasks/completed/2026-02-15_profile_melder_overrides_graph_callchain_task.md:1-20, context_compass/tasks/completed/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md:1-20
+  IMPACT: Epic active scope is now narrowed to story-level closure and next-wave routing decisions.
+  NEXT: Review remaining in-progress stories and either close them or open a new implementation wave task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Closed and moved two finished in-progress stories to `stories/completed` (`creationcontext_phase12_codegen_discovery_refresh`, `phase12_codegen_runtime_tightening`), while keeping the epic open.
+  EVIDENCE: context_compass/stories/completed/2026-02-15_creationcontext_phase12_codegen_discovery_refresh_story.md:1-20, context_compass/stories/completed/2026-02-15_phase12_codegen_runtime_tightening_story.md:1-20, context_compass/epics/2026-02-15_creationcontext_phase12_codegen_optimization_epic.md:88-92
+  IMPACT: Epic stays active because required story lanes for creationcontext runtime tightening and benchmark/regression validation remain open.
+  NEXT: Decide whether to open the remaining required stories/tasks now or de-scope epic acceptance criteria.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Opened three new deep discovery stories (one per codegen module) to investigate unconsidered generator-level strategy opportunities.
+  EVIDENCE: context_compass/stories/2026-02-16_deep_creation_context_codegen_strategy_discovery_story.md:1-36, context_compass/stories/2026-02-16_deep_phase12_no_overrides_codegen_strategy_discovery_story.md:1-36, context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md:1-36
+  IMPACT: Epic scope now includes deeper codegen-strategy discovery lanes beyond wave-1 runtime micro-slices.
+  NEXT: Drive option ranking and experiment planning in these three stories.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
 
 ## Context / Handoff Summary
-New optimization epic is active for `CreationContext` + `Phase12` codegen
-runtime improvements. Next step is a current-head discovery refresh that ranks
-implementation candidates before any code edits.
+Optimization epic remains active after closing three tasks to
+`tasks/completed` and two stories to `stories/completed`. Remaining required
+lanes are creationcontext runtime tightening and benchmark/regression
+validation, plus newly opened deep generator-strategy discovery stories for the
+three core codegen modules.
+

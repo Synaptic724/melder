@@ -1,13 +1,17 @@
 # Story: Phase12 and CreationContext Runtime Tightening
 
+Completed: 2026-02-16
+Summary: Closed after user acceptance; wave-1 runtime tightening task is
+complete with retained baseline capture and reverted non-winning slices.
+
 ## Metadata
 - Story ID: STORY-2026-02-15-phase12-codegen-runtime-tightening
 - Epic: EPIC-2026-02-15-creationcontext-phase12-codegen-optimization
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
-- Updated: 2026-02-15
+- Updated: 2026-02-16
 
 ## User Narrative
 As a runtime maintainer, I want hotspot-led codegen runtime optimizations in
@@ -38,15 +42,15 @@ evidence and keeps changes small, reviewable, and contract-safe.
 - Policy/contract behavior changes.
 
 ## Dependencies / Related Work
-- `context_compass/tasks/2026-02-15_profile_meld_hotpath_with_test_shallow_all_task.md`
-- `context_compass/tasks/2026-02-15_profile_melder_overrides_graph_callchain_task.md`
+- `context_compass/tasks/completed/2026-02-15_profile_meld_hotpath_with_test_shallow_all_task.md`
+- `context_compass/tasks/completed/2026-02-15_profile_melder_overrides_graph_callchain_task.md`
 - `benchmarks/testing_other_di/profiles/fast_graphs_melder/*.summary.txt`
 - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/*.summary.txt`
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: TASK-2026-02-15-optimize-phase12-creationcontext-codegen-wave1 - Implement first hotspot optimization patch and validate.
-- [ ] Enforce Ticket Microcycle across linked tasks.
-- [ ] Require meaningful-finding note updates during investigation and implementation.
+- [x] Task: TASK-2026-02-15-optimize-phase12-creationcontext-codegen-wave1 - Implement first hotspot optimization patch and validate.
+- [x] Enforce Ticket Microcycle across linked tasks.
+- [x] Require meaningful-finding note updates during investigation and implementation.
 
 ## Acceptance Criteria
 - At least one hotspot-led optimization patch is implemented.
@@ -74,10 +78,19 @@ evidence and keeps changes small, reviewable, and contract-safe.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Wave-1 optimization task is closed and moved to `tasks/completed` after user acceptance; retained baseline gains are banked and non-winning slices were reverted.
+  EVIDENCE: context_compass/tasks/completed/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md:1-20, context_compass/tasks/completed/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md:819-836
+  IMPACT: Story implementation checklist is complete, with story-level closure confirmation remaining.
+  NEXT: Confirm story closure with user and move to `stories/completed` when approved.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user
 
 ## Context / Handoff Summary
-Wave-1 runtime tightening story is active. Immediate next step is implementing
-the first hotspot optimization patch with targeted benchmark validation.
+Wave-1 runtime tightening implementation is complete and the linked task is now
+closed in `tasks/completed`. Story closed after user acceptance.

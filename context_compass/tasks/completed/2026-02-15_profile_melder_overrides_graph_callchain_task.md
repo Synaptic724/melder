@@ -1,13 +1,17 @@
-# Task: Profile Melder Overrides Graph Call Chains
+﻿# Task: Profile Melder Overrides Graph Call Chains
+
+Completed: 2026-02-16
+Summary: Closed after user acceptance; melder override-graph profiling suite
+and call-chain artifact outputs are complete and validated.
 
 ## Metadata
 - Task ID: TASK-2026-02-15-profile-melder-overrides-graph-callchain
 - Story: STORY-2026-02-15-creationcontext-phase12-codegen-discovery-refresh
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
-- Updated: 2026-02-15
+- Updated: 2026-02-16
 
 ## Objective
 Add a dedicated melder overrides-graph profiling suite that exports cProfile,
@@ -38,7 +42,7 @@ hotspot, and caller/callee chain artifacts per graph lane.
 ## Files / Paths Impacted
 - `benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py`
 - `context_compass/attention_board.md`
-- `context_compass/tasks/2026-02-15_profile_melder_overrides_graph_callchain_task.md`
+- `context_compass/tasks/completed/2026-02-15_profile_melder_overrides_graph_callchain_task.md`
 
 ## Validation
 - Ran:
@@ -70,7 +74,7 @@ hotspot, and caller/callee chain artifacts per graph lane.
 - [x] Validation status recorded
 - [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
 - [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
+- [x] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
 - DATE: 2026-02-15
@@ -139,5 +143,6 @@ hotspot, and caller/callee chain artifacts per graph lane.
 ## Context / Handoff Summary
 Overrides graph call-chain benchmark suite is implemented and validated, and
 both profiler suites now emit readable console summaries plus per-lane
-`.summary.txt` artifacts. Next step is ranked hotspot analysis for override
-lanes and comparison against non-override fast-graph results.
+`.summary.txt` artifacts. Ticket closed after user acceptance and moved to
+completed state.
+

@@ -1,13 +1,17 @@
 # Story: CreationContext and Phase12 Discovery Refresh
 
+Completed: 2026-02-16
+Summary: Closed after user acceptance; melder fast-graph and overrides
+profiling discovery tasks are complete with durable artifact outputs.
+
 ## Metadata
 - Story ID: STORY-2026-02-15-creationcontext-phase12-codegen-discovery-refresh
 - Epic: EPIC-2026-02-15-creationcontext-phase12-codegen-optimization
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
-- Updated: 2026-02-15
+- Updated: 2026-02-16
 
 ## User Narrative
 As a runtime maintainer, I want a fast and repeatable melder-only profiling lane,
@@ -39,10 +43,10 @@ which keeps the performance plan contract-safe and reviewable.
 - `benchmarks/testing_other_di/test_shallow_all.py`
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: TASK-2026-02-15-profile-meld-hotpath-with-test-shallow-all - Add melder fast-graph cProfile pytest suite and validate targeted execution.
-- [ ] Task: TASK-2026-02-15-profile-melder-overrides-graph-callchain - Add melder overrides-graph cProfile suite with call-chain artifacts and validate targeted execution.
-- [ ] Enforce Ticket Microcycle across all linked tasks.
-- [ ] Require meaningful-finding note updates during discovery/implementation.
+- [x] Task: TASK-2026-02-15-profile-meld-hotpath-with-test-shallow-all - Add melder fast-graph cProfile pytest suite and validate targeted execution.
+- [x] Task: TASK-2026-02-15-profile-melder-overrides-graph-callchain - Add melder overrides-graph cProfile suite with call-chain artifacts and validate targeted execution.
+- [x] Enforce Ticket Microcycle across all linked tasks.
+- [x] Require meaningful-finding note updates during discovery/implementation.
 
 ## Acceptance Criteria
 - New benchmark suite exists and is melder-only.
@@ -76,10 +80,19 @@ which keeps the performance plan contract-safe and reviewable.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Both linked profiling tasks are completed and moved to `tasks/completed` with acceptance confirmed.
+  EVIDENCE: context_compass/tasks/completed/2026-02-15_profile_meld_hotpath_with_test_shallow_all_task.md:1-20, context_compass/tasks/completed/2026-02-15_profile_melder_overrides_graph_callchain_task.md:1-20
+  IMPACT: Discovery implementation work is complete; story is now pending story-level closure confirmation only.
+  NEXT: Confirm story closure with user and move to `stories/completed` when approved.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user
 
 ## Context / Handoff Summary
-Active discovery story for melder fast-graph cProfile capture is in progress.
-Immediate next step is task-level implementation and validation of the new suite.
+Discovery implementation is complete and both linked tasks are now closed in
+`tasks/completed`. Story closed after user acceptance.

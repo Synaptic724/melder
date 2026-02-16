@@ -1,9 +1,14 @@
-# Task: Optimize Phase12 and CreationContext Codegen Wave 1
+﻿# Task: Optimize Phase12 and CreationContext Codegen Wave 1
+
+Completed: 2026-02-16
+Summary: Closed after user acceptance; wave-1 retained baseline gains were
+banked, non-winning slices were reverted, and post-revert validation remained
+green.
 
 ## Metadata
 - Task ID: TASK-2026-02-15-optimize-phase12-creationcontext-codegen-wave1
 - Story: STORY-2026-02-15-phase12-codegen-runtime-tightening
-- Status: in_progress
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
@@ -39,7 +44,7 @@ Phase12/CreationContext and validate with targeted profiler suites.
 - `src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py`
 - `src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py`
 - `src/melder/aether/conduit/meld/creation_context/creation_context.py` (only if needed)
-- `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md`
+- `context_compass/tasks/completed/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md`
 
 ## Validation
 - Ran:
@@ -54,13 +59,13 @@ Phase12/CreationContext and validate with targeted profiler suites.
   Rollback: keep patch isolated, then compare both suites before finalizing.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
-- [ ] Acceptance criteria reviewed with user and confirmed
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >= 8 for required re-entry notes)
+- [x] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
 - DATE: 2026-02-16
@@ -156,7 +161,7 @@ Phase12/CreationContext and validate with targeted profiler suites.
 - DATE: 2026-02-16
   TYPE: ALIGNMENT_CHECK
   CLAIM: Re-onboarding was completed again before continuing optimization work, and execution is resuming from the existing "Phase10 override preprocessing" next-slice plan.
-  EVIDENCE: context_compass/AGENTS.MD:3-3, context_compass/AGENTS.MD:64-80, context_compass/AGENTS.MD:456-456, context_compass/agent_onboarding/agent/general/skills/compaction_requirements.md:7-14, context_compass/agent_onboarding/agent/general/skills/compaction_requirements.md:26-39, context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt:8-9, context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt:82-82, context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md:149-154
+  EVIDENCE: context_compass/AGENTS.MD:3-3, context_compass/AGENTS.MD:64-80, context_compass/AGENTS.MD:456-456, context_compass/agent_onboarding/agent/general/skills/compaction_requirements.md:7-14, context_compass/agent_onboarding/agent/general/skills/compaction_requirements.md:26-39, context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt:8-9, context_compass/agent_onboarding/agent/general/skills/onboarding_read_paths.txt:82-82, context_compass/tasks/completed/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md:149-154
   IMPACT: Ticket routing and policy gates stay explicit while work resumes on the intended hotspot.
   NEXT: Inspect current `CreationContext`/Phase10 override preprocessing path, implement one structural slice, and run pre/post benchmark cadence.
   REREAD: REQUIRED
@@ -558,30 +563,314 @@ Phase12/CreationContext and validate with targeted profiler suites.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: The `dependency_count > 2` branch-cleanup candidate is functionally correct but non-winning versus retained baseline (regressions on most fast and override medians).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_dependency_count_gt2_branch_cleanup_delta_vs_direct_callable_baseline.txt:1-34
+  IMPACT: Candidate fails the no-overrides retention criteria.
+  NEXT: Reject and revert this slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Reject and revert the `_build_kwargs_no_overrides` `dependency_count > 2` branch-cleanup slice.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_dependency_count_gt2_branch_cleanup_delta_vs_direct_callable_baseline.txt:23-31, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_dependency_count_gt2_branch_cleanup_delta_vs_direct_callable_baseline.txt:33-34
+  IMPACT: Prevents carrying measured regressions into active baseline.
+  NEXT: Revert code change, run post-revert validation, and announce result.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Post-revert validation is green for the `dependency_count > 2` branch-cleanup slice and no-overrides call-chain shape remains on retained baseline.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_dependency_count_gt2_branch_cleanup_slice_reverted.txt:1-10, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:24-29
+  IMPACT: Confirms rollback closure and baseline restoration after rejecting this candidate.
+  NEXT: Continue no-overrides optimization from retained baseline with a different structural target.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: ALIGNMENT_CHECK
+  CLAIM: Dependency-count branch-cleanup slice outcome is explicitly announced (rejected + reverted + baseline restored).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_dependency_count_gt2_branch_cleanup_slice_reverted.txt:8-10, context_compass/AGENTS.MD:54-54
+  IMPACT: Keeps per-slice result visibility explicit in-ticket and aligned with user request.
+  NEXT: Preserve this explicit announce-on-slice pattern for subsequent non-override targets.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Next no-overrides slice will bypass `ExecutionPlanStep` property wrappers in `_build_kwargs_no_overrides` by reading the precomputed step fields directly (`_dependency_resolution_order`, `_contract_positional_override`, `_has_contract_payload`, `_contract_payload`, `_uses_positional_override`, `_spell`) to trim repeated property-call overhead on the hot helper path.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:982-1103, src/melder/spellbook/spell_crafter/blueprints/execution_plan.py:76-259, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:24-29
+  IMPACT: Targets no-overrides helper overhead without changing planner data shape or meld API behavior.
+  NEXT: Implement direct-field reads, run no-overrides unit tests, then run fast/override cprofile cadence for keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: The no-overrides direct-step-field-read candidate is functionally correct but non-winning versus retained baseline, with broad override-lane regressions and wide/diamond fast-lane regressions.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_direct_step_field_reads_delta_vs_direct_callable_baseline.txt:1-34
+  IMPACT: Candidate fails retained-wave criteria.
+  NEXT: Reject and revert this slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Reject and revert the `_build_kwargs_no_overrides` direct-step-field-read slice.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_direct_step_field_reads_delta_vs_direct_callable_baseline.txt:23-31, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_direct_step_field_reads_delta_vs_direct_callable_baseline.txt:33-34
+  IMPACT: Prevents carrying measured regressions into active baseline.
+  NEXT: Run post-revert validation and announce result.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Post-revert validation is green and no-overrides hotspot shape is restored to the retained baseline call-chain.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_direct_step_field_reads_slice_reverted.txt:1-10, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:24-29
+  IMPACT: Confirms rollback closure and baseline restoration for this slice.
+  NEXT: Continue no-overrides optimization from retained baseline with a different structural target.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: ALIGNMENT_CHECK
+  CLAIM: Direct-step-field-read slice outcome is explicitly announced (rejected + reverted + baseline restored).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_direct_step_field_reads_slice_reverted.txt:8-10, context_compass/AGENTS.MD:54-54
+  IMPACT: Maintains explicit per-slice result visibility for non-override work.
+  NEXT: Preserve announce-on-slice behavior for subsequent candidates.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Next no-overrides slice will attempt a private-field fast path in `_build_kwargs_no_overrides` using direct underscore attributes with `AttributeError` fallback to public attributes, avoiding per-call property wrappers on `ExecutionPlanStep` while preserving compatibility with generic plan-step carriers used in tests.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:982-1103, src/melder/spellbook/spell_crafter/blueprints/execution_plan.py:76-259, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.call_chain.json:1033-1040
+  IMPACT: Targets no-overrides helper overhead with minimal contract risk and without introducing hot-path `isinstance` checks.
+  NEXT: Implement fast-path + fallback, run no-overrides unit tests, then run fast/override cprofile cadence for keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: The no-overrides private-field fast path with `AttributeError` fallback is functionally correct but non-winning versus retained baseline (material fast-lane regressions and mostly non-improving override lanes).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_private_field_attrerror_fallback_delta_vs_direct_callable_baseline.txt:1-34
+  IMPACT: Candidate fails retained-wave criteria.
+  NEXT: Reject and revert this slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Reject and revert the `_build_kwargs_no_overrides` private-field-attrerror-fallback slice.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_private_field_attrerror_fallback_delta_vs_direct_callable_baseline.txt:23-31, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_private_field_attrerror_fallback_delta_vs_direct_callable_baseline.txt:33-34
+  IMPACT: Keeps retained baseline unchanged and avoids carrying measured regressions.
+  NEXT: Run post-revert validation and announce result.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Post-revert validation is green and no-overrides call-chain shape returns to retained baseline behavior.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_private_field_attrerror_fallback_slice_reverted.txt:1-10, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:24-29
+  IMPACT: Confirms rollback closure and baseline restoration.
+  NEXT: Continue no-overrides optimization from retained baseline with a different structural target.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: ALIGNMENT_CHECK
+  CLAIM: Private-field attrerror-fallback slice outcome is explicitly announced (rejected + reverted + baseline restored).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_private_field_attrerror_fallback_slice_reverted.txt:8-10, context_compass/AGENTS.MD:54-54
+  IMPACT: Maintains explicit per-slice visibility for non-override work.
+  NEXT: Preserve announce-on-slice behavior for subsequent candidates.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Compact iteration: next no-overrides slice will local-alias `instance_results.__getitem__` inside `_build_kwargs_no_overrides` and route all dependency lookups through that alias to reduce repeated dictionary attribute lookup overhead on the hot helper path.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:982-1103, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:24-29
+  IMPACT: Targets helper micro-overhead with low semantic risk and a minimal patch surface.
+  NEXT: Implement local-getitem alias, run no-overrides unit tests plus fast/override cprofile cadence, then keep/revert by measured deltas.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: The compact `instance_results.__getitem__` local-alias candidate is functionally correct but non-winning versus retained baseline, with regressions across all measured override and fast medians.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_instance_results_getitem_alias_delta_vs_direct_callable_baseline.txt:1-34
+  IMPACT: Candidate fails retained-wave criteria for non-override optimization.
+  NEXT: Reject and revert this slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Reject and revert the `_build_kwargs_no_overrides` `instance_results.__getitem__` local-alias slice.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_instance_results_getitem_alias_delta_vs_direct_callable_baseline.txt:23-31, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_instance_results_getitem_alias_delta_vs_direct_callable_baseline.txt:33-34
+  IMPACT: Keeps the retained baseline unchanged and avoids carrying measured regressions.
+  NEXT: Run post-revert validation and announce result.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Post-revert validation is green and no-overrides call-chain shape remains on retained baseline behavior after unwinding the local-alias slice.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_instance_results_getitem_alias_slice_reverted.txt:1-10, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:24-29
+  IMPACT: Confirms rollback closure and baseline restoration for this compact iteration.
+  NEXT: Continue non-override optimization from retained baseline with a different hotspot family.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: ALIGNMENT_CHECK
+  CLAIM: Local-alias slice outcome is explicitly announced (rejected + reverted + baseline restored).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_instance_results_getitem_alias_slice_reverted.txt:8-10, context_compass/AGENTS.MD:54-54
+  IMPACT: Maintains explicit per-slice visibility and satisfies the announce-results request.
+  NEXT: Preserve announce-on-slice behavior for subsequent non-override iterations.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Compact next-iteration queue (non-override, same cadence): (1) target `_get_existing_creation` with a shared-scope map-lookup micro-slice, (2) target `_construct_spell_instance` branch-shape split between dependency kwargs and contract-payload-only kwargs, (3) target emitter-side no-overrides step specialization around static existence buckets feeding `_get_existing_creation`.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:919-981, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:1114-1164, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.hotspots.json:152-173
+  IMPACT: Adds multiple compact plan items while moving off the repeatedly non-winning `_build_kwargs_no_overrides` property-wrapper family.
+  NEXT: Execute queue item (1) first with unit + fast/override cprofile cadence, then keep/revert by measured deltas.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Freeze the retained baseline checkpoint so yesterday's override wins are explicitly banked before we pivot away from exhausted no-overrides micro work.
+  EVIDENCE: context_compass/tasks/completed/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md:68-68, context_compass/tasks/completed/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md:248-248, context_compass/tasks/completed/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md:275-275, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_retained_baseline_checkpoint_2026-02-16.txt:1-20
+  IMPACT: Provides a stable performance anchor for subsequent keep/revert decisions.
+  NEXT: Compare all future slices against the frozen checkpoint medians and retained components.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Close the `_build_kwargs_no_overrides` micro-family as exhausted after repeated non-winning attempts (`dependency_count > 2` cleanup, direct-step-field reads, private-field fallback, local getitem alias).
+  EVIDENCE: context_compass/tasks/completed/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md:563-572, context_compass/tasks/completed/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md:608-618, context_compass/tasks/completed/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md:654-663, context_compass/tasks/completed/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md:698-707
+  IMPACT: Stops additional low-yield burn on the same hotspot micro-structure family.
+  NEXT: Do not open new `_build_kwargs_no_overrides` micro-slices in this wave.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Pivot to other parts immediately: execute `_get_existing_creation` shared-scope map-lookup structural slice first, with `_construct_spell_instance` branch-shape split and emitter-side static existence specialization queued next.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:919-981, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:1114-1164, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.hotspots.json:152-173
+  IMPACT: Moves optimization effort to different hotspot families while keeping the same benchmark cadence.
+  NEXT: Implement the `_get_existing_creation` slice and run unit + fast/override cprofile keep/revert cycle.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: The no-overrides `_get_existing_creation` shared-scope lookup candidate is functionally correct but non-winning versus the frozen retained checkpoint, with regressions across all measured fast and override medians.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_get_existing_creation_shared_scope_lookup_delta_vs_retained_checkpoint.txt:1-31
+  IMPACT: Candidate fails retained-wave criteria for non-override targets.
+  NEXT: Reject and revert this slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Reject and revert the `_get_existing_creation` shared-scope lookup slice.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_get_existing_creation_shared_scope_lookup_delta_vs_retained_checkpoint.txt:23-31, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_get_existing_creation_shared_scope_lookup_delta_vs_retained_checkpoint.txt:39-40, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:1131-1136
+  IMPACT: Keeps the frozen retained baseline unchanged and avoids carrying a measured regression.
+  NEXT: Run post-revert validation and announce outcome.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Post-revert validation is green (`27 passed` no-overrides unit suite, `8 passed` fast cprofile suite, `8 passed` overrides cprofile suite).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_get_existing_creation_shared_scope_lookup_slice_reverted.txt:13-35
+  IMPACT: Confirms rollback closure and baseline restoration for this slice.
+  NEXT: Continue non-override optimization from retained baseline with a different hotspot family.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: ALIGNMENT_CHECK
+  CLAIM: `_get_existing_creation` slice outcome is explicitly announced (rejected + reverted + baseline validation green).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_get_existing_creation_shared_scope_lookup_slice_reverted.txt:38-38, context_compass/AGENTS.MD:54-54
+  IMPACT: Maintains explicit per-slice result visibility as requested.
+  NEXT: Preserve announce-on-slice behavior for subsequent non-override iterations.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Next non-override slice will target `_construct_spell_instance` branch-shape split between dependency kwargs and contract-payload-only kwargs using the same unit + fast/overrides cprofile cadence.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:919-981, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.hotspots.json:152-173
+  IMPACT: Continues "other parts" hotspot work after closing `_get_existing_creation`.
+  NEXT: Implement the `_construct_spell_instance` slice and run keep/revert validation against the frozen retained checkpoint.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: The `_construct_spell_instance` direct-kwargs invoke candidate is functionally correct but non-winning versus the frozen retained checkpoint (override shallow/wide/diamond regressions and broad fast-lane regressions).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_construct_spell_instance_direct_kwargs_invoke_delta_vs_retained_checkpoint.txt:1-31
+  IMPACT: Candidate fails retained-wave criteria for non-override targets.
+  NEXT: Reject and revert this slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Reject and revert the `_construct_spell_instance` direct-kwargs invoke slice.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_construct_spell_instance_direct_kwargs_invoke_delta_vs_retained_checkpoint.txt:23-31, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_no_overrides_construct_spell_instance_direct_kwargs_invoke_delta_vs_retained_checkpoint.txt:38-40, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:953-973
+  IMPACT: Keeps frozen retained baseline unchanged and avoids carrying measured regressions.
+  NEXT: Run post-revert validation and announce outcome.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Post-revert validation is green for the `_construct_spell_instance` slice (`27 passed` no-overrides unit suite, `8 passed` fast cprofile suite, `8 passed` overrides cprofile suite).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_construct_spell_instance_direct_kwargs_invoke_slice_reverted.txt:13-35
+  IMPACT: Confirms rollback closure and baseline restoration.
+  NEXT: Close wave-1 task and carry baseline forward to a separate next-wave ticket if needed.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: ALIGNMENT_CHECK
+  CLAIM: `_construct_spell_instance` slice outcome is explicitly announced (rejected + reverted + baseline validation green).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_construct_spell_instance_direct_kwargs_invoke_slice_reverted.txt:38-38, context_compass/AGENTS.MD:54-54
+  IMPACT: Maintains explicit per-slice visibility while closing wave-1 execution.
+  NEXT: Hand off any additional runtime work under a new wave ticket.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-Wave-1 task is active with the latest retained baseline set to the
-CreationContext prebound Phase10 apply-callable slice
-(`wave1_creation_context_prebound_phase10_apply_postbaseline.txt`).
-The retained Phase12 follow-up slice inlines Existence.many registration
-inside the overrides shape emitter and skips unused registration metadata
-locals for non-registering many steps
-(`wave1_phase12_overrides_many_register_inline_delta_vs_postrevert_baseline.txt`).
-The retained follow-up specialization now also emits static disposal-aware
-many-registration lanes (skip entirely for static no-disposal rows; emit direct
-registration for static yes-disposal rows)
-(`wave1_phase12_overrides_many_static_disposal_registration_delta_vs_lock_gate_baseline.txt`).
-The retained invoke-path follow-up emits direct callable invocation for static
-empty-kwargs no-override lanes inside override executors
-(`wave1_phase12_overrides_direct_callable_empty_kwargs_delta_vs_static_disposal_baseline.txt`).
-The follow-up many caller/spellspace spell-local elision candidate was measured
-as non-winning and reverted
-(`wave1_phase12_overrides_many_caller_spell_local_elision_delta_vs_direct_callable_baseline.txt`).
-The follow-up prebound `plan_step_{i}` defaults candidate was also measured as
-non-winning and reverted
-(`wave1_phase12_overrides_prebound_plan_steps_delta_vs_direct_callable_baseline.txt`).
-The follow-up route-field prebind slice was rejected and reverted
-(`wave1_creation_context_prebound_route_fields_delta_vs_prebaseline.txt`).
-Next action is to target the next structural override runtime hotspot inside
-generated `_phase12_executor` and rerun normal cadence.
+Wave-1 task remains on the retained baseline composed of:
+- `CreationContext` prebound Phase10 apply-callable retention.
+- Retained override-executor slices (many-registration inline, static-disposal specialization, direct-call static empty-kwargs lanes).
+
+Current non-override tranche status:
+- Rejected + reverted: `dependency_count > 2` branch cleanup.
+- Rejected + reverted: `direct_step_field_reads` in `_build_kwargs_no_overrides`.
+- Rejected + reverted: `private_field_attrerror_fallback` in `_build_kwargs_no_overrides`.
+- Rejected + reverted: `instance_results.__getitem__` local alias in `_build_kwargs_no_overrides`.
+- Rejected + reverted: `_get_existing_creation` shared-scope lookup micro-slice.
+- Rejected + reverted: `_construct_spell_instance` direct-kwargs invoke micro-slice.
+- `_build_kwargs_no_overrides` micro-family is now closed/exhausted for this wave.
+
+All post-revert validations are green (`27 passed` no-overrides unit tests, `8 passed` fast cprofile, `8 passed` overrides cprofile per closure run), and results are explicitly announced in per-slice validation artifacts.
+
+Frozen retained baseline checkpoint: `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_retained_baseline_checkpoint_2026-02-16.txt`.
+
+Wave-1 execution is closed. Any further optimization work should continue in a
+new task ticket using the frozen retained checkpoint as baseline.
+
 
 
