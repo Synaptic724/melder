@@ -116,6 +116,285 @@ _TEMPLATE_EXISTING_NO_OVERRIDES_ONLY = (
 ## Notes
 - DATE: 2026-02-16
   TYPE: PLAN
+  CLAIM: With `CC-H4` reverted and rollback validation captured, high-risk routing advances to `CC-H5` (profiler-guided specialization policy).
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md:44-50, context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md:125-132
+  IMPACT: Decision gate for `CC-H4` is closed and the queue is unblocked for the next candidate.
+  NEXT: Capture fresh `CC-H5` 10k prebaseline, then scope a compact implementation slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: `CC-H4` rollback validation is green on unit tests (`17 passed, 1 warning`) and two 10k rollback compares were captured against the `CC-H4` prebaseline.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h4_postrevert_unit_validation_2026-02-16.txt:1-8, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h4_postrevert_10k_2026-02-16_snapshot_summary_2026-02-16_16-00-27.txt:35-51, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h4_postrevert_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_16-00-36.txt:35-51
+  IMPACT: Revert correctness is confirmed and rollback benchmark artifacts are available for audit before continuing.
+  NEXT: Record explicit `RESULT: REVERTED` for `CC-H4` and move to `CC-H5`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - per user direction, `CC-H4` selector-unification changes were removed and `creation_context_codegen.py` is restored to the pre-`CC-H4` template-selector shape.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:909-909, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:969-969, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:1064-1086
+  IMPACT: Non-winning `CC-H4` changes are out of the active checkpoint and no longer block high-risk queue progression.
+  NEXT: Continue high-risk order with `CC-H5`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - `CC-H4` is functionally green (`17 passed`) but benchmark-non-winning on repeated 10k compares versus prebaseline (aggregate `combined` regressive on all three runs), so explicit keep/revert direction is required.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h4_posttest_unit_validation_2026-02-16.txt:1-8, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h4_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_15-51-24.txt:30-51, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h4_posttest_10k_seq2_2026-02-16_snapshot_summary_2026-02-16_15-51-31.txt:30-51, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h4_posttest_10k_seq3_2026-02-16_snapshot_summary_2026-02-16_15-51-41.txt:30-51
+  IMPACT: High-risk lane is paused at benchmark decision gate and should not auto-advance with `CC-H4` retained.
+  NEXT: User chooses keep or revert for `CC-H4` (recommended: revert).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: `CC-H4` repeated 10k deltas vs prebaseline were near-neutral-to-regressive on aggregate lanes: seq1 (`combined +0.9079%`, `fast +1.2859%`, `overrides -2.6535%`), seq2 (`combined +0.7286%`, `fast +0.7343%`, `overrides +0.6753%`), seq3 (`combined +0.8297%`, `fast +1.0541%`, `overrides -1.2840%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h4_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_15-51-24.txt:45-47, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h4_posttest_10k_seq2_2026-02-16_snapshot_summary_2026-02-16_15-51-31.txt:45-47, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h4_posttest_10k_seq3_2026-02-16_snapshot_summary_2026-02-16_15-51-41.txt:45-47
+  IMPACT: Selector-unification did not produce a measurable lane-level win under the active average-based gate.
+  NEXT: Pair with cProfile context and escalate keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Fresh cProfile timing passes keep the same dominant shallow hotspot chains (`_creation_context_execute_no_overrides_only -> <melder_phase12_no_overrides_step_executor>` in fast and `_creation_context_execute_overrides_only -> _execute_with_overrides` in overrides), indicating no hotspot displacement from `CC-H4`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:1-29, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:1-29
+  IMPACT: Profiler context aligns with the non-winning snapshot signal.
+  NEXT: Hold `CC-H4` patch state until explicit keep/revert direction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Implemented compact `CC-H4` selector-unification slice by routing both hooks/no-hooks compile entrypoints through shared selector helpers and consolidated template registries keyed by route plus return-shape flags.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:28-83, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:199-233, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:1030-1064
+  IMPACT: Hooks/no-hooks template-family duplication is reduced at selector-layer while emitted executor source and runtime callable contracts stay unchanged.
+  NEXT: Run unit validation and repeated 10k snapshot compares against `CC-H4` prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Execute compact `CC-H4` slice by collapsing hooks/no-hooks template selector families into shared registries keyed by route plus `return_created` (and fast-transient flag for no-overrides), while leaving emitted executor source and call signatures unchanged.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:186-258, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:909-1094
+  IMPACT: This targets selector-layer duplication (hooks vs no-hooks families) with bounded behavior risk and straightforward rollback.
+  NEXT: Patch selector/maps, run unit validation, then run repeated 10k compares versus `CC-H4` prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Captured `CC-H4` 10k prebaseline snapshot with lane summaries `combined_mean_ns=0.012434ms`, `fast_cycle_mean_ns=0.022482ms`, and `overrides_root_mean_ns=0.002386ms`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h4_prebaseline_10k_2026-02-16_snapshot_summary_2026-02-16_15-47-03.txt:1-33
+  IMPACT: High-risk queue is immediately ready to start `CC-H4` after `CC-H3` rollback closure.
+  NEXT: Define and implement a compact `CC-H4` slice, then run the same unit + repeated 10k compare gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected revert for `CC-H3`; the cache-lifecycle patch was removed and compile/exec template path is restored.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:1-1, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:350-357
+  IMPACT: Non-winning `CC-H3` code is out of the active checkpoint and high-risk iteration can continue.
+  NEXT: Move to `CC-H4` in the high-risk queue.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Post-revert validation for `CC-H3` is green (`17 passed`) and repeated 10k rollback compares are near-baseline but slightly regressive on aggregate lanes (run1 `combined +2.0922%`, `fast +1.9939%`, `overrides +3.0309%`; run2 `combined +1.9127%`, `fast +1.9823%`, `overrides +1.2481%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h3_postrevert_unit_validation_2026-02-16.txt:1-8, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h3_postrevert_10k_2026-02-16_snapshot_summary_2026-02-16_15-46-33.txt:45-47, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h3_postrevert_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_15-46-41.txt:45-47
+  IMPACT: Rollback is validated and safe for immediate next-candidate continuation.
+  NEXT: Continue with `CC-H4` prebaseline and compact implementation slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - `CC-H3` is functionally green (`17 passed`) but benchmark-non-winning on all three 10k post-test compares versus the `CC-H3` prebaseline (aggregate lane summaries regressive each run), so explicit keep/revert direction is required.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h3_posttest_unit_validation_2026-02-16.txt:1-8, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h3_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_15-43-02.txt:30-51, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h3_posttest_10k_seq2_2026-02-16_snapshot_summary_2026-02-16_15-43-09.txt:30-51, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h3_posttest_10k_seq3_2026-02-16_snapshot_summary_2026-02-16_15-43-18.txt:30-51
+  IMPACT: High-risk lane is paused at benchmark decision gate and should not auto-advance with `CC-H3` retained.
+  NEXT: User selects keep or revert for `CC-H3` (recommended: revert).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: `CC-H3` repeated 10k deltas vs prebaseline were regressive on lane aggregates across all runs: seq1 (`combined +9.2215%`, `fast +9.5295%`, `overrides +6.2827%`), seq2 (`combined +1.8802%`, `fast +1.7088%`, `overrides +3.5162%`), seq3 (`combined +3.7090%`, `fast +3.4351%`, `overrides +6.3227%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h3_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_15-43-02.txt:40-51, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h3_posttest_10k_seq2_2026-02-16_snapshot_summary_2026-02-16_15-43-09.txt:40-51, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h3_posttest_10k_seq3_2026-02-16_snapshot_summary_2026-02-16_15-43-18.txt:40-51
+  IMPACT: Current `CC-H3` cache slice does not meet retention threshold under the active benchmark policy.
+  NEXT: Pair with cProfile context and escalate keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Fresh cProfile timing passes keep the same dominant shallow hotspot chains (`_creation_context_execute_no_overrides_only -> <melder_phase12_no_overrides_step_executor>` in fast lane and `_creation_context_execute_overrides_only -> _execute_with_overrides` in overrides lane), indicating no hotspot displacement from `CC-H3`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:1-29, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:1-29
+  IMPACT: Profiler context aligns with the repeated snapshot regression signal.
+  NEXT: Hold branch state until explicit keep/revert direction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Implemented a bounded `CC-H3` artifact-cache slice by adding module-level template code-object and callable caches keyed by deterministic template source/name signatures inside `creation_context_codegen` compile path.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:1-5, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:337-382
+  IMPACT: Repeated template retrieval can now bypass recompile/re-exec through cached code objects/callables while preserving selector and runtime lane contracts.
+  NEXT: Run unit validation and repeated 10k snapshot compares against `CC-H3` prebaseline to determine keep/revert outcome.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Current CreationContext codegen still compiles emitted template sources through `compile(...)+exec(...)` and eagerly materializes the full template matrix as module-level globals; there is no dedicated artifact-cache lifecycle boundary yet.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:333-357, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:909-1094
+  IMPACT: `CC-H3` can be trialed as a bounded artifact-cache lifecycle overlay without changing runtime lane contracts.
+  NEXT: Implement a compact `CC-H3` slice that introduces template artifact caching keyed by template signature while preserving current selector APIs.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Captured `CC-H3` 10k prebaseline snapshot with lane summaries `combined_mean_ns=0.012536ms`, `fast_cycle_mean_ns=0.022693ms`, and `overrides_root_mean_ns=0.002378ms`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h3_prebaseline_10k_2026-02-16_snapshot_summary_2026-02-16_15-33-40.txt:1-30
+  IMPACT: `CC-H3` now has a fresh benchmark anchor and is ready for compact-slice implementation.
+  NEXT: Define and implement a bounded `CC-H3` cache-lifecycle slice, then run the same unit + repeated 10k compare gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - per user decision, `CC-H1` was rolled back and CreationContext codegen returned to the dynamic overrides-only source-compile path.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:261-357, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:625-682
+  IMPACT: Non-winning `CC-H1` is removed from active runtime state and the high-risk queue is unblocked.
+  NEXT: Continue high-risk order with `CC-H3`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Post-revert validation for `CC-H1` is green (`17 passed`) and rollback snapshots are near-baseline to improving on repeat (`combined -0.0415%` then `-2.3053%` vs `CC-H1` prebaseline).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h1_postrevert_unit_validation_2026-02-16.txt:1-7, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h1_postrevert_10k_2026-02-16_snapshot_summary_2026-02-16_15-32-25.txt:34-46, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h1_postrevert_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_15-32-33.txt:34-46
+  IMPACT: Reverted checkpoint is validated for immediate next-candidate iteration.
+  NEXT: Capture `CC-H3` prebaseline and continue under the same benchmark gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - `CC-H1` is functionally green (`17 passed`) but benchmark-non-winning on all three 10k post-test compares versus prebaseline; aggregate lane summaries remain regressive, so explicit keep/revert direction is required.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h1_posttest_unit_validation_2026-02-16.txt:1-7, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h1_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_15-30-08.txt:34-46, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h1_posttest_10k_seq2_2026-02-16_snapshot_summary_2026-02-16_15-30-20.txt:34-46, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h1_posttest_10k_seq3_2026-02-16_snapshot_summary_2026-02-16_15-30-20.txt:34-46
+  IMPACT: High-risk lane is blocked at decision gate; moving forward without keep/revert would violate the active benchmark policy.
+  NEXT: User chooses keep or revert for `CC-H1` (recommended: revert).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: `CC-H1` post-test lane summaries vs prebaseline were: seq1 (`combined +11.9709%`, `fast +12.8487%`, `overrides +3.6809%`), seq2 (`combined +1.2350%`, `fast +1.4416%`, `overrides -0.7156%`), seq3 (`combined +0.7168%`, `fast +0.7119%`, `overrides +0.7632%`); cProfile shallow chains remained rooted in no-overrides spellspace step execution for fast lane and `_creation_context_execute_overrides_only -> _execute_with_overrides` for overrides lane.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h1_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_15-30-08.txt:34-46, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h1_posttest_10k_seq2_2026-02-16_snapshot_summary_2026-02-16_15-30-20.txt:34-46, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h1_posttest_10k_seq3_2026-02-16_snapshot_summary_2026-02-16_15-30-20.txt:34-46, benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:1-29, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:1-29
+  IMPACT: Regression signal is persistent on aggregate metrics and not explained by hotspot displacement.
+  NEXT: Raise keep/revert decision request with revert recommendation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Implemented compact `CC-H1` slice by replacing dynamic source compilation for overrides-only templates with route-specialized closure template factories inside `_compile_creation_context_overrides_only_template`; no-overrides template compilation path remains unchanged.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:261-624, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:625-682
+  IMPACT: High-risk change is bounded to one template family and can be benchmarked/reverted without touching no-overrides source-emission flow.
+  NEXT: Run syntax + unit validation, then execute 10k post-test snapshot compare against `CC-H1` prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Execute a compact `CC-H1` slice by replacing dynamic `compile(...)+exec(...)` only for the overrides-only template family (`_compile_creation_context_overrides_only_template`) with route-specialized closure templates, while leaving no-overrides template codegen unchanged.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:261-294, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:352-357, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:910-967
+  IMPACT: This isolates high-risk change surface to one template family and keeps rollback scope compact if performance or behavior regresses.
+  NEXT: Patch `creation_context_codegen.py`, run unit validation, then run a 10k post-test compare versus `CC-H1` prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Captured `CC-H1` 10k prebaseline snapshot with lane summaries `combined_mean_ns=0.012847ms`, `fast_cycle_mean_ns=0.023233ms`, and `overrides_root_mean_ns=0.002460ms`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h1_prebaseline_10k_2026-02-16_snapshot_summary_2026-02-16_15-27-09.txt:1-30
+  IMPACT: High-risk `CC-H1` now has a fresh rollback/compare anchor under the same benchmark gate contract.
+  NEXT: Scope a compact `CC-H1` slice around dynamic `compile(...)+exec(...)` template creation in `creation_context_codegen.py`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Post-revert validation for `CC-H2` is green on unit tests (`17 passed`) and rollback snapshots are near-baseline but slightly regressive on lane aggregates (`combined +1.9051%` then `+0.7901%` vs prebaseline), which is acceptable for rollback continuity under current noise levels.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h2_postrevert_unit_validation_2026-02-16.txt:1-7, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h2_postrevert_10k_2026-02-16_snapshot_summary_2026-02-16_15-21-42.txt:34-46, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h2_postrevert_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_15-22-01.txt:34-46
+  IMPACT: Rollback is validated and the high-risk lane can continue to the next candidate.
+  NEXT: Start `CC-H1` with a fresh 10k prebaseline using the same benchmark gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - per user direction, `CC-H2` was rolled back and `creation_context_codegen.py` was restored to the explicit eager template-constant matrix with route maps.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:909-1086, context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md:128-133
+  IMPACT: The mixed `CC-H2` candidate is removed from active runtime state and no longer blocks forward experimentation.
+  NEXT: Continue high-risk queue at `CC-H1`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - `CC-H2` is functionally green but mixed on repeated 10k post-test compares versus prebaseline (`seq1` regressive, `seq2` and `seq3` winning), so explicit keep/revert direction is required.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h2_unit_validation_2026-02-16.txt:1-7, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h2_prebaseline_10k_2026-02-16_snapshot_summary_2026-02-16_15-11-09.txt:26-30, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h2_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_15-12-51.txt:26-46, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h2_posttest_10k_seq2_2026-02-16_snapshot_summary_2026-02-16_15-13-09.txt:26-46, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h2_posttest_10k_seq3_2026-02-16_snapshot_summary_2026-02-16_15-13-09.txt:26-46
+  IMPACT: Lane continuation is blocked at the benchmark decision gate per the current policy and user direction.
+  NEXT: User chooses keep or revert for `CC-H2` (recommendation: keep with caution, based on 2/3 winning aggregate repeats).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Fresh fast/overrides cProfile passes keep the same dominant shallow hotspot chains as prior iterations (`no-overrides spellspace lane -> phase12 no-overrides step executor -> register_spellspace_creation` and `overrides-only lane -> _execute_with_overrides`), showing no hotspot displacement from the `CC-H2` registry rewrite.
+  EVIDENCE: benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:1-29, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:1-29
+  IMPACT: Profiler context supports using the repeated 10k snapshot deltas as the primary keep/revert signal.
+  NEXT: Raise explicit keep/revert decision request with mixed snapshot evidence.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Implemented compact CC-H2 tranche by replacing hand-expanded module-level template constants with a declarative eager registry builder (`_build_creation_context_template_registry`) that preserves route coverage and `many` fast-transient specialization.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:902-1095
+  IMPACT: Template matrix maintenance complexity is reduced while keeping runtime selection contracts unchanged.
+  NEXT: Run unit validation and post-test 10k snapshot compare versus CC-H2 prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Current CreationContext codegen still materializes a large eager template matrix as explicit module-level constants plus route lookup maps, which is the direct CC-H2 target surface.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:909-1094
+  IMPACT: A declarative registry builder can replace this matrix without changing runtime caller contracts.
+  NEXT: Implement one compact CC-H2 tranche that keeps eager compilation but moves matrix assembly to spec-driven registry generation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Captured the 10k prebaseline snapshot for CC-H2 with lane summaries `combined_mean_ns=0.012467ms`, `fast_cycle_mean_ns=0.022531ms`, and `overrides_root_mean_ns=0.002403ms`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h2_prebaseline_10k_2026-02-16_snapshot_summary_2026-02-16_15-11-09.txt:1-33
+  IMPACT: Post-edit comparisons can now use the same average-based gate used throughout current iterations.
+  NEXT: Apply CC-H2 compact registry rewrite and run unit + post-test snapshot comparison.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
   CLAIM: Medium discovery tickets were turned in per user direction, so active CreationContext routing now starts this high-risk lane.
   EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:1-132, context_compass/attention_board.md:16-28
   IMPACT: High-risk exploration is now the primary execution lane.

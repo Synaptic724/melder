@@ -15,9 +15,108 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: creationcontext high-risk lane kickoff | in_progress | codex | none | Medium tickets are turned in; begin `CC-H2` discovery tranche with the existing benchmark gate | `context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md` | 2026-02-16 | REQUIRED |
+| task: creationcontext high-risk lane kickoff | in_progress | codex | none | capture `CC-H5` 10k prebaseline and start compact implementation slice | `context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md` | 2026-02-16 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: `CC-H4` decision gate is closed after user-directed revert; high-risk routing advances to `CC-H5` for the next compact cycle.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md:44-50, context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md:125-132
+  IMPACT: Active item is unblocked and no longer waiting on `CC-H4` keep/revert input.
+  NEXT: Capture `CC-H5` 10k prebaseline and proceed with the same unit + repeated 10k gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: `CC-H4` rollback validation artifacts are captured (`17 passed, 1 warning`) with two 10k rollback snapshot compares against prebaseline.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h4_postrevert_unit_validation_2026-02-16.txt:1-8, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h4_postrevert_10k_2026-02-16_snapshot_summary_2026-02-16_16-00-27.txt:35-51, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h4_postrevert_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_16-00-36.txt:35-51
+  IMPACT: Revert correctness and rollback measurement evidence are available before queue advancement.
+  NEXT: Keep `CC-H4` closed as reverted and start `CC-H5`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user directed revert for `CC-H4`; selector-unification changes are removed from `creation_context_codegen.py`.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:909-909, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:969-969, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:1064-1086
+  IMPACT: Active checkpoint no longer contains the non-winning `CC-H4` slice.
+  NEXT: Continue high-risk candidate order at `CC-H5`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - `CC-H4` unit validation is green but repeated 10k post-test compares are aggregate non-winning versus prebaseline (`combined` regressive in all three runs), so explicit keep/revert direction is required.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h4_posttest_unit_validation_2026-02-16.txt:1-8, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h4_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_15-51-24.txt:30-51, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h4_posttest_10k_seq2_2026-02-16_snapshot_summary_2026-02-16_15-51-31.txt:30-51, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h4_posttest_10k_seq3_2026-02-16_snapshot_summary_2026-02-16_15-51-41.txt:30-51
+  IMPACT: Active high-risk routing is paused at the benchmark decision gate and should not auto-advance.
+  NEXT: User chooses keep or revert for `CC-H4` (recommended: revert).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Fresh cProfile timing passes keep the same dominant shallow hotspot chains (`_creation_context_execute_no_overrides_only -> <melder_phase12_no_overrides_step_executor>` in fast and `_creation_context_execute_overrides_only -> _execute_with_overrides` in overrides), indicating no hotspot displacement from `CC-H4`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:1-29, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:1-29
+  IMPACT: Profiler context aligns with the repeated snapshot non-winning signal.
+  NEXT: Keep `CC-H4` blocked until explicit keep/revert direction.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Captured fresh `CC-H4` 10k prebaseline after `CC-H3` rollback with lane summaries `combined_mean_ns=0.012434ms`, `fast_cycle_mean_ns=0.022482ms`, and `overrides_root_mean_ns=0.002386ms`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h4_prebaseline_10k_2026-02-16_snapshot_summary_2026-02-16_15-47-03.txt:1-33
+  IMPACT: High-risk queue can continue immediately to the next candidate without re-baselining delay.
+  NEXT: Implement compact `CC-H4` slice and run unit + repeated 10k compare gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected option `2` for `CC-H3`; cache-lifecycle patch was removed and rollback validation completed.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md:126-140, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:1-1, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:350-357
+  IMPACT: Non-winning `CC-H3` changes are out of the active checkpoint and routing is unblocked.
+  NEXT: Continue high-risk queue at `CC-H4`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected revert for `CC-H1`; codegen was restored and post-revert unit + repeated 10k snapshot checks were captured before continuing the high-risk queue.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md:6-6, context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md:118-133, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h1_postrevert_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_15-32-33.txt:34-46
+  IMPACT: Decision gate is closed and active routing can continue to `CC-H3`.
+  NEXT: Start `CC-H3` with a fresh 10k prebaseline snapshot.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - `CC-H1` is unit-green but benchmark-non-winning on repeated 10k compares (all aggregate `combined` deltas regressive), and cProfile keeps the same dominant shallow chains; explicit keep/revert direction is required.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md:118-133, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h1_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_15-30-08.txt:34-46, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h1_posttest_10k_seq2_2026-02-16_snapshot_summary_2026-02-16_15-30-20.txt:34-46, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h1_posttest_10k_seq3_2026-02-16_snapshot_summary_2026-02-16_15-30-20.txt:34-46
+  IMPACT: High-risk routing is paused at decision gate; next candidate cannot start until keep/revert direction is given.
+  NEXT: User chooses keep or revert for `CC-H1` (recommended: revert).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected revert for `CC-H2`; the registry-builder rewrite was removed and post-revert unit + snapshot checks were captured before resuming the high-risk queue.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md:118-133, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h2_postrevert_unit_validation_2026-02-16.txt:1-7, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h2_postrevert_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_15-22-01.txt:34-46
+  IMPACT: High-risk routing is unblocked and can continue with the next candidate.
+  NEXT: Start `CC-H1` prebaseline and continue the same pre/post decision gate process.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - `CC-H2` is green on unit validation and mixed on repeated 10k snapshots (seq1 regression, seq2/seq3 wins) with unchanged fast/overrides cProfile shallow hotspot chains, so explicit keep/revert direction is required.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md:119-133, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h2_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_15-12-51.txt:26-46, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h2_posttest_10k_seq2_2026-02-16_snapshot_summary_2026-02-16_15-13-09.txt:26-46, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h2_posttest_10k_seq3_2026-02-16_snapshot_summary_2026-02-16_15-13-09.txt:26-46
+  IMPACT: Active high-risk routing is paused at decision gate per benchmark policy; no additional candidate should start before keep/revert direction.
+  NEXT: User chooses keep or revert for `CC-H2`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: Per user direction, all medium discovery tickets were turned in (`creationcontext`, `phase12 no-overrides`, `phase12 overrides`) and tracked as complete in the epic task checklist where medium turn-in entries were added.
