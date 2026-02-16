@@ -36,6 +36,33 @@ Attention details rule
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Reject and revert the prebound active route-field slice in `CreationContext`. Measured override deltas versus the retained baseline regressed on priority lanes (`shallow +0.20%`, `wide +0.17%`, `diamond +1.29%`), so it is non-retained.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_creation_context_prebound_route_fields_delta_vs_prebaseline.txt:3-6, src/melder/aether/conduit/meld/creation_context/creation_context.py:253-253, src/melder/aether/conduit/meld/creation_context/creation_context.py:619-619
+  IMPACT: Active baseline remains the retained prebound Phase10 apply-callable slice only.
+  NEXT: Continue with the next structural hotspot outside route-field aliasing.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Reject and revert the positional executor-invocation slice (`CreationContext` positional tail args + non-keyword-only emitted `_phase12_executor` signatures). The measured post window versus retained baseline was non-winning and the slice broadened generated call contracts without clear gain.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_creation_context_positional_executor_invocation_delta_vs_prebaseline.txt:3-12, src/melder/aether/conduit/meld/creation_context/creation_context.py:585-590, src/melder/aether/conduit/meld/creation_context/creation_context.py:602-607, src/melder/aether/conduit/meld/creation_context/creation_context.py:693-698, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:558-558, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:762-762
+  IMPACT: Retained baseline is unchanged; no executor call-contract change is carried forward.
+  NEXT: Re-rank current hotspots and take the next structural slice from retained state.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Do not retain the no-overrides registration-inline emitter slice this tranche; generated step lanes stay on `_register_spell_instance_prebound(...)` routing while we keep the override-focused retained baseline stable.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:587-591, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:625-629, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:669-673, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:692-696, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:726-730, benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_register_inline_slice_reverted.txt:2-20
+  IMPACT: No no-overrides codegen contract change is carried forward; baseline correctness is reconfirmed.
+  NEXT: Continue with a lower-risk structural hotspot from current retained state.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-15
   TYPE: DECISION
   CLAIM: Reject and revert the `Meld._normalize_spell_override` exact-dict copy fast path (`payload.copy()` for exact dict). Overrides-only confirmation still regressed against retained baseline (`shallow +2.44%`, `wide +4.55%`, `diamond +1.95%`).

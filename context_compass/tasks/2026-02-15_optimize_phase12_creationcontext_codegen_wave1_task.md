@@ -65,12 +65,75 @@ Phase12/CreationContext and validate with targeted profiler suites.
 ## Notes
 - DATE: 2026-02-16
   TYPE: DECISION
-  CLAIM: Next structural slice will prebind active override-route fields (`plan_signature`, `path_registry`, `plan_rows`, `root_spell_id`, `spell_lookup`) onto `CreationContext` at build time and consume those direct fields in `_execute_with_overrides(...)`.
-  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context.py:250-261, src/melder/aether/conduit/meld/creation_context/creation_context.py:586-593, src/melder/aether/conduit/meld/creation_context/creation_context.py:649-678, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:39-46
-  IMPACT: Removes repeated `override_route_config_active.<field>` attribute reads from each override call while preserving executor specialization/cache semantics.
-  NEXT: Add context fields + cleanup wiring, align object-level harness setup, then rerun focused validation and benchmark cadence for keep/revert.
+  CLAIM: Do not retain the no-overrides registration-inline emitter slice in this tranche. Keep generated step lanes on `_register_spell_instance_prebound(...)` routing for now and preserve baseline stability.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:587-591, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:625-629, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:669-673, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:692-696, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:726-730, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:1098-1163
+  IMPACT: Runtime code remains on the prior retained override-focused baseline; no no-overrides registration contract/codegen change is carried forward.
+  NEXT: Re-rank hotspots and pick a lower-risk structural slice that keeps emitted-source stability.
   REREAD: REQUIRED
-  SCORE_0_TO_10: 9
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Post-revert validation is green for the no-overrides and benchmark suites (`27 passed` unit no-overrides executor; `16 passed` fast/overrides cprofile suites).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_register_inline_slice_reverted.txt:2-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_phase12_no_overrides_register_inline_slice_reverted.txt:12-20
+  IMPACT: Baseline correctness is reconfirmed after rejecting this slice.
+  NEXT: Continue from stable retained state.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Attempted slice targeted Phase12 no-overrides registration overhead by emitting existence-specialized registration statements directly in generated step source for static `Existence` lanes (`unique*` and `many`) instead of routing through `_register_spell_instance_prebound(...)`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:9-20, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:576-576, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:587-587, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:1098-1163
+  IMPACT: Recorded attempt scope and motivation for this non-retained tranche.
+  NEXT: Completed and rejected by the decision above; keep for historical trace only.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Reject and revert the positional executor-invocation slice (`CreationContext` positional tail args + non-keyword-only emitted `_phase12_executor` signature). Measured windows were non-winning and this slice broadened generated executor call contracts without clear upside.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_creation_context_positional_executor_invocation_delta_vs_prebaseline.txt:3-12, src/melder/aether/conduit/meld/creation_context/creation_context.py:585-590, src/melder/aether/conduit/meld/creation_context/creation_context.py:602-607, src/melder/aether/conduit/meld/creation_context/creation_context.py:693-698, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:558-558, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:762-762
+  IMPACT: Runtime stays on the retained prebound Phase10 apply-callable baseline; no executor signature/call-style change is carried forward.
+  NEXT: Continue from retained baseline and target a different hotspot in `_execute_with_overrides` / `_phase12_executor` that does not alter call contracts.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Slice validation after revert is green (`83 passed, 1 warning`) and artifacts for the attempted positional-invocation run were captured (`overrides x5`, `fast x3` post window + delta file).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_creation_context_positional_executor_invocation_slice_reverted.txt:1-9, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_creation_context_positional_executor_invocation_post_bench_runs.txt:1-1, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_creation_context_positional_executor_invocation_postbaseline.txt:1-12, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_creation_context_positional_executor_invocation_delta_vs_prebaseline.txt:1-12
+  IMPACT: Attempt result is fully documented and baseline stability is reconfirmed.
+  NEXT: Re-rank current hotspots from retained state and pick the next structural slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: BLOCKER
+  CLAIM: During the attempted positional-invocation slice, generated Phase12 override executors were incompatible because emitted `_phase12_executor` signatures defined `owner_creations` / `caller_creations_lock_held` as keyword-only (`*` separator). The temporary positional `_execute_with_overrides(...)` calls raised `TypeError` until signatures were aligned.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context.py:693-698, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:554-560, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:758-764
+  IMPACT: The in-flight partial slice was blocked and could not remain in that state.
+  NEXT: Completed by revert decision above; keep this note as attempted-slice history.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Next structural slice will remove keyword-call overhead on hot override executor invocations by passing `owner_creations` and `caller_creations_lock_held` positionally from `CreationContext._execute_with_overrides(...)` (`baseline_executor(...)`, cache-hit `executor(...)`, final `executor(...)`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:7-10, src/melder/aether/conduit/meld/creation_context/creation_context.py:585-590, src/melder/aether/conduit/meld/creation_context/creation_context.py:602-607, src/melder/aether/conduit/meld/creation_context/creation_context.py:693-698, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:554-560
+  IMPACT: Keeps override semantics unchanged while trimming per-call Python keyword argument dispatch work on the 1050-call hot lane.
+  NEXT: Patch invocation sites and adjust focused unit stubs if needed, then run focused validation and benchmark cadence for keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Reject and revert the prebound active route-field slice in `CreationContext` (`plan_signature`, `path_registry`, `plan_rows`, `root_spell_id`, `spell_lookup`). Measured overrides regressed on the priority lanes (`shallow +0.20%`, `wide +0.17%`, `diamond +1.29%`) against the retained baseline.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_creation_context_prebound_route_fields_delta_vs_prebaseline.txt:3-6, src/melder/aether/conduit/meld/creation_context/creation_context.py:253-253, src/melder/aether/conduit/meld/creation_context/creation_context.py:619-619
+  IMPACT: Active retained baseline remains the prebound Phase10 apply-callable slice only; route-field prebinding is explicitly non-retained.
+  NEXT: Continue from retained baseline and target the next structural hotspot in `_execute_with_overrides` / `_phase12_executor` outside route-field aliasing.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
 
 - DATE: 2026-02-16
   TYPE: DECISION
@@ -1127,6 +1190,9 @@ Phase12/CreationContext and validate with targeted profiler suites.
 
 ## Context / Handoff Summary
 Wave-1 task is active with the latest retained baseline set to the
-one-key patch-map identity slice (`wave1_patchmaps_onekey_identity_postbaseline.txt`).
+CreationContext prebound Phase10 apply-callable slice
+(`wave1_creation_context_prebound_phase10_apply_postbaseline.txt`).
+The follow-up route-field prebind slice was rejected and reverted
+(`wave1_creation_context_prebound_route_fields_delta_vs_prebaseline.txt`).
 Next action is to target the next structural override runtime hotspot
 (`_execute_with_overrides` / `_phase12_executor`) and rerun normal cadence.
