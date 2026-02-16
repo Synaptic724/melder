@@ -65,6 +65,33 @@ Phase12/CreationContext and validate with targeted profiler suites.
 ## Notes
 - DATE: 2026-02-15
   TYPE: DECISION
+  CLAIM: Reject and revert the `Meld._normalize_spell_override` exact-dict copy fast path (`payload.copy()` for exact dict). Both the full cadence window and overrides-only confirmation regressed on primary override lanes versus the retained baseline.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_meld_normalize_dictcopy_delta_vs_prebaseline.txt:4-7, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_meld_normalize_dictcopy_overridesonly_delta_vs_prebaseline.txt:4-7, src/melder/aether/conduit/meld/meld.py:957-963
+  IMPACT: Baseline remains the retained one-key patch-map identity slice; this normalize-path variant is not carried forward.
+  NEXT: Re-rank the next structural hotspot from `creation_context._execute_with_overrides` / `_phase12_executor`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Post-change cadence (`overrides x5`, `fast x3`) and overrides-only confirmation (`overrides x5`) completed. Full window deltas vs pre-baseline were overrides `solo -0.03%`, `shallow +6.35%`, `wide +7.90%`, `diamond +3.71%`; confirmation still regressed overrides `solo +0.08%`, `shallow +2.44%`, `wide +4.55%`, `diamond +1.95%`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_meld_normalize_dictcopy_delta_vs_prebaseline.txt:4-13, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_meld_normalize_dictcopy_overridesonly_delta_vs_prebaseline.txt:4-7, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_meld_normalize_dictcopy_overridesonly_post_bench_runs.txt:2-597
+  IMPACT: Confirms non-retention despite small isolated microbenchmark upside for `.copy()` on exact dicts.
+  NEXT: Keep state on retained baseline and continue with a different optimization target.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Next slice targets `Meld._normalize_spell_override(...)` exact-dict normalization overhead. The override benchmark path uses one-key dict payloads per call, and profile hotspots still show normalization on the runtime path; we can preserve copy semantics while using faster exact-dict copy (`payload.copy()`).
+  EVIDENCE: src/melder/aether/conduit/meld/meld.py:291-294, src/melder/aether/conduit/meld/meld.py:906-968, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:145-145
+  IMPACT: Keeps scope narrow to override frontdoor normalization and avoids changing override-routing semantics.
+  NEXT: Patch `_normalize_spell_override`, run focused `test_meld` normalization checks plus override-path suites, and run benchmark cadence for keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
   CLAIM: Retain the one-key patch-map identity slice. The one-key lane rewrite in `_apply_with_socket_shape_prechecked(...)` reduced measured override timings across all four graphs in the matched cadence window, and the latest shallow hotspot summary no longer shows the patch-map function in the top-8 list.
   EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:104-104, src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:299-323, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_onekey_identity_delta_vs_prebaseline.txt:4-7, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:1-10
   IMPACT: Active retained baseline now includes this one-key identity rewrite and provides a lower starting point for the next structural hotspot tranche.

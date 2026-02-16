@@ -15,9 +15,27 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | one-key patch-map identity slice retained after cadence wins; re-rank `_execute_with_overrides` and `_phase12_executor` hotspots from new baseline | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
+| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | normalize-dictcopy slice was rejected/reverted after override regressions; continue from retained one-key patch-map baseline and target a different structural hotspot | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Reject and revert the `Meld._normalize_spell_override` exact-dict copy fast path (`payload.copy()` for exact dict). Overrides-only confirmation still regressed against retained baseline (`shallow +2.44%`, `wide +4.55%`, `diamond +1.95%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_meld_normalize_dictcopy_delta_vs_prebaseline.txt:4-7, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_meld_normalize_dictcopy_overridesonly_delta_vs_prebaseline.txt:4-7, src/melder/aether/conduit/meld/meld.py:957-963
+  IMPACT: Runtime code stays on the prior retained one-key patch-map baseline; no normalize-path change is retained.
+  NEXT: Re-rank hotspots and implement a different structural optimization.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Full cadence (`overrides x5`, `fast x3`) and overrides-only confirmation (`overrides x5`) were completed for the normalize-dictcopy slice. Full deltas vs pre-baseline were overrides `solo -0.03%`, `shallow +6.35%`, `wide +7.90%`, `diamond +3.71%`; confirmation remained regressive.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_meld_normalize_dictcopy_delta_vs_prebaseline.txt:4-13, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_meld_normalize_dictcopy_overridesonly_delta_vs_prebaseline.txt:4-7, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_meld_normalize_dictcopy_overridesonly_post_bench_runs.txt:2-597
+  IMPACT: Provides clear keep/revert evidence for this attempted slice.
+  NEXT: Continue from retained baseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-15
   TYPE: DECISION
   CLAIM: Retain the one-key patch-map identity slice. The one-key lane in `_apply_with_socket_shape_prechecked(...)` now uses direct key lookup plus object-identity cache checks and measured cadence deltas were favorable on all override lanes.
