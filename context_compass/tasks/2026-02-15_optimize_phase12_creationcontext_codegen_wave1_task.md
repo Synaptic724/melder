@@ -7,7 +7,7 @@
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
-- Updated: 2026-02-15
+- Updated: 2026-02-16
 
 ## Objective
 Implement the first hotspot-led codegen runtime optimization patch for
@@ -63,6 +63,42 @@ Phase12/CreationContext and validate with targeted profiler suites.
 - [ ] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Next structural slice will prebind active override-route fields (`plan_signature`, `path_registry`, `plan_rows`, `root_spell_id`, `spell_lookup`) onto `CreationContext` at build time and consume those direct fields in `_execute_with_overrides(...)`.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context.py:250-261, src/melder/aether/conduit/meld/creation_context/creation_context.py:586-593, src/melder/aether/conduit/meld/creation_context/creation_context.py:649-678, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:39-46
+  IMPACT: Removes repeated `override_route_config_active.<field>` attribute reads from each override call while preserving executor specialization/cache semantics.
+  NEXT: Add context fields + cleanup wiring, align object-level harness setup, then rerun focused validation and benchmark cadence for keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Retain the prebound Phase10 apply-callable slice in `CreationContext`. Cadence results versus prebaseline improved all override timing lanes (`solo -1.88%`, `shallow -2.98%`, `wide -0.80%`, `diamond -3.42%`); fast lanes were mixed and treated as out-of-path noise for this override-only runtime change.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_creation_context_prebound_phase10_apply_delta_vs_prebaseline.txt:3-6, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_creation_context_prebound_phase10_apply_delta_vs_prebaseline.txt:9-12, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_creation_context_prebound_phase10_apply_postbaseline.txt:3-13, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_creation_context_prebound_phase10_apply_prebaseline.txt:3-13
+  IMPACT: New retained baseline includes prebound Phase10 override apply dispatch in `CreationContext`.
+  NEXT: Re-rank `_execute_with_overrides` and `_phase12_executor` hotspots from this retained state and implement the next structural slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: `CreationContext` now binds the Phase10 apply callable during initialization (`_override_apply_with_socket_shape_prechecked_phase10`) and reuses that callable in `_execute_with_overrides(...)`; object-level harness setup and cleanup assertions were updated for the new slot.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context.py:152-152, src/melder/aether/conduit/meld/creation_context/creation_context.py:228-234, src/melder/aether/conduit/meld/creation_context/creation_context.py:619-629, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:99-130, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:814-837, benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_creation_context_prebound_phase10_apply_slice.txt:1-9
+  IMPACT: Removes repeated patch-map method lookup on each override-bearing call while preserving the existing missing-map failure contract.
+  NEXT: Use the retained baseline for the next optimization tranche.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Next structural slice will prebind the Phase10 override apply callable on `CreationContext` construction and reuse that callable in `_execute_with_overrides(...)` to remove repeated patch-map attribute/method lookup on the per-call hot path.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context.py:224-225, src/melder/aether/conduit/meld/creation_context/creation_context.py:607-617, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:8-12
+  IMPACT: Keeps semantics unchanged while tightening one repeated runtime lookup in override-bearing calls.
+  NEXT: Add prebound callable field + cleanup wiring, align object-level harness tests, then run focused unit/component validation before cadence benchmarking.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 - DATE: 2026-02-15
   TYPE: DECISION
   CLAIM: Reject and revert the `Meld._normalize_spell_override` exact-dict copy fast path (`payload.copy()` for exact dict). Both the full cadence window and overrides-only confirmation regressed on primary override lanes versus the retained baseline.

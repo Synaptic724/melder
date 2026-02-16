@@ -15,9 +15,27 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | normalize-dictcopy slice was rejected/reverted after override regressions; continue from retained one-key patch-map baseline and target a different structural hotspot | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
+| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | prebound Phase10 apply-callable slice is retained on override-lane gains; continue from this baseline and target the next structural hotspot in `_execute_with_overrides`/`_phase12_executor` | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-16 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Retain the `CreationContext` prebound Phase10 apply-callable slice. Cadence results versus prebaseline improved all override lanes (`solo -1.88%`, `shallow -2.98%`, `wide -0.80%`, `diamond -3.42%`); fast lanes were mixed and treated as out-of-path noise.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_creation_context_prebound_phase10_apply_delta_vs_prebaseline.txt:3-6, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_creation_context_prebound_phase10_apply_delta_vs_prebaseline.txt:9-12, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_creation_context_prebound_phase10_apply_postbaseline.txt:3-13, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_creation_context_prebound_phase10_apply_prebaseline.txt:3-13
+  IMPACT: Retained wave-1 baseline now includes prebound override apply dispatch in `CreationContext`.
+  NEXT: Re-rank hotspots and implement the next structural optimization slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: `CreationContext` now stores `_override_apply_with_socket_shape_prechecked_phase10` at initialization and uses it in `_execute_with_overrides`; object-level harness setup/cleanup assertions were updated and focused validation is green (`83 passed`).
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context.py:152-152, src/melder/aether/conduit/meld/creation_context/creation_context.py:228-234, src/melder/aether/conduit/meld/creation_context/creation_context.py:619-629, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:99-130, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:814-837, benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_creation_context_prebound_phase10_apply_slice.txt:1-9
+  IMPACT: Removes repeated patch-map method lookup from each override-bearing call while preserving existing error semantics.
+  NEXT: Continue iteration from the retained baseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-15
   TYPE: DECISION
   CLAIM: Reject and revert the `Meld._normalize_spell_override` exact-dict copy fast path (`payload.copy()` for exact dict). Overrides-only confirmation still regressed against retained baseline (`shallow +2.44%`, `wide +4.55%`, `diamond +1.95%`).

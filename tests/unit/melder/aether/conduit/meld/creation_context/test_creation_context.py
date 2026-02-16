@@ -120,6 +120,15 @@ def _make_override_harness(
     context._execute_no_hooks_no_overrides_compiled = None
     context._no_overrides_executor = None
     context._override_patch_map_phase10 = patch_map
+    if patch_map is None or not hasattr(
+            patch_map,
+            "_apply_with_socket_shape_prechecked",
+    ):
+        context._override_apply_with_socket_shape_prechecked_phase10 = None
+    else:
+        context._override_apply_with_socket_shape_prechecked_phase10 = (
+            patch_map._apply_with_socket_shape_prechecked
+        )
     context._override_route_config_no_mutation = route_config_no_mutation
     context._override_route_config_mutation = route_config_mutation
     context._override_route_config_active = route_config_active
@@ -825,5 +834,6 @@ def test_cleanup_clears_runtime_cache_and_route_refs() -> None:
     assert context._override_executor_code_object_cache_by_plan_signature is None
     assert context._override_prefilter_step_targets_cache is None
     assert context._override_prefilter_path_metadata_cache is None
+    assert context._override_apply_with_socket_shape_prechecked_phase10 is None
     assert route_config_no_mutation.plan_signature is None
     assert route_config_mutation.plan_signature is None

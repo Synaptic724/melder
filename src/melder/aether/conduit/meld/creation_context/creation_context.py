@@ -149,6 +149,7 @@ class CreationContext(Cleanable):
         "_execute_no_hooks_no_overrides_compiled",
         "_no_overrides_executor",
         "_override_patch_map_phase10",
+        "_override_apply_with_socket_shape_prechecked_phase10",
         "_override_route_config_no_mutation",
         "_override_route_config_mutation",
         "_override_route_config_active",
@@ -224,6 +225,15 @@ class CreationContext(Cleanable):
         self._override_patch_map_phase10: Optional[Any] = (
             override_patch_map_phase10
         )
+        self._override_apply_with_socket_shape_prechecked_phase10: Optional[
+            Callable[..., Any]
+        ]
+        if override_patch_map_phase10 is None:
+            self._override_apply_with_socket_shape_prechecked_phase10 = None
+        else:
+            self._override_apply_with_socket_shape_prechecked_phase10 = (
+                override_patch_map_phase10._apply_with_socket_shape_prechecked
+            )
         self._override_route_config_no_mutation: Optional[OverrideRouteConfig] = (
             override_route_config_no_mutation
         )
@@ -391,6 +401,7 @@ class CreationContext(Cleanable):
         self._execute_no_hooks_no_overrides_compiled = None
         self._no_overrides_executor = None
         self._override_patch_map_phase10 = None
+        self._override_apply_with_socket_shape_prechecked_phase10 = None
         self._override_route_config_no_mutation = None
         self._override_route_config_mutation = None
         self._override_route_config_active = None
@@ -604,16 +615,18 @@ class CreationContext(Cleanable):
             else:
                 target_payload = override_payload
             if target_payload:
-                override_patch_map_phase10 = self._override_patch_map_phase10
+                override_apply_with_socket_shape_prechecked_phase10 = (
+                    self._override_apply_with_socket_shape_prechecked_phase10
+                )
                 try:
-                    if override_patch_map_phase10 is None:
+                    if override_apply_with_socket_shape_prechecked_phase10 is None:
                         raise RuntimeError(
                             "Phase 10 override patch map is required for meld execution."
                         )
                     (
                         override_map,
                         socket_shape,
-                    ) = override_patch_map_phase10._apply_with_socket_shape_prechecked(
+                    ) = override_apply_with_socket_shape_prechecked_phase10(
                         spell_override=target_payload,
                     )
                 except MeldExecutionError:
