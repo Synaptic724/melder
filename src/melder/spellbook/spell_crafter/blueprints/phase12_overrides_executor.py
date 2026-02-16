@@ -689,6 +689,7 @@ def _build_shape_source_step_metadata(
             )
         static_is_existing_unique_creation: Optional[bool] = None
         static_is_callable_spell: Optional[bool] = None
+        static_has_disposal_methods: Optional[bool] = None
         if spell_lookup is not None:
             spell = spell_lookup.get(spell_id)
             if spell is not None:
@@ -698,6 +699,7 @@ def _build_shape_source_step_metadata(
                     spell_is_class_spell = spell.is_class_spell
                     spell_is_method_spell = spell.is_method_spell
                     spell_is_lambda_spell = spell.is_lambda_spell
+                    spell_has_disposal_methods = spell.has_disposal_methods
                 except AttributeError:
                     spell = None
                 if spell is not None:
@@ -710,12 +712,18 @@ def _build_shape_source_step_metadata(
                         or bool(spell_is_method_spell)
                         or bool(spell_is_lambda_spell)
                     )
+                    static_has_disposal_methods = bool(spell_has_disposal_methods)
         if static_is_existing_unique_creation is None and "is_existing_unique_creation" in row:
             static_is_existing_unique_creation = bool(
                 row["is_existing_unique_creation"]
             )
         if static_is_callable_spell is None and "is_callable_spell" in row:
             static_is_callable_spell = bool(row["is_callable_spell"])
+        if (
+                static_has_disposal_methods is None
+                and "has_disposal_methods" in row
+        ):
+            static_has_disposal_methods = bool(row["has_disposal_methods"])
         step_metadata.append(
             (
                 spell_id,
@@ -734,6 +742,7 @@ def _build_shape_source_step_metadata(
                 contract_payload_items,
                 static_is_existing_unique_creation,
                 static_is_callable_spell,
+                static_has_disposal_methods,
             )
         )
     return tuple(step_metadata)
@@ -818,6 +827,7 @@ def _build_phase12_overrides_executor_shape_source(
             contract_payload_items,
             static_is_existing_unique_creation,
             static_is_callable_spell,
+            static_has_disposal_methods,
         ) = metadata
         _append_overrides_step_shape_source(
             lines=lines,
@@ -838,6 +848,7 @@ def _build_phase12_overrides_executor_shape_source(
             contract_payload_items=contract_payload_items,
             static_is_existing_unique_creation=static_is_existing_unique_creation,
             static_is_callable_spell=static_is_callable_spell,
+            static_has_disposal_methods=static_has_disposal_methods,
         )
 
     lines.extend([
@@ -1306,6 +1317,7 @@ def _append_no_overrides_kwargs_inline_source(
         has_contract_payload: bool,
         contract_payload_items: Tuple[Tuple[str, Any], ...],
         uses_positional_override: bool,
+        emit_empty_kwargs: bool = True,
 ) -> None:
     """
     Append generated source lines for no-override kwargs assembly.
@@ -1321,7 +1333,8 @@ def _append_no_overrides_kwargs_inline_source(
             and contract_positional_override is None
             and not has_contract_payload
     ):
-        lines.append(f"{indent}kwargs_{step_index} = {{}}")
+        if emit_empty_kwargs:
+            lines.append(f"{indent}kwargs_{step_index} = {{}}")
         return
 
     if (
@@ -1496,6 +1509,12 @@ def _append_overrides_construct_no_overrides_source(
         - Inlines `_build_kwargs_no_overrides(...)` semantics for shape lanes.
         - Preserves invoke semantics while inlining call dispatch.
     """
+    kwargs_always_empty = (
+        not positional_args_possible
+        and not dependency_resolution_order
+        and contract_positional_override is None
+        and not has_contract_payload
+    )
     _append_no_overrides_kwargs_inline_source(
         lines=lines,
         step_index=step_index,
@@ -1505,6 +1524,7 @@ def _append_overrides_construct_no_overrides_source(
         has_contract_payload=has_contract_payload,
         contract_payload_items=contract_payload_items,
         uses_positional_override=uses_positional_override,
+        emit_empty_kwargs=not kwargs_always_empty,
     )
     _append_overrides_invoke_source(
         lines=lines,
@@ -1513,6 +1533,7 @@ def _append_overrides_construct_no_overrides_source(
         positional_args_possible=positional_args_possible,
         static_is_existing_unique_creation=static_is_existing_unique_creation,
         static_is_callable_spell=static_is_callable_spell,
+        kwargs_always_empty=kwargs_always_empty,
     )
 
 
@@ -1524,6 +1545,7 @@ def _append_overrides_invoke_source(
         positional_args_possible: bool,
         static_is_existing_unique_creation: Optional[bool] = None,
         static_is_callable_spell: Optional[bool] = None,
+        kwargs_always_empty: bool = False,
 ) -> None:
     """
     Append generated source for step-level invoke dispatch.
@@ -1573,6 +1595,25 @@ def _append_overrides_invoke_source(
                 (
                     f"{body_indent}    instance_{step_index} = "
                     f"plan_step_{step_index}.spell.spell(*args_{step_index}, **call_kwargs_{step_index})"
+                ),
+                f"{body_indent}except Exception as exc:",
+                f"{body_indent}    raise MeldExecutionError(",
+                f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.current,",
+                f"{body_indent}        spell_name=plan_step_{step_index}.spell.spell_name,",
+                (
+                    f"{body_indent}        message=(\"Error invoking spell '\" + "
+                    f"plan_step_{step_index}.spell.spell_name + \"'.\"),"
+                ),
+                f"{body_indent}        inner=exc,",
+                f"{body_indent}    ) from exc",
+            ])
+            return
+        if kwargs_always_empty:
+            lines.extend([
+                f"{body_indent}try:",
+                (
+                    f"{body_indent}    instance_{step_index} = "
+                    f"plan_step_{step_index}.spell.spell()"
                 ),
                 f"{body_indent}except Exception as exc:",
                 f"{body_indent}    raise MeldExecutionError(",
@@ -1667,6 +1708,7 @@ def _append_overrides_step_shape_source(
         contract_payload_items: Tuple[Tuple[str, Any], ...],
         static_is_existing_unique_creation: Optional[bool],
         static_is_callable_spell: Optional[bool],
+        static_has_disposal_methods: Optional[bool],
 ) -> None:
     """
     Append one step block specialized by static target/existence metadata.
@@ -1681,19 +1723,42 @@ def _append_overrides_step_shape_source(
     positional_args_possible = (
         use_positional_override or has_static_root_positional_override
     )
+    many_registration_static_enabled = (
+        existence is Existence.many
+        and must_register
+        and static_has_disposal_methods is True
+    )
+    many_registration_runtime_enabled = (
+        existence is Existence.many
+        and must_register
+        and static_has_disposal_methods is None
+    )
+    registration_metadata_required = (
+        existence is not Existence.many
+        or many_registration_static_enabled
+        or many_registration_runtime_enabled
+    )
     lines.extend([
         f"    plan_step_{step_index} = steps[{step_index}]",
         f"    spell_{step_index} = step_spells[{step_index}]",
-        f"    spell_id_{step_index} = step_spell_ids[{step_index}]",
-        (
-            f"    has_disposal_methods_{step_index} = "
-            f"step_has_disposal_methods[{step_index}]"
-        ),
-        (
-            f"    disposal_methods_{step_index} = "
-            f"step_disposal_methods[{step_index}]"
-        ),
     ])
+    if registration_metadata_required:
+        lines.append(
+            f"    spell_id_{step_index} = step_spell_ids[{step_index}]"
+        )
+        if existence is not Existence.many or many_registration_runtime_enabled:
+            lines.append(
+                (
+                    f"    has_disposal_methods_{step_index} = "
+                    f"step_has_disposal_methods[{step_index}]"
+                )
+            )
+        lines.append(
+            (
+                f"    disposal_methods_{step_index} = "
+                f"step_disposal_methods[{step_index}]"
+            )
+        )
     if static_is_callable_spell is None:
         lines.extend([
             (
@@ -1789,19 +1854,20 @@ def _append_overrides_step_shape_source(
                 static_is_existing_unique_creation=effective_is_existing_unique_creation_static,
                 static_is_callable_spell=static_is_callable_spell,
             )
-        if must_register:
-            lines.extend([
-                f"    with creations_{step_index}._lock:",
-                (
-                    f"        _register_spell_instance_prebound("
-                    f"spell_id=spell_id_{step_index}, "
-                    f"instance=instance_{step_index}, "
-                    f"creations=creations_{step_index}, "
-                    f"existence=plan_step_{step_index}.existence, "
-                    f"has_disposal_methods=has_disposal_methods_{step_index}, "
-                    f"disposal_methods=disposal_methods_{step_index})"
-                ),
-            ])
+        if many_registration_static_enabled:
+            _append_overrides_many_register_inline_source(
+                lines=lines,
+                step_index=step_index,
+                indent="    ",
+                static_has_disposal_methods=True,
+            )
+        elif many_registration_runtime_enabled:
+            _append_overrides_many_register_inline_source(
+                lines=lines,
+                step_index=step_index,
+                indent="    ",
+                static_has_disposal_methods=None,
+            )
     elif existence in (
             Existence.unique_per_conduit,
             Existence.unique_per_spell_space,
@@ -2066,6 +2132,50 @@ def _append_overrides_step_shape_source(
     lines.append(
         f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
     )
+
+
+def _append_overrides_many_register_inline_source(
+        *,
+        lines: list[str],
+        step_index: int,
+        indent: str,
+        static_has_disposal_methods: Optional[bool],
+) -> None:
+    """
+    Append direct Existence.many registration source for one emitted step.
+
+    Contract:
+        - Mirrors `_register_spell_instance_prebound(...)` Existence.many logic.
+        - Registers only when disposal methods exist for the step spell.
+        - Avoids the generic registration helper dispatch on this hot lane.
+    """
+    if static_has_disposal_methods is False:
+        return
+    if static_has_disposal_methods is True:
+        lines.extend([
+            f"{indent}with creations_{step_index}._lock:",
+            f"{indent}    creations_{step_index}.add_many_creations(",
+            f"{indent}        spell_id_{step_index},",
+            f"{indent}        instance_{step_index},",
+            f"{indent}        has_disposal_methods=True,",
+            f"{indent}        disposal_methods=disposal_methods_{step_index},",
+            f"{indent}    )",
+        ])
+        return
+
+    lines.extend([
+        f"{indent}if has_disposal_methods_{step_index}:",
+        f"{indent}    with creations_{step_index}._lock:",
+        f"{indent}        creations_{step_index}.add_many_creations(",
+        f"{indent}            spell_id_{step_index},",
+        f"{indent}            instance_{step_index},",
+        (
+            f"{indent}            has_disposal_methods="
+            f"has_disposal_methods_{step_index},"
+        ),
+        f"{indent}            disposal_methods=disposal_methods_{step_index},",
+        f"{indent}        )",
+    ])
 
 
 def _append_overrides_step_source(

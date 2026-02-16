@@ -198,13 +198,165 @@ Phase12/CreationContext and validate with targeted profiler suites.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: The Phase12 override-emitter many-registration slice (inline `add_many_creations` + skip unused registration metadata locals) produced consistent override-lane wins across repeated runs with mixed/mostly-neutral fast-lane movement.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_overrides_many_register_inline_delta_vs_postrevert_baseline.txt:1-37, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1684-1699, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1802-1805, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2073-2095, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py:484-506
+  IMPACT: Adds a measured structural win on the override hot lane without correctness regressions in targeted tests.
+  NEXT: Keep this slice in working state and continue iterative tuning for remaining `_phase12_executor` hotspot cost.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Retain the Phase12 overrides many-registration inline slice for now and continue optimization from this baseline.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_overrides_many_register_inline_delta_vs_postrevert_baseline.txt:10-31, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:1-10, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_wide.summary.txt:1-10
+  IMPACT: Preserves override-path gains while we keep monitoring fast-lane variance in subsequent slices.
+  NEXT: Target another structural reduction inside generated `_phase12_executor` (override-value assembly/invoke branch structure) and re-run cadence.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Lock-gating the many-registration inline emitter (`if has_disposal_methods: with lock -> add_many_creations`) tightened this slice and produced a favorable latest run versus baseline on fast shallow/wide/diamond and override shallow/wide/diamond.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_overrides_many_register_inline_delta_vs_postrevert_baseline.txt:45-63, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1799-1802, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2070-2095
+  IMPACT: Current retained slice now avoids unnecessary lock acquisition on many-steps without disposal tracking.
+  NEXT: Continue from this baseline and target remaining `_phase12_executor` branch/assembly overhead.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Next `_phase12_executor` slice will specialize Existence.many registration on static disposal metadata so steps with statically-false disposal methods emit no registration branch/metadata loads at runtime.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1684-1696, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1798-1802, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2070-2095, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:7-10
+  IMPACT: Targets per-step branch/load overhead in the remaining override executor hotspot without changing public APIs.
+  NEXT: Implement static-disposal metadata in shape emission, validate phase12 unit tests, then run fast/override cprofile cadence for keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Static disposal specialization for Existence.many registration delivered a net-positive override profile (median wins on solo/wide/diamond, near-flat shallow) across three cadences while keeping all targeted tests green.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_overrides_many_static_disposal_registration_delta_vs_lock_gate_baseline.txt:1-37, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1696-1709, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1827-1839, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2122-2144, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py:499-536
+  IMPACT: Removes runtime many-registration work for static no-disposal steps and removes the runtime disposal-branch for static yes-disposal steps.
+  NEXT: Keep this slice and move to the next `_phase12_executor` structure reduction target.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Retain the static-disposal many-registration specialization slice in active baseline.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1696-1709, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1827-1839, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2122-2144, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_overrides_many_static_disposal_registration_delta_vs_lock_gate_baseline.txt:22-37
+  IMPACT: Preserves measured override-lane gains and lowers many-step runtime branching/metadata loads for static shapes.
+  NEXT: Re-rank remaining `_phase12_executor` costs (kwargs assembly/invoke path) and implement one structural follow-up slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Next slice will specialize no-override invoke emission so steps with statically-empty kwargs call callable spells directly (`spell()`) instead of allocating `{}` and invoking `spell(**kwargs)`.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1310-1360, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1530-1604, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:7-10
+  IMPACT: Targets hot-lane invoke overhead on override executors for steps that carry no dependency/contract/override payload.
+  NEXT: Implement emitter specialization + tests, then rerun fast/override cprofile cadence for keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Direct-call specialization for static empty-kwargs lanes produced strong median override wins on shallow/wide (and slight diamond win) across two cadences, with a modest solo tradeoff.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_overrides_direct_callable_empty_kwargs_delta_vs_static_disposal_baseline.txt:1-29, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1512-1536, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1611-1634, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py:550-564
+  IMPACT: Reduces no-override callable invoke overhead inside override executors by removing unnecessary `{}` allocation and `**kwargs` unpack on static-empty lanes.
+  NEXT: Retain this slice and continue ranking remaining `_phase12_executor` cost centers.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Retain the direct-call static empty-kwargs invoke specialization in active baseline.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1320-1336, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1512-1536, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1611-1634, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_overrides_direct_callable_empty_kwargs_delta_vs_static_disposal_baseline.txt:22-29
+  IMPACT: Keeps the latest structural reduction in override executor invoke paths while preserving green targeted validations.
+  NEXT: Continue wave-1 on the next structural hotspot with override-lane priority.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Next `_phase12_executor` slice will skip emitting `spell_{i} = step_spells[i]` for shape-specialized rows where creations target is statically caller/spellspace and spell locals are not consumed.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1742-1744, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1800-1807, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:7-10
+  IMPACT: Removes one repeated tuple-index load/local assignment from hot override step blocks without changing runtime semantics.
+  NEXT: Implement emitter guard + source-shape tests, then rerun unit and cprofile cadence for keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: The many caller/spellspace spell-local elision slice is correct but regresses retained-baseline medians in shallow/wide/diamond override lanes across three runs.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_overrides_many_caller_spell_local_elision_delta_vs_direct_callable_baseline.txt:1-42
+  IMPACT: This slice does not satisfy the retained-wave criterion (stable override-lane gains versus current baseline).
+  NEXT: Reject and revert this slice, then move to a different `_phase12_executor` structural target.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Reject and revert the many caller/spellspace spell-local elision slice in `phase12_overrides_executor`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_overrides_many_caller_spell_local_elision_delta_vs_direct_callable_baseline.txt:24-42
+  IMPACT: Keeps the retained direct-call/static-disposal baseline unchanged and avoids carrying measured regressions.
+  NEXT: Re-rank remaining `_phase12_executor` hotspots and implement a different structural slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Next `_phase12_executor` slice will prebind per-step `plan_step_{i}` defaults in the generated signature and remove per-call `plan_step_{i} = steps[i]` assignments.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:766-775, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1742-1744, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:7-10
+  IMPACT: Targets repeated tuple-index lookups on the hottest override executor path while preserving step semantics.
+  NEXT: Implement emitter changes + source-shape tests, then run unit and cprofile cadence for keep/revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: The prebound `plan_step_{i}` defaults slice shows mixed override movement and regresses wide override timing on both runs versus the retained baseline.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_overrides_prebound_plan_steps_delta_vs_direct_callable_baseline.txt:1-35
+  IMPACT: Candidate fails the stable-win retention bar for the active wave.
+  NEXT: Reject and revert this slice; keep retained baseline unchanged.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Reject and revert the prebound `plan_step_{i}` defaults slice.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_phase12_overrides_prebound_plan_steps_delta_vs_direct_callable_baseline.txt:19-35
+  IMPACT: Avoids carrying non-winning runtime changes into the override baseline.
+  NEXT: Re-rank remaining `_phase12_executor` structure costs and continue with a different slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 Wave-1 task is active with the latest retained baseline set to the
 CreationContext prebound Phase10 apply-callable slice
 (`wave1_creation_context_prebound_phase10_apply_postbaseline.txt`).
+The retained Phase12 follow-up slice inlines Existence.many registration
+inside the overrides shape emitter and skips unused registration metadata
+locals for non-registering many steps
+(`wave1_phase12_overrides_many_register_inline_delta_vs_postrevert_baseline.txt`).
+The retained follow-up specialization now also emits static disposal-aware
+many-registration lanes (skip entirely for static no-disposal rows; emit direct
+registration for static yes-disposal rows)
+(`wave1_phase12_overrides_many_static_disposal_registration_delta_vs_lock_gate_baseline.txt`).
+The retained invoke-path follow-up emits direct callable invocation for static
+empty-kwargs no-override lanes inside override executors
+(`wave1_phase12_overrides_direct_callable_empty_kwargs_delta_vs_static_disposal_baseline.txt`).
+The follow-up many caller/spellspace spell-local elision candidate was measured
+as non-winning and reverted
+(`wave1_phase12_overrides_many_caller_spell_local_elision_delta_vs_direct_callable_baseline.txt`).
+The follow-up prebound `plan_step_{i}` defaults candidate was also measured as
+non-winning and reverted
+(`wave1_phase12_overrides_prebound_plan_steps_delta_vs_direct_callable_baseline.txt`).
 The follow-up route-field prebind slice was rejected and reverted
 (`wave1_creation_context_prebound_route_fields_delta_vs_prebaseline.txt`).
-Next action is to target the next structural override runtime hotspot
-(`_execute_with_overrides` / `_phase12_executor`) and rerun normal cadence.
+Next action is to target the next structural override runtime hotspot inside
+generated `_phase12_executor` and rerun normal cadence.
 
 

@@ -481,6 +481,89 @@ def test_emit_phase12_overrides_executor_shape_source_uses_per_step_target_count
     assert "override_values_1 = _EMPTY_OVERRIDE_VALUES" in source
 
 
+def test_emit_phase12_overrides_executor_shape_source_inlines_many_registration() -> None:
+    """Shape emitter inlines Existence.many registration when must_register is true."""
+    row = _make_plan_row("root")
+    row["must_register"] = True
+
+    source = emit_phase12_overrides_executor_shape_source(
+        plan_rows=(row,),
+        root_spell_id="root",
+    )
+
+    assert "with creations_0._lock:" in source
+    assert "creations_0.add_many_creations(" in source
+    assert "_register_spell_instance_prebound(" not in source
+
+
+def test_emit_phase12_overrides_executor_shape_source_skips_many_registration_when_static_disposal_is_false() -> None:
+    """Shape emitter omits many-registration emission when disposal metadata is statically false."""
+    row = _make_plan_row("root")
+    row["must_register"] = True
+    spell = _make_spell("root")
+    spell.has_disposal_methods = False
+
+    source = emit_phase12_overrides_executor_shape_source(
+        plan_rows=(row,),
+        root_spell_id="root",
+        spell_lookup={"root": spell},
+    )
+
+    assert "creations_0.add_many_creations(" not in source
+    assert "spell_id_0 = step_spell_ids[0]" not in source
+    assert "has_disposal_methods_0 = step_has_disposal_methods[0]" not in source
+    assert "disposal_methods_0 = step_disposal_methods[0]" not in source
+
+
+def test_emit_phase12_overrides_executor_shape_source_inlines_many_registration_without_runtime_disposal_branch_when_static_true() -> None:
+    """Shape emitter emits direct many-registration when disposal metadata is statically true."""
+    row = _make_plan_row("root")
+    row["must_register"] = True
+    spell = _make_spell("root")
+    spell.has_disposal_methods = True
+    spell.disposal_method_names = ("cleanup",)
+
+    source = emit_phase12_overrides_executor_shape_source(
+        plan_rows=(row,),
+        root_spell_id="root",
+        spell_lookup={"root": spell},
+    )
+
+    assert "creations_0.add_many_creations(" in source
+    assert "if has_disposal_methods_0:" not in source
+    assert "has_disposal_methods=True" in source
+    assert "has_disposal_methods_0 = step_has_disposal_methods[0]" not in source
+
+
+def test_emit_phase12_overrides_executor_shape_source_skips_many_registration_metadata_when_unused() -> None:
+    """Shape emitter skips per-step registration metadata for non-registering many rows."""
+    source = emit_phase12_overrides_executor_shape_source(
+        plan_rows=(_make_plan_row("root"),),
+        root_spell_id="root",
+    )
+
+    assert "spell_id_0 = step_spell_ids[0]" not in source
+    assert "has_disposal_methods_0 = step_has_disposal_methods[0]" not in source
+    assert "disposal_methods_0 = step_disposal_methods[0]" not in source
+
+
+def test_emit_phase12_overrides_executor_shape_source_uses_direct_callable_invoke_for_static_empty_kwargs() -> None:
+    """Shape emitter calls callable spells directly when kwargs are statically empty."""
+    spell = _make_spell("root")
+    spell.is_class_spell = True
+    spell.spell = lambda: "ok"
+
+    source = emit_phase12_overrides_executor_shape_source(
+        plan_rows=(_make_plan_row("root"),),
+        root_spell_id="root",
+        spell_lookup={"root": spell},
+    )
+
+    assert "kwargs_0 = {}" not in source
+    assert "plan_step_0.spell.spell()" in source
+    assert "plan_step_0.spell.spell(**kwargs_0)" not in source
+
+
 def test_build_phase12_override_step_target_counts_from_rows_filters_duplicate_spell_steps() -> None:
     """Per-step target counts honor row-level shared/non-shared matching rules."""
     socket_a = _SocketRef("dup", "value", 10, "normal")
