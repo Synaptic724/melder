@@ -92,7 +92,7 @@ _TEMPLATE_EXISTING_NO_OVERRIDES_ONLY = (
 - `src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py` (discovery evidence only unless approved for implementation)
 
 ## Validation
-- Not run.
+- Latest (`CC-H5`): unit validation green (`17 passed, 1 warning`), four 10k post-test compares captured versus prebaseline, and fresh fast/overrides cProfile timing reruns captured.
 - If experimentation becomes implementation, enforce the story benchmark gate and `DECISION_REQUEST` rules.
 - Recommended commands:
   - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py -q`
@@ -114,6 +114,87 @@ _TEMPLATE_EXISTING_NO_OVERRIDES_ONLY = (
 - [ ] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - per user direction, `CC-H5` specialization+fallback changes were removed and `creation_context_codegen.py` is restored to the explicit route-template matrix path.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:261-274, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:909-964, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:1064-1086
+  IMPACT: The non-winning `CC-H5` patch is no longer in the active checkpoint.
+  NEXT: Capture rollback validation artifacts and continue with next ticket slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: `CC-H5` rollback validation is green (`17 passed, 1 warning`) and two 10k rollback compares are captured versus the `CC-H5` prebaseline with winning aggregate lane deltas in both runs (`combined -12.5465%/-13.7211%`, `fast -13.1502%/-14.4139%`, `overrides -6.5270%/-6.8141%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h5_postrevert_unit_validation_2026-02-16.txt:1-8, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h5_postrevert_10k_2026-02-16_snapshot_summary_2026-02-16_16-59-19.txt:45-47, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h5_postrevert_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_16-59-27.txt:45-47
+  IMPACT: Revert correctness and rollback performance evidence are recorded before advancing.
+  NEXT: Move high-risk routing to the next planned work item.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - `CC-H5` is functionally green but benchmark-mixed after four 10k post-test compares versus prebaseline: aggregate deltas are near-neutral for `combined` (`avg -0.1272%`, `median -0.0117%`) and slightly winning for fast (`avg -0.5484%`), while overrides aggregate is consistently regressive (`avg +4.0722%`, `median +4.3148%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h5_posttest_10k_aggregate4_2026-02-16.txt:10-20, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h5_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_16-40-02.txt:45-51, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h5_posttest_10k_seq2_2026-02-16_snapshot_summary_2026-02-16_16-40-09.txt:45-51, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h5_posttest_10k_seq3_2026-02-16_snapshot_summary_2026-02-16_16-40-16.txt:45-51, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h5_posttest_10k_seq4_2026-02-16_snapshot_summary_2026-02-16_16-43-00.txt:45-51
+  IMPACT: High-risk queue should pause at decision gate; recommendation is revert for balanced-lane policy, or keep only if non-overrides gains are prioritized over overrides regressions.
+  NEXT: User chooses keep or revert for `CC-H5`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Added a fourth 10k post-test compare (`seq4`) to account for host-load noise and completed the standard `CC-H5` post-test gate set (`seq1..seq4`) against the same prebaseline.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h5_posttest_10k_2026-02-16_snapshot_summary_2026-02-16_16-40-02.txt:35-38, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h5_posttest_10k_seq2_2026-02-16_snapshot_summary_2026-02-16_16-40-09.txt:35-38, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h5_posttest_10k_seq3_2026-02-16_snapshot_summary_2026-02-16_16-40-16.txt:35-38, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h5_posttest_10k_seq4_2026-02-16_snapshot_summary_2026-02-16_16-43-00.txt:35-38
+  IMPACT: Decision context now includes an extra repeated run under active system noise before requesting keep/revert.
+  NEXT: Use aggregate summary across all four runs for gate decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Unit validation for `CC-H5` remains green (`17 passed, 1 warning`) and per-graph deltas across four 10k runs are polarized: fast `shallow` improves (`avg -7.1237%`) while fast `diamond` regresses (`avg +5.7442%`); overrides `shallow` improves (`avg -14.1875%`) while overrides `wide` and `diamond` regress (`avg +11.5446%`, `avg +11.6434%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h5_posttest_unit_validation_2026-02-16.txt:1-8, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h5_posttest_10k_aggregate4_2026-02-16.txt:14-20
+  IMPACT: Signal suggests route-shape tradeoff rather than uniform improvement, which elevates the keep/revert policy decision.
+  NEXT: Keep patch state pending explicit user decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Fresh fast/overrides cProfile timing reruns succeed and preserve the same dominant shallow call chains (`_creation_context_execute_no_overrides_only -> <melder_phase12_no_overrides_step_executor>` and `_creation_context_execute_overrides_only -> _execute_with_overrides`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/fast_graphs_melder/melder_fast_timings_shallow.summary.txt:1-29, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:1-29
+  IMPACT: `CC-H5` does not show hotspot displacement in shallow cProfile traces despite mixed snapshot deltas.
+  NEXT: Hold for keep/revert decision instead of auto-advancing to next high-risk candidate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Implemented compact `CC-H5` specialization+fallback slice by precompiling high-frequency routes (`existing_creation`, `many`, `spellspace`) and routing cold routes (`unique_per_conduit`, `shared`) through generic fallback templates parameterized by route key.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:269-275, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:351-430, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:965-1050, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:1111-1303
+  IMPACT: Template compile surface shifts toward benchmark-hot routes while preserving full route coverage through generic fallback lanes.
+  NEXT: Run unit validation and repeated 10k post-test compares versus the `CC-H5` prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: The active snapshot benchmark lanes predominantly exercise CreationContext routes `many`, `spellspace`, and `existing_creation`: fast-lane melder ops bind roots as `Existence.many` plus spellspace roots as `Existence.unique_per_spell_space`, while overrides-lane melder ops use `Existence.many` for payload graphs and `Existence.unique` (`existing_creation` route) for solo.
+  EVIDENCE: benchmarks/testing_other_di/run_snapshot_timings.py:263-303, benchmarks/testing_other_di/run_snapshot_timings.py:325-339, benchmarks/testing_other_di/test_shallow_all.py:1094-1109, benchmarks/testing_other_di/test_overrides_all.py:563-569
+  IMPACT: `CC-H5` can target hot-route specialization around this observed set and use one generic fallback lane for colder routes (`unique_per_conduit`, `shared`).
+  NEXT: Implement compact specialization+fallback selector slice in `creation_context_codegen.py` and run the standard gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Captured fresh `CC-H5` 10k prebaseline snapshot with lane summaries `combined_mean_ns=0.014483ms`, `fast_cycle_mean_ns=0.026325ms`, and `overrides_root_mean_ns=0.002640ms` under current host load.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h5_prebaseline_10k_2026-02-16_snapshot_summary_2026-02-16_16-34-02.txt:1-34
+  IMPACT: `CC-H5` now has a benchmark anchor so compact implementation can proceed with the same post-test gate.
+  NEXT: Scope and implement a bounded specialization+fallback slice, then run unit validation and repeated 10k compares.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-16
   TYPE: PLAN
   CLAIM: With `CC-H4` reverted and rollback validation captured, high-risk routing advances to `CC-H5` (profiler-guided specialization policy).

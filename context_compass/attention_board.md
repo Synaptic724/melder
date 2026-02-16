@@ -15,15 +15,24 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: creationcontext high-risk lane kickoff | in_progress | codex | none | capture `CC-H5` 10k prebaseline and start compact implementation slice | `context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md` | 2026-02-16 | REQUIRED |
+| task: creationcontext high-risk lane kickoff | in_progress | codex | none | `CC-H5` reverted; move to next codegen work item selection | `context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md` | 2026-02-16 | REQUIRED |
 
 ## Active Attention Details
 - DATE: 2026-02-16
-  TYPE: PLAN
-  CLAIM: `CC-H4` decision gate is closed after user-directed revert; high-risk routing advances to `CC-H5` for the next compact cycle.
-  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md:44-50, context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md:125-132
-  IMPACT: Active item is unblocked and no longer waiting on `CC-H4` keep/revert input.
-  NEXT: Capture `CC-H5` 10k prebaseline and proceed with the same unit + repeated 10k gate.
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user directed revert for `CC-H5`; specialization+fallback code was removed and `creation_context_codegen.py` is restored to explicit route-template selection.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md:118-134, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:909-964, src/melder/aether/conduit/meld/creation_context/creation_context_codegen.py:1064-1086
+  IMPACT: High-risk decision gate is closed and no pending keep/revert blocker remains.
+  NEXT: Continue with next codegen ticket tranche.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: `CC-H5` rollback validation artifacts are captured (`17 passed, 1 warning`) with two 10k rollback compares vs prebaseline, both showing winning aggregate lane deltas (`combined`, `fast`, and `overrides` all negative delta_pct).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h5_postrevert_unit_validation_2026-02-16.txt:1-8, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h5_postrevert_10k_2026-02-16_snapshot_summary_2026-02-16_16-59-19.txt:45-47, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave3_creationcontext_cc_h5_postrevert_10k_repeat1_2026-02-16_snapshot_summary_2026-02-16_16-59-27.txt:45-47
+  IMPACT: Revert is validated and benchmark-backed before advancing.
+  NEXT: Select and execute the next queued optimization target.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
