@@ -46,6 +46,7 @@ This discovery lane targets generator architecture quality:
 - [ ] Quantify compile-time template fan-out and identify dedupe opportunities.
 - [ ] Propose 2-3 deep strategy options with tradeoffs (lazy compile, merged templates, code-object caching).
 - [ ] Define validation experiment plan for selected option.
+- [ ] Enforce benchmark gate for every follow-on optimization slice (pre-test baseline, post-test cadence, and mandatory revert on failed/non-winning deltas).
 
 ## Acceptance Criteria
 - Story documents at least three deep codegen findings with concrete evidence.
@@ -55,8 +56,32 @@ This discovery lane targets generator architecture quality:
 ## Validation / Test Plan
 - Discovery-only: no runtime edits in this story.
 - Validation command recommendations for follow-on implementation:
+  - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py -q`
   - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py -q -s`
   - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py -q -s`
+
+## Benchmark Gate (Mandatory)
+- Pre-test baseline (before any code edit):
+  - Run unit suite:
+    - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py -q`
+  - Run benchmark cadence using the same suites used throughout wave-1:
+    - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py -q -s` (run twice sequentially)
+    - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py -q -s` (run twice sequentially)
+  - Capture medians and write baseline artifact/delta context against:
+    - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_retained_baseline_checkpoint_2026-02-16.txt`
+- Post-test (after each candidate edit):
+  - Re-run the same unit + benchmark cadence.
+  - Emit a candidate delta artifact under:
+    - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/`
+- Revert gate (non-negotiable):
+  - If unit or benchmark command fails, revert candidate immediately.
+  - If measured delta is non-winning versus retained checkpoint, revert candidate immediately.
+  - After revert, run one full post-revert validation pass:
+    - unit suite once, fast cprofile once, overrides cprofile once.
+  - Emit post-revert validation artifact and explicit result-announce note (`RESULT: REVERTED` + reason + artifact path).
+- Retain gate:
+  - Retain only candidates that pass validation and satisfy checkpoint comparison criteria.
+  - Emit explicit result-announce note (`RESULT: RETAINED` + median deltas + artifact path).
 
 ## Risks / Mitigations
 - Risk: overfitting strategy to source shape without compile-frequency evidence.

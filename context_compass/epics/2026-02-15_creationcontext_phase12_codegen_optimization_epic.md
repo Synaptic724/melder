@@ -119,6 +119,26 @@ The MRP is a measurable, contract-safe optimization tranche:
 - Benchmark validation via route-matrix or equivalent current-head performance
   harness output.
 
+## Benchmark Gate (Mandatory For Optimization Slices)
+- Every optimization slice under this epic must follow:
+  - Pre-test baseline cadence (before edit):
+    - targeted unit suite(s) for touched module,
+    - `benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py` run twice sequentially,
+    - `benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py` run twice sequentially.
+  - Post-test cadence (after edit): rerun the same suites.
+  - Delta comparison against retained checkpoint:
+    - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_retained_baseline_checkpoint_2026-02-16.txt`
+- Revert rule:
+  - If validation command fails, revert candidate immediately.
+  - If candidate delta is non-winning versus retained checkpoint, revert candidate immediately.
+  - After revert, run one full post-revert validation pass and emit a validation artifact.
+- Keep rule:
+  - Retain only candidates that are validation-green and checkpoint-winning per lane criteria.
+- Announcement rule:
+  - Every optimization slice must publish one explicit outcome note in the active task/story:
+    - `RESULT: RETAINED` + median deltas + artifact path, or
+    - `RESULT: REVERTED` + reason + artifact path.
+
 ## Rollout / Adoption Plan
 - Run discovery refresh first.
 - Execute rank-1 and rank-2 slices in separate reviewable tasks.
@@ -204,6 +224,15 @@ The MRP is a measurable, contract-safe optimization tranche:
   EVIDENCE: context_compass/stories/2026-02-16_deep_creation_context_codegen_strategy_discovery_story.md:1-36, context_compass/stories/2026-02-16_deep_phase12_no_overrides_codegen_strategy_discovery_story.md:1-36, context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md:1-36
   IMPACT: Epic scope now includes deeper codegen-strategy discovery lanes beyond wave-1 runtime micro-slices.
   NEXT: Drive option ranking and experiment planning in these three stories.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Enforced a mandatory benchmark gate for all optimization slices under this epic: pre-test baseline, post-test comparison, and immediate revert on failing tests or non-winning deltas.
+  EVIDENCE: context_compass/epics/2026-02-15_creationcontext_phase12_codegen_optimization_epic.md:132-147, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_retained_baseline_checkpoint_2026-02-16.txt:1-20
+  IMPACT: Keeps future codegen optimization work aligned with the same benchmark cadence and keep/revert behavior used in wave-1.
+  NEXT: Apply this gate in every new implementation task opened under the epic.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 

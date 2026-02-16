@@ -15,33 +15,24 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| epic: creationcontext/phase12 codegen optimization | in_progress | codex | none | deep discovery stories opened for all 3 codegen modules; continue option ranking and experiment planning per story | `context_compass/epics/2026-02-15_creationcontext_phase12_codegen_optimization_epic.md` | 2026-02-16 | REQUIRED |
+| story: deep phase12 overrides codegen strategy discovery | in_progress | codex | none | first compact slice was reverted as non-winning; choose next compact candidate under same benchmark gate | `context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md` | 2026-02-16 | REQUIRED |
 
 ## Active Attention Details
 - DATE: 2026-02-16
   TYPE: DECISION
-  CLAIM: Opened three deep discovery stories, one per target codegen module (`creation_context_codegen.py`, `phase12_no_overrides_executor.py`, `phase12_overrides_executor.py`).
-  EVIDENCE: context_compass/stories/2026-02-16_deep_creation_context_codegen_strategy_discovery_story.md:1-36, context_compass/stories/2026-02-16_deep_phase12_no_overrides_codegen_strategy_discovery_story.md:1-36, context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md:1-36
-  IMPACT: Deep strategy discovery is now explicitly separated by module instead of a single broad ticket.
-  NEXT: Continue discovery notes and option ranking in each story.
-  REREAD: REQUIRED
-  SCORE_0_TO_10: 10
-
-- DATE: 2026-02-16
-  TYPE: FACT
-  CLAIM: Deep findings are now captured against unconsidered generator internals: CreationContext template matrix compile fan-out, no-overrides monolithic emitted step blocks/transient signature width, and overrides shape-metadata plus inline kwargs/invoke duplication.
-  EVIDENCE: context_compass/stories/2026-02-16_deep_creation_context_codegen_strategy_discovery_story.md:74-100, context_compass/stories/2026-02-16_deep_phase12_no_overrides_codegen_strategy_discovery_story.md:76-102, context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md:76-110
-  IMPACT: Discovery focus has moved from micro runtime tweaks to generator architecture quality.
-  NEXT: Convert top ranked strategy options into implementation tasks.
+  CLAIM: Benchmark discipline is standardized across all deep codegen stories: pre-test baseline, post-test comparison, immediate revert on failing/non-winning deltas, plus explicit `RESULT` announcement notes.
+  EVIDENCE: context_compass/epics/2026-02-15_creationcontext_phase12_codegen_optimization_epic.md:122-140, context_compass/stories/2026-02-16_deep_creation_context_codegen_strategy_discovery_story.md:63-84, context_compass/stories/2026-02-16_deep_phase12_no_overrides_codegen_strategy_discovery_story.md:63-84, context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md:63-84
+  IMPACT: Non-overrides and overrides follow-on optimization tasks now share one enforceable benchmark keep/revert contract and outcome-reporting format.
+  NEXT: Copy this gate verbatim into each newly opened implementation task from deep story lanes.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
 - DATE: 2026-02-16
   TYPE: PLAN
-  CLAIM: Next step is to finish deep option ranking across the three stories and open one implementation task from the top strategy lane.
-  EVIDENCE: context_compass/epics/2026-02-15_creationcontext_phase12_codegen_optimization_epic.md:88-101, context_compass/epics/2026-02-15_creationcontext_phase12_codegen_optimization_epic.md:188-201
-  IMPACT: Keeps epic execution in deep-discovery-first mode before new optimization code edits.
-  NEXT: Select the first generator-strategy experiment and create its task ticket.
+  CLAIM: First compact implementation slice completed with a non-winning result and was reverted; story-level routing resumes for next-candidate selection.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_cold_path_helper_extraction_task.md:101-135, context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md:214-229
+  IMPACT: We keep benchmark discipline and avoid retaining regressions while preserving momentum for the next compact iteration.
+  NEXT: Select next compact candidate (narrower rank-1 variant or rank-2 metadata snapshot caching) and open a new gated task.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
