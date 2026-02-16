@@ -15,9 +15,27 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12 no-overrides high-risk discovery | in_progress | codex | none | run NO-H1 10k prebaseline and continue with 10k before/after decision gate | `context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md` | 2026-02-16 | REQUIRED |
+| task: phase12 no-overrides high-risk discovery | in_progress | codex | none | run NO-H4 10k prebaseline and continue with 10k before/after decision gate | `context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md` | 2026-02-16 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected option `1` for NO-H1; transient vectorized runtime changes were removed and rollback validation was completed.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:181-188, benchmarks/testing_other_di/profiles/baselines/no_h1_revert_validation_2026-02-16.txt:3-16
+  IMPACT: NO-H1 decision gate is closed and high-risk no-overrides queue can advance.
+  NEXT: Continue at NO-H4 with a fresh 10k prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - NO-H1 transient vectorized runtime loop is unit-green but benchmark-non-winning versus its 10k prebaseline (`fast mean +4.096%`, `overrides mean +0.872%`, `combined +2.484%`); recommended direction is revert.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h1_posttest_validation_2026-02-16.txt:3-5, benchmarks/testing_other_di/profiles/baselines/no_h1_posttest_validation_2026-02-16.txt:13-16, benchmarks/testing_other_di/profiles/baselines/no_h1_posttest_validation_2026-02-16.txt:19-32
+  IMPACT: High-risk no-overrides lane is paused at the decision gate and should not auto-advance.
+  NEXT: User chooses keep, revert, or one additional refinement pass.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: RESULT: REVERTED - NO-H2 segmented-helper slice is reverted after repeated fast baseline regressions; lane advances to NO-H1.

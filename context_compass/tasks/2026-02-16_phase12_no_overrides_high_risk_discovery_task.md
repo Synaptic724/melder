@@ -26,8 +26,8 @@ stronger controls and explicit decision points.
 - [x] Document at least 2 high-risk redesign candidates and their architecture impact.
 - [x] Define prerequisite guards (tests, instrumentation, rollback) per candidate.
 - [x] Provide recommendation criteria for promotion to implementation.
-- [ ] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - High-risk candidate briefs with migration concerns and payoff hypotheses.
@@ -150,6 +150,60 @@ Execution order:
   EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h2_revert_validation_2026-02-16.txt:12-15
   IMPACT: Reduces decision churn from short-window variance and keeps gate behavior consistent across upcoming candidates.
   NEXT: Apply the 10k pre/post gate for NO-H1.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: Captured NO-H1 pre-edit 10k baseline artifacts for both fast and overrides lanes using iteration mode (`sample_count=10000` on timing categories) to lock the before-state checkpoint.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_h1_prebaseline_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_h1_prebaseline_2026-02-16.jsonl:1-8
+  IMPACT: High-risk NO-H1 implementation can now be judged against a same-process 10k before baseline.
+  NEXT: Implement NO-H1 (transient vectorized runtime loop path) and run unit + 10k post-test compare.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Implemented NO-H1 by replacing transient source-string executor compilation with a vectorized runtime loop executor built from dependency-index arrays (`CALL0..CALL8`) and step callables, while preserving emitted step-source fallback for unsupported transient call modes.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:55-198, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:418-708, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:177-263
+  IMPACT: NO-H1 architecture shift is now active in the transient lane without generated source compilation on supported transient schemas.
+  NEXT: Evaluate keep/revert using unit + 10k post-test benchmark deltas versus NO-H1 prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-H1 post-test validation is unit-green (`27 passed, 1 warning`) but benchmark-regressive versus 10k prebaseline (`fast mean +4.096%`, `overrides mean +0.872%`, `combined +2.484%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h1_posttest_validation_2026-02-16.txt:3-5, benchmarks/testing_other_di/profiles/baselines/no_h1_posttest_validation_2026-02-16.txt:13-16, benchmarks/testing_other_di/profiles/baselines/no_h1_posttest_validation_2026-02-16.txt:19-32
+  IMPACT: Current NO-H1 candidate does not satisfy the lane's aggregate keep gate.
+  NEXT: Escalate a `DECISION_REQUEST` with recommendation to revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - NO-H1 transient vectorized runtime loop is functionally valid but benchmark-non-winning versus its 10k prebaseline; recommend revert unless user wants an additional refinement pass.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h1_posttest_validation_2026-02-16.txt:13-16, benchmarks/testing_other_di/profiles/baselines/no_h1_posttest_validation_2026-02-16.txt:19-32
+  IMPACT: High-risk no-overrides lane is paused at keep/revert gate and should not auto-advance.
+  NEXT: User chooses keep, revert, or one additional NO-H1 refinement pass.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected option `1` (revert now) for NO-H1; transient vectorized runtime changes were removed and no-overrides executor/test files are restored to the pre-NO-H1 shape.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:116-133, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:210-227, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:177-267
+  IMPACT: Non-winning NO-H1 candidate is out of the active checkpoint and high-risk queue can advance.
+  NEXT: Continue to NO-H4 and capture a fresh 10k prebaseline before edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-H1 rollback validation is unit-green (`27 passed, 1 warning`) and 10k rollback benchmark artifacts are captured for fast/overrides lanes.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h1_revert_validation_2026-02-16.txt:3-5, benchmarks/testing_other_di/profiles/baselines/no_h1_revert_validation_2026-02-16.txt:7-16, benchmarks/testing_other_di/profiles/baselines/no_h1_revert_validation_2026-02-16.txt:18-31
+  IMPACT: Revert decision is validated and documented before moving to the next candidate.
+  NEXT: Start NO-H4 prebaseline and repeat the 10k pre/post decision gate.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
