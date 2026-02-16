@@ -15,9 +15,27 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | empty-kwargs constant slice was rejected/reverted after pre/post cadence regression; continue from retained baseline and target a different structural hotspot | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
+| task: phase12/creationcontext codegen optimize wave1 | in_progress | codex | none | one-key patch-map identity slice retained after cadence wins; re-rank `_execute_with_overrides` and `_phase12_executor` hotspots from new baseline | `context_compass/tasks/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md` | 2026-02-15 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Retain the one-key patch-map identity slice. The one-key lane in `_apply_with_socket_shape_prechecked(...)` now uses direct key lookup plus object-identity cache checks and measured cadence deltas were favorable on all override lanes.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:299-323, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_onekey_identity_delta_vs_prebaseline.txt:4-7, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:1-10
+  IMPACT: Active retained baseline moves to `wave1_patchmaps_onekey_identity_postbaseline.txt`.
+  NEXT: Continue with the next structural hotspot slice in `_execute_with_overrides` or `_phase12_executor`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Matched cadence completed (`overrides x5`, `fast x3`) with post-vs-pre deltas: overrides `solo -2.37%`, `shallow -7.06%`, `wide -7.30%`, `diamond -7.98%`; fast reference `solo -9.93%`, `shallow -5.50%`, `wide -9.57%`, `diamond -7.42%`. Focused validations are also green (`21 passed`, `48 passed`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_onekey_identity_prebaseline.txt:1-13, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_onekey_identity_postbaseline.txt:1-13, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_onekey_identity_delta_vs_prebaseline.txt:4-13, benchmarks/testing_other_di/profiles/overrides_graphs_melder/validation_unit_wave1_patchmaps_onekey_identity_slice.txt:9-17, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_onekey_identity_post_bench_runs.txt:2-599
+  IMPACT: Slice is backed by repeatable artifacts and can stay retained while we iterate further.
+  NEXT: Re-rank hotspots and implement next medium/high-risk change.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-15
   TYPE: DECISION
   CLAIM: Reject and revert the empty-kwargs constant slice. Initial pre/post window was mixed and a follow-up overrides-only rerun regressed on all override lanes versus pre-baseline (`solo +4.36%`, `shallow +7.18%`, `wide +1.16%`, `diamond +4.15%`), so the slice is not retained.

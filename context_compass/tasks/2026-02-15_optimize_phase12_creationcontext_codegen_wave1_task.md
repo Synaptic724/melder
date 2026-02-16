@@ -65,6 +65,42 @@ Phase12/CreationContext and validate with targeted profiler suites.
 ## Notes
 - DATE: 2026-02-15
   TYPE: DECISION
+  CLAIM: Retain the one-key patch-map identity slice. The one-key lane rewrite in `_apply_with_socket_shape_prechecked(...)` reduced measured override timings across all four graphs in the matched cadence window, and the latest shallow hotspot summary no longer shows the patch-map function in the top-8 list.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:104-104, src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:299-323, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_onekey_identity_delta_vs_prebaseline.txt:4-7, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:1-10
+  IMPACT: Active retained baseline now includes this one-key identity rewrite and provides a lower starting point for the next structural hotspot tranche.
+  NEXT: Re-rank `_execute_with_overrides` and `_phase12_executor` hotspots from this retained state and implement the next slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: MEASURE
+  CLAIM: Matched cadence reruns completed (`overrides x5`, `fast x3`) after focused validation. Post-vs-pre deltas are: overrides `solo -2.37%`, `shallow -7.06%`, `wide -7.30%`, `diamond -7.98%`; fast reference window is also lower (`solo -9.93%`, `shallow -5.50%`, `wide -9.57%`, `diamond -7.42%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_onekey_identity_prebaseline.txt:1-13, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_onekey_identity_postbaseline.txt:1-13, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_onekey_identity_delta_vs_prebaseline.txt:1-13, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_patchmaps_onekey_identity_post_bench_runs.txt:1-981
+  IMPACT: The slice has measured keep/revert evidence with durable benchmark artifacts.
+  NEXT: Continue optimization from this retained baseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: FACT
+  CLAIM: One-key override application now extracts payload by key iteration + direct dict lookup and uses direct object-identity cache checks (`is`) instead of `id(...)` for the single-value cache lane.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:104-104, src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:148-148, src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:299-303, src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:323-323
+  IMPACT: Removes one-key `.items()` tuple creation and explicit `id(...)` calls on the hottest single-key path while preserving cache semantics.
+  NEXT: Keep this in retained baseline and re-rank next hotspot.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
+  CLAIM: Next structural slice targets the one-key hot lane in `OverridePatchMap._apply_with_socket_shape_prechecked(...)` by removing avoidable `dict.items()` tuple materialization and reducing repeated `id(...)` calls on cache-hit and cache-miss paths.
+  EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.summary.txt:8-12, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:54-54, benchmarks/testing_other_di/profiles/overrides_graphs_melder/melder_overrides_timings_shallow.hotspots.json:201-208, src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:298-353
+  IMPACT: Keeps scope on the currently measured top residual override-preprocessing hotspot without changing override conflict/precedence semantics.
+  NEXT: Patch the one-key lane in `patch_maps.py`, run focused unit/component validation, then run baseline/post benchmark cadence for keep-or-revert.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-15
+  TYPE: DECISION
   CLAIM: Reject and revert the empty-kwargs constant slice (`_EMPTY_KWARGS` use in no-overrides runtime helper and overrides shape emission). A clean pre/post cadence from fresh baseline did not produce a stable win and the follow-up overrides-only rerun regressed all override lanes versus pre-baseline.
   EVIDENCE: benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_emptykwargs_constant_delta_vs_prebaseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_emptykwargs_constant_overridesonly_delta_vs_prebaseline.txt:1-11, benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_emptykwargs_constant_overridesonly_postbaseline.txt:1-11
   IMPACT: No optimization from this slice is retained; source files were restored to baseline behavior.
@@ -1028,6 +1064,6 @@ Phase12/CreationContext and validate with targeted profiler suites.
 
 ## Context / Handoff Summary
 Wave-1 task is active with the latest retained baseline set to the
-patch-map prechecked-entry slice (`wave1_patchmaps_prechecked_entry_baseline.txt`).
+one-key patch-map identity slice (`wave1_patchmaps_onekey_identity_postbaseline.txt`).
 Next action is to target the next structural override runtime hotspot
 (`_execute_with_overrides` / `_phase12_executor`) and rerun normal cadence.

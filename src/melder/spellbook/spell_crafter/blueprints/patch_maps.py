@@ -101,7 +101,7 @@ class OverridePatchMap(Cleanable):
         "_specificity_by_spec",
         "_resolved_targets_by_raw_key",
         "_last_single_raw_key",
-        "_last_single_value_id",
+        "_last_single_value",
         "_last_single_override_map",
         "_last_single_socket_shape",
         "_last_multi_signature",
@@ -145,7 +145,7 @@ class OverridePatchMap(Cleanable):
             tuple[tuple[SocketRef, ...], _Specificity, tuple[tuple[object, ...], ...]],
         ] = {}
         self._last_single_raw_key: Optional[str] = None
-        self._last_single_value_id: int = -1
+        self._last_single_value: Optional[object] = None
         self._last_single_override_map: Optional[Dict[SocketRef, object]] = None
         self._last_single_socket_shape: Optional[tuple[tuple[object, ...], ...]] = None
         self._last_multi_signature: Optional[tuple[tuple[str, int], ...]] = None
@@ -167,7 +167,7 @@ class OverridePatchMap(Cleanable):
         self._specificity_by_spec.clear()
         self._resolved_targets_by_raw_key.clear()
         self._last_single_raw_key = None
-        self._last_single_value_id = -1
+        self._last_single_value = None
         self._last_single_override_map = None
         self._last_single_socket_shape = None
         self._last_multi_signature = None
@@ -178,7 +178,7 @@ class OverridePatchMap(Cleanable):
         self._specificity_by_spec = None
         self._resolved_targets_by_raw_key = None
         self._last_single_raw_key = None
-        self._last_single_value_id = None
+        self._last_single_value = None
         self._last_single_override_map = None
         self._last_single_socket_shape = None
         self._last_multi_signature = None
@@ -296,10 +296,11 @@ class OverridePatchMap(Cleanable):
         if not spell_override:
             return {}, ()
         if len(spell_override) == 1:
-            raw_key, value = next(iter(spell_override.items()))
+            raw_key = next(iter(spell_override))
+            value = spell_override[raw_key]
             if (
                     raw_key == self._last_single_raw_key
-                    and id(value) == self._last_single_value_id
+                    and value is self._last_single_value
             ):
                 cached_map = self._last_single_override_map
                 cached_shape = self._last_single_socket_shape
@@ -319,7 +320,7 @@ class OverridePatchMap(Cleanable):
                     for socket_ref in matches
                 }
             self._last_single_raw_key = raw_key
-            self._last_single_value_id = id(value)
+            self._last_single_value = value
             self._last_single_override_map = override_map
             self._last_single_socket_shape = socket_shape
             return (
