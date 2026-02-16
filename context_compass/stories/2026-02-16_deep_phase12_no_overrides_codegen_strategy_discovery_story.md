@@ -42,11 +42,15 @@ This lane targets emitter architecture and generated function shape:
 - `context_compass/tasks/completed/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md`
 
 ## Tasks (Implementation Checklist)
+- [x] Open and maintain low/medium/high risk-lane discovery tasks for this story.
 - [ ] Quantify step-plan generated function growth versus plan size.
 - [ ] Evaluate transient unrolled signature strategy and dependency-array prebind model.
 - [ ] Define candidate generator strategies (shape-family split, cold-path extraction, selective helper fallback).
 - [ ] Produce validation experiment plan and keep/revert criteria.
 - [ ] Enforce benchmark gate for every follow-on optimization slice (pre-test baseline, post-test cadence, and mandatory revert on failed/non-winning deltas).
+- [ ] Execute `TASK-2026-02-16-phase12-no-overrides-low-risk-discovery`.
+- [ ] Execute `TASK-2026-02-16-phase12-no-overrides-medium-risk-discovery`.
+- [ ] Execute `TASK-2026-02-16-phase12-no-overrides-high-risk-discovery`.
 
 ## Acceptance Criteria
 - At least three deep findings are documented with evidence.
@@ -82,6 +86,17 @@ This lane targets emitter architecture and generated function shape:
 - Retain gate:
   - Retain only candidates that pass validation and satisfy checkpoint comparison criteria.
   - Emit explicit result-announce note (`RESULT: RETAINED` + median deltas + artifact path).
+
+## Risk-Lane Discovery Queue (Required Reference)
+Process rule:
+- Before each new investigation or implementation iteration, select one task from this queue and reference its task ID in `## Notes`.
+- Do not run ad-hoc candidate exploration outside this queue unless a `DECISION` note expands scope first.
+
+| Risk lane | Status | Task | Focus |
+|---|---|---|---|
+| low | ready | `context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md` | contract-safe no-overrides emitter candidates |
+| medium | ready | `context_compass/tasks/2026-02-16_phase12_no_overrides_medium_risk_discovery_task.md` | medium-reward generated-shape and compile-lifecycle candidates |
+| high | ready | `context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md` | architectural no-overrides redesign discovery |
 
 ## Risks / Mitigations
 - Risk: emitter simplification may increase runtime branching.
@@ -133,6 +148,24 @@ This lane targets emitter architecture and generated function shape:
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Created a mandatory low/medium/high risk-lane queue for no-overrides discovery and required iterations to begin from a queued task ID.
+  EVIDENCE: context_compass/stories/2026-02-16_deep_phase12_no_overrides_codegen_strategy_discovery_story.md:85-96, context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md:1-78, context_compass/tasks/2026-02-16_phase12_no_overrides_medium_risk_discovery_task.md:1-78, context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:1-77
+  IMPACT: Future no-overrides iterations can run from a persistent, risk-labeled queue rather than ad-hoc path hunting.
+  NEXT: Choose the next queued task and log the task ID before starting the next tranche.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: No-overrides low/medium/high tasks are now fully loaded with candidate backlogs and reusable ops-reference sections for repeated execution loops.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md:35-84, context_compass/tasks/2026-02-16_phase12_no_overrides_medium_risk_discovery_task.md:35-85, context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:35-84
+  IMPACT: Iteration setup is now externalized in tickets, reducing repeated planning overhead.
+  NEXT: Execute `NO-L1` first, then `NO-M1` if low-risk deltas plateau.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -140,4 +173,5 @@ This lane targets emitter architecture and generated function shape:
 ## Context / Handoff Summary
 Deep no-overrides discovery opened with initial evidence on compile path, step
 emitter size/branch density, and transient unrolled signature strategy. Next
-step is option ranking with measurable hypotheses.
+step is option ranking with measurable hypotheses. Low/medium/high risk-lane
+discovery tasks are now opened and serve as the required iteration queue.

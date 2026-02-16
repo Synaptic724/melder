@@ -42,11 +42,15 @@ This discovery lane targets generator architecture quality:
 - `context_compass/tasks/completed/2026-02-15_optimize_phase12_creationcontext_codegen_wave1_task.md`
 
 ## Tasks (Implementation Checklist)
+- [x] Open and maintain low/medium/high risk-lane discovery tasks for this story.
 - [ ] Map current template matrix and specialization dimensions.
 - [ ] Quantify compile-time template fan-out and identify dedupe opportunities.
 - [ ] Propose 2-3 deep strategy options with tradeoffs (lazy compile, merged templates, code-object caching).
 - [ ] Define validation experiment plan for selected option.
 - [ ] Enforce benchmark gate for every follow-on optimization slice (pre-test baseline, post-test cadence, and mandatory revert on failed/non-winning deltas).
+- [ ] Execute `TASK-2026-02-16-creationcontext-codegen-low-risk-discovery`.
+- [ ] Execute `TASK-2026-02-16-creationcontext-codegen-medium-risk-discovery`.
+- [ ] Execute `TASK-2026-02-16-creationcontext-codegen-high-risk-discovery`.
 
 ## Acceptance Criteria
 - Story documents at least three deep codegen findings with concrete evidence.
@@ -82,6 +86,17 @@ This discovery lane targets generator architecture quality:
 - Retain gate:
   - Retain only candidates that pass validation and satisfy checkpoint comparison criteria.
   - Emit explicit result-announce note (`RESULT: RETAINED` + median deltas + artifact path).
+
+## Risk-Lane Discovery Queue (Required Reference)
+Process rule:
+- Before each new investigation or implementation iteration, select one task from this queue and reference its task ID in `## Notes`.
+- Do not run ad-hoc candidate exploration outside this queue unless a `DECISION` note expands scope first.
+
+| Risk lane | Status | Task | Focus |
+|---|---|---|---|
+| low | ready | `context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md` | contract-safe micro and compile-prep efficiency candidates |
+| medium | ready | `context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md` | medium-reward template/compile strategy candidates |
+| high | ready | `context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md` | architectural redesign discovery with explicit guardrails |
 
 ## Risks / Mitigations
 - Risk: overfitting strategy to source shape without compile-frequency evidence.
@@ -133,6 +148,24 @@ This discovery lane targets generator architecture quality:
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Created a mandatory low/medium/high risk-lane task queue for this story and required each iteration to start from one queued task ID.
+  EVIDENCE: context_compass/stories/2026-02-16_deep_creation_context_codegen_strategy_discovery_story.md:85-96, context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:1-78, context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:1-78, context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md:1-77
+  IMPACT: Iterations are now deterministic and no longer depend on hunt-and-seek rediscovery.
+  NEXT: Select one queued task and record its task ID in notes before the next investigation tranche.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: All three CreationContext risk-lane tasks now include expanded candidate backlogs plus reusable ops-reference steps so future iterations can run directly from ticket ops.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:38-86, context_compass/tasks/2026-02-16_creationcontext_codegen_medium_risk_discovery_task.md:38-85, context_compass/tasks/2026-02-16_creationcontext_codegen_high_risk_discovery_task.md:38-85
+  IMPACT: CreationContext lane can execute multiple iterations without repeating strategy setup.
+  NEXT: Start with `CC-L1` or `CC-M1` depending on risk preference and publish `RESULT` note after first run.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -140,4 +173,6 @@ This discovery lane targets generator architecture quality:
 ## Context / Handoff Summary
 Deep discovery opened for `creation_context_codegen.py` focusing on compile
 topology, template fan-out, and emitted-source strategy. Next step is option
-design with measurable hypotheses before implementation.
+design with measurable hypotheses before implementation. Low/medium/high
+risk-lane discovery tasks are now opened and must be used as the iteration
+entry queue.

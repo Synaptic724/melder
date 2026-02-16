@@ -15,7 +15,7 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| story: deep phase12 overrides codegen strategy discovery | in_progress | codex | none | first compact slice was reverted as non-winning; choose next compact candidate under same benchmark gate | `context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md` | 2026-02-16 | REQUIRED |
+| story: deep phase12 overrides codegen strategy discovery | in_progress | codex | none | medium-risk discovery iteration 2 completed; queue expanded to 8 candidates, execute `OV-M1` first then `OV-M6` on revert | `context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md` | 2026-02-16 | REQUIRED |
 
 ## Active Attention Details
 - DATE: 2026-02-16
@@ -33,6 +33,33 @@ Attention details rule
   EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_cold_path_helper_extraction_task.md:101-135, context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md:214-229
   IMPACT: We keep benchmark discipline and avoid retaining regressions while preserving momentum for the next compact iteration.
   NEXT: Select next compact candidate (narrower rank-1 variant or rank-2 metadata snapshot caching) and open a new gated task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Added low/medium/high risk-lane discovery queues to all deep codegen stories with dedicated tasks and a mandatory queue-first iteration rule.
+  EVIDENCE: context_compass/stories/2026-02-16_deep_creation_context_codegen_strategy_discovery_story.md:85-96, context_compass/stories/2026-02-16_deep_phase12_no_overrides_codegen_strategy_discovery_story.md:85-96, context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md:89-100, context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:1-78, context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md:1-78, context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md:1-77
+  IMPACT: Iteration entry points are now explicit across all three deep stories, reducing hunt-and-seek overhead.
+  NEXT: Execute queued discovery tasks by risk lane, beginning with overrides medium-risk lane unless reprioritized.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Each risk-lane task now includes multi-candidate backlog ordering and reusable ops-reference steps, turning the tasks into persistent execution playbooks.
+  EVIDENCE: context_compass/tasks/2026-02-16_creationcontext_codegen_low_risk_discovery_task.md:38-86, context_compass/tasks/2026-02-16_phase12_no_overrides_medium_risk_discovery_task.md:35-85, context_compass/tasks/2026-02-16_phase12_overrides_medium_risk_discovery_task.md:35-85
+  IMPACT: Future iterations can run directly from ticket ops without re-planning overhead.
+  NEXT: Start medium-risk overrides with candidate `OV-M1` under the existing benchmark keep/revert gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Completed one additional overrides medium-risk discovery iteration and expanded that queue from five to eight candidates.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_medium_risk_discovery_task.md:38-55, context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md:264-271
+  IMPACT: We can run several more benchmark-gated attempts without further discovery setup.
+  NEXT: Run `OV-M1`; if reverted, continue with `OV-M6`.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 

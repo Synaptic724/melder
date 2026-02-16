@@ -48,6 +48,10 @@ This discovery lane targets deeper generator decisions:
 - [x] Define benchmark/validation plan for follow-on implementation.
 - [x] Enforce benchmark gate for every follow-on optimization slice (pre-test, post-test, and mandatory revert on failure/non-winning delta).
 - [x] Open first implementation task from rank-1 strategy with benchmark gate copied verbatim.
+- [x] Open and maintain low/medium/high risk-lane discovery tasks for this story.
+- [ ] Execute `TASK-2026-02-16-phase12-overrides-low-risk-discovery`.
+- [ ] Execute `TASK-2026-02-16-phase12-overrides-medium-risk-discovery`.
+- [ ] Execute `TASK-2026-02-16-phase12-overrides-high-risk-discovery`.
 
 ## Acceptance Criteria
 - At least three deep findings documented with evidence.
@@ -83,6 +87,17 @@ This discovery lane targets deeper generator decisions:
 - Retain gate:
   - Retain only candidates that pass validation and satisfy checkpoint comparison criteria.
   - Emit explicit result-announce note (`RESULT: RETAINED` + median deltas + artifact path).
+
+## Risk-Lane Discovery Queue (Required Reference)
+Process rule:
+- Before each new investigation or implementation iteration, select one task from this queue and reference its task ID in `## Notes`.
+- Do not run ad-hoc candidate exploration outside this queue unless a `DECISION` note expands scope first.
+
+| Risk lane | Status | Task | Focus |
+|---|---|---|---|
+| low | ready | `context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md` | compact, contract-safe override efficiency candidates |
+| medium | ready | `context_compass/tasks/2026-02-16_phase12_overrides_medium_risk_discovery_task.md` | medium-reward compile/source strategy candidates |
+| high | ready | `context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md` | high-risk override generator redesign discovery |
 
 ## Strategy Candidates (Ranked)
 1. Rank-1 (selected for first implementation task): compact generated step bodies by extracting cold/error-heavy invoke/kwargs branches to shared helpers while preserving inline fast paths for common override shapes.
@@ -229,6 +244,33 @@ This discovery lane targets deeper generator decisions:
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: Created a mandatory low/medium/high risk-lane queue for overrides discovery and required future iterations to start from queued task IDs.
+  EVIDENCE: context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md:85-96, context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md:1-77, context_compass/tasks/2026-02-16_phase12_overrides_medium_risk_discovery_task.md:1-77, context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:1-77
+  IMPACT: Next override iterations now run from a fixed risk-lane backlog instead of rediscovery-based path selection.
+  NEXT: Start the next iteration from `TASK-2026-02-16-phase12-overrides-medium-risk-discovery` unless user reprioritizes.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Overrides low/medium/high tasks are now loaded with multi-candidate backlogs and reusable ops-reference steps so we can iterate directly from task ops.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md:34-84, context_compass/tasks/2026-02-16_phase12_overrides_medium_risk_discovery_task.md:35-85, context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:34-83
+  IMPACT: Overrides lane can execute repeated attempts without redoing candidate discovery setup.
+  NEXT: Begin with `OV-M1` for medium-risk pass; keep strict result/revert gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: Discovery iteration 2 expanded the overrides medium-risk queue to eight candidates, adding deeper compile-miss preprocessing reuse options while keeping `OV-M1` as first execution pick.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_medium_risk_discovery_task.md:38-55, src/melder/aether/conduit/meld/creation_context/creation_context.py:653-675, src/melder/aether/conduit/meld/creation_context/creation_context.py:875-924, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:269-334, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:609-748, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2397-2486
+  IMPACT: Medium-risk lane now supports several additional iterations without fresh backlog work.
+  NEXT: Execute `OV-M1`; if reverted, continue with `OV-M6` then `OV-M2` under the same benchmark gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -240,4 +282,5 @@ is selecting the next compact candidate after the first rank-1 slice was
 executed and reverted as non-winning (with full post-revert validation
 artifacts captured). Benchmark gate wording is standardized across all deep
 codegen stories, including explicit `RESULT` announcement requirements for
-retain/revert decisions.
+retain/revert decisions. Low/medium/high risk-lane discovery tasks are now
+opened and required as the iteration entry queue.
