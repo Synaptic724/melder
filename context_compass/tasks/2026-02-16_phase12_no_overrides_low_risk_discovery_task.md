@@ -3,7 +3,7 @@
 ## Metadata
 - Task ID: TASK-2026-02-16-phase12-no-overrides-low-risk-discovery
 - Story: STORY-2026-02-16-deep-phase12-no-overrides-codegen-strategy-discovery
-- Status: ready
+- Status: in_progress
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-16
@@ -100,6 +100,54 @@ Execution order:
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: User accepted NO-H5 and requested continuation, so active execution shifts to low-risk no-overrides candidate `NO-L1` (static creations-target routing emission).
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:392-399, context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md:35-37
+  IMPACT: No-overrides optimization work continues with the next queued compact candidate under the same pinned 10k pre/post gate.
+  NEXT: Capture NO-L1 prebaseline artifacts (unit + fast/overrides pinned 10k) before editing emitter code.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-L1 prebaseline capture is complete in pinned/no-cProfile mode with unit green (`29 passed, 1 warning`) and fresh 10k fast/overrides artifact pairs.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l1_prebaseline_validation_2026-02-16.txt:1-9, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_l1_prebaseline_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_l1_prebaseline_2026-02-16.jsonl:1-8
+  IMPACT: NO-L1 now has a locked before-state checkpoint for post-test keep/revert evaluation.
+  NEXT: Implement NO-L1 static creations-target routing emission in step-plan source builder and run post-test gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Implemented NO-L1 by emitting static creations-target routing per step from compile-time `plan_step.creations_target_kind`, replacing runtime per-step target-kind branch ladders and removing `step_creations_target_kinds` prebound defaults from emitted step executors.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:550-668, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:919-965, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:391-409
+  IMPACT: Reduces per-step emitted branch overhead and trims emitted executor default payload for no-overrides step-plan path.
+  NEXT: Run pinned 10k post-test compare versus NO-L1 prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-L1 post-test gate is complete in pinned/no-cProfile mode with unit green (`29 passed, 1 warning`) and aggregate-winning 10k deltas versus prebaseline (`fast -3.451%`, `overrides -8.668%`, `combined -6.060%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l1_posttest_validation_2026-02-16.txt:1-34, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_l1_posttest_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_l1_posttest_2026-02-16.jsonl:1-8
+  IMPACT: NO-L1 currently satisfies the lane benchmark keep threshold with no unit regressions.
+  NEXT: Escalate explicit keep/revert decision request for NO-L1 (recommended keep).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - NO-L1 static creations-target routing emission is functionally valid and benchmark-winning at the pinned 10k gate; recommended action is keep.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l1_posttest_validation_2026-02-16.txt:14-34
+  IMPACT: Low-risk no-overrides lane is paused at explicit user keep/revert confirmation before advancing to NO-L4.
+  NEXT: User chooses keep or revert for NO-L1.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 This task is the low-risk lane for no-overrides codegen strategy work. It
-should feed compact implementation attempts with clear user-directed decision criteria (`DECISION_REQUEST` on non-winning/failing outcomes).
+now has NO-L1 implemented and validated with post-test evidence in
+`benchmarks/testing_other_di/profiles/baselines/no_l1_posttest_validation_2026-02-16.txt`.
+Lane is currently paused at explicit NO-L1 keep/revert decision (recommended keep)
+before advancing to NO-L4.

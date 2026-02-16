@@ -386,10 +386,11 @@ def test_compile_phase12_no_overrides_executor_inlines_creations_target_routing(
 
 def test_compile_phase12_no_overrides_executor_prebinds_step_existences() -> None:
     """
-    Ensure emitted step executors prebind per-step existence metadata.
+    Ensure emitted step executors prebind required per-step metadata.
 
     Contract:
         - Generated executor defaults include `step_existences`.
+        - Generated executor no longer prebinds per-step creations target kinds.
     """
     codegen_ir = {
         "steps_rows": (_make_step_row("root"),),
@@ -405,6 +406,7 @@ def test_compile_phase12_no_overrides_executor_prebinds_step_existences() -> Non
     assert "step_spells" in executor.__code__.co_varnames
     assert "step_existences" in executor.__code__.co_varnames
     assert "step_instance_keys" in executor.__code__.co_varnames
+    assert "step_creations_target_kinds" not in executor.__code__.co_varnames
 
 
 def test_compile_phase12_no_overrides_executor_requires_spell_lookup_for_steps_rows() -> None:

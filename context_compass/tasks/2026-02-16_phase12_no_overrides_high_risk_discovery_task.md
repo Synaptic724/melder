@@ -387,6 +387,15 @@ Execution order:
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: RETAINED - user accepted NO-H5 by committing the change; optional transient native-dispatch wiring remains in the active checkpoint.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:55-231, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:258-335, benchmarks/testing_other_di/profiles/baselines/no_h5_posttest_validation_2026-02-16.txt:1-34
+  IMPACT: NO-H5 decision gate is closed as kept and high-risk no-overrides lane can hand off to the next queued no-overrides discovery lane.
+  NEXT: Shift active routing to low-risk no-overrides `NO-L1` and begin prebaseline for the next codegen slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 NO-H4 is reverted and rollback validation is captured in
 `benchmarks/testing_other_di/profiles/baselines/no_h4_revert_validation_2026-02-16.txt`.
@@ -401,4 +410,5 @@ NO-H5 prebaseline is now captured in
 NO-H5 implementation/unit fix is complete and post-test validation is captured in
 `benchmarks/testing_other_di/profiles/baselines/no_h5_posttest_validation_2026-02-16.txt`
 with aggregate-winning 10k deltas versus prebaseline.
-Lane is currently paused at explicit keep/revert decision for NO-H5 (recommended keep).
+NO-H5 is retained per user commit/acceptance and this lane is ready to hand off
+to next no-overrides queue work (`NO-L1` low-risk lane).

@@ -50,7 +50,7 @@ This lane targets emitter architecture and generated function shape:
 - [ ] Enforce benchmark gate for every follow-on optimization slice (pre-test baseline, post-test cadence, and mandatory `DECISION_REQUEST` escalation on failed/non-winning deltas).
 - [ ] Execute `TASK-2026-02-16-phase12-no-overrides-low-risk-discovery`.
 - [x] Execute `TASK-2026-02-16-phase12-no-overrides-medium-risk-discovery`.
-- [ ] Execute `TASK-2026-02-16-phase12-no-overrides-high-risk-discovery`.
+- [x] Execute `TASK-2026-02-16-phase12-no-overrides-high-risk-discovery`.
 
 ## Acceptance Criteria
 - At least three deep findings are documented with evidence.

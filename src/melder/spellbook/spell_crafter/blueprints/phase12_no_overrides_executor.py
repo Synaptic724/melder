@@ -1,4 +1,4 @@
-import os
+﻿import os
 from types import SimpleNamespace
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
@@ -557,7 +557,6 @@ def _build_step_plan_executor_source(
         "        step_has_disposal_methods=step_has_disposal_methods,",
         "        step_disposal_methods=step_disposal_methods,",
         "        step_existences=step_existences,",
-        "        step_creations_target_kinds=step_creations_target_kinds,",
         "        step_instance_keys=step_instance_keys,",
         "        root_instance_key=root_instance_key,",
         "        ExecutionPlanTargetKind=ExecutionPlanTargetKind,",
@@ -587,6 +586,53 @@ def _build_step_plan_executor_source(
     return "\n".join(lines)
 
 
+def _append_step_creations_target_source(
+        *,
+        lines: list[str],
+        step_index: int,
+        target_kind: ExecutionPlanTargetKind,
+) -> None:
+    """
+    Append emitted source lines for static creations-target routing.
+
+    Contract:
+        - Emits one fixed routing path from compile-time `target_kind`.
+        - Avoids per-step runtime target-kind branch ladders.
+    """
+    if target_kind in (
+            ExecutionPlanTargetKind.CALLER,
+            ExecutionPlanTargetKind.SPELLSPACE,
+    ):
+        lines.extend([
+            "    if caller_creations is None:",
+            "        raise RuntimeError(",
+            "            \"Phase 12 CALLER/SPELLSPACE execution requires caller_creations.\"",
+            "        )",
+            f"    creations_{step_index} = caller_creations",
+        ])
+        return
+
+    if target_kind == ExecutionPlanTargetKind.OWNER:
+        lines.extend([
+            f"    owner_creations_{step_index} = spell_{step_index}._owner_creations",
+            f"    if owner_creations_{step_index} is not None:",
+            f"        creations_{step_index} = owner_creations_{step_index}",
+            "    elif owner_creations is None:",
+            "        raise RuntimeError(",
+            "            \"Phase 12 OWNER execution requires owner_creations.\"",
+            "        )",
+            "    else:",
+            f"        creations_{step_index} = owner_creations",
+        ])
+        return
+
+    lines.append(
+        f"    raise RuntimeError("
+        f"f\"Unsupported creations target kind '{target_kind}' "
+        f"for spell '{{spell_{step_index}.spell_id}}'.\")"
+    )
+
+
 def _append_step_resolution_source(
         *,
         lines: list[str],
@@ -599,6 +645,7 @@ def _append_step_resolution_source(
     Contract:
         - Emits deterministic variable names per step index.
         - Mirrors `_resolve_step_instance` semantics for all existence modes.
+        - Emits static creations-target routing from plan metadata.
     """
     lines.extend([
         f"    plan_step_{step_index} = steps[{step_index}]",
@@ -613,33 +660,12 @@ def _append_step_resolution_source(
             f"step_disposal_methods[{step_index}]"
         ),
         f"    existence_{step_index} = step_existences[{step_index}]",
-        f"    target_kind_{step_index} = step_creations_target_kinds[{step_index}]",
-        (
-            f"    if target_kind_{step_index} in ("
-            f"ExecutionPlanTargetKind.CALLER, ExecutionPlanTargetKind.SPELLSPACE):"
-        ),
-        "        if caller_creations is None:",
-        "            raise RuntimeError(",
-        "                \"Phase 12 CALLER/SPELLSPACE execution requires caller_creations.\"",
-        "            )",
-        f"        creations_{step_index} = caller_creations",
-        f"    elif target_kind_{step_index} == ExecutionPlanTargetKind.OWNER:",
-        f"        owner_creations_{step_index} = spell_{step_index}._owner_creations",
-        f"        if owner_creations_{step_index} is not None:",
-        f"            creations_{step_index} = owner_creations_{step_index}",
-        "        elif owner_creations is None:",
-        "            raise RuntimeError(",
-        "                \"Phase 12 OWNER execution requires owner_creations.\"",
-        "            )",
-        "        else:",
-        f"            creations_{step_index} = owner_creations",
-        "    else:",
-        (
-            f"        raise RuntimeError("
-            f"f\"Unsupported creations target kind '{{target_kind_{step_index}}}' "
-            f"for spell '{{spell_{step_index}.spell_id}}'.\")"
-        ),
     ])
+    _append_step_creations_target_source(
+        lines=lines,
+        step_index=step_index,
+        target_kind=plan_step.creations_target_kind,
+    )
 
     existence = plan_step.existence
     if existence is Existence.many:
@@ -928,10 +954,6 @@ def _build_step_executor_namespace(
         ),
         "step_existences": tuple(
             plan_step.existence
-            for plan_step in steps
-        ),
-        "step_creations_target_kinds": tuple(
-            plan_step.creations_target_kind
             for plan_step in steps
         ),
         "step_instance_keys": tuple(

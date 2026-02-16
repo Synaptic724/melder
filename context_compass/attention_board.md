@@ -15,9 +15,63 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12 no-overrides high-risk discovery | review | codex | awaiting user NO-H5 keep/revert decision | user chooses keep or revert for NO-H5 (recommended keep), then advance queue | `context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md` | 2026-02-16 | REQUIRED |
+| task: phase12 no-overrides low-risk discovery | review | codex | awaiting user NO-L1 keep/revert decision | user chooses keep or revert for NO-L1 (recommended keep), then continue queue at NO-L4 | `context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md` | 2026-02-16 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - NO-L1 static creations-target routing emission is functionally valid and benchmark-winning at the pinned 10k gate; recommended action is keep.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l1_posttest_validation_2026-02-16.txt:14-34
+  IMPACT: Low-risk no-overrides lane is paused until explicit user keep/revert direction is provided for NO-L1.
+  NEXT: User chooses keep or revert for NO-L1.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-L1 post-test gate is complete in pinned/no-cProfile mode with unit green (`29 passed, 1 warning`) and aggregate-winning 10k deltas versus prebaseline (`fast -3.451%`, `overrides -8.668%`, `combined -6.060%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l1_posttest_validation_2026-02-16.txt:1-34, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_l1_posttest_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_l1_posttest_2026-02-16.jsonl:1-8
+  IMPACT: NO-L1 has complete post-test evidence and currently meets lane keep criteria.
+  NEXT: Escalate explicit keep/revert decision request before queue advancement.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Implemented NO-L1 static creations-target emission by compiling per-step target routing directly from plan metadata and removing runtime `step_creations_target_kinds` step defaults.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:550-668, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:919-965, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:391-409
+  IMPACT: Reduces runtime branch overhead in emitted step-plan no-overrides executors.
+  NEXT: Hold patch state pending NO-L1 keep/revert decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-L1 prebaseline capture is complete in pinned/no-cProfile mode with unit green (`29 passed, 1 warning`) and fresh 10k fast/overrides artifacts.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l1_prebaseline_validation_2026-02-16.txt:1-9, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_l1_prebaseline_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_l1_prebaseline_2026-02-16.jsonl:1-8
+  IMPACT: Low-risk no-overrides lane is ready for NO-L1 implementation with a locked pre-edit checkpoint.
+  NEXT: Patch step-plan source emission for NO-L1 and run post-test gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Active routing moved from no-overrides high-risk review to no-overrides low-risk execution after NO-H5 retention; next queued candidate is NO-L1.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:392-399, context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md:35-37
+  IMPACT: Codegen iteration continues immediately with the next no-overrides queue lane and no decision-gate blocker.
+  NEXT: Run NO-L1 prebaseline capture before code edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: RETAINED - user accepted NO-H5 by committing the patch; optional transient native-dispatch wiring remains active.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:392-399, benchmarks/testing_other_di/profiles/baselines/no_h5_posttest_validation_2026-02-16.txt:1-34
+  IMPACT: NO-H5 decision gate is closed and high-risk lane handoff is complete.
+  NEXT: Continue no-overrides queue at low-risk NO-L1.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-16
   TYPE: DECISION_REQUEST
   CLAIM: RESULT: DECISION_REQUEST - NO-H5 optional transient native-dispatch wiring is functionally valid and benchmark-winning at the pinned 10k gate; recommended action is keep.
