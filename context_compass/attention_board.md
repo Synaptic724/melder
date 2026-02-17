@@ -15,9 +15,540 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12 no-overrides low-risk discovery | review | codex | awaiting user NO-L2 keep/revert decision | user chooses keep or revert for NO-L2 (recommended revert), then continue queue at NO-L3 | `context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md` | 2026-02-16 | REQUIRED |
+| task: phase12 overrides low-risk discovery | blocked | codex | keep/revert decision for OV-L3 | user chooses keep or revert for OV-L3 | `context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md` | 2026-02-17 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: User clarified no benchmark code changes; `spellspace` exclusion is reporting-only for assistant-delivered summaries, while route-matrix script outputs remain unchanged.
+  EVIDENCE: benchmarks/testing_other_di/run_codegen_benchmark_deltas.py:770-790, benchmarks/testing_other_di/run_codegen_benchmark_deltas.py:1125-1147
+  IMPACT: Active communication will report split lanes without spellspace while preserving existing benchmark artifact structure.
+  NEXT: Continue OV-L3 decision support with reported lanes `warm_root`, `override_args`, `override_targeted`, and `mixed`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: User directed benchmark route calculations to exclude `spellspace` going forward; route-matrix measurement/reporting must remove `warm_spellspace`.
+  EVIDENCE: benchmarks/testing_other_di/run_codegen_benchmark_deltas.py:760-790, benchmarks/testing_other_di/run_codegen_benchmark_deltas.py:1125-1147
+  IMPACT: Split-lane baseline gates and summary output will no longer use spellspace route values.
+  NEXT: Patch benchmark route sampling, route baseline comparison, and summary print formatting; then run one pinned benchmark report for shape validation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-L3 post-test split-lane reruns are mixed: route baseline passed once and failed twice due `fast.warm_root=1.2500`, while `override.args`/`override.targeted` were mostly flat-to-winning and `fast.spellspace` stayed near flat.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l3_posttest_validation_2026-02-17.txt:21-63, benchmarks/testing_other_di/profiles/baselines/ov_l3_posttest_codegen_report_2026-02-17.json:190-197, benchmarks/testing_other_di/profiles/baselines/ov_l3_posttest_split_codegen_report_2026-02-17.json:190-196, benchmarks/testing_other_di/profiles/baselines/ov_l3_posttest_split2_codegen_report_2026-02-17.json:192-197
+  IMPACT: OV-L3 has split-lane ambiguity with instability concentrated in warm-root timer-floor behavior.
+  NEXT: Raise explicit keep/revert decision gate for OV-L3.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - OV-L3 is functionally valid, but split-lane benchmark outcome is mixed (2/3 route-baseline fails driven by `fast.warm_root=1.2500` against `400ns` baseline floor); recommended action is keep if warm-root quantization is treated as noise, otherwise revert for strict route-gate policy.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l3_posttest_validation_2026-02-17.txt:54-63, benchmarks/testing_other_di/profiles/baselines/ov_l3_posttest_codegen_report_2026-02-17.json:171-183, benchmarks/testing_other_di/profiles/baselines/ov_l3_posttest_split2_codegen_report_2026-02-17.json:171-183
+  IMPACT: Active overrides low-risk routing is paused at keep/revert gate before advancing to OV-L4.
+  NEXT: User chooses keep or revert for OV-L3.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-L3 prebaseline gate is captured with unit green (`76 passed, 3 warnings`) and pinned codegen benchmark medians (`cold=6652800ns`, `warm=500ns`, `mixed=22600ns`), with aggregate and route gates passing.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l3_prebaseline_validation_2026-02-17.txt:1-22, benchmarks/testing_other_di/profiles/baselines/ov_l3_prebaseline_codegen_report_2026-02-17.json:127-160
+  IMPACT: OV-L3 now has a locked before-state checkpoint for keep/revert evaluation.
+  NEXT: Implement OV-L3 compact slice and run post-test compare.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: RESULT: RETAINED - user approved keep for OV-L1 after split-lane rerun; OV-L1 row-static-flag precedence remains active.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l1_posttest_split_validation_2026-02-17.txt:6-14, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:694-742
+  IMPACT: OV-L1 gate is closed and low-risk queue is unblocked.
+  NEXT: Continue candidate order at OV-L3 prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-L1 split-lane rerun confirms separated-lane wins versus prebaseline: `fast.warm_root=1.0000`, `fast.spellspace=0.9196`, `override.args=0.9630`, `override.targeted=0.9310`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l1_posttest_split_validation_2026-02-17.txt:1-16, benchmarks/testing_other_di/profiles/baselines/ov_l1_posttest_split_codegen_report_2026-02-17.json:166-196
+  IMPACT: OV-L1 decision can be based on explicit fast-vs-override split instead of aggregate-only metrics.
+  NEXT: Keep/revert decision remains the active gate for OV-L1.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-L1 post-test gate is complete with unit green (`76 passed, 3 warnings`) and pinned compare medians (`cold=6730100ns`, `warm=500ns`, `mixed=22600ns`), with aggregate and route baseline ratios all winning/flat (`cold_ratio=0.8621`, `mixed_ratio=0.9300`, `spellspace_ratio=0.9062`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l1_posttest_validation_2026-02-17.txt:1-22, benchmarks/testing_other_di/profiles/baselines/ov_l1_posttest_codegen_report_2026-02-17.json:127-199
+  IMPACT: OV-L1 currently meets keep criteria and is ready for explicit keep/revert decision.
+  NEXT: Raise OV-L1 decision gate before queue advancement.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - OV-L1 row-static-flag precedence slice is functionally valid and benchmark-winning versus prebaseline; recommended action is keep.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l1_posttest_validation_2026-02-17.txt:15-18, benchmarks/testing_other_di/profiles/baselines/ov_l1_posttest_codegen_report_2026-02-17.json:141-143
+  IMPACT: Active overrides low-risk routing is paused at keep/revert gate before advancing to OV-L3.
+  NEXT: User chooses keep or revert for OV-L1.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-L1 prebaseline gate is captured with unit green (`75 passed, 3 warnings`) and pinned codegen benchmark medians (`cold=7806200ns`, `warm=500ns`, `mixed=24300ns`), with aggregate and route gates passing.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l1_prebaseline_validation_2026-02-17.txt:1-22, benchmarks/testing_other_di/profiles/baselines/ov_l1_prebaseline_codegen_report_2026-02-17.json:127-160
+  IMPACT: OV-L1 now has a locked before-state checkpoint for keep/revert evaluation.
+  NEXT: Implement OV-L1 compact slice and run post-test unit + pinned compare.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected explicit revert for OV-L2, and `_hydrate_steps_from_rows(...)` required-fields tuple hoist was rolled back.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2438-2455, context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md:149-156
+  IMPACT: OV-L2 non-winning slice is removed and low-risk overrides routing is unblocked.
+  NEXT: Continue candidate order at OV-L1 prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-L2 rollback validation is complete with unit green (`75 passed, 3 warnings`) and pinned baseline-compare report passing all aggregate and route baseline gates (`cold_ratio=0.9606`, `warm_ratio=1.0000`, `mixed_ratio=0.9906`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l2_revert_validation_2026-02-17.txt:1-22, benchmarks/testing_other_di/profiles/baselines/ov_l2_postrevert_codegen_report_2026-02-17.json:127-199
+  IMPACT: Reverted checkpoint is validated and benchmark-improved versus OV-L2 prebaseline.
+  NEXT: Execute OV-L1 prebaseline gate before any OV-L1 code edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: User-directed move-to-next routing shifts active execution from overrides high-risk closure to overrides low-risk OV-L2 kickoff.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:373-380, context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md:43-44
+  IMPACT: Active execution is unblocked with a concrete next-candidate queue entry.
+  NEXT: Run OV-L2 prebaseline gate (unit + pinned codegen compare report), then implement one compact slice.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-L2 prebaseline gate is captured with unit green (`75 passed, 3 warnings`) and pinned codegen benchmark medians (`cold=6725500ns`, `warm=500ns`, `mixed=21300ns`) plus route medians (`warm_root=500ns`, `spellspace=20600ns`, `override_args=2600ns`, `override_targeted=2900ns`, `mixed=19900ns`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l2_prebaseline_validation_2026-02-17.txt:1-31, benchmarks/testing_other_di/profiles/baselines/ov_l2_prebaseline_codegen_report_2026-02-17.json:127-149
+  IMPACT: OV-L2 now has a locked before-state checkpoint for post-test keep/revert gating.
+  NEXT: Implement one compact OV-L2 slice and run post-test compare against `ov_l2_prebaseline_codegen_report_2026-02-17.json`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-L2 post-test gate is complete with unit green (`75 passed, 3 warnings`) and pinned codegen compare medians (`cold=6726300ns`, `warm=500ns`, `mixed=23200ns`); baseline deltas passed thresholds (`cold_ratio=1.0001`, `warm_ratio=1.0000`, `mixed_ratio=1.0892`) and route baseline deltas passed (`warm_root=1.0000`, `spellspace=0.9854`, `override_args=0.9615`, `override_targeted=0.9655`, `mixed=1.0352`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l2_posttest_validation_2026-02-17.txt:1-43, benchmarks/testing_other_di/profiles/baselines/ov_l2_posttest_codegen_report_2026-02-17.json:127-199
+  IMPACT: OV-L2 is functionally valid and threshold-pass, but speed outcome is mixed because mixed lane regressed versus prebaseline.
+  NEXT: Escalate explicit keep/revert decision request before advancing to OV-L1.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - OV-L2 required-fields hoist is functionally valid and benchmark-threshold-pass, but benchmark-non-winning for speed objective due mixed-lane regression (`mixed_ratio=1.0892`); recommended action is revert unless this tradeoff is explicitly accepted.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l2_posttest_validation_2026-02-17.txt:26-36, benchmarks/testing_other_di/profiles/baselines/ov_l2_posttest_codegen_report_2026-02-17.json:140-143
+  IMPACT: Active overrides low-risk routing is paused at keep/revert gate before queue advancement.
+  NEXT: User chooses keep or revert for OV-L2.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected explicit revert for OV-H2; OV-H2 socket-shape index/cache code and targeted tests were rolled back.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h2_revert_validation_2026-02-17.txt:4-6, src/melder/aether/conduit/meld/creation_context/creation_context.py:667-667, src/melder/aether/conduit/meld/creation_context/creation_context.py:875-875
+  IMPACT: OV-H2 decision gate is closed and OV-H2 experimental code is no longer active.
+  NEXT: Capture rollback validation results and route to the next optimization step.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-H2 rollback validation is complete with unit green (`75 passed, 1 warning`), but pinned baseline-compare reruns remained non-passing (`attempt1 cold_ratio=1.2241 baseline_passed=false`; `attempt2 cold_ratio=1.2478 baseline_passed=false`, attempt2 route baseline failed at `override_targeted_ratio=1.2222`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h2_revert_validation_2026-02-17.txt:10-27, benchmarks/testing_other_di/profiles/baselines/ov_h2_postrevert_codegen_report_2026-02-17.json:141-145, benchmarks/testing_other_di/profiles/baselines/ov_h2_postrevert_codegen_report_2026-02-17.json:186-199
+  IMPACT: Rollback is applied and functionally stable, but benchmark environment currently reports above-threshold cold variance versus OV-H2 prebaseline.
+  NEXT: Confirm next optimization direction with the user.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: FACT
+  CLAIM: Implemented a compact OV-H2 slice in `CreationContext` that adds socket-shape row indexing (`_override_socket_ref_by_shape_row`) and grouped-target memoization (`_override_targets_by_socket_shape_cache`) with miss-path routing through `_collect_override_targets_from_socket_shape_cached(...)`.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context.py:163-164, src/melder/aether/conduit/meld/creation_context/creation_context.py:279-285, src/melder/aether/conduit/meld/creation_context/creation_context.py:684-687, src/melder/aether/conduit/meld/creation_context/creation_context.py:822-898, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:147-152, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:278-373
+  IMPACT: Override miss-path grouping can reuse per-shape grouped-target materialization and avoid repeated shape-row map rebuild.
+  NEXT: Evaluate OV-H2 post-test unit + pinned benchmark compare vs prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-H2 post-test gate is complete with unit green (`77 passed, 1 warning`) and pinned benchmark deltas versus prebaseline: `cold_ratio=1.1905`, `warm_ratio=1.0000`, `mixed_ratio=0.9831` (baseline passed `true`), with route baseline ratios also within gate (`warm_root=0.8000`, `spellspace=0.9713`, `override_args=1.0400`, `override_targeted=1.1481`, `mixed=1.0142`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h2_posttest_validation_2026-02-17.txt:6-33, benchmarks/testing_other_di/profiles/baselines/ov_h2_posttest_codegen_report_2026-02-17.json:134-143, benchmarks/testing_other_di/profiles/baselines/ov_h2_posttest_codegen_report_2026-02-17.json:175-195
+  IMPACT: OV-H2 is threshold-pass but not a clear speed win because compile-cold cost regressed materially.
+  NEXT: Raise explicit keep/revert decision request for OV-H2.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - OV-H2 socket-shape target-cache slice is functionally valid and threshold-pass, but benchmark-non-winning for speed objective due cold compile regression (`cold_ratio=1.1905`); recommended action is revert unless this tradeoff is explicitly accepted.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h2_posttest_validation_2026-02-17.txt:21-25, benchmarks/testing_other_di/profiles/baselines/ov_h2_posttest_codegen_report_2026-02-17.json:141-143
+  IMPACT: Active routing is paused at keep/revert gate before advancing the high-risk queue.
+  NEXT: User chooses keep or revert for OV-H2.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-H2 prebaseline gate is captured with unit green (`75 passed, 3 warnings`) and pinned benchmark medians (`cold=6416500ns`, `warm=500ns`, `mixed=23700ns`) plus route medians (`warm_root=500ns`, `spellspace=20900ns`, `override_args=2500ns`, `override_targeted=2700ns`, `mixed=21200ns`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h2_prebaseline_validation_2026-02-17.txt:6-31, benchmarks/testing_other_di/profiles/baselines/ov_h2_prebaseline_codegen_report_2026-02-17.json:105-149
+  IMPACT: OV-H2 now has a locked before-state checkpoint and active routing can enter implementation.
+  NEXT: Implement one compact OV-H2 slice and run post-test compare against `ov_h2_prebaseline_codegen_report_2026-02-17.json`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected option `2`; OV-H5 warm-precompile top-N code/test changes were rolled back.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h5_posttest_validation_2026-02-17.txt:10-20, src/melder/aether/conduit/meld/creation_context/creation_context.py:1-1237, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:1-839
+  IMPACT: OV-H5 decision gate is closed and active routing is unblocked.
+  NEXT: Validate rollback against OV-H5 prebaseline and advance to OV-H2.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-H5 rollback validation is complete with unit green (`75 passed, 3 warnings`) and pinned baseline-delta compare passed (`cold_ratio=0.9891`, `warm_ratio=1.0000`, `mixed_ratio=1.0045`) with route baseline ratios inside gate (`warm_root=0.8333`, `spellspace=1.0236`, `override_args=1.0400`, `override_targeted=1.1071`, `mixed=1.0099`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h5_revert_validation_2026-02-17.txt:6-35, benchmarks/testing_other_di/profiles/baselines/ov_h5_postrevert_codegen_report_2026-02-17.json:141-145, benchmarks/testing_other_di/profiles/baselines/ov_h5_postrevert_codegen_report_2026-02-17.json:192-197
+  IMPACT: Reverted checkpoint is validated and ready for next-candidate execution.
+  NEXT: Continue high-risk execution order at OV-H2 prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: FACT
+  CLAIM: Implemented a compact OV-H5 slice in `CreationContext` with env-gated top-N warm precompile (`DI_OVERRIDES_WARM_PRECOMPILE_LIMIT`) for deterministic single-key override shapes, plus focused unit coverage for env parsing and warmup top-N behavior.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context.py:139-168, src/melder/aether/conduit/meld/creation_context/creation_context.py:283-288, src/melder/aether/conduit/meld/creation_context/creation_context.py:570-694, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:149-170, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:173-286
+  IMPACT: OV-H5 now has a bounded warm-precompile implementation ready for benchmark decision.
+  NEXT: Evaluate OV-H5 post-test deltas versus prebaseline with feature enabled.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-H5 post-test gate (feature enabled with `DI_OVERRIDES_WARM_PRECOMPILE_LIMIT=2`) is unit-green (`77 passed, 3 warnings`) but baseline-delta non-winning (`cold_ratio=1.3696`, `warm_ratio=1.0000`, `mixed_ratio=1.0455`, baseline passed `false`); route baseline ratios are winning/flat (`warm_root=0.8333`, `spellspace=0.9623`, `override_args=1.0000`, `override_targeted=0.9286`, `mixed=0.9851`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h5_posttest_validation_2026-02-17.txt:6-35, benchmarks/testing_other_di/profiles/baselines/ov_h5_posttest_codegen_report_2026-02-17.json:141-145, benchmarks/testing_other_di/profiles/baselines/ov_h5_posttest_codegen_report_2026-02-17.json:192-197
+  IMPACT: Candidate fails keep criteria because cold compile regression dominates aggregate baseline gate.
+  NEXT: Escalate explicit keep/revert decision request.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - OV-H5 warm-precompile top-N slice is functionally valid but benchmark-non-winning versus prebaseline; recommended action is revert.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h5_posttest_validation_2026-02-17.txt:10-20, benchmarks/testing_other_di/profiles/baselines/ov_h5_posttest_codegen_report_2026-02-17.json:141-145
+  IMPACT: Active routing is paused at keep/revert gate before advancing the high-risk queue.
+  NEXT: User chooses keep or revert for OV-H5.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: RESULT: RETAINED - user selected option `1`; OV-H3 compile-flag code-object slice is kept in the active checkpoint.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h3_posttest_validation_2026-02-17.txt:7-14, benchmarks/testing_other_di/profiles/baselines/ov_h3_posttest_codegen_report_2026-02-17.json:141-143, benchmarks/testing_other_di/profiles/baselines/ov_h3_posttest_codegen_report_2026-02-17.json:191-195
+  IMPACT: OV-H3 decision gate is closed and active routing is no longer blocked.
+  NEXT: Capture OV-H5 prebaseline artifacts before code edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: PLAN
+  CLAIM: Active routing advances from retained OV-H3 to OV-H5 prebaseline capture under the same pinned-core benchmark gate contract.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:69-72, context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:272-279, benchmarks/testing_other_di/run_codegen_benchmark_deltas.py:945-1018
+  IMPACT: High-risk overrides execution continues immediately with a locked before-state checkpoint for OV-H5.
+  NEXT: Run OV-H5 unit prebaseline and pinned `run_codegen_benchmark_deltas.py` report capture.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-H5 prebaseline gate is captured with unit green (`58 passed, 3 warnings`) and pinned benchmark medians (`cold=6506500ns`, `warm=500ns`, `mixed=22000ns`) plus route medians (`warm_root=600ns`, `spellspace=21200ns`, `override_args=2500ns`, `override_targeted=2800ns`, `mixed=20200ns`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h5_prebaseline_validation_2026-02-17.txt:6-31, benchmarks/testing_other_di/profiles/baselines/ov_h5_prebaseline_codegen_report_2026-02-17.json:105-149
+  IMPACT: OV-H5 now has a locked before-state checkpoint and active routing can enter implementation.
+  NEXT: Implement one compact OV-H5 slice and run post-test compare against `ov_h5_prebaseline_codegen_report_2026-02-17.json`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: FACT
+  CLAIM: Implemented a compact OV-H3 slice by compiling emitted overrides executors with deterministic optimized code-object flags (`dont_inherit=True`, `optimize=2`) plus targeted unit coverage of compile-flag wiring.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:140-141, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py:335-368
+  IMPACT: OV-H3 now has a bounded code-object construction change ready for decision-gated benchmark evaluation.
+  NEXT: Evaluate post-test deltas versus OV-H3 prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-H3 post-test gate is complete with unit green (`75 passed, 3 warnings`) and aggregate-winning baseline ratios (`cold=0.9650`, `warm=1.0000`, `mixed=0.9779`) with all tracked route baseline ratios winning/flat (`warm_root=1.0000`, `spellspace=0.9806`, `override_args=0.9630`, `override_targeted=0.8438`, `mixed=0.9854`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h3_posttest_validation_2026-02-17.txt:2-15, benchmarks/testing_other_di/profiles/baselines/ov_h3_posttest_codegen_report_2026-02-17.json:141-143, benchmarks/testing_other_di/profiles/baselines/ov_h3_posttest_codegen_report_2026-02-17.json:191-195
+  IMPACT: OV-H3 currently meets keep criteria under pinned-core benchmark policy.
+  NEXT: Escalate explicit keep/revert decision request.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - OV-H3 compile-flag code-object slice is functionally valid and benchmark-winning versus prebaseline; recommended action is keep.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h3_posttest_validation_2026-02-17.txt:7-14, benchmarks/testing_other_di/profiles/baselines/ov_h3_posttest_codegen_report_2026-02-17.json:141-143, benchmarks/testing_other_di/profiles/baselines/ov_h3_posttest_codegen_report_2026-02-17.json:191-195
+  IMPACT: Active routing is paused at keep/revert gate before advancing the high-risk queue.
+  NEXT: User chooses keep or revert for OV-H3.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-H3 prebaseline gate is captured with unit green (`74 passed, 3 warnings`) and pinned benchmark medians (`cold=6489500ns`, `warm=500ns`, `mixed=22600ns`) plus route medians (`warm_root=500ns`, `spellspace=20600ns`, `override_args=2700ns`, `override_targeted=3200ns`, `mixed=20500ns`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h3_prebaseline_validation_2026-02-17.txt:2-14, benchmarks/testing_other_di/profiles/baselines/ov_h3_prebaseline_codegen_report_2026-02-17.json:128-149
+  IMPACT: OV-H3 now has a locked before-state checkpoint and active routing can enter implementation.
+  NEXT: Implement one compact OV-H3 slice and run post-test compare against OV-H3 prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected option `2` for OV-H4; cold/hot threshold changes were rolled back from `CreationContext` and its targeted unit-test additions.
+  EVIDENCE: src/melder/aether/conduit/meld/creation_context/creation_context.py:157-167, src/melder/aether/conduit/meld/creation_context/creation_context.py:565-739, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:99-110, tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py:698-779
+  IMPACT: Active overrides high-risk routing is unblocked from the OV-H4 decision gate.
+  NEXT: Capture OV-H3 prebaseline artifacts and continue high-risk execution order.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-H4 rollback validation is complete with unit green (`74 passed, 3 warnings`) and pinned baseline-delta benchmark capture (`cold_ratio=1.0332`, `warm_ratio=1.0000`, `mixed_ratio=1.0467`; route baseline includes `spellspace_ratio=1.0446`, `override_args_ratio=1.1250`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h4_revert_validation_2026-02-17.txt:14-14, benchmarks/testing_other_di/profiles/baselines/ov_h4_revert_validation_2026-02-17.txt:178-180, benchmarks/testing_other_di/profiles/baselines/ov_h4_revert_validation_2026-02-17.txt:228-232, benchmarks/testing_other_di/profiles/baselines/ov_h4_postrevert_codegen_report_2026-02-17.json:141-143, benchmarks/testing_other_di/profiles/baselines/ov_h4_postrevert_codegen_report_2026-02-17.json:191-195
+  IMPACT: Revert outcome is validated and archived, allowing queue progression without ambiguity.
+  NEXT: Continue OV-H3 prebaseline and keep the same pinned benchmark gate policy.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: PLAN
+  CLAIM: Active routing moved from no-overrides low-risk closure to overrides high-risk discovery; OV-H1 is the next codegen candidate outside snapshot workflow.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md:421-429, context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:103-111
+  IMPACT: Execution is unblocked and pointed to the next queued codegen lane.
+  NEXT: Capture OV-H1 prebaseline artifacts before code edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-H4 prebaseline gate is captured with unit green (`57 passed, 3 warnings`) plus pinned `run_codegen_benchmark_deltas.py` report (`cold=6418500ns`, `warm=500ns`, `mixed=21400ns`, route matrix passed, affinity pinned to CPUs 0-15).
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:173-179, benchmarks/testing_other_di/profiles/baselines/ov_h4_prebaseline_validation_2026-02-17.txt:1-24, benchmarks/testing_other_di/profiles/baselines/ov_h4_prebaseline_codegen_report_2026-02-17.json:1-257
+  IMPACT: Active high-risk overrides lane now has a pinned-run before-state checkpoint for OV-H4.
+  NEXT: Implement one compact OV-H4 slice and run post-test compare with `--baseline-path` against the OV-H4 prebaseline report.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - OV-H4 compact slice is unit-green but benchmark-mixed/non-winning versus prebaseline (`cold_ratio=1.0343`, `mixed_ratio=1.0140`, `warm_ratio=1.0000`; route spellspace/override_args regressive), so lane progression is paused for explicit keep/revert/refine direction.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:191-197, benchmarks/testing_other_di/profiles/baselines/ov_h4_posttest_validation_2026-02-17.txt:13-28, benchmarks/testing_other_di/profiles/baselines/ov_h4_posttest_codegen_report_2026-02-17.json:122-207
+  IMPACT: Active routing is blocked at the decision gate and should not auto-advance to the next high-risk candidate.
+  NEXT: User chooses `keep`, `revert`, or `one refinement pass` for OV-H4.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-H1 prebaseline capture is complete with unit green (`57 passed, 1 warning`) plus pinned/no-cProfile 10k fast and overrides artifact pairs.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h1_prebaseline_validation_2026-02-17.txt:1-14, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_ov_h1_prebaseline_2026-02-17.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_ov_h1_prebaseline_2026-02-17.jsonl:1-8
+  IMPACT: OV-H1 now has a locked before-state checkpoint for post-test decision quality.
+  NEXT: Implement one compact OV-H1 slice and run post-test unit + pinned/no-cProfile 10k fast/overrides compares.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: FACT
+  CLAIM: Implemented an OV-H1 compact follow-on slice by extracting shape-lane creations-target source emission into `_append_overrides_shape_creations_source(...)` and adding targeted helper-output unit tests.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1717-1754, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1865-1870, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py:1101-1155
+  IMPACT: Shape-step source assembly is further segmented while preserving OWNER/CALLER/SPELLSPACE routing semantics.
+  NEXT: Run post-test gate and evaluate deltas versus OV-H1 prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-H1 follow-on post-test gate is complete with unit green (`60 passed, 1 warning`) but aggregate-regressive 10k deltas versus prebaseline (`fast_mean_ms -2.647%`, `overrides_mean_ms +9.041%`, `combined_mean_ms +3.941%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h1_posttest_validation_2026-02-17.txt:1-27, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_ov_h1_posttest_2026-02-17.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_ov_h1_posttest_2026-02-17.jsonl:1-8
+  IMPACT: Candidate currently fails keep criteria because overrides-lane regressions dominate aggregate mean.
+  NEXT: Escalate explicit keep/revert decision request.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected option `1` for OV-H1 follow-on; extracted creations-target helper segmentation and focused helper tests were rolled back.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:145-161
+  IMPACT: OV-H1 decision gate is closed and active routing is unblocked.
+  NEXT: Continue execution order with OV-H4 prebaseline gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-H1 rollback validation is complete with unit green (`57 passed, 3 warnings`) and pinned/no-cProfile 10k postrevert deltas versus prebaseline (`fast_mean_ms +0.457%`, `overrides_mean_ms -3.673%`, `combined_mean_ms +0.059%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h1_revert_validation_2026-02-17.txt:1-43, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_ov_h1_postrevert_2026-02-17.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_ov_h1_postrevert_2026-02-17.jsonl:1-8
+  IMPACT: Reverted checkpoint is validated and effectively back at baseline noise range.
+  NEXT: Capture OV-H4 prebaseline artifacts and proceed with the next high-risk candidate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected revert for NO-L5; transient support memoization changes were removed and low-risk no-overrides queue closure is no longer blocked.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md:393-399
+  IMPACT: NO-L5 decision gate is closed and stale keep/revert blocker is resolved.
+  NEXT: Record rollback measurement and route to the next codegen task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: NO-L5 rollback validation is complete with unit green (`33 passed, 1 warning`) and pinned 10k postrevert deltas versus prebaseline (`fast +10.666%`, `overrides +1.876%`, `combined +6.271%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l5_revert_validation_2026-02-16.txt:1-34, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_l5_postrevert_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_l5_postrevert_2026-02-16.jsonl:1-8
+  IMPACT: Low-risk no-overrides results are fully measured through rollback and ready for handoff.
+  NEXT: Continue from overrides high-risk OV-H1 prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - NO-L5 transient support memoization is functionally valid but benchmark-non-winning at the pinned 10k gate; recommended action is revert.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l5_posttest_validation_2026-02-16.txt:16-34
+  IMPACT: Low-risk no-overrides lane is paused at explicit user keep/revert confirmation before low-risk queue closure.
+  NEXT: User chooses keep or revert for NO-L5.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-L5 post-test gate is complete in pinned/no-cProfile mode with unit green (`34 passed, 1 warning`) but aggregate-regressive 10k deltas versus prebaseline (`fast +8.455%`, `overrides +5.257%`, `combined +6.856%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l5_posttest_validation_2026-02-16.txt:1-34, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_l5_posttest_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_l5_posttest_2026-02-16.jsonl:1-8
+  IMPACT: NO-L5 currently fails lane keep criteria on both fast and overrides aggregate means.
+  NEXT: Escalate explicit keep/revert decision request for NO-L5.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Implemented NO-L5 schema-local transient support memoization keyed by current steps identity/length, with focused unit coverage proving cache reuse behavior.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:54-56, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:318-321, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:558-599, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:615-653
+  IMPACT: Adds memoization behavior to transient support checks while preserving compile-lane semantics.
+  NEXT: Hold checkpoint state pending NO-L5 keep/revert decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-L5 prebaseline capture is complete in pinned/no-cProfile mode with unit green (`33 passed, 1 warning`) and fresh 10k fast/overrides artifacts.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l5_prebaseline_validation_2026-02-16.txt:1-9, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_l5_prebaseline_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_l5_prebaseline_2026-02-16.jsonl:1-8
+  IMPACT: NO-L5 has a locked before-state checkpoint and is ready for implementation.
+  NEXT: Implement NO-L5 compact slice and run post-test benchmark compare.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Active low-risk no-overrides routing advances from reverted NO-L3 to the final queued candidate NO-L5.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md:53-55, context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md:315-322
+  IMPACT: Queue momentum is restored with no pending keep/revert blocker.
+  NEXT: Capture NO-L5 prebaseline artifacts (unit + pinned 10k fast/overrides) before any code edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-L3 rollback validation is complete with unit green (`33 passed, 1 warning`) and pinned 10k postrevert deltas versus prebaseline (`fast +6.188%`, `overrides +1.332%`, `combined +3.760%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l3_revert_validation_2026-02-16.txt:1-34, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_l3_postrevert_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_l3_postrevert_2026-02-16.jsonl:1-8
+  IMPACT: Reverted checkpoint is measured and ready for next-candidate execution.
+  NEXT: Continue lane at NO-L5 prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected revert for NO-L3; transient schema tuple-allocation tightening changes were removed while retained NO-L4 shared-entry compile-path dedupe remains active.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md:306-312, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:445-490, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:583-643
+  IMPACT: NO-L3 decision gate is closed and active lane is unblocked.
+  NEXT: Run NO-L5 prebaseline gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - NO-L3 transient schema tuple-allocation tightening is functionally valid but benchmark-non-winning at the pinned 10k gate; recommended action is revert.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l3_posttest_validation_2026-02-16.txt:16-34
+  IMPACT: Low-risk no-overrides lane is paused at explicit user keep/revert confirmation before advancing to NO-L5.
+  NEXT: User chooses keep or revert for NO-L3.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-L3 post-test gate is complete in pinned/no-cProfile mode with unit green (`34 passed, 1 warning`) but aggregate-regressive 10k deltas versus prebaseline (`fast -0.246%`, `overrides +8.656%`, `combined +4.205%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l3_posttest_validation_2026-02-16.txt:1-34, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_l3_posttest_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_l3_posttest_2026-02-16.jsonl:1-8
+  IMPACT: NO-L3 currently fails lane keep criteria, driven by strong overrides-lane regression.
+  NEXT: Escalate explicit keep/revert decision request for NO-L3.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Implemented NO-L3 by tightening `_normalize_transient_schema(...)` to reuse already-tuple transient schema payloads while still converting non-tuple sequences; added focused unit coverage for tuple identity and conversion behavior.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:445-490, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:615-636
+  IMPACT: Reduces redundant tuple allocations on transient compile paths with no semantic contract expansion.
+  NEXT: Hold checkpoint state pending NO-L3 keep/revert decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Active low-risk no-overrides routing advances from reverted NO-L2 to the next queued candidate NO-L3.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md:267-270
+  IMPACT: Queue momentum is restored with no pending keep/revert blocker.
+  NEXT: Capture NO-L3 prebaseline artifacts (unit + pinned 10k fast/overrides) before any code edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-L2 rollback validation is complete with unit green (`33 passed, 1 warning`) and pinned 10k postrevert deltas versus prebaseline (`fast -3.713%`, `overrides +1.037%`, `combined -1.338%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l2_revert_validation_2026-02-16.txt:1-34, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_l2_postrevert_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_l2_postrevert_2026-02-16.jsonl:1-8
+  IMPACT: Reverted checkpoint is measured and ready for next-candidate execution.
+  NEXT: Continue lane at NO-L3 prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected revert for NO-L2; non-`many` registration-emission gating changes were removed while retained NO-L4 shared-entry compile-path dedupe remains active.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md:258-264, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:547-856, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:366-583
+  IMPACT: NO-L2 decision gate is closed and active lane is unblocked.
+  NEXT: Run NO-L3 prebaseline gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-16
   TYPE: DECISION_REQUEST
   CLAIM: RESULT: DECISION_REQUEST - NO-L2 registration-emission gating is functionally valid but benchmark-non-winning at the pinned 10k gate; recommended action is revert.

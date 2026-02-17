@@ -3,7 +3,7 @@
 ## Metadata
 - Task ID: TASK-2026-02-16-phase12-no-overrides-low-risk-discovery
 - Story: STORY-2026-02-16-deep-phase12-no-overrides-codegen-strategy-discovery
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-16
@@ -26,8 +26,8 @@ implemented in compact slices.
 - [x] Build a low-risk candidate list (minimum 3) with evidence and expected impact.
 - [x] Label each candidate with blast radius and rollback conditions.
 - [x] Define which unit + benchmark lanes gate candidate retention.
-- [ ] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Low-risk discovery matrix for no-overrides codegen.
@@ -253,10 +253,177 @@ Execution order:
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected revert for NO-L2; non-`many` registration-emission gating changes were removed while retained NO-L4 shared-entry compile-path dedupe remained active.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:230-325, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:547-856, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:366-583
+  IMPACT: Low-risk no-overrides lane is unblocked and checkpoint semantics are restored to pre-NO-L2 registration behavior.
+  NEXT: Run NO-L2 rollback validation (unit + pinned 10k fast/overrides compare) and record postrevert deltas.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-L2 rollback validation is complete with unit green (`33 passed, 1 warning`) and pinned 10k postrevert deltas versus prebaseline (`fast -3.713%`, `overrides +1.037%`, `combined -1.338%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l2_revert_validation_2026-02-16.txt:1-34, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_l2_postrevert_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_l2_postrevert_2026-02-16.jsonl:1-8
+  IMPACT: Reverted checkpoint is validated and low-risk queue can continue to the next candidate with fresh evidence.
+  NEXT: Continue queue at NO-L3 with a fresh pinned/no-cProfile 10k prebaseline capture.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: PLAN
+  CLAIM: Started NO-L3 execution tranche under the established gate: capture fresh prebaseline (unit + pinned/no-cProfile fast and overrides 10k), then patch `_normalize_transient_schema(...)` to skip redundant tuple allocations for already-tuple schema entries.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_low_risk_discovery_task.md:53-54, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:331-390
+  IMPACT: Keeps low-risk queue momentum while preserving the same benchmark decision contract used in earlier candidates.
+  NEXT: Run NO-L3 prebaseline capture and write `no_l3_prebaseline_validation_2026-02-16.txt`.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-L3 prebaseline capture is complete in pinned/no-cProfile mode with unit green (`33 passed, 1 warning`) and fresh 10k fast/overrides artifacts.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l3_prebaseline_validation_2026-02-16.txt:1-9, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_l3_prebaseline_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_l3_prebaseline_2026-02-16.jsonl:1-8
+  IMPACT: NO-L3 has a locked before-state checkpoint for post-test keep/revert evaluation.
+  NEXT: Implement NO-L3 tuple-allocation tightening in transient schema normalization and run post-test gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Implemented NO-L3 by reusing existing tuple payloads in `_normalize_transient_schema(...)` and only converting non-tuple sequences, preserving normalization contracts while removing redundant tuple allocations on compile paths.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:445-490
+  IMPACT: Reduces compile-path allocation churn for already-normalized transient schema arrays.
+  NEXT: Validate with focused unit coverage and pinned 10k benchmark compare.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Added targeted NO-L3 unit coverage proving transient schema normalization preserves tuple identity for tuple fields while continuing to convert non-tuple sequence fields to tuple.
+  EVIDENCE: tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:615-636
+  IMPACT: NO-L3 behavior is explicitly regression-guarded at normalization semantics level.
+  NEXT: Evaluate benchmark gate outcome for keep/revert decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-L3 post-test gate is complete in pinned/no-cProfile mode with unit green (`34 passed, 1 warning`) but aggregate-regressive 10k deltas versus prebaseline (`fast -0.246%`, `overrides +8.656%`, `combined +4.205%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l3_posttest_validation_2026-02-16.txt:1-34, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_l3_posttest_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_l3_posttest_2026-02-16.jsonl:1-8
+  IMPACT: NO-L3 currently fails lane keep criteria due to significant overrides-lane regression.
+  NEXT: Escalate explicit keep/revert decision request for NO-L3 (recommended revert).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - NO-L3 transient schema tuple-allocation tightening is functionally valid but benchmark-non-winning at the pinned 10k gate; recommended action is revert.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l3_posttest_validation_2026-02-16.txt:16-34
+  IMPACT: Low-risk no-overrides lane is paused at explicit user keep/revert confirmation before advancing to NO-L5.
+  NEXT: User chooses keep or revert for NO-L3.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected revert for NO-L3; transient schema tuple-allocation tightening changes were removed while retained NO-L4 shared-entry compile-path dedupe remains active.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:445-490, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:583-643
+  IMPACT: Low-risk no-overrides lane is unblocked and checkpoint semantics are restored to pre-NO-L3 transient normalization behavior.
+  NEXT: Run NO-L3 rollback validation (unit + pinned 10k fast/overrides compare) and record postrevert deltas.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-L3 rollback validation is complete with unit green (`33 passed, 1 warning`) and pinned 10k postrevert deltas versus prebaseline (`fast +6.188%`, `overrides +1.332%`, `combined +3.760%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l3_revert_validation_2026-02-16.txt:1-34, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_l3_postrevert_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_l3_postrevert_2026-02-16.jsonl:1-8
+  IMPACT: Reverted checkpoint is validated and low-risk queue can continue despite observed run-to-run timing variance.
+  NEXT: Continue queue at NO-L5 with a fresh pinned/no-cProfile 10k prebaseline capture.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-L5 prebaseline capture is complete in pinned/no-cProfile mode with unit green (`33 passed, 1 warning`) and fresh 10k fast/overrides artifacts.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l5_prebaseline_validation_2026-02-16.txt:1-9, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_l5_prebaseline_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_l5_prebaseline_2026-02-16.jsonl:1-8
+  IMPACT: NO-L5 now has a locked before-state checkpoint for post-test keep/revert evaluation.
+  NEXT: Implement NO-L5 compact slice (plan-shape transient support memoization) and run post-test gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Implemented NO-L5 by adding schema-local transient support memoization keyed by current steps identity/length, so repeated compile calls with the same schema+steps can skip repeated `_supports_transient_unrolled_plan(...)` scans.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:54-56, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:318-321, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:558-599
+  IMPACT: Targets compile-path eligibility-check overhead for repeated identical plan shapes while preserving transient-vs-step-plan semantics.
+  NEXT: Validate with focused unit coverage and pinned 10k benchmark compare.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: FACT
+  CLAIM: Added focused NO-L5 unit coverage proving schema-local cache reuse prevents duplicate `_supports_transient_unrolled_plan(...)` calls for repeated checks with identical steps identity.
+  EVIDENCE: tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:615-653
+  IMPACT: NO-L5 memoization behavior is explicitly regression-guarded.
+  NEXT: Evaluate benchmark gate outcome for keep/revert decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: MEASURE
+  CLAIM: NO-L5 post-test gate is complete in pinned/no-cProfile mode with unit green (`34 passed, 1 warning`) but aggregate-regressive 10k deltas versus prebaseline (`fast +8.455%`, `overrides +5.257%`, `combined +6.856%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l5_posttest_validation_2026-02-16.txt:1-34, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_l5_posttest_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_l5_posttest_2026-02-16.jsonl:1-8
+  IMPACT: NO-L5 currently fails lane keep criteria on both fast and overrides aggregate means.
+  NEXT: Escalate explicit keep/revert decision request for NO-L5 (recommended revert).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-16
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - NO-L5 transient support memoization is functionally valid but benchmark-non-winning at the pinned 10k gate; recommended action is revert.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l5_posttest_validation_2026-02-16.txt:16-34
+  IMPACT: Low-risk no-overrides lane is paused at explicit user keep/revert confirmation before closing the low-risk queue.
+  NEXT: User chooses keep or revert for NO-L5.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected revert for NO-L5; transient support memoization changes were removed and the no-overrides executor/tests returned to the retained NO-L1/NO-L4 checkpoint shape.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:54-56, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:558-599, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:615-653
+  IMPACT: NO-L5 decision gate is closed and low-risk queue is no longer blocked on keep/revert.
+  NEXT: Record rollback benchmark evidence and hand off to the next codegen lane.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: NO-L5 rollback validation is complete with unit green (`33 passed, 1 warning`) and pinned 10k postrevert deltas versus prebaseline (`fast +10.666%`, `overrides +1.876%`, `combined +6.271%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_l5_revert_validation_2026-02-16.txt:1-34, benchmarks/testing_other_di/profiles/baselines/fast/benchmark_results_10k_no_l5_postrevert_2026-02-16.jsonl:1-8, benchmarks/testing_other_di/profiles/baselines/overrides/benchmark_results_10k_no_l5_postrevert_2026-02-16.jsonl:1-8
+  IMPACT: Low-risk queue outcomes are fully measured, including NO-L5 rollback, and ready for route handoff.
+  NEXT: Move active routing to the next codegen task outside this low-risk queue.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 This task is the low-risk lane for no-overrides codegen strategy work. It
 now has NO-L1 implemented and validated with post-test evidence in
 `benchmarks/testing_other_di/profiles/baselines/no_l1_posttest_validation_2026-02-16.txt`.
 NO-L1 and NO-L4 are retained. NO-L2 is implemented and validated in
 `benchmarks/testing_other_di/profiles/baselines/no_l2_posttest_validation_2026-02-16.txt`,
-but currently paused at keep/revert decision request (recommended revert).
+then reverted per user decision with rollback validation captured in
+`benchmarks/testing_other_di/profiles/baselines/no_l2_revert_validation_2026-02-16.txt`.
+NO-L3 is implemented and validated in
+`benchmarks/testing_other_di/profiles/baselines/no_l3_posttest_validation_2026-02-16.txt`,
+then reverted per user decision with rollback validation captured in
+`benchmarks/testing_other_di/profiles/baselines/no_l3_revert_validation_2026-02-16.txt`.
+NO-L5 prebaseline is captured in
+`benchmarks/testing_other_di/profiles/baselines/no_l5_prebaseline_validation_2026-02-16.txt`.
+NO-L5 implementation + post-test gate is complete in
+`benchmarks/testing_other_di/profiles/baselines/no_l5_posttest_validation_2026-02-16.txt`,
+then reverted per user decision with rollback validation captured in
+`benchmarks/testing_other_di/profiles/baselines/no_l5_revert_validation_2026-02-16.txt`.
+Low-risk no-overrides queue execution is complete (retained: NO-L1/NO-L4;
+reverted: NO-L2/NO-L3/NO-L5), and routing should hand off to the next
+codegen task.
