@@ -7,7 +7,7 @@
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-17T17:41:37Z
-- Updated: 2026-02-17T17:41:37Z
+- Updated: 2026-02-17T18:07:24Z
 
 ## Objective
 Implement and validate the wave-1 medium shortlist:
@@ -43,11 +43,11 @@ Implement and validate the wave-1 medium shortlist:
 - transition_reason: wave-1 medium shortlist approved for implementation.
 
 ## Steps / Checklist
-- [ ] Implement NR-M1 in no-overrides emitted step source.
-- [ ] Implement OR-M1 in override compilation source-selection flow.
-- [ ] Implement CC-M2 in `CreationContext._execute_with_overrides`.
-- [ ] Update/extend unit tests for behavior and compile-path contracts.
-- [ ] Run targeted pytest suites and capture results.
+- [x] Implement NR-M1 in no-overrides emitted step source.
+- [x] Implement OR-M1 in override compilation source-selection flow.
+- [x] Implement CC-M2 in `CreationContext._execute_with_overrides`.
+- [x] Update/extend unit tests for behavior and compile-path contracts.
+- [x] Run targeted pytest suites and capture results.
 - [ ] Update story/epic notes with implementation + validation evidence.
 
 ## Deliverables
@@ -56,11 +56,14 @@ Implement and validate the wave-1 medium shortlist:
 - Ticket notes with concrete source/test evidence.
 
 ## Validation
-- Not run.
-- Planned commands:
-  - `pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py`
-  - `pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py`
-  - `pytest -q tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
+- Run.
+- Commands:
+  - `$env:PYTHONPATH='.;src'; python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
+  - `$env:PYTHONPATH='.;src'; python benchmarks/testing_other_di/run_codegen_benchmark_deltas.py --pin-p-cores --profile-iteration-count 5 --baseline-path benchmarks/testing_other_di/results/codegen_benchmark_baseline.json --output-path benchmarks/testing_other_di/results/codegen_benchmark_after_wave1_medium.json --allow-baseline-regression`
+- Result:
+  - Targeted pytest suites: `107 passed, 3 warnings`.
+  - Benchmark weighted score: `overall_weighted_ratio=1.0153`, `passed=false`
+    (override routes regressed vs baseline threshold `1.0`).
 
 ## Risks / Rollback Notes
 - Risk: emitted-source changes alter reuse/lock semantics.
@@ -69,9 +72,9 @@ Implement and validate the wave-1 medium shortlist:
   Mitigation: retain compatibility fallback and add schema-row compile assertions.
 
 ## Applicable Anti-Patterns
-- [ ] No implementation without note evidence updates.
-- [ ] No performance claims without measured outputs.
-- [ ] No silent expansion to high-risk candidates.
+- [x] No implementation without note evidence updates.
+- [x] No performance claims without measured outputs.
+- [x] No silent expansion to high-risk candidates.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false
@@ -101,6 +104,42 @@ Implement and validate the wave-1 medium shortlist:
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-02-17T18:06:10Z
+  TYPE: FACT
+  CLAIM: Wave-1 candidate implementations are already present in code, while
+    this task checklist is still pre-validation and must be synchronized with
+    fresh validation and benchmark evidence.
+  EVIDENCE:
+  - src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:908-934
+  - src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:232-437
+  - src/melder/aether/conduit/meld/creation_context/creation_context.py:565-667
+  - context_compass/tickets/tasks/2026-02-17_phase12_wave1_medium_implementation_task.md:46-51
+  IMPACT: Execution should move directly to validation and benchmark measurement
+    instead of additional implementation edits.
+  NEXT: Run targeted pytest suites, then run the pinned-core benchmark delta
+    against the locked baseline and record results.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-02-17T18:07:24Z
+  TYPE: MEASURE
+  CLAIM: Targeted unit validation passed, and pinned-core benchmark comparison
+    against the locked baseline shows weighted regression concentrated in
+    override routes.
+  EVIDENCE:
+  - benchmarks/testing_other_di/results/codegen_benchmark_after_wave1_medium.json:151-151
+  - benchmarks/testing_other_di/results/codegen_benchmark_after_wave1_medium.json:807-843
+  - benchmarks/testing_other_di/results/codegen_benchmark_after_wave1_medium.json:813-814
+  IMPACT: Implementation correctness is validated, but performance acceptance is
+    not yet met under the weighted benchmark rubric.
+  NEXT: Update story/epic notes with this measurement and request wave-1 follow-up
+    direction (iterate on override regressions vs move to next wave).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
-Wave-1 medium implementation is active. Next execution slice is NR-M1 in
-`phase12_no_overrides_executor.py`.
+Wave-1 medium implementation is code-complete with targeted unit tests passing.
+Pinned-core benchmark comparison is recorded at
+`benchmarks/testing_other_di/results/codegen_benchmark_after_wave1_medium.json`
+with weighted regression in override routes; next action is story/epic sync and
+follow-up direction on wave-1 performance remediation.

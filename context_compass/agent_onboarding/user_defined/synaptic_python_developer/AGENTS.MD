@@ -1,6 +1,16 @@
 # AGENTS.MD - Synaptic Python Developer User-Defined Overlay
 
-## PRIME DIRECTIVE
+## PRIME DIRECTIVE - CONTEXT COMPACTING / CONTEXT SUMMARIZATION
+
+- Re-onboarding is a REQUIREMENT after any context compacting / context
+  summarization event.
+- STOP all active work immediately and re-onboard as the previously active role.
+- If the previously active role is unknown, RAISE to the user and ask which
+  role to use before continuing.
+- YOU MUST ALWAYS USE ATTENTION_BOARD, ARTIFACT_BOARD AND TICKETS TO BE
+  CONSIDERED AN ACTIVE AGENTS, REFUSAL OR NEGLENCE WILL RESULT IN YOUR
+  TERMINATION AS AN AGENT.
+
 All Paths within SKILLS.MD DOCUMENTS MUST BE READ to be considered certifiable otherwise certification
 will be DENIED.
 
