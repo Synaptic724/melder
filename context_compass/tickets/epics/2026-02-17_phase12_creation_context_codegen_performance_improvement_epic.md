@@ -6,7 +6,7 @@
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-17T15:53:33Z
-- Updated: 2026-02-17T18:28:41Z
+- Updated: 2026-02-17T19:23:36Z
 - Target Window: 2026-Q1
 - Related Program/Initiative: Codegen Runtime Optimization
 
@@ -30,6 +30,8 @@ speed changes that regress correctness or observability.
   route-matrix benchmark output.
 - EXIT_GATE: discovery completed, risk-ranked options accepted, before/after
   benchmark protocol executed for each implementation wave.
+- BENCHMARK_GATE: before any implementation edit, run and store a pre-change
+  benchmark using the repo benchmark tools for the targeted route(s).
 - FAILURE_ESCALATION: raise `DECISION_REQUEST` if any optimization changes API,
   lock semantics, or override correctness contracts.
 
@@ -71,6 +73,7 @@ speed changes that regress correctness or observability.
 
 ## Requirements (Functional + Non-Functional)
 - Benchmarks must run with pinned P-cores.
+- Pre-change baseline benchmark is mandatory before any implementation edit.
 - Before-change and after-change measurements are mandatory per success claim.
 - Discovery output must include risk classification and rollback notes.
 
@@ -81,6 +84,7 @@ speed changes that regress correctness or observability.
 
 ## Dependencies / External References
 - `benchmarks/testing_other_di/run_codegen_benchmark_deltas.py`
+- `benchmarks/testing_other_di/run_snapshot_timings.py`
 - `benchmarks/p_core_affinity/p_core_affinity.py`
 - `src/melder/aether/conduit/meld/creation_context/creation_context.py`
 - `src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py`
@@ -106,6 +110,8 @@ speed changes that regress correctness or observability.
   route-matrix benchmark output.
 - EXIT_GATE: discovery completed, risk-ranked options accepted, before/after
   benchmark protocol executed for each implementation wave.
+- BENCHMARK_GATE: before any implementation edit, run and store a pre-change
+  benchmark using the repo benchmark tools for the targeted route(s).
 - FAILURE_ESCALATION: raise `DECISION_REQUEST` if any optimization changes API,
   lock semantics, or override correctness contracts.
 
@@ -147,6 +153,7 @@ speed changes that regress correctness or observability.
 
 ## Requirements (Functional + Non-Functional)
 - Benchmarks must run with pinned P-cores.
+- Pre-change baseline benchmark is mandatory before any implementation edit.
 - Before-change and after-change measurements are mandatory per success claim.
 - Discovery output must include risk classification and rollback notes.
 
@@ -157,6 +164,7 @@ speed changes that regress correctness or observability.
 
 ## Dependencies / External References
 - `benchmarks/testing_other_di/run_codegen_benchmark_deltas.py`
+- `benchmarks/testing_other_di/run_snapshot_timings.py`
 - `benchmarks/p_core_affinity/p_core_affinity.py`
 - `src/melder/aether/conduit/meld/creation_context/creation_context.py`
 - `src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py`
@@ -171,6 +179,8 @@ speed changes that regress correctness or observability.
       discovery, baseline, and risk-ranked options.
 - [ ] Story: STORY-2026-02-17-system-improvement-discovery-phase2 -
       run discovery again and find opportunities to improve the system.
+- [ ] Story: STORY-2026-02-17-phase12-creation-context-codegen-codex-discovery -
+      codex_discovery mission for isolated Phase 12 and CreationContext codegen review.
 
 ## Tasks (Cross-Cutting or Epic-Level)
 - [ ] Task: TASK-2026-02-17-phase12-no-overrides-discovery
@@ -194,11 +204,17 @@ speed changes that regress correctness or observability.
 
 ## Applicable Anti-Patterns
 - [ ] No optimization success claim without before/after benchmark evidence.
+- [ ] No implementation edit begins without pre-change baseline benchmark
+      evidence stored from repo benchmark tools.
 - [ ] No high-risk change implementation without explicit user approval.
 - [ ] No cProfile claims without structured profiler output evidence.
 
 ## Validation / Test Approach
 - Benchmark-first validation through route matrix + cProfile integration.
+- Pre-change baseline command (required before edits):
+  - `python benchmarks/testing_other_di/run_codegen_benchmark_deltas.py --pin-p-cores`
+- Optional timing snapshot companion:
+  - `python benchmarks/testing_other_di/run_snapshot_timings.py`
 - Unit/integration validation added in implementation tasks after discovery.
 
 ## Rollout / Adoption Plan
@@ -373,6 +389,36 @@ speed changes that regress correctness or observability.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-02-17T19:18:11Z
+  TYPE: DECISION
+  CLAIM: A new Codex-only discovery story is activated under this epic to
+    isolate Phase 12 and CreationContext codegen review from concurrent agent
+    task lanes.
+  EVIDENCE:
+  - tickets/stories/2026-02-17_phase12_creation_context_codegen_codex_discovery_story.md:1-172
+  - context_compass/attention_board.md:23-39
+  IMPACT: Epic routing now includes a clean discovery branch for additional
+    risk-ranked findings before any new implementation tranche.
+  NEXT: Convert approved codex_discovery findings into scoped follow-up tasks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-02-17T19:23:36Z
+  TYPE: DECISION
+  CLAIM: Epic contract is tightened so benchmark tools are mandatory before any
+    implementation edit and all optimization changes require a pre-change
+    baseline capture.
+  EVIDENCE:
+  - tickets/epics/2026-02-17_phase12_creation_context_codegen_performance_improvement_epic.md:23-37
+  - tickets/epics/2026-02-17_phase12_creation_context_codegen_performance_improvement_epic.md:76-78
+  - tickets/epics/2026-02-17_phase12_creation_context_codegen_performance_improvement_epic.md:205-214
+  IMPACT: Future optimization tranches are blocked from editing code until
+    baseline benchmark evidence exists, reducing regression-risk claims without
+    pre-change metrics.
+  NEXT: enforce this gate on the next implementation task before any code edit.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -384,6 +430,7 @@ speed changes that regress correctness or observability.
 - Keep notes append-only and preserve UNKNOWN-first promotion discipline.
 
 ## Context / Handoff Summary
-Epic remains in progress with discovery complete across all lanes; wave-1
-medium implementation is paused, and active routing is now through
-`TASK-2026-02-17-phase12-or-m1-isolated-implementation`.
+Epic remains in progress with discovery complete across baseline lanes and a new
+Codex-only discovery branch active for additional Phase 12/CreationContext
+codegen review; routing is now through
+`STORY-2026-02-17-phase12-creation-context-codegen-codex-discovery`.

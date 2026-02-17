@@ -23,9 +23,40 @@ Attention details rule
 ## Active Items
 | work_item | status | mode | owner | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 |---|---|---|---|---|---|---|---|---|---|---|
-| task: system improvement discovery | in_progress | discovery | codex | none | run codebase scan for optimization/cleanup opportunities | risk-ranked improvement options | discovery scan completion | `tickets/tasks/2026-02-17_system_improvement_discovery_scan_task.md` | 2026-02-17T18:52:00Z | REQUIRED |
+| task: codex attempts implementation | in_progress | implementation | codex | none | run pre-change benchmark, implement empty override normalization and bounded override cache attempts, then validate | measured implementation attempts tied to codex_discovery findings | pre/post benchmark + targeted tests are recorded and reviewed | `tickets/tasks/2026-02-17_phase12_codex_attempts_implementation_task.md` | 2026-02-17T19:25:58Z | REQUIRED |
 
 ## Active Attention Details
+- DATETIME: 2026-02-17T19:25:58Z
+  TYPE: DECISION
+  CLAIM: Active routing moved from Codex discovery story to a new implementation
+    task lane for scoped Phase12/CreationContext attempts.
+  EVIDENCE:
+  - tickets/tasks/2026-02-17_phase12_codex_attempts_implementation_task.md:1-145
+  - tickets/stories/2026-02-17_phase12_creation_context_codegen_codex_discovery_story.md:69-74
+  IMPACT: Implementation now proceeds under a task-level boundary with explicit
+    benchmark-first gating.
+  NEXT: execute mandatory pre-change benchmark before runtime code edits.
+  SWITCH_TRIGGER: pre-change benchmark evidence is captured and implementation
+    edits are complete with post-change validation.
+  RESUME_HIERARCHY: codex attempts task -> codex discovery story -> phase12 epic.
+  REREAD: REQUIRED
+
+- DATETIME: 2026-02-17T19:18:11Z
+  TYPE: DECISION
+  CLAIM: Active routing shifted to a Codex-only discovery story tied to the
+    Phase 12 epic so concurrent agent work does not share the active lane.
+  EVIDENCE:
+  - tickets/stories/2026-02-17_phase12_creation_context_codegen_codex_discovery_story.md:1-172
+  - tickets/epics/2026-02-17_phase12_creation_context_codegen_performance_improvement_epic.md:169-175
+  IMPACT: Discovery now runs on a clean story boundary and no longer depends on
+    another agent's active task row.
+  NEXT: continue source-level review and produce scoped follow-up tasks for
+    approved findings.
+  SWITCH_TRIGGER: user approves one or more codex_discovery findings for
+    implementation taskization.
+  RESUME_HIERARCHY: codex discovery story -> phase12 epic.
+  REREAD: REQUIRED
+
 - DATETIME: 2026-02-17T18:28:41Z
   TYPE: DECISION
   CLAIM: Next-wave selection completed and routing advanced to isolated OR-M1
