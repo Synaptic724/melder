@@ -7,7 +7,7 @@
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-16
-- Updated: 2026-02-16
+- Updated: 2026-02-17
 
 ## Objective
 Investigate high-risk/high-reward redesign options for
@@ -40,6 +40,7 @@ stronger controls and explicit decision points.
 | NO-H3 | Expand transient-unrolled eligibility beyond `Existence.many` by introducing dedicated state carriers for reusable lanes. | src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:421-435, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:523-717 | Potentially high runtime win; high correctness risk around reuse semantics. |
 | NO-H4 | Replace source-string generation with direct code-object/AST construction to cut parser overhead and tighten compile artifacts. | src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:440-466, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:1257-1419 | High compile-latency upside; high implementation and debug complexity. |
 | NO-H5 | Introduce optional native fast-path call dispatcher for transient call modes (`CALL0..CALL8`) with Python fallback. | src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:1428-1531 | High potential runtime win; high build/distribution risk. |
+| NO-H6 | Standardize no-overrides emitted executor code-object construction with deterministic compile flags (`dont_inherit=True`, `optimize=2`) to match retained overrides code-object policy. | src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:55-57, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:568-578 | Medium compile-path consistency upside; low runtime semantics risk. |
 
 Execution order:
 1. NO-H2
@@ -47,6 +48,7 @@ Execution order:
 3. NO-H4
 4. NO-H3
 5. NO-H5
+6. NO-H6
 
 ## Ops Reference (Reuse)
 1. Keep this lane discovery-first; implementation only after explicit decision.
@@ -81,6 +83,78 @@ Execution order:
 - [ ] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: NO-H6 cProfile-first split-lane gate is captured as current/current validation (`no_h6_current_run1` vs `no_h6_current_run2`): tracked fast markers are fully flat, overrides tracked markers are flat except `phase12_overrides_executor_py` (`505 -> 500`, `-0.9901%`), aggregate marker calls are near-flat (`6225 -> 6220`, `-0.0803%`), weighted cProfile delta is `-1.0063%`, cold reference is lower (`8542900ns -> 7900800ns`, `-7.5162%`), and 10k snapshot means drifted up (`fast_cycle +2.5725%`, `overrides_root +3.7933%`, `combined +2.6902%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h6_current_current_cprofile_diff_validation_2026-02-17.txt:1-35
+  IMPACT: Current measurements indicate near-flat call graph under same-code reruns, with timing movement behaving as noise-floor context rather than code-delta evidence.
+  NEXT: Raise explicit decision request because true NO-H6 pre-edit benchmark baseline is missing.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - NO-H6 lacks a true pre-edit benchmark baseline artifact, so only current/current noise-floor evidence is available; explicit direction is needed to either (1) synthesize a true prebaseline by temporarily reverting NO-H6 for measurement, or (2) accept neutral call-differential evidence and move to the next candidate.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h6_prebaseline_absence_2026-02-17.txt:1-6, benchmarks/testing_other_di/profiles/baselines/no_h6_current_current_cprofile_diff_validation_2026-02-17.txt:1-35
+  IMPACT: Lane should not claim a true before/after outcome until the missing baseline condition is resolved by user direction.
+  NEXT: User chooses synthetic prebaseline run or proceed without true pre/post.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: FACT
+  CLAIM: NO-H6 has no preserved pre-edit benchmark baseline artifact in `profiles/baselines`; only unit-validation evidence exists, so a true code-delta pre/post benchmark compare cannot be reconstructed from existing artifacts.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h6_prebaseline_absence_2026-02-17.txt:1-6
+  IMPACT: Decision gating must be labeled as current/current noise-floor validation unless a synthetic prebaseline is created by reverting and re-running.
+  NEXT: Run a cProfile-first split-lane current/current gate for NO-H6 and report it explicitly as non-code-delta evidence.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: PLAN
+  CLAIM: Opened NO-H6 as the next bounded tranche candidate: apply deterministic code-object compile flags in no-overrides emitted executor compilation to mirror retained OV-H3 policy.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:55-57, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:568-578
+  IMPACT: Lane has an executable follow-on slice without widening runtime API or control-flow shape.
+  NEXT: Implement NO-H6 code + focused unit coverage and run targeted no-overrides executor validation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: FACT
+  CLAIM: No-overrides emitted executor compilation currently uses default `compile(...)` flags in `_compile_emitted_no_overrides_executor(...)`, unlike the retained OV-H3 overrides lane that already standardizes deterministic optimized code-object flags.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:568-570, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:140-141
+  IMPACT: No-overrides high-risk lane has a bounded next candidate (`NO-H6`) for code-object construction parity without widening runtime API shape.
+  NEXT: Implement `NO-H6` compile-flag wiring plus focused unit coverage and run targeted no-overrides unit validation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: FACT
+  CLAIM: Implemented NO-H6 compile-flag wiring in `_compile_emitted_no_overrides_executor(...)` with module-level constants and explicit `compile(..., dont_inherit=True, optimize=2)` arguments; added focused unit coverage to assert emitted compile flags.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:55-57, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:567-578, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:271-310
+  IMPACT: No-overrides emitted executors now share deterministic code-object compile policy with overrides lane.
+  NEXT: Run focused no-overrides executor unit suite and capture validation artifact.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: NO-H6 focused no-overrides executor unit validation is green (`34 passed, 3 warnings`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h6_unit_validation_2026-02-17.txt:1-12
+  IMPACT: NO-H6 code slice is functionally stable and ready for cProfile-first benchmark gate.
+  NEXT: Capture NO-H6 pre/post cProfile split-lane artifacts under the epic decision model.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: PLAN
+  CLAIM: Active routing is re-opened here after OV-H6 revert closure in phase12 overrides high-risk.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:1-10, context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:84-104
+  IMPACT: No-overrides high-risk lane is now the execution target for the next optimization tranche.
+  NEXT: Re-check queue state and capture the next candidate prebaseline/post-test decision gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-16
   TYPE: PLAN
   CLAIM: Opened high-risk no-overrides discovery lane to isolate deep redesign concepts from regular compact optimization loops.
@@ -412,3 +486,8 @@ NO-H5 implementation/unit fix is complete and post-test validation is captured i
 with aggregate-winning 10k deltas versus prebaseline.
 NO-H5 is retained per user commit/acceptance and this lane is ready to hand off
 to next no-overrides queue work (`NO-L1` low-risk lane).
+Lane has now been re-opened for a new bounded tranche (`NO-H6`) that applies
+deterministic compile flags for emitted no-overrides executors; implementation
+and focused unit validation are captured in
+`benchmarks/testing_other_di/profiles/baselines/no_h6_unit_validation_2026-02-17.txt`.
+Next action is the cProfile-first pre/post benchmark decision gate for NO-H6.

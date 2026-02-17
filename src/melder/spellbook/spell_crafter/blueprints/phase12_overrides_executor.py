@@ -671,8 +671,9 @@ def _build_shape_source_step_metadata(
             )
             for param_name, dependency_keys in row["dependency_resolution_order"]
         )
+        has_contract_payload = bool(row["has_contract_payload"])
         contract_payload_items: Tuple[Tuple[str, Any], ...] = ()
-        if bool(row["has_contract_payload"]):
+        if has_contract_payload:
             contract_payload_items = tuple(
                 (param_name, value)
                 for param_name, value in row["contract_payload_items"]
@@ -738,7 +739,7 @@ def _build_shape_source_step_metadata(
                 spell_id == root_spell_id and has_root_positional_override,
                 dependency_resolution_order,
                 row["contract_positional_override"],
-                bool(row["has_contract_payload"]),
+                has_contract_payload,
                 contract_payload_items,
                 static_is_existing_unique_creation,
                 static_is_callable_spell,
@@ -2478,8 +2479,9 @@ def _hydrate_steps_from_rows(
             )
             for param_name, dependency_keys in row["dependency_resolution_order"]
         )
+        has_contract_payload = bool(row["has_contract_payload"])
         contract_payload = None
-        if row["has_contract_payload"]:
+        if has_contract_payload:
             contract_payload = {
                 param_name: value
                 for param_name, value in row["contract_payload_items"]
@@ -2497,7 +2499,7 @@ def _hydrate_steps_from_rows(
                 override_match_prefix_len=row["override_match_prefix_len"],
                 uses_positional_override=row["uses_positional_override"],
                 contract_positional_override=row["contract_positional_override"],
-                has_contract_payload=row["has_contract_payload"],
+                has_contract_payload=has_contract_payload,
                 contract_payload=contract_payload,
                 use_spell_lock_hint=row["use_spell_lock_hint"],
                 must_register=row["must_register"],

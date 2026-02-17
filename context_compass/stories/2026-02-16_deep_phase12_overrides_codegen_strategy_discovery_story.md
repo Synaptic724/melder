@@ -7,7 +7,7 @@
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-16
-- Updated: 2026-02-16
+- Updated: 2026-02-17
 
 ## User Narrative
 As a runtime/codegen maintainer, I want deep structural analysis of
@@ -49,9 +49,9 @@ This discovery lane targets deeper generator decisions:
 - [x] Enforce benchmark gate for every follow-on optimization slice (pre-test, post-test, and mandatory `DECISION_REQUEST` escalation on failure/non-winning delta).
 - [x] Open first implementation task from rank-1 strategy with benchmark gate copied verbatim.
 - [x] Open and maintain low/medium/high risk-lane discovery tasks for this story.
-- [ ] Execute `TASK-2026-02-16-phase12-overrides-low-risk-discovery`.
+- [x] Execute `TASK-2026-02-16-phase12-overrides-low-risk-discovery`.
 - [x] Execute `TASK-2026-02-16-phase12-overrides-medium-risk-discovery`.
-- [ ] Execute `TASK-2026-02-16-phase12-overrides-high-risk-discovery`.
+- [x] Execute `TASK-2026-02-16-phase12-overrides-high-risk-discovery`.
 
 ## Acceptance Criteria
 - At least three deep findings documented with evidence.
@@ -96,9 +96,9 @@ Process rule:
 
 | Risk lane | Status | Task | Focus |
 |---|---|---|---|
-| low | ready | `context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md` | compact, contract-safe override efficiency candidates |
+| low | done | `context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md` | compact, contract-safe override efficiency candidates |
 | medium | done | `context_compass/tasks/completed/2026-02-16_phase12_overrides_medium_risk_discovery_task.md` | medium-reward compile/source strategy candidates |
-| high | ready | `context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md` | high-risk override generator redesign discovery |
+| high | in_progress | `context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md` | high-risk override generator redesign discovery |
 
 ## Strategy Candidates (Ranked)
 1. Rank-1 (selected for first implementation task): compact generated step bodies by extracting cold/error-heavy invoke/kwargs branches to shared helpers while preserving inline fast paths for common override shapes.
@@ -137,6 +137,33 @@ Process rule:
 - 2026-02-16: Story opened per user direction for deep overrides codegen strategy discovery.
 
 ## Notes
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-H6 benchmark gate is complete under cProfile-first scoring and is call-neutral on both split lanes (`fast` and `override` marker deltas all `0`; aggregate marker calls `6244 -> 6244`), with weighted elapsed drift `+0.5180%` and near-flat 10k snapshot reference.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h6_posttest_prepost_cprofile_diff_2026-02-17.txt:1-31
+  IMPACT: Story-level high-risk OV-H6 slice has a complete decision artifact and can move to keep/revert gating without further measurement collection.
+  NEXT: Resolve OV-H6 keep/revert direction, then advance high-risk queue ordering.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: FACT
+  CLAIM: High-risk lane OV-H6 moved from candidate discovery into a compact implementation slice by tightening `_build_step_override_targets(...)` path-metadata caching to `param_path_id` keys with legacy socket-ref fallback.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:87-94, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2551-2584
+  IMPACT: High-risk execution is progressing on a concrete override compile-miss reduction change rather than remaining in backlog-only state.
+  NEXT: Complete OV-H6 cProfile-first split-lane benchmark gate and raise keep/revert decision.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-H6 slice currently validates green on the targeted overrides executor unit suite (`58 passed, 3 warnings`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h6_unit_validation_2026-02-17.txt:1-13
+  IMPACT: Story-level high-risk execution can proceed to benchmark decisioning without unresolved correctness regressions.
+  NEXT: Capture split fast/override cProfile before/after deltas for OV-H6 and apply epic keep/revert model.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-16
   TYPE: FACT
   CLAIM: Core override compile flow supports source and code-object paths, builds per-step override targets, and executes compiled code with generated namespace binding.

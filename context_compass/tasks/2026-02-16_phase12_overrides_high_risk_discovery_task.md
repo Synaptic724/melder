@@ -39,6 +39,7 @@ unlock larger gains but require explicit architectural safeguards.
 | OV-H3 | Replace string-line source generation with AST/code-object construction for shape lanes. | src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:751-848, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:869-1689 | High compile-path reduction potential; very high complexity. |
 | OV-H4 | Introduce two-tier execution model: generic interpreter lane for cold shapes and compiled lane only for hot shapes. | src/melder/aether/conduit/meld/creation_context/creation_context.py:741-818, src/melder/aether/conduit/meld/creation_context/creation_context.py:1046-1107, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:337-433 | High end-to-end efficiency potential; high architecture and observability requirements. |
 | OV-H5 | Precompile top-N override shapes during conjure/warm phase and defer tail shapes to on-demand compile. | src/melder/aether/conduit/meld/creation_context/creation_context.py:1046-1235, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:337-433 | High latency improvement for common shapes; high upfront compile and invalidation risk. |
+| OV-H6 | Precompute socket path metadata (`parent_id`, `depth`) per shape and pass it through prefilter metadata caches so `_build_step_override_targets(...)` avoids repeated `path_registry` lookups on compile misses. | src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:187-392, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2537-2574 | High compile-miss prefilter reduction; high cache-key correctness risk. |
 
 Execution order:
 1. OV-H1
@@ -46,6 +47,7 @@ Execution order:
 3. OV-H3
 4. OV-H5
 5. OV-H2
+6. OV-H6
 
 ## Ops Reference (Reuse)
 1. Keep lane discovery-first until explicit promotion.
@@ -80,6 +82,78 @@ Execution order:
 - [ ] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user directed OV-H6 revert; path-id-first metadata cache-key logic in `_build_step_override_targets(...)` and the OV-H6-specific path-id cache-key unit slice were removed.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2568-2577, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py:924-995
+  IMPACT: OV-H6 decision gate is closed with reverted code shape.
+  NEXT: Sync active routing away from the OV-H6 decision block.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: Post-revert focused overrides executor validation is green (`57 passed, 3 warnings`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h6_revert_validation_2026-02-17.txt:1-12
+  IMPACT: Reverted OV-H6 checkpoint is functionally stable for next-lane routing.
+  NEXT: Hand off execution to the next codegen optimization lane.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-H6 pre/post decision gate is complete under the epic cProfile-first model (`ov_h6_prebaseline` vs `ov_h6_post_run`): tracked fast and override marker calls are fully flat (`aggregate 6244 -> 6244`, all marker deltas `0`), cProfile elapsed means drifted up (`fast +1.8116%`, `override +3.8558%`, `combined +2.0721%`, weighted `+0.5180%`), and 10k snapshot timing stayed near-flat (`fast_cycle -0.2471%`, `overrides_root +0.4206%`, `combined -0.1898%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h6_posttest_prepost_cprofile_diff_2026-02-17.txt:1-31, benchmarks/testing_other_di/profiles/baselines/ov_h6_prebaseline/cprofile_overrides/benchmark_results.jsonl:1-4, benchmarks/testing_other_di/profiles/baselines/ov_h6_post_run/cprofile_overrides/benchmark_results.jsonl:1-4
+  IMPACT: Primary call-differential signal is neutral for both split lanes; timing movement remains secondary/noise per epic scoring policy.
+  NEXT: Raise OV-H6 keep/revert decision with call-first interpretation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - OV-H6 path-id metadata cache-key tightening is functionally valid and call-differential-neutral on both `fast` and `override` lanes; recommended action is keep under the cProfile-first model.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h6_posttest_prepost_cprofile_diff_2026-02-17.txt:7-31, benchmarks/testing_other_di/profiles/baselines/ov_h6_posttest_validation_2026-02-17.txt:1-10
+  IMPACT: High-risk overrides lane is paused at explicit user keep/revert gate before queue advancement.
+  NEXT: User chooses keep or revert for OV-H6.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: FACT
+  CLAIM: Implemented OV-H6 path-metadata cache-key tightening in `_build_step_override_targets(...)`: metadata lookup is now keyed by `param_path_id` first, with a compatibility fallback that still honors legacy socket-ref keyed cache entries.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2551-2584, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py:959-984
+  IMPACT: Compile-miss prefiltering can reuse one `parent_id/depth` lookup across multiple socket refs that share the same path id, while preserving existing external cache injection behavior.
+  NEXT: Complete OV-H6 benchmark gate using split fast/override cProfile deltas plus 10k timing snapshot as secondary context.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-H6 code slice is unit-green after cache-key tightening and focused path-id reuse coverage (`58 passed, 3 warnings`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h6_unit_validation_2026-02-17.txt:1-13
+  IMPACT: Current OV-H6 checkpoint is functionally stable before benchmark decision gating.
+  NEXT: Capture OV-H6 before/after cProfile split-lane artifacts and prepare keep/revert decision request under epic scoring model.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: High-risk overrides lane is reopened as the active execution target after OV low-risk queue completion and user continue direction.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md:454-455, context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:6-10
+  IMPACT: This lane is no longer parked for direction and now owns next-tranche candidate execution.
+  NEXT: Start OV-H6 prebaseline gate under the cProfile-first benchmark model.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: FACT
+  CLAIM: Added OV-H6 as a new high-risk tranche candidate: push socket path metadata precomputation into compile-prep caches so miss-path filtering in `_build_step_override_targets(...)` reuses metadata instead of calling `path_registry.parent_id/depth` repeatedly.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:187-392, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2537-2574
+  IMPACT: OV high-risk queue has a concrete next experiment after OV-H1..OV-H5 closure outcomes.
+  NEXT: Prepare OV-H6 implementation slice with full pre/post benchmark gate artifacts.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-16
   TYPE: PLAN
   CLAIM: Opened high-risk overrides discovery lane to isolate deeper redesign exploration from regular compact optimization passes.
@@ -420,4 +494,9 @@ OV-H2 implementation was user-directed to revert, rollback validation artifacts
 are captured in
 `benchmarks/testing_other_di/profiles/baselines/ov_h2_revert_validation_2026-02-17.txt`
 and `benchmarks/testing_other_di/profiles/baselines/ov_h2_postrevert_codegen_report_2026-02-17.json`,
-and active execution is now paused for next-lane direction after OV-H2 closure.
+OV-H6 pre/post decision artifacts are captured in
+`benchmarks/testing_other_di/profiles/baselines/ov_h6_posttest_prepost_cprofile_diff_2026-02-17.txt`,
+the user-directed revert is now applied, and post-revert validation is captured
+in `benchmarks/testing_other_di/profiles/baselines/ov_h6_revert_validation_2026-02-17.txt`.
+This lane is now in review and active routing is handed off to the next
+codegen optimization lane.

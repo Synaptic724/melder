@@ -6,7 +6,7 @@
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-15
-- Updated: 2026-02-16
+- Updated: 2026-02-17
 - Target Window: 2026-Q1
 - Related Program/Initiative: Runtime Performance and Hot-Path Efficiency
 
@@ -122,28 +122,35 @@ The MRP is a measurable, contract-safe optimization tranche:
 - Benchmark validation via route-matrix or equivalent current-head performance
   harness output.
 
-## Benchmark Gate (Mandatory For Optimization Slices)
-- Every optimization slice under this epic must follow:
-  - Pre-test baseline cadence (before edit):
-    - targeted unit suite(s) for touched module,
-    - pinned benchmark mode enabled by default (`DI_PIN_P_CORES=1` for benchmark pytest runs; `--pin-p-cores` for snapshot/codegen benchmark runners when used),
-    - `benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py` run twice sequentially,
-    - `benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py` run twice sequentially.
-  - Post-test cadence (after edit): rerun the same suites.
-  - Delta comparison against retained checkpoint:
-    - `benchmarks/testing_other_di/profiles/overrides_graphs_melder/wave1_retained_baseline_checkpoint_2026-02-16.txt`
+## Benchmark Decision Model (Mandatory For Optimization Slices)
+This epic uses a cProfile-first decision model to reduce wall-clock noise and
+prioritize call-graph evidence.
+
+- Required cadence per optimization slice:
+  - Before edit:
+    - run targeted unit suite(s) for touched module,
+    - run one measured fast cProfile pass (`DI_CPROFILE_ITERS=1`),
+    - run one measured overrides cProfile pass (`DI_OVERRIDE_PROFILE_ITERS=1`),
+    - capture one pinned 10k timing snapshot (`--pin-p-cores --iterations 10000`) as reference.
+  - After edit:
+    - rerun the same unit + cProfile + 10k snapshot cadence.
+- Lane split (no aggregate-only decisions):
+  - evaluate `fast` and `override` lanes separately,
+  - when a candidate targets overrides, prioritize override-lane interpretation,
+  - exclude `spellspace` from assistant-reported benchmark calculations.
+- Scoring model:
+  - Primary signal (`75%`): cProfile call differential (total calls + tracked marker deltas).
+  - Secondary signal (`25%`): cProfile elapsed timer differential.
+  - Snapshot wall-clock deltas are advisory context only and must not override cProfile call outcomes by themselves.
 - Decision rule:
-  - If any validation command fails, raise `DECISION_REQUEST` and wait for user keep/revert direction.
-  - If candidate delta is non-winning versus retained checkpoint, raise `DECISION_REQUEST` and wait for user keep/revert direction.
-  - Emit `RESULT: DECISION_REQUEST` with failing/non-winning evidence and explicit keep/revert options before any state change.
-  - If user selects revert, run one full post-revert validation pass and emit a validation artifact.
-- Keep rule:
-  - Retain only candidates that are validation-green, checkpoint-winning per lane criteria, and explicitly approved by user direction.
-- Announcement rule:
-  - Every optimization slice must publish one explicit outcome note in the active task/story:
-    - `RESULT: DECISION_REQUEST` + reason + evidence + keep/revert options,
-    - `RESULT: RETAINED` + median deltas + artifact path, or
-    - `RESULT: REVERTED` + reason + artifact path.
+  - If any validation command fails: `RESULT: DECISION_REQUEST` with explicit keep/revert options.
+  - Keep only when tests are green and target-lane call differential is neutral-or-better.
+  - If calls are flat and only timing changes, treat timing-only drift as noise unless repeated directional movement is observed across reruns.
+  - For any non-winning call differential: emit `RESULT: DECISION_REQUEST`, wait for user keep/revert direction, then apply post-revert validation if reverted.
+- Required reporting:
+  - publish before/after `fast` vs `override` breakdowns separately (not collective-only),
+  - include cold numbers in reported benchmark summaries,
+  - attach artifact paths for cProfile diff output and snapshot timing output.
 
 ## Rollout / Adoption Plan
 - Run discovery refresh first.
@@ -161,6 +168,15 @@ The MRP is a measurable, contract-safe optimization tranche:
 - 2026-02-15: User directed discovery to use `test_shallow_all` and prioritize meld-targeted `cProfile` evidence for hotspot ranking.
 
 ## Notes
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: Adopted the benchmark decision model for this epic as cProfile-first with weighted scoring (`75%` call differential, `25%` cProfile elapsed timer), with split reporting for `fast` and `override` lanes and `spellspace` excluded from assistant-reported benchmark calculations.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l4_current_current_cprofile_diff_validation_2026-02-17.txt:1-54, context_compass/epics/2026-02-15_creationcontext_phase12_codegen_optimization_epic.md:125-151
+  IMPACT: Optimization keep/revert decisions in this epic now use call-differential evidence as primary signal and treat timing drift as secondary/noise context.
+  NEXT: Apply this benchmark model for OV-L4 and all subsequent codegen optimization slices under this epic.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-16
   TYPE: DECISION
   CLAIM: Per user direction, all medium-risk discovery tickets were turned in and marked done (`creationcontext`, `phase12-no-overrides`, `phase12-overrides`), and epic task checkboxes were updated for those ticket IDs.

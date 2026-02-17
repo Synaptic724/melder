@@ -3,7 +3,7 @@
 ## Metadata
 - Task ID: TASK-2026-02-16-phase12-overrides-low-risk-discovery
 - Story: STORY-2026-02-16-deep-phase12-overrides-codegen-strategy-discovery
-- Status: blocked
+- Status: review
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-16
@@ -25,8 +25,8 @@ preserving existing override precedence and runtime contracts.
 - [x] Produce at least 3 low-risk candidates with source-backed evidence.
 - [x] Define expected benchmark direction and rollback criteria per candidate.
 - [x] Rank candidates by effort, risk, and estimated payoff.
-- [ ] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Run Ticket Microcycle during execution (`Investigate -> Document -> Strategy/Plan -> Document -> Implement -> Document -> Validate -> Document`).
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Low-risk override-candidate matrix with implementation boundaries.
@@ -48,23 +48,36 @@ Execution order:
 5. OV-L5
 
 ## Ops Reference (Reuse)
-1. Pre-test benchmark cadence (unit + fast x2 + overrides x2).
+1. Pre-test baseline cadence:
+   - cProfile-first lane split: run fast and overrides cProfile suites separately with one measured iteration each.
+   - Keep lane reporting separate (`fast` vs `override`) and exclude `spellspace` from assistant-reported calculations.
+   - Capture pinned 10k timing snapshots as advisory-only context.
 2. Implement one low-risk candidate only.
-3. Post-test same cadence + compare checkpoint.
-4. Revert immediately on non-winning/failing outcome.
-5. Record `RESULT` note with artifact path before next candidate.
+3. Post-test cadence:
+   - cProfile-first rerun with the same split-lane setup (one measured iteration each).
+   - Advisory-only 10k snapshot compare against prebaseline.
+4. Decision weighting:
+   - cProfile call differential: 75%
+   - cProfile elapsed timer differential: 25%
+5. Revert immediately on non-winning/failing outcome and record `RESULT`.
 
 ## Files / Paths Impacted
 - `context_compass/stories/2026-02-16_deep_phase12_overrides_codegen_strategy_discovery_story.md`
 - `src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py` (discovery evidence only unless approved for implementation)
 
 ## Validation
-- Not run.
+- Run (2026-02-17):
+  - unit: `57 passed, 3 warnings`
+  - fast cProfile timings: `4 passed, 3 warnings`
+  - overrides cProfile timings: `4 passed, 3 warnings`
+  - 10k snapshot timing captured for revert validation
 - If implementation is attempted, enforce story benchmark gate.
 - Recommended commands:
-  - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py -q`
-  - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py -q -s` (twice)
-  - `$env:PYTHONPATH='src'; .\.venv_new\Scripts\python.exe -m pytest benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py -q -s` (twice)
+  - `$env:PYTHONPATH='.;src'; python -m pytest tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py -q`
+  - `$env:PYTHONPATH='.;src'; $env:DI_CPROFILE_ITERS='1'; python -m pytest benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py -q -s`
+  - `$env:PYTHONPATH='.;src'; $env:DI_OVERRIDE_PROFILE_ITERS='1'; python -m pytest benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py -q -s`
+  - `$env:PYTHONPATH='.;src'; python benchmarks/testing_other_di/run_snapshot_timings.py --pin-p-cores --snapshot-label ov_l4_prebaseline --iterations 10000 --output-dir benchmarks/testing_other_di/profiles/baselines`
+  - `$env:PYTHONPATH='.;src'; python benchmarks/testing_other_di/run_snapshot_timings.py --pin-p-cores --snapshot-label ov_l4_posttest --iterations 10000 --output-dir benchmarks/testing_other_di/profiles/baselines --baseline-json <ov_l4_prebaseline_snapshot.json>`
 
 ## Risks / Rollback Notes
 - Risk: even low-risk edits can regress fast lanes.
@@ -81,6 +94,132 @@ Execution order:
 - [ ] Acceptance criteria reviewed with user and confirmed
 
 ## Notes
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: Low-risk OV queue execution is complete (retained: `OV-L1`, `OV-L5`; reverted: `OV-L2`, `OV-L3`, `OV-L4`), and routing is handed off to the next overrides lane per user continue direction.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md:117-134, context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md:454-455, context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:6-10
+  IMPACT: This task no longer blocks active execution and should remain as a completed-lane reference while the next lane runs.
+  NEXT: Switch active routing to the high-risk overrides lane and begin the next queued candidate tranche.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: FACT
+  CLAIM: Implemented OV-L5 as a narrow row-hydration micro-optimization by hoisting `has_contract_payload` into one local bool per row in both `_build_shape_source_step_metadata(...)` and `_hydrate_steps_from_rows(...)`, then reusing that local for contract-payload materialization gating and stored metadata fields.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:674-678, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:741-742, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2481-2485, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2500
+  IMPACT: Contract-payload gating in these paths no longer re-reads/re-casts the same row flag at multiple points in the same row pass.
+  NEXT: Compare OV-L5 post-test against OV-L5 prebaseline under cProfile-first model.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-L5 pre/post benchmark gate is complete (`ov_l5_prebaseline` vs `ov_l5_post_run`) with cProfile call-differential primary signal and 10k timing secondary: all tracked fast/override marker calls stayed exactly flat (`aggregate 6244 -> 6244`, delta `0`), cProfile elapsed means drifted up (`fast +2.0170%`, `override +4.3624%`, `combined +2.3060%`, weighted `+0.5765%`), and 10k timing reference improved (`fast_cycle -8.9047%`, `overrides_root -3.1381%`, `combined -8.4334%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l5_posttest_prepost_cprofile_diff_2026-02-17.txt:1-29, benchmarks/testing_other_di/profiles/baselines/ov_l5_prebaseline/cprofile_overrides/benchmark_results.jsonl:1-4, benchmarks/testing_other_di/profiles/baselines/ov_l5_post_run/cprofile_overrides/benchmark_results.jsonl:1-4
+  IMPACT: Primary call-differential signal is neutral; timing signals remain mixed/noisy across measurement channels.
+  NEXT: Close OV-L5 with cProfile-call-neutral interpretation and advance queue.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: RESULT: RETAINED - OV-L5 is retained because the primary cProfile call-differential signal is fully neutral (no tracked call growth) and validation suites are green, while timing-only drift is treated as secondary/noise under the epic model.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l5_posttest_prepost_cprofile_diff_2026-02-17.txt:7-21, benchmarks/testing_other_di/profiles/baselines/ov_l5_posttest_validation_2026-02-17.txt:1-10
+  IMPACT: Low-risk overrides queue now has two retained slices (`OV-L1`, `OV-L5`) and three reverted slices (`OV-L2`, `OV-L3`, `OV-L4`).
+  NEXT: Move execution to the next active optimization lane after low-risk OV queue completion.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected revert for OV-L4, and the root-positional merge dedup change in `_append_overrides_kwargs_inline_source(...)` was removed.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:983-1275, benchmarks/testing_other_di/profiles/baselines/ov_l4_posttest_prepost_cprofile_diff_2026-02-17.txt:15-25
+  IMPACT: OV-L4 non-winning call-differential slice is removed and low-risk queue is unblocked.
+  NEXT: Continue candidate execution at OV-L5 prebaseline gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-L4 post-revert validation is complete and call-differential baseline is restored: tracked fast and override marker calls are exactly flat vs pre-change baseline (`aggregate 6244 -> 6244`, all tracked marker deltas `0`), with unit green (`57 passed, 3 warnings`), combined cProfile elapsed `+1.3307%`, weighted cProfile delta `+0.3327%`, and 10k timing secondary deltas (`fast_cycle -5.2522%`, `overrides_root +1.7896%`, `combined -4.6660%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l4_revert_prepost_cprofile_diff_2026-02-17.txt:1-29, benchmarks/testing_other_di/profiles/baselines/ov_l4_revert_validation_2026-02-17.txt:1-10, benchmarks/testing_other_di/profiles/baselines/ov_l4_revert_run/cprofile_fast/benchmark_results.jsonl:1-4, benchmarks/testing_other_di/profiles/baselines/ov_l4_revert_run/cprofile_overrides/benchmark_results.jsonl:1-4
+  IMPACT: Reverted state is validated under the epic benchmark model and is safe to use as the lane checkpoint.
+  NEXT: Start OV-L5 prebaseline capture (split fast/override cProfile + 10k snapshot).
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-L4 pre/post benchmark gate is complete using the epic model (calls `75%` + cProfile elapsed `25%`, 10k snapshot secondary) comparing pre-change `ov_l4_current_run2` to post-change `ov_l4_post_run`: fast-lane tracked calls stayed flat, override-lane tracked calls were flat except `phase12_overrides_executor_py` (`524 -> 528`, `+4`, `+0.7634%`), aggregate tracked calls were `6244 -> 6248` (`+0.0641%`), combined cProfile elapsed was near-flat (`-0.0233%`), weighted cProfile delta was `+0.0422%`, and 10k timing reference improved (`fast_cycle -7.8972%`, `overrides_root -5.5482%`, `combined -7.7017%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l4_posttest_prepost_cprofile_diff_2026-02-17.txt:1-33, benchmarks/testing_other_di/profiles/baselines/ov_l4_post_run/cprofile_fast/benchmark_results.jsonl:1-4, benchmarks/testing_other_di/profiles/baselines/ov_l4_post_run/cprofile_overrides/benchmark_results.jsonl:1-4
+  IMPACT: OV-L4 has mixed measurement signals: timing improved, but target override marker-call differential is non-neutral.
+  NEXT: Raise keep/revert decision gate for OV-L4 with cProfile-call-first interpretation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - OV-L4 root-positional merge dedup is unit-green and snapshot-time-improving, but it is non-winning on the cProfile primary signal because override module marker calls increased (`phase12_overrides_executor_py +4`, aggregate `+0.0641%`); recommended action is revert unless this call increase is explicitly accepted.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l4_posttest_prepost_cprofile_diff_2026-02-17.txt:15-25, benchmarks/testing_other_di/profiles/baselines/ov_l4_codegen_dedup_unit_validation_2026-02-17.txt:1-12
+  IMPACT: Queue progress is paused at explicit user keep/revert gate for OV-L4 under the epic benchmark model.
+  NEXT: User chooses keep or revert for OV-L4.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: FACT
+  CLAIM: Implemented OV-L4 in `_append_overrides_kwargs_inline_source(...)` by centralizing step root positional override merge emission into one local helper and reusing it across static override-target branches (`0/1/2`) instead of repeating the same emitted-source block in each branch.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:983-1051, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1251-1278
+  IMPACT: Generated-source emission logic is smaller and less branch-duplicated for the root positional merge path while preserving branch semantics.
+  NEXT: Run OV-L4 cProfile-first pre/post benchmark gate (split `fast` and `override`) and report call-differential-first results.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: Targeted overrides executor unit validation is green after OV-L4 implementation (`57 passed, 3 warnings`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l4_codegen_dedup_unit_validation_2026-02-17.txt:1-12
+  IMPACT: OV-L4 implementation preserves current unit-tested override execution contracts before performance gating.
+  NEXT: Collect OV-L4 benchmark deltas under the epic cProfile decision model.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: Benchmark model is now finalized for this lane as cProfile-first with weighted scoring (`75%` call differential, `25%` cProfile elapsed timer), split-lane reporting (`fast` and `override` separately), and `spellspace` excluded from assistant-reported calculations.
+  EVIDENCE: context_compass/epics/2026-02-15_creationcontext_phase12_codegen_optimization_epic.md:125-166, benchmarks/testing_other_di/profiles/baselines/ov_l4_current_current_cprofile_diff_validation_2026-02-17.txt:1-54
+  IMPACT: OV-L4 and subsequent low-risk override slices now use one benchmark model with call-differential priority and reduced timing-noise influence.
+  NEXT: Use this model unchanged for the next pre/post OV-L4 decision gate report.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: Executed user-requested current-vs-current benchmark rerun using cProfile-first differential scoring (75% calls, 25% cProfile elapsed timer) with one measured cProfile iteration plus 10k timing reference; tracked call markers were exactly flat (`delta=0` across all configured fast/override markers), and weighted cProfile delta was `+0.1794%`.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l4_current_current_cprofile_diff_validation_2026-02-17.txt:1-54
+  IMPACT: Current checkpoint shows no call-graph drift between repeated runs; this method is now ready for pre/post candidate gating on OV-L4.
+  NEXT: Capture OV-L4 prebaseline with the same cProfile differential method before making code edits.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: OV-L3 is marked failure/non-retained and rolled back in current code state; `_build_step_override_targets(...)` no longer has the empty-target early short-circuit and proceeds through per-step iteration.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2535-2580, benchmarks/testing_other_di/profiles/baselines/ov_l3_posttest_validation_2026-02-17.txt:21-63
+  IMPACT: Low-risk queue is unblocked from OV-L3 decision gate and can advance to OV-L4.
+  NEXT: Start OV-L4 prebaseline with cProfile-first + 10k snapshot cadence.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: Benchmark decision protocol is now cProfile-priority (`70%`) with timing snapshots as secondary signal (`30%`), using one measured cProfile iteration and 10k time snapshots for before/after comparisons.
+  EVIDENCE: benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py:912-914, benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py:885-887, benchmarks/testing_other_di/run_snapshot_timings.py:111-126
+  IMPACT: Future keep/revert decisions in this lane prioritize hotspot/callchain evidence over raw timing drift.
+  NEXT: Apply this protocol to OV-L4 and remaining OV-L5 candidate flow.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-17
   TYPE: DECISION
   CLAIM: User clarified that benchmark tooling code must not change; `spellspace` exclusion is reporting-only for assistant summaries and does not modify `run_codegen_benchmark_deltas.py`.
@@ -300,4 +439,26 @@ OV-L3 post-test artifacts are captured in
 `benchmarks/testing_other_di/profiles/baselines/ov_l3_posttest_codegen_report_2026-02-17.json`,
 `benchmarks/testing_other_di/profiles/baselines/ov_l3_posttest_split_codegen_report_2026-02-17.json`,
 and `benchmarks/testing_other_di/profiles/baselines/ov_l3_posttest_split2_codegen_report_2026-02-17.json`.
-Active execution is now paused at explicit keep/revert decision gate for OV-L3.
+OV-L3 is non-retained (rolled back), and active execution now advances to OV-L4.
+Benchmark protocol for remaining candidates is now cProfile-first with weighted
+decisioning (`75%` call differential, `25%` cProfile elapsed timer), split
+`fast`/`override` reporting, and advisory-only 10k timing snapshots.
+OV-L4 code change is now implemented and unit-green; next gate is cProfile-first
+benchmark validation (split `fast` + `override`, report without `spellspace`).
+OV-L4 pre/post gate artifacts are captured in
+`benchmarks/testing_other_di/profiles/baselines/ov_l4_posttest_prepost_cprofile_diff_2026-02-17.txt`
+with post-run data roots under
+`benchmarks/testing_other_di/profiles/baselines/ov_l4_post_run/`.
+OV-L4 was reverted per user decision and post-revert validation artifacts are
+captured in
+`benchmarks/testing_other_di/profiles/baselines/ov_l4_revert_validation_2026-02-17.txt`
+and
+`benchmarks/testing_other_di/profiles/baselines/ov_l4_revert_prepost_cprofile_diff_2026-02-17.txt`,
+with cProfile/snapshot roots under
+`benchmarks/testing_other_di/profiles/baselines/ov_l4_revert_run/`.
+OV-L5 prebaseline/posttest artifacts are captured in
+`benchmarks/testing_other_di/profiles/baselines/ov_l5_prebaseline/`,
+`benchmarks/testing_other_di/profiles/baselines/ov_l5_post_run/`,
+and `benchmarks/testing_other_di/profiles/baselines/ov_l5_posttest_prepost_cprofile_diff_2026-02-17.txt`.
+OV-L5 is retained with neutral cProfile call differential.
+Current state advances beyond low-risk OV queue completion to the next lane.

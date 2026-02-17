@@ -15,9 +15,189 @@ Attention details rule
 ## Active Items
 | work_item | status | owner | blocker | next | ticket | updated | reread |
 |---|---|---|---|---|---|---|---|
-| task: phase12 overrides low-risk discovery | blocked | codex | keep/revert decision for OV-L3 | user chooses keep or revert for OV-L3 | `context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md` | 2026-02-17 | REQUIRED |
+| task: phase12 no-overrides high-risk discovery | in_progress | codex | none | run NO-H6 cProfile-first pre/post split-lane gate | `context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md` | 2026-02-17 | REQUIRED |
 
 ## Active Attention Details
+- DATE: 2026-02-17
+  TYPE: PLAN
+  CLAIM: Opened NO-H6 in phase12 no-overrides high-risk lane: apply deterministic compile flags in emitted no-overrides executor compilation (`dont_inherit=True`, `optimize=2`) to match retained overrides code-object policy.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:55-57, src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:568-578
+  IMPACT: Active lane has a bounded next slice without widening runtime API shape.
+  NEXT: Implement NO-H6 code/test slice and run focused no-overrides executor unit validation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: FACT
+  CLAIM: Implemented NO-H6 compile-flag wiring in `_compile_emitted_no_overrides_executor(...)` plus focused compile-flag unit coverage.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:567-578, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py:271-310
+  IMPACT: No-overrides emitted executor code-object construction now uses explicit deterministic flags.
+  NEXT: Capture focused validation output and prepare cProfile-first decision gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: NO-H6 focused no-overrides executor unit validation is green (`34 passed, 3 warnings`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/no_h6_unit_validation_2026-02-17.txt:1-12
+  IMPACT: Active NO-H6 slice is functionally stable for benchmark decisioning.
+  NEXT: Run NO-H6 pre/post cProfile split-lane gate under epic scoring model.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user directed OV-H6 revert; `_build_step_override_targets(...)` now uses socket-ref keyed path metadata caching again and OV-H6-specific path-id cache-key changes are removed.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2568-2577, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py:924-995
+  IMPACT: OV-H6 decision gate is closed and no OV-H6 experimental code remains active.
+  NEXT: Move routing off the OV-H6 decision block.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: Post-revert OV-H6 focused unit validation is green (`57 passed, 3 warnings`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h6_revert_validation_2026-02-17.txt:1-12
+  IMPACT: Reverted checkpoint is functionally stable for next-lane routing.
+  NEXT: Continue with the next codegen optimization lane.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: Active routing is switched to phase12 no-overrides high-risk discovery after OV-H6 closure.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_no_overrides_high_risk_discovery_task.md:1-10, context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:6-10
+  IMPACT: Board is unblocked and pointed at an executable next lane.
+  NEXT: Re-open no-overrides high-risk lane notes and pick the next candidate tranche.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-H6 pre/post cProfile gate is complete: tracked split-lane marker calls are fully flat (`aggregate 6244 -> 6244`, all marker deltas `0`), weighted cProfile delta is `+0.5180%`, and 10k snapshot deltas are near-flat (`fast_cycle -0.2471%`, `overrides_root +0.4206%`, `combined -0.1898%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h6_posttest_prepost_cprofile_diff_2026-02-17.txt:1-31
+  IMPACT: Primary signal is neutral call-differential; timing remains secondary context.
+  NEXT: Raise explicit keep/revert decision request for OV-H6.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - OV-H6 is unit-green and cProfile-call-neutral across `fast` and `override`; recommended action is keep.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h6_posttest_prepost_cprofile_diff_2026-02-17.txt:7-31, benchmarks/testing_other_di/profiles/baselines/ov_h6_posttest_validation_2026-02-17.txt:1-10
+  IMPACT: High-risk lane is paused at user decision gate before advancing.
+  NEXT: User chooses keep or revert for OV-H6.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: FACT
+  CLAIM: OV-H6 implementation is now applied in the active checkpoint: `_build_step_override_targets(...)` caches path metadata by `param_path_id` and falls back to legacy socket-ref keys for compatibility.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2551-2584, tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py:959-984
+  IMPACT: High-risk lane has moved from OV-H6 discovery-only status to an executable code slice ready for benchmark gating.
+  NEXT: Capture split-lane OV-H6 cProfile before/after artifacts and evaluate keep/revert under epic scoring model.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-H6 local validation is green after the cache-key change and focused unit coverage (`58 passed, 3 warnings`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_h6_unit_validation_2026-02-17.txt:1-13
+  IMPACT: OV-H6 is functionally stable enough to proceed into cProfile-first decision gating.
+  NEXT: Complete split fast/override cProfile compare and issue keep/revert decision request.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: Active routing is switched from OV low-risk (queue complete) to OV high-risk continuation so execution can proceed without stale-board blocking.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md:454-455, context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:6-10
+  IMPACT: Board routing now matches the active task lane and avoids re-entering completed OV-L1..OV-L5 queue work.
+  NEXT: Execute OV-H6 prebaseline gate and move into next high-risk tranche cycle.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: FACT
+  CLAIM: OV-H6 was added to the high-risk overrides backlog, targeting compile-miss prefilter overhead by reusing precomputed socket path metadata in `_build_step_override_targets(...)`.
+  EVIDENCE: context_compass/tasks/2026-02-16_phase12_overrides_high_risk_discovery_task.md:40-48, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:187-392, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2537-2574
+  IMPACT: Next-lane execution now has a concrete candidate and does not require a fresh broad discovery pass.
+  NEXT: Capture OV-H6 prebaseline artifacts using the cProfile-first split-lane model.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: RESULT: REVERTED - user selected revert for OV-L4 and the root-positional merge dedup hunk was removed from `phase12_overrides_executor.py`.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:983-1275, benchmarks/testing_other_di/profiles/baselines/ov_l4_posttest_prepost_cprofile_diff_2026-02-17.txt:15-25
+  IMPACT: OV-L4 no longer affects active code and queue execution can continue to OV-L5.
+  NEXT: Capture OV-L5 prebaseline artifacts.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-L4 post-revert validation is complete: tracked cProfile marker calls are fully restored flat vs pre-change baseline (`aggregate 6244 -> 6244`, all tracked deltas `0`), unit is green (`57 passed, 3 warnings`), weighted cProfile delta is `+0.3327%`, and 10k snapshot timing remains secondary with mixed drift (`fast_cycle -5.2522%`, `overrides_root +1.7896%`, `combined -4.6660%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l4_revert_prepost_cprofile_diff_2026-02-17.txt:1-29, benchmarks/testing_other_di/profiles/baselines/ov_l4_revert_validation_2026-02-17.txt:1-10, benchmarks/testing_other_di/profiles/baselines/ov_l4_revert_run/cprofile_overrides/benchmark_results.jsonl:1-4
+  IMPACT: Reverted checkpoint is validated and safe as the continuing baseline for this lane.
+  NEXT: Begin OV-L5 candidate prebaseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: OV-L4 pre/post benchmark diff is complete against pre-change `ov_l4_current_run2`: fast tracked calls stayed flat, override tracked calls were flat except `phase12_overrides_executor_py` (`524 -> 528`, `+4`), aggregate tracked marker calls were `6244 -> 6248` (`+0.0641%`), combined cProfile elapsed was near-flat (`-0.0233%`), weighted cProfile delta was `+0.0422%`, and 10k timing reference improved (`fast_cycle -7.8972%`, `overrides_root -5.5482%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l4_posttest_prepost_cprofile_diff_2026-02-17.txt:1-33, benchmarks/testing_other_di/profiles/baselines/ov_l4_post_run/cprofile_overrides/benchmark_results.jsonl:1-4, benchmarks/testing_other_di/profiles/baselines/ov_l4_post_run/timing/ov_l4_post_run_snapshot_2026-02-17_11-13-31.json:300-337
+  IMPACT: OV-L4 has mixed signal and now requires explicit keep/revert decision under cProfile-call-first policy.
+  NEXT: User chooses keep or revert for OV-L4.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION_REQUEST
+  CLAIM: RESULT: DECISION_REQUEST - OV-L4 is unit-green and timing-improved but non-winning on primary cProfile call signal due override-module marker call increase; recommended action is revert unless the call increase is explicitly accepted.
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l4_posttest_prepost_cprofile_diff_2026-02-17.txt:15-25, benchmarks/testing_other_di/profiles/baselines/ov_l4_codegen_dedup_unit_validation_2026-02-17.txt:1-12
+  IMPACT: Active routing is blocked at user decision gate before moving to OV-L5.
+  NEXT: Await keep/revert direction for OV-L4.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: FACT
+  CLAIM: OV-L4 code change is implemented: `_append_overrides_kwargs_inline_source(...)` now uses one shared root-positional merge emitter helper instead of repeating identical merge-emission blocks across static override-target branches (`0/1/2`).
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:983-1051, src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:1251-1278, context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md:95-102
+  IMPACT: Active lane has moved from prebaseline-only planning to post-implementation performance gating for OV-L4.
+  NEXT: Run OV-L4 cProfile-first benchmark gate and report split fast/override deltas with cold numbers.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: MEASURE
+  CLAIM: User-requested current-vs-current cProfile differential rerun completed with new weighting (`calls 75%`, `cProfile elapsed 25%`): tracked fast/override marker call counts were flat (`delta=0` for all markers) and weighted cProfile delta was `+0.1794%`; 10k timing reference drifted positive (`combined +6.3667%`).
+  EVIDENCE: benchmarks/testing_other_di/profiles/baselines/ov_l4_current_current_cprofile_diff_validation_2026-02-17.txt:1-54
+  IMPACT: Differential method is operational and indicates stable call graph across repeated current-state runs.
+  NEXT: Use this exact method for OV-L4 pre/post gating.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: OV-L3 is marked non-retained and rolled back; current `phase12_overrides_executor` state no longer includes the empty-target short-circuit branch and queue routing advances to OV-L4.
+  EVIDENCE: src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2535-2580, benchmarks/testing_other_di/profiles/baselines/ov_l3_posttest_validation_2026-02-17.txt:21-63, context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md:94-110
+  IMPACT: Active lane is unblocked from OV-L3 keep/revert gate and can continue candidate order.
+  NEXT: Capture OV-L4 prebaseline artifacts.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATE: 2026-02-17
+  TYPE: DECISION
+  CLAIM: Benchmark policy for this lane is now cProfile-priority (`70%`) with timing snapshots secondary (`30%`), using one measured cProfile iteration plus 10k time snapshots before/after.
+  EVIDENCE: benchmarks/testing_other_di/test_melder_fast_graphs_cprofile.py:912-914, benchmarks/testing_other_di/test_melder_overrides_graphs_cprofile.py:885-887, benchmarks/testing_other_di/run_snapshot_timings.py:111-126, context_compass/tasks/2026-02-16_phase12_overrides_low_risk_discovery_task.md:50-59
+  IMPACT: Keep/revert decisions are now primarily hotspot/callchain driven with timing as supporting evidence.
+  NEXT: Apply the new cadence when executing OV-L4.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 - DATE: 2026-02-17
   TYPE: DECISION
   CLAIM: User clarified no benchmark code changes; `spellspace` exclusion is reporting-only for assistant-delivered summaries, while route-matrix script outputs remain unchanged.
