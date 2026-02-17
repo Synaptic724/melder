@@ -398,45 +398,9 @@ def _compile_phase12_overrides_executor_core(
     ):
         raise ValueError("source must be a non-empty string.")
     if source_to_compile is None and code_object is None:
-        if plan_rows and spell_lookup is not None:
-            override_targeted_spell_ids = tuple(
-                sorted(override_targets_by_spell_id.keys())
-            )
-            override_target_counts_by_spell_id = tuple(
-                sorted(
-                    (
-                        spell_id,
-                        len(targets),
-                    )
-                    for spell_id, targets in override_targets_by_spell_id.items()
-                    if targets
-                )
-            )
-            override_target_counts_by_step = (
-                build_phase12_override_step_target_counts_from_rows(
-                    plan_rows=plan_rows,
-                    override_targets_by_spell_id=override_targets_by_spell_id,
-                    path_registry=path_registry,
-                    prefilter_step_targets_cache=prefilter_step_targets_cache,
-                    prefilter_cache_key=prefilter_cache_key,
-                    prefilter_path_metadata_cache=prefilter_path_metadata_cache,
-                )
-            )
-            source_to_compile = emit_phase12_overrides_executor_shape_source(
-                plan_rows=plan_rows,
-                root_spell_id=root_spell_id,
-                spell_lookup=spell_lookup,
-                override_targeted_spell_ids=override_targeted_spell_ids,
-                override_target_counts_by_spell_id=(
-                    override_target_counts_by_spell_id
-                ),
-                override_target_counts_by_step=override_target_counts_by_step,
-                has_root_positional_override=any_overrides_present,
-            )
-        else:
-            source_to_compile = emit_phase12_overrides_executor_source(
-                step_count=len(steps),
-            )
+        source_to_compile = emit_phase12_overrides_executor_source(
+            step_count=len(steps),
+        )
     if code_object is None:
         code_object = compile_phase12_overrides_executor_code_object(
             source=source_to_compile,
