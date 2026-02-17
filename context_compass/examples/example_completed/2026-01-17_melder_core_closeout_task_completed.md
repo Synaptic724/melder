@@ -14,7 +14,7 @@
 
 ## Objective
 Move completed tickets to their matching completed folders
-(`tickets/epics/completed/`, `tickets/stories/completed/`, `tickets/tasks/completed/`) with summaries
+(`epics/completed/`, `stories/completed/`, `tasks/completed/`) with summaries
 and update `README.md`.
 
 ## Scope Boundaries
@@ -27,13 +27,13 @@ and update `README.md`.
 - [x] Update `README.md` completed list.
 
 ## Deliverables
-- Completed tickets in `tickets/epics/completed/`, `tickets/stories/completed/`, and `tickets/tasks/completed/`.
+- Completed tickets in `epics/completed/`, `stories/completed/`, and `tasks/completed/`.
 - Updated `README.md`.
 
 ## Files / Paths Impacted
-- `tickets/epics/completed/`
-- `tickets/stories/completed/`
-- `tickets/tasks/completed/`
+- `epics/completed/`
+- `stories/completed/`
+- `tasks/completed/`
 - `README.md`
 
 ## Validation
@@ -52,4 +52,3 @@ and update `README.md`.
 
 ## Context / Handoff Summary
 - Closeout complete. Tickets moved to completed folders and README updated.
-
