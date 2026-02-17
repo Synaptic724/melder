@@ -924,6 +924,7 @@ class Meld(Cleanable, IMeld):
         * ``dict``:
             - Treated as keyword-style overrides:
               ``{"param_name": value, "other_param": other_value}``.
+            - Empty dict payloads are normalized to ``None`` (no overrides).
             - A shallow copy is created to avoid accidental mutation of the
               caller's dictionary.
 
@@ -955,6 +956,8 @@ class Meld(Cleanable, IMeld):
             return None
 
         if isinstance(spell_override, dict):
+            if not spell_override:
+                return None
             # Shallow copy to avoid side-effects if the caller mutates
             # their dictionary after passing it into meld(...).
             return dict(spell_override)

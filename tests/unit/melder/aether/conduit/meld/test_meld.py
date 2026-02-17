@@ -777,6 +777,26 @@ def test_meld_no_hooks_uses_cached_context_overrides_door() -> None:
     assert context.last_overrides == {"__args__": [1, 2]}
 
 
+def test_meld_no_hooks_empty_dict_override_uses_no_overrides_door() -> None:
+    """
+    Verify empty dict override payloads route through the no-overrides door.
+
+    Contract:
+        - Empty dict payload normalizes to `None`.
+        - No-overrides compiled door executes.
+    """
+    creations, _ = _make_creations()
+    meld = _make_meld(creations=creations)
+    context = _CreationContextStub(no_hooks_no_overrides_result="instance")
+    spell = _SpellStub(spell_id="spell-1", owner_creations=creations, creation_context=context)
+    spell._hooks_enabled = False
+    meld._resolve_spell_by_id = MagicMock(return_value=spell)
+
+    assert meld.meld(spell="spell-1", spell_override={}) == "instance"
+    assert context.calls == ["no_hooks_no_overrides"]
+    assert context.last_overrides is None
+
+
 def test_meld_non_string_cache_hit_reuses_input_resolution_entry() -> None:
     """
     Verify non-string meld calls reuse the input-resolution cache entry.
@@ -1004,6 +1024,14 @@ def test_normalize_spell_override_dict_returns_copy() -> None:
     normalized = meld._normalize_spell_override(payload)
     assert normalized == payload
     assert normalized is not payload
+
+
+def test_normalize_spell_override_empty_dict_returns_none() -> None:
+    """
+    Verify empty dict payloads normalize to no-overrides (`None`).
+    """
+    meld = _make_meld()
+    assert meld._normalize_spell_override({}) is None
 
 
 @pytest.mark.parametrize("payload", [[1, 2], ("a", "b")])

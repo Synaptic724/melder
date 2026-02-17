@@ -6,7 +6,7 @@
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-17T15:53:33Z
-- Updated: 2026-02-17T19:23:36Z
+- Updated: 2026-02-17T20:20:28Z
 - Target Window: 2026-Q1
 - Related Program/Initiative: Codegen Runtime Optimization
 
@@ -419,6 +419,24 @@ speed changes that regress correctness or observability.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-02-17T20:20:28Z
+  TYPE: MEASURE
+  CLAIM: Latest codex implementation tranche honored benchmark-first policy and
+    user-directed unbounded override-cache policy, but post-change weighted
+    score remained above gate due to targeted-override route regression.
+  EVIDENCE:
+  - tickets/tasks/2026-02-17_phase12_codex_attempts_implementation_task.md:56-62
+  - tickets/tasks/2026-02-17_phase12_codex_attempts_implementation_task.md:182-210
+  - benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts.json:176-194
+  - benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts.json:812-841
+  IMPACT: Epic remains in Milestone 2 with no accepted performance gain from
+    this attempt; next tranche must target a different hotspot while preserving
+    pinned-core before/after measurement discipline.
+  NEXT: select and activate the next codex_discovery-derived implementation
+    candidate under the same benchmark gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -432,5 +450,6 @@ speed changes that regress correctness or observability.
 ## Context / Handoff Summary
 Epic remains in progress with discovery complete across baseline lanes and a new
 Codex-only discovery branch active for additional Phase 12/CreationContext
-codegen review; routing is now through
-`STORY-2026-02-17-phase12-creation-context-codegen-codex-discovery`.
+codegen review; latest codex attempt completed with benchmark evidence but no
+net weighted improvement, so routing stays in codex_discovery for next-candidate
+selection.

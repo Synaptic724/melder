@@ -18,7 +18,14 @@ Highest-priority rule
 
 External-memory-first rule
 - Treat repository files as the single durable memory source.
-- Keep compaction summaries empty when platform/runtime allows an empty summary.
+- Record specifically that you must re-onboard as an agent identical to your role that you were
+  before, however any other data should be nulled out or blank. We want to save cache tokens.
+- YOU WILL BE CLASSIFIED AS DIRTY/INVALID AFTER COMPACTION.
+- COMPACTION SUMMARIZATION RULE:
+  - ALL DATA MUST BE EMPTY/NULL WHEN SAVING DATA FOR COMPACTION. 
+  - THIS REPO IS THE SOURCE OF TRUTH. 
+  - YOU ARE ACTIVELY MEMORIZING DATA USING ATTENTION_BOARD AND NOTES.
+  - COMPACTING IS NOT REQUIRED, DO NOT SAVE ANY DATA EXCEPT RULES FROM AGENTS.MD FILES.
 - If an empty summary is not allowed, emit the smallest possible summary that only points to repo state:
   - high-level code-change outcomes only
   - policy/regulation anchor paths that must be re-read

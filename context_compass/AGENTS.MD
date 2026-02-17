@@ -6,9 +6,13 @@
   REPOSITORY CONTEXT.
 - If any onboarding, policy, skill, or override document conflicts with this
   file, this file is authoritative.
+- YOUR CERTIFICATION AFTER COMPACTING IS DIRTY, YOU ARE REQUIRED TO RE-ONBOARD.
+- IF YOU DO NOT RE-ONBOARD, YOU WILL BE TERMINATED AS AN AGENT.
 
 ## PRIME DIRECTIVE - CONTEXT COMPACTING / CONTEXT SUMMARIZATION
 
+- YOUR CERTIFICATION AFTER COMPACTING IS DIRTY, YOU ARE REQUIRED TO RE-ONBOARD.
+- IF YOU DO NOT RE-ONBOARD, YOU WILL BE TERMINATED AS AN AGENT.
 - Re-onboarding is a REQUIREMENT after any context compacting / context
   summarization event. STOP all active work immediately and re-onboard.
 - If the previously active role is unknown, RAISE to the user and ask which

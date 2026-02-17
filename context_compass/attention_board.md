@@ -23,9 +23,28 @@ Attention details rule
 ## Active Items
 | work_item | status | mode | owner | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 |---|---|---|---|---|---|---|---|---|---|---|
-| task: codex attempts implementation | in_progress | implementation | codex | none | run pre-change benchmark, implement empty override normalization and bounded override cache attempts, then validate | measured implementation attempts tied to codex_discovery findings | pre/post benchmark + targeted tests are recorded and reviewed | `tickets/tasks/2026-02-17_phase12_codex_attempts_implementation_task.md` | 2026-02-17T19:25:58Z | REQUIRED |
+| task: codex attempts implementation | review | validation | codex | none | select and activate the next codex_discovery optimization candidate | benchmark-backed decision on next optimization tranche after first codex attempt | user confirms next optimization candidate scope | `tickets/tasks/2026-02-17_phase12_codex_attempts_implementation_task.md` | 2026-02-17T20:21:05Z | REQUIRED |
 
 ## Active Attention Details
+- DATETIME: 2026-02-17T20:21:05Z
+  TYPE: MEASURE
+  CLAIM: Codex implementation tranche completed with empty-dict override
+    normalization and unbounded override-cache policy, but post-change weighted
+    score did not improve due to targeted-override regression.
+  EVIDENCE:
+  - tickets/tasks/2026-02-17_phase12_codex_attempts_implementation_task.md:209-284
+  - tickets/stories/2026-02-17_phase12_creation_context_codegen_codex_discovery_story.md:109-209
+  - tickets/epics/2026-02-17_phase12_creation_context_codegen_performance_improvement_epic.md:424-437
+  - benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts.json:176-194
+  - benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts.json:812-841
+  IMPACT: Current lane is now in review/selection mode instead of active
+    implementation, with clear benchmark evidence for next-tranche choice.
+  NEXT: choose the next optimization candidate under codex_discovery and keep
+    benchmark-before-edit gate unchanged.
+  SWITCH_TRIGGER: user approves next candidate scope for implementation.
+  RESUME_HIERARCHY: codex attempts task -> codex discovery story -> phase12 epic.
+  REREAD: REQUIRED
+
 - DATETIME: 2026-02-17T19:25:58Z
   TYPE: DECISION
   CLAIM: Active routing moved from Codex discovery story to a new implementation

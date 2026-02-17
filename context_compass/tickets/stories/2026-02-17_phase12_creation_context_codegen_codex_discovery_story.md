@@ -8,7 +8,7 @@
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-17T19:18:11Z
-- Updated: 2026-02-17T19:25:58Z
+- Updated: 2026-02-17T20:20:28Z
 
 ## User Narrative
 As a performance-focused maintainer, I want a fresh Codex-only discovery lane on
@@ -66,7 +66,7 @@ identify high-leverage call-path and specialization-shape risks.
 ## Tasks (Implementation Checklist)
 - [x] Convert findings into one scoped task per approved optimization tranche.
 - [ ] Task: TASK-2026-02-17-phase12-codex-attempts-implementation - implement
-      empty override normalization and bounded override cache growth attempts.
+      empty override normalization while keeping override cache unbounded.
 - [ ] Require explicit user approval before any runtime code edits.
 - [ ] Keep all discovery findings in story notes with line-range evidence.
 - [ ] Enforce Ticket Microcycle while discovery continues.
@@ -106,6 +106,8 @@ identify high-leverage call-path and specialization-shape risks.
 ## Decision Log
 - Created separate Codex-only discovery lane tied to the existing Phase 12 epic
   due to concurrent agent activity.
+- User approved empty-override normalization but explicitly rejected bounded
+  override-specialization cache policy for this tranche.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false
@@ -193,6 +195,24 @@ identify high-leverage call-path and specialization-shape risks.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-02-17T20:20:28Z
+  TYPE: MEASURE
+  CLAIM: Implementation tranche completed with empty-dict override normalization
+    plus targeted tests, but post-change benchmark did not show net weighted
+    improvement; targeted override lane regressed versus pre-change baseline.
+  EVIDENCE:
+  - tickets/tasks/2026-02-17_phase12_codex_attempts_implementation_task.md:56-62
+  - tickets/tasks/2026-02-17_phase12_codex_attempts_implementation_task.md:182-210
+  - benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts.json:176-194
+  - benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts.json:812-841
+  IMPACT: Discovery question about empty dict semantics is now resolved in code,
+    and cache-cardinality remains explicitly unbounded per user direction; next
+    optimization tranche should target a different hotspot.
+  NEXT: keep this story open for next codex_discovery-backed optimization task
+    selection under the same epic benchmark gate.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -208,5 +228,5 @@ identify high-leverage call-path and specialization-shape risks.
 ## Context / Handoff Summary
 Codex-only discovery lane is active under the phase-12 epic with initial source
 evidence across `CreationContext` and Phase 12 executors. Immediate next action
-is contract clarification for empty override payload semantics and taskization
-of approved optimization slices.
+is selecting the next optimization slice after empty-dict normalization landed
+and benchmark results showed no weighted performance improvement.
