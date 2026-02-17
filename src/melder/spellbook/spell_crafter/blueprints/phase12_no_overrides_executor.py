@@ -608,7 +608,6 @@ def _build_step_plan_executor_source(
         "        root_instance_key=root_instance_key,",
         "        ExecutionPlanTargetKind=ExecutionPlanTargetKind,",
         "        _construct_spell_instance=_construct_spell_instance,",
-        "        _get_existing_creation=_get_existing_creation,",
         "        _register_spell_instance_prebound=_register_spell_instance_prebound,",
         "        MeldExecutionError=MeldExecutionError,",
         "        SpellSpaceScopeError=SpellSpaceScopeError,",
@@ -731,25 +730,62 @@ def _append_step_resolution_source(
         lines.append(f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}")
         return
 
-    if existence in (
-            Existence.unique_per_conduit,
-            Existence.unique_per_spell_space,
-    ):
+    if existence is Existence.unique_per_conduit:
         lines.extend([
-            (
-                f"    instance_{step_index} = _get_existing_creation("
-                f"spell=spell_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=plan_step_{step_index}.existence)"
-            ),
+            f"    # Inline singleton reuse lookup for unique_per_conduit.",
+        ])
+        _append_shared_existing_lookup_source(
+            lines=lines,
+            step_index=step_index,
+            indent="    ",
+        )
+        lines.extend([
             f"    if instance_{step_index} is None:",
             f"        with creations_{step_index}._lock:",
+        ])
+        _append_shared_existing_lookup_source(
+            lines=lines,
+            step_index=step_index,
+            indent="            ",
+        )
+        lines.extend([
+            f"            if instance_{step_index} is None:",
             (
-                f"            instance_{step_index} = _get_existing_creation("
-                f"spell=spell_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=existence_{step_index})"
+                f"                instance_{step_index} = _construct_spell_instance("
+                f"plan_step=plan_step_{step_index}, "
+                f"instance_results=instance_results)"
             ),
+        ])
+        _append_step_register_source(
+            lines=lines,
+            step_index=step_index,
+            indent="                ",
+            existence=existence,
+        )
+        lines.append(
+            f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
+        )
+        return
+
+    if existence is Existence.unique_per_spell_space:
+        lines.extend([
+            f"    # Inline singleton reuse lookup for spellspace-scoped lifetimes.",
+        ])
+        _append_spellspace_existing_lookup_source(
+            lines=lines,
+            step_index=step_index,
+            indent="    ",
+        )
+        lines.extend([
+            f"    if instance_{step_index} is None:",
+            f"        with creations_{step_index}._lock:",
+        ])
+        _append_spellspace_existing_lookup_source(
+            lines=lines,
+            step_index=step_index,
+            indent="            ",
+        )
+        lines.extend([
             f"            if instance_{step_index} is None:",
             (
                 f"                instance_{step_index} = _construct_spell_instance("
@@ -776,22 +812,24 @@ def _append_step_resolution_source(
             f"            and creations_{step_index} is caller_creations",
             "    ):",
             f"        use_spell_lock_{step_index} = False",
-            (
-                f"    instance_{step_index} = _get_existing_creation("
-                f"spell=spell_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=existence_{step_index})"
-            ),
+        ])
+        _append_shared_existing_lookup_source(
+            lines=lines,
+            step_index=step_index,
+            indent="    ",
+        )
+        lines.extend([
             f"    if instance_{step_index} is None:",
             f"        if use_spell_lock_{step_index}:",
             f"            with spell_{step_index}._lock:",
             f"                with creations_{step_index}._lock:",
-            (
-                f"                    instance_{step_index} = _get_existing_creation("
-                f"spell=spell_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=existence_{step_index})"
-            ),
+        ])
+        _append_shared_existing_lookup_source(
+            lines=lines,
+            step_index=step_index,
+            indent="                    ",
+        )
+        lines.extend([
             f"                if instance_{step_index} is None:",
             (
                 f"                    instance_{step_index} = _construct_spell_instance("
@@ -809,12 +847,13 @@ def _append_step_resolution_source(
         lines.extend([
             "        else:",
             f"            with creations_{step_index}._lock:",
-            (
-                f"                instance_{step_index} = _get_existing_creation("
-                f"spell=spell_{step_index}, "
-                f"creations=creations_{step_index}, "
-                f"existence=existence_{step_index})"
-            ),
+        ])
+        _append_shared_existing_lookup_source(
+            lines=lines,
+            step_index=step_index,
+            indent="                ",
+        )
+        lines.extend([
             f"                if instance_{step_index} is None:",
             (
                 f"                    instance_{step_index} = _construct_spell_instance("
@@ -832,20 +871,22 @@ def _append_step_resolution_source(
         return
 
     lines.extend([
-        (
-            f"    instance_{step_index} = _get_existing_creation("
-            f"spell=spell_{step_index}, "
-            f"creations=creations_{step_index}, "
-            f"existence=existence_{step_index})"
-        ),
+    ])
+    _append_shared_existing_lookup_source(
+        lines=lines,
+        step_index=step_index,
+        indent="    ",
+    )
+    lines.extend([
         f"    if instance_{step_index} is None:",
         f"        with creations_{step_index}._lock:",
-        (
-            f"            instance_{step_index} = _get_existing_creation("
-            f"spell=spell_{step_index}, "
-            f"creations=creations_{step_index}, "
-            f"existence=existence_{step_index})"
-        ),
+    ])
+    _append_shared_existing_lookup_source(
+        lines=lines,
+        step_index=step_index,
+        indent="            ",
+    )
+    lines.extend([
         f"            if instance_{step_index} is None:",
         (
             f"                instance_{step_index} = _construct_spell_instance("
@@ -862,6 +903,75 @@ def _append_step_resolution_source(
     lines.append(
         f"    instance_results[step_instance_keys[{step_index}]] = instance_{step_index}"
     )
+
+
+def _append_shared_existing_lookup_source(
+        *,
+        lines: list[str],
+        step_index: int,
+        indent: str,
+) -> None:
+    """
+    Emit direct shared-scope creation reuse lookup lines for one step.
+
+    Contract:
+        - Reads from `creations._creations` without helper trampoline calls.
+        - Produces `instance_{step_index}` with the same value semantics as
+          `_get_existing_creation(...)` for shared singleton scopes.
+    """
+    lines.extend([
+        (
+            f"{indent}creation_{step_index} = "
+            f"creations_{step_index}._creations.get(spell_id_{step_index})"
+        ),
+        f"{indent}if creation_{step_index} is None:",
+        f"{indent}    instance_{step_index} = None",
+        f"{indent}else:",
+        f"{indent}    instance_{step_index} = creation_{step_index}.value",
+    ])
+
+
+def _append_spellspace_existing_lookup_source(
+        *,
+        lines: list[str],
+        step_index: int,
+        indent: str,
+) -> None:
+    """
+    Emit direct spellspace-scope creation reuse lookup lines for one step.
+
+    Contract:
+        - Preserves active spellspace and owner-conduit checks.
+        - Produces `instance_{step_index}` semantics matching
+          `_get_existing_creation(...)` for spellspace scope.
+    """
+    lines.extend([
+        (
+            f"{indent}spellspace_{step_index} = "
+            f"creations_{step_index}._conduit.get_active_spellspace()"
+        ),
+        f"{indent}if spellspace_{step_index} is None:",
+        f"{indent}    raise SpellSpaceScopeError(",
+        f"{indent}        \"Existence.unique_per_spell_space requires an active SpellSpace. \"",
+        f"{indent}        \"Use 'with conduit.enter_spellspace()' when melding.\"",
+        f"{indent}    )",
+        (
+            f"{indent}if spellspace_{step_index}.owner_conduit "
+            f"is not creations_{step_index}._conduit:"
+        ),
+        f"{indent}    raise SpellSpaceScopeError(",
+        f"{indent}        \"Active SpellSpace belongs to a different conduit.\"",
+        f"{indent}    )",
+        (
+            f"{indent}creation_{step_index} = "
+            f"creations_{step_index}.get_spellspace_creation("
+            f"spellspace_{step_index}.id, spell_id_{step_index})"
+        ),
+        f"{indent}if creation_{step_index} is None:",
+        f"{indent}    instance_{step_index} = None",
+        f"{indent}else:",
+        f"{indent}    instance_{step_index} = creation_{step_index}.value",
+    ])
 
 
 def _append_step_register_source(

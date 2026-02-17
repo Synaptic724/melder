@@ -590,15 +590,25 @@ class CreationContext(Cleanable):
                     caller_creations_lock_held=caller_creations_lock_held,
                 )
             shape_key = self._override_empty_shape_key
-            executor = self._get_or_compile_override_executor(
-                shape_key=shape_key,
-                override_targets_by_spell_id={},
-                any_overrides_present=False,
-                path_registry=override_route_config.path_registry,
-                plan_rows=override_route_config.plan_rows,
-                root_spell_id=override_route_config.root_spell_id,
-                spell_lookup=override_route_config.spell_lookup,
-            )
+            if shape_key is None:
+                raise RuntimeError(
+                    "Override route config is missing empty-shape cache key."
+                )
+            override_specialization_cache = self._override_specialization_cache
+            executor = override_specialization_cache.get(shape_key)
+            if executor is None:
+                executor = self._get_or_compile_override_executor(
+                    shape_key=shape_key,
+                    override_targets_by_spell_id={},
+                    any_overrides_present=False,
+                    path_registry=override_route_config.path_registry,
+                    plan_rows=override_route_config.plan_rows,
+                    root_spell_id=override_route_config.root_spell_id,
+                    spell_lookup=override_route_config.spell_lookup,
+                )
+            self._override_last_socket_shape = ()
+            self._override_last_root_positional_arity = -1
+            self._override_last_executor = executor
             return executor(
                 caller_creations,
                 override_map,
@@ -654,10 +664,10 @@ class CreationContext(Cleanable):
         else:
             executor = None
         if executor is None:
-            shape_key = (
-                plan_signature,
-                socket_shape,
-                root_positional_arity,
+            shape_key = self._build_override_shape_key(
+                plan_signature=plan_signature,
+                socket_shape=socket_shape,
+                root_positional_override=root_positional_override,
             )
             override_specialization_cache = self._override_specialization_cache
             executor = override_specialization_cache.get(shape_key)

@@ -23,9 +23,28 @@ Attention details rule
 ## Active Items
 | work_item | status | mode | owner | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 |---|---|---|---|---|---|---|---|---|---|---|
-| story: phase12 and creation context optimization discovery | in_progress | discovery | codex | none | collect user decision on wave-1 candidate IDs and risk class | implementation planning starts immediately with approved shortlist | user selects approved candidates and requests implementation kickoff | `tickets/stories/2026-02-17_phase12_creation_context_discovery_and_benchmark_story.md` | 2026-02-17T17:00:02Z | REQUIRED |
+| task: wave-1 medium candidate implementation | in_progress | implementation | codex | none | implement NR-M1, OR-M1, and CC-M2 with targeted unit validation | first medium-risk optimization wave is delivered with evidence and measurable test coverage | implementation task reaches review with code + test evidence and wave-2 decision prompt | `tickets/tasks/2026-02-17_phase12_wave1_medium_implementation_task.md` | 2026-02-17T17:41:37Z | REQUIRED |
 
 ## Active Attention Details
+- DATETIME: 2026-02-17T17:41:37Z
+  TYPE: DECISION
+  CLAIM: User requested continuation of ticket execution, so wave-1 is now
+    unblocked and defaulted to the medium shortlist `{NR-M1, OR-M1, CC-M2}`
+    while high-risk candidates remain deferred.
+  EVIDENCE:
+  - tickets/stories/2026-02-17_phase12_creation_context_discovery_and_benchmark_story.md:198-208
+  - tickets/epics/2026-02-17_phase12_creation_context_codegen_performance_improvement_epic.md:234-243
+  - tickets/tasks/2026-02-17_phase12_no_overrides_executor_discovery_task.md:66-72
+  - tickets/tasks/2026-02-17_phase12_overrides_executor_discovery_task.md:67-72
+  - tickets/tasks/2026-02-17_creation_context_discovery_task.md:68-72
+  IMPACT: Active routing can shift from discovery gating into concrete
+    implementation without waiting on additional shortlist selection.
+  NEXT: Execute new wave-1 implementation task and record code/test evidence.
+  SWITCH_TRIGGER: task reaches review or hits contract-risk blocker requiring
+    user decision.
+  RESUME_HIERARCHY: wave-1 task -> story -> epic.
+  REREAD: REQUIRED
+
 - DATETIME: 2026-02-17T17:00:02Z
   TYPE: DECISION_REQUEST
   CLAIM: Consolidated shortlist is documented and execution is blocked only on

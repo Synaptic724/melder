@@ -273,7 +273,7 @@ def test_compile_phase12_overrides_executor_inlines_creations_target_routing() -
 
 
 def test_compile_phase12_overrides_executor_prebinds_step_metadata() -> None:
-    """Generated override source prebinds step metadata tuples for hot-path access."""
+    """Schema-row compile path prefers shape-specialized metadata prebinds."""
     spell = _make_spell("root")
     executor = compile_phase12_overrides_executor(
         execution_plan=None,
@@ -285,11 +285,12 @@ def test_compile_phase12_overrides_executor_prebinds_step_metadata() -> None:
         path_registry=None,
     )
     assert "step_spells" in executor.__code__.co_varnames
-    assert "step_existences" in executor.__code__.co_varnames
     assert "step_instance_keys" in executor.__code__.co_varnames
-    assert "step_use_spell_lock_hints" in executor.__code__.co_varnames
     assert "step_has_targeted_overrides" in executor.__code__.co_varnames
-    assert "step_must_register_flags" in executor.__code__.co_varnames
+    assert "step_override_target_counts" in executor.__code__.co_varnames
+    assert "step_existences" not in executor.__code__.co_varnames
+    assert "step_use_spell_lock_hints" not in executor.__code__.co_varnames
+    assert "step_must_register_flags" not in executor.__code__.co_varnames
 
 
 def test_compile_phase12_overrides_executor_from_source_supports_schema_rows_execution() -> None:
@@ -667,11 +668,11 @@ def test_emit_phase12_overrides_executor_source_uses_prebound_targeted_override_
 def test_compile_phase12_overrides_executor_raises_on_codegen_error(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Compilation fails fast when generated source cannot compile."""
+    """Shape-source compile failures raise RuntimeError during schema-row compile."""
     monkeypatch.setattr(
         phase12_module,
-        "_build_phase12_overrides_executor_source",
-        lambda step_count: "def _phase12_executor(:\n    pass",
+        "emit_phase12_overrides_executor_shape_source",
+        lambda **kwargs: "def _phase12_executor(:\n    pass",
     )
 
     with pytest.raises(RuntimeError, match="code generation failed"):
@@ -689,11 +690,11 @@ def test_compile_phase12_overrides_executor_raises_on_codegen_error(
 def test_compile_phase12_overrides_executor_raises_when_callable_missing(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Compilation fails when generated source omits `_phase12_executor`."""
+    """Schema-row compile fails when shape source omits `_phase12_executor`."""
     monkeypatch.setattr(
         phase12_module,
-        "_build_phase12_overrides_executor_source",
-        lambda step_count: "x = 1",
+        "emit_phase12_overrides_executor_shape_source",
+        lambda **kwargs: "x = 1",
     )
 
     with pytest.raises(RuntimeError, match="did not define a callable _phase12_executor"):

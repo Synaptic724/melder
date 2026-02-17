@@ -7,7 +7,7 @@
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-17T15:53:33Z
-- Updated: 2026-02-17T17:00:02Z
+- Updated: 2026-02-17T17:41:37Z
 
 ## User Narrative
 As a performance-focused maintainer, I want discovery across Phase 12 and
@@ -64,6 +64,7 @@ before code changes.
 - [x] Task: TASK-2026-02-17-phase12-overrides-discovery
 - [x] Task: TASK-2026-02-17-creation-context-discovery
 - [x] Task: TASK-2026-02-17-codegen-benchmark-pcore-baseline-and-scoring
+- [ ] Task: TASK-2026-02-17-phase12-wave1-medium-implementation
 - [x] Enforce Ticket Microcycle across all linked tasks.
 - [x] Require meaningful-finding note updates during discovery/implementation.
 
@@ -96,7 +97,8 @@ before code changes.
   sidecar artifact files?
 
 ## Decision Log
-- Pending shortlist approval for implementation wave 1.
+- Wave-1 medium shortlist approved for execution:
+  `{NR-M1, OR-M1, CC-M2}`.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false
@@ -209,6 +211,21 @@ before code changes.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-02-17T17:41:37Z
+  TYPE: DECISION
+  CLAIM: Execution is resumed with wave-1 defaulted to the medium-risk shortlist
+    `{NR-M1, OR-M1, CC-M2}`; high-risk candidates remain deferred.
+  EVIDENCE:
+  - tickets/tasks/2026-02-17_phase12_no_overrides_executor_discovery_task.md:66-72
+  - tickets/tasks/2026-02-17_phase12_overrides_executor_discovery_task.md:67-72
+  - tickets/tasks/2026-02-17_creation_context_discovery_task.md:68-72
+  IMPACT: Story can move from shortlist gating into implementation and targeted
+    validation for the first medium-risk wave.
+  NEXT: Create and execute `TASK-2026-02-17-phase12-wave1-medium-implementation`
+    with code + test evidence.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -221,4 +238,5 @@ before code changes.
 
 ## Context / Handoff Summary
 Story discovery is complete across benchmark, no-overrides, overrides, and
-creation-context lanes; next step is ranked shortlist synthesis for user approval.
+creation-context lanes; wave-1 medium implementation is now active via
+`TASK-2026-02-17-phase12-wave1-medium-implementation`.

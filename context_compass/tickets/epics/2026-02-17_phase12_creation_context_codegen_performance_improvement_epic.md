@@ -6,7 +6,7 @@
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-17T15:53:33Z
-- Updated: 2026-02-17T17:00:02Z
+- Updated: 2026-02-17T17:41:37Z
 - Target Window: 2026-Q1
 - Related Program/Initiative: Codegen Runtime Optimization
 
@@ -88,7 +88,7 @@ speed changes that regress correctness or observability.
 
 ## Milestones (Track Progress)
 - [x] Milestone 1: Discovery and baseline complete.
-- [ ] Milestone 2: Approved optimization candidates and implementation plan.
+- [ ] Milestone 2: Wave-1 medium candidate implementation and validation.
 
 ## Stories (Required to Complete)
 - [ ] Story: STORY-2026-02-17-phase12-creation-context-discovery-and-benchmark -
@@ -99,6 +99,7 @@ speed changes that regress correctness or observability.
 - [ ] Task: TASK-2026-02-17-phase12-overrides-discovery
 - [ ] Task: TASK-2026-02-17-creation-context-discovery
 - [x] Task: TASK-2026-02-17-codegen-benchmark-pcore-baseline-and-scoring
+- [ ] Task: TASK-2026-02-17-phase12-wave1-medium-implementation
 
 ## Acceptance Criteria (Epic Done)
 - Discovery story accepted by user.
@@ -131,7 +132,8 @@ speed changes that regress correctness or observability.
 - Which hot-path call stacks are primary targets for call-count reduction?
 
 ## Decision Log
-- Pending wave-1 candidate approval.
+- Wave-1 medium shortlist selected for implementation:
+  `{NR-M1, OR-M1, CC-M2}`.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false
@@ -244,6 +246,22 @@ speed changes that regress correctness or observability.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-02-17T17:41:37Z
+  TYPE: DECISION
+  CLAIM: Epic wave execution resumed with medium-risk wave-1
+    `{NR-M1, OR-M1, CC-M2}` and deferred high-risk candidates.
+  EVIDENCE:
+  - tickets/stories/2026-02-17_phase12_creation_context_discovery_and_benchmark_story.md:198-217
+  - tickets/tasks/2026-02-17_phase12_no_overrides_executor_discovery_task.md:66-72
+  - tickets/tasks/2026-02-17_phase12_overrides_executor_discovery_task.md:67-72
+  - tickets/tasks/2026-02-17_creation_context_discovery_task.md:68-72
+  IMPACT: Milestone 2 can proceed with concrete implementation and targeted
+    validation for approved medium candidates.
+  NEXT: Execute `TASK-2026-02-17-phase12-wave1-medium-implementation` and log
+    before/after evidence.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -255,5 +273,6 @@ speed changes that regress correctness or observability.
 - Keep notes append-only and preserve UNKNOWN-first promotion discipline.
 
 ## Context / Handoff Summary
-Epic remains in progress with discovery complete across all lanes; next action
-is user-approved implementation-wave selection from ranked candidates.
+Epic remains in progress with discovery complete across all lanes; wave-1
+medium implementation is now active in
+`TASK-2026-02-17-phase12-wave1-medium-implementation`.

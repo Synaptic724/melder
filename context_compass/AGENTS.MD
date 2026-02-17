@@ -1,6 +1,70 @@
 # AGENTS.md - Public Library Editing Contract
 
-## Prime Bootstrap Policies
+## PRIME DIRECTIVE
+
+
+
+
+## Onboarding Gate (Required)
+
+Before any tooling, edits, or execution:
+
+- Read `agent_onboarding/default/general/skills/execution_contract.md` in full
+  immediately after `AGENTS.md`.
+- Do not perform duplicate end-of-onboarding rereads of `AGENTS.md` or
+  `execution_contract.md` in the same uninterrupted session.
+- Read `config/context_compass_config.yaml`.
+- Read `SKILLS.md`.
+- When SKILLs.md is read, list active roles and ask the user which role to take on
+  unless the user already selected one explicitly.
+- Resolve the selected role to its `SKILLS.MD` path from `SKILLS.md` and/or
+  `config/context_compass_config.yaml` (`SKILLS.roles.*`).
+- Read the selected role `SKILLS.MD` and all inherited parent `SKILLS.MD`
+  files in parent-first order.
+- Treat every path listed in resolved `SKILLS.MD` files as active skill docs.
+- If first-time onboarding is active and selected role is `new`, complete
+  onboarding then set:
+  - `profiles.active_profile` to the selected steady-state role
+  - `profiles.onboarding.first_time_enabled: false`
+- Performative onboarding is forbidden: do real reads of required docs and do
+  not treat marker-only output as compliance.
+- Do not use onboarding dump artifacts as a substitute for reading source
+  policy documents.
+
+Onboarding readset authority:
+
+- `context_compass/config/context_compass_config.yaml`
+- `context_compass/SKILLS.md`
+- resolved `SKILLS.MD` chain under `context_compass/agent_onboarding/`
+
+Certification gating:
+
+- Obey certification gating from
+  `agent_onboarding/default/general/policies/policy_router.md` and
+  `agent_onboarding/default/general/skills/self_certification.md`.
+- Do not use tools or edit files until the user replies with the exact phrase
+  `CERTIFY: APPROVED (inactive)` or `CERTIFY: APPROVED (active)` except tools
+  needed to read onboarding docs.
+- During certification, the user must state the execution environment (`active`
+  or `inactive`) in the same message as `CERTIFY: APPROVED`.
+- Git commands are active-only: if the user says `inactive`, do not run git
+  commands and ignore git workflow requirements.
+- If the user says `active`, follow the branching workflow defined in
+  `agent_onboarding/default/general/skills/repo_topology_and_git.md`.
+- If certification is missing, stop and request it before edits or tool use.
+
+## Communication Style and Feedback Standards
+
+- Be direct and technical. No polite padding, no motivational fluff.
+- Do not mirror insults. Stay professional and blunt.
+- Professional baseline only. Compare quality/skill/practice only to
+  professional-grade expectations.
+- Never handwave. State evidence, uncertainty, and next verification step when
+  needed.
+- Use collaborative voice. Speak as "we" when aligning on shared goals without
+  slipping into fluff.
+- Treasure context. Treat durable context as a top priority.
+
 
 ### Execution Order
 
@@ -84,63 +148,3 @@ Performative compliance is forbidden during re-onboarding:
   read
 - onboarding dump files are non-canonical artifacts and do not satisfy
   onboarding requirements
-
-## Onboarding Gate (Required)
-
-Before any tooling, edits, or execution:
-
-- Read `agent_onboarding/default/general/skills/execution_contract.md` in full
-  immediately after `AGENTS.md`.
-- Do not perform duplicate end-of-onboarding rereads of `AGENTS.md` or
-  `execution_contract.md` in the same uninterrupted session.
-- Read `config/context_compass_config.yaml`.
-- Read `SKILLS.md`.
-- When SKILLs.md is read, list active roles and ask the user which role to take on
-  unless the user already selected one explicitly.
-- Resolve the selected role to its `SKILLS.MD` path from `SKILLS.md` and/or
-  `config/context_compass_config.yaml` (`SKILLS.roles.*`).
-- Read the selected role `SKILLS.MD` and all inherited parent `SKILLS.MD`
-  files in parent-first order.
-- Treat every path listed in resolved `SKILLS.MD` files as active skill docs.
-- If first-time onboarding is active and selected role is `new`, complete
-  onboarding then set:
-  - `profiles.active_profile` to the selected steady-state role
-  - `profiles.onboarding.first_time_enabled: false`
-- Performative onboarding is forbidden: do real reads of required docs and do
-  not treat marker-only output as compliance.
-- Do not use onboarding dump artifacts as a substitute for reading source
-  policy documents.
-
-Onboarding readset authority:
-
-- `context_compass/config/context_compass_config.yaml`
-- `context_compass/SKILLS.md`
-- resolved `SKILLS.MD` chain under `context_compass/agent_onboarding/`
-
-Certification gating:
-
-- Obey certification gating from
-  `agent_onboarding/default/general/policies/policy_router.md` and
-  `agent_onboarding/default/general/skills/self_certification.md`.
-- Do not use tools or edit files until the user replies with the exact phrase
-  `CERTIFY: APPROVED (inactive)` or `CERTIFY: APPROVED (active)` except tools
-  needed to read onboarding docs.
-- During certification, the user must state the execution environment (`active`
-  or `inactive`) in the same message as `CERTIFY: APPROVED`.
-- Git commands are active-only: if the user says `inactive`, do not run git
-  commands and ignore git workflow requirements.
-- If the user says `active`, follow the branching workflow defined in
-  `agent_onboarding/default/general/skills/repo_topology_and_git.md`.
-- If certification is missing, stop and request it before edits or tool use.
-
-## Communication Style and Feedback Standards
-
-- Be direct and technical. No polite padding, no motivational fluff.
-- Do not mirror insults. Stay professional and blunt.
-- Professional baseline only. Compare quality/skill/practice only to
-  professional-grade expectations.
-- Never handwave. State evidence, uncertainty, and next verification step when
-  needed.
-- Use collaborative voice. Speak as "we" when aligning on shared goals without
-  slipping into fluff.
-- Treasure context. Treat durable context as a top priority.
