@@ -30,8 +30,8 @@ Identify core entrypoints, lifecycle sequences, and invariants for Spectrum -> C
 - Source inventory notes for architecture and components docs.
 
 ## Files / Paths Impacted
-- `architecture/src_architecture.md`
-- `components/src_components.md`
+- `system_docs/src_architecture.md`
+- `system_docs/src_components.md`
 
 ## Validation
 - Not run.
@@ -49,3 +49,4 @@ Identify core entrypoints, lifecycle sequences, and invariants for Spectrum -> C
 
 ## Context / Handoff Summary
 - Inventory complete. Sources reviewed across Spectrum, CommandCenter, core builders/resources, agent pools, missions/activities, strategic command, concurrency, synchronization, and utilities to ground the deep docs.
+

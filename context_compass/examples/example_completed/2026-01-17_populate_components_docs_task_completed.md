@@ -16,7 +16,7 @@
 Populate src and tests components docs with C3/C2/C1 details.
 
 ## Scope Boundaries
-- In scope: `components/src_components.md`, `components/tests_components.md`.
+- In scope: `system_docs/src_components.md`, `system_docs/tests_components.md`.
 - Out of scope: exhaustive per-class documentation.
 
 ## Steps / Checklist
@@ -25,12 +25,12 @@ Populate src and tests components docs with C3/C2/C1 details.
 - [x] Record information sources.
 
 ## Deliverables
-- Updated `components/src_components.md`
-- Updated `components/tests_components.md`
+- Updated `system_docs/src_components.md`
+- Updated `system_docs/tests_components.md`
 
 ## Files / Paths Impacted
-- `components/src_components.md`
-- `components/tests_components.md`
+- `system_docs/src_components.md`
+- `system_docs/tests_components.md`
 
 ## Validation
 - Not run.
@@ -47,4 +47,5 @@ Populate src and tests components docs with C3/C2/C1 details.
 - [x] Validation status recorded
 
 ## Context / Handoff Summary
-Components docs populated in `components/src_components.md` and `components/tests_components.md`.
+Components docs populated in `system_docs/src_components.md` and `system_docs/tests_components.md`.
+

@@ -16,7 +16,7 @@
 Populate src and tests architecture docs with concrete C4 summaries and diagrams.
 
 ## Scope Boundaries
-- In scope: `architecture/src_architecture.md`, `architecture/tests_architecture.md`.
+- In scope: `system_docs/src_architecture.md`, `system_docs/tests_architecture.md`.
 - Out of scope: exhaustive per-module documentation.
 
 ## Steps / Checklist
@@ -25,12 +25,12 @@ Populate src and tests architecture docs with concrete C4 summaries and diagrams
 - [x] Record information sources.
 
 ## Deliverables
-- Updated `architecture/src_architecture.md`
-- Updated `architecture/tests_architecture.md`
+- Updated `system_docs/src_architecture.md`
+- Updated `system_docs/tests_architecture.md`
 
 ## Files / Paths Impacted
-- `architecture/src_architecture.md`
-- `architecture/tests_architecture.md`
+- `system_docs/src_architecture.md`
+- `system_docs/tests_architecture.md`
 
 ## Validation
 - Not run.
@@ -47,4 +47,5 @@ Populate src and tests architecture docs with concrete C4 summaries and diagrams
 - [x] Validation status recorded
 
 ## Context / Handoff Summary
-Architecture docs populated in `architecture/src_architecture.md` and `architecture/tests_architecture.md`.
+Architecture docs populated in `system_docs/src_architecture.md` and `system_docs/tests_architecture.md`.
+

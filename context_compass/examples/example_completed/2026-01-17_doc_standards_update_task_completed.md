@@ -18,8 +18,8 @@ so future context re-entry starts from rich, grounded docs with no handwaving.
 
 ## Scope Boundaries
 - In scope:
-  - `architecture/src_architecture.md`
-  - `components/src_components.md`
+  - `system_docs/src_architecture.md`
+  - `system_docs/src_components.md`
 - Out of scope:
   - Runtime code changes
   - Tests or CI configuration
@@ -33,8 +33,8 @@ so future context re-entry starts from rich, grounded docs with no handwaving.
 - Updated architecture/components docs with explicit doc standards.
 
 ## Files / Paths Impacted
-- `architecture/src_architecture.md`
-- `components/src_components.md`
+- `system_docs/src_architecture.md`
+- `system_docs/src_components.md`
 
 ## Validation
 - Not run.
@@ -52,3 +52,4 @@ so future context re-entry starts from rich, grounded docs with no handwaving.
 
 ## Context / Handoff Summary
 - Completed. Documentation standards sections added to architecture/components docs and TOCs updated.
+

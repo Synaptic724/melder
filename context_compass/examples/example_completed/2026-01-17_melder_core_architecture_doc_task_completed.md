@@ -1,5 +1,5 @@
 - Completed: 2026-01-17
-- Summary: Expanded `architecture/src_architecture.md` with deep C4 narrative, sequences, and appendices.
+- Summary: Expanded `system_docs/src_architecture.md` with deep C4 narrative, sequences, and appendices.
 
 # Task: Rewrite src architecture doc to deep standard
 
@@ -13,7 +13,7 @@
 - Updated: 2026-01-17
 
 ## Objective
-Rewrite `architecture/src_architecture.md` as a deep, source-anchored C4 architecture document for Melder core.
+Rewrite `system_docs/src_architecture.md` as a deep, source-anchored C4 architecture document for Melder core.
 
 ## Scope Boundaries
 - In scope: Spectrum root, CommandCenter orchestration, core concurrency/synchronization, and utilities used by core.
@@ -27,10 +27,10 @@ Rewrite `architecture/src_architecture.md` as a deep, source-anchored C4 archite
 - [x] Add sources and open questions.
 
 ## Deliverables
-- Updated `architecture/src_architecture.md` with deep narrative.
+- Updated `system_docs/src_architecture.md` with deep narrative.
 
 ## Files / Paths Impacted
-- `architecture/src_architecture.md`
+- `system_docs/src_architecture.md`
 
 ## Validation
 - Not run.
@@ -47,4 +47,5 @@ Rewrite `architecture/src_architecture.md` as a deep, source-anchored C4 archite
 - [x] Validation status recorded
 
 ## Context / Handoff Summary
-- Completed deep rewrite of `architecture/src_architecture.md` with extended system narrative, sequences, appendices, and source coverage.
+- Completed deep rewrite of `system_docs/src_architecture.md` with extended system narrative, sequences, appendices, and source coverage.
+

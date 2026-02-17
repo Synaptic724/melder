@@ -59,7 +59,7 @@ The core platform is defined as:
 
 Out of scope (for this document):
 - Peripheral tools not required to understand the core runtime behavior.
-- Test code (covered by `architecture/tests_architecture.md`).
+- Test code (covered by `system_docs/tests_architecture.md`).
 
 ## Documentation Quality Standard
 This document is treated as durable context. It must be deep enough to recover
@@ -752,7 +752,7 @@ The system is designed for extension via registries:
 
 ## C3 and C2 Cross-Reference
 Detailed C3 and C2 component descriptions are maintained in:
-- `components/src_components.md`
+- `system_docs/src_components.md`
 
 This architecture doc provides the system-level view and lifecycle sequences.
 
@@ -1049,7 +1049,7 @@ sequenceDiagram
 This doc is a deep C4 architecture view centered on Spectrum as the root entrypoint.
 It captures the configuration pipeline, singleton publication, CommandCenter lifecycle,
 and the core orchestration flow across agents, pools, activities, and missions.
-Use this as the system-level reference and consult `components/src_components.md`
+Use this as the system-level reference and consult `system_docs/src_components.md`
 for component-level C3/C2/C1 detail.
 
 # Appendix A: Deep Component Narratives (Core)
@@ -2484,7 +2484,7 @@ Role: Load-balanced deploy strategy.
 Coverage: traced.
 Notes: Selects group by capacity and tags.
 
-### File: `src/melder/command_center/strategic_command/command_center/tasks/task_round_robin.py`
+### File: `src/melder/command_center/strategic_command/command_center/tickets/tasks/task_round_robin.py`
 Role: Round-robin task strategy.
 Coverage: partial.
 Notes: Verify scheduling logic.
@@ -2494,7 +2494,7 @@ Role: Pool-affinity deploy strategy.
 Coverage: partial.
 Notes: Verify pool selection logic.
 
-### File: `src/melder/command_center/strategic_command/command_group/tasks/task_round_robin.py`
+### File: `src/melder/command_center/strategic_command/command_group/tickets/tasks/task_round_robin.py`
 Role: Tagged round-robin task strategy.
 Coverage: partial.
 Notes: Verify tagged routing.
@@ -3080,3 +3080,5 @@ This map describes where agentic mode affects locks and behavior.
 - Locks use symbolic handoff to waiting agents.
 - Registries use agent-aware Concurrent* structures.
 - Some cleanup paths wake sleeping agents explicitly.
+
+

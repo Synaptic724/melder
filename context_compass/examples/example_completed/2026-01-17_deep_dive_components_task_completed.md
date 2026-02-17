@@ -16,7 +16,7 @@
 Deepen the src components doc with Spectrum subcomponents and wiring details.
 
 ## Scope Boundaries
-- In scope: `components/src_components.md`.
+- In scope: `system_docs/src_components.md`.
 - Out of scope: code changes.
 
 ## Steps / Checklist
@@ -26,10 +26,10 @@ Deepen the src components doc with Spectrum subcomponents and wiring details.
 - [x] Record key information sources.
 
 ## Deliverables
-- Updated `components/src_components.md`
+- Updated `system_docs/src_components.md`
 
 ## Files / Paths Impacted
-- `components/src_components.md`
+- `system_docs/src_components.md`
 
 ## Validation
 - Not run.
@@ -47,3 +47,4 @@ Deepen the src components doc with Spectrum subcomponents and wiring details.
 
 ## Context / Handoff Summary
 Src components doc expanded with Spectrum root and subcomponents.
+

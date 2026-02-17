@@ -35,8 +35,8 @@ This documentation captures the holistic core of Melder (Spectrum + CommandCente
 - Out of scope: non-core tools and peripheral modules not needed for core understanding.
 
 ## Dependencies / Related Work
-- `architecture/src_architecture.md`
-- `components/src_components.md`
+- `system_docs/src_architecture.md`
+- `system_docs/src_components.md`
 
 ## Tasks (Implementation Checklist)
 - [x] Task: TASK-2026-01-17-melder-core-architecture-inventory - Inventory entrypoints, lifecycle, and invariants.
@@ -67,3 +67,4 @@ This documentation captures the holistic core of Melder (Spectrum + CommandCente
 
 ## Context / Handoff Summary
 - Story complete. Deep architecture and components docs updated with detailed C3/C2/C1 coverage and diagrams.
+

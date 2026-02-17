@@ -1,5 +1,5 @@
 - Completed: 2026-01-17
-- Summary: Expanded `components/src_components.md` with detailed C3/C2/C1 catalog and diagrams.
+- Summary: Expanded `system_docs/src_components.md` with detailed C3/C2/C1 catalog and diagrams.
 
 # Task: Rewrite src components doc to deep standard
 
@@ -13,7 +13,7 @@
 - Updated: 2026-01-17
 
 ## Objective
-Rewrite `components/src_components.md` as a deep, source-anchored C3/C2/C1 component document for Melder core.
+Rewrite `system_docs/src_components.md` as a deep, source-anchored C3/C2/C1 component document for Melder core.
 
 ## Scope Boundaries
 - In scope: Spectrum root, CommandCenter orchestration, agents/pools/activities/missions, core concurrency and synchronization.
@@ -27,10 +27,10 @@ Rewrite `components/src_components.md` as a deep, source-anchored C3/C2/C1 compo
 - [x] Add sources and open questions.
 
 ## Deliverables
-- Updated `components/src_components.md` with deep component catalog.
+- Updated `system_docs/src_components.md` with deep component catalog.
 
 ## Files / Paths Impacted
-- `components/src_components.md`
+- `system_docs/src_components.md`
 
 ## Validation
 - Not run.
@@ -47,4 +47,5 @@ Rewrite `components/src_components.md` as a deep, source-anchored C3/C2/C1 compo
 - [x] Validation status recorded
 
 ## Context / Handoff Summary
-- Completed deep rewrite of `components/src_components.md` with detailed C3/C2/C1 catalog and diagrams.
+- Completed deep rewrite of `system_docs/src_components.md` with detailed C3/C2/C1 catalog and diagrams.
+

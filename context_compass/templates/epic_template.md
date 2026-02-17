@@ -5,8 +5,8 @@
 - Status: draft | ready | in_progress | blocked | done
 - Owner:
 - Priority: p0 | p1 | p2 | p3
-- Created: YYYY-MM-DD
-- Updated: YYYY-MM-DD
+- Created: YYYY-MM-DDTHH:MM:SSZ
+- Updated: YYYY-MM-DDTHH:MM:SSZ
 - Target Window: <e.g., 2026-Q1>
 - Related Program/Initiative:
 
@@ -15,6 +15,13 @@
 
 ## MRP Alignment (Most Reasonable Product)
 <Explain the holistic core being built and why this is the right long-term foundation.>
+
+## Ticket Contract
+- ENTRY_GATE: <program lane is routed and prerequisite story set is defined>
+- EXECUTION_BOUNDARY: <epic-level scope and explicit exclusions>
+- DEPENDENCIES: <required stories, policies, and architecture anchors>
+- EXIT_GATE: <all required stories accepted + board/closure sync complete>
+- FAILURE_ESCALATION: <when to raise DECISION_REQUEST/CONFLICT/BLOCKER>
 
 ## Goals (Outcomes)
 - 
@@ -25,6 +32,11 @@
 ## Scope Boundaries
 - In scope:
 - Out of scope:
+
+## State Transition Event
+- from_state: draft | ready | in_progress | blocked | review
+- to_state: ready | in_progress | blocked | review | done
+- transition_reason: <why this transition is valid now>
 
 ## Success Metrics
 - 
@@ -50,13 +62,18 @@
 - [ ] Task: Complete story <STORY-ID>
 - [ ] Task: Complete story <STORY-ID>
 - [ ] Task: <cross-cutting task>
-- [ ] Task: Verify Ticket Microcycle enforcement across active stories/tasks.
+- [ ] Task: Verify Ticket Microcycle enforcement across active tickets/stories/tasks.
 
 ## Acceptance Criteria (Epic Done)
 - 
 
 ## Risks / Mitigations
 - 
+
+## Applicable Anti-Patterns
+- [ ] No epic-state transition without story-level evidence.
+- [ ] No closure while required stories are incomplete or unaccepted.
+- [ ] No program claims without source evidence from story/task notes.
 
 ## Validation / Test Approach
 - 
@@ -70,11 +87,23 @@
 ## Decision Log
 - 
 
+## Artifact Links (Optional)
+- ARTIFACTS_REQUIRED: true | false
+- ARTIFACT_PATHS:
+  - <artifacts/YYYY-MM-DD_<slug>.<ext>>
+- DISPOSITION: delete_on_close | retain_as_reference | promote_to_documentation
+- CLEANUP_TRIGGER: <when artifact cleanup/retention decision is applied>
+
 ## Notes
-- DATE: YYYY-MM-DD
-  TYPE: FACT | UNKNOWN | HYPOTHESIS | DECISION | DECISION_REQUEST | PLAN | STRATEGY_DISCUSSION | ASSUMPTION_CHALLENGE | CONFLICT | TRADEOFF | BLOCKER | ALIGNMENT_CHECK | MEASURE | RISK | RAISE
+- DATETIME: YYYY-MM-DDTHH:MM:SSZ
+  TYPE:
+    FACT | UNKNOWN | HYPOTHESIS | DECISION | DECISION_REQUEST | PLAN |
+    STRATEGY_DISCUSSION | ASSUMPTION_CHALLENGE | CONFLICT | TRADEOFF |
+    BLOCKER | ALIGNMENT_CHECK | MEASURE | RISK | RAISE
   CLAIM: <short finding>
-  EVIDENCE: <path:start_line-end_line>, <path:start_line-end_line>
+  EVIDENCE:
+  - <path:start_line-end_line>
+  - <path:start_line-end_line>
   IMPACT: <why this matters>
   NEXT: <one concrete next action>
   REREAD: REQUIRED | HELPFUL
@@ -83,6 +112,14 @@
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
+- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+
+## Noting Behavior
+- Note focus: program-level direction, cross-story tradeoffs, and tranche order.
+- Add notes when priorities, sequencing, or scope boundaries change.
+- Reference story/task evidence instead of duplicating tactical execution logs.
+- Keep notes append-only and preserve UNKNOWN-first promotion discipline.
 
 ## Context / Handoff Summary
 <Succinct summary of current state, key decisions, and next steps for future context.>
+

@@ -28,11 +28,12 @@ Deep, accurate architecture docs reduce rework and support long-term clarity of 
 - C4/C3/C2/C1 mapping remains consistent with templates.
 
 ## Scope Boundaries
-- In scope: `architecture/src_architecture.md`, `components/src_components.md`.
+- In scope: `system_docs/src_architecture.md`, `system_docs/src_components.md`.
 - Out of scope: changes to code or tests.
 
 ## Dependencies / Related Work
-- Existing C4 docs in `architecture/` and `components/`.
+- Existing docs in `system_docs/src_architecture.md` and
+  `system_docs/src_components.md`.
 
 ## Tasks (Implementation Checklist)
 - [x] Task: TASK-2026-01-17-deep-dive-architecture - Update src architecture doc with Spectrum entrypoint and init flow.
@@ -59,3 +60,5 @@ Deep, accurate architecture docs reduce rework and support long-term clarity of 
 
 ## Context / Handoff Summary
 Story complete; src architecture and components docs updated for Spectrum entrypoint.
+
+

@@ -16,7 +16,7 @@
 Reframe the src architecture doc around Spectrum as the entrypoint and document init flow and lifecycle boundaries.
 
 ## Scope Boundaries
-- In scope: `architecture/src_architecture.md`.
+- In scope: `system_docs/src_architecture.md`.
 - Out of scope: code changes.
 
 ## Steps / Checklist
@@ -26,10 +26,10 @@ Reframe the src architecture doc around Spectrum as the entrypoint and document 
 - [x] Record key information sources.
 
 ## Deliverables
-- Updated `architecture/src_architecture.md`
+- Updated `system_docs/src_architecture.md`
 
 ## Files / Paths Impacted
-- `architecture/src_architecture.md`
+- `system_docs/src_architecture.md`
 
 ## Validation
 - Not run.
@@ -47,3 +47,4 @@ Reframe the src architecture doc around Spectrum as the entrypoint and document 
 
 ## Context / Handoff Summary
 Src architecture doc updated with Spectrum entrypoint and init flow.
+
