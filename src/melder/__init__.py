@@ -8,10 +8,10 @@ Lightweight dependency injection system designed for high-performance modular Py
 import sys
 import warnings
 
-from src.melder.__version__ import __version__ as base_version
-from src.melder.__author__ import CREATOR as __author__
-from src.melder.__license__ import __license__
-from src.melder.__description__ import __description__
+from melder.__version__ import __version__ as base_version
+from melder.__author__ import CREATOR as __author__
+from melder.__license__ import __license__
+from melder.__description__ import __description__
 from melder.__melder_registration_guard__ import MelderRegistrationGuard
 # Eagerly instantiate the registration guard at package import time (internal use).
 __melder_registration_guard__ = MelderRegistrationGuard()

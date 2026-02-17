@@ -23,9 +23,40 @@ Attention details rule
 ## Active Items
 | work_item | status | mode | owner | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 |---|---|---|---|---|---|---|---|---|---|---|
-| task: wave-1 medium candidate implementation | in_progress | implementation | codex | none | implement NR-M1, OR-M1, and CC-M2 with targeted unit validation | first medium-risk optimization wave is delivered with evidence and measurable test coverage | implementation task reaches review with code + test evidence and wave-2 decision prompt | `tickets/tasks/2026-02-17_phase12_wave1_medium_implementation_task.md` | 2026-02-17T17:41:37Z | REQUIRED |
+| task: system improvement discovery | in_progress | discovery | codex | none | run codebase scan for optimization/cleanup opportunities | risk-ranked improvement options | discovery scan completion | `tickets/tasks/2026-02-17_system_improvement_discovery_scan_task.md` | 2026-02-17T18:52:00Z | REQUIRED |
 
 ## Active Attention Details
+- DATETIME: 2026-02-17T18:28:41Z
+  TYPE: DECISION
+  CLAIM: Next-wave selection completed and routing advanced to isolated OR-M1
+    implementation.
+  EVIDENCE:
+  - tickets/tasks/2026-02-17_phase12_wave2_candidate_selection_task.md:1-126
+  - tickets/tasks/2026-02-17_phase12_or_m1_isolated_implementation_task.md:1-115
+  - tickets/tasks/2026-02-17_phase12_overrides_executor_discovery_task.md:64-68
+  IMPACT: Active execution is now a single-candidate implementation lane with
+    direct benchmark traceability.
+  NEXT: Execute OR-M1 code/test/benchmark cycle and document results.
+  SWITCH_TRIGGER: OR-M1 task reaches review or raises contract-risk escalation.
+  RESUME_HIERARCHY: OR-M1 task -> story -> epic.
+  REREAD: REQUIRED
+
+- DATETIME: 2026-02-17T18:26:37Z
+  TYPE: DECISION
+  CLAIM: Wave-1 implementation is paused after rollback, and active execution
+    moved to next-wave candidate selection.
+  EVIDENCE:
+  - tickets/tasks/2026-02-17_phase12_wave1_medium_implementation_task.md:1-144
+  - tickets/tasks/2026-02-17_phase12_wave2_candidate_selection_task.md:1-118
+  - benchmarks/testing_other_di/results/codegen_benchmark_after_branch_compare_chat_ref.json:807-844
+  IMPACT: Routing remains unblocked while implementation focus shifts to a new
+    ticket lane.
+  NEXT: Finish next-wave selection and activate the new implementation ticket.
+  SWITCH_TRIGGER: selected implementation ticket is created and confirmed for
+    activation.
+  RESUME_HIERARCHY: wave-2 selection task -> story -> epic.
+  REREAD: REQUIRED
+
 - DATETIME: 2026-02-17T17:41:37Z
   TYPE: DECISION
   CLAIM: User requested continuation of ticket execution, so wave-1 is now

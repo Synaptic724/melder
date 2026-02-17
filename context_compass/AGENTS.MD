@@ -110,7 +110,7 @@ Certification gating:
   before continuing work.
 - For compaction/handoff summaries, prefer empty summaries when allowed;
   otherwise use minimal file-pointer summaries only.
-- Post `REONBOARD: COMPLETE` attestation (with env + reread files +
+- Post `ONBOARD: COMPLETE` attestation (with env + reread files +
   `NO_ACTION_TAKEN_YET: true`) before any action.
 
 
@@ -138,7 +138,7 @@ After any context compaction, handoff, or fresh session:
 - During compaction/handoff summarization, prefer empty summaries when allowed;
   otherwise emit minimal file-pointer summaries only.
 - Before any action, publish a Re-Onboarding Attestation message with:
-  - `REONBOARD: COMPLETE`
+  - `ONBOARD: COMPLETE`
   - certification state (`active` or `inactive`)
   - files re-read summary (active ticket paths and any non-readset docs only)
   - onboarding readset reference

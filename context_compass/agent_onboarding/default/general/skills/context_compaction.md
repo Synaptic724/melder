@@ -78,7 +78,7 @@ Before compaction, review these files in order:
 ## Post-Compaction Verification
 After compaction, re-open the required review set and confirm:
 - `agent_onboarding/default/general/skills/compaction_requirements.md` has been re-applied before any action.
-- A `REONBOARD: COMPLETE` attestation was posted before any action.
+- A `ONBOARD: COMPLETE` attestation was posted before any action.
 - `attention_board.md` was re-opened and still matches active ticket state.
 - `artifact_board.md` was re-opened when artifact-linked tickets are active.
 - The active tickets still represent the correct plan.

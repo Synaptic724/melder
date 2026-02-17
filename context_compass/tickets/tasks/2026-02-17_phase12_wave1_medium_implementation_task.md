@@ -3,11 +3,11 @@
 ## Metadata
 - Task ID: TASK-2026-02-17-phase12-wave1-medium-implementation
 - Story: STORY-2026-02-17-phase12-creation-context-discovery-and-benchmark
-- Status: in_progress
+- Status: blocked
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-17T17:41:37Z
-- Updated: 2026-02-17T18:07:24Z
+- Updated: 2026-02-17T18:26:37Z
 
 ## Objective
 Implement and validate the wave-1 medium shortlist:
@@ -38,16 +38,17 @@ Implement and validate the wave-1 medium shortlist:
   - broad architecture refactors.
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: wave-1 medium shortlist approved for implementation.
+- from_state: in_progress
+- to_state: blocked
+- transition_reason: user reverted wave-1 code changes and requested advancing
+  to the next ticket.
 
 ## Steps / Checklist
-- [x] Implement NR-M1 in no-overrides emitted step source.
-- [x] Implement OR-M1 in override compilation source-selection flow.
-- [x] Implement CC-M2 in `CreationContext._execute_with_overrides`.
-- [x] Update/extend unit tests for behavior and compile-path contracts.
-- [x] Run targeted pytest suites and capture results.
+- [ ] Implement NR-M1 in no-overrides emitted step source.
+- [ ] Implement OR-M1 in override compilation source-selection flow.
+- [ ] Implement CC-M2 in `CreationContext._execute_with_overrides`.
+- [ ] Update/extend unit tests for behavior and compile-path contracts.
+- [ ] Run targeted pytest suites and capture results.
 - [ ] Update story/epic notes with implementation + validation evidence.
 
 ## Deliverables
@@ -56,7 +57,8 @@ Implement and validate the wave-1 medium shortlist:
 - Ticket notes with concrete source/test evidence.
 
 ## Validation
-- Run.
+- Historical run captured; current branch no longer contains the wave-1
+  implementation changes and requires re-execution if this ticket is resumed.
 - Commands:
   - `$env:PYTHONPATH='.;src'; python -m pytest -q tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_no_overrides_executor.py tests/unit/melder/spellbook/spell_crafter/blueprints/test_phase12_overrides_executor.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
   - `$env:PYTHONPATH='.;src'; python benchmarks/testing_other_di/run_codegen_benchmark_deltas.py --pin-p-cores --profile-iteration-count 5 --baseline-path benchmarks/testing_other_di/results/codegen_benchmark_baseline.json --output-path benchmarks/testing_other_di/results/codegen_benchmark_after_wave1_medium.json --allow-baseline-regression`
@@ -72,9 +74,9 @@ Implement and validate the wave-1 medium shortlist:
   Mitigation: retain compatibility fallback and add schema-row compile assertions.
 
 ## Applicable Anti-Patterns
-- [x] No implementation without note evidence updates.
-- [x] No performance claims without measured outputs.
-- [x] No silent expansion to high-risk candidates.
+- [ ] No implementation without note evidence updates.
+- [ ] No performance claims without measured outputs.
+- [ ] No silent expansion to high-risk candidates.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false
@@ -137,9 +139,22 @@ Implement and validate the wave-1 medium shortlist:
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-02-17T18:26:37Z
+  TYPE: DECISION
+  CLAIM: Wave-1 implementation work is paused because the branch was reverted
+    and execution direction moved to the next ticket.
+  EVIDENCE:
+  - src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:740-790
+  - src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:401-401
+  - src/melder/aether/conduit/meld/creation_context/creation_context.py:592-592
+  IMPACT: This task is no longer the active execution lane and should remain
+    blocked until wave-1 is explicitly resumed.
+  NEXT: Route active work to a new next-wave ticket and continue execution
+    there.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
-Wave-1 medium implementation is code-complete with targeted unit tests passing.
-Pinned-core benchmark comparison is recorded at
-`benchmarks/testing_other_di/results/codegen_benchmark_after_wave1_medium.json`
-with weighted regression in override routes; next action is story/epic sync and
-follow-up direction on wave-1 performance remediation.
+Wave-1 medium implementation is paused after branch rollback. Historical
+validation/benchmark notes remain for traceability, but active routing has moved
+to the next ticket per user direction.

@@ -7,7 +7,7 @@
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-17T15:53:33Z
-- Updated: 2026-02-17T17:41:37Z
+- Updated: 2026-02-17T18:28:41Z
 
 ## User Narrative
 As a performance-focused maintainer, I want discovery across Phase 12 and
@@ -65,6 +65,8 @@ before code changes.
 - [x] Task: TASK-2026-02-17-creation-context-discovery
 - [x] Task: TASK-2026-02-17-codegen-benchmark-pcore-baseline-and-scoring
 - [ ] Task: TASK-2026-02-17-phase12-wave1-medium-implementation
+- [x] Task: TASK-2026-02-17-phase12-wave2-candidate-selection
+- [ ] Task: TASK-2026-02-17-phase12-or-m1-isolated-implementation
 - [x] Enforce Ticket Microcycle across all linked tasks.
 - [x] Require meaningful-finding note updates during discovery/implementation.
 
@@ -99,6 +101,8 @@ before code changes.
 ## Decision Log
 - Wave-1 medium shortlist approved for execution:
   `{NR-M1, OR-M1, CC-M2}`.
+- Wave-1 implementation lane paused after rollback; next routing lane is
+  wave-2 candidate selection.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false
@@ -226,6 +230,36 @@ before code changes.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-02-17T18:26:37Z
+  TYPE: DECISION
+  CLAIM: Wave-1 implementation is paused after rollback, and active execution
+    has shifted to next-wave candidate selection.
+  EVIDENCE:
+  - tickets/tasks/2026-02-17_phase12_wave1_medium_implementation_task.md:1-144
+  - tickets/tasks/2026-02-17_phase12_wave2_candidate_selection_task.md:1-118
+  - benchmarks/testing_other_di/results/codegen_benchmark_after_branch_compare_chat_ref.json:807-844
+  IMPACT: Story routing remains active while implementation focus moves to a
+    new lane without reopening discovery.
+  NEXT: Complete next-wave selection task and activate the selected
+    implementation ticket.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-02-17T18:28:41Z
+  TYPE: DECISION
+  CLAIM: Next-wave selection completed and OR-M1 is now the active isolated
+    implementation lane.
+  EVIDENCE:
+  - tickets/tasks/2026-02-17_phase12_wave2_candidate_selection_task.md:1-126
+  - tickets/tasks/2026-02-17_phase12_or_m1_isolated_implementation_task.md:1-115
+  - context_compass/attention_board.md:23-46
+  IMPACT: Story execution continues with a concrete medium-risk ticket focused
+    on override-route behavior.
+  NEXT: Execute OR-M1 implementation task and capture targeted pytest/benchmark
+    evidence.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -238,5 +272,5 @@ before code changes.
 
 ## Context / Handoff Summary
 Story discovery is complete across benchmark, no-overrides, overrides, and
-creation-context lanes; wave-1 medium implementation is now active via
-`TASK-2026-02-17-phase12-wave1-medium-implementation`.
+creation-context lanes; wave-1 medium implementation remains paused, and active
+routing now runs through `TASK-2026-02-17-phase12-or-m1-isolated-implementation`.

@@ -45,7 +45,7 @@ README policy
 
 Mandatory attestation format
 ```text
-REONBOARD: COMPLETE
+ONBOARD: COMPLETE
 ENVIRONMENT: <active|inactive>
 FILES_REREAD:
 - <active ticket path>
