@@ -2484,7 +2484,7 @@ Role: Load-balanced deploy strategy.
 Coverage: traced.
 Notes: Selects group by capacity and tags.
 
-### File: `src/melder/command_center/strategic_command/command_center/tasks/task_round_robin.py`
+### File: `src/melder/command_center/strategic_command/command_center/tickets/tasks/task_round_robin.py`
 Role: Round-robin task strategy.
 Coverage: partial.
 Notes: Verify scheduling logic.
@@ -2494,7 +2494,7 @@ Role: Pool-affinity deploy strategy.
 Coverage: partial.
 Notes: Verify pool selection logic.
 
-### File: `src/melder/command_center/strategic_command/command_group/tasks/task_round_robin.py`
+### File: `src/melder/command_center/strategic_command/command_group/tickets/tasks/task_round_robin.py`
 Role: Tagged round-robin task strategy.
 Coverage: partial.
 Notes: Verify tagged routing.
@@ -3080,4 +3080,5 @@ This map describes where agentic mode affects locks and behavior.
 - Locks use symbolic handoff to waiting agents.
 - Registries use agent-aware Concurrent* structures.
 - Some cleanup paths wake sleeping agents explicitly.
+
 

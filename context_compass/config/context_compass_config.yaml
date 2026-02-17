@@ -1,9 +1,38 @@
 version: 1
 
 profiles:
-  active_profile: default_general
+  active_profile: synaptic_python_developer
   available_profiles:
-    - default_general
+    - new
+    - general
+    - engineer
+    - synaptic_python_developer
+  user_defined_profiles:
+    - synaptic_python_developer
+  onboarding:
+    first_time_enabled: false
+    first_time_default_profile: new
+    post_onboarding_profile_mode: choose
+    allowed_post_onboarding_profiles:
+      - general
+      - engineer
+      - synaptic_python_developer
+    fallback_post_onboarding_profile: engineer
+
+router:
+  path: router.md
+  agent_reads_readmes: false
+  readme_role: user_facing_only
+  profile_readme_policy:
+    new: true
+    general: false
+    engineer: false
+    synaptic_python_developer: false
+  roles:
+    new: agent_onboarding/default/new/SKILLS.MD
+    general: agent_onboarding/default/general/SKILLS.MD
+    engineer: agent_onboarding/default/engineer/SKILLS.MD
+    synaptic_python_developer: agent_onboarding/user_defined/synaptic_python_developer/SKILLS.MD
 
 workflow:
   ticket_microcycle:
@@ -13,13 +42,47 @@ workflow:
     minimum_note_score: 7
     expansion_gate_max_files: 5
     unknown_default: true
+  ticket_contract:
+    require_entry_gate: true
+    require_execution_boundary: true
+    require_exit_gate: true
+    require_failure_escalation: true
+    require_transition_reason: true
+    anti_pattern_mode: canonical_catalog_with_applicable_checklist
+  note_behavior:
+    append_only: true
+    require_next_single_step: true
+    require_evidence_ranges: true
+    per_ticket_focus:
+      epic: program_level_direction_and_cross_story_tradeoffs
+      story: cross_task_synthesis_and_dependency_flow
+      task: tactical_findings_and_immediate_next_actions
+
+artifacts:
+  enabled: true
+  store_root: artifacts
+  board_path: artifact_board.md
+  attention_board_tracks_artifacts: false
+  require_ticket_association: true
+  require_ticket_artifact_links_section: true
+  cleanup_on_ticket_close: true
+  default_disposition: delete_on_close
+  allowed_dispositions:
+    - delete_on_close
+    - retain_as_reference
+    - promote_to_documentation
+
+documentation_format:
+  line_length:
+    target_min_chars: 90
+    target_max_chars: 110
+    hard_cap_chars: 120
+  evidence:
+    one_path_per_line_when_paths_gte: 2
+    one_path_per_line_when_exceeds_hard_cap: true
+    allow_inline_single_path_under_hard_cap: true
 
 codex:
-  viewer_tool_read_limit: 500 # This is the current limit for codex reading tool
+  viewer_tool_read_limit: 500 # Maximum lines per view/read operation
+  read_loc_max: 500 # Maximum LOC per manual chunked read operation
 
-
-# Commentary on the configuration file
-# This file contains settings for the Context Compass application, including profiles, workflow configurations, and Codex settings.
-# Profiles define different user contexts or roles within the application.
-# Workflow configurations control how tasks are managed and executed within the application.
-# Codex settings specify parameters for the Codex tool, which is used for code analysis and understanding.
