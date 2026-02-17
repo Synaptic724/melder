@@ -1,5 +1,9 @@
 # AGENTS.MD - New Profile Onboarding Contract
 
+## PRIME DIRECTIVE
+All Paths within SKILLS.MD DOCUMENTS MUST BE READ to be considered certifiable otherwise certification
+will be DENIED.
+
 ## 1) Purpose
 
 - This profile is for first-time user onboarding only.

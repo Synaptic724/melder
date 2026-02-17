@@ -19,5 +19,5 @@ Why skills are treated as capabilities
 - Progressive disclosure prevents bloating context with unused documentation.
 
 References
-- `router.md`
+- `context_compass/SKILLS.md`
 

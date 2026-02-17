@@ -1,5 +1,9 @@
 # AGENTS.MD - Synaptic Python Developer User-Defined Overlay
 
+## PRIME DIRECTIVE
+All Paths within SKILLS.MD DOCUMENTS MUST BE READ to be considered certifiable otherwise certification
+will be DENIED.
+
 ## 1) Document Intent
 
 This document defines user-specific behavior and policy overrides for the

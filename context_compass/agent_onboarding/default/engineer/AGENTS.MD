@@ -1,5 +1,9 @@
 # AGENTS.md - Public Library Editing Contract
 
+## PRIME DIRECTIVE
+All Paths within SKILLS.MD DOCUMENTS MUST BE READ to be considered certifiable otherwise certification
+will be DENIED.
+
 ## 1) Document Purpose
 
 This is a high-level reinforcer document that defines behavior expectations for

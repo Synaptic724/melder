@@ -7,7 +7,7 @@
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-17T15:53:33Z
-- Updated: 2026-02-17T15:53:33Z
+- Updated: 2026-02-17T17:00:02Z
 
 ## User Narrative
 As a performance-focused maintainer, I want discovery across Phase 12 and
@@ -60,12 +60,12 @@ before code changes.
 - EPIC-2026-02-17-phase12-creation-context-codegen-performance
 
 ## Tasks (Implementation Checklist)
-- [ ] Task: TASK-2026-02-17-phase12-no-overrides-discovery
-- [ ] Task: TASK-2026-02-17-phase12-overrides-discovery
-- [ ] Task: TASK-2026-02-17-creation-context-discovery
-- [ ] Task: TASK-2026-02-17-codegen-benchmark-pcore-baseline-and-scoring
-- [ ] Enforce Ticket Microcycle across all linked tasks.
-- [ ] Require meaningful-finding note updates during discovery/implementation.
+- [x] Task: TASK-2026-02-17-phase12-no-overrides-discovery
+- [x] Task: TASK-2026-02-17-phase12-overrides-discovery
+- [x] Task: TASK-2026-02-17-creation-context-discovery
+- [x] Task: TASK-2026-02-17-codegen-benchmark-pcore-baseline-and-scoring
+- [x] Enforce Ticket Microcycle across all linked tasks.
+- [x] Require meaningful-finding note updates during discovery/implementation.
 
 ## Acceptance Criteria
 - All four location/protocol tasks completed with evidence.
@@ -96,7 +96,7 @@ before code changes.
   sidecar artifact files?
 
 ## Decision Log
-- Pending discovery outputs.
+- Pending shortlist approval for implementation wave 1.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false
@@ -119,6 +119,96 @@ before code changes.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-02-17T16:20:08Z
+  TYPE: FACT
+  CLAIM: Benchmark protocol task is complete with pinned-core baseline and
+    weighted cProfile/time scoring outputs, and ticket was moved to completed.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-02-17_codegen_benchmark_pcore_baseline_and_scoring_task_completed.md:1-215
+  - benchmarks/testing_other_di/results/codegen_benchmark_baseline.json:3-745
+  - benchmarks/testing_other_di/results/codegen_benchmark_after.json:807-853
+  IMPACT: Story now needs only the three location discovery tasks and risk
+    option synthesis before closure.
+  NEXT: Route active attention to the story and select first location discovery
+    task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-02-17T16:48:45Z
+  TYPE: FACT
+  CLAIM: No-overrides discovery task is now active and has first-pass hotspot
+    evidence for compile-time source expansion and transient namespace setup.
+  EVIDENCE:
+  - tickets/tasks/2026-02-17_phase12_no_overrides_executor_discovery_task.md:3-111
+  - src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:583-633
+  - src/melder/spellbook/spell_crafter/blueprints/phase12_no_overrides_executor.py:1392-1505
+  IMPACT: Story execution has moved from routing setup into concrete
+    per-location discovery with evidence-backed optimization leverage points.
+  NEXT: Finish no-overrides candidate table, then activate overrides discovery
+    task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-02-17T16:52:56Z
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: No-overrides discovery now has a complete option pack (three medium,
+    three high risk) and can serve as the first lane for cross-task synthesis.
+  EVIDENCE:
+  - tickets/tasks/2026-02-17_phase12_no_overrides_executor_discovery_task.md:38-71
+  - tickets/tasks/2026-02-17_phase12_no_overrides_executor_discovery_task.md:148-172
+  - benchmarks/testing_other_di/results/codegen_benchmark_baseline.json:217-222
+  - benchmarks/testing_other_di/results/codegen_benchmark_after.json:277-282
+  IMPACT: Story has one completed location discovery package and can now route
+    execution to overrides and then creation-context tasks.
+  NEXT: Activate overrides discovery task and mirror this option-capture format.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-02-17T16:55:17Z
+  TYPE: FACT
+  CLAIM: No-overrides task is now in review and overrides task is active with
+    its own medium/high option set captured.
+  EVIDENCE:
+  - tickets/tasks/2026-02-17_phase12_no_overrides_executor_discovery_task.md:3-172
+  - tickets/tasks/2026-02-17_phase12_overrides_executor_discovery_task.md:3-111
+  - tickets/tasks/2026-02-17_phase12_overrides_executor_discovery_task.md:116-128
+  IMPACT: Story now holds two discovery lanes worth of option evidence and can
+    route final discovery to creation-context.
+  NEXT: Activate creation-context discovery and capture its option table.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-02-17T16:58:00Z
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: All three location tasks now hold risk-ranked option tables, yielding
+    a complete discovery package for cross-location ranking and user selection.
+  EVIDENCE:
+  - tickets/tasks/2026-02-17_phase12_no_overrides_executor_discovery_task.md:53-172
+  - tickets/tasks/2026-02-17_phase12_overrides_executor_discovery_task.md:53-155
+  - tickets/tasks/2026-02-17_creation_context_discovery_task.md:55-155
+  - context_compass/attention_board.md:23-61
+  IMPACT: Story can now transition from evidence collection to shortlist
+    synthesis without blocking on additional discovery lanes.
+  NEXT: Produce ranked medium/high shortlist for implementation-wave approval.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-02-17T17:00:02Z
+  TYPE: DECISION_REQUEST
+  CLAIM: Consolidated wave-1 shortlist is ready: medium candidates
+    {NR-M1, OR-M1, CC-M2} and high candidates {OR-H1, CC-H1, NR-H2}.
+  EVIDENCE:
+  - tickets/tasks/2026-02-17_phase12_no_overrides_executor_discovery_task.md:64-71
+  - tickets/tasks/2026-02-17_phase12_overrides_executor_discovery_task.md:64-72
+  - tickets/tasks/2026-02-17_creation_context_discovery_task.md:64-72
+  - benchmarks/testing_other_di/results/codegen_benchmark_baseline.json:301-313
+  - benchmarks/testing_other_di/results/codegen_benchmark_after.json:361-373
+  IMPACT: Discovery can transition into implementation planning immediately once
+    candidate IDs are approved.
+  NEXT: User selects approved wave-1 candidate IDs (medium/high) and risk level.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -130,5 +220,5 @@ before code changes.
 - Keep notes append-only and preserve UNKNOWN-first promotion discipline.
 
 ## Context / Handoff Summary
-Story is active with four discovery tasks covering both Phase 12 executors,
-`CreationContext`, and benchmark protocol/scoring.
+Story discovery is complete across benchmark, no-overrides, overrides, and
+creation-context lanes; next step is ranked shortlist synthesis for user approval.

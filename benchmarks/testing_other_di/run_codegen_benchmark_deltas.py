@@ -1,6 +1,8 @@
+import cProfile
 import argparse
 import json
 import os
+import pstats
 import time
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
@@ -341,11 +343,21 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--warm-to-cold-max-ratio", type=float, default=0.35)
     parser.add_argument("--mixed-to-cold-max-ratio", type=float, default=0.60)
     parser.add_argument("--route-to-cold-max-ratio", type=float, default=0.80)
+    parser.add_argument("--profile-iteration-count", type=int, default=5)
+    parser.add_argument("--profile-top-functions", type=int, default=12)
     parser.add_argument("--baseline-path", type=str, default="")
     parser.add_argument("--cold-max-regression-ratio", type=float, default=1.20)
     parser.add_argument("--warm-max-regression-ratio", type=float, default=1.20)
     parser.add_argument("--mixed-max-regression-ratio", type=float, default=1.20)
     parser.add_argument("--route-max-regression-ratio", type=float, default=1.20)
+    parser.add_argument("--weighted-cprofile-weight", type=float, default=0.75)
+    parser.add_argument("--weighted-time-weight", type=float, default=0.25)
+    parser.add_argument("--weighted-max-regression-ratio", type=float, default=1.00)
+    parser.add_argument(
+        "--weighted-routes",
+        type=str,
+        default="warm_root_ns,warm_override_root_args_ns,warm_override_targeted_ns",
+    )
     parser.add_argument(
         "--output-path",
         type=str,
@@ -455,6 +467,44 @@ def _extract_route_matrix_report(payload: Dict[str, Any]) -> Optional[Dict[str, 
     if isinstance(nested, dict):
         return nested
     return None
+
+
+def _extract_route_profile_report(payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """
+    Extract optional route-profile report section from a benchmark payload.
+
+    Contract:
+        - Returns route-profile mapping when present and dict-shaped.
+        - Returns None when no route-profile report is available.
+    """
+    nested = payload.get("route_profile_report")
+    if isinstance(nested, dict):
+        return nested
+    return None
+
+
+def _parse_weighted_routes(raw_value: str) -> Tuple[str, ...]:
+    """
+    Parse and normalize weighted-route CSV argument values.
+
+    Contract:
+        - Trims whitespace and removes empty segments.
+        - Preserves first-seen order and drops duplicates.
+        - Returns non-empty immutable tuple.
+    """
+    parts = [part.strip() for part in raw_value.split(",")]
+    normalized = []
+    seen = set()
+    for part in parts:
+        if not part:
+            continue
+        if part in seen:
+            continue
+        seen.add(part)
+        normalized.append(part)
+    if not normalized:
+        raise ValueError("weighted_routes must contain at least one route key.")
+    return tuple(normalized)
 
 
 def _sample_callable_ns(
@@ -799,6 +849,125 @@ def _collect_route_matrix_samples(
     }
 
 
+def _build_route_callable_map(session: CodegenBenchmarkSession) -> Dict[str, Callable[[], Any]]:
+    """
+    Build route-name to callable mapping used by timing and profiling collectors.
+
+    Contract:
+        - Route keys match route matrix report key schema.
+        - Values are zero-argument execute callables.
+    """
+    return {
+        "warm_root_ns": session.resolve_root_once,
+        "warm_spellspace_ns": session.resolve_spellspace_once,
+        "warm_override_root_args_ns": session.resolve_override_root_args_once,
+        "warm_override_targeted_ns": session.resolve_override_targeted_once,
+        "warm_mixed_ns": session.resolve_mixed_once,
+    }
+
+
+def _profile_callable(
+        *,
+        fn: Callable[[], Any],
+        profile_iteration_count: int,
+        warmup_count: int,
+        profile_top_functions: int,
+) -> Dict[str, Any]:
+    """
+    Capture one cProfile sample payload for a callable.
+
+    Contract:
+        - Performs warmup calls before profiled iterations.
+        - Profiles exactly `profile_iteration_count` calls under one profiler.
+        - Returns aggregate call/time counters and top cumulative hotspots.
+    """
+    if profile_iteration_count < 1:
+        raise ValueError("profile_iteration_count must be >= 1.")
+    if warmup_count < 0:
+        raise ValueError("warmup_count must be >= 0.")
+    if profile_top_functions < 1:
+        raise ValueError("profile_top_functions must be >= 1.")
+
+    for _ in range(warmup_count):
+        fn()
+
+    profile = cProfile.Profile()
+    start_ns = time.perf_counter_ns()
+    profile.enable()
+    for _ in range(profile_iteration_count):
+        fn()
+    profile.disable()
+    end_ns = time.perf_counter_ns()
+
+    stats = pstats.Stats(profile)
+    top_functions = []
+    sorted_rows = sorted(
+        stats.stats.items(),
+        key=lambda item: item[1][3],
+        reverse=True,
+    )
+    for function_key, values in sorted_rows[:profile_top_functions]:
+        top_functions.append(
+            {
+                "function": "{0}:{1}:{2}".format(
+                    function_key[0],
+                    function_key[1],
+                    function_key[2],
+                ),
+                "primitive_calls": int(values[0]),
+                "total_calls": int(values[1]),
+                "total_time_seconds": float(values[2]),
+                "cumulative_time_seconds": float(values[3]),
+            }
+        )
+
+    elapsed_ns = end_ns - start_ns
+    return {
+        "iteration_count": profile_iteration_count,
+        "warmup_count": warmup_count,
+        "wall_total_ns": elapsed_ns,
+        "wall_ns_per_iteration": elapsed_ns / profile_iteration_count,
+        "total_calls": int(stats.total_calls),
+        "primitive_calls": int(stats.prim_calls),
+        "total_calls_per_iteration": stats.total_calls / profile_iteration_count,
+        "primitive_calls_per_iteration": stats.prim_calls / profile_iteration_count,
+        "cpu_total_seconds": float(stats.total_tt),
+        "cpu_seconds_per_iteration": float(stats.total_tt) / profile_iteration_count,
+        "top_functions_by_cumulative_time": top_functions,
+    }
+
+
+def _collect_route_profile_report(
+        *,
+        session: CodegenBenchmarkSession,
+        profile_iteration_count: int,
+        warmup_count: int,
+        profile_top_functions: int,
+) -> Dict[str, Any]:
+    """
+    Collect cProfile snapshots for each benchmark route.
+
+    Contract:
+        - Uses one cProfile capture per route key.
+        - Route keys match route matrix report route names.
+    """
+    route_callables = _build_route_callable_map(session)
+    route_profiles: Dict[str, Dict[str, Any]] = {}
+    for route_name, route_callable in route_callables.items():
+        route_profiles[route_name] = _profile_callable(
+            fn=route_callable,
+            profile_iteration_count=profile_iteration_count,
+            warmup_count=warmup_count,
+            profile_top_functions=profile_top_functions,
+        )
+    return {
+        "profile_iteration_count": profile_iteration_count,
+        "warmup_count": warmup_count,
+        "profile_top_functions": profile_top_functions,
+        "routes": route_profiles,
+    }
+
+
 def _evaluate_route_matrix_report(
         *,
         route_samples_ns: Dict[str, Sequence[int]],
@@ -928,6 +1097,141 @@ def _evaluate_route_matrix_baseline_deltas(
     }
 
 
+def _evaluate_weighted_route_regression(
+        *,
+        current_route_report: Dict[str, Any],
+        baseline_route_report: Dict[str, Any],
+        current_route_profile_report: Dict[str, Any],
+        baseline_route_profile_report: Dict[str, Any],
+        weighted_routes: Sequence[str],
+        weighted_cprofile_weight: float,
+        weighted_time_weight: float,
+        weighted_max_regression_ratio: float,
+) -> Dict[str, Any]:
+    """
+    Evaluate weighted route regression with cProfile/time blend.
+
+    Contract:
+        - Weighted ratio = (`cProfile_ratio` * cprofile_weight) + (`time_ratio` * time_weight).
+        - Lower ratio is better; values above threshold fail.
+        - Uses route medians for time ratio and total calls per iteration for profile ratio.
+    """
+    if weighted_cprofile_weight <= 0:
+        raise ValueError("weighted_cprofile_weight must be > 0.")
+    if weighted_time_weight <= 0:
+        raise ValueError("weighted_time_weight must be > 0.")
+    if abs((weighted_cprofile_weight + weighted_time_weight) - 1.0) > 1e-9:
+        raise ValueError("weighted_cprofile_weight + weighted_time_weight must equal 1.0.")
+    if weighted_max_regression_ratio <= 0:
+        raise ValueError("weighted_max_regression_ratio must be > 0.")
+
+    current_route_medians = current_route_report.get("route_medians_ns")
+    baseline_route_medians = baseline_route_report.get("route_medians_ns")
+    current_route_profiles = current_route_profile_report.get("routes")
+    baseline_route_profiles = baseline_route_profile_report.get("routes")
+    if not isinstance(current_route_medians, dict):
+        raise ValueError("current_route_report.route_medians_ns must be a dict.")
+    if not isinstance(baseline_route_medians, dict):
+        raise ValueError("baseline_route_report.route_medians_ns must be a dict.")
+    if not isinstance(current_route_profiles, dict):
+        raise ValueError("current_route_profile_report.routes must be a dict.")
+    if not isinstance(baseline_route_profiles, dict):
+        raise ValueError("baseline_route_profile_report.routes must be a dict.")
+    if not weighted_routes:
+        raise ValueError("weighted_routes must not be empty.")
+
+    route_scores: Dict[str, Dict[str, Any]] = {}
+    failures = []
+    weighted_ratio_sum = 0.0
+    for route_name in weighted_routes:
+        current_time_ns = current_route_medians.get(route_name)
+        baseline_time_ns = baseline_route_medians.get(route_name)
+        current_profile = current_route_profiles.get(route_name)
+        baseline_profile = baseline_route_profiles.get(route_name)
+        if not isinstance(current_time_ns, int):
+            raise ValueError("current_route_report.route_medians_ns[{0}] must be an int.".format(route_name))
+        if not isinstance(baseline_time_ns, int):
+            raise ValueError("baseline_route_report.route_medians_ns[{0}] must be an int.".format(route_name))
+        if baseline_time_ns < 1:
+            raise ValueError("baseline_route_report.route_medians_ns[{0}] must be >= 1.".format(route_name))
+        if not isinstance(current_profile, dict):
+            raise ValueError("current_route_profile_report.routes[{0}] must be a dict.".format(route_name))
+        if not isinstance(baseline_profile, dict):
+            raise ValueError("baseline_route_profile_report.routes[{0}] must be a dict.".format(route_name))
+
+        current_calls = current_profile.get("total_calls_per_iteration")
+        baseline_calls = baseline_profile.get("total_calls_per_iteration")
+        if not isinstance(current_calls, (float, int)):
+            raise ValueError(
+                "current_route_profile_report.routes[{0}].total_calls_per_iteration must be numeric.".format(
+                    route_name
+                )
+            )
+        if not isinstance(baseline_calls, (float, int)):
+            raise ValueError(
+                "baseline_route_profile_report.routes[{0}].total_calls_per_iteration must be numeric.".format(
+                    route_name
+                )
+            )
+        if baseline_calls <= 0:
+            raise ValueError(
+                "baseline_route_profile_report.routes[{0}].total_calls_per_iteration must be > 0.".format(
+                    route_name
+                )
+            )
+
+        time_ratio = current_time_ns / baseline_time_ns
+        cprofile_ratio = float(current_calls) / float(baseline_calls)
+        weighted_ratio = (
+                (weighted_cprofile_weight * cprofile_ratio)
+                + (weighted_time_weight * time_ratio)
+        )
+        route_passed = weighted_ratio <= weighted_max_regression_ratio
+        if not route_passed:
+            failures.append(
+                "{0} weighted ratio {1:.4f} exceeded {2:.4f}".format(
+                    route_name,
+                    weighted_ratio,
+                    weighted_max_regression_ratio,
+                )
+            )
+        route_scores[route_name] = {
+            "current_time_median_ns": current_time_ns,
+            "baseline_time_median_ns": baseline_time_ns,
+            "time_ratio": time_ratio,
+            "current_profile_calls_per_iteration": float(current_calls),
+            "baseline_profile_calls_per_iteration": float(baseline_calls),
+            "cprofile_ratio": cprofile_ratio,
+            "weighted_ratio": weighted_ratio,
+            "passed": route_passed,
+        }
+        weighted_ratio_sum += weighted_ratio
+
+    overall_weighted_ratio = weighted_ratio_sum / len(weighted_routes)
+    if overall_weighted_ratio > weighted_max_regression_ratio:
+        failures.append(
+            "overall weighted ratio {0:.4f} exceeded {1:.4f}".format(
+                overall_weighted_ratio,
+                weighted_max_regression_ratio,
+            )
+        )
+
+    return {
+        "weighted_routes": tuple(weighted_routes),
+        "weights": {
+            "cprofile": weighted_cprofile_weight,
+            "time": weighted_time_weight,
+        },
+        "thresholds": {
+            "weighted_max_regression_ratio": weighted_max_regression_ratio,
+        },
+        "route_scores": route_scores,
+        "overall_weighted_ratio": overall_weighted_ratio,
+        "failures": tuple(failures),
+        "passed": len(failures) == 0,
+    }
+
+
 def run_codegen_benchmark_report(arguments: argparse.Namespace) -> Dict[str, Any]:
     """
     Execute benchmark sampling and optional baseline delta evaluation.
@@ -978,6 +1282,12 @@ def run_codegen_benchmark_report(arguments: argparse.Namespace) -> Dict[str, Any
             cold_compile_median_ns=gate_report["cold_compile_median_ns"],
             route_to_cold_max_ratio=arguments.route_to_cold_max_ratio,
         )
+        route_profile_report = _collect_route_profile_report(
+            session=warm_session,
+            profile_iteration_count=arguments.profile_iteration_count,
+            warmup_count=arguments.warmup_count,
+            profile_top_functions=arguments.profile_top_functions,
+        )
     finally:
         try:
             warm_session.cleanup()
@@ -985,7 +1295,7 @@ def run_codegen_benchmark_report(arguments: argparse.Namespace) -> Dict[str, Any
             _reset_aether_singleton_for_benchmark()
 
     report: Dict[str, Any] = {
-        "schema_version": "codegen_benchmark_report_v2",
+        "schema_version": "codegen_benchmark_report_v3",
         "generated_at_unix": time.time(),
         "sample_count": arguments.sample_count,
         "warmup_count": arguments.warmup_count,
@@ -994,6 +1304,7 @@ def run_codegen_benchmark_report(arguments: argparse.Namespace) -> Dict[str, Any
         "gate_report": gate_report,
         "route_samples_ns": route_samples_ns,
         "route_matrix_report": route_matrix_report,
+        "route_profile_report": route_profile_report,
     }
 
     baseline_path = arguments.baseline_path.strip()
@@ -1017,6 +1328,22 @@ def run_codegen_benchmark_report(arguments: argparse.Namespace) -> Dict[str, Any
                     baseline_route_report=baseline_route_matrix_report,
                     route_max_regression_ratio=arguments.route_max_regression_ratio,
                 )
+            )
+        baseline_route_profile_report = _extract_route_profile_report(baseline_payload)
+        if (
+                baseline_route_matrix_report is not None
+                and baseline_route_profile_report is not None
+        ):
+            weighted_routes = _parse_weighted_routes(arguments.weighted_routes)
+            report["weighted_score_report"] = _evaluate_weighted_route_regression(
+                current_route_report=route_matrix_report,
+                baseline_route_report=baseline_route_matrix_report,
+                current_route_profile_report=route_profile_report,
+                baseline_route_profile_report=baseline_route_profile_report,
+                weighted_routes=weighted_routes,
+                weighted_cprofile_weight=arguments.weighted_cprofile_weight,
+                weighted_time_weight=arguments.weighted_time_weight,
+                weighted_max_regression_ratio=arguments.weighted_max_regression_ratio,
             )
 
     return report
@@ -1078,6 +1405,13 @@ def _compute_exit_code(
             route_matrix_baseline_delta_report is not None
             and (not allow_baseline_regression)
             and (not route_matrix_baseline_delta_report["passed"])
+    ):
+        exit_code = 1
+    weighted_score_report = report.get("weighted_score_report")
+    if (
+            weighted_score_report is not None
+            and (not allow_baseline_regression)
+            and (not weighted_score_report["passed"])
     ):
         exit_code = 1
     return exit_code
@@ -1145,6 +1479,16 @@ def _print_summary(report: Dict[str, Any]) -> None:
                 route_delta_ratios["warm_override_targeted_ns"],
                 route_delta_ratios["warm_mixed_ns"],
                 route_matrix_baseline_delta_report["passed"],
+            )
+        )
+    weighted_score_report = report.get("weighted_score_report")
+    if weighted_score_report is not None:
+        print(
+            "[codegen-benchmark] weighted score: overall_ratio={0:.4f}, passed={1}, weights(cprofile={2:.2f}, time={3:.2f})".format(
+                weighted_score_report["overall_weighted_ratio"],
+                weighted_score_report["passed"],
+                weighted_score_report["weights"]["cprofile"],
+                weighted_score_report["weights"]["time"],
             )
         )
 

@@ -23,7 +23,7 @@ Before compaction, review these files in order:
 - `AGENTS.MD`
 - `agent_onboarding/default/general/skills/execution_contract.md`
 - `config/context_compass_config.yaml`
-- `router.md`
+- `context_compass/SKILLS.md`
 - `agent_onboarding/default/general/SKILLS.MD`
 - `agent_onboarding/default/engineer/SKILLS.MD`
 - `agent_onboarding/default/general/skills/compaction_requirements.md`

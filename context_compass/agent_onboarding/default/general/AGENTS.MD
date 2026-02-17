@@ -1,5 +1,9 @@
 # AGENTS.MD - Default General Baseline Policy
 
+## PRIME DIRECTIVE
+All Paths within SKILLS.MD DOCUMENTS MUST BE READ to be considered certifiable otherwise certification
+will be DENIED.
+
 ## Document Intent
 
 This is a high-level reinforcer document that defines behavior expectations for

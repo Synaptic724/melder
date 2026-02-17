@@ -8,7 +8,7 @@ Checklist (short form)
    - Read `AGENTS.MD` and any directory-local `AGENTS.MD` in scope.
 2) Read onboarding entrypoints
    - `config/context_compass_config.yaml`
-   - `router.md`
+   - `context_compass/SKILLS.md`
    - `agent_onboarding/default/new/skills/first_time_profile_setup.md`
    - `agent_onboarding/default/new/README.md` (allowed only for `new` profile)
 3) Select career (engineer)
@@ -27,5 +27,5 @@ Checklist (short form)
 References
 - `AGENTS.MD`
 - `config/context_compass_config.yaml`
-- `router.md`
+- `context_compass/SKILLS.md`
 

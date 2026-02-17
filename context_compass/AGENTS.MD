@@ -1,9 +1,13 @@
 # AGENTS.md - Public Library Editing Contract
 
-## Prime Bootstrap Policies (Root-Migrated)
+## Prime Bootstrap Policies
 
-These directives are migrated from repository-root `agents.md` and are treated
-as top-priority bootstrap enforcement rules.
+### Execution Order
+
+- Before running tools, editing files, or executing commands, complete
+  onboarding from `context_compass/AGENTS.md`.
+- If there is any conflict between repository-root `agents.md` and
+  `context_compass/AGENTS.md`, `context_compass/AGENTS.md` is authoritative.
 
 ### Onboarding Directive
 
@@ -39,16 +43,6 @@ as top-priority bootstrap enforcement rules.
 - Post `REONBOARD: COMPLETE` attestation (with env + reread files +
   `NO_ACTION_TAKEN_YET: true`) before any action.
 
-### Execution Order
-
-- Before running tools, editing files, or executing commands, complete
-  onboarding from `context_compass/AGENTS.md`.
-- If there is any conflict between repository-root `agents.md` and
-  `context_compass/AGENTS.md`, `context_compass/AGENTS.md` is authoritative.
-- During debugging/fix work, apply profile-resolved engineering rules from the
-  active role chain (for example,
-  `context_compass/agent_onboarding/default/engineer/skills/technical_expertise.md`
-  when `engineer` or inheriting overlays are active).
 
 ## Highest Priority Adherence (Compaction Re-Onboarding)
 

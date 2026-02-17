@@ -94,7 +94,7 @@ References
 - `agent_onboarding/default/general/skills/active_documentation.md`
 - `agent_onboarding/default/general/skills/compaction_requirements.md`
 - `agent_onboarding/default/general/skills/workflow.md`
-- `router.md`
+- `context_compass/SKILLS.md`
 
 
 

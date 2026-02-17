@@ -7,7 +7,7 @@ Purpose
 
 First-time setup sequence
 1) Start from `AGENTS.MD` bootstrap rules.
-2) Read `router.md` and configuration authority in
+2) Read `context_compass/SKILLS.md` and configuration authority in
    `config/context_compass_config.yaml`.
 3) Explain the system purpose and onboarding model using:
    - `system_overview_for_user.md`
@@ -26,8 +26,6 @@ Profile intent summary
 - `engineer`:
   programming/testing/architecture/code-construction specialization layered on
   top of `general`.
-- `user_defined/synaptic_python_developer`:
-  user preference overlay layered on `engineer`.
 
 User-facing recommendation
 - This system is designed for code development and supports any language.
@@ -42,6 +40,9 @@ Rules
 - Treat skill-map headers as authoritative for inheritance order.
 
 References
+- `context_compass/AGENTS.MD`
+- `context_compass/config/context_compass_config.yaml`
+- `context_compass/SKILLS.md`
 - `agent_onboarding/default/general/SKILLS.MD`
 - `agent_onboarding/default/engineer/SKILLS.MD`
 - `agent_onboarding/default/new/SKILLS.MD`

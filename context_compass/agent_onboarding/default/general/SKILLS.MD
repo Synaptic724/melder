@@ -8,6 +8,7 @@ Inheritance
 
 Activation rule
 - All paths listed below are active skills for this role.
+- YOU MUST READ ALL PATHS BELOW for all these skills to be considered active.
 
 Active skills
 - `agent_onboarding/default/general/AGENTS.MD`

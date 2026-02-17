@@ -6,7 +6,7 @@
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-17T15:53:33Z
-- Updated: 2026-02-17T15:53:33Z
+- Updated: 2026-02-17T17:00:02Z
 - Target Window: 2026-Q1
 - Related Program/Initiative: Codegen Runtime Optimization
 
@@ -87,7 +87,7 @@ speed changes that regress correctness or observability.
 - `src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py`
 
 ## Milestones (Track Progress)
-- [ ] Milestone 1: Discovery and baseline complete.
+- [x] Milestone 1: Discovery and baseline complete.
 - [ ] Milestone 2: Approved optimization candidates and implementation plan.
 
 ## Stories (Required to Complete)
@@ -98,7 +98,7 @@ speed changes that regress correctness or observability.
 - [ ] Task: TASK-2026-02-17-phase12-no-overrides-discovery
 - [ ] Task: TASK-2026-02-17-phase12-overrides-discovery
 - [ ] Task: TASK-2026-02-17-creation-context-discovery
-- [ ] Task: TASK-2026-02-17-codegen-benchmark-pcore-baseline-and-scoring
+- [x] Task: TASK-2026-02-17-codegen-benchmark-pcore-baseline-and-scoring
 
 ## Acceptance Criteria (Epic Done)
 - Discovery story accepted by user.
@@ -131,7 +131,7 @@ speed changes that regress correctness or observability.
 - Which hot-path call stacks are primary targets for call-count reduction?
 
 ## Decision Log
-- Pending discovery.
+- Pending wave-1 candidate approval.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false
@@ -155,6 +155,95 @@ speed changes that regress correctness or observability.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-02-17T16:20:08Z
+  TYPE: FACT
+  CLAIM: Benchmark protocol task closed with pinned-core baseline/comparison
+    evidence and weighted 75/25 scoring now in the benchmark schema.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-02-17_codegen_benchmark_pcore_baseline_and_scoring_task_completed.md:1-215
+  - benchmarks/testing_other_di/run_codegen_benchmark_deltas.py:1298-1349
+  - benchmarks/testing_other_di/results/codegen_benchmark_after.json:807-853
+  IMPACT: Epic can move from benchmark-protocol setup into location discovery
+    and risk-ranked optimization option generation.
+  NEXT: Execute remaining discovery tasks and produce medium/high-risk option
+    synthesis.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-02-17T16:48:45Z
+  TYPE: PLAN
+  CLAIM: Epic discovery execution has resumed with no-overrides task activation
+    and first hotspot evidence capture underway.
+  EVIDENCE:
+  - context_compass/attention_board.md:23-45
+  - tickets/tasks/2026-02-17_phase12_no_overrides_executor_discovery_task.md:3-111
+  - tickets/stories/2026-02-17_phase12_creation_context_discovery_and_benchmark_story.md:108-149
+  IMPACT: Milestone 1 work has moved from setup into active per-location
+    discovery needed for medium/high-risk option synthesis.
+  NEXT: Complete no-overrides discovery deliverables, then route to overrides
+    and creation-context tasks.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-02-17T16:52:56Z
+  TYPE: FACT
+  CLAIM: First location discovery lane now has a complete no-overrides option
+    package with risk ranking and call-count impact direction.
+  EVIDENCE:
+  - tickets/tasks/2026-02-17_phase12_no_overrides_executor_discovery_task.md:53-71
+  - tickets/tasks/2026-02-17_phase12_no_overrides_executor_discovery_task.md:148-172
+  - tickets/stories/2026-02-17_phase12_creation_context_discovery_and_benchmark_story.md:108-164
+  IMPACT: Epic Milestone 1 has moved from activation to substantive option
+    generation, reducing remaining discovery to overrides and creation-context.
+  NEXT: Execute overrides and creation-context discovery tasks, then synthesize
+    cross-location medium/high-risk recommendations.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-02-17T16:55:17Z
+  TYPE: FACT
+  CLAIM: Discovery progression reached second lane activation: no-overrides is
+    in review and overrides has risk-ranked candidates documented.
+  EVIDENCE:
+  - tickets/tasks/2026-02-17_phase12_no_overrides_executor_discovery_task.md:3-172
+  - tickets/tasks/2026-02-17_phase12_overrides_executor_discovery_task.md:3-128
+  - context_compass/attention_board.md:23-59
+  IMPACT: Epic Milestone 1 now has two location lanes populated, leaving only
+    creation-context discovery before cross-lane ranking.
+  NEXT: Run creation-context discovery task and produce final synthesis package.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-02-17T16:58:00Z
+  TYPE: FACT
+  CLAIM: Discovery coverage is now complete across all three location tasks with
+    documented medium/high candidate tables and benchmark-aligned hotspot anchors.
+  EVIDENCE:
+  - tickets/tasks/2026-02-17_phase12_no_overrides_executor_discovery_task.md:53-172
+  - tickets/tasks/2026-02-17_phase12_overrides_executor_discovery_task.md:53-155
+  - tickets/tasks/2026-02-17_creation_context_discovery_task.md:55-155
+  - tickets/stories/2026-02-17_phase12_creation_context_discovery_and_benchmark_story.md:62-180
+  IMPACT: Epic is ready to move from discovery into user-approved implementation
+    wave planning with explicit risk-ranked candidate choices.
+  NEXT: Present consolidated shortlist and request user approval for wave 1.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-02-17T17:00:02Z
+  TYPE: DECISION_REQUEST
+  CLAIM: Epic wave-1 shortlist is prepared for approval with medium set
+    {NR-M1, OR-M1, CC-M2} and high set {OR-H1, CC-H1, NR-H2}.
+  EVIDENCE:
+  - tickets/stories/2026-02-17_phase12_creation_context_discovery_and_benchmark_story.md:98-192
+  - tickets/tasks/2026-02-17_phase12_no_overrides_executor_discovery_task.md:64-71
+  - tickets/tasks/2026-02-17_phase12_overrides_executor_discovery_task.md:64-72
+  - tickets/tasks/2026-02-17_creation_context_discovery_task.md:64-72
+  IMPACT: Milestone 2 can begin immediately after candidate selection without
+    additional discovery delay.
+  NEXT: User selects approved wave-1 candidate IDs and permitted risk class.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -166,6 +255,5 @@ speed changes that regress correctness or observability.
 - Keep notes append-only and preserve UNKNOWN-first promotion discipline.
 
 ## Context / Handoff Summary
-Epic started to structure Phase 12 and `CreationContext` optimization work with
-mandatory pinned-core before/after benchmarking and weighted cProfile+time
-scoring.
+Epic remains in progress with discovery complete across all lanes; next action
+is user-approved implementation-wave selection from ranked candidates.

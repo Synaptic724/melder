@@ -17,7 +17,7 @@ Safety rules
 - Prefer concise, evidence-based notes over speculative memory.
 
 References
-- `router.md`
+- `context_compass/SKILLS.md`
 - `agent_onboarding/default/general/skills/workflow.md`
 - `agent_onboarding/default/general/skills/active_documentation.md`
 

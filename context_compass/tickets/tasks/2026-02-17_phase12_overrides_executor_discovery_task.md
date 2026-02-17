@@ -3,11 +3,11 @@
 ## Metadata
 - Task ID: TASK-2026-02-17-phase12-overrides-discovery
 - Story: STORY-2026-02-17-phase12-creation-context-discovery-and-benchmark
-- Status: ready
+- Status: review
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-17T15:53:33Z
-- Updated: 2026-02-17T15:53:33Z
+- Updated: 2026-02-17T16:59:29Z
 
 ## Objective
 Identify medium-risk and high-risk optimization candidates in
@@ -30,15 +30,16 @@ Identify medium-risk and high-risk optimization candidates in
   - implementation changes in this task
 
 ## State Transition Event
-- from_state: draft
-- to_state: ready
-- transition_reason: task created for user-requested per-location discovery.
+- from_state: in_progress
+- to_state: review
+- transition_reason: overrides hotspots and risk-ranked options are documented,
+  so task moved to review while routing advances to creation-context lane.
 
 ## Steps / Checklist
-- [ ] Identify compile-time and runtime override hot paths.
-- [ ] Draft medium-risk optimization options.
-- [ ] Draft high-risk optimization options.
-- [ ] Estimate cProfile call-count and route-time impact per option.
+- [x] Identify compile-time and runtime override hot paths.
+- [x] Draft medium-risk optimization options.
+- [x] Draft high-risk optimization options.
+- [x] Estimate cProfile call-count and route-time impact per option.
 - [ ] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
@@ -48,6 +49,27 @@ Identify medium-risk and high-risk optimization candidates in
 ## Deliverables
 - Hotspot summary for overrides lane.
 - Medium-risk and high-risk candidate table with tradeoffs.
+
+## Hotspot Summary
+- Overrides execution still shows `_phase12_executor` as a top cumulative-time
+  function under override routes, and `_raise_override_on_existing_instance`
+  remains on the hot-path call list.
+- Generic overrides source emission performs a large per-step branch lattice in
+  `_append_overrides_step_source` (target-kind, existence, lock, override
+  checks) before reaching construction/register calls.
+- Compile-time prefiltering and kwargs assembly remain heavy in
+  `_build_step_override_targets` and `_build_kwargs_with_overrides`, especially
+  when specialization cannot fully remove runtime map/dependency handling.
+
+## Candidate Table
+| Candidate | Risk | Target | Expected cProfile impact | Tradeoffs |
+|---|---|---|---|---|
+| OR-M1 | Medium | Prefer shape-specialized executor emission path for all eligible plans and reduce fallback use of generic `_append_overrides_step_source`. | Lower branch depth inside `<melder_phase12_overrides_executor>` and reduce helper frames in override routes. | Requires strict shape eligibility checks to avoid semantic drift. |
+| OR-M2 | Medium | Expand static override-target-count specialization to remove more runtime dict/map churn in construct+kwargs lanes. | Fewer per-step override-map lookups and lower route-time variance when targeted overrides are sparse. | Benefit depends on actual override target cardinality distributions. |
+| OR-M3 | Medium | Strengthen `_build_step_override_targets` cache reuse across compile calls (prefilter tuples + path metadata). | Reduces compile-time socket path traversal and repeated prefilter frames on rebuilds. | Compile-heavy benefit; smaller effect on steady-state warm calls. |
+| OR-H1 | High | Unify on fully inlined shape source for kwargs/dependency assembly and retire generic helper-heavy path for most plans. | Potential 10-20% call-volume reduction within overrides executor lane by removing runtime helper dispatch. | High correctness risk around override precedence and error translation parity. |
+| OR-H2 | High | Introduce native fast path for override existing-instance checks and register/reuse operations. | Potential double-digit reduction in Python call frames for override-heavy workloads. | Native parity, portability, and maintenance complexity are high. |
+| OR-H3 | High | Precompute per-step override param maps upstream (CreationContext) and pass compact step payloads into overrides executor. | Shifts repeated override socket scans out of hot executor path; lowers per-step map assembly overhead. | Requires cross-module contract changes and careful cache invalidation rules. |
 
 ## Files / Paths Impacted
 - `src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py`
@@ -68,12 +90,12 @@ Identify medium-risk and high-risk optimization candidates in
 - [ ] No closure without acceptance confirmation and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
 - [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
 - [ ] Applicable anti-pattern checks are clear or escalated with evidence.
 - [ ] Acceptance criteria reviewed with user and confirmed
@@ -107,5 +129,27 @@ Identify medium-risk and high-risk optimization candidates in
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
 
+- DATETIME: 2026-02-17T16:55:17Z
+  TYPE: STRATEGY_DISCUSSION
+  CLAIM: Overrides discovery produced three medium-risk and three high-risk
+    candidates centered on step-source branch depth, override-target prefilter
+    cost, and kwargs assembly overhead.
+  EVIDENCE:
+  - src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:537-606
+  - src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2201-2360
+  - src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2537-2608
+  - src/melder/spellbook/spell_crafter/blueprints/phase12_overrides_executor.py:2759-2840
+  - benchmarks/testing_other_di/results/codegen_benchmark_baseline.json:308-313
+  - benchmarks/testing_other_di/results/codegen_benchmark_baseline.json:427-432
+  - benchmarks/testing_other_di/results/codegen_benchmark_after.json:368-373
+  - benchmarks/testing_other_di/results/codegen_benchmark_after.json:487-492
+  IMPACT: Second discovery lane now has risk-ranked options and measured
+    hotspot anchors for story-level synthesis.
+  NEXT: Route to creation-context discovery and finalize cross-location option
+    ranking.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
-Task created and scoped to overrides Phase 12 discovery and option design.
+Task is in review with overrides hotspot evidence and medium/high candidate
+table ready for cross-task synthesis.

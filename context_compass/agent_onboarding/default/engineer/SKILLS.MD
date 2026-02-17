@@ -8,6 +8,7 @@ Inheritance
 
 Activation rule
 - All paths listed below are active skills for this role.
+- YOU MUST READ ALL PATHS BELOW for all these skills to be considered active.
 - This role inherits all active skills from `general`.
 
 Active skills
@@ -26,18 +27,11 @@ Active skills
 - `agent_onboarding/default/engineer/behavioral_guidelines/task_execution_and_validation.md`
 - `agent_onboarding/default/engineer/examples/artifact_workflow.md`
 - `agent_onboarding/default/engineer/examples/eng_task_flow.md`
-
-# Optional documentation below:
-    if writing code or understanding the code you must read these:
-    - `system_docs/src_architecture.md`
-    - `system_docs/src_components.md`
-
-    if writing tests you must read these:
-    - `system_docs/tests_architecture.md`
-    - `system_docs/tests_components.md`
-
-    if updating system documents:
-    - `agent_onboarding/default/engineer/skills/src_architecture_instructions.md`
-    - `agent_onboarding/default/engineer/skills/src_components_instructions.md`
-    - `agent_onboarding/default/engineer/skills/tests_architecture_instructions.md`
-    - `agent_onboarding/default/engineer/skills/tests_components_instructions.md`
+- `agent_onboarding/default/engineer/skills/src_architecture_instructions.md`
+- `agent_onboarding/default/engineer/skills/src_components_instructions.md`
+- `agent_onboarding/default/engineer/skills/tests_architecture_instructions.md`
+- `agent_onboarding/default/engineer/skills/tests_components_instructions.md`
+- `system_docs/tests_architecture.md`
+- `system_docs/tests_components.md`
+- `system_docs/src_architecture.md`
+- `system_docs/src_components.md`

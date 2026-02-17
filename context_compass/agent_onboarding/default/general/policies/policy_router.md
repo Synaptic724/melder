@@ -111,12 +111,11 @@ Summary
 * Keep onboarding, certification, and ticket routing deterministic.
 
 Order of authority (highest to lowest)
-1) AGENTS.override.md in the working directory (if present)
-2) AGENTS.MD
-3) agent_onboarding/default/general/skills/*
-4) agent_onboarding/default/general/examples/*
-5) Repo documentation (README, docs/)
-6) Code (last resort)
+1) AGENTS.MD and any other known AGENTS.MD read by you.
+2) SKILLS.MD and any other SKILLS.MD read by you
+3) EXAMPLE DOCUMENTATION
+4) Repo documentation (README, docs/)
+5) Code (last resort)
 
 Operational guidance (enriched)
 - Do not improvise conventions; mirror the skills and examples.

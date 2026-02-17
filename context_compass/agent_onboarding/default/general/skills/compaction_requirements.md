@@ -29,30 +29,14 @@ External-memory-first rule
 
 Required post-compaction sequence
 Run this sequence once per trigger event.
-1) Read `AGENTS.MD`.
-2) Read `execution_contract.md` in full immediately after `AGENTS.MD`.
-3) Read `config/context_compass_config.yaml`.
-4) Read `SKILLS.md`.
-5) Read `agent_onboarding/default/new/skills/first_time_profile_setup.md`.
-6) Read `agent_onboarding/default/general/SKILLS.MD` in full order.
-7) Read `agent_onboarding/default/engineer/SKILLS.MD` in full order.
-8) Re-read `workflow.md` and `context_compaction.md`.
-9) Complete role-driven onboarding reads from:
-   - `context_compass/config/context_compass_config.yaml`
-   - `context_compass/SKILLS.md`
-   - resolved role `SKILLS.MD` chain
-     (`agent_onboarding/default/general/SKILLS.MD`,
-      `agent_onboarding/default/engineer/SKILLS.MD`,
-      and user-defined `SKILLS.MD` when active)
-10) Re-open `attention_board.md` and process rows with `reread=REQUIRED`.
-10a) If active tickets include artifacts, re-open `artifact_board.md` and
-    process active artifact rows.
-11) Re-open active tickets and verify their `Notes` and `Context / Handoff Summary`.
-12) Request certification and wait for exact user approval phrase:
-   - `CERTIFY: APPROVED (active)` or
-   - `CERTIFY: APPROVED (inactive)`
-13) Publish a re-onboarding attestation message before any action.
-14) Include a concise read-integrity proof in the attestation (concrete rule callouts from reread docs).
+
+# Re-Onboarding
+
+You must re-onboard as an agent via context_compass/agents.md,
+this means you must remember your role that you chose such as `general`, `engineer`, or some user defined role.
+If you do not remember your role please ask the user for the role he wants to use.
+
+# After Onboarding
 
 README policy
 - README reads are allowed only for `new` first-time onboarding flow.
