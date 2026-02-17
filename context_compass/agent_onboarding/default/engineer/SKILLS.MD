@@ -10,26 +10,15 @@ Activation rule
 - All paths listed below are active skills for this role.
 - This role inherits all active skills from `general`.
 
-System docs rule - `context_compass\system_docs`
-- `read src_architecture and src_components if they exist`
-
 Active skills
 - `agent_onboarding/default/engineer/AGENTS.MD`
 - `agent_onboarding/default/engineer/skills/engineer_execution.md`
 - `agent_onboarding/default/engineer/skills/technical_expertise.md`
 - `agent_onboarding/default/engineer/skills/system_orientation.md`
 - `agent_onboarding/default/engineer/skills/architecture_contexts.md`
-- `agent_onboarding/default/engineer/skills/src_architecture_instructions.md`
-- `agent_onboarding/default/engineer/skills/src_components_instructions.md`
-- `agent_onboarding/default/engineer/skills/tests_architecture_instructions.md`
-- `agent_onboarding/default/engineer/skills/tests_components_instructions.md`
 - `agent_onboarding/default/engineer/skills/documentation_standards.md`
 - `agent_onboarding/default/engineer/skills/context_protocol.md`
 - `agent_onboarding/default/engineer/skills/staleness_protocol.md`
-- `system_docs/src_architecture.md`
-- `system_docs/src_components.md`
-- `system_docs/tests_architecture.md`
-- `system_docs/tests_components.md`
 - `agent_onboarding/default/engineer/policies/engineer_quality_policy.md`
 - `agent_onboarding/default/engineer/policies/ctx_autonomy_policy.md`
 - `agent_onboarding/default/engineer/policies/ctx_autonomy_rubric.md`
@@ -37,3 +26,18 @@ Active skills
 - `agent_onboarding/default/engineer/behavioral_guidelines/task_execution_and_validation.md`
 - `agent_onboarding/default/engineer/examples/artifact_workflow.md`
 - `agent_onboarding/default/engineer/examples/eng_task_flow.md`
+
+# Optional documentation below:
+    if writing code or understanding the code you must read these:
+    - `system_docs/src_architecture.md`
+    - `system_docs/src_components.md`
+
+    if writing tests you must read these:
+    - `system_docs/tests_architecture.md`
+    - `system_docs/tests_components.md`
+
+    if updating system documents:
+    - `agent_onboarding/default/engineer/skills/src_architecture_instructions.md`
+    - `agent_onboarding/default/engineer/skills/src_components_instructions.md`
+    - `agent_onboarding/default/engineer/skills/tests_architecture_instructions.md`
+    - `agent_onboarding/default/engineer/skills/tests_components_instructions.md`

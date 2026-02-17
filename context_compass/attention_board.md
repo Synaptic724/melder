@@ -23,12 +23,30 @@ Attention details rule
 ## Active Items
 | work_item | status | mode | owner | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 |---|---|---|---|---|---|---|---|---|---|---|
-| none | none | none | none | none | none | none | none | none | 2026-02-17T08:44:28Z | HELPFUL |
+| story: phase12 and creation context optimization discovery | in_progress | discovery | codex | none | execute per-location discovery tasks and finalize risk-ranked options | benchmark-ready discovery package with medium/high-risk options | user approves implementation wave based on discovery outputs | `tickets/stories/2026-02-17_phase12_creation_context_discovery_and_benchmark_story.md` | 2026-02-17T15:53:33Z | REQUIRED |
 
 ## Active Attention Details
-- none
+- DATETIME: 2026-02-17T15:53:33Z
+  TYPE: PLAN
+  CLAIM: Discovery lane is established with one epic, one story, and four tasks
+    covering `creation_context`, Phase12 no-overrides, Phase12 overrides, and
+    pinned-core benchmark/scoring protocol.
+  EVIDENCE:
+  - tickets/epics/2026-02-17_phase12_creation_context_codegen_performance_improvement_epic.md:1-170
+  - tickets/stories/2026-02-17_phase12_creation_context_discovery_and_benchmark_story.md:1-140
+  - tickets/tasks/2026-02-17_phase12_no_overrides_executor_discovery_task.md:1-126
+  - tickets/tasks/2026-02-17_phase12_overrides_executor_discovery_task.md:1-126
+  - tickets/tasks/2026-02-17_creation_context_discovery_task.md:1-129
+  - tickets/tasks/2026-02-17_codegen_benchmark_pcore_baseline_and_scoring_task.md:1-129
+  IMPACT: Work can proceed deterministically with explicit location ownership
+    and benchmark success rules.
+  NEXT: Start with benchmark protocol task, then run location discovery tasks.
+  SWITCH_TRIGGER: benchmark protocol and discovery findings are approved for
+    implementation wave.
+  RESUME_HIERARCHY: story -> benchmark task -> location discovery tasks -> epic.
+  REREAD: REQUIRED
 
 ## Recently Closed Anchors
 | work_item | status | owner | blocker | next | ticket | updated_at | reread |
 |---|---|---|---|---|---|---|---|
-| none | none | none | none | none | none | 2026-02-17T08:44:28Z | HELPFUL |
+| task: split root AGENTS into bootstrap and profile-owned policies | done | codex | none | none | `tickets/tasks/completed/2026-02-17_agents_bootstrap_split_and_profile_distribution_task_completed.md` | 2026-02-17T15:53:33Z | HELPFUL |
