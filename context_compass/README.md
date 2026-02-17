@@ -15,7 +15,7 @@ Core operating model
 
 Primary docs
 - `AGENTS.MD`: repository operating contract.
-- `router.md`: onboarding/profile routing contract.
+- `context_compass/SKILLS.md`: onboarding/profile routing contract.
 - `agent_onboarding/default/general/skills/workflow.md`: ticket lifecycle and closure rules.
 - `agent_onboarding/default/general/skills/ticket_microcycle.md`: strict/relaxed ticket microcycle definition.
 - `agent_onboarding/default/general/skills/context_compaction.md`: compaction/handoff policy.
@@ -35,7 +35,7 @@ Policy anchors
 Packaging model
 - `agent_onboarding/`:
   - Default profile baselines and user-defined overlays.
-- `router.md`:
+- `context_compass/SKILLS.md`:
   - Active role routing and role-selection directive.
 - `agent_onboarding/*/SKILLS.MD`:
   - Per-role active-skill lists and inheritance chaining.
