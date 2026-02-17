@@ -23,58 +23,25 @@ Attention details rule
 ## Active Items
 | work_item | status | mode | owner | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 |---|---|---|---|---|---|---|---|---|---|---|
-| task: codex attempts implementation | review | validation | codex | none | review high-confidence benchmark evidence and confirm acceptance for closure | acceptance decision on codex attempt tranche after weighted pass under expanded sampling | user confirms acceptance criteria and closure handling | `tickets/tasks/2026-02-17_phase12_codex_attempts_implementation_task.md` | 2026-02-17T20:53:52Z | REQUIRED |
+| story: codex discovery follow-up selection | in_progress | discovery | codex | none | select the next codex_discovery optimization candidate and open a scoped task | benchmark-backed next-tranche plan after closure of first codex implementation task | user confirms next candidate scope and risk boundary | `tickets/stories/2026-02-17_phase12_creation_context_codegen_codex_discovery_story.md` | 2026-02-17T21:00:42Z | REQUIRED |
 
 ## Active Attention Details
-- DATETIME: 2026-02-17T20:53:52Z
-  TYPE: MEASURE
-  CLAIM: High-confidence rerun with expanded samples/profile iterations passed
-    weighted scoring and showed targeted override route median improvement over
-    pre-change baseline.
+- DATETIME: 2026-02-17T21:00:42Z
+  TYPE: DECISION
+  CLAIM: The codex attempts implementation task is closed after user-accepted
+    high-confidence benchmark evidence, and active routing returns to story-level
+    next-tranche selection.
   EVIDENCE:
-  - tickets/tasks/2026-02-17_phase12_codex_attempts_implementation_task.md:304-320
+  - tickets/tasks/completed/2026-02-17_phase12_codex_attempts_implementation_task_completed.md:1-15
+  - tickets/tasks/completed/2026-02-17_phase12_codex_attempts_implementation_task_completed.md:304-329
   - benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts_high_samples.json:170-193
   - benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts_high_samples.json:904-936
-  IMPACT: Active routing shifts from next-candidate selection to acceptance
-    review for the current codex implementation tranche.
-  NEXT: ask user to confirm acceptance criteria and close the active task if
-    approved.
-  SWITCH_TRIGGER: user confirms acceptance criteria and closure handling.
-  RESUME_HIERARCHY: codex attempts task -> codex discovery story -> phase12 epic.
-  REREAD: REQUIRED
-
-- DATETIME: 2026-02-17T20:21:05Z
-  TYPE: MEASURE
-  CLAIM: Codex implementation tranche completed with empty-dict override
-    normalization and unbounded override-cache policy, but post-change weighted
-    score did not improve due to targeted-override regression.
-  EVIDENCE:
-  - tickets/tasks/2026-02-17_phase12_codex_attempts_implementation_task.md:209-284
-  - tickets/stories/2026-02-17_phase12_creation_context_codegen_codex_discovery_story.md:109-209
-  - tickets/epics/2026-02-17_phase12_creation_context_codegen_performance_improvement_epic.md:424-437
-  - benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts.json:176-194
-  - benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts.json:812-841
-  IMPACT: Current lane is now in review/selection mode instead of active
-    implementation, with clear benchmark evidence for next-tranche choice.
-  NEXT: choose the next optimization candidate under codex_discovery and keep
-    benchmark-before-edit gate unchanged.
-  SWITCH_TRIGGER: user approves next candidate scope for implementation.
-  RESUME_HIERARCHY: codex attempts task -> codex discovery story -> phase12 epic.
-  REREAD: REQUIRED
-
-- DATETIME: 2026-02-17T19:25:58Z
-  TYPE: DECISION
-  CLAIM: Active routing moved from Codex discovery story to a new implementation
-    task lane for scoped Phase12/CreationContext attempts.
-  EVIDENCE:
-  - tickets/tasks/2026-02-17_phase12_codex_attempts_implementation_task.md:1-145
-  - tickets/stories/2026-02-17_phase12_creation_context_codegen_codex_discovery_story.md:69-74
-  IMPACT: Implementation now proceeds under a task-level boundary with explicit
-    benchmark-first gating.
-  NEXT: execute mandatory pre-change benchmark before runtime code edits.
-  SWITCH_TRIGGER: pre-change benchmark evidence is captured and implementation
-    edits are complete with post-change validation.
-  RESUME_HIERARCHY: codex attempts task -> codex discovery story -> phase12 epic.
+  IMPACT: Task lane is no longer active; next execution returns to codex discovery
+    planning under the same epic benchmark gate.
+  NEXT: select the next optimization candidate in the codex discovery story and
+    create a new scoped implementation task if approved.
+  SWITCH_TRIGGER: user confirms the next candidate scope and risk boundary.
+  RESUME_HIERARCHY: codex discovery story -> phase12 epic.
   REREAD: REQUIRED
 
 - DATETIME: 2026-02-17T19:18:11Z
@@ -263,5 +230,6 @@ Attention details rule
 ## Recently Closed Anchors
 | work_item | status | owner | blocker | next | ticket | updated_at | reread |
 |---|---|---|---|---|---|---|---|
+| task: codex attempts implementation | done | codex | none | route to codex discovery story for next candidate selection | `tickets/tasks/completed/2026-02-17_phase12_codex_attempts_implementation_task_completed.md` | 2026-02-17T21:00:42Z | REQUIRED |
 | task: benchmark p-core baseline and weighted scoring | done | codex | none | route to story-level discovery and location tasks | `tickets/tasks/completed/2026-02-17_codegen_benchmark_pcore_baseline_and_scoring_task_completed.md` | 2026-02-17T16:20:08Z | REQUIRED |
 | task: split root AGENTS into bootstrap and profile-owned policies | done | codex | none | none | `tickets/tasks/completed/2026-02-17_agents_bootstrap_split_and_profile_distribution_task_completed.md` | 2026-02-17T15:53:33Z | HELPFUL |

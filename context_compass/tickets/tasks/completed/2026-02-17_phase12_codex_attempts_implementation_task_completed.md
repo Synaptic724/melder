@@ -1,13 +1,17 @@
+- Completed: 2026-02-17T20:59:58Z
+- Summary: Closed after user acceptance of the codex attempt tranche and closure directive.
+- Summary: Delivered empty-override normalization with unbounded cache policy and high-confidence weighted benchmark pass.
+
 # Task: Implement Codex Attempts For Phase12 Override Semantics And Cache Discipline
 
 ## Metadata
 - Task ID: TASK-2026-02-17-phase12-codex-attempts-implementation
 - Story: STORY-2026-02-17-phase12-creation-context-codegen-codex-discovery
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-17T19:25:58Z
-- Updated: 2026-02-17T20:53:52Z
+- Updated: 2026-02-17T20:59:58Z
 
 ## Objective
 Implement the first Codex attempt set from discovery findings:
@@ -45,10 +49,10 @@ Implement the first Codex attempt set from discovery findings:
   - public API shape changes.
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: user requested implementation attempts immediately after
-  enforcing benchmark-before-change epic gate.
+- from_state: review
+- to_state: done
+- transition_reason: user confirmed acceptance criteria and directed closure
+  continuation for this task lane.
 
 ## Steps / Checklist
 - [x] Run pre-change pinned-core baseline benchmark and record evidence.
@@ -77,11 +81,15 @@ Implement the first Codex attempt set from discovery findings:
 - `benchmarks/testing_other_di/results/`
 
 ## Validation
-- Not run.
-- Planned commands:
+- Executed:
   - `$env:PYTHONPATH='.;src'; python benchmarks/testing_other_di/run_codegen_benchmark_deltas.py --pin-p-cores --profile-iteration-count 5 --baseline-path benchmarks/testing_other_di/results/codegen_benchmark_baseline.json --output-path benchmarks/testing_other_di/results/codegen_benchmark_prechange_current_branch.json --allow-baseline-regression`
   - `$env:PYTHONPATH='.;src'; python -m pytest -q tests/unit/melder/aether/conduit/meld/test_meld.py tests/unit/melder/aether/conduit/meld/creation_context/test_creation_context.py`
   - `$env:PYTHONPATH='.;src'; python benchmarks/testing_other_di/run_codegen_benchmark_deltas.py --pin-p-cores --profile-iteration-count 5 --baseline-path benchmarks/testing_other_di/results/codegen_benchmark_prechange_current_branch.json --output-path benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts.json --allow-baseline-regression`
+  - `$env:PYTHONPATH='.;src'; python benchmarks/testing_other_di/run_codegen_benchmark_deltas.py --pin-p-cores --sample-count 21 --profile-iteration-count 25 --baseline-path benchmarks/testing_other_di/results/codegen_benchmark_prechange_current_branch.json --output-path benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts_high_samples.json --allow-baseline-regression`
+- Result:
+  - targeted pytest suite passed.
+  - high-confidence benchmark report passed weighted score gate with
+    `overall_weighted_ratio=0.9697239991710799`.
 
 ## Risks / Rollback Notes
 - Risk: empty override normalization changes existing caller expectations.
@@ -92,21 +100,21 @@ Implement the first Codex attempt set from discovery findings:
   revisit only if future profiling shows memory pressure.
 
 ## Applicable Anti-Patterns
-- [ ] No implementation edit before pre-change baseline evidence.
-- [ ] No optimization claim without measured benchmark output.
-- [ ] No status transition without evidence-backed notes.
+- [x] No implementation edit before pre-change baseline evidence.
+- [x] No optimization claim without measured benchmark output.
+- [x] No status transition without evidence-backed notes.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false
@@ -320,11 +328,15 @@ Implement the first Codex attempt set from discovery findings:
   SCORE_0_TO_10: 10
 
 ## Context / Handoff Summary
-Task is in review for implementation attempts derived from Codex discovery.
+Task is closed after implementation attempts derived from Codex discovery.
 Pre-change pinned-core benchmark is freshly captured with fast/override split.
 Empty-dict override normalization is implemented and validated, cache policy
 remains unbounded per user direction. The initial post-change 9-sample report
 showed targeted-route regression, but a higher-confidence rerun
 (`sample_count=21`, `profile_iteration_count=25`) passed weighted scoring with
-improved override-route medians versus baseline. Next action is acceptance
-review and task closure decision.
+improved override-route medians versus baseline. Next action routes back to the
+codex discovery story for subsequent candidate planning.
+
+## Closure Note
+Closed by explicit user direction to continue and finalize this accepted task
+lane.
