@@ -23,9 +23,26 @@ Attention details rule
 ## Active Items
 | work_item | status | mode | owner | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 |---|---|---|---|---|---|---|---|---|---|---|
-| task: codex attempts implementation | review | validation | codex | none | select and activate the next codex_discovery optimization candidate | benchmark-backed decision on next optimization tranche after first codex attempt | user confirms next optimization candidate scope | `tickets/tasks/2026-02-17_phase12_codex_attempts_implementation_task.md` | 2026-02-17T20:21:05Z | REQUIRED |
+| task: codex attempts implementation | review | validation | codex | none | review high-confidence benchmark evidence and confirm acceptance for closure | acceptance decision on codex attempt tranche after weighted pass under expanded sampling | user confirms acceptance criteria and closure handling | `tickets/tasks/2026-02-17_phase12_codex_attempts_implementation_task.md` | 2026-02-17T20:53:52Z | REQUIRED |
 
 ## Active Attention Details
+- DATETIME: 2026-02-17T20:53:52Z
+  TYPE: MEASURE
+  CLAIM: High-confidence rerun with expanded samples/profile iterations passed
+    weighted scoring and showed targeted override route median improvement over
+    pre-change baseline.
+  EVIDENCE:
+  - tickets/tasks/2026-02-17_phase12_codex_attempts_implementation_task.md:304-320
+  - benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts_high_samples.json:170-193
+  - benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts_high_samples.json:904-936
+  IMPACT: Active routing shifts from next-candidate selection to acceptance
+    review for the current codex implementation tranche.
+  NEXT: ask user to confirm acceptance criteria and close the active task if
+    approved.
+  SWITCH_TRIGGER: user confirms acceptance criteria and closure handling.
+  RESUME_HIERARCHY: codex attempts task -> codex discovery story -> phase12 epic.
+  REREAD: REQUIRED
+
 - DATETIME: 2026-02-17T20:21:05Z
   TYPE: MEASURE
   CLAIM: Codex implementation tranche completed with empty-dict override

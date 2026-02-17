@@ -6,7 +6,7 @@
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-17T15:53:33Z
-- Updated: 2026-02-17T20:20:28Z
+- Updated: 2026-02-17T20:53:52Z
 - Target Window: 2026-Q1
 - Related Program/Initiative: Codegen Runtime Optimization
 
@@ -437,6 +437,21 @@ speed changes that regress correctness or observability.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-02-17T20:53:52Z
+  TYPE: MEASURE
+  CLAIM: Expanded benchmark confidence run (`sample_count=21`,
+    `profile_iteration_count=25`) passed weighted scoring and removed the
+    earlier small-sample targeted-override regression signal.
+  EVIDENCE:
+  - tickets/tasks/2026-02-17_phase12_codex_attempts_implementation_task.md:304-320
+  - benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts_high_samples.json:170-193
+  - benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts_high_samples.json:904-936
+  IMPACT: Epic Milestone 2 can treat this tranche as review-ready evidence
+    instead of immediate follow-up optimization pressure.
+  NEXT: route to user acceptance/closure decision for the active codex task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -450,6 +465,6 @@ speed changes that regress correctness or observability.
 ## Context / Handoff Summary
 Epic remains in progress with discovery complete across baseline lanes and a new
 Codex-only discovery branch active for additional Phase 12/CreationContext
-codegen review; latest codex attempt completed with benchmark evidence but no
-net weighted improvement, so routing stays in codex_discovery for next-candidate
-selection.
+codegen review; latest codex attempt now has a high-confidence weighted pass
+after expanded benchmarking, so routing moves to acceptance review/closure for
+the active task before selecting another candidate.

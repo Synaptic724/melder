@@ -3,11 +3,11 @@
 ## Metadata
 - Task ID: TASK-2026-02-17-phase12-codex-attempts-implementation
 - Story: STORY-2026-02-17-phase12-creation-context-codegen-codex-discovery
-- Status: in_progress
+- Status: review
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-17T19:25:58Z
-- Updated: 2026-02-17T20:27:25Z
+- Updated: 2026-02-17T20:53:52Z
 
 ## Objective
 Implement the first Codex attempt set from discovery findings:
@@ -59,10 +59,10 @@ Implement the first Codex attempt set from discovery findings:
 - [x] Run targeted pytest validation.
 - [x] Run post-change pinned-core comparison benchmark and record evidence.
 - [x] Update story/epic/task notes with measured results.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further investigation.
+- [x] Document each meaningful finding immediately in `## Notes` before further investigation.
 
 ## Deliverables
 - Code updates for both attempt surfaces.
@@ -301,11 +301,30 @@ Implement the first Codex attempt set from discovery findings:
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-02-17T20:53:52Z
+  TYPE: MEASURE
+  CLAIM: Higher-confidence pinned-core rerun (`sample_count=21`,
+    `profile_iteration_count=25`) produced a weighted pass and removed the
+    earlier small-sample targeted-override regression signal.
+  EVIDENCE:
+  - benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts_high_samples.json:170-193
+  - benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts_high_samples.json:223-223
+  - benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts_high_samples.json:829-829
+  - benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts_high_samples.json:904-936
+  IMPACT: The current implementation tranche no longer indicates net weighted
+    regression under a larger sample/profile window and is ready for user
+    acceptance review.
+  NEXT: sync this result to story/epic/board state and request acceptance for
+    task closure.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
-Task is active for implementation attempts derived from Codex discovery.
+Task is in review for implementation attempts derived from Codex discovery.
 Pre-change pinned-core benchmark is freshly captured with fast/override split.
 Empty-dict override normalization is implemented and validated, cache policy
-remains unbounded per user direction, and post-change benchmark did not produce
-weighted-score improvement; mean+call-data extraction now confirms unchanged
-call volumes with override-lane time regression. Next action is selecting the
-next optimization candidate tranche.
+remains unbounded per user direction. The initial post-change 9-sample report
+showed targeted-route regression, but a higher-confidence rerun
+(`sample_count=21`, `profile_iteration_count=25`) passed weighted scoring with
+improved override-route medians versus baseline. Next action is acceptance
+review and task closure decision.

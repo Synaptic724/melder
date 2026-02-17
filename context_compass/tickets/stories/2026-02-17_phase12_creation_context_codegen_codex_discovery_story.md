@@ -8,7 +8,7 @@
 - Owner: codex
 - Priority: p1
 - Created: 2026-02-17T19:18:11Z
-- Updated: 2026-02-17T20:20:28Z
+- Updated: 2026-02-17T20:53:52Z
 
 ## User Narrative
 As a performance-focused maintainer, I want a fresh Codex-only discovery lane on
@@ -65,7 +65,7 @@ identify high-leverage call-path and specialization-shape risks.
 
 ## Tasks (Implementation Checklist)
 - [x] Convert findings into one scoped task per approved optimization tranche.
-- [ ] Task: TASK-2026-02-17-phase12-codex-attempts-implementation - implement
+- [x] Task: TASK-2026-02-17-phase12-codex-attempts-implementation - implement
       empty override normalization while keeping override cache unbounded.
 - [ ] Require explicit user approval before any runtime code edits.
 - [ ] Keep all discovery findings in story notes with line-range evidence.
@@ -213,6 +213,21 @@ identify high-leverage call-path and specialization-shape risks.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-02-17T20:53:52Z
+  TYPE: MEASURE
+  CLAIM: Higher-confidence pinned-core rerun (`sample_count=21`,
+    `profile_iteration_count=25`) passed weighted scoring and showed targeted
+    override median improvement versus baseline.
+  EVIDENCE:
+  - tickets/tasks/2026-02-17_phase12_codex_attempts_implementation_task.md:304-320
+  - benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts_high_samples.json:170-193
+  - benchmarks/testing_other_di/results/codegen_benchmark_after_codex_attempts_high_samples.json:904-936
+  IMPACT: This implementation tranche is now in acceptance-review state rather
+    than immediate next-candidate selection.
+  NEXT: request user acceptance decision and close task if approved.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
 - [ ] Acceptance criteria confirmed by user
@@ -226,7 +241,8 @@ identify high-leverage call-path and specialization-shape risks.
 - Keep notes append-only and maintain UNKNOWN-first discipline.
 
 ## Context / Handoff Summary
-Codex-only discovery lane is active under the phase-12 epic with initial source
-evidence across `CreationContext` and Phase 12 executors. Immediate next action
-is selecting the next optimization slice after empty-dict normalization landed
-and benchmark results showed no weighted performance improvement.
+Codex-only discovery lane remains active under the phase-12 epic with source
+evidence across `CreationContext` and Phase 12 executors. The first codex
+implementation tranche now has a high-confidence weighted pass after expanded
+sampling/profile iterations, so the immediate next action is user acceptance
+review for task closure.
