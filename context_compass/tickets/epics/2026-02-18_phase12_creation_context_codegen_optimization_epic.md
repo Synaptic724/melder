@@ -326,6 +326,40 @@ that increase complexity without durable performance wins.
   NEXT: Execute tranche 2 optimization and remeasure pinned non-spellspace means.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+- DATETIME: 2026-02-18T10:36:22Z
+  TYPE: DECISION
+  CLAIM: User directed reverting tranche 1 and tranche 2 optimization code; epic execution continues from reverted baseline.
+  EVIDENCE:
+  - tickets/tasks/2026-02-18_creation_context_override_dispatch_micro_optimization_task.md:122-141
+  - tickets/tasks/2026-02-18_targeted_override_patchmap_micro_optimization_task.md:115-134
+  - src/melder/aether/conduit/meld/creation_context/creation_context.py:611-614
+  - src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:302-323
+  IMPACT: Previous tranche code is not retained; next optimization attempt must come from a fresh hotspot slice.
+  NEXT: Start overrides-executor hotspot tranche and benchmark deltas from pinned baseline.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-02-18T10:39:48Z
+  TYPE: MEASURE
+  CLAIM: Tranche 3 overrides-executor kwargs fast-path also regressed mixed route and was reverted.
+  EVIDENCE:
+  - tickets/tasks/2026-02-18_overrides_executor_kwargs_fastpath_task.md:99-128
+  - benchmarks/testing_other_di/results/codegen_discovery_2026-02-18_after_overrides_executor_tranche3.json:652-671
+  - benchmarks/testing_other_di/results/codegen_discovery_2026-02-18_after_overrides_executor_tranche3_r2.json:652-671
+  IMPACT: All attempted tranches to date are reverted; next attempt shifts to no-args invocation hot path.
+  NEXT: Execute no-args invocation fast-path tranche and rerun pinned means.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-02-18T10:42:12Z
+  TYPE: MEASURE
+  CLAIM: Tranche 4 no-args invocation fast path also regressed route means and was reverted.
+  EVIDENCE:
+  - tickets/tasks/2026-02-18_phase12_invoke_no_args_fastpath_task.md:106-125
+  - benchmarks/testing_other_di/results/codegen_discovery_2026-02-18_after_invoke_fastpath_tranche4.json:652-671
+  - benchmarks/testing_other_di/results/codegen_discovery_2026-02-18_after_invoke_fastpath_tranche4_r2.json:652-671
+  IMPACT: Four tranches are reverted; next iteration should increase measurement confidence before editing.
+  NEXT: Run higher-sample pinned route baseline and re-rank ops.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user

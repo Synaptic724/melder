@@ -3,11 +3,11 @@
 ## Metadata
 - Task ID: TASK-2026-02-18-creation-context-override-dispatch-micro-optimization
 - Story: STORY-2026-02-18-codegen-baseline-and-hotspot-map
-- Status: review
+- Status: blocked
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-18T10:26:30Z
-- Updated: 2026-02-18T10:28:00Z
+- Updated: 2026-02-18T10:36:22Z
 
 ## Objective
 Reduce overhead in the first-priority override dispatch path by optimizing
@@ -129,8 +129,19 @@ Reduce overhead in the first-priority override dispatch path by optimizing
   NEXT: Continue with second override-path tranche (patch-map/apply + overrides executor focus) and remeasure.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+- DATETIME: 2026-02-18T10:36:22Z
+  TYPE: DECISION
+  CLAIM: Tranche 1 runtime patch has been reverted per user direction because mixed-route results were not acceptable.
+  EVIDENCE:
+  - src/melder/aether/conduit/meld/creation_context/creation_context.py:611-614
+  - src/melder/aether/conduit/meld/meld.py:965-968
+  - benchmarks/testing_other_di/results/codegen_discovery_2026-02-18_after_cc_override_dispatch.json:652-671
+  IMPACT: Root-args-only gain is no longer active; subsequent work should target different hotspots.
+  NEXT: Move optimization focus to generated overrides executor path.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
 
 ## Context / Handoff Summary
 Task is active and scoped to micro-optimizations in override dispatch and
-override normalization. First patch and reruns are complete; next step is a
-second override-path tranche to improve targeted/mixed route means.
+override normalization. This tranche was reverted and is blocked; next step is
+to continue with a different phase12/codegen hotspot.

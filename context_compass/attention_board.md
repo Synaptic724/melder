@@ -35,18 +35,17 @@ Attention detail notation (required for non-empty entries)
 ## Active Items
 | work_item | status | mode | owner | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 |---|---|---|---|---|---|---|---|---|---|---|
-| phase12 codegen second implementation tranche | in_progress | implementation | codex | none | optimize targeted override path (`patch_maps` + overrides executor dispatch) | reduce targeted/mixed non-spellspace means after tranche 1 mixed results | pinned rerun shows targeted and mixed mean improvements vs baseline | tickets/stories/2026-02-18_codegen_baseline_and_hotspot_map_story.md | 2026-02-18T10:28:35Z | REQUIRED |
+| phase12 codegen measurement reset | in_progress | validation | codex | none | run higher-sample pinned measurement pass before next code edit | reduce false positives from low-sample regressions and pick next hotspot confidently | next candidate change is chosen from higher-confidence benchmark evidence | tickets/stories/2026-02-18_codegen_baseline_and_hotspot_map_story.md | 2026-02-18T10:42:12Z | REQUIRED |
 
 ## Active Attention Details
-- DATETIME: 2026-02-18T10:28:35Z
+- DATETIME: 2026-02-18T10:42:12Z
   TYPE: PLAN
-  CLAIM: Tranche 1 patch landed and measured; routing advances to tranche 2 because targeted/mixed outcomes still need improvement.
+  CLAIM: Tranche 4 was also reverted; active routing shifts to higher-sample measurement before further edits.
   EVIDENCE:
-  - tickets/tasks/2026-02-18_creation_context_override_dispatch_micro_optimization_task.md:107-126
-  - tickets/stories/2026-02-18_codegen_baseline_and_hotspot_map_story.md:135-144
-  IMPACT: Implementation continues with focus on `patch_maps` and overrides executor path rather than additional front-door tweaks.
-  NEXT: Implement targeted override path optimizations and rerun pinned benchmarks.
-  SWITCH_TRIGGER: tranche 2 patch + pinned rerun evidence show targeted and mixed mean gains.
+  - tickets/tasks/2026-02-18_phase12_invoke_no_args_fastpath_task.md:106-125
+  IMPACT: Next optimization decision should be driven by stronger signal than two 3-sample reruns.
+  NEXT: Run pinned benchmark with higher sample count and refresh route ranking.
+  SWITCH_TRIGGER: high-sample results identify a new top candidate with acceptable confidence.
   RESUME_HIERARCHY: task -> story -> epic
   REREAD: REQUIRED
 

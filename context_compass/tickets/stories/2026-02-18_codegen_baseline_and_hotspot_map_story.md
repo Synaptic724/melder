@@ -63,6 +63,8 @@ the core runtime path with reproducible evidence.
 - [ ] Task: TASK-2026-02-18-codegen-phase12-hotspot-op-priority-map - rank concrete phase12/codegen ops.
 - [ ] Task: TASK-2026-02-18-creation-context-override-dispatch-micro-optimization - optimize first override-dispatch target and remeasure.
 - [ ] Task: TASK-2026-02-18-targeted-override-patchmap-micro-optimization - optimize targeted override patch-map path and remeasure.
+- [ ] Task: TASK-2026-02-18-overrides-executor-kwargs-fastpath - optimize overrides executor kwargs materialization path and remeasure.
+- [ ] Task: TASK-2026-02-18-phase12-invoke-no-args-fastpath - optimize no-args invocation helpers in phase12 executors and remeasure.
 - [ ] Enforce Ticket Microcycle across all linked tasks.
 - [ ] Require meaningful-finding note updates during discovery/implementation.
 
@@ -153,6 +155,40 @@ the core runtime path with reproducible evidence.
   NEXT: Start second implementation tranche focused on override targeted path costs and rerun pinned benchmarks.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+- DATETIME: 2026-02-18T10:36:22Z
+  TYPE: DECISION
+  CLAIM: User directed reverting both tranche 1 and tranche 2 code changes due mixed-route outcome concerns.
+  EVIDENCE:
+  - tickets/tasks/2026-02-18_creation_context_override_dispatch_micro_optimization_task.md:122-141
+  - tickets/tasks/2026-02-18_targeted_override_patchmap_micro_optimization_task.md:115-134
+  - src/melder/aether/conduit/meld/creation_context/creation_context.py:611-614
+  - src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:302-323
+  IMPACT: Story continues with reverted baseline code and must pursue a different hotspot for phase12/codegen gains.
+  NEXT: Open overrides-executor micro-optimization task and remeasure with pinned means.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-02-18T10:39:48Z
+  TYPE: MEASURE
+  CLAIM: Tranche 3 overrides-executor kwargs fast-path was also reverted after pinned reruns showed mixed-route regression despite slight targeted-route gain.
+  EVIDENCE:
+  - tickets/tasks/2026-02-18_overrides_executor_kwargs_fastpath_task.md:99-128
+  - benchmarks/testing_other_di/results/codegen_discovery_2026-02-18_after_overrides_executor_tranche3.json:652-671
+  - benchmarks/testing_other_di/results/codegen_discovery_2026-02-18_after_overrides_executor_tranche3_r2.json:652-671
+  IMPACT: Three attempted tranches are now reverted; next attempt should target a different high-frequency path.
+  NEXT: Start no-args invocation fast-path tranche in phase12 executor helpers.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+- DATETIME: 2026-02-18T10:42:12Z
+  TYPE: MEASURE
+  CLAIM: Tranche 4 no-args invocation helper fast path regressed non-spellspace means and was reverted.
+  EVIDENCE:
+  - tickets/tasks/2026-02-18_phase12_invoke_no_args_fastpath_task.md:106-125
+  - benchmarks/testing_other_di/results/codegen_discovery_2026-02-18_after_invoke_fastpath_tranche4.json:652-671
+  - benchmarks/testing_other_di/results/codegen_discovery_2026-02-18_after_invoke_fastpath_tranche4_r2.json:652-671
+  IMPACT: Four implementation tranches are now reverted; further code edits should be preceded by stronger measurement confidence.
+  NEXT: Run higher-sample pinned baseline/after comparisons before next optimization edit.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
 
 ## Closure Confirmation
 - [ ] Work walkthrough shared with user
@@ -167,5 +203,5 @@ the core runtime path with reproducible evidence.
 
 ## Context / Handoff Summary
 Story is active and scoped to pinned mean-baseline and phase12/codegen hotspot
-ranking. Prioritized ops and first target are now selected; next step is the
-second implementation tranche focused on targeted override path costs.
+ranking. Tranche 1/2/3/4 patches are reverted; next step is higher-sample
+measurement before further code edits.

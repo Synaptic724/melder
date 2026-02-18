@@ -3,11 +3,11 @@
 ## Metadata
 - Task ID: TASK-2026-02-18-targeted-override-patchmap-micro-optimization
 - Story: STORY-2026-02-18-codegen-baseline-and-hotspot-map
-- Status: review
+- Status: blocked
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-18T10:29:40Z
-- Updated: 2026-02-18T10:31:20Z
+- Updated: 2026-02-18T10:36:22Z
 
 ## Objective
 Reduce targeted override overhead in Phase 10 patch-map application path by
@@ -122,8 +122,19 @@ improving single-key raw override cache behavior.
   NEXT: Create task for generated overrides executor micro-optimizations.
   REREAD: REQUIRED
   SCORE_0_TO_10: 9
+- DATETIME: 2026-02-18T10:36:22Z
+  TYPE: DECISION
+  CLAIM: Tranche 2 patch-map change has been reverted per user direction due mixed-route regression concerns.
+  EVIDENCE:
+  - src/melder/spellbook/spell_crafter/blueprints/patch_maps.py:302-323
+  - benchmarks/testing_other_di/results/codegen_discovery_2026-02-18_after_patchmap_tranche2.json:652-671
+  - benchmarks/testing_other_di/results/codegen_discovery_2026-02-18_after_patchmap_tranche2_r2.json:652-671
+  IMPACT: Targeted-route gains from this patch are no longer active in code; follow-on work moves to the next hotspot.
+  NEXT: Start overrides-executor micro-optimization task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
 
 ## Context / Handoff Summary
 Task is active with patch-map targeted override micro-optimization applied.
-Pinned reruns are complete with mixed results. Next step is the overrides
-executor tranche to recover mixed-route performance.
+This tranche was reverted and is blocked. Next step is the overrides executor
+hotspot tranche.
