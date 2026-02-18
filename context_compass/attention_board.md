@@ -25,26 +25,26 @@ Attention details rule
 ## Active Items
 | work_item | status | mode | owner | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 |---|---|---|---|---|---|---|---|---|---|---|
-| story: knowledge-test-only gate | review | handoff | codex | none | present the simplification changes and confirm acceptance | fidelity-diff gate requirements were removed from active certification/compaction surfaces | user confirms acceptance so story/task can be moved to completed | `tickets/stories/2026-02-18_knowledge_test_only_gate_story.md` | 2026-02-18T18:17:15Z | REQUIRED |
+| board: idle | idle | standby | codex | none | wait for next directive | knowledge-test-only gate lane closed and archived | a new work item is assigned | `none` | 2026-02-18T18:21:41Z | HELPFUL |
 
 ## Active Attention Details
-- DATETIME: 2026-02-18T18:14:27Z
+- DATETIME: 2026-02-18T18:21:41Z
   TYPE: FACT
-  CLAIM: User-requested gate simplification is implemented: knowledge-test is now the sole required gate across compaction/certification surfaces.
+  CLAIM: The active fidelity-diff removal lane is closed; story and task are archived under completed routing.
   EVIDENCE:
-  - compacting_differential_board.md:1-86
-  - agent_onboarding/default/general/skills/compaction_diff_onboarding.md:1-101
-  - agent_onboarding/default/general/skills/self_certification.md:1-64
-  - AGENTS.MD:58-111
-  IMPACT: Active lane is implementation-complete and awaiting acceptance/closure.
-  NEXT: share the exact changed gate semantics and request close approval.
-  SWITCH_TRIGGER: user accepts and ticket chain is archived.
-  RESUME_HIERARCHY: story.
-  REREAD: REQUIRED
+  - tickets/stories/completed/2026-02-18_knowledge_test_only_gate_story_completed.md:1-147
+  - tickets/tasks/completed/2026-02-18_remove_fidelity_diff_gate_surface_task_completed.md:1-102
+  IMPACT: Attention board has no active implementation lane.
+  NEXT: wait for the next user-directed ticket.
+  SWITCH_TRIGGER: user assigns a new active work item.
+  RESUME_HIERARCHY: board.
+  REREAD: HELPFUL
 
 ## Recently Closed Anchors
 | work_item | status | owner | blocker | next | ticket | updated_at | reread |
 |---|---|---|---|---|---|---|---|
+| story: knowledge-test-only gate | done | codex | none | none | `tickets/stories/completed/2026-02-18_knowledge_test_only_gate_story_completed.md` | 2026-02-18T18:21:41Z | REQUIRED |
+| task: remove fidelity-diff gate surfaces | done | codex | none | none | `tickets/tasks/completed/2026-02-18_remove_fidelity_diff_gate_surface_task_completed.md` | 2026-02-18T18:21:41Z | REQUIRED |
 | epic: skill-gate-first compaction measurement loop | done | codex | none | none | `tickets/epics/completed/2026-02-18_skill_gate_first_compaction_measurement_loop_epic_completed.md` | 2026-02-18T18:05:56Z | REQUIRED |
 | story: skill-gate-first compaction discovery | done | codex | none | none | `tickets/stories/completed/2026-02-18_skill_gate_first_compaction_discovery_story_completed.md` | 2026-02-18T18:05:56Z | REQUIRED |
 | task: skill-gate onboarding minimum readset discovery | done | codex | none | none | `tickets/tasks/completed/2026-02-18_skill_gate_onboarding_minimum_readset_discovery_task_completed.md` | 2026-02-18T18:05:56Z | REQUIRED |

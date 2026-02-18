@@ -3,11 +3,11 @@
 ## Metadata
 - Story ID: STORY-2026-02-18-knowledge-test-only-gate
 - Epic: EPIC-2026-02-18-skill-gate-first-compaction-measurement-loop
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-18T18:14:27Z
-- Updated: 2026-02-18T18:17:15Z
+- Updated: 2026-02-18T18:21:41Z
 
 ## User Narrative
 As a maintainer, I want fidelity-diff gating removed so certification is driven
@@ -43,9 +43,9 @@ signal semantics between parity diagnostics and scored test evidence.
   - unrelated runtime code
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: user directed immediate removal of fidelity-diff gating.
+- from_state: review
+- to_state: done
+- transition_reason: user confirmed closure after walkthrough of the gate simplification changes.
 
 ## Dependencies / Related Work
 - `tickets/epics/completed/2026-02-18_skill_gate_first_compaction_measurement_loop_epic_completed.md`
@@ -75,15 +75,15 @@ signal semantics between parity diagnostics and scored test evidence.
   Mitigation: keep parity diagnostics optional and non-gating where needed.
 
 ## Applicable Anti-Patterns
-- [ ] No story-state transition without linked task-state evidence.
-- [ ] No closure while required tasks remain active or un-routed.
-- [ ] No cross-task synthesis claims without ticket-note evidence pointers.
+- [x] No story-state transition without linked task-state evidence.
+- [x] No closure while required tasks remain active or un-routed.
+- [x] No cross-task synthesis claims without ticket-note evidence pointers.
 
 ## Open Questions
 - Should optional parity diagnostics live in a separate non-gating board?
 
 ## Decision Log
-- Pending implementation.
+- Knowledge-test-only gate model accepted as the active certification path.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: false
@@ -118,10 +118,21 @@ signal semantics between parity diagnostics and scored test evidence.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-02-18T18:21:41Z
+  TYPE: FACT
+  CLAIM: User confirmed closure for this lane after receiving the implementation summary.
+  EVIDENCE:
+  - tickets/tasks/completed/2026-02-18_remove_fidelity_diff_gate_surface_task_completed.md:1-102
+  - attention_board.md:21-39
+  IMPACT: Story can transition to done and be archived to completed routing.
+  NEXT: move story/task to completed and sync attention board.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: cross-task synthesis, dependency flow, and state-transition logic.
@@ -130,5 +141,7 @@ signal semantics between parity diagnostics and scored test evidence.
 - Keep notes append-only and preserve UNKNOWN-first promotion discipline.
 
 ## Context / Handoff Summary
-Story opened for knowledge-test-only gate simplification across compaction
-policy and certification surfaces.
+Story implementation is complete, accepted, and ready for completed-lane archiving.
+
+## Closure Note
+Closed after user confirmation to finish this gate-simplification lane.

@@ -3,11 +3,11 @@
 ## Metadata
 - Task ID: TASK-2026-02-18-remove-fidelity-diff-gate-surface
 - Story: STORY-2026-02-18-knowledge-test-only-gate
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-18T18:14:27Z
-- Updated: 2026-02-18T18:17:15Z
+- Updated: 2026-02-18T18:21:41Z
 
 ## Objective
 Remove `fidelity_diff` as a gating requirement and keep `knowledge_test` as the
@@ -35,6 +35,11 @@ only certification/compaction completion gate.
 - Out of scope:
   - phase12 tickets
   - runtime app code
+
+## State Transition Event
+- from_state: review
+- to_state: done
+- transition_reason: user accepted closure after implementation walkthrough.
 
 ## Steps
 - [x] Rewrite differential board schema to knowledge-test-only required rows.
@@ -76,9 +81,22 @@ only certification/compaction completion gate.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-02-18T18:21:41Z
+  TYPE: FACT
+  CLAIM: User requested final closure for this lane after the delivered implementation.
+  EVIDENCE:
+  - tickets/stories/completed/2026-02-18_knowledge_test_only_gate_story_completed.md:1-147
+  - attention_board.md:21-39
+  IMPACT: Task is eligible for done transition and completed-lane archival.
+  NEXT: move task file to completed and sync board anchors.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Noting Behavior
 - Note focus: tactical findings, immediate impacts, and one-step continuation.
 
 ## Context / Handoff Summary
-Task opened to execute user-requested fidelity-diff gate removal and enforce a
-single knowledge-test gate.
+Task implementation is complete, accepted, and ready for completed-lane archival.
+
+## Closure Note
+Closed after user confirmation to finalize the knowledge-test-only gate update.
