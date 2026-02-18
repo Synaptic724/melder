@@ -102,7 +102,6 @@ Publish REONBOARD attestation with:
 - `SKILL_GATE_ONBOARD_READSET`
 - `FILES_REREAD`
 - `READ_INTEGRITY_PROOF`
-- `DIFF_ONBOARDING_REPORT`
 - `SKILL_GATE_REPORT` (score, rank, misses, anti-cheat status)
 - `NO_ACTION_TAKEN_YET: true`
 

@@ -25,21 +25,22 @@ Attention details rule
 ## Active Items
 | work_item | status | mode | owner | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 |---|---|---|---|---|---|---|---|---|---|---|
-| none | idle | none | codex | none | wait for next routed work item | first-compaction measurement epic/story/tasks were validated and archived after user request | user provides next active ticket or implementation lane | `n/a` | 2026-02-18T18:05:56Z | OPTIONAL |
+| story: knowledge-test-only gate | review | handoff | codex | none | present the simplification changes and confirm acceptance | fidelity-diff gate requirements were removed from active certification/compaction surfaces | user confirms acceptance so story/task can be moved to completed | `tickets/stories/2026-02-18_knowledge_test_only_gate_story.md` | 2026-02-18T18:17:15Z | REQUIRED |
 
 ## Active Attention Details
-- DATETIME: 2026-02-18T18:05:56Z
-  TYPE: MEASURE
-  CLAIM: Skill-gate-first compaction measurement lane is now closed after operational validation and ticket archival.
+- DATETIME: 2026-02-18T18:14:27Z
+  TYPE: FACT
+  CLAIM: User-requested gate simplification is implemented: knowledge-test is now the sole required gate across compaction/certification surfaces.
   EVIDENCE:
-  - tickets/epics/completed/2026-02-18_skill_gate_first_compaction_measurement_loop_epic_completed.md:1-230
-  - tickets/stories/completed/2026-02-18_skill_gate_first_compaction_discovery_story_completed.md:1-180
-  - skill_check/historical_test_results/cycle_2026-02-18T175200Z_hard_mcq_grade.md:1-66
-  IMPACT: No active lane is currently routed on attention board.
-  NEXT: route the next requested ticket lane when user directs.
-  SWITCH_TRIGGER: new active ticket request.
-  RESUME_HIERARCHY: none.
-  REREAD: OPTIONAL
+  - compacting_differential_board.md:1-86
+  - agent_onboarding/default/general/skills/compaction_diff_onboarding.md:1-101
+  - agent_onboarding/default/general/skills/self_certification.md:1-64
+  - AGENTS.MD:58-111
+  IMPACT: Active lane is implementation-complete and awaiting acceptance/closure.
+  NEXT: share the exact changed gate semantics and request close approval.
+  SWITCH_TRIGGER: user accepts and ticket chain is archived.
+  RESUME_HIERARCHY: story.
+  REREAD: REQUIRED
 
 ## Recently Closed Anchors
 | work_item | status | owner | blocker | next | ticket | updated_at | reread |

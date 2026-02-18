@@ -4,7 +4,7 @@
 
 Purpose
 - Define the mandatory evidence package an agent must publish before requesting certification.
-- Prevent box-check compliance by requiring measured parity + measured competence after compaction.
+- Prevent box-check compliance by requiring measured competence after compaction.
 
 Canonical references
 - `context_compass/AGENTS.MD`
@@ -29,30 +29,22 @@ Hard rule
 
 ---
 
-## Additional post-compaction certification gates (mandatory)
+## Additional post-compaction certification gate (mandatory)
 
-When the session follows a compaction/handoff/reset event, certification requires BOTH:
+When the session follows a compaction/handoff/reset event, certification requires:
 
-### A) Fidelity evidence (Diff-Onboarding)
-Publish `DIFF_ONBOARDING_REPORT` including at least:
-- `system_skill_doc_coverage`
-- `system_skill_parity_rate`
-- `policy_gate_miss_count`
-- top 3 misses + `next_compaction_hint` corrections
-
-### B) Knowledge evidence (Skill Gate)
+### Knowledge evidence (Skill Gate)
 Publish `SKILL_GATE_REPORT` including at least:
 - `knowledge_score`
 - `knowledge_pass_rate`
 - `p0_miss_count`
 - `critical_p0_miss_count`
-- `fidelity_score`
-- `global_score`
+- `policy_gate_miss_count`
 - `rank`
 - `ANTI_CHEAT: PASSED` (answers submitted before reading answer keys)
 
 Certification gates (strict; default)
-- `global_score >= knowledge_gate.global_pass_threshold`
+- `knowledge_score >= knowledge_gate.global_pass_threshold`
 - `policy_gate_miss_count == 0`
 - `critical_p0_miss_count <= knowledge_gate.p0_critical_miss_max`
 - consecutive pass cycles threshold respected
@@ -71,7 +63,6 @@ When (and only when) all required gates pass:
 1) State: `CERTIFY: REQUEST`
 2) Include the full attestation package:
    - baseline reads evidence (always)
-   - `DIFF_ONBOARDING_REPORT` (post-compaction only)
    - `SKILL_GATE_REPORT` (post-compaction only)
 3) Request user approval using the exact token:
    - `CERTIFY: APPROVED`

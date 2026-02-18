@@ -23,10 +23,9 @@ Certification gate (mandatory)
 
 
 Post-compaction additional gate (non-negotiable)
-- If a compaction/handoff/reset occurred, certification requires BOTH:
-  - `DIFF_ONBOARDING_REPORT` (semantic parity metrics)
+- If a compaction/handoff/reset occurred, certification requires:
   - `SKILL_GATE_REPORT` (knowledge-gate metrics + anti-cheat passed)
-- If either is missing, certification is blocked.
+- If `SKILL_GATE_REPORT` is missing, certification is blocked.
 - Do not use tools or edit files until the user provides this approval token.
 
 Required flow

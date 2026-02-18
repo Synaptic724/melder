@@ -4,7 +4,7 @@
 
 Purpose
 - Define the user-side approval gate for agent certification.
-- Ensure certification is only granted after evidence-backed onboarding + (post-compaction) measured parity + measured competence.
+- Ensure certification is only granted after evidence-backed onboarding + (post-compaction) measured competence.
 
 Canonical references
 - `context_compass/AGENTS.MD`
@@ -39,21 +39,15 @@ If any are missing: do not approve.
 
 ## Additional post-compaction gate (mandatory)
 
-If the session follows a compaction/handoff/reset event, the user should only approve when BOTH reports are present:
+If the session follows a compaction/handoff/reset event, the user should only
+approve when `SKILL_GATE_REPORT` is present:
 
-### A) `DIFF_ONBOARDING_REPORT`
-Must include:
-- `system_skill_doc_coverage`
-- `system_skill_parity_rate`
-- `policy_gate_miss_count`
-- top misses + `next_compaction_hint`
-
-### B) `SKILL_GATE_REPORT`
+### `SKILL_GATE_REPORT`
 Must include:
 - `knowledge_score`
 - `p0_miss_count`
 - `critical_p0_miss_count`
-- `global_score`
+- `policy_gate_miss_count`
 - `rank`
 - `ANTI_CHEAT: PASSED`
 
@@ -61,7 +55,7 @@ Default approval rule (strict)
 - Do NOT approve if:
   - `policy_gate_miss_count > 0`, OR
   - any critical P0 miss, OR
-  - `global_score < knowledge_gate.global_pass_threshold`
+  - `knowledge_score < knowledge_gate.global_pass_threshold`
 
 ---
 

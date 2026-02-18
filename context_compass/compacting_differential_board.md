@@ -1,14 +1,12 @@
-# compacting_differential_board (Score-Grounded Fidelity + Knowledge Ledger)
+# compacting_differential_board (Knowledge-Test Ledger)
 
 Purpose
 - Canonical measurement ledger for post-compaction cycles.
-- Track:
-  1) scored knowledge performance (`knowledge_test` rows, primary),
-  2) semantic parity diagnostics (`fidelity_diff` rows, secondary).
+- Track scored knowledge performance only (`knowledge_test` rows).
 
 Non-negotiable intent
 - This board does not attest performance by prose.
-- Cycle success is determined by graded test evidence.
+- Cycle success is determined by graded test evidence only.
 - `knowledge_score: Not run` means cycle status is `incomplete`.
 
 Canonical references
@@ -22,15 +20,13 @@ Canonical references
 
 Each compaction/re-entry cycle must add one summary row.
 
-| cycle_id | knowledge_score | knowledge_pass_rate | p0_miss_count | critical_p0_miss_count | fidelity_parity_rate | policy_gate_miss_count | fidelity_score | global_score | rank | status | delta_vs_prev |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|
-|  | 0 | 0.00 | 0 | 0 | 0.00 | 0 | 0 | 0 | C | open | baseline |
+| cycle_id | knowledge_score | knowledge_pass_rate | p0_miss_count | critical_p0_miss_count | policy_gate_miss_count | rank | status | delta_vs_prev |
+|---|---:|---:|---:|---:|---:|---|---|---|
+|  | 0 | 0.00 | 0 | 0 | 0 | C | open | baseline |
 
 Definitions
 - `knowledge_score`: score from graded answers, never from attestation prose.
 - `knowledge_pass_rate`: passed required docs / tested required docs.
-- `fidelity_parity_rate`: retained_exact + retained_paraphrase over parity set.
-- `global_score = 0.6*knowledge_score + 0.4*fidelity_score`.
 - `status`: `pass | fail | incomplete | open`.
   - `incomplete` if grading was not run.
 
@@ -40,7 +36,6 @@ Definitions
 
 All detail rows must include `row_type`:
 1) `knowledge_test` (primary scored evidence)
-2) `fidelity_diff` (secondary parity diagnostics)
 
 ---
 
@@ -69,36 +64,6 @@ Table
 | cycle_id | row_type | doc_id | skill_id | question_id | priority | agent_answer | correct_answer_ref | result | miss_class | severity | remediation_hint | next_compaction_hint | status | streak |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 |  | knowledge_test |  |  |  | P0 |  |  | incorrect | policy | critical |  |  | open | 0 |
-
----
-
-## Fidelity Diff Rows (row_type: fidelity_diff)
-
-Each row is one atomic parity claim comparison.
-
-Columns
-1) `cycle_id`
-2) `row_type` (`fidelity_diff`)
-3) `claim_id`
-4) `domain` (`system_skill|operational`)
-5) `priority` (`P0|P1|P2`)
-6) `source_doc_path`
-7) `source_doc_title`
-8) `evidence_path`
-9) `summary_state`
-10) `ground_truth`
-11) `diff_type` (`retained_exact|retained_paraphrase|distorted|dropped`)
-12) `distortion_class` (`value|scope|dependency|sequence|policy|none`)
-13) `severity` (`low|medium|high|critical`)
-14) `impact`
-15) `next_compaction_hint`
-16) `status` (`open|improving|stable`)
-17) `streak_retained`
-
-Table
-| cycle_id | row_type | claim_id | domain | priority | source_doc_path | source_doc_title | evidence_path | summary_state | ground_truth | diff_type | distortion_class | severity | impact | next_compaction_hint | status | streak_retained |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-|  | fidelity_diff |  | system_skill | P0 |  |  |  |  |  |  |  |  |  |  | open | 0 |
 
 ---
 

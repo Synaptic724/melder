@@ -59,20 +59,17 @@
   - Re-entry begins with `skill_gate_onboard` minimum-read measurement mode.
   - Do NOT perform full role baseline rereads before blind test submission.
   - Full rereads after compaction must be targeted to failed/weak docs after grading.
-  - You MUST measure compaction retention vs canonical docs and report parity metrics
-    before certification.
   - You MUST run the knowledge gate (Skill Check) and report competence metrics
     before certification.
   - Canonical instructions live in:
     - `context_compass/agent_onboarding/default/general/skills/compaction_diff_onboarding.md`
     - `context_compass/skill_check/skill_check_policy.md`
-- Post `REONBOARD: COMPLETE` attestation **with read-integrity proof AND parity + knowledge evidence**
+- Post `REONBOARD: COMPLETE` attestation **with read-integrity proof AND knowledge evidence**
   before any action:
   - `ROLE_SKILLS_READ`
   - `FILES_REREAD`
   - `READ_INTEGRITY_PROOF`
-  - `DIFF_ONBOARDING_REPORT` (system-skill parity metrics + policy-gate miss count)
-  - `SKILL_GATE_REPORT` (knowledge-score + P0 miss count + rank + global score; anti-cheat passed)
+  - `SKILL_GATE_REPORT` (knowledge-score + P0 miss count + rank; anti-cheat passed)
   - `NO_ACTION_TAKEN_YET: true`
 
 ## Highest Priority Adherence (Compaction Re-Onboarding)
@@ -107,8 +104,7 @@ After any context compaction or handoff:
   - `ROLE_SKILLS_READ` (resolved role chain in parent-first order)
   - `FILES_REREAD` (at minimum: `attention_board.md` + active ticket paths)
   - `READ_INTEGRITY_PROOF` (concise comprehension proof; NOT tool logs)
-  - `DIFF_ONBOARDING_REPORT` (semantic parity metrics; system-skill prioritized)
-  - `SKILL_GATE_REPORT` (knowledge-gate results; global score + rank; anti-cheat passed)
+  - `SKILL_GATE_REPORT` (knowledge-gate results; rank; anti-cheat passed)
   - `NO_ACTION_TAKEN_YET: true`
 
 Performative compliance is forbidden during re-onboarding:
@@ -206,5 +202,5 @@ When the user signals distrust or drift (e.g., "performative compliance", "playi
 4) Execute the single compliant next step. Do not present options unless multiple compliant paths truly exist.
 5) Prove, don't posture:
    - repair/provide `READ_INTEGRITY_PROOF` (no tool-log theatre)
-   - if post-compaction, include the `DIFF_ONBOARDING_REPORT` parity metrics
+   - if post-compaction, include the `SKILL_GATE_REPORT` measured score output
 6) If proof cannot be produced, mark `BLOCKED` and ask for instructions.

@@ -67,13 +67,9 @@ Capture:
 - rank
 - per-doc misses
 
-### Step 4 - Parity measurement
-Run diff-onboarding parity checks and compute:
-- `system_skill_doc_coverage`
-- `system_skill_parity_rate`
-- `policy_gate_miss_count`
-- `fidelity_score`
-- `global_score`
+### Step 4 - Knowledge ledger update
+Record graded outcomes into the differential board using `knowledge_test` rows and
+cycle summary fields from the grading report.
 
 ### Step 5 - Targeted relearn
 - Re-read only failed/weak docs plus required P0 dependencies.
@@ -82,8 +78,7 @@ Run diff-onboarding parity checks and compute:
 ### Step 6 - Gate outcome
 Pass requires:
 1) hard-MCQ score gates,
-2) diff parity gates,
-3) anti-cheat intact.
+2) anti-cheat intact.
 
 Hard outcomes:
 - grading not run => `incomplete`
@@ -94,7 +89,7 @@ Hard outcomes:
 ## Required pre-cert reporting
 
 Before requesting certification publish:
-1) `SKILL_GATE_REPORT` (hard-MCQ score evidence)
-2) `DIFF_ONBOARDING_REPORT` (semantic parity evidence)
+1) `SKILL_GATE_REPORT` (hard-MCQ score evidence, anti-cheat status, remediation
+   hints)
 
-Either missing blocks certification.
+Missing `SKILL_GATE_REPORT` blocks certification.

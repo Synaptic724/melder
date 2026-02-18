@@ -116,7 +116,7 @@ Required outputs
 
 Certification remains blocked unless:
 1) Grading has been executed for the active cycle.
-2) `global_score`/rank thresholds are met by configured policy.
+2) `knowledge_score`/rank thresholds are met by configured policy.
 3) Critical policy-gate misses are zero.
 4) Anti-cheat protocol is intact.
 

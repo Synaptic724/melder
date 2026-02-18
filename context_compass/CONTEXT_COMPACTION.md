@@ -47,9 +47,9 @@ Provide a high-fidelity semantic mirror of the canonical docs:
 - Preserve definitions, gates, ordering constraints, and "what changes my behavior" implications.
 - If you are unsure, mark `UNKNOWN` rather than invent.
 
-### 3) Diff + Knowledge Feedback Loop State (system; short but mandatory)
+### 3) Knowledge Feedback Loop State (system; short but mandatory)
 - last `cycle_id` (if any)
-- top unresolved misses from `compacting_differential_board.md` (both fidelity_diff and knowledge_test)
+- top unresolved misses from `compacting_differential_board.md` (`knowledge_test` rows)
 - the top 5 `next_compaction_hint` corrections to apply next compaction
   - prioritize policy-gate and sequence-order misses first
 
@@ -110,6 +110,5 @@ System-context / architecture docs remain **ON-DEMAND** unless a role baseline e
 After compaction/handoff, before any action:
 
 - Apply `agent_onboarding/default/general/skills/compaction_requirements.md` (REONBOARD).
-- Produce a `DIFF_ONBOARDING_REPORT` (semantic parity metrics) before requesting certification.
-- Produce a `SKILL_GATE_REPORT` (knowledge-gate test metrics + global score + rank) before requesting certification.
+- Produce a `SKILL_GATE_REPORT` (knowledge-gate test metrics + rank) before requesting certification.
 - Only after certification may you update `compacting_differential_board.md` with the new cycle rows.
