@@ -25,22 +25,25 @@ Attention details rule
 ## Active Items
 | work_item | status | mode | owner | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 |---|---|---|---|---|---|---|---|---|---|---|
-| task: skill check bootstrap test suite generation | in_progress | implementation | codex | none | generate manifest and cycle test/answer files for required docs | compaction-ready skill-check suite exists with quality metrics | generated suite satisfies bootstrap policy requirements | `tickets/tasks/2026-02-18_skill_check_bootstrap_test_suite_task.md` | 2026-02-18T16:01:46Z | REQUIRED |
+| epic: skill-gate-first compaction measurement loop | review | handoff | codex | none | share implemented policy/generator/board changes and request acceptance confirmation | score-grounded compaction loop with skill-gate-first onboarding, targeted relearn, and single-cycle reset/shrink is implemented | user confirms acceptance criteria so epic/story/tasks can move to completed folders | `tickets/epics/2026-02-18_skill_gate_first_compaction_measurement_loop_epic.md` | 2026-02-18T17:07:51Z | REQUIRED |
 
 ## Active Attention Details
-- DATETIME: 2026-02-18T16:01:46Z
-  TYPE: PLAN
-  CLAIM: User requested immediate skill-check suite build for compaction setup;
-    active routing now targets bootstrap manifest and cycle artifact generation.
+- DATETIME: 2026-02-18T17:07:51Z
+  TYPE: FACT
+  CLAIM: Discovery and implementation lanes are complete; compaction policy now
+    enforces skill-gate-first minimum reads, score-grounded completion, targeted
+    relearn, and single-active-cycle reset/shrink behavior.
   EVIDENCE:
-  - tickets/tasks/2026-02-18_skill_check_bootstrap_test_suite_task.md:1-74
-  - skill_check/skill_check_policy.md:63-65
-  IMPACT: Workstream shifts from prior wording-cleanup closure to compaction
-    readiness artifact generation.
-  NEXT: generate manifest entries and required cycle test/answer files.
-  SWITCH_TRIGGER: bootstrap artifacts exist and quality gate summary is
-    available.
-  RESUME_HIERARCHY: task.
+  - AGENTS.MD:59-61
+  - agent_onboarding/default/general/skills/compaction_requirements.md:61-185
+  - agent_onboarding/default/general/skills/compaction_diff_onboarding.md:54-107
+  - skill_check/skill_check_policy.md:21-26
+  - compacting_differential_board.md:107-109
+  - skill_check/generate_bootstrap_suite.py:270-329
+  IMPACT: Active work is now closure-ready pending user acceptance.
+  NEXT: run walkthrough and confirm acceptance criteria before moving tickets.
+  SWITCH_TRIGGER: user confirms acceptance criteria.
+  RESUME_HIERARCHY: epic.
   REREAD: REQUIRED
 
 ## Recently Closed Anchors

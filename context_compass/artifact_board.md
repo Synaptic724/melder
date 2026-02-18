@@ -21,10 +21,20 @@ Disposition values
 ## Active Artifact Links
 | ticket | artifact_path | artifact_type | status | disposition | next | updated_at | reread |
 |---|---|---|---|---|---|---|---|
-| none | none | none | none | none | none | 2026-02-17T12:01:56Z | REQUIRED |
+| `tickets/epics/2026-02-18_skill_gate_first_compaction_measurement_loop_epic.md` | `artifacts/2026-02-18_skill_gate_first_compaction_success_model.md` | planning_spec | active | retain_as_reference | keep linked through discovery and implementation planning | 2026-02-18T16:53:27Z | REQUIRED |
 
 ## Active Artifact Details
-- none
+- DATETIME: 2026-02-18T16:53:27Z
+  TYPE: FACT
+  CLAIM: Artifact captures the requested skill-gate-first scored compaction
+    loop and is linked to the new epic as planning source of truth.
+  EVIDENCE:
+  - artifacts/2026-02-18_skill_gate_first_compaction_success_model.md:1-136
+  - tickets/epics/2026-02-18_skill_gate_first_compaction_measurement_loop_epic.md:156-160
+  IMPACT: Discovery and upcoming implementation are now anchored to a durable
+    artifact instead of transient chat context.
+  NEXT: keep artifact linkage updated as discovery decisions solidify.
+  REREAD: REQUIRED
 
 ## Recently Cleared Artifacts
 | ticket | artifact_path | disposition | reason | closed_at |

@@ -7,7 +7,7 @@
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-18T16:01:46Z
-- Updated: 2026-02-18T16:01:46Z
+- Updated: 2026-02-18T16:43:50Z
 
 ## Objective
 Generate the initial skill-check bootstrap artifacts so compaction cycles can run
@@ -42,14 +42,16 @@ with manifest-driven test/answer coverage.
 
 ## Steps / Checklist
 - [x] Route active attention to this task.
-- [ ] Build deterministic required-doc manifest from onboarding chain.
-- [ ] Generate cycle test files and answer files for required docs.
-- [ ] Compute and record bootstrap quality scores per generated test file.
-- [ ] Publish bootstrap summary and readiness state.
-- [ ] Run Ticket Microcycle during execution:
+- [x] Build deterministic required-doc manifest from onboarding chain.
+- [x] Generate cycle test files and answer files for required docs.
+- [x] Compute and record bootstrap quality scores per generated test file.
+- [x] Publish bootstrap summary and readiness state.
+- [x] Implement adaptive suite maintenance: stability-driven shrink metadata and
+      compaction cleanup to keep a single fresh cycle.
+- [x] Run Ticket Microcycle during execution:
       `Investigate -> Document -> Strategy/Plan -> Document -> Implement ->
       Document -> Validate -> Document`.
-- [ ] Document each meaningful finding immediately in `## Notes` before further
+- [x] Document each meaningful finding immediately in `## Notes` before further
       investigation.
 
 ## Deliverables
@@ -63,15 +65,27 @@ with manifest-driven test/answer coverage.
 - `skill_check/tests/cycle_<cycle_id>/`
 - `skill_check/test_answers/cycle_<cycle_id>/`
 - `skill_check/historical_test_results/cycle_<cycle_id>.md`
+- `skill_check/generate_bootstrap_suite.py`
 - `attention_board.md`
 - `tickets/tasks/2026-02-18_skill_check_bootstrap_test_suite_task.md`
 
 ## Validation
-- Not run.
+- Ran: `python context_compass/skill_check/generate_bootstrap_suite.py`
+  - cycle_id: `2026-02-18T162034Z`
+  - total_docs: `81`
+  - required_for_certification_docs: `27`
+  - total_questions: `752`
+  - stable_docs: `0`
+  - shrink_applied_docs: `0`
+  - avg_test_quality_score: `97.00`
+  - removed_test_cycle_dirs: `1`
+  - removed_answer_cycle_dirs: `1`
+  - removed_historical_cycle_files: `1`
+- Ran: `python -c "import py_compile; py_compile.compile('context_compass/skill_check/generate_bootstrap_suite.py', doraise=True)"`.
 - Recommended commands:
-  - `rg -n "doc_id:|required_for_certification: true" skill_check/manifest/onboarding_manifest.yaml`
-  - `rg -n "test_quality_score:" skill_check/tests/cycle_*/*.test.md`
-  - `rg -n "correct_answer_ref:" skill_check/test_answers/cycle_*/*.answers.md`
+  - `rg -n "doc_id:|required_for_certification: true|stability_streak:" skill_check/manifest/onboarding_manifest.yaml`
+  - `rg -n "question_count:|base_question_count:|shrink_applied:" skill_check/tests/cycle_*/*.test.md`
+  - `rg -n "removed_test_cycle_dirs:|removed_answer_cycle_dirs:" skill_check/historical_test_results/cycle_*.md`
 
 ## Risks / Rollback Notes
 - Bulk-generated content quality may drift below rubric threshold and require
@@ -124,6 +138,64 @@ with manifest-driven test/answer coverage.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-02-18T16:05:37Z
+  TYPE: FACT
+  CLAIM: Bootstrap generator populated the manifest and generated a full cycle
+    suite with quality score 97 for each generated test file.
+  EVIDENCE:
+  - skill_check/manifest/onboarding_manifest.yaml:5-20
+  - skill_check/historical_test_results/cycle_2026-02-18T160537Z.md:15-20
+  - skill_check/generate_bootstrap_suite.py:1-445
+  IMPACT: Skill-check bootstrap gates are now materially satisfied for manifest
+    and artifact presence.
+  NEXT: enforce single-suite state by removing older generated cycle artifacts.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-02-18T16:08:25Z
+  TYPE: MEASURE
+  CLAIM: Cleanup pass removed the older cycle (`2026-02-18T160455Z`) so only
+    the latest suite (`2026-02-18T160537Z`) remains referenced and stored.
+  EVIDENCE:
+  - skill_check/manifest/onboarding_manifest.yaml:18-19
+  - skill_check/historical_test_results/cycle_2026-02-18T160537Z.md:1-20
+  IMPACT: The test system now has a single active bootstrap suite, matching the
+    requested state.
+  NEXT: confirm suite shape with user and continue compaction-prep work.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
+- DATETIME: 2026-02-18T16:21:08Z
+  TYPE: FACT
+  CLAIM: Generator now supports compaction refresh maintenance by regenerating a
+    fresh cycle, pruning stale cycle artifacts, and carrying stability metadata
+    for future shrink decisions.
+  EVIDENCE:
+  - skill_check/generate_bootstrap_suite.py:1-971
+  - skill_check/historical_test_results/cycle_2026-02-18T162034Z.md:1-35
+  - agent_onboarding/default/general/skills/compaction_requirements.md:192-204
+  IMPACT: Single-suite policy is now enforced automatically; future graded
+    cycles can reduce total questions once streak thresholds are met.
+  NEXT: confirm whether grading writes `status/last_score/requires_retest` and
+    `stability_streak` values back to manifest for shrink activation.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
+- DATETIME: 2026-02-18T16:43:50Z
+  TYPE: MEASURE
+  CLAIM: Compacting diff cycle `2026-02-18T1623Z-F01` was recorded with 10
+    fidelity claims and full parity on the sampled system-skill claim set.
+  EVIDENCE:
+  - compacting_differential_board.md:24-123
+  IMPACT: Fidelity loop is now represented in the canonical board; knowledge
+    test rows remain outstanding for full cycle completion.
+  NEXT: run skill-gate grading and append `knowledge_test` rows for the same
+    cycle id.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 9
+
 ## Context / Handoff Summary
-Task tracks bootstrap creation of skill-check manifest and initial cycle suite
-required before robust compaction re-entry scoring.
+Task now contains a single active maintained suite (`cycle_2026-02-18T162034Z`)
+and one compacting diff cycle entry (`2026-02-18T1623Z-F01`) in the
+differential board; fidelity evidence is present and knowledge evidence is
+pending.

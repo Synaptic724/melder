@@ -1,28 +1,29 @@
-
-
-# skill_check_policy (Knowledge Gate + Fidelity Convergence)
+# skill_check_policy (Skill-Gate-First Scored Compaction Policy)
 
 Status: active
-Scope: post-compaction re-entry (REONBOARD) + steady-state skill competence enforcement
+Scope: post-compaction REONBOARD measurement loop + cycle maintenance
 Owner: user authority (policy) + implementation agent (execution)
 
-This document defines a fidelity-first compaction + knowledge-gate system.
-It is designed to reduce policy drift after compaction by enforcing:
-1) measured semantic parity (Diff Board), AND
-2) measured skill competence (Skill Check tests).
+This policy defines a score-grounded compaction loop:
+1) minimum-read `skill_gate_onboard`,
+2) blind test submission,
+3) deterministic grading,
+4) targeted relearn,
+5) fresh-cycle reset with adaptive shrink.
 
 ---
 
 ## 1) Core intent (non-negotiable)
 
-1. Compaction is not a â€œsmall cacheâ€ optimization.
-2. Compaction summary should be as rich as platform limits allow.
-3. Target mix in compaction summary is **~90% system/skills/policy** and **~10% operational pointers**.
-4. The Diff Board is not the cache itself. It is the measurement ledger for cache fidelity and policy-gate integrity.
-5. The Skill Check is not the cache itself. It is the measurement ledger for competence and correct gate execution.
-6. The system must improve over cycles by measuring weaknesses, targeting them in next compaction, then retesting.
+1. Compaction is not a "small cache" optimization.
+2. Compaction summaries should use as much budget as platform limits allow.
+3. Summary mix target is **~90% system/skills/policy** and **~10% operational pointers**.
+4. Post-compaction success is score-grounded:
+   - primary evidence: `knowledge_test` scored rows,
+   - secondary evidence: `fidelity_diff` parity diagnostics.
+5. A cycle with `knowledge_score: Not run` is `incomplete`, not pass.
 
-Compactness is a constraint. Fidelity is the objective.
+Compactness is a constraint. Fidelity + competence are objectives.
 
 ---
 
@@ -37,314 +38,181 @@ Required structure
 - `context_compass/skill_check/historical_test_results/`
 - `context_compass/skill_check/manifest/`
 
-Canonical manifest file (required)
+Canonical files
 - `context_compass/skill_check/manifest/onboarding_manifest.yaml`
+- `context_compass/compacting_differential_board.md`
 
-Templates (required)
+Templates
 - `context_compass/skill_check/tests/test_template.md`
 - `context_compass/skill_check/test_answers/answer_template.md`
 - `context_compass/skill_check/historical_test_results/historical_results_template.md`
 
-Measurement ledger (required)
-- `context_compass/compacting_differential_board.md`
-  - MUST include both `fidelity_diff` rows and `knowledge_test` rows.
-
-Config knobs (required)
+Config knobs
 - `context_compass/config/context_compass_config.yaml` (`knowledge_gate.*`)
 
 ---
 
-## 3) Operating model: what happens when
+## 3) Operating model
 
-### A) First-time install / bootstrap (one-time, post-cert)
-If the `skill_check/` subsystem has just been added or the manifest/tests are missing:
-- You still follow standard ONBOARD + certification gating (no pre-cert edits).
-- After the user provides `CERTIFY: APPROVED`, your **first** post-cert action MUST be:
-  1) Generate and write the onboarding manifest.
-  2) Generate and write the full initial test set + answer set for all required manifest entries.
-  3) Run the test quality rubric and regenerate until `test_quality_score >= threshold`.
-  4) Stop. Do not begin normal work until the bootstrap artifacts exist.
+### A) Bootstrap generation (one-time, post-cert)
+If manifest/tests are missing:
+1) generate manifest from canonical docs,
+2) generate full test+answer suite,
+3) enforce test quality threshold,
+4) stop when bootstrap artifacts exist.
 
-This ensures that future compaction re-entry can run the knowledge gate deterministically.
-
-### B) Post-compaction re-entry (every compaction/handoff)
-After any compaction/handoff:
-- REONBOARD is mandatory.
-- Re-entry runs in **Diff-Onboarding + Skill-Check mode**.
-- Before requesting certification, you MUST:
-  1) measure semantic parity (Diff Board protocol), AND
-  2) run the knowledge gate tests (Skill Check protocol), AND
-  3) meet configured gates.
+### B) Post-compaction re-entry (every cycle)
+Before certification:
+1) run `skill_gate_onboard` minimum-read stage,
+2) run blind submission + grading,
+3) run diff-onboarding parity measurement,
+4) run targeted failed-doc relearn,
+5) meet configured pass gates.
 
 No exceptions.
 
 ---
 
-## 4) Manifest requirement (yes, implement it)
+## 4) Manifest requirements
 
-### 4.1 Canonical file
-- `context_compass/skill_check/manifest/onboarding_manifest.yaml`
+### 4.1 Generation timing
+Regenerate manifest at onboarding start from canonical docs:
+- `context_compass/AGENTS.MD`
+- `context_compass/SKILLS.MD`
+- resolved role `SKILLS.MD` chain
+- required baseline docs implied by that chain
 
-### 4.2 Manifest generation timing
-- The manifest MUST be regenerated **at each onboarding start** (ONBOARD or REONBOARD) from canonical docs:
-  - `context_compass/AGENTS.MD`
-  - `context_compass/SKILLS.MD`
-  - resolved role `SKILLS.MD` chain (parent-first)
-  - required baseline skill/policy/behavior docs implied by that chain
-
-No manual curation. The manifest is derived.
-
-### 4.3 Deterministic manifest algorithm (required)
-At onboarding start:
-
-1) Resolve active profile/role from:
-   - `context_compass/config/context_compass_config.yaml` (`profiles.active_profile`)
-   - `context_compass/SKILLS.MD` (roles map)
-2) Build the required doc set `D_required`:
-   - Always include (system root):
-     - `AGENTS.MD`
-     - `config/context_compass_config.yaml`
-     - `SKILLS.MD`
-   - Include the resolved role `SKILLS.MD` chain (the SKILLS files themselves).
-   - Include every path under **Active skills** / **Required baseline skills** in each resolved SKILLS file.
-3) Normalize + dedupe paths (canonical form):
-   - Use forward slashes in the manifest `path` field.
-   - Keep paths relative to `context_compass/` (no leading `./`).
-4) Assign `doc_type` deterministically:
-   - `agents`: any `**/AGENTS.MD`
-   - `skills`: any `**/SKILLS.MD` OR `**/skills/**`
-   - `policy`: any `**/policies/**` OR files containing certification/tooling gates
-   - `behavior`: any `**/behavioral_guidelines/**` OR workflow/communication behavior docs
-   - If ambiguous, classify as `policy` when it defines MUST/DO NOT gates; otherwise `skills`.
-5) Assign `priority` deterministically (default rules; override only in config):
-   - `P0`:
-     - root `AGENTS.MD`
-     - `execution_contract.md` (even though behavioral, it shapes enforcement of gates)
-     - certification docs
-     - compaction requirements + diff onboarding docs
-     - `policy_skills.md`
-   - `P1`:
-     - core workflow/ticketing/context docs that control correctness
-   - `P2`:
-     - nice-to-have guidance; style; optional heuristics
-6) Assign `required_for_certification`:
-   - Default: `true` for all `P0` and `P1` docs.
-   - Default: `false` for `P2` docs (may be tested opportunistically).
-   - This default may be tightened in config.
-
-### 4.4 Required manifest fields (minimum schema)
-Each entry MUST include at least:
-
-- `doc_id` (stable ID)
-- `path` (canonical repo path relative to `context_compass/`)
+### 4.2 Minimum fields
+Each entry must include:
+- `doc_id`
+- `path`
 - `doc_type` (`agents|skills|policy|behavior`)
 - `priority` (`P0|P1|P2`)
-- `required_for_certification` (bool)
-- `test_file` (path under `skill_check/tests/`)
-- `answer_file` (path under `skill_check/test_answers/`)
-- `last_score` (0â€“100; default 0 for unrated)
-- `last_cycle_id` (string or null)
+- `required_for_certification`
+- `test_file`
+- `answer_file`
+- `last_score`
+- `last_cycle_id`
 - `status` (`unrated|pass|fail`)
-- `requires_retest` (bool)
+- `requires_retest`
+- `stability_streak`
 
 Hard rule
-- Missing `test_file` OR missing `answer_file` for any `required_for_certification: true` entry:
-  - blocks post-compaction certification
-  - triggers remediation (see section 10)
-
-### 4.5 Stable `doc_id` rule (deterministic)
-`doc_id` MUST be stable across cycles unless the doc path changes.
-
-Default rule (recommended):
-- `doc_id = UPPERCASE(path) with '/' -> '__' and '.' -> '_'`
-Example:
-- path: `agent_onboarding/default/general/skills/compaction_requirements.md`
-- doc_id: `AGENT_ONBOARDING__DEFAULT__GENERAL__SKILLS__COMPACTION_REQUIREMENTS_MD`
+- Missing `test_file` or `answer_file` on any required entry blocks certification.
 
 ---
 
-## 5) Test authoring model per skill/doc
+## 5) `skill_gate_onboard` contract (minimum-read gate)
 
-### 5.1 Hybrid format (required)
-- Not MCQ-only and not long-form-only.
+Required pre-test reads:
+1) active manifest metadata
+2) active cycle tests
+3) anti-cheat + grading rules
+4) board schema for score recording
 
-Default mix (configurable):
-- 70% MCQ (4 options, single best)
-- 20% short answer (1â€“3 lines)
-- 10% scenario/application
-
-### 5.2 Question count by doc size (required)
-Per doc test question count:
-- Small: 8
-- Medium: 12
-- Large or critical: 16
-
-Doc size classification (deterministic default):
-- Large: priority `P0` OR doc LOC >= `codex.read_loc_max` OR doc defines multi-step gates
-- Medium: typical skills/policy docs
-- Small: short, single-purpose guidance docs
-
-### 5.3 Priority distribution (required)
-Default mix (configurable):
-- 50% P0
-- 35% P1
-- 15% P2
-
-Hard rule
-- Every `P0` doc MUST include enough `P0` questions to detect gate drift.
-
-### 5.4 Required question coverage per doc test (non-negotiable)
-Every skill/doc test MUST include:
-
-1) at least one **must-do rule** question (MUST)
-2) at least one **must-not-do rule** question (DO NOT)
-3) at least one **sequence/order gate** question (ordering constraint)
-4) at least one **escalation/certification gate** question (what blocks, what requires user approval)
-5) at least one **application scenario** question (apply rule to an example)
-
-### 5.5 Source anchoring (required)
-Every question MUST be anchored to canonical doc sections.
-
-Minimum anchor payload per question:
-- `source_path`
-- `source_section` (header/anchor)
-- (optional) `source_excerpt` (<= 25 words)
-
-Hard rule
-- If you cannot anchor a question to a doc section, do not include it.
+Forbidden pre-test reads:
+- any `skill_check/test_answers/**`
+- broad under-test skill-doc rereads for memorization
+- full role baseline rereads prior to blind submission
 
 ---
 
-## 6) Test + answer file format (deterministic)
+## 6) Test authoring model
 
-### 6.1 Stable question IDs (required)
-Each question MUST have a stable `question_id` within the doc:
+Hybrid mix (default):
+- 70% MCQ
+- 20% short
+- 10% scenario
 
-- Format: `<doc_id>::Q###`
-- Example: `AGENTS_MD::Q001`
+Question count baseline:
+- small: 8
+- medium: 12
+- large/P0: 16
 
-### 6.2 Canonical templates
-- Tests MUST follow: `skill_check/tests/test_template.md`
-- Answers MUST follow: `skill_check/test_answers/answer_template.md`
+Coverage requirements per doc test:
+1) must-do rule
+2) must-not rule
+3) sequence/order gate
+4) escalation/certification gate
+5) application scenario
 
-Hard rule
-- If a test deviates from the template, it is invalid.
+Every question must be source-anchored.
 
 ---
 
-## 7) Test quality rubric (must run before using tests)
+## 7) Test quality gate
 
-### 7.1 Rubric categories (score out of 100)
-Score each generated test set:
+Rubric score out of 100:
+1) coverage completeness: 25
+2) source anchoring quality: 20
+3) deterministic gradability: 20
+4) behavioral realism: 15
+5) anti-cheat robustness: 10
+6) atomic clarity: 10
 
-1) Coverage completeness: 25
-2) Source anchoring quality: 20
-3) Deterministic gradability: 20
-4) Behavioral realism: 15
-5) Anti-cheat robustness: 10
-6) Atomic clarity (one claim per question): 10
-
-### 7.2 Gate (non-negotiable)
-- `test_quality_score >= knowledge_gate.test_quality_threshold` is required.
+Gate:
+- `test_quality_score >= knowledge_gate.test_quality_threshold`
 
 If below threshold:
-- regenerate the test set (and answer key) until it passes.
-- Do not proceed to knowledge scoring with a low-quality test set.
+- regenerate tests/answers; block scoring until passing.
 
 ---
 
 ## 8) Anti-cheat protocol (strict)
 
-Core rule
-- The agent MUST NOT read `skill_check/test_answers/**` until AFTER full answers are submitted.
+1) Read tests only.
+2) Submit all answers first (`ANSWERS_UNREAD: true`).
+3) Read answer keys only after submission.
+4) Grade deterministically.
 
-Evaluation sequencing (required)
-1) Read `tests/*` only.
-2) Submit full answers (all questions).
-3) Post attestation:
-   - `ANSWERS_UNREAD: true`
-4) Only then may you read `test_answers/*` to grade.
-5) Any early access to `test_answers/*` invalidates the cycle and forces rerun.
-
-Hard rule
-- If early access occurred: declare `ANTI_CHEAT_VIOLATION: true`, set cycle status FAIL, and restart the cycle.
+Hard rule:
+- early answer-key access => `ANTI_CHEAT_VIOLATION: true`, cycle fail, rerun required.
 
 ---
 
-## 9) Scoring and ranking
+## 9) Scoring model
 
-### 9.1 Per-doc skill score (required)
-Compute per-doc score:
+Per-doc skill score:
+- `doc_skill_score = 0.7*P0 + 0.2*P1 + 0.1*P2`
 
-- `P0_score = percent_correct(P0 questions)`
-- `P1_score = percent_correct(P1 questions)`
-- `P2_score = percent_correct(P2 questions)`
+Critical rule:
+- any critical P0 miss => doc fail.
 
-Then:
-- `doc_skill_score = 0.7*P0_score + 0.2*P1_score + 0.1*P2_score`
-
-Critical rule
-- Any **critical** P0 miss => doc FAIL regardless of total score.
-
-### 9.2 Knowledge score (global)
-Aggregate across required docs:
-
-Default aggregation (deterministic):
-- `knowledge_score = weighted_average(doc_skill_score, weight_by_priority)`
-  - `P0 docs weight = 1.0`
-  - `P1 docs weight = 0.7`
-  - `P2 docs weight = 0.3` (if included)
-
-### 9.3 Fidelity score (global)
-Use Diff Board semantic parity metrics:
-
-Default:
+Global scores:
+- `knowledge_score = weighted_average(doc_skill_score)`
 - `fidelity_score = 100 * system_skill_parity_rate`
-
-### 9.4 Global score (required)
 - `global_score = 0.6*knowledge_score + 0.4*fidelity_score`
 
-### 9.5 Rank bands (required)
 Rank bands (default):
-
 - S: >=95 and zero critical P0 misses
-- A: 90â€“94 and zero critical P0 misses
-- B: 80â€“89 and <=1 non-critical P0 miss
+- A: 90-94 and zero critical P0 misses
+- B: 80-89 and <=1 non-critical P0 miss
 - C: <80 or any critical P0 miss
 
 ---
 
-## 10) Certification gates (strict)
+## 10) Certification gates
 
-Post-compaction certification is blocked unless all are true:
-
+Certification blocked unless all pass:
 1) `global_score >= knowledge_gate.global_pass_threshold`
-2) `policy_gate_miss_count == 0` (from fidelity diff rows; policy-gate distortions/drops)
-3) `p0_critical_miss_count <= knowledge_gate.p0_critical_miss_max`
-4) required consecutive pass cycles threshold respected
-5) anti-cheat passed (no early answers access)
-6) required manifest entries have tests + answers present
+2) `policy_gate_miss_count == 0`
+3) `critical_p0_miss_count <= knowledge_gate.p0_critical_miss_max`
+4) anti-cheat passed
+5) required manifest entries have test+answer artifacts
 
-If blocked:
-- Provide an explicit remediation list:
-  - missing tests/answers
-  - doc_ids failed
-  - top incorrect question_ids + remediation_hint
-  - top fidelity misses + next_compaction_hint
-
-Hard rule
-- Do NOT request `CERTIFY: APPROVED` when blocked.
+Hard rules:
+- do not request `CERTIFY: APPROVED` when blocked.
+- `knowledge_score: Not run` blocks certification.
 
 ---
 
-## 11) Diff Board integration (required)
+## 11) Diff board integration
 
-`context_compass/compacting_differential_board.md` MUST store both row types:
+`context_compass/compacting_differential_board.md` must include:
+- `row_type: knowledge_test` (primary scored evidence)
+- `row_type: fidelity_diff` (secondary parity evidence)
 
-- `row_type: fidelity_diff`
-- `row_type: knowledge_test`
-
-Knowledge test row fields (minimum)
+`knowledge_test` minimum fields:
 1) `cycle_id`
 2) `doc_id`
 3) `skill_id`
@@ -360,83 +228,42 @@ Knowledge test row fields (minimum)
 13) `status`
 14) `streak`
 
-Cycle summary section MUST include:
-1) system-skill coverage
-2) fidelity parity rate
-3) knowledge pass rate
-4) P0 miss count
-5) rank
-6) delta vs previous cycle
+Cycle summary must include:
+1) `knowledge_score`
+2) `knowledge_pass_rate`
+3) `p0_miss_count`
+4) `fidelity_parity_rate`
+5) `global_score`
+6) explicit cycle status (`pass|fail|incomplete`)
 
 ---
 
-## 12) Compaction cycle behavior (required)
+## 12) Targeted relearn contract
 
-Cycle 1 (first onboarding / bootstrap)
-1) Build full manifest.
-2) Generate full tests and answers for all required entries.
-3) Run quality rubric and fix until pass.
-4) Wait for compaction/handoff.
-5) After compaction, run evaluation and grade.
-6) Record baseline scores + weaknesses.
+After grading:
+1) derive failed/weak docs from misses,
+2) reread failed/weak docs + required P0 dependencies only,
+3) record relearn evidence + unresolved weaknesses,
+4) generate `next_compaction_hint` corrections from misses.
 
-Cycle 2
-1) Regenerate tests (new variants) for failed/weak skills.
-2) Include P0 sentinel checks for all critical docs regardless of previous pass.
-3) Retest and grade.
-4) Update board with score deltas + remediation status.
-
-Cycle N
-1) Keep focused retests on weak areas.
-2) Keep permanent minimal P0 sentinels.
-3) Shrink total test volume only when stability streaks justify it.
-4) Never skip policy-gate validation.
+Full baseline rereads are not the default relearn path.
 
 ---
 
-## 13) How to run one full post-compaction cycle (operator guide)
+## 13) Fresh-cycle reset and adaptive shrink
 
-Pre-condition: compaction/handoff occurred.
-
-0) STOP. No work actions. Enter REONBOARD.
-
-1) Phase A (reads)
-- Follow `agent_onboarding/default/general/skills/compaction_requirements.md` Phase A exactly.
-
-2) Phase B (measurement + knowledge gate)
-- Choose `cycle_id`.
-- Regenerate manifest (in memory) and compute required test set.
-- Answer tests WITHOUT reading answer keys.
-- Post `SKILL_CHECK_SUBMISSION` in chat with:
-  - cycle_id
-  - all answers
-  - `ANSWERS_UNREAD: true`
-- Read answer keys and grade.
-- Produce `SKILL_GATE_REPORT` in chat with:
-  - knowledge_score, p0_miss_count, critical_miss_count, rank
-  - top misses + remediation_hint
-- Produce `DIFF_ONBOARDING_REPORT` in chat with:
-  - system_skill_doc_coverage, parity_rate, policy_gate_miss_count
-  - top misses + next_compaction_hint
-- Compute `global_score` and pass/fail.
-
-3) Phase C (attestation + certification request)
-- Only if gates pass:
-  - post REONBOARD attestation including DIFF + SKILL_GATE evidence
-  - request `CERTIFY: APPROVED`
-
-4) Phase D (post-cert updates)
-- Write:
-  - updated manifest to `skill_check/manifest/onboarding_manifest.yaml`
-  - cycle rows into `compacting_differential_board.md` (both row types)
-  - historical cycle report into `skill_check/historical_test_results/`
-  - next-cycle test generation artifacts as needed
+After certification:
+1) regenerate manifest + suite (`--compaction-event` flow),
+2) keep one active cycle only (prune stale cycle dirs/files),
+3) failed/weak docs remain dense or increase,
+4) stable docs may shrink only after streak threshold,
+5) never remove P0 sentinel minimum coverage.
 
 ---
 
 ## 14) Non-negotiable discipline
 
-- No pre-cert edits (except Phase D after user approval).
-- No policy bypass options.
-- No performative compliance (no fake â€œran testsâ€ claims).
-- If anything is missing: declare `BLOCKED`, list what is missing, and ask the user for instructions.
+- no pre-cert edits outside measurement workflow.
+- no bypass options for anti-cheat, grading, or gate checks.
+- no performative "ran tests" claims.
+- if blocked, publish `BLOCKED` with exact missing artifacts or failed gates.
