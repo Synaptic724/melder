@@ -44,6 +44,3 @@ References
 - `agent_onboarding/default/new/skills/system_overview_for_user.md`
 - `agent_onboarding/default/new/skills/profile_model_explained.md`
 - `agent_onboarding/default/new/skills/configuration_map_guide.md`
-
-
-

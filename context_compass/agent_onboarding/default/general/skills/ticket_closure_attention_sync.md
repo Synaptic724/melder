@@ -51,8 +51,3 @@ References
 - `context_compass/agent_onboarding/default/general/skills/workflow.md`
 - `context_compass/agent_onboarding/default/general/skills/ticketing.md`
 - `context_compass/agent_onboarding/default/general/skills/active_pointerboard.md`
-
-
-
-
-

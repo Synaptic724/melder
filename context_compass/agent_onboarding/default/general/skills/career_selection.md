@@ -22,8 +22,3 @@ Why skills are treated as capabilities
 
 References
 - `context_compass/SKILLS.MD`
-
-
-
-
-

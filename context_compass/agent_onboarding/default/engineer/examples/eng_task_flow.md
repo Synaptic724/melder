@@ -10,9 +10,9 @@ Context
 Example flow (concise)
 1) Confirm scope and list files to be changed.
 2) Read the relevant module and docstrings.
-3) Propose a minimal plan (2â€“4 steps) and confirm.
+3) Propose a minimal plan (2ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“4 steps) and confirm.
 4) Implement the change with docstrings and tests.
-5) Run `pytest` and report results or say â€œNot run.â€
+5) Run `pytest` and report results or say ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œNot run.ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â
 
 Expected output format (sample)
 - Plan:
@@ -24,8 +24,3 @@ Expected output format (sample)
   - `tests/unit/test_module_x.py`: new coverage for split helper.
 - Tests:
   - `pytest -q` (pass)
-
-
-
-
-

@@ -124,7 +124,3 @@ Survey expectations (planned)
 References
 - agent_onboarding/default/engineer/skills/context_protocol.md
 - agent_onboarding/default/engineer/skills/staleness_protocol.md
-
-
-
-

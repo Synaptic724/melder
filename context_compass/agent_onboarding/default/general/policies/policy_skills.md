@@ -20,6 +20,13 @@ Certification gate (mandatory)
 - Complete onboarding skills and request approval.
 - Require the approval message to include the exact token
   `CERTIFY: APPROVED`.
+
+
+Post-compaction additional gate (non-negotiable)
+- If a compaction/handoff/reset occurred, certification requires BOTH:
+  - `DIFF_ONBOARDING_REPORT` (semantic parity metrics)
+  - `SKILL_GATE_REPORT` (knowledge-gate metrics + anti-cheat passed)
+- If either is missing, certification is blocked.
 - Do not use tools or edit files until the user provides this approval token.
 
 Required flow
@@ -145,9 +152,3 @@ Workflow
 4) Review relevant examples and mirror the pattern.
 5) If work is code-engineering, continue with engineer profile docs before
    implementation.
-
-
-
-
-
-

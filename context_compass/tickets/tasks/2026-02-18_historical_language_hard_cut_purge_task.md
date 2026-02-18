@@ -83,6 +83,3 @@ forward-only.
 
 ## Context / Handoff Summary
 Task opened to finish full historical wording purge after active-policy closure.
-
-
-

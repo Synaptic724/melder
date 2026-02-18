@@ -86,8 +86,3 @@ This deep documentation is part of the holistic core. It codifies how Melder act
 
 ## Context / Handoff Summary
 - Epic complete. Deep architecture and components documentation delivered for Melder core.
-
-
-
-
-

@@ -259,6 +259,3 @@ speed changes that regress correctness or observability.
 ## Context / Handoff Summary
 Epic remains in progress with discovery complete across all lanes; next action
 is user-approved implementation-wave selection from ranked candidates.
-
-
-

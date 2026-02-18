@@ -30,8 +30,3 @@ Example uses
 
 Examples
 - agent_onboarding/user_defined/synaptic_python_developer/examples/python/pytest_integration_examples.py
-
-
-
-
-

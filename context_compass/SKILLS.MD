@@ -1,4 +1,5 @@
 
+
 # SKILLS Role Map
 
 Purpose
@@ -33,4 +34,3 @@ Notes
 - This file is a routing manifest, not a license to read the whole repo.
 - Baseline/on-demand triggers are defined in the resolved role `SKILLS.MD` files and enforced
   by `AGENTS.MD` and `compaction_requirements.md`.
-

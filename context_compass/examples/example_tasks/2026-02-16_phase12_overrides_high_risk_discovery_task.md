@@ -106,6 +106,3 @@ Execution order:
 ## Context / Handoff Summary
 This task is the high-risk lane for overrides strategy discovery. It captures
 major redesign options and decision criteria before any implementation push.
-
-
-

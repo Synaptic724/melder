@@ -35,5 +35,3 @@ As a developer, I want to re-evaluate the system for improvement opportunities s
 
 ## Notes
 - Requested by user to "run discovery again and find opportunities to improve the system".
-
-

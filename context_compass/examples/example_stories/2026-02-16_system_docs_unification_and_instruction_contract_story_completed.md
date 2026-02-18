@@ -152,9 +152,3 @@ simpler and token-aware.
 ## Context / Handoff Summary
 Hard-cut system-doc unification executed across phased tasks and accepted;
 ready for archive move.
-
-
-
-
-
-

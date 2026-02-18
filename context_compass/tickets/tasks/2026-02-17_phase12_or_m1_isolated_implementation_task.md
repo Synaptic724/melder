@@ -106,5 +106,3 @@ with targeted tests and pinned-core benchmark comparison.
 ## Context / Handoff Summary
 This task is the active OR-M1 implementation lane for the next wave after
 wave-1 rollback.
-
-

@@ -18,6 +18,3 @@ Boundary rule
 - These are additive overrides for `synaptic_python_developer` only.
 - Do not copy these policy constraints into default `general` or `engineer`
   profile docs unless explicitly approved for global adoption.
-
-
-

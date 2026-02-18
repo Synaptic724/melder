@@ -224,6 +224,3 @@ before code changes.
 ## Context / Handoff Summary
 Story discovery is complete across benchmark, no-overrides, overrides, and
 creation-context lanes; next step is ranked shortlist synthesis for user approval.
-
-
-

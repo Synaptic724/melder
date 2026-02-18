@@ -50,7 +50,3 @@ Populate src and tests components docs with C3/C2/C1 details.
 
 ## Context / Handoff Summary
 Components docs populated in `system_docs/src_components.md` and `system_docs/tests_components.md`.
-
-
-
-

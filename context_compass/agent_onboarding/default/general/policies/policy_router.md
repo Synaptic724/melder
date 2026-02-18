@@ -133,4 +133,3 @@ Workflow
 4) Review relevant examples and mirror the pattern.
 5) If work is code-engineering, continue with engineer profile docs before
    implementation.
-

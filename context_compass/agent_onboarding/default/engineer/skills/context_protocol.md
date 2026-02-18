@@ -28,8 +28,3 @@ Rules
 
 Examples
 - `agent_onboarding/default/general/README.md`
-
-
-
-
-

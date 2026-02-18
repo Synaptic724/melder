@@ -59,7 +59,3 @@ References
 - `agent_onboarding/default/general/skills/reactive_documentation.md`
 - `agent_onboarding/default/general/skills/compaction_requirements.md`
 - `workflow.md`
-
-
-
-

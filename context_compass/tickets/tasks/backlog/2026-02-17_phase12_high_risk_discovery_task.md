@@ -151,6 +151,3 @@ weighted benchmark evidence.
 ## Context / Handoff Summary
 Task is staged and ready. Activation should begin only after mid-risk baseline
 and initial candidate findings are documented in story notes.
-
-
-

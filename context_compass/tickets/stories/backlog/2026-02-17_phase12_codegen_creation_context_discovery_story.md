@@ -206,6 +206,3 @@ Story is active with benchmark contract and pre baseline artifact captured at
 Risk-lane candidates are now documented in task notes. Next action is
 MR-1 feasibility validation and prototype decisioning before any high-risk
 activation.
-
-
-

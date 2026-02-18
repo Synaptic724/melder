@@ -95,6 +95,3 @@ Pass only when all checks are true:
   - evidence-backed state,
   - unresolved unknowns,
   - next discovery target.
-
-
-

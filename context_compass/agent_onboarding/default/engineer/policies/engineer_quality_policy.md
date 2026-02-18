@@ -28,7 +28,3 @@ Exceptions
 References
 - `AGENTS.MD`
 - `agent_onboarding/default/general/skills/unknowns_gate_reference.md`
-
-
-
-

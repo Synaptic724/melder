@@ -38,8 +38,3 @@ Rules
 
 Examples
 - agent_onboarding/user_defined/synaptic_python_developer/examples/python/anti_patterns.py
-
-
-
-
-

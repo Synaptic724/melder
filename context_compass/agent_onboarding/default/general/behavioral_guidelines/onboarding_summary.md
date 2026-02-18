@@ -32,7 +32,3 @@ References
 - `AGENTS.MD`
 - `config/context_compass_config.yaml`
 - `context_compass/SKILLS.MD`
-
-
-
-

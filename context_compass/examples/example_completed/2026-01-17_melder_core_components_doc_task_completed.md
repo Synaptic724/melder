@@ -50,7 +50,3 @@ Rewrite `system_docs/src_components.md` as a deep, source-anchored C3/C2/C1 comp
 
 ## Context / Handoff Summary
 - Completed deep rewrite of `system_docs/src_components.md` with detailed C3/C2/C1 catalog and diagrams.
-
-
-
-

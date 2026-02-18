@@ -49,8 +49,3 @@ Unknowns Gate
   status must remain UNKNOWN until direct source evidence is attached.
 - During execution handoffs, promote to FACT only with reproducible evidence
   pointers that another engineer can verify quickly.
-
-
-
-
-

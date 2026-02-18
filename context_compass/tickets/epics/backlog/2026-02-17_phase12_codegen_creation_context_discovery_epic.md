@@ -205,6 +205,3 @@ runtime contract.
 ## Context / Handoff Summary
 Epic is now active and scoped to discovery only. The linked story is the single
 execution lane for baseline capture, risk-lane analysis, and recommendation output.
-
-
-

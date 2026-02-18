@@ -116,6 +116,3 @@ onboarding policy docs.
 
 ## Closure Note
 Closed after user confirmation to continue and finalize token-only certification alignment.
-
-
-

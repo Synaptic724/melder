@@ -49,7 +49,3 @@ Deepen the src components doc with Spectrum subcomponents and wiring details.
 
 ## Context / Handoff Summary
 Src components doc expanded with Spectrum root and subcomponents.
-
-
-
-

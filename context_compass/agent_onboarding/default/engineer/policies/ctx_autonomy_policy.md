@@ -29,7 +29,3 @@ Engineer emphasis
 References
 - agent_onboarding/default/engineer/policies/ctx_autonomy_rubric.md
 - agent_onboarding/default/engineer/policies/engineer_quality_policy.md
-
-
-
-

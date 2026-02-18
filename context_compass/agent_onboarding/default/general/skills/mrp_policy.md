@@ -23,6 +23,3 @@ Decision heuristic
 - If uncertainty is foundation reliability, choose MRP.
 - If success depends on love/retention/referrals, apply MLP after MRP.
 - Default to MRP when in doubt.
-
-
-

@@ -24,7 +24,3 @@ References
 - `agent_onboarding/default/engineer/skills/src_components_instructions.md`
 - `agent_onboarding/default/engineer/skills/tests_architecture_instructions.md`
 - `agent_onboarding/default/engineer/skills/tests_components_instructions.md`
-
-
-
-

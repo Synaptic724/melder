@@ -125,5 +125,3 @@ tables.
 ## Context / Handoff Summary
 Selection/routing is complete. Active implementation lane is now
 `TASK-2026-02-17-phase12-or-m1-isolated-implementation`.
-
-

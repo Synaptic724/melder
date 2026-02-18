@@ -54,7 +54,3 @@ Rules for custom classes
 References
 - `agent_onboarding/default/new/skills/configuration_map_guide.md`
 - `PROFILE_CLASS_CREATION_GUIDE.md`
-
-
-
-

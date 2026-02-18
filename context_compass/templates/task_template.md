@@ -99,6 +99,3 @@
 
 ## Context / Handoff Summary
 <Succinct summary of current state, key decisions, and next steps for future context.>
-
-
-

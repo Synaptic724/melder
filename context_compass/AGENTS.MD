@@ -43,24 +43,35 @@
 - Repository-root `agents.md` is bootstrap-only; canonical onboarding and
   execution policy lives in `context_compass/AGENTS.md`.
 
-### Compaction Directive
+### Compaction Directive (Fidelity-First)
 
 - Highest priority adherence: after any context compaction or handoff,
   immediately re-onboard before any action.
-- Re-read `context_compass/AGENTS.md`,
-  `context_compass/agent_onboarding/default/general/skills/compaction_requirements.md`,
-  and `context_compass/agent_onboarding/default/general/skills/compaction_diff_onboarding.md`
+- Re-read `context_compass/AGENTS.md` and
+  `context_compass/agent_onboarding/default/general/skills/compaction_requirements.md`
   before continuing work.
-- Compaction/handoff summaries are a volatile cache. Empty summaries are forbidden.
-  - The summary MUST preserve P0/P1 operational truths and resumption pointers.
-  - Follow `context_compass/CONTEXT_COMPACTION.md` compaction-cache format.
-  - Do NOT write narrative replay. Do NOT include secrets.
-- Post `REONBOARD: COMPLETE` attestation **with read-integrity proof** and
-  **Diff-Onboarding metrics** before any action:
+- Compaction summary objective (non-negotiable):
+  - **Maximize semantic fidelity of system/skills/policy state across compaction.**
+  - Default target mix for the compaction summary:
+    - **~90%**: system/skills/policy state (role skills chain, gates, invariants, definitions)
+    - **~10%**: operational pointers (routing, active tickets, immediate next actions)
+  - Compactness is a constraint, not the objective. Use as much summary budget as the platform allows.
+  - Do NOT intentionally minimize the compaction summary by default.
+- After compaction/handoff, re-entry is **DIFF-ONBOARDING + SKILL-CHECK mode**:
+  - You MUST measure compaction retention vs canonical docs and report parity metrics
+    before certification.
+  - You MUST run the knowledge gate (Skill Check) and report competence metrics
+    before certification.
+  - Canonical instructions live in:
+    - `context_compass/agent_onboarding/default/general/skills/compaction_diff_onboarding.md`
+    - `context_compass/skill_check/skill_check_policy.md`
+- Post `REONBOARD: COMPLETE` attestation **with read-integrity proof AND parity + knowledge evidence**
+  before any action:
   - `ROLE_SKILLS_READ`
   - `FILES_REREAD`
   - `READ_INTEGRITY_PROOF`
-  - `DIFF_ONBOARDING_REPORT`
+  - `DIFF_ONBOARDING_REPORT` (system-skill parity metrics + policy-gate miss count)
+  - `SKILL_GATE_REPORT` (knowledge-score + P0 miss count + rank + global score; anti-cheat passed)
   - `NO_ACTION_TAKEN_YET: true`
 
 ## Highest Priority Adherence (Compaction Re-Onboarding)
@@ -79,22 +90,20 @@ After any context compaction or handoff:
 - Start from `config/context_compass_config.yaml`, then `SKILLS.MD`.
 - Re-read `agent_onboarding/default/general/skills/compaction_requirements.md`.
 - Re-read `agent_onboarding/default/general/skills/compaction_diff_onboarding.md`.
+- Re-read `skill_check/skill_check_policy.md`.
+- Re-read `skill_check/manifest/onboarding_manifest.yaml`.
 - README reads are allowed for `new` first-time onboarding only; non-`new`
   roles use policy/skills docs.
 - Re-certify with exact phrase `CERTIFY: APPROVED` before acting.
 - If anything is unclear after re-onboarding, ask the user for instructions and
   get confirmation before acting.
-- During compaction/handoff summarization, you MUST write the structured compaction cache summary
-  defined in `context_compass/CONTEXT_COMPACTION.md`.
-  - Empty summaries are forbidden.
-  - Retain P0/P1 operational truths + resumption pointers.
-  - No narrative replay; no secrets.
 - Before any action, publish a Re-Onboarding Attestation message with:
   - `REONBOARD: COMPLETE`
   - `ROLE_SKILLS_READ` (resolved role chain in parent-first order)
   - `FILES_REREAD` (at minimum: `attention_board.md` + active ticket paths)
   - `READ_INTEGRITY_PROOF` (concise comprehension proof; NOT tool logs)
-  - `DIFF_ONBOARDING_REPORT` (cycle metrics + P0 critical-loss count)
+  - `DIFF_ONBOARDING_REPORT` (semantic parity metrics; system-skill prioritized)
+  - `SKILL_GATE_REPORT` (knowledge-gate results; global score + rank; anti-cheat passed)
   - `NO_ACTION_TAKEN_YET: true`
 
 Performative compliance is forbidden during re-onboarding:
@@ -149,7 +158,6 @@ Onboarding completion attestation (first onboarding in a fresh session):
   - `ONBOARD: COMPLETE`
   - `ROLE_SKILLS_READ` (resolved role chain in parent-first order)
   - `READ_INTEGRITY_PROOF` (concise comprehension proof; NOT tool logs)
-  - `DIFF_ONBOARDING_REPORT` (cycle metrics + P0 critical-loss count)
   - `NO_ACTION_TAKEN_YET: true`
 
 Certification gating:
@@ -187,10 +195,7 @@ When the user signals distrust or drift (e.g., "performative compliance", "playi
 2) State current status plainly: ONBOARD/REONBOARD complete? If uncertain, treat as NOT complete.
 3) Cite the controlling rule(s) (file + section name).
 4) Execute the single compliant next step. Do not present options unless multiple compliant paths truly exist.
-5) Prove, don't posture: repair/provide `READ_INTEGRITY_PROOF` (no tool-log theatre).
-   If proof cannot be produced, mark `BLOCKED` and ask for instructions.
-
-
-
-
-
+5) Prove, don't posture:
+   - repair/provide `READ_INTEGRITY_PROOF` (no tool-log theatre)
+   - if post-compaction, include the `DIFF_ONBOARDING_REPORT` parity metrics
+6) If proof cannot be produced, mark `BLOCKED` and ask for instructions.

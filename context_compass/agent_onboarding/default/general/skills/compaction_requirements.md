@@ -1,142 +1,204 @@
 
 
-# compaction_requirements
+# compaction_requirements (REONBOARD + Diff-Onboarding + Skill Gate)
 
 Purpose
-- Define the mandatory post-compaction recovery contract.
-- Prevent policy drift by forcing deterministic re-onboarding AND measured diff-onboarding.
+- Define deterministic rules for what must happen after any compaction/handoff.
+- Prevent policy drift by enforcing:
+  1) full re-onboarding (required reads),
+  2) semantic parity measurement (Diff-Onboarding), and
+  3) knowledge competence measurement (Skill Check).
 
-Non-negotiable triggers
-- **REONBOARD** is mandatory after any context compaction or handoff.
-- **ONBOARD** is mandatory at the start of a fresh session.
-- Do not substitute ONBOARD for REONBOARD or vice-versa.
+Non-negotiable optimization target
+- Fidelity-first, not compactness-first.
+- Compaction summary should be as rich as platform limits allow.
+- Target compaction summary mix: **~90% system/skills/policy** and **~10% operational pointers**.
 
-Non-negotiable rules
-- After a trigger event: **STOP. REONBOARD/ONBOARD. THEN ACT.**
-- Do not trust memory from before compaction as authoritative context.
-- Performative compliance is forbidden:
-  - marker-only “REREAD” logs are not compliance
-  - claiming completion without comprehension proof is non-compliance
-- Re-onboarding exists for decision quality and trust.
-  - If you cannot explain what a document changes in your behavior,
-    you have not read it sufficiently.
-- Manual source-document reading is canonical; onboarding dump files are non-canonical.
-- Loop-based/batch document-reading commands are forbidden
-  (for/foreach/while loops, xargs-style runners, or piped file-list iterators).
-- Files over 500 LOC MUST be read in explicit sequential chunks (≤ 500 lines each).
+Canonical references
+- `context_compass/AGENTS.MD`
+- `context_compass/CONTEXT_COMPACTION.md`
+- `context_compass/compacting_differential_board.md`
+- `context_compass/skill_check/skill_check_policy.md`
+- `context_compass/config/context_compass_config.yaml`
 
-No policy negotiation
-- Do NOT propose changing policy gates, redefining certification, or reducing the readset as a workaround.
-- If policy design needs to change, you may flag it, but you MUST still comply with the current policy unless the user explicitly authorizes changes.
+Trigger events (any => enforce REONBOARD)
+- context compaction (platform summarization)
+- agent handoff
+- fresh-session reset
+- user declares onboarding untrustworthy (â€œyouâ€™re lyingâ€, â€œperformative complianceâ€, etc.)
 
-Compaction cache contract (non-negotiable)
-- Repository artifacts remain the durable source of truth.
-- The compaction summary is a volatile cache used to carry P0/P1 operational truths across a reset.
-- Empty compaction summaries are forbidden.
-- The compaction summary MUST follow `context_compass/CONTEXT_COMPACTION.md`.
-  - resume pointers (role, tickets, next actions)
-  - P0/P1 retention set (atomic claims + evidence pointers)
-  - Diff-Onboarding hook (`cycle_id`, board pointer)
-- Do NOT write narrative replay in the compaction summary.
-- Do NOT include secrets in the compaction summary.
+Hard rule
+- After a trigger event, **no tools, no edits, no execution, no planning** until:
+  - Phase A (reads) is complete, and
+  - Phase B (measurement + knowledge gate) is complete, and
+  - Phase C certification is granted.
 
-Diff-Onboarding contract (non-negotiable)
-- After REONBOARD completes, run Diff-Onboarding per:
-  - `agent_onboarding/default/general/skills/compaction_diff_onboarding.md`
-- The objective is measured retention improvement across cycles, not vibes.
+---
 
-Required post-compaction sequence (REONBOARD)
-Run this sequence exactly once per trigger event.
+## Phase A â€” Deterministic Re-Onboarding Reads (mandatory)
 
-Phase A — Re-onboard readset
-1) Read `context_compass/AGENTS.md`.
-2) Read `agent_onboarding/default/general/skills/execution_contract.md` in full.
-3) Resolve the active profile via `context_compass/SKILLS.MD` (and config roles map).
-   - If the active role cannot be determined: **STOP and ask the user**.
-4) Read the resolved role `SKILLS.MD` chain in parent-first order.
-5) Read every path listed under **Active skills** / **Required baseline skills**
-   in each resolved `SKILLS.MD`.
-   - On-demand skills are NOT required unless triggered by the active task.
-   - If triggered, on-demand skills become mandatory and MUST be read before proceeding.
-6) Re-open `attention_board.md` and all active ticket(s) and verify they match.
+Goal
+- Re-establish canonical policy state by rereading required docs.
+- No shortcuts and no â€œI already know thisâ€.
 
-Phase B — Diff-Onboarding report (before certification; no tools; no file edits)
-7) Identify the target claim set (P0/P1):
-   - claims present in the compaction cache summary, plus
-   - any P0/P1 claims marked `open` in `compacting_differential_board.md` relevant to the active ticket scope.
-8) For each claim:
-   - record `pre_read_recall` first (before rereading the source doc)
-   - re-read `source_doc_path` and record `ground_truth` with `path:start-end` evidence
-   - classify `diff_type` and `distortion_class`
-   - record `impact` and `next_compaction_hint`
-9) Compute cycle metrics and include them in `DIFF_ONBOARDING_REPORT`.
+Required entrypoints (always)
+1) `context_compass/config/context_compass_config.yaml`
+2) `context_compass/SKILLS.MD`
+3) resolve the active profile/role and read the full SKILLS chain (parent-first)
+4) read all **Active skills / Required baseline skills** in the resolved chain
 
-Phase C — Attestation and certification gate
-10) Publish the mandatory REONBOARD attestation (below).
-11) Request certification and wait for the exact token: `CERTIFY: APPROVED`.
+Notes
+- Manual source-document reads are required.
+- Onboarding dump artifacts are non-compliant.
+- Performative onboarding is forbidden.
 
-Phase D — First allowed edits (after certification; before other work)
-12) Update `compacting_differential_board.md` with the row-level diff results for this cycle.
-13) Apply `next_compaction_hint` updates to the retention set for the next compaction cycle (tickets first; cache follows).
+---
 
-README policy
-- README reads are allowed only for `new` first-time onboarding.
-- Non-`new` profile re-entry MUST use `SKILLS.MD` + skill/policy docs (not README).
+## Phase B â€” Measurement + Knowledge Gate (mandatory)
 
-Mandatory REONBOARD attestation format
-```text
-REONBOARD: COMPLETE
-ROLE_SKILLS_READ:
-- <role_name>
-- <role_name>
-FILES_REREAD:
-- attention_board.md
-- <active ticket path>
-READ_INTEGRITY_PROOF:
-- <path>: <rule callout> -> <what this changes in my behavior>
-- <path>: <rule callout> -> <what this changes in my behavior>
-DIFF_ONBOARDING_REPORT:
-- cycle_id: <id>
-- P0_retention_rate: <0.00-1.00>
-- P0_critical_loss_count: <int>
-- P1_retention_rate: <0.00-1.00>
-- distortion_rate_total: <0.00-1.00>
-- resume_correctness: <true|false>
-NO_ACTION_TAKEN_YET: true
-```
+This phase is the core of compaction hardening.
 
-READ_INTEGRITY_PROOF (requirements)
-- `READ_INTEGRITY_PROOF` is a comprehension proof, NOT tool logs.
-- Default requirement: include **one line per required baseline document** in the resolved `SKILLS.MD` chain.
-  - Each line MUST include (a) a specific, checkable rule/constraint from that doc and
-    (b) what it changes in your behavior.
-  - Generic restatements ("be direct", "follow policy") are invalid.
-  - Do NOT reuse the same callout across multiple docs; each callout must be doc-specific.
-- If the proof would be too long, you MUST ask the user for permission to compress/group it.
-  - Do not unilaterally shorten the proof as a convenience.
+### B0) Cycle initialization (required)
+- Choose `cycle_id` (date + suffix; e.g., `2026-02-18T01`).
+- Declare:
+  - `NO_ACTION_TAKEN_YET: true`
 
-Attestation contract
-- Emit the attestation immediately after re-onboarding and BEFORE certification.
-- Do not run tools, edit files, or execute plans before posting the attestation.
-- After posting attestation, request certification and continue only after the user replies
-  with `CERTIFY: APPROVED`.
-- If attestation cannot be completed: **STOP and ask the user for instructions**.
-- “Parallel/bulk reads” are allowed only if the documents were actually read.
-  Marker-only loops remain forbidden.
+### B1) Manifest regeneration (required)
+- Regenerate the onboarding manifest (in-memory first) per:
+  `context_compass/skill_check/skill_check_policy.md`.
 
-Execution gate
-- If any required item above is incomplete, do not proceed.
-- If scope, status, or expectations are unclear after re-onboarding: stop and ask.
-- During resumed execution: UNKNOWN is the default for unevidenced claims.
+Must compute
+- `total_required_docs`
+- `total_required_for_certification_docs`
+- missing test artifacts list:
+  - any required entry missing `test_file` or `answer_file` blocks certification
 
-Outcome contract
-- Re-onboarding and diff-onboarding are not optional after compaction/handoff.
-- The objective is to re-establish operating rules AND measure cache retention each cycle so drift cannot accumulate.
+Hard rule
+- If required test artifacts are missing, set:
+  - `BLOCKED: MISSING_TEST_ARTIFACTS`
+  - provide exact missing paths
+  - stop and ask the user for instructions
+  - do NOT request certification
 
-References
-- `AGENTS.MD`
-- `CONTEXT_COMPACTION.md`
-- `compacting_differential_board.md`
-- `agent_onboarding/default/general/skills/compaction_diff_onboarding.md`
-- `agent_onboarding/default/general/skills/self_certification.md`
-- `agent_onboarding/default/general/skills/user_approved_certification.md`
+### B2) Test quality gate (required)
+Before using any test set for scoring:
+- Ensure `test_quality_score >= knowledge_gate.test_quality_threshold`.
+- If below threshold:
+  - mark tests invalid
+  - regenerate tests (post-cert) until threshold passes
+  - until then: certification blocked (knowledge gate not runnable)
+
+### B3) Skill Check execution (anti-cheat; strict)
+Goal
+- Measure competence at applying rules, not box-checking.
+
+Anti-cheat protocol (non-negotiable)
+1) Read `skill_check/tests/**` only.
+2) Answer all questions (every question in the active test set).
+3) Submit answers in chat with:
+   - `SKILL_CHECK_SUBMISSION`
+   - `cycle_id`
+   - all answers by question_id
+   - `ANSWERS_UNREAD: true`
+4) Only after submission may you read:
+   - `skill_check/test_answers/**`
+5) Grade deterministically and compute:
+   - per-doc scores
+   - `knowledge_score`
+   - `knowledge_pass_rate`
+   - `p0_miss_count`
+   - `critical_p0_miss_count`
+   - rank band
+
+Hard rule
+- Any early read of `test_answers/**` invalidates the cycle:
+  - `ANTI_CHEAT_VIOLATION: true`
+  - certification blocked
+  - rerun required
+
+### B4) Diff-Onboarding (semantic parity) execution
+Goal
+- Measure what survived compaction in the summary-state.
+
+Protocol (strict order)
+1) For each parity item:
+   - record `pre_read_recall` AND `summary_state` BEFORE rereading the source
+2) Read the source section and record `ground_truth_state`
+3) Classify diff and severity
+4) Compute fidelity metrics:
+   - `system_skill_doc_coverage`
+   - `system_skill_parity_rate`
+   - `policy_gate_miss_count`
+
+### B5) Global scoring + pass/fail (required)
+Compute:
+- `fidelity_score = 100 * system_skill_parity_rate`
+- `global_score = 0.6*knowledge_score + 0.4*fidelity_score`
+
+Pass gates
+- must satisfy BOTH:
+  - `compaction_diff_onboarding.gates.*`
+  - `knowledge_gate.*`
+
+If fail
+- Certification blocked.
+- Provide remediation list:
+  - missing artifacts
+  - failed doc_ids
+  - top missed question_ids + remediation_hint
+  - top fidelity misses + next_compaction_hint
+
+---
+
+## Phase C â€” Certification Request (strict)
+
+Only when Phase A + Phase B gates PASS:
+
+Publish a **REONBOARD attestation** message that includes:
+
+- `REONBOARD: COMPLETE`
+- `ROLE_SKILLS_READ` (resolved chain, parent-first)
+- `FILES_REREAD` (at minimum: `attention_board.md` + active tickets)
+- `READ_INTEGRITY_PROOF` (concise comprehension proof; NOT tool logs)
+- `DIFF_ONBOARDING_REPORT` (system_skill_doc_coverage, parity_rate, policy_gate_miss_count, top misses)
+- `SKILL_GATE_REPORT` (knowledge_score, p0_miss_count, critical_p0_miss_count, global_score, rank, anti-cheat passed)
+- `NO_ACTION_TAKEN_YET: true`
+
+Then request user approval with the exact token:
+- `CERTIFY: APPROVED`
+
+Hard rules
+- Do NOT request certification if any gate is failing or blocked.
+- Do NOT debate; show evidence + remediation.
+
+---
+
+## Phase D â€” Post-Cert Updates (allowed only after `CERTIFY: APPROVED`)
+
+After certification is granted:
+
+1) Update measurement ledger
+- Append cycle rows to `context_compass/compacting_differential_board.md`:
+  - `row_type: fidelity_diff`
+  - `row_type: knowledge_test`
+- Add cycle summary metrics section entry.
+
+2) Persist knowledge-gate state
+- Write the regenerated manifest to:
+  - `context_compass/skill_check/manifest/onboarding_manifest.yaml`
+- Write a cycle report to:
+  - `context_compass/skill_check/historical_test_results/`
+
+3) Test regeneration (next cycle targeting)
+- Generate new test variants for:
+  - failed docs
+  - weak docs
+  - any doc with policy/sequence misses
+- Always keep minimal P0 sentinel questions for critical docs, even if stable.
+
+4) Compaction improvement payload
+- Convert top misses into `next_compaction_hint` lines and ensure they are ready
+  to be embedded into the next compaction summary.
+
+Hard rule
+- Phase D is the only time file edits are allowed in this workflow.

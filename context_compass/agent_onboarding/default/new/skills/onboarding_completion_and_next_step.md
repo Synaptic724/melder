@@ -32,8 +32,3 @@ References
 - `agent_onboarding/default/new/skills/configuration_map_guide.md`
 - `config/context_compass_config.yaml`
 - `SKILLS.MD`
-
-
-
-
-

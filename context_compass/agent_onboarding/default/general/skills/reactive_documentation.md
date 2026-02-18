@@ -24,16 +24,7 @@ Canonical storage
   - `Unknowns` for unresolved or blocked claims.
   - `Context / Handoff Summary` for current state and next actions.
 - `attention_board.md` is routing-only state, not detailed finding storage.
-- Avoid creating ad-hoc side memory stores unless explicitly requested.
-- Approved exception: `compacting_differential_board.md` is mandatory for diff-onboarding retention tracking.
-
-
-Compaction retention promotion (required for P0/P1)
-- If a finding is P0/P1 and must survive compaction:
-  - Convert it into an atomic retention claim (one line; one dependency).
-  - Attach `path:start-end` evidence pointer(s).
-  - Add/update the claim in `compacting_differential_board.md` (after certification).
-  - Ensure the next compaction cache summary includes it in `RETENTION_SET_P0`/`RETENTION_SET_P1`.
+- Avoid creating side memory stores unless explicitly requested.
 
 Reactive capture protocol (mandatory)
 1) Classify claim type:
@@ -104,12 +95,5 @@ References
 - `agent_onboarding/default/general/skills/memory_management.md`
 - `agent_onboarding/default/general/skills/active_documentation.md`
 - `agent_onboarding/default/general/skills/compaction_requirements.md`
-- `agent_onboarding/default/general/skills/compaction_diff_onboarding.md`
 - `agent_onboarding/default/general/skills/workflow.md`
 - `context_compass/SKILLS.MD`
-
-
-
-
-
-

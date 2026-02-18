@@ -9,9 +9,7 @@
 - On-demand skills are NOT part of baseline certification. They become mandatory ONLY when triggered by the active task.
 - After any compaction/handoff, assume chat memory is unreliable:
   - You MUST re-onboard per `agent_onboarding/default/general/skills/compaction_requirements.md` before any action.
-  - You MUST NOT claim you retained the full document across compaction.
-    - Treat cache recall as provisional until Diff-Onboarding verifies it.
-    - Re-open the source file for authority.
+  - You MUST NOT claim you "retained" this document; re-open it instead.
 
 
 ## 1) Document Purpose
@@ -447,5 +445,3 @@ If you find mistakes while writing tests (bugs, incorrect docstrings, missing cl
 ## 11) Test Mocks Skills
 
 For reusable test-only classes and helpers, see `tests/mocks/`.
-
-

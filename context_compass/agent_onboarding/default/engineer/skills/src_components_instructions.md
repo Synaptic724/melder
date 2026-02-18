@@ -114,6 +114,3 @@ Pass only when all checks are true:
   - what component contracts changed,
   - what is still unknown,
   - which subsystem should be verified next.
-
-
-

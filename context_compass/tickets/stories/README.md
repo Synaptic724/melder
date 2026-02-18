@@ -62,8 +62,3 @@ When completed, move to `context_compass/tickets/stories/completed/` and rename 
 - `context_compass/SKILLS.MD` (deep descriptive model and naming rules)
 - `context_compass/agent_onboarding/default/general/skills/workflow.md` (ticket lifecycle and completion format)
 - `context_compass/templates/story_template.md`
-
-
-
-
-

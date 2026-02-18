@@ -202,6 +202,3 @@ Task is active with pre baseline captured at
 `benchmarks/testing_other_di/results/codegen_phase12_discovery_pre.json`.
 MR-1 prototype is implemented and initial post benchmark is captured.
 Immediate next step is rerunning weighted scoring with spellspace route included.
-
-
-

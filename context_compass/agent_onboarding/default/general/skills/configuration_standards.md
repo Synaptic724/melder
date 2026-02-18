@@ -65,9 +65,3 @@ Adoption policy
 - Forward-looking by default:
   - all new or edited active docs should follow this standard.
 - Archived/completed docs are not rewritten unless explicitly requested.
-
-
-
-
-
-

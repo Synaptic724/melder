@@ -55,5 +55,3 @@ If triggered, you MUST read the relevant items below (do not skip):
 - `system_docs/tests_components.md`
 - `system_docs/src_architecture.md`
 - `system_docs/src_components.md`
-
-

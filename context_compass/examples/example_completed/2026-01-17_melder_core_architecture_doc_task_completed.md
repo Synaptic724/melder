@@ -50,7 +50,3 @@ Rewrite `system_docs/src_architecture.md` as a deep, source-anchored C4 architec
 
 ## Context / Handoff Summary
 - Completed deep rewrite of `system_docs/src_architecture.md` with extended system narrative, sequences, appendices, and source coverage.
-
-
-
-

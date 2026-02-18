@@ -322,9 +322,3 @@ Check:
 - Use this guide through `new` onboarding when creating a class.
 - Keep class changes explicit, additive, and validated before switching
   defaults.
-
-
-
-
-
-

@@ -23,7 +23,6 @@ Core rule
 Canonical storage
 - Primary: `## Notes` in the active ticket being worked.
 - Secondary: `attention_board.md` for routing state only.
-- Tertiary (compaction): `compacting_differential_board.md` for P0/P1 retention claims that must survive compaction (after certification).
 - Do not move detailed findings into `attention_board.md`; keep detail in
   ticket notes.
 
@@ -74,12 +73,6 @@ Quality bar
 
 References
 - `agent_onboarding/default/general/skills/reactive_documentation.md`
-- `agent_onboarding/default/general/skills/compaction_diff_onboarding.md`
 - `agent_onboarding/default/general/skills/active_pointerboard.md`
 - `agent_onboarding/default/general/skills/ticketing.md`
 - `workflow.md`
-
-
-
-
-

@@ -446,6 +446,3 @@ If you find mistakes while writing tests (bugs, incorrect docstrings, missing cl
 ## 11) Test Mocks Skills
 
 For reusable test-only classes and helpers, see `tests/mocks/`.
-
-
-

@@ -30,8 +30,3 @@ Evidence discipline
 
 References
 - `context_compass/agent_onboarding/default/general/skills/execution_contract.md`
-
-
-
-
-

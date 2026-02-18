@@ -30,6 +30,3 @@ Disposition values
 | ticket | artifact_path | disposition | reason | closed_at |
 |---|---|---|---|---|
 | `tickets/tasks/completed/2026-02-16_artifact_board_and_store_contract_task_completed.md` | `artifacts/2026-02-16_artifact_protocol_discovery_snapshot.md` | delete_on_close | ticket closed; disposition applied and artifact removed from active set | 2026-02-17T12:01:56Z |
-
-
-

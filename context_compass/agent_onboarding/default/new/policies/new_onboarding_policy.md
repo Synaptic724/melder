@@ -44,8 +44,3 @@ References
 - `SKILLS.MD`
 - `agent_onboarding/default/new/skills/first_time_profile_setup.md`
 - `agent_onboarding/default/new/skills/configuration_map_guide.md`
-
-
-
-
-

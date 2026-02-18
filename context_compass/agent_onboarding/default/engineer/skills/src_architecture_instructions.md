@@ -113,6 +113,3 @@ Pass only when all checks are true:
   - what changed,
   - what remains unknown,
   - where the next reader should start.
-
-
-

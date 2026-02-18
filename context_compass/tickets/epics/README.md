@@ -62,8 +62,3 @@ When completed, move to `context_compass/tickets/epics/completed/` and rename to
 - `context_compass/SKILLS.MD` (deep descriptive model and naming rules)
 - `context_compass/agent_onboarding/default/general/skills/workflow.md` (ticket lifecycle and completion format)
 - `context_compass/templates/epic_template.md`
-
-
-
-
-

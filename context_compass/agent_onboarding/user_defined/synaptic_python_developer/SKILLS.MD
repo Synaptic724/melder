@@ -38,6 +38,3 @@ Active skills
 - `agent_onboarding/user_defined/synaptic_python_developer/skills/python/banned_patterns.md`
 - `agent_onboarding/user_defined/synaptic_python_developer/skills/python/hot_path_attribute_aliasing.md`
 - `agent_onboarding/user_defined/synaptic_python_developer/skills/python/refactor_limits.md`
-
-
-

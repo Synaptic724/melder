@@ -178,10 +178,3 @@ keeping architecture/component context compaction-safe.
 ## Context / Handoff Summary
 Discovery story is active again after migration closure. Next action is to
 select and activate the first concrete next-idea task in this lane.
-
-
-
-
-
-
-

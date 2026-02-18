@@ -45,8 +45,3 @@ Outcome for user
 References
 - `agent_onboarding/default/new/skills/profile_model_explained.md`
 - `agent_onboarding/default/new/skills/configuration_map_guide.md`
-
-
-
-
-

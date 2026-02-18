@@ -51,9 +51,3 @@ References
 - `SKILLS.MD`
 - `agent_onboarding/default/new/skills/profile_model_explained.md`
 - `PROFILE_CLASS_CREATION_GUIDE.md`
-
-
-
-
-
-

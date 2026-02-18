@@ -172,6 +172,3 @@ Identify medium-risk and high-risk optimization candidates in
 ## Context / Handoff Summary
 Task is in review with documented hotspot evidence and medium/high candidate
 table pending cross-task synthesis and closure review.
-
-
-

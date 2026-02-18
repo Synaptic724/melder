@@ -109,6 +109,3 @@ Pass only when all checks are true:
   - what component mapping is verified,
   - what remains unknown,
   - which test subsystem should be mapped next.
-
-
-

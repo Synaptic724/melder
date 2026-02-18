@@ -218,7 +218,3 @@ Remediation pass is complete and this task is done. Standards are now
 YAML-driven for threshold behavior with `expansion_gate_max_files: 5` and
 `minimum_note_score: 7`; active notes use one-path-per-line evidence blocks,
 and policy/template hard-cap lines are wrapped.
-
-
-
-

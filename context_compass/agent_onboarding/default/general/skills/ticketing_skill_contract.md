@@ -48,6 +48,3 @@ Naming convention (date-first, descriptive):
   `agent_onboarding/default/general/skills/context_compaction.md` and
   `agent_onboarding/default/general/skills/compaction_requirements.md`.
 - Keep ticket `Context / Handoff Summary` sections current before handoff.
-
-
-

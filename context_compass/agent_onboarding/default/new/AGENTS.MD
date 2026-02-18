@@ -80,8 +80,3 @@ Do not remove onboarding defaults from config:
 - `context_compass/SKILLS.MD`
 - `context_compass/agent_onboarding/default/new/skills/first_time_profile_setup.md`
 - `context_compass/agent_onboarding/default/new/skills/onboarding_completion_and_next_step.md`
-
-
-
-
-

@@ -47,6 +47,3 @@ Document the pytest requirement in AGENTS and clarify the existing unittest cont
 
 ## Context / Handoff Summary
 AGENTS now documents pytest requirement and acknowledges existing unittest tests.
-
-
-

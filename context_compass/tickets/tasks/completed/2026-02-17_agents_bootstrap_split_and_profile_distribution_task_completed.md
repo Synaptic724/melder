@@ -195,7 +195,3 @@ scope narrowed to root + `new/general/engineer/synaptic` only. Next step is to
 tighten AGENTS content quality per profile before root cutover.
 ## Closure Note
 Closed by explicit user instruction to close all tickets and clear attention routing.
-
-
-
-

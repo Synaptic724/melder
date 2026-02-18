@@ -160,5 +160,3 @@ Implement and validate the wave-1 medium shortlist:
 Wave-1 medium implementation is paused after branch rollback. Historical
 validation/benchmark notes remain for traceability, but active routing has moved
 to the next ticket per user direction.
-
-

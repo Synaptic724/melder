@@ -50,7 +50,3 @@ References
 - `agent_onboarding/default/new/SKILLS.MD`
 - `agent_onboarding/default/new/policies/new_onboarding_policy.md`
 - `agent_onboarding/default/new/behavioral_guidelines/user_onboarding_flow.md`
-
-
-
-

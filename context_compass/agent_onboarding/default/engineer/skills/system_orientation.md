@@ -3,7 +3,7 @@
 # system_orientation
 
 Purpose
-- Provide a consistent way to explain this repoâ€™s workflow and docs.
+- Provide a consistent way to explain this repoÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s workflow and docs.
 - Translate agent stories and repo docs into clear, actionable guidance.
 
 When to use
@@ -54,7 +54,3 @@ Notes
 - Use clear, direct language; avoid restating full policy documents.
 - Keep explanations faithful to `AGENTS.MD`.
 - When discussing current work state, route via `attention_board.md` and linked tickets, not memory.
-
-
-
-

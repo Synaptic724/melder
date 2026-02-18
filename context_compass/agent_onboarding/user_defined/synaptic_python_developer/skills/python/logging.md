@@ -25,9 +25,3 @@ Example
 
 Examples
 - agent_onboarding/user_defined/synaptic_python_developer/examples/python/logging_patterns.py
-
-
-
-
-
-

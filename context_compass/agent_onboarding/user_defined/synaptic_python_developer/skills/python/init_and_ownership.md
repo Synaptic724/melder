@@ -28,9 +28,3 @@ Checklist
 
 Examples
 - agent_onboarding/user_defined/synaptic_python_developer/examples/python/cleanup_patterns.py
-
-
-
-
-
-

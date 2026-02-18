@@ -21,8 +21,7 @@ Primary docs
 - `agent_onboarding/default/general/skills/workflow.md`: ticket lifecycle and closure rules.
 - `agent_onboarding/default/general/skills/ticket_microcycle.md`: strict/relaxed ticket microcycle definition.
 - `agent_onboarding/default/general/skills/context_compaction.md`: compaction/handoff policy.
-- `agent_onboarding/default/general/skills/compaction_diff_onboarding.md`: measured diff-onboarding loop.
-- `compacting_differential_board.md`: compaction retention diff board (P0/P1 claim tracking).
+- `skill_check/`: knowledge-gate tests + manifest + historical results (post-compaction competence).
 - `agent_onboarding/`: onboarding policy modules.
 - `system_docs/`: canonical docs:
   `src_architecture.md`, `src_components.md`,
@@ -54,10 +53,3 @@ Completed Archive
 - 2026-01-17 - Melder scan bind module work (see `completed/2026-01-17_melder_scan_bind_module_task_completed.md`).
 - 2026-01-18 - Melder src architecture doc (see `completed/2026-01-18_melder_src_architecture_doc_task_completed.md`).
 - 2026-01-18 - Melder src components doc (see `completed/2026-01-18_melder_src_components_doc_task_completed.md`).
-
-
-
-
-
-
-

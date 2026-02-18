@@ -121,6 +121,3 @@ under the standard benchmark keep/revert gate.
 This task is the first high-risk implementation iteration in the overrides
 queue (OV-H1). It must execute under the standard benchmark keep/revert gate
 and produce an explicit retained/reverted result.
-
-
-

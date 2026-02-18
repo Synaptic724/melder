@@ -179,6 +179,3 @@ baseline/comparison evidence needed for optimization-wave scoring.
 
 ## Closure Note
 Closed by explicit user approval after benchmark protocol validation.
-
-
-

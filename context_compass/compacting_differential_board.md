@@ -1,95 +1,126 @@
 
-# compacting_differential_board
+
+# compacting_differential_board (Fidelity + Knowledge Ledger)
 
 Purpose
-- Measure compaction retention quality per compaction cycle.
-- Improve compaction-cache retention empirically (from measured misses, not intuition).
-- Preserve **1:1 operational truth** for P0/P1 claims across compactions.
+- Provide a living measurement ledger for:
+  1) **Fidelity parity**: what system/skills/policy knowledge survived compaction.
+  2) **Knowledge competence**: whether the agent can correctly apply the rules (gates, sequences, must-do/must-not).
 
-Core rule (non-negotiable)
-- Each row is one **atomic retention claim**.
-- Do NOT store paragraph blobs.
-- Do NOT merge multiple dependencies into one claim.
-- If a claim is complex, split it.
+Non-negotiable intent
+- This board is NOT the cache.
+- This board measures the cache (compaction summary state) against canonical repo truth.
+- The system improves over cycles by:
+  measure â†’ correct next compaction â†’ retest â†’ converge.
 
-Important constraint
-- Repository artifacts remain the durable source of truth.
-- The compaction summary is a volatile cache that can carry P0/P1 claims across a reset.
-- The cache is **not authoritative** until verified via Diff-Onboarding.
+Canonical references
+- `context_compass/CONTEXT_COMPACTION.md`
+- `context_compass/agent_onboarding/default/general/skills/compaction_diff_onboarding.md`
+- `context_compass/skill_check/skill_check_policy.md`
 
-Security and privacy (non-negotiable)
-- Never store secrets, credentials, tokens, private keys, or sensitive identifiers.
-- If a claim depends on a secret value, record only a redacted placeholder and point to the secure source.
+---
 
-Board data model (one row = one claim)
-Each row is one atomic retention item.
+## Cycle Summary (required)
 
-| cycle_id | claim_id | priority | source_doc_path | source_doc_title | evidence_path | pre_read_recall | ground_truth | diff_type | distortion_class | impact | next_compaction_hint | status | streak_retained |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+Each compaction/re-entry cycle MUST add one cycle summary row.
 
-Field meanings
-- `cycle_id`: Unique id for one compaction/re-entry cycle (ISO-8601 timestamp recommended).
-- `claim_id`: Stable id; never reused. Format: `C-P0-001`, `C-P1-042`, ...
-- `priority`: `P0` | `P1` | `P2`.
-  - `P0`: execution-blocking if wrong.
-  - `P1`: materially impacts correctness/quality; not always blocking.
-  - `P2`: useful context; lowest priority for cache retention.
-- `source_doc_path`: Canonical repo-relative source-of-truth path.
-- `source_doc_title`: Human title of the source doc (stable label).
-- `evidence_path`: Evidence pointer(s) supporting `ground_truth` (`path:start-end`).
-- `pre_read_recall`: What the agent believes **before** rereading `source_doc_path`.
-- `ground_truth`: Short doc-backed truth (paraphrase; keep it checkable).
-- `diff_type`: `retained_exact` | `retained_paraphrase` | `distorted` | `dropped`.
-- `distortion_class`: `value` | `scope` | `dependency` | `sequence` | `policy`.
-- `impact`: Why this miss matters (what breaks or what wrong action happens).
-- `next_compaction_hint`: How to write the next compaction summary to retain this correctly.
-- `status`: `open` | `improving` | `stable`.
-- `streak_retained`: Consecutive cycles with `diff_type` in `{retained_exact, retained_paraphrase}`.
+| cycle_id | system_skill_coverage | fidelity_parity_rate | knowledge_pass_rate | p0_miss_count | policy_gate_miss_count | knowledge_score | fidelity_score | global_score | rank | delta_vs_prev | status |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---|---|---|
+|  | 0/0 (0.00) | 0.00 | 0.00 | 0 | 0 | 0 | 0 | 0 | C | 0 | open |
 
-Active claims board
-Only `open`/`improving` rows live here. Keep this section small.
+Definitions
+- `system_skill_coverage`: docs/items covered Ã· required (system/skills/policy domain)
+- `fidelity_parity_rate`: retained_exact + retained_paraphrase Ã· total (system/skills/policy)
+- `knowledge_pass_rate`: docs with status=pass Ã· docs tested (required_for_certification)
+- `p0_miss_count`: total incorrect/partial P0 questions across the cycle
+- `policy_gate_miss_count`: number of fidelity diffs classified as policy-gate distortions/drops
+- `global_score = 0.6*knowledge_score + 0.4*fidelity_score`
+- `delta_vs_prev`: summary of change (+/-) vs previous cycle (fidelity + knowledge + global)
 
-| cycle_id | claim_id | priority | source_doc_path | source_doc_title | evidence_path | pre_read_recall | ground_truth | diff_type | distortion_class | impact | next_compaction_hint | status | streak_retained |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+---
 
-Cycle metrics log
-For each compaction/re-entry cycle, record the metrics block below.
+## Row Types (required)
 
-Cycle metrics (required)
-- `P0_retention_rate = retained(P0) / total(P0)`
-- `P0_critical_loss_count = distorted_or_dropped(P0)`
-- `P1_retention_rate = retained(P1) / total(P1)`
-- `distortion_rate_total = distorted_or_dropped(all) / total(all)`
-- `resume_correctness`: were the first next-actions still correct? (`true`|`false`)
+All rows MUST include `row_type`:
 
-Gates (default pass conditions)
-The loop is considered healthy only when all are true:
+1) `row_type: fidelity_diff`
+- semantic parity measurement between compaction summary state and canonical docs
 
-Optional configuration knobs
-If `config/context_compass_config.yaml` defines these keys, they override the defaults above.
+2) `row_type: knowledge_test`
+- question-level knowledge gate evidence (tests)
 
-```yaml
-compaction_diff_onboarding:
-  gates:
-    p0_retention_rate_min: 0.98
-    p0_critical_loss_max: 0
-    consecutive_cycles_required: 2
-  board:
-    active_rows_max: 75
-```
+---
 
-- `P0_retention_rate >= 0.98`
-- `P0_critical_loss_count == 0`
-- achieved for `2` consecutive cycles
+## Fidelity Diff Rows (row_type: fidelity_diff)
 
-Adaptation rules (mandatory)
-- If `dropped`: raise to `P0` next cycle and simplify claim wording.
-- If `distorted`: split into smaller atomic claims (one dependency per claim).
-- If retained for `streak_retained >= 3`: may demote `P0` -> `P1` (never demote policy-gate claims).
-- If a source doc changes materially (hash/LOC/ticket evidence moves): reset affected claims to `open`
-  and `streak_retained = 0`.
+Each row is one atomic retention item (not a paragraph blob).
 
-References
-- `CONTEXT_COMPACTION.md`
-- `agent_onboarding/default/general/skills/compaction_requirements.md`
-- `agent_onboarding/default/general/skills/compaction_diff_onboarding.md`
+Columns
+1. `cycle_id`
+2. `row_type` (always `fidelity_diff`)
+3. `claim_id` (stable ID like `C-P0-001`)
+4. `domain` (`system_skill` | `operational`)
+5. `priority` (`P0` | `P1` | `P2`)
+6. `source_doc_path`
+7. `source_doc_title`
+8. `evidence_path` (path:line_start-line_end)
+9. `pre_read_recall`
+10. `ground_truth`
+11. `diff_type` (`retained_exact` | `retained_paraphrase` | `distorted` | `dropped`)
+12. `distortion_class` (`value` | `scope` | `dependency` | `sequence` | `policy` | `none`)
+13. `severity` (`low` | `medium` | `high` | `critical`)
+14. `impact`
+15. `next_compaction_hint`
+16. `status` (`open` | `improving` | `stable`)
+17. `streak_retained`
+
+Table
+| cycle_id | row_type | claim_id | domain | priority | source_doc_path | source_doc_title | evidence_path | pre_read_recall | ground_truth | diff_type | distortion_class | severity | impact | next_compaction_hint | status | streak_retained |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+|  | fidelity_diff |  | system_skill | P0 |  |  |  |  |  |  |  |  |  |  | open | 0 |
+
+---
+
+## Knowledge Test Rows (row_type: knowledge_test)
+
+Each row is one question result.
+
+Columns (minimum required by policy)
+1. `cycle_id`
+2. `row_type` (always `knowledge_test`)
+3. `doc_id`
+4. `skill_id` (can equal doc_id if 1:1)
+5. `question_id`
+6. `priority`
+7. `agent_answer`
+8. `correct_answer_ref` (path#section or path:line)
+9. `result` (`correct` | `incorrect` | `partial`)
+10. `miss_class` (`concept` | `policy` | `sequence` | `scope` | `application`)
+11. `severity` (`low` | `medium` | `high` | `critical`)
+12. `remediation_hint`
+13. `next_compaction_hint`
+14. `status` (`open` | `improving` | `stable`)
+15. `streak`
+
+Table
+| cycle_id | row_type | doc_id | skill_id | question_id | priority | agent_answer | correct_answer_ref | result | miss_class | severity | remediation_hint | next_compaction_hint | status | streak |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+|  | knowledge_test |  |  |  | P0 |  |  | incorrect | policy | critical |  |  | open | 0 |
+
+---
+
+## Operating rules (hard)
+
+1) No performative compliance
+- Rows must be grounded in doc-backed truth.
+- No fake â€œI ran testsâ€ claims.
+
+2) System-skill dominance
+- The board prioritizes system/skills/policy parity over operational routing.
+
+3) Next-compaction hints are mandatory
+- Every miss (fidelity or knowledge) must generate a concrete hint.
+
+4) Streak rules (default)
+- When retained/pass streak >= 3, status may move to `stable`.
+- Stable does not mean â€œignoreâ€; P0 sentinels remain permanent.

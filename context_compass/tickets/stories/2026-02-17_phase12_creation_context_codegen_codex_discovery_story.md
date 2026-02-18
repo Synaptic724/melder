@@ -263,5 +263,3 @@ Codex-only discovery lane remains active under the phase-12 epic with source
 evidence across `CreationContext` and Phase 12 executors. The first codex
 implementation tranche is now closed after user acceptance and high-confidence
 benchmark pass; immediate next action is selecting the next candidate tranche.
-
-

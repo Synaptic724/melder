@@ -155,6 +155,3 @@ execution-lane selection.
 ## Context / Handoff Summary
 Task is in review with hotspot evidence and medium/high candidate table ready
 for cross-location synthesis.
-
-
-

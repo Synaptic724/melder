@@ -21,6 +21,3 @@ Collaboration note
 References
 - `README.md`
 - `AGENTS.MD`
-
-
-

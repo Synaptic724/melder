@@ -29,11 +29,3 @@ Unknowns Gate
   `agent_onboarding/default/general/skills/unknowns_gate_reference.md`.
 - Local onboarding guidance must treat unevidenced claims as UNKNOWN.
 - Onboarding summaries must include concrete source pointers for promoted FACT claims.
-
-
-
-
-
-
-
-

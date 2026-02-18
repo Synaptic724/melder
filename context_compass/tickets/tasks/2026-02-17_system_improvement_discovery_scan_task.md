@@ -36,5 +36,3 @@ The user has requested a fresh discovery pass to identify opportunities to impro
 
 ## Notes
 - Focus on evidence-based improvements.
-
-

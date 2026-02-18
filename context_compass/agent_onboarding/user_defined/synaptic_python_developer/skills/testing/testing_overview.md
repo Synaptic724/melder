@@ -190,8 +190,3 @@ Examples
 - agent_onboarding/user_defined/synaptic_python_developer/examples/python/pytest_unit_examples.py
 - agent_onboarding/user_defined/synaptic_python_developer/examples/python/pytest_component_examples.py
 - agent_onboarding/user_defined/synaptic_python_developer/examples/python/pytest_integration_examples.py
-
-
-
-
-

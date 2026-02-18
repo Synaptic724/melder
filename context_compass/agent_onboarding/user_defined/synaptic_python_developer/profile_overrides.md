@@ -23,6 +23,3 @@ References
 - `agent_onboarding/user_defined/synaptic_python_developer/policies/synaptic_policy_overrides.md`
 - `agent_onboarding/user_defined/synaptic_python_developer/skills/synaptic_skill_overrides.md`
 - `agent_onboarding/user_defined/synaptic_python_developer/behavioral_guidelines/synaptic_behavior_overrides.md`
-
-
-

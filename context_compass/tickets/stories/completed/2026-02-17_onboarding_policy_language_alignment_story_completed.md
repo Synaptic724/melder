@@ -116,11 +116,3 @@ Story opened for a single-pass onboarding language alignment sweep tied to user 
 
 ## Closure Note
 Closed after user confirmation to continue and complete the active policy alignment chain.
-
-
-
-
-
-
-
-

@@ -11,9 +11,8 @@
     triggered by the active task. If triggered, you MUST read them before proceeding.
 - After any compaction/handoff, assume chat memory is unreliable.
   - You MUST re-onboard per `agent_onboarding/default/general/skills/compaction_requirements.md` before any action.
-  - You MUST NOT claim you retained full documents across compaction.
-    - Only claim what you re-read and can prove via read-integrity/comprehension proof, OR
-    - verified P0/P1 retention claims carried in the compaction cache and checked via Diff-Onboarding.
+  - You MUST NOT claim you "retained" this document (or any other doc) across compaction.
+    Only claim what you re-read and can prove via read-integrity/comprehension proof.
 - No policy negotiation:
   - Do NOT propose reducing the readset or rewriting policy as a workaround unless the user explicitly asks.
 
@@ -335,5 +334,3 @@ Cleanup nulling contract:
   prefer >=95% with density heuristics (>=10 tests per 100 LOC baseline;
   >=20 tests per 100 LOC for dense/high-complexity logic), without filler
   assertions.
-
-

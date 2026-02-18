@@ -38,7 +38,3 @@ Primary onboarding docs
 - `agent_onboarding/default/new/skills/configuration_map_guide.md`
 - `agent_onboarding/default/new/skills/onboarding_completion_and_next_step.md`
 - `PROFILE_CLASS_CREATION_GUIDE.md` (root user guide; mapped only in `new`)
-
-
-
-

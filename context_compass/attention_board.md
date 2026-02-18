@@ -25,40 +25,21 @@ Attention details rule
 ## Active Items
 | work_item | status | mode | owner | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 |---|---|---|---|---|---|---|---|---|---|---|
-| task: historical language hard-cut purge | in_progress | implementation | codex | none | summarize completion and request closure confirmation | forward-only wording is consistent across full context_compass docs | user confirms task closure | `tickets/tasks/2026-02-18_historical_language_hard_cut_purge_task.md` | 2026-02-18T00:38:29Z | REQUIRED |
+| task: skill check bootstrap test suite generation | in_progress | implementation | codex | none | generate manifest and cycle test/answer files for required docs | compaction-ready skill-check suite exists with quality metrics | generated suite satisfies bootstrap policy requirements | `tickets/tasks/2026-02-18_skill_check_bootstrap_test_suite_task.md` | 2026-02-18T16:01:46Z | REQUIRED |
 
 ## Active Attention Details
-- DATETIME: 2026-02-18T00:35:09Z
+- DATETIME: 2026-02-18T16:01:46Z
   TYPE: PLAN
-  CLAIM: User requested continuation after closure; a follow-up hard-cut purge
-    task is active to remove remaining historical wording across
-    `context_compass`.
+  CLAIM: User requested immediate skill-check suite build for compaction setup;
+    active routing now targets bootstrap manifest and cycle artifact generation.
   EVIDENCE:
-  - tickets/tasks/2026-02-18_historical_language_hard_cut_purge_task.md:1-62
-  - artifacts/README.md:34-34
-  - agent_onboarding/default/new/README.md:29-29
-  - agent_onboarding/user_defined/synaptic_python_developer/README.md:24-24
-  IMPACT: Completes forward-only language enforcement across active and
-    historical documentation surfaces.
-  NEXT: patch matched files and re-run verification.
-  SWITCH_TRIGGER: verification search returns zero targeted matches.
-  RESUME_HIERARCHY: task.
-  REREAD: REQUIRED
-
-- DATETIME: 2026-02-18T00:38:29Z
-  TYPE: MEASURE
-  CLAIM: Wording normalization pass completed and verification scan returned no
-    matches for the targeted terminology set.
-  EVIDENCE:
-  - tickets/tasks/2026-02-18_historical_language_hard_cut_purge_task.md:41-74
-  - artifacts/README.md:34-34
-  - agent_onboarding/default/new/README.md:29-29
-  - agent_onboarding/user_defined/synaptic_python_developer/README.md:24-24
-  - examples/example_epics/2026-02-16_system_representation_documentation_improvement_epic_completed.md:143-143
-  IMPACT: Active work can move to closure confirmation without additional patch
-    rounds.
-  NEXT: present completion summary and request user closure decision.
-  SWITCH_TRIGGER: user confirms task closure.
+  - tickets/tasks/2026-02-18_skill_check_bootstrap_test_suite_task.md:1-74
+  - skill_check/skill_check_policy.md:63-65
+  IMPACT: Workstream shifts from prior wording-cleanup closure to compaction
+    readiness artifact generation.
+  NEXT: generate manifest entries and required cycle test/answer files.
+  SWITCH_TRIGGER: bootstrap artifacts exist and quality gate summary is
+    available.
   RESUME_HIERARCHY: task.
   REREAD: REQUIRED
 
@@ -71,6 +52,3 @@ Attention details rule
 | task: onboarding policy skills/certify/reonboard sweep | done | codex | none | none | `tickets/tasks/completed/2026-02-17_onboarding_policy_skills_certify_reonboard_sweep_task_completed.md` | 2026-02-18T00:29:25Z | REQUIRED |
 | task: benchmark p-core baseline and weighted scoring | done | codex | none | route to story-level discovery and location tasks | `tickets/tasks/completed/2026-02-17_codegen_benchmark_pcore_baseline_and_scoring_task_completed.md` | 2026-02-17T16:20:08Z | REQUIRED |
 | task: split root AGENTS into bootstrap and profile-owned policies | done | codex | none | none | `tickets/tasks/completed/2026-02-17_agents_bootstrap_split_and_profile_distribution_task_completed.md` | 2026-02-17T15:53:33Z | HELPFUL |
-
-
-
