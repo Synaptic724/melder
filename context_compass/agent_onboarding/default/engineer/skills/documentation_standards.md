@@ -4,13 +4,13 @@
 
 ## Purpose
 Architecture and components docs must be deep enough to reorient from a blank slate
-without relying on memory, oral tradition, or Ã¢â‚¬Å“obviousÃ¢â‚¬Â assumptions.
+without relying on memory, oral tradition, or obvious assumptions.
 
 These standards exist so *agents* (human or AI) can safely extend the system without inventing behavior.
 
 ## Non-Negotiables (Hardlines)
 - **No handwaving.** Every claim must be grounded in source evidence or marked as **UNKNOWN**.
-- **Explicit entrypoints and flows.** If itÃ¢â‚¬â„¢s core behavior, show how it is entered and how it executes.
+- **Explicit entrypoints and flows.** If its core behavior, show how it is entered and how it executes.
 - **Ownership + lifecycle clarity.** Who creates it, who owns it, how it is cleaned up, and in what order.
 - **Concurrency is first-class.** Document locks, queues, gates, thread-affinity rules, and failure modes.
 - **Consistency across layers.** C4 architecture and C3/C2/C1 components must not contradict.
@@ -30,8 +30,8 @@ What counts as evidence:
 - A reference to a previously approved doc section that was itself code-grounded
 
 What **does not** count as evidence:
-- Ã¢â‚¬Å“Typical framework behaviorÃ¢â‚¬Â
-- Ã¢â‚¬Å“ProbablyÃ¢â‚¬Â
+- Typical framework behavior
+- Probably
 - Naming conventions, patterns, or vibes
 
 ### Required behavior when evidence is missing
@@ -60,7 +60,7 @@ Required sections (minimum):
 
 Strongly recommended additions:
 - Operational playbook (bring-up + teardown)
-- Troubleshooting section (common failure modes Ã¢â€ â€™ where to look)
+- Troubleshooting section (common failure modes  where to look)
 - Diagram legend (how to interpret optional vs core subsystems)
 
 ### Component Docs (C3/C2/C1)
@@ -72,32 +72,32 @@ Required sections (minimum):
 - Wiring tables / registry keys for runtime lookups
 
 Strongly recommended additions:
-- Registry Ã¢â‚¬Å“quick referenceÃ¢â‚¬Â for common string keys and defaults
+- Registry quick reference for common string keys and defaults
 - Ownership matrix (who owns what; who may call what)
-- Cleanup cascade (parent Ã¢â€ â€™ child teardown order)
+- Cleanup cascade (parent  child teardown order)
 
 ## Metadata & Status (If Present)
 When a doc includes a Metadata block:
 - Update the `Updated:` date whenever you change behavior descriptions.
 - Keep `Status:` honest (draft / current / deprecated).
-- If the doc is a Ã¢â‚¬Å“durable contextÃ¢â‚¬Â artifact, prefer **append-only enrichment** over rewriting history.
+- If the doc is a durable context artifact, prefer **append-only enrichment** over rewriting history.
 
 ## Diagram Standards
 - Provide **ASCII** for terminal scanning and diffs.
 - Provide **Mermaid** for higher fidelity.
-- Label edges with verbs when it improves clarity (e.g., Ã¢â‚¬Å“createsÃ¢â‚¬Â, Ã¢â‚¬Å“ownsÃ¢â‚¬Â, Ã¢â‚¬Å“enqueuesÃ¢â‚¬Â).
+- Label edges with verbs when it improves clarity (e.g., creates, owns, enqueues).
 - Show optional subsystems with dashed arrows/edges.
-- DonÃ¢â‚¬â„¢t let diagrams become Ã¢â‚¬Å“artÃ¢â‚¬Â: clarity > completeness.
+- Dont let diagrams become art: clarity > completeness.
 
 ## Consistency Rules (Across Docs)
-- Names and terms should match across C4 and C3/C2/C1 docs (e.g., Ã¢â‚¬Å“SpectrumÃ¢â‚¬Â, Ã¢â‚¬Å“CommandCenterÃ¢â‚¬Â, etc.).
+- Names and terms should match across C4 and C3/C2/C1 docs (e.g., Spectrum, CommandCenter, etc.).
 - If you rename a component, update:
   - component catalog,
   - diagrams,
   - wiring tables,
   - and code map references.
 
-## Review Checklist (Before You Call It Ã¢â‚¬Å“CurrentÃ¢â‚¬Â)
+## Review Checklist (Before You Call It Current)
 - [ ] No unverified claims (or they are marked UNKNOWN)
 - [ ] Core flows have method-level call sequences
 - [ ] Ownership/lifecycle/cleanup ordering is explicit

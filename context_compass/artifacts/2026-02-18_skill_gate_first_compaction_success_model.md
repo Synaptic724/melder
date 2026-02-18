@@ -2,7 +2,7 @@
 
 Created: 2026-02-18T16:53:27Z
 Owner: codex
-Linked Epic: `tickets/epics/2026-02-18_skill_gate_first_compaction_measurement_loop_epic.md`
+Linked Epic: `tickets/epics/completed/2026-02-18_skill_gate_first_compaction_measurement_loop_epic_completed.md`
 
 ## Why This Exists
 

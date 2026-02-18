@@ -7,7 +7,7 @@
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-18T16:53:27Z
-- Updated: 2026-02-18T17:07:51Z
+- Updated: 2026-02-18T18:04:29Z
 
 ## Objective
 Define a deterministic minimum-read `skill_gate_onboard` stage at compaction
@@ -56,7 +56,7 @@ exit so testing is measured before full role reread and answer-key access.
   - order constraints and gating language
 
 ## Files / Paths Impacted
-- `tickets/tasks/2026-02-18_skill_gate_onboarding_minimum_readset_discovery_task.md`
+- `tickets/tasks/completed/2026-02-18_skill_gate_onboarding_minimum_readset_discovery_task_completed.md`
 - (discovery references only)
   - `agent_onboarding/default/general/skills/compaction_diff_onboarding.md`
   - `skill_check/skill_check_policy.md`
@@ -72,21 +72,21 @@ exit so testing is measured before full role reread and answer-key access.
 - If minimum readset is overspecified, test measurement may remain inflated.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
+- [x] No status transition without evidence-backed transition reason.
 - [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
 - [x] No closure without acceptance confirmation and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -131,6 +131,22 @@ exit so testing is measured before full role reread and answer-key access.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-02-18T18:04:29Z
+  TYPE: MEASURE
+  CLAIM: End-to-end hard-MCQ cycle run confirms score-grounded compaction loop remains operational under current policy flow.
+  EVIDENCE:
+  - skill_check/build_hard_mcq_pool.py:1-432
+  - skill_check/generate_hard_mcq_exam.py:1-252
+  - skill_check/grade_hard_mcq_submission.py:1-206
+  - skill_check/historical_test_results/cycle_2026-02-18T175200Z_hard_mcq_grade.md:1-66
+  IMPACT: Task lane is validated and accepted for closure/archive.
+  NEXT: close story and epic, then move tickets into completed folders.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 Task outcome captured and implemented: minimum-read skill-gate onboarding is now
 the enforced pre-test stage in compaction policy surfaces.
+
+## Closure Note
+Closed after user requested finishing this epic and validation confirmed the loop is operational.

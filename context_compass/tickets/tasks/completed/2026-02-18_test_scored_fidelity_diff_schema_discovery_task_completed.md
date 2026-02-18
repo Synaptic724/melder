@@ -7,7 +7,7 @@
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-18T16:53:27Z
-- Updated: 2026-02-18T17:07:51Z
+- Updated: 2026-02-18T18:05:56Z
 
 ## Objective
 Define schema/reporting changes so cycle success is driven by graded test
@@ -51,7 +51,7 @@ results (`knowledge_test`) rather than parity-only `fidelity_diff` attestations.
 - Discovery spec for schema realignment and cycle summary semantics.
 
 ## Files / Paths Impacted
-- `tickets/tasks/2026-02-18_test_scored_fidelity_diff_schema_discovery_task.md`
+- `tickets/tasks/completed/2026-02-18_test_scored_fidelity_diff_schema_discovery_task_completed.md`
 - (discovery references only)
   - `compacting_differential_board.md`
   - `skill_check/skill_check_policy.md`
@@ -67,21 +67,21 @@ results (`knowledge_test`) rather than parity-only `fidelity_diff` attestations.
   explicit.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
+- [x] No status transition without evidence-backed transition reason.
 - [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
 - [x] No closure without acceptance confirmation and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -128,6 +128,21 @@ results (`knowledge_test`) rather than parity-only `fidelity_diff` attestations.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-02-18T18:05:56Z
+  TYPE: MEASURE
+  CLAIM: Current scoring semantics are operational and validated in a fresh cycle with graded output.
+  EVIDENCE:
+  - compacting_differential_board.md:1-126
+  - skill_check/skill_check_policy.md:1-132
+  - skill_check/historical_test_results/cycle_2026-02-18T175200Z_hard_mcq_grade.md:1-66
+  IMPACT: Schema-discovery outcomes remain valid and closure-ready.
+  NEXT: finalize story/epic closure and archive this task.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 Task outcome captured and implemented: board and policy now enforce score-first
 cycle completion semantics.
+
+## Closure Note
+Closed after user requested finishing the epic and validation confirmed score-grounded reporting works.

@@ -25,30 +25,38 @@ Attention details rule
 ## Active Items
 | work_item | status | mode | owner | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 |---|---|---|---|---|---|---|---|---|---|---|
-| epic: skill-gate-first compaction measurement loop | review | handoff | codex | none | share implemented policy/generator/board changes and request acceptance confirmation | score-grounded compaction loop with skill-gate-first onboarding, targeted relearn, and single-cycle reset/shrink is implemented | user confirms acceptance criteria so epic/story/tasks can move to completed folders | `tickets/epics/2026-02-18_skill_gate_first_compaction_measurement_loop_epic.md` | 2026-02-18T17:07:51Z | REQUIRED |
+| none | idle | none | codex | none | wait for next routed work item | first-compaction measurement epic/story/tasks were validated and archived after user request | user provides next active ticket or implementation lane | `n/a` | 2026-02-18T18:05:56Z | OPTIONAL |
 
 ## Active Attention Details
-- DATETIME: 2026-02-18T17:07:51Z
-  TYPE: FACT
-  CLAIM: Discovery and implementation lanes are complete; compaction policy now
-    enforces skill-gate-first minimum reads, score-grounded completion, targeted
-    relearn, and single-active-cycle reset/shrink behavior.
+- DATETIME: 2026-02-18T18:05:56Z
+  TYPE: MEASURE
+  CLAIM: Skill-gate-first compaction measurement lane is now closed after operational validation and ticket archival.
   EVIDENCE:
-  - AGENTS.MD:59-61
-  - agent_onboarding/default/general/skills/compaction_requirements.md:61-185
-  - agent_onboarding/default/general/skills/compaction_diff_onboarding.md:54-107
-  - skill_check/skill_check_policy.md:21-26
-  - compacting_differential_board.md:107-109
-  - skill_check/generate_bootstrap_suite.py:270-329
-  IMPACT: Active work is now closure-ready pending user acceptance.
-  NEXT: run walkthrough and confirm acceptance criteria before moving tickets.
-  SWITCH_TRIGGER: user confirms acceptance criteria.
-  RESUME_HIERARCHY: epic.
-  REREAD: REQUIRED
+  - tickets/epics/completed/2026-02-18_skill_gate_first_compaction_measurement_loop_epic_completed.md:1-230
+  - tickets/stories/completed/2026-02-18_skill_gate_first_compaction_discovery_story_completed.md:1-180
+  - skill_check/historical_test_results/cycle_2026-02-18T175200Z_hard_mcq_grade.md:1-66
+  IMPACT: No active lane is currently routed on attention board.
+  NEXT: route the next requested ticket lane when user directs.
+  SWITCH_TRIGGER: new active ticket request.
+  RESUME_HIERARCHY: none.
+  REREAD: OPTIONAL
 
 ## Recently Closed Anchors
 | work_item | status | owner | blocker | next | ticket | updated_at | reread |
 |---|---|---|---|---|---|---|---|
+| epic: skill-gate-first compaction measurement loop | done | codex | none | none | `tickets/epics/completed/2026-02-18_skill_gate_first_compaction_measurement_loop_epic_completed.md` | 2026-02-18T18:05:56Z | REQUIRED |
+| story: skill-gate-first compaction discovery | done | codex | none | none | `tickets/stories/completed/2026-02-18_skill_gate_first_compaction_discovery_story_completed.md` | 2026-02-18T18:05:56Z | REQUIRED |
+| task: skill-gate onboarding minimum readset discovery | done | codex | none | none | `tickets/tasks/completed/2026-02-18_skill_gate_onboarding_minimum_readset_discovery_task_completed.md` | 2026-02-18T18:05:56Z | REQUIRED |
+| task: test-scored fidelity schema discovery | done | codex | none | none | `tickets/tasks/completed/2026-02-18_test_scored_fidelity_diff_schema_discovery_task_completed.md` | 2026-02-18T18:05:56Z | REQUIRED |
+| task: failed-doc targeted relearn discovery | done | codex | none | none | `tickets/tasks/completed/2026-02-18_failed_doc_targeted_relearn_discovery_task_completed.md` | 2026-02-18T18:05:56Z | REQUIRED |
+| task: cycle reset and adaptive shrink discovery | done | codex | none | none | `tickets/tasks/completed/2026-02-18_cycle_reset_and_adaptive_shrink_discovery_task_completed.md` | 2026-02-18T18:05:56Z | REQUIRED |
+| epic: hidden blind hard-mcq skill-check system | done | codex | none | none | `tickets/epics/completed/2026-02-18_hidden_blind_hard_mcq_skillcheck_epic_completed.md` | 2026-02-18T17:48:29Z | REQUIRED |
+| story: hidden blind hard-mcq skill-check flow | done | codex | none | none | `tickets/stories/completed/2026-02-18_hidden_blind_hard_mcq_skillcheck_story_completed.md` | 2026-02-18T17:48:29Z | REQUIRED |
+| task: hidden key vault and blind contract | done | codex | none | none | `tickets/tasks/completed/2026-02-18_hidden_key_vault_discovery_and_contract_task_completed.md` | 2026-02-18T17:48:29Z | REQUIRED |
+| task: hard mcq pool generator implementation | done | codex | none | none | `tickets/tasks/completed/2026-02-18_hard_mcq_pool_generator_implementation_task_completed.md` | 2026-02-18T17:48:29Z | REQUIRED |
+| task: randomized hard mcq exam generator implementation | done | codex | none | none | `tickets/tasks/completed/2026-02-18_randomized_hard_mcq_exam_generator_implementation_task_completed.md` | 2026-02-18T17:48:29Z | REQUIRED |
+| task: json grader ranking report implementation | done | codex | none | none | `tickets/tasks/completed/2026-02-18_json_grader_ranking_report_implementation_task_completed.md` | 2026-02-18T17:48:29Z | REQUIRED |
+| task: skill and policy surface integration | done | codex | none | none | `tickets/tasks/completed/2026-02-18_skill_and_policy_surface_integration_task_completed.md` | 2026-02-18T17:48:29Z | REQUIRED |
 | epic: onboarding policy drift hardening | done | codex | none | none | `tickets/epics/completed/2026-02-17_onboarding_policy_drift_hardening_epic_completed.md` | 2026-02-18T00:29:25Z | REQUIRED |
 | story: onboarding policy language alignment | done | codex | none | none | `tickets/stories/completed/2026-02-17_onboarding_policy_language_alignment_story_completed.md` | 2026-02-18T00:29:25Z | REQUIRED |
 | story: certification token-only policy | done | codex | none | none | `tickets/stories/completed/2026-02-18_certification_token_only_story_completed.md` | 2026-02-18T00:29:25Z | REQUIRED |

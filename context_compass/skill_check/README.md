@@ -1,40 +1,38 @@
-
-
-# skill_check (Knowledge Gate + Compaction Fidelity System)
+# skill_check (Hard MCQ Blind-Submission System)
 
 Purpose
-- Add a **measurable knowledge-gate** layer to the existing fidelity-first compaction + diff-onboarding loop.
-- The Diff Board measures *semantic parity* (what survived compaction).
-- The Skill Check measures *skill competence* (can the agent apply the rules correctly).
-- Over repeated compaction cycles, the system must converge toward:
-  - high-fidelity retention of system/skills/policy state, AND
-  - consistent correct application of those rules.
+- Run score-grounded post-compaction checks with:
+  - hard MCQ questions only,
+  - blind JSON submission,
+  - sealed answer-key grading,
+  - deterministic rank output.
 
 Core intent (non-negotiable)
-1) Compaction is not a â€œsmall cacheâ€ optimization.
-2) Compaction summary should be as rich as platform limits allow.
-3) Target mix in compaction summary is **~90% system/skills/policy** and **~10% operational pointers**.
-4) The Diff Board is not the cache itself. It is the measurement ledger for cache fidelity.
-5) The Skill Check is not the cache itself. It is the measurement ledger for skill competence.
-6) The system must improve over cycles by measuring weaknesses, targeting them in the next compaction summary, then retesting.
+1) Questions are MCQ only.
+2) Each question has one truth + three difficult deterministic lies.
+3) Exam quota is `1 question per 100 LOC` for each required doc.
+4) Answer keys are sealed and not exposed in public exam artifacts.
+5) Grading is script-driven from sealed keys and submitted JSON answers.
 
 Directory structure
+- `context_compass/skill_check/question_pool/`
+  - public question pool with no explicit answer keys
+- `context_compass/skill_check/.sealed/`
+  - private key material used only by generator/grader
 - `context_compass/skill_check/tests/`
-  - test prompts only (safe to read before answering)
-- `context_compass/skill_check/test_answers/`
-  - answer keys + grading rubrics (**locked until answer submission**)
+  - generated exam markdowns for blind reading
+- `context_compass/skill_check/submissions/`
+  - answer JSON files
 - `context_compass/skill_check/historical_test_results/`
-  - cycle summaries + deltas + remediation tracking
-- `context_compass/skill_check/manifest/`
-  - onboarding manifest derived from canonical docs
+  - grader outputs and cycle score reports
 
-Canonical references
-- `context_compass/AGENTS.MD`
-- `context_compass/CONTEXT_COMPACTION.md`
-- `context_compass/compacting_differential_board.md`
-- `context_compass/agent_onboarding/default/general/skills/compaction_requirements.md`
-- `context_compass/agent_onboarding/default/general/skills/compaction_diff_onboarding.md`
-- `context_compass/config/context_compass_config.yaml`
+Primary commands
+1) Build/refresh pool (10x size target):
+   - `python context_compass/skill_check/build_hard_mcq_pool.py --multiplier 10`
+2) Generate blinded exam:
+   - `python context_compass/skill_check/generate_hard_mcq_exam.py --cycle-id <cycle_id>`
+3) Submit JSON answers, then grade:
+   - `python context_compass/skill_check/grade_hard_mcq_submission.py --cycle-id <cycle_id> --submission <path>`
 
-Read next
-- `context_compass/skill_check/skill_check_policy.md` (canonical operating policy)
+Canonical policy
+- `context_compass/skill_check/skill_check_policy.md`

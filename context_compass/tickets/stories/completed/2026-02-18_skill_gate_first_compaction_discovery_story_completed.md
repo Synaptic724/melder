@@ -3,11 +3,11 @@
 ## Metadata
 - Story ID: STORY-2026-02-18-skill-gate-first-compaction-discovery
 - Epic: EPIC-2026-02-18-skill-gate-first-compaction-measurement-loop
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-18T16:53:27Z
-- Updated: 2026-02-18T17:07:51Z
+- Updated: 2026-02-18T18:05:56Z
 
 ## User Narrative
 As a maintainer preparing for frequent compaction events, I want post-compaction
@@ -50,13 +50,12 @@ policy safety gates.
   - non-compaction subsystem work
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: user requested epic/story/tasks-first planning and artifact
-  capture before implementation.
+- from_state: review
+- to_state: done
+- transition_reason: user requested finishing this epic lane and validation confirmed implementation behavior.
 
 ## Dependencies / Related Work
-- `tickets/epics/2026-02-18_skill_gate_first_compaction_measurement_loop_epic.md`
+- `tickets/epics/completed/2026-02-18_skill_gate_first_compaction_measurement_loop_epic_completed.md`
 - `artifacts/2026-02-18_skill_gate_first_compaction_success_model.md`
 - `skill_check/skill_check_policy.md`
 - `compacting_differential_board.md`
@@ -96,9 +95,9 @@ policy safety gates.
   Mitigation: preserve anti-cheat and post-score gate ordering as hard rules.
 
 ## Applicable Anti-Patterns
-- [ ] No story-state transition without linked task-state evidence.
-- [ ] No closure while required tasks remain active or un-routed.
-- [ ] No cross-task synthesis claims without ticket-note evidence pointers.
+- [x] No story-state transition without linked task-state evidence.
+- [x] No closure while required tasks remain active or un-routed.
+- [x] No cross-task synthesis claims without ticket-note evidence pointers.
 
 ## Open Questions
 - Should row naming remain backward-compatible or become explicit?
@@ -148,10 +147,23 @@ policy safety gates.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-02-18T18:05:56Z
+  TYPE: MEASURE
+  CLAIM: End-to-end cycle validation passed and grader robustness was improved to accept BOM-prefixed UTF-8 submissions.
+  EVIDENCE:
+  - skill_check/build_hard_mcq_pool.py:1-432
+  - skill_check/generate_hard_mcq_exam.py:1-252
+  - skill_check/grade_hard_mcq_submission.py:1-206
+  - skill_check/historical_test_results/cycle_2026-02-18T175200Z_hard_mcq_grade.md:1-66
+  IMPACT: Story scope is validated in current repo state and ready for final epic closure.
+  NEXT: close and archive epic/story/tasks with board and artifact sync.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: cross-task synthesis, dependency flow, and state-transition logic.
@@ -160,5 +172,7 @@ policy safety gates.
 - Keep notes append-only and preserve UNKNOWN-first promotion discipline.
 
 ## Context / Handoff Summary
-Story outputs are complete and implemented; lane is now in review pending user
-acceptance and closure confirmation.
+Story outputs are complete, validated, and accepted for closure.
+
+## Closure Note
+Closed after user-requested completion and successful validation pass.

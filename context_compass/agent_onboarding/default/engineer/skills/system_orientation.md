@@ -3,7 +3,7 @@
 # system_orientation
 
 Purpose
-- Provide a consistent way to explain this repoÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s workflow and docs.
+- Provide a consistent way to explain this repos workflow and docs.
 - Translate agent stories and repo docs into clear, actionable guidance.
 
 When to use

@@ -7,7 +7,7 @@
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-18T16:53:27Z
-- Updated: 2026-02-18T17:07:51Z
+- Updated: 2026-02-18T18:05:56Z
 
 ## Objective
 Define the fresh-cycle reset protocol and adaptive shrinking rules so each new
@@ -53,7 +53,7 @@ less over time.
 - Discovery spec for cycle reset + adaptive shrink mechanics.
 
 ## Files / Paths Impacted
-- `tickets/tasks/2026-02-18_cycle_reset_and_adaptive_shrink_discovery_task.md`
+- `tickets/tasks/completed/2026-02-18_cycle_reset_and_adaptive_shrink_discovery_task_completed.md`
 - (discovery references only)
   - `skill_check/skill_check_policy.md`
   - `skill_check/generate_bootstrap_suite.py`
@@ -71,21 +71,21 @@ less over time.
 - Over-retention of stale artifacts can bloat cycle management.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
+- [x] No status transition without evidence-backed transition reason.
 - [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
 - [x] No closure without acceptance confirmation and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -133,6 +133,22 @@ less over time.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-02-18T18:05:56Z
+  TYPE: MEASURE
+  CLAIM: Active cycle generation and grading ran successfully, and generator/shrink contracts remain implemented in code and policy.
+  EVIDENCE:
+  - skill_check/generate_bootstrap_suite.py:85-116
+  - skill_check/generate_bootstrap_suite.py:952-984
+  - skill_check/generate_hard_mcq_exam.py:1-252
+  - skill_check/grade_hard_mcq_submission.py:1-206
+  IMPACT: Reset/shrink discovery outcomes are still valid for closure.
+  NEXT: close story/epic and archive this discovery chain.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 Task outcome captured and implemented: cycle reset, stale cleanup, and adaptive
 shrink readiness are now codified and wired into generator behavior.
+
+## Closure Note
+Closed after user-requested completion and functional validation pass.

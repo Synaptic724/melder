@@ -420,7 +420,7 @@ Melder. It is the reference for `Conduit.meld`, `Meld.meld`, `SpellInputUtils`,
 `SpellMap` semantics, and SpellCrafter resolution behavior. Where the spec
 and current implementation differ, the gap is called out explicitly.
 
-Spec overview (Sections AÃ¢â‚¬â€œH):
+Spec overview (Sections AH):
 - Root meld entry modes:
   - By spell_id (string) and by spell object (class/function).
   - By Protocol/frame type and by binding_name for disambiguation.
@@ -450,7 +450,7 @@ Spec overview (Sections AÃ¢â‚¬â€œH):
   - Protocols/interfaces for contract DI; strings for grouping categories.
 
 Spec vs implementation notes:
-- Spec cites 19 items but includes Sections G/H labeled Items 20Ã¢â‚¬â€œ21; treat
+- Spec cites 19 items but includes Sections G/H labeled Items 2021; treat
   numbering as advisory and follow the content as authoritative.
 - Decision: Post-init SpellMap deep scan is not planned; users should express
   dependencies via constructor DI (SpellMap defaults/type hints).

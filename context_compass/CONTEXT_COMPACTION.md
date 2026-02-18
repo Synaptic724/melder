@@ -24,7 +24,7 @@ The compaction summary MUST be structured with system/skills/policy first.
 - resolved `SKILLS.MD` chain (parent-first) and any on-demand triggers currently active
 - certification state requirement (must re-certify after compaction)
 - **skill_check snapshot** (short): last cycle_id, last global_score, last rank, requires_retest count
-- pointers: `attention_board.md`, active tickets, immediate next actions (1Ã¢â‚¬â€œ3)
+- pointers: `attention_board.md`, active tickets, immediate next actions (13)
 
 ### 2) System / Skills / Policy State Mirror (dominant; ~90% of budget)
 Provide a high-fidelity semantic mirror of the canonical docs:

@@ -1,0 +1,386 @@
+{
+  "cycle_id": "2026-02-18T173500Z",
+  "total_questions": 38,
+  "correct": 8,
+  "incorrect": 30,
+  "unanswered": 0,
+  "score": 21.05,
+  "rank": "D",
+  "status": "fail",
+  "per_doc": {
+    "UNKNOWNS_GATE_REFERENCE_MD_AD06A50B4C": {
+      "correct": 0,
+      "incorrect": 1,
+      "unanswered": 0,
+      "total": 1
+    },
+    "TICKETING_MD_B9F11C28D1": {
+      "correct": 0,
+      "incorrect": 2,
+      "unanswered": 0,
+      "total": 2
+    },
+    "AGENTS_MD_1EECA99492": {
+      "correct": 0,
+      "incorrect": 3,
+      "unanswered": 0,
+      "total": 3
+    },
+    "EXECUTION_CONTRACT_MD_0521F8ACFA": {
+      "correct": 0,
+      "incorrect": 3,
+      "unanswered": 0,
+      "total": 3
+    },
+    "POLICY_SKILLS_MD_56890A798A": {
+      "correct": 0,
+      "incorrect": 2,
+      "unanswered": 0,
+      "total": 2
+    },
+    "MEMORY_MANAGEMENT_MD_FA354F406A": {
+      "correct": 0,
+      "incorrect": 1,
+      "unanswered": 0,
+      "total": 1
+    },
+    "CONTEXT_PROTOCOL_MD_C4C2DB8A08": {
+      "correct": 0,
+      "incorrect": 1,
+      "unanswered": 0,
+      "total": 1
+    },
+    "SELF_CERTIFICATION_MD_1F6B4EB055": {
+      "correct": 0,
+      "incorrect": 1,
+      "unanswered": 0,
+      "total": 1
+    },
+    "SKILL_CHECK_POLICY_MD_7D5A201CAB": {
+      "correct": 2,
+      "incorrect": 0,
+      "unanswered": 0,
+      "total": 2
+    },
+    "CTX_AUTONOMY_POLICY_MD_4E704BF803": {
+      "correct": 1,
+      "incorrect": 0,
+      "unanswered": 0,
+      "total": 1
+    },
+    "CTX_AUTONOMY_RUBRIC_MD_58460FA90A": {
+      "correct": 0,
+      "incorrect": 2,
+      "unanswered": 0,
+      "total": 2
+    },
+    "ENGINEER_QUALITY_POLICY_MD_66A6644C4D": {
+      "correct": 0,
+      "incorrect": 1,
+      "unanswered": 0,
+      "total": 1
+    },
+    "STALENESS_PROTOCOL_MD_FBCEA7DE0C": {
+      "correct": 0,
+      "incorrect": 1,
+      "unanswered": 0,
+      "total": 1
+    },
+    "COMPACTION_DIFF_ONBOARDING_MD_52789BB4E1": {
+      "correct": 0,
+      "incorrect": 1,
+      "unanswered": 0,
+      "total": 1
+    },
+    "WORKFLOW_MD_ED76952356": {
+      "correct": 1,
+      "incorrect": 2,
+      "unanswered": 0,
+      "total": 3
+    },
+    "TICKETING_SKILL_CONTRACT_MD_6AF21B7276": {
+      "correct": 1,
+      "incorrect": 0,
+      "unanswered": 0,
+      "total": 1
+    },
+    "ARTIFACT_BOARD_MD_748583D824": {
+      "correct": 0,
+      "incorrect": 1,
+      "unanswered": 0,
+      "total": 1
+    },
+    "ACTIVE_POINTERBOARD_MD_4590880B7C": {
+      "correct": 0,
+      "incorrect": 1,
+      "unanswered": 0,
+      "total": 1
+    },
+    "COMPACTION_REQUIREMENTS_MD_61C91C54F6": {
+      "correct": 1,
+      "incorrect": 1,
+      "unanswered": 0,
+      "total": 2
+    },
+    "TECHNICAL_EXPERTISE_MD_965DF266F7": {
+      "correct": 0,
+      "incorrect": 1,
+      "unanswered": 0,
+      "total": 1
+    },
+    "ATTENTION_BOARD_MD_4477E44E1B": {
+      "correct": 0,
+      "incorrect": 1,
+      "unanswered": 0,
+      "total": 1
+    },
+    "CONTEXT_COMPACTION_MD_69BEE0312F": {
+      "correct": 0,
+      "incorrect": 1,
+      "unanswered": 0,
+      "total": 1
+    },
+    "CONTEXT_WINDOW_BUDGET_MD_E9C7ABBBEE": {
+      "correct": 0,
+      "incorrect": 1,
+      "unanswered": 0,
+      "total": 1
+    },
+    "USER_APPROVED_CERTIFICATION_MD_FE7543EC84": {
+      "correct": 0,
+      "incorrect": 1,
+      "unanswered": 0,
+      "total": 1
+    },
+    "REACTIVE_DOCUMENTATION_MD_73B34DE8A2": {
+      "correct": 1,
+      "incorrect": 0,
+      "unanswered": 0,
+      "total": 1
+    },
+    "ACTIVE_DOCUMENTATION_MD_D01C615D40": {
+      "correct": 1,
+      "incorrect": 0,
+      "unanswered": 0,
+      "total": 1
+    },
+    "TICKET_CLOSURE_ATTENTION_SYNC_MD_BE9F026937": {
+      "correct": 0,
+      "incorrect": 1,
+      "unanswered": 0,
+      "total": 1
+    }
+  },
+  "misses": [
+    {
+      "question_id": "UNKNOWNS_GATE_REFERENCE_MD_AD06A50B4C::H98637203B7A3",
+      "doc_id": "UNKNOWNS_GATE_REFERENCE_MD_AD06A50B4C",
+      "selected": "A",
+      "correct": "D",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "TICKETING_MD_B9F11C28D1::HFBA305B8BD39",
+      "doc_id": "TICKETING_MD_B9F11C28D1",
+      "selected": "B",
+      "correct": "A",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "AGENTS_MD_1EECA99492::HF0698E171B01",
+      "doc_id": "AGENTS_MD_1EECA99492",
+      "selected": "C",
+      "correct": "D",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "AGENTS_MD_1EECA99492::HED432BD1C7BD",
+      "doc_id": "AGENTS_MD_1EECA99492",
+      "selected": "D",
+      "correct": "B",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "EXECUTION_CONTRACT_MD_0521F8ACFA::HD7BF6A50D01D",
+      "doc_id": "EXECUTION_CONTRACT_MD_0521F8ACFA",
+      "selected": "A",
+      "correct": "C",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "POLICY_SKILLS_MD_56890A798A::HD41C4D1C6193",
+      "doc_id": "POLICY_SKILLS_MD_56890A798A",
+      "selected": "B",
+      "correct": "D",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "MEMORY_MANAGEMENT_MD_FA354F406A::H766B6E858F71",
+      "doc_id": "MEMORY_MANAGEMENT_MD_FA354F406A",
+      "selected": "C",
+      "correct": "A",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "CONTEXT_PROTOCOL_MD_C4C2DB8A08::H51846F21224C",
+      "doc_id": "CONTEXT_PROTOCOL_MD_C4C2DB8A08",
+      "selected": "D",
+      "correct": "B",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "SELF_CERTIFICATION_MD_1F6B4EB055::HBC77785E68BC",
+      "doc_id": "SELF_CERTIFICATION_MD_1F6B4EB055",
+      "selected": "A",
+      "correct": "B",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "CTX_AUTONOMY_RUBRIC_MD_58460FA90A::H10BB8BFF4E1A",
+      "doc_id": "CTX_AUTONOMY_RUBRIC_MD_58460FA90A",
+      "selected": "D",
+      "correct": "C",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "ENGINEER_QUALITY_POLICY_MD_66A6644C4D::H924AE2E6A04A",
+      "doc_id": "ENGINEER_QUALITY_POLICY_MD_66A6644C4D",
+      "selected": "A",
+      "correct": "D",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "STALENESS_PROTOCOL_MD_FBCEA7DE0C::H40AB89036D08",
+      "doc_id": "STALENESS_PROTOCOL_MD_FBCEA7DE0C",
+      "selected": "B",
+      "correct": "D",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "CTX_AUTONOMY_RUBRIC_MD_58460FA90A::H669574F2A9D3",
+      "doc_id": "CTX_AUTONOMY_RUBRIC_MD_58460FA90A",
+      "selected": "C",
+      "correct": "D",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "COMPACTION_DIFF_ONBOARDING_MD_52789BB4E1::H98C5394E6CF6",
+      "doc_id": "COMPACTION_DIFF_ONBOARDING_MD_52789BB4E1",
+      "selected": "D",
+      "correct": "C",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "WORKFLOW_MD_ED76952356::HB644779BE047",
+      "doc_id": "WORKFLOW_MD_ED76952356",
+      "selected": "A",
+      "correct": "C",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "ARTIFACT_BOARD_MD_748583D824::H25536B823DD8",
+      "doc_id": "ARTIFACT_BOARD_MD_748583D824",
+      "selected": "C",
+      "correct": "A",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "EXECUTION_CONTRACT_MD_0521F8ACFA::H051FF375D3DB",
+      "doc_id": "EXECUTION_CONTRACT_MD_0521F8ACFA",
+      "selected": "D",
+      "correct": "A",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "ACTIVE_POINTERBOARD_MD_4590880B7C::HEB0615AD408D",
+      "doc_id": "ACTIVE_POINTERBOARD_MD_4590880B7C",
+      "selected": "A",
+      "correct": "C",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "COMPACTION_REQUIREMENTS_MD_61C91C54F6::HBED905C9DA75",
+      "doc_id": "COMPACTION_REQUIREMENTS_MD_61C91C54F6",
+      "selected": "B",
+      "correct": "A",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "EXECUTION_CONTRACT_MD_0521F8ACFA::H1E286F17E66E",
+      "doc_id": "EXECUTION_CONTRACT_MD_0521F8ACFA",
+      "selected": "C",
+      "correct": "B",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "TECHNICAL_EXPERTISE_MD_965DF266F7::HAAB8FD0154E8",
+      "doc_id": "TECHNICAL_EXPERTISE_MD_965DF266F7",
+      "selected": "D",
+      "correct": "A",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "POLICY_SKILLS_MD_56890A798A::H385E0352DC23",
+      "doc_id": "POLICY_SKILLS_MD_56890A798A",
+      "selected": "B",
+      "correct": "A",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "ATTENTION_BOARD_MD_4477E44E1B::H734BFAE70636",
+      "doc_id": "ATTENTION_BOARD_MD_4477E44E1B",
+      "selected": "C",
+      "correct": "A",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "TICKETING_MD_B9F11C28D1::H7140E19CC032",
+      "doc_id": "TICKETING_MD_B9F11C28D1",
+      "selected": "D",
+      "correct": "A",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "WORKFLOW_MD_ED76952356::HC2029C8B3DA0",
+      "doc_id": "WORKFLOW_MD_ED76952356",
+      "selected": "A",
+      "correct": "B",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "CONTEXT_COMPACTION_MD_69BEE0312F::HBC3D4F67E47D",
+      "doc_id": "CONTEXT_COMPACTION_MD_69BEE0312F",
+      "selected": "B",
+      "correct": "C",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "CONTEXT_WINDOW_BUDGET_MD_E9C7ABBBEE::H8BD2F812A39B",
+      "doc_id": "CONTEXT_WINDOW_BUDGET_MD_E9C7ABBBEE",
+      "selected": "D",
+      "correct": "C",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "AGENTS_MD_1EECA99492::H62BD8EB94A8E",
+      "doc_id": "AGENTS_MD_1EECA99492",
+      "selected": "B",
+      "correct": "C",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "USER_APPROVED_CERTIFICATION_MD_FE7543EC84::H0469A3CA1FE8",
+      "doc_id": "USER_APPROVED_CERTIFICATION_MD_FE7543EC84",
+      "selected": "C",
+      "correct": "B",
+      "status": "incorrect"
+    },
+    {
+      "question_id": "TICKET_CLOSURE_ATTENTION_SYNC_MD_BE9F026937::HAAC327F6E024",
+      "doc_id": "TICKET_CLOSURE_ATTENTION_SYNC_MD_BE9F026937",
+      "selected": "B",
+      "correct": "D",
+      "status": "incorrect"
+    }
+  ]
+}

@@ -2,18 +2,18 @@
 
 ## Metadata
 - Epic ID: EPIC-2026-02-18-skill-gate-first-compaction-measurement-loop
-- Status: review
+- Status: done
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-18T16:53:27Z
-- Updated: 2026-02-18T17:07:51Z
+- Updated: 2026-02-18T18:05:56Z
 - Target Window: 2026-Q1
 - Related Program/Initiative: Compaction Fidelity Convergence
 
 ## Problem / Opportunity
 Current compaction measurement behavior can report parity-style `fidelity_diff`
 rows without requiring a full scored test cycle. This allows non-empirical
-“knowledge retained” claims that do not prove performance against the generated
+"knowledge retained" claims that do not prove performance against the generated
 question set.
 
 The opportunity is to make post-compaction success score-grounded:
@@ -28,7 +28,7 @@ The opportunity is to make post-compaction success score-grounded:
 ## MRP Alignment (Most Reasonable Product)
 The durable core is a deterministic measurement-and-relearn loop that produces
 real scores and progressively lowers reread volume while preserving safety
-sentinels. This avoids fragile attestation-based “success” and improves
+sentinels. This avoids fragile attestation-based "success" and improves
 compaction reliability over repeated cycles.
 
 ## Ticket Contract
@@ -65,10 +65,9 @@ compaction reliability over repeated cycles.
   - unrelated benchmark or codegen optimization lanes
 
 ## State Transition Event
-- from_state: ready
-- to_state: in_progress
-- transition_reason: user directed creation of epic/story/discovery-task lane
-  before implementation due imminent compaction risk.
+- from_state: review
+- to_state: done
+- transition_reason: user requested finishing this epic and validation confirmed implemented behavior.
 
 ## Success Metrics
 - 100% of cycle completion claims include graded `knowledge_test` evidence.
@@ -129,9 +128,9 @@ compaction reliability over repeated cycles.
   Mitigation: enforce status blocks and explicit anti-cheat attestation fields.
 
 ## Applicable Anti-Patterns
-- [ ] No epic-state transition without story-level evidence.
-- [ ] No closure while required stories are incomplete or unaccepted.
-- [ ] No program claims without source evidence from story/task notes.
+- [x] No epic-state transition without story-level evidence.
+- [x] No closure while required stories are incomplete or unaccepted.
+- [x] No program claims without source evidence from story/task notes.
 
 ## Validation / Test Approach
 - Discovery-phase validation only:
@@ -191,10 +190,23 @@ compaction reliability over repeated cycles.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-02-18T18:05:56Z
+  TYPE: MEASURE
+  CLAIM: Validation confirmed the score-grounded loop still works end-to-end, including a BOM-safe grader path for submission JSON.
+  EVIDENCE:
+  - skill_check/build_hard_mcq_pool.py:1-432
+  - skill_check/generate_hard_mcq_exam.py:1-252
+  - skill_check/grade_hard_mcq_submission.py:1-206
+  - skill_check/historical_test_results/cycle_2026-02-18T175200Z_hard_mcq_grade.md:1-66
+  IMPACT: Epic acceptance criteria are satisfied in current repository state.
+  NEXT: close and archive epic/story/task tickets and sync boards.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Closure Confirmation
-- [ ] Work walkthrough shared with user
-- [ ] Acceptance criteria confirmed by user
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Work walkthrough shared with user
+- [x] Acceptance criteria confirmed by user
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
 
 ## Noting Behavior
 - Note focus: program-level direction, cross-story tradeoffs, and tranche order.
@@ -203,5 +215,7 @@ compaction reliability over repeated cycles.
 - Keep notes append-only and preserve UNKNOWN-first promotion discipline.
 
 ## Context / Handoff Summary
-Epic implementation is complete and in review; closure is blocked only on user
-acceptance confirmation per ticket policy.
+Epic implementation is complete, validated, and accepted for closure.
+
+## Closure Note
+Closed after user-requested completion and successful operational validation.

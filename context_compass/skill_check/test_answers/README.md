@@ -1,12 +1,8 @@
+# test_answers (legacy)
 
+This directory remains for legacy artifacts from the previous mixed-format test flow.
 
-# test_answers
-
-This directory contains answer keys and grading rubrics.
-
-ANTI-CHEAT
-- Do NOT read anything in `test_answers/` until AFTER answers are fully submitted.
-- Early access invalidates the cycle.
-
-Template
-- `context_compass/skill_check/test_answers/answer_template.md`
+Current hard-MCQ flow
+- Do not use this directory for new cycles.
+- New sealed answer keys live under `context_compass/skill_check/.sealed/`.
+- Grading is performed by script, not by manual key reads.

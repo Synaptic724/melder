@@ -22,6 +22,8 @@ Active skills
 - `skill_check/manifest/onboarding_manifest.yaml`
 - `skill_check/tests/test_template.md`
 - `skill_check/test_answers/answer_template.md`
+- `agent_onboarding/default/general/skills/hard_mcq_skillcheck_protocol.md`
+- `agent_onboarding/default/general/skills/hard_mcq_question_pool_design.md`
 - `skill_check/historical_test_results/historical_results_template.md`
 - `agent_onboarding/default/general/policies/policy_skills.md`
 - `agent_onboarding/default/general/skills/agent_stance.md`

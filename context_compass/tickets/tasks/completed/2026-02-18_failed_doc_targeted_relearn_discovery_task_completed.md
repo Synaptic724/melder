@@ -7,7 +7,7 @@
 - Owner: codex
 - Priority: p0
 - Created: 2026-02-18T16:53:27Z
-- Updated: 2026-02-18T17:07:51Z
+- Updated: 2026-02-18T18:05:56Z
 
 ## Objective
 Define how graded misses produce a mandatory failed-doc reread set and targeted
@@ -53,7 +53,7 @@ re-onboarding pass before the next cycle.
 - Discovery spec for targeted relearn routing and state updates.
 
 ## Files / Paths Impacted
-- `tickets/tasks/2026-02-18_failed_doc_targeted_relearn_discovery_task.md`
+- `tickets/tasks/completed/2026-02-18_failed_doc_targeted_relearn_discovery_task_completed.md`
 - (discovery references only)
   - `skill_check/skill_check_policy.md`
   - `skill_check/manifest/onboarding_manifest.yaml`
@@ -69,21 +69,21 @@ re-onboarding pass before the next cycle.
 - Under-broad reread sets risk repeating misses without correction.
 
 ## Applicable Anti-Patterns
-- [ ] No status transition without evidence-backed transition reason.
+- [x] No status transition without evidence-backed transition reason.
 - [x] No implementation/validation from `UNKNOWN` or `HYPOTHESIS`.
 - [x] No closure without acceptance confirmation and board-sync completion.
 
 ## Done Checklist
-- [ ] Steps complete and checked off
-- [ ] Deliverables produced and linked
-- [ ] Documentation updated (if needed)
-- [ ] Validation status recorded
-- [ ] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
-- [ ] Notes quality maintained (`SCORE_0_TO_10` >=
+- [x] Steps complete and checked off
+- [x] Deliverables produced and linked
+- [x] Documentation updated (if needed)
+- [x] Validation status recorded
+- [x] Unknown-first discipline followed (`UNKNOWN` promoted to `FACT` only with evidence)
+- [x] Notes quality maintained (`SCORE_0_TO_10` >=
       `workflow.ticket_microcycle.minimum_note_score`)
-- [ ] Applicable anti-pattern checks are clear or escalated with evidence.
-- [ ] Acceptance criteria reviewed with user and confirmed
-- [ ] Board sync completed for successor routing or closure anchor update.
+- [x] Applicable anti-pattern checks are clear or escalated with evidence.
+- [x] Acceptance criteria reviewed with user and confirmed
+- [x] Board sync completed for successor routing or closure anchor update.
 
 ## Artifact Links (Optional)
 - ARTIFACTS_REQUIRED: true
@@ -127,6 +127,21 @@ re-onboarding pass before the next cycle.
   REREAD: REQUIRED
   SCORE_0_TO_10: 10
 
+- DATETIME: 2026-02-18T18:05:56Z
+  TYPE: FACT
+  CLAIM: The validation cycle and generated report continue to support targeted failed-doc relearn routing.
+  EVIDENCE:
+  - agent_onboarding/default/general/skills/compaction_diff_onboarding.md:74-99
+  - skill_check/grade_hard_mcq_submission.py:1-206
+  - skill_check/historical_test_results/cycle_2026-02-18T175200Z_hard_mcq_grade.md:1-66
+  IMPACT: Relearn-routing discovery output remains accurate and closure-ready.
+  NEXT: close story/epic and archive related tickets.
+  REREAD: REQUIRED
+  SCORE_0_TO_10: 10
+
 ## Context / Handoff Summary
 Task outcome captured and implemented: targeted failed-doc relearn behavior is
 now policy-enforced across compaction and skill-check docs.
+
+## Closure Note
+Closed after user-requested completion and successful end-to-end validation.

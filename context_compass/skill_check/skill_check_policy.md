@@ -1,269 +1,141 @@
-# skill_check_policy (Skill-Gate-First Scored Compaction Policy)
+# skill_check_policy (Hard MCQ Blind-Submission Policy)
 
 Status: active
-Scope: post-compaction REONBOARD measurement loop + cycle maintenance
+Scope: post-compaction knowledge measurement and scoring workflow
 Owner: user authority (policy) + implementation agent (execution)
 
-This policy defines a score-grounded compaction loop:
-1) minimum-read `skill_gate_onboard`,
-2) blind test submission,
-3) deterministic grading,
-4) targeted relearn,
-5) fresh-cycle reset with adaptive shrink.
+This policy defines the current skill-check system:
+1) hard MCQ pool build,
+2) blinded exam generation,
+3) JSON submission,
+4) sealed-key grading,
+5) score/rank reporting and remediation routing.
 
 ---
 
 ## 1) Core intent (non-negotiable)
 
-1. Compaction is not a "small cache" optimization.
-2. Compaction summaries should use as much budget as platform limits allow.
-3. Summary mix target is **~90% system/skills/policy** and **~10% operational pointers**.
-4. Post-compaction success is score-grounded:
-   - primary evidence: `knowledge_test` scored rows,
-   - secondary evidence: `fidelity_diff` parity diagnostics.
-5. A cycle with `knowledge_score: Not run` is `incomplete`, not pass.
-
-Compactness is a constraint. Fidelity + competence are objectives.
+1. Compaction success must be score-grounded.
+2. Question format is MCQ only.
+3. Each question must contain:
+   - 1 true statement,
+   - 3 difficult deterministic lies that are close to the truth.
+4. Exam volume is `1 question per 100 LOC` for each required doc.
+5. A cycle is incomplete until grading has been run.
 
 ---
 
-## 2) Artifacts (required)
+## 2) Artifact layout (required)
 
-Root subsystem
-- `context_compass/skill_check/`
+Public artifacts
+- `context_compass/skill_check/question_pool/hard_mcq_pool.jsonl`
+- `context_compass/skill_check/tests/cycle_<id>/hard_mcq_exam.md`
+- `context_compass/skill_check/submissions/cycle_<id>_answers.json`
+- `context_compass/skill_check/historical_test_results/cycle_<id>_hard_mcq_grade.md`
 
-Required structure
-- `context_compass/skill_check/tests/`
-- `context_compass/skill_check/test_answers/`
-- `context_compass/skill_check/historical_test_results/`
-- `context_compass/skill_check/manifest/`
-
-Canonical files
-- `context_compass/skill_check/manifest/onboarding_manifest.yaml`
-- `context_compass/compacting_differential_board.md`
-
-Templates
-- `context_compass/skill_check/tests/test_template.md`
-- `context_compass/skill_check/test_answers/answer_template.md`
-- `context_compass/skill_check/historical_test_results/historical_results_template.md`
-
-Config knobs
-- `context_compass/config/context_compass_config.yaml` (`knowledge_gate.*`)
-
----
-
-## 3) Operating model
-
-### A) Bootstrap generation (one-time, post-cert)
-If manifest/tests are missing:
-1) generate manifest from canonical docs,
-2) generate full test+answer suite,
-3) enforce test quality threshold,
-4) stop when bootstrap artifacts exist.
-
-### B) Post-compaction re-entry (every cycle)
-Before certification:
-1) run `skill_gate_onboard` minimum-read stage,
-2) run blind submission + grading,
-3) run diff-onboarding parity measurement,
-4) run targeted failed-doc relearn,
-5) meet configured pass gates.
-
-No exceptions.
-
----
-
-## 4) Manifest requirements
-
-### 4.1 Generation timing
-Regenerate manifest at onboarding start from canonical docs:
-- `context_compass/AGENTS.MD`
-- `context_compass/SKILLS.MD`
-- resolved role `SKILLS.MD` chain
-- required baseline docs implied by that chain
-
-### 4.2 Minimum fields
-Each entry must include:
-- `doc_id`
-- `path`
-- `doc_type` (`agents|skills|policy|behavior`)
-- `priority` (`P0|P1|P2`)
-- `required_for_certification`
-- `test_file`
-- `answer_file`
-- `last_score`
-- `last_cycle_id`
-- `status` (`unrated|pass|fail`)
-- `requires_retest`
-- `stability_streak`
+Sealed artifacts (private)
+- `context_compass/skill_check/.sealed/pool_truth_keys.jsonl`
+- `context_compass/skill_check/.sealed/exams/cycle_<id>_answer_key.json`
 
 Hard rule
-- Missing `test_file` or `answer_file` on any required entry blocks certification.
+- Sealed artifacts must never be embedded into public exam markdown files.
 
 ---
 
-## 5) `skill_gate_onboard` contract (minimum-read gate)
+## 3) Pool build contract (required)
 
-Required pre-test reads:
-1) active manifest metadata
-2) active cycle tests
-3) anti-cheat + grading rules
-4) board schema for score recording
+Build command
+- `python context_compass/skill_check/build_hard_mcq_pool.py --multiplier 10`
 
-Forbidden pre-test reads:
-- any `skill_check/test_answers/**`
-- broad under-test skill-doc rereads for memorization
-- full role baseline rereads prior to blind submission
+Requirements
+1) Pool size target must be >= `10x` current known question count.
+2) Pool rows must not expose explicit answer keys.
+3) Truth mapping must be written to sealed storage.
+4) Question options must be close-match statements, not obvious distractors.
 
 ---
 
-## 6) Test authoring model
+## 4) Exam generation contract (required)
 
-Hybrid mix (default):
-- 70% MCQ
-- 20% short
-- 10% scenario
+Generation command
+- `python context_compass/skill_check/generate_hard_mcq_exam.py --cycle-id <id>`
 
-Question count baseline:
-- small: 8
-- medium: 12
-- large/P0: 16
-
-Coverage requirements per doc test:
-1) must-do rule
-2) must-not rule
-3) sequence/order gate
-4) escalation/certification gate
-5) application scenario
-
-Every question must be source-anchored.
+Requirements
+1) Resolve required docs from manifest.
+2) Allocate `ceil(LOC/100)` questions per required doc.
+3) Randomize selected question order.
+4) Randomize option order per question.
+5) Write answer keys only to sealed cycle key file.
+6) Emit a JSON submission template for the cycle.
 
 ---
 
-## 7) Test quality gate
+## 5) Submission contract (required)
 
-Rubric score out of 100:
-1) coverage completeness: 25
-2) source anchoring quality: 20
-3) deterministic gradability: 20
-4) behavioral realism: 15
-5) anti-cheat robustness: 10
-6) atomic clarity: 10
+Submission schema
+```json
+{
+  "cycle_id": "2026-02-18T180000Z",
+  "answers": {
+    "<question_id>": "A"
+  }
+}
+```
 
-Gate:
-- `test_quality_score >= knowledge_gate.test_quality_threshold`
-
-If below threshold:
-- regenerate tests/answers; block scoring until passing.
-
----
-
-## 8) Anti-cheat protocol (strict)
-
-1) Read tests only.
-2) Submit all answers first (`ANSWERS_UNREAD: true`).
-3) Read answer keys only after submission.
-4) Grade deterministically.
-
-Hard rule:
-- early answer-key access => `ANTI_CHEAT_VIOLATION: true`, cycle fail, rerun required.
+Rules
+1) Allowed values are `A|B|C|D`.
+2) Missing/blank answers are scored as unanswered.
+3) Submission is considered blind until grading begins.
 
 ---
 
-## 9) Scoring model
+## 6) Grading contract (required)
 
-Per-doc skill score:
-- `doc_skill_score = 0.7*P0 + 0.2*P1 + 0.1*P2`
+Grading command
+- `python context_compass/skill_check/grade_hard_mcq_submission.py --cycle-id <id> --submission <path>`
 
-Critical rule:
-- any critical P0 miss => doc fail.
-
-Global scores:
-- `knowledge_score = weighted_average(doc_skill_score)`
-- `fidelity_score = 100 * system_skill_parity_rate`
-- `global_score = 0.6*knowledge_score + 0.4*fidelity_score`
-
-Rank bands (default):
-- S: >=95 and zero critical P0 misses
-- A: 90-94 and zero critical P0 misses
-- B: 80-89 and <=1 non-critical P0 miss
-- C: <80 or any critical P0 miss
+Required outputs
+1) Total correct/incorrect/unanswered counts.
+2) Score percentage.
+3) Rank (`S|A|B|C|D`).
+4) Per-doc score breakdown.
+5) Persisted cycle report under `historical_test_results/`.
 
 ---
 
-## 10) Certification gates
+## 7) Anti-cheat protocol (strict)
 
-Certification blocked unless all pass:
-1) `global_score >= knowledge_gate.global_pass_threshold`
-2) `policy_gate_miss_count == 0`
-3) `critical_p0_miss_count <= knowledge_gate.p0_critical_miss_max`
-4) anti-cheat passed
-5) required manifest entries have test+answer artifacts
-
-Hard rules:
-- do not request `CERTIFY: APPROVED` when blocked.
-- `knowledge_score: Not run` blocks certification.
+1) Read only exam markdown before submission.
+2) Do not read sealed key artifacts before submission.
+3) Do not grade until JSON answers are fully submitted.
+4) Any sealed pre-read is an anti-cheat violation.
 
 ---
 
-## 11) Diff board integration
+## 8) Certification gates
 
-`context_compass/compacting_differential_board.md` must include:
-- `row_type: knowledge_test` (primary scored evidence)
-- `row_type: fidelity_diff` (secondary parity evidence)
+Certification remains blocked unless:
+1) Grading has been executed for the active cycle.
+2) `global_score`/rank thresholds are met by configured policy.
+3) Critical policy-gate misses are zero.
+4) Anti-cheat protocol is intact.
 
-`knowledge_test` minimum fields:
-1) `cycle_id`
-2) `doc_id`
-3) `skill_id`
-4) `question_id`
-5) `priority`
-6) `agent_answer`
-7) `correct_answer_ref`
-8) `result` (`correct|incorrect|partial`)
-9) `miss_class` (`concept|policy|sequence|scope|application`)
-10) `severity`
-11) `remediation_hint`
-12) `next_compaction_hint`
-13) `status`
-14) `streak`
-
-Cycle summary must include:
-1) `knowledge_score`
-2) `knowledge_pass_rate`
-3) `p0_miss_count`
-4) `fidelity_parity_rate`
-5) `global_score`
-6) explicit cycle status (`pass|fail|incomplete`)
+Hard rule
+- `knowledge_score: Not run` or missing grade report means cycle status is `incomplete`.
 
 ---
 
-## 12) Targeted relearn contract
+## 9) Maintenance
 
-After grading:
-1) derive failed/weak docs from misses,
-2) reread failed/weak docs + required P0 dependencies only,
-3) record relearn evidence + unresolved weaknesses,
-4) generate `next_compaction_hint` corrections from misses.
-
-Full baseline rereads are not the default relearn path.
+After accepted cycle closure:
+1) Refresh pool with multiplier target.
+2) Generate fresh exam for next cycle.
+3) Keep sealed keys local and private.
+4) Track score trends in historical results.
 
 ---
 
-## 13) Fresh-cycle reset and adaptive shrink
+## 10) Legacy compatibility note
 
-After certification:
-1) regenerate manifest + suite (`--compaction-event` flow),
-2) keep one active cycle only (prune stale cycle dirs/files),
-3) failed/weak docs remain dense or increase,
-4) stable docs may shrink only after streak threshold,
-5) never remove P0 sentinel minimum coverage.
-
----
-
-## 14) Non-negotiable discipline
-
-- no pre-cert edits outside measurement workflow.
-- no bypass options for anti-cheat, grading, or gate checks.
-- no performative "ran tests" claims.
-- if blocked, publish `BLOCKED` with exact missing artifacts or failed gates.
+Legacy mixed-format test artifacts may still exist under `test_answers/`.
+The active flow is hard-MCQ + sealed-key grading only.

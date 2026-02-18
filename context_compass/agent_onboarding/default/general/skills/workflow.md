@@ -191,13 +191,13 @@ Before context compaction or major handoff:
 
 
 ## Agent Operating Notes (Optional but Recommended)
-This section exists to reduce Ã¢â‚¬Å“process driftÃ¢â‚¬Â when the workflow is executed by multiple humans and/or AI agents.
+This section exists to reduce process drift when the workflow is executed by multiple humans and/or AI agents.
 
 ### Definition of Done (DoD) for a ticket
 Before moving a ticket to a completed folder:
 - [ ] `attention_board.md` is synchronized using deterministic closure-sync rules.
 - [ ] `artifact_board.md` is synchronized when ticket artifacts exist.
-- [ ] Acceptance criteria are explicitly met (not Ã¢â‚¬Å“mostly doneÃ¢â‚¬Â).
+- [ ] Acceptance criteria are explicitly met (not mostly done).
 - [ ] Any new/changed behavior has been documented in the relevant C4/C3 docs.
 - [ ] Unknowns introduced during work are either resolved (with evidence) or
       recorded as **UNKNOWN** with investigation pointers.
@@ -215,7 +215,7 @@ If a ticket modifies system behavior, make a small doc update as part of the sam
 ### Evidence discipline still applies
 Even inside tickets:
 - Prefer `path/to/file:Symbol` evidence when describing a behavior change.
-- If you canÃ¢â‚¬â„¢t confirm, mark it **UNKNOWN** and create a follow-up task for investigation.
+- If you cant confirm, mark it **UNKNOWN** and create a follow-up task for investigation.
 
 ### Active Notes Discipline
 - Every active ticket must include a `## Notes` section.

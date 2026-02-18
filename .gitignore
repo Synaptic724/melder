@@ -187,3 +187,6 @@ cython_debug/
 /TestIdeas/
 /INFO/
 /benchmarks/competitors/
+context_compass/skill_check/.sealed/**/*.json
+context_compass/skill_check/.sealed/**/*.jsonl
+context_compass/skill_check/.sealed/**/*.seed

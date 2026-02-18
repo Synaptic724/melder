@@ -1,188 +1,124 @@
-# compaction_requirements (REONBOARD + Skill-Gate-First Measurement Loop)
+# compaction_requirements (REONBOARD + Hard MCQ Measurement Loop)
 
 Purpose
-- Define deterministic rules for what must happen after any compaction/handoff.
-- Prevent policy drift by enforcing:
-  1) minimum-read skill-gate onboarding,
-  2) blind scored testing before answer-key access,
-  3) targeted relearn from misses,
-  4) fresh-cycle regeneration with adaptive shrink.
-
-Non-negotiable optimization target
-- Fidelity-first, not compactness-first.
-- Compaction summary should be as rich as platform limits allow.
-- Target compaction summary mix: **~90% system/skills/policy** and **~10% operational pointers**.
+- Define deterministic behavior after compaction/handoff.
+- Enforce minimum-read skill-gate onboarding and score-grounded grading.
 
 Canonical references
 - `context_compass/AGENTS.MD`
-- `context_compass/CONTEXT_COMPACTION.md`
-- `context_compass/compacting_differential_board.md`
+- `context_compass/agent_onboarding/default/general/skills/compaction_diff_onboarding.md`
 - `context_compass/skill_check/skill_check_policy.md`
-- `context_compass/config/context_compass_config.yaml`
+- `context_compass/skill_check/manifest/onboarding_manifest.yaml`
 
 Trigger events (any => enforce REONBOARD)
-- context compaction (platform summarization)
+- context compaction
 - agent handoff
 - fresh-session reset
-- user declares onboarding untrustworthy ("you're lying", "performative compliance", etc.)
+- user distrust challenge on onboarding integrity
 
 Hard rule
-- After a trigger event, **no tools, no edits, no execution, no planning** until:
-  - Phase A is complete,
-  - Phase B/C scored measurement is complete,
-  - Phase D targeted relearn is complete,
-  - Phase E certification is granted.
+- After trigger: no implementation action until measured re-entry gates complete.
 
 ---
 
-## Phase A - Re-Entry Bootstrap Reads (mandatory)
+## Phase A - Re-entry bootstrap reads (mandatory)
 
-Goal
-- Re-establish policy and workflow gates needed to run honest measurement.
-- Do not perform a full role baseline reread in this phase.
-
-Required bootstrap reads
+Required reads
 1) `context_compass/AGENTS.MD`
-2) `context_compass/agent_onboarding/default/general/skills/execution_contract.md`
-3) `context_compass/agent_onboarding/default/general/skills/compaction_requirements.md`
-4) `context_compass/agent_onboarding/default/general/skills/compaction_diff_onboarding.md`
-5) `context_compass/skill_check/skill_check_policy.md`
-6) `context_compass/skill_check/manifest/onboarding_manifest.yaml`
-7) `context_compass/config/context_compass_config.yaml`
-8) `context_compass/attention_board.md` + active ticket paths
-
-Notes
-- Manual source-document reads are required.
-- Onboarding dump artifacts are non-compliant.
-- Performative onboarding is forbidden.
+2) `agent_onboarding/default/general/skills/execution_contract.md`
+3) `agent_onboarding/default/general/skills/compaction_requirements.md`
+4) `agent_onboarding/default/general/skills/compaction_diff_onboarding.md`
+5) `skill_check/skill_check_policy.md`
+6) `skill_check/manifest/onboarding_manifest.yaml`
+7) `config/context_compass_config.yaml`
+8) `attention_board.md` + active ticket paths
 
 ---
 
-## Phase B - `skill_gate_onboard` Minimum Readset (mandatory)
+## Phase B - skill_gate_onboard minimum readset (mandatory)
 
 Goal
-- Read only the minimum required to execute an unbiased scored cycle.
+- Read only enough to execute a blind hard-MCQ cycle.
 
 Required minimum readset
-1) Active manifest metadata and required-doc/test mapping.
-2) Active cycle test files in `skill_check/tests/**`.
-3) Anti-cheat and grading rules in `skill_check_policy.md`.
-4) Board schema required to record scored rows in
-   `compacting_differential_board.md`.
+1) Active manifest metadata.
+2) Active exam markdown (`skill_check/tests/cycle_<id>/hard_mcq_exam.md`).
+3) Submission schema in `skill_check/submissions/README.md`.
+4) Grading contract in `skill_check/skill_check_policy.md`.
 
-Prohibited before blind submission
-- Any file under `skill_check/test_answers/**`.
-- Broad reread of under-test skill docs for memorization.
-- Full role baseline reread prior to scoring.
-
-Hard rule
-- If test artifacts for required docs are missing:
-  - set `BLOCKED: MISSING_TEST_ARTIFACTS`,
-  - list exact missing paths,
-  - stop and request user instructions.
+Prohibited before submission
+- Any file under `skill_check/.sealed/**`.
+- Any file under legacy `skill_check/test_answers/**`.
+- Broad reread of under-test docs for memorization.
 
 ---
 
-## Phase C - Blind Skill Check + Grading (mandatory)
+## Phase C - blind submission + grading (mandatory)
 
-### C1) Cycle initialization
-- Choose `cycle_id` (for example: `2026-02-18T01`).
+### C1) Initialize cycle
+- Generate or receive `cycle_id`.
 - Declare `NO_ACTION_TAKEN_YET: true`.
 
-### C2) Blind submission (anti-cheat)
-1) Read `skill_check/tests/**` only.
-2) Answer all required questions.
-3) Submit in chat with:
+### C2) Blind submission
+1) Read exam markdown only.
+2) Produce JSON answers using required schema.
+3) Save submission under `skill_check/submissions/cycle_<id>_answers.json`.
+4) Post in chat:
    - `SKILL_CHECK_SUBMISSION`
    - `cycle_id`
-   - all answers by `question_id`
+   - `submission_path`
    - `ANSWERS_UNREAD: true`
 
-### C3) Grading (after submission only)
-1) Read `skill_check/test_answers/**`.
-2) Grade deterministically and compute:
-   - per-doc scores
-   - `knowledge_score`
-   - `knowledge_pass_rate`
-   - `p0_miss_count`
-   - `critical_p0_miss_count`
-   - `rank`
-3) Run Diff-Onboarding parity measurement and compute:
-   - `system_skill_doc_coverage`
-   - `system_skill_parity_rate`
-   - `policy_gate_miss_count`
-4) Compute:
-   - `fidelity_score = 100 * system_skill_parity_rate`
-   - `global_score = 0.6*knowledge_score + 0.4*fidelity_score`
+### C3) Scripted grading
+1) Run:
+   - `python context_compass/skill_check/grade_hard_mcq_submission.py --cycle-id <id> --submission <path>`
+2) Do not manually inspect sealed key files.
+3) Capture outputs:
+   - total correct/incorrect/unanswered
+   - score
+   - rank
+   - per-doc misses
 
 Hard rules
-- Early read of `test_answers/**` sets `ANTI_CHEAT_VIOLATION: true` and blocks certification.
-- A cycle with `knowledge_score: Not run` is `incomplete` and cannot pass.
+- Sealed key reads before submission => `ANTI_CHEAT_VIOLATION: true`.
+- A cycle without grader output is `incomplete`.
 
 ---
 
-## Phase D - Targeted Relearn (mandatory)
+## Phase D - targeted relearn (mandatory)
 
-Goal
-- Re-onboard only weak areas after scoring.
-
-Protocol
-1) Build failed/weak set from graded misses.
-2) Re-read failed/weak docs only, plus required P0 dependencies.
-3) Record relearn completion evidence and unresolved weak areas.
-4) Convert misses to explicit `next_compaction_hint` entries.
-
-Hard rule
-- Do not replace targeted relearn with full-role baseline rereads unless the user explicitly directs it.
+1) Build weak-doc list from grader misses.
+2) Re-read failed/weak docs only plus required P0 dependencies.
+3) Record remediation and unresolved weak areas.
+4) Promote misses to `next_compaction_hint` entries.
 
 ---
 
-## Phase E - Certification Request (strict)
+## Phase E - certification request (strict)
 
-Only when Phase A/B/C/D gates pass:
-
-Publish a `REONBOARD` attestation with:
+Publish REONBOARD attestation with:
 - `REONBOARD: COMPLETE`
-- `ROLE_SKILLS_READ` (resolved role chain)
-- `SKILL_GATE_ONBOARD_READSET` (minimum-read files used pre-test)
-- `FILES_REREAD` (at minimum: `attention_board.md` + active tickets)
-- `READ_INTEGRITY_PROOF` (concise comprehension proof; no tool logs)
-- `DIFF_ONBOARDING_REPORT` (coverage, parity, policy_gate_miss_count, top misses)
-- `SKILL_GATE_REPORT` (knowledge_score, p0 misses, critical misses, global_score, rank, anti-cheat passed)
+- `ROLE_SKILLS_READ`
+- `SKILL_GATE_ONBOARD_READSET`
+- `FILES_REREAD`
+- `READ_INTEGRITY_PROOF`
+- `DIFF_ONBOARDING_REPORT`
+- `SKILL_GATE_REPORT` (score, rank, misses, anti-cheat status)
 - `NO_ACTION_TAKEN_YET: true`
 
-Then request user approval with exact token:
+Then request user token:
 - `CERTIFY: APPROVED`
-
-Hard rule
-- Do not request certification when any gate is failing, incomplete, or blocked.
 
 ---
 
-## Phase F - Post-Cert Updates (allowed only after `CERTIFY: APPROVED`)
+## Phase F - post-cert updates
 
-1) Update measurement ledger
-- Append cycle rows to `context_compass/compacting_differential_board.md`:
-  - `row_type: knowledge_test` (primary scored evidence)
-  - `row_type: fidelity_diff` (secondary parity diagnostics)
-- Append cycle summary metrics with explicit pass/incomplete status.
-
-2) Persist knowledge-gate state
-- Write updated manifest to `context_compass/skill_check/manifest/onboarding_manifest.yaml`.
-- Persist cycle report in `context_compass/skill_check/historical_test_results/`.
-
-3) Regenerate and reset suite
-- Run:
-  - `python context_compass/skill_check/generate_bootstrap_suite.py --compaction-event`
-- Keep one active cycle only:
-  - prune stale `skill_check/tests/cycle_*`,
-  - prune stale `skill_check/test_answers/cycle_*`,
-  - prune stale `skill_check/historical_test_results/cycle_*.md`.
-
-4) Adaptive shrink and reinforcement
-- Failed/weak docs stay dense or increase.
-- Stable docs may shrink only when streak thresholds are met.
-- Permanent P0 sentinel coverage is never removed.
+1) Refresh hard-MCQ pool:
+   - `python context_compass/skill_check/build_hard_mcq_pool.py --multiplier 10`
+2) Generate fresh exam:
+   - `python context_compass/skill_check/generate_hard_mcq_exam.py --cycle-id <next_id>`
+3) Preserve sealed key files as local private artifacts.
+4) Persist grading report under `historical_test_results/`.
 
 Hard rule
-- Phase F is the only phase where this workflow writes files.
+- Only Phase F writes new cycle generation artifacts.
