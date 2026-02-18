@@ -37,7 +37,11 @@ Please get Codex to read this to help you make a class; this guide uses tokens a
 
 ### 3) Default class
 - This is the profile loaded after onboarding.
-- For code work, `engineer` is the recommended default.
+- For general code work, `engineer` is the recommended default.
+- Use specialized defaults when the work demands it:
+  - software lane: `design_engineer`, `platform_engineer`, `qa_engineer`, `security_engineer`
+  - fiction lane: `story_designer`, `story_novel_artist`, `researcher`, `draft_writer`,
+    `developmental_editor`, `line_copy_editor`, `continuity_fact_checker`, `proofreader`
 
 ### 4) User-defined class
 - A custom profile you create under `agent_onboarding/user_defined/`.
@@ -47,12 +51,35 @@ Please get Codex to read this to help you make a class; this guide uses tokens a
 - `new`
   - first-time onboarding and class selection.
 - `general`
-  - system behavior, ticketing, process controls.
+  - shared system behavior, ticketing, process controls.
 - `engineer`
-  - code-development specializations and creation mechanics.
+  - general-purpose code-development execution layered on top of `general`.
+- `design_engineer`
+  - software/system design specialization layered on top of `engineer`.
+- `platform_engineer`
+  - CI/CD, deployment, observability, and operations specialization layered on top of `engineer`.
+- `qa_engineer`
+  - test strategy, quality gates, and release signoff specialization layered on top of `engineer`.
+- `security_engineer`
+  - threat modeling, security review, and hardening specialization layered on top of `engineer`.
+- `story_designer`
+  - narrative architecture specialization layered on top of `general`.
+- `story_novel_artist`
+  - visual language and art-direction specialization layered on top of `general`.
+- `researcher`
+  - evidence and plausibility specialization layered on top of `general`.
+- `draft_writer`
+  - manuscript drafting and rewrite specialization layered on top of `general`.
+- `developmental_editor`
+  - structural editing specialization layered on top of `general`.
+- `line_copy_editor`
+  - line/copy prose specialization layered on top of `general`.
+- `continuity_fact_checker`
+  - canon/timeline/fact integrity specialization layered on top of `general`.
+- `proofreader`
+  - final lock and surface-quality specialization layered on top of `general`.
 - `user_defined/*`
-  - personal or team overlays.
-
+  - personal or team overlays (usually extend the closest matching default role).
 ## Where to configure classes
 - `context_compass/config/context_compass_config.yaml`
 
@@ -276,7 +303,20 @@ Skills
   `general` then `engineer` then custom.
 
 ## Recommended default class choice
-- For code development, default to `engineer`.
+- For general code development, default to `engineer`.
+- For specialized posture, default to the closest matching role:
+  - `design_engineer` for architecture/design work,
+  - `platform_engineer` for CI/CD/deploy/observability/ops,
+  - `qa_engineer` for testing and quality gates,
+  - `security_engineer` for security review and hardening,
+  - `story_designer` for fiction narrative architecture,
+  - `story_novel_artist` for visual language and art direction,
+  - `researcher` for source-backed plausibility,
+  - `draft_writer` for manuscript drafting and rewrites,
+  - `developmental_editor` for structural editing and rewrite planning,
+  - `line_copy_editor` for prose polish and consistency,
+  - `continuity_fact_checker` for canon/timeline/fact checks,
+  - `proofreader` for final typo/punctuation/format lock.
 - Use user-defined classes when you need preference/domain overlays.
 
 ## Fast operator checklist
@@ -322,3 +362,4 @@ Check:
 - Use this guide through `new` onboarding when creating a class.
 - Keep class changes explicit, additive, and validated before switching
   defaults.
+

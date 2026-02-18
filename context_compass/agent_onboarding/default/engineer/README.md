@@ -17,15 +17,6 @@ Engineer inventory
 - `skills/engineer_execution.md`: execution discipline for engineering work.
 - `skills/technical_expertise.md`: root-cause-first debugging discipline.
 - `skills/system_orientation.md`: system explanation flow for engineers.
-- `skills/architecture_contexts.md`: architecture/components source-of-truth policy.
-- `skills/src_architecture_instructions.md`: creation/maintenance mechanics for
-  `system_docs/src_architecture.md`.
-- `skills/src_components_instructions.md`: creation/maintenance mechanics for
-  `system_docs/src_components.md`.
-- `skills/tests_architecture_instructions.md`: creation/maintenance mechanics
-  for `system_docs/tests_architecture.md`.
-- `skills/tests_components_instructions.md`: creation/maintenance mechanics for
-  `system_docs/tests_components.md`.
 - `skills/documentation_standards.md`: deep architecture/components documentation quality contract.
 - `skills/context_protocol.md`: code-work discovery order and docs-first boundary rules.
 - `skills/staleness_protocol.md`: stale-doc handling for engineering context maintenance.
@@ -36,6 +27,11 @@ Engineer inventory
 - `behavioral_guidelines/task_execution_and_validation.md`: implementation and validation flow for engineering tasks.
 - `examples/eng_task_flow.md`: concise engineer task flow.
 - `examples/artifact_workflow.md`: scratch-to-ticket artifact promotion pattern.
+
+Architecture docs ownership
+- Architecture/components instruction mechanics are owned by:
+  `agent_onboarding/default/design_engineer/skills/`.
+- Engineer reads `system_docs/*` on-demand when task scope requires architecture/components/tests claims.
 
 User-defined overlay boundary
 - Preference-heavy Python/testing/library-style rules are routed through:
@@ -49,3 +45,6 @@ Unknowns Gate
   status must remain UNKNOWN until direct source evidence is attached.
 - During execution handoffs, promote to FACT only with reproducible evidence
   pointers that another engineer can verify quickly.
+
+
+

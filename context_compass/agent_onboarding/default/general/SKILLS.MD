@@ -16,15 +16,6 @@ Active skills
 - `agent_onboarding/default/general/AGENTS.MD`
 - `agent_onboarding/default/general/skills/execution_contract.md`
 - `agent_onboarding/default/general/skills/compaction_requirements.md`
-- `agent_onboarding/default/general/skills/compaction_diff_onboarding.md`
-- `skill_check/README.md`
-- `skill_check/skill_check_policy.md`
-- `skill_check/manifest/onboarding_manifest.yaml`
-- `skill_check/tests/test_template.md`
-- `skill_check/test_answers/answer_template.md`
-- `agent_onboarding/default/general/skills/hard_mcq_skillcheck_protocol.md`
-- `agent_onboarding/default/general/skills/hard_mcq_question_pool_design.md`
-- `skill_check/historical_test_results/historical_results_template.md`
 - `agent_onboarding/default/general/policies/policy_skills.md`
 - `agent_onboarding/default/general/skills/agent_stance.md`
 - `agent_onboarding/default/general/skills/agent_lifecycle.md`
@@ -53,3 +44,8 @@ Active skills
 - `agent_onboarding/default/general/behavioral_guidelines/agent_lifecycle_and_heartbeat.md`
 - `agent_onboarding/default/general/behavioral_guidelines/work_intake_and_execution.md`
 - `agent_onboarding/default/general/behavioral_guidelines/onboarding_summary.md`
+
+
+
+
+

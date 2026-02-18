@@ -1,5 +1,4 @@
 
-
 # new_onboarding_policy
 
 Purpose
@@ -13,14 +12,21 @@ Scope
 Policy
 - Explain the system in plain language before asking for configuration changes.
 - Describe the system goal accurately:
-  - context_compass is a code-development workflow system,
+  - context_compass is a policy-driven workflow system for code and fiction,
   - it supports any programming language,
   - it improves consistency when using Codex and other AI agents.
 - State current execution recommendation explicitly:
   - use Codex with Extra High reasoning,
   - other reasoning modes are not yet validated in this repository.
 - Explain profile classes and inheritance before asking for selection.
-- Make `engineer` the recommended default class after onboarding.
+- Present the full set of default roles from `SKILLS.MD`.
+- Make `engineer` the recommended default class for general code development.
+- If the user needs a specialized posture, route them to the matching role:
+  - software lane: `design_engineer`, `platform_engineer`, `qa_engineer`,
+    `security_engineer`.
+  - fiction lane: `story_designer`, `story_novel_artist`, `researcher`,
+    `draft_writer`, `developmental_editor`, `line_copy_editor`,
+    `continuity_fact_checker`, `proofreader`.
 - Keep `new` profile content minimal; do not load deep engineering policy here.
 
 Configuration authority

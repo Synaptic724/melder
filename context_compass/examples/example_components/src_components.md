@@ -2009,3 +2009,7 @@ graph TD
 This document provides the component-level map for Melder core.
 It details C3 components, C2 subcomponents, and a C1 code map.
 Use this along with the architecture doc to reorient quickly after compaction.
+
+
+
+

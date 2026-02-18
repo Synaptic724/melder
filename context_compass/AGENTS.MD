@@ -1,19 +1,8 @@
 
 
-# AGENTS.md - Public Library Editing Contract
-
-# Prime Policies
-
-- You must read every required **baseline** onboarding file completely.
-  - Do not skip required-baseline files.
-  - Do NOT claim a file was read unless it was actually read.
-  - On-demand files are required only when the active task triggers them.
-- Loop-based document reads are forbidden except for line counts. Content reads
-  must be manual per file path.
-- Files larger than `codex.read_loc_max` LOC must be read in sequential chunks
-  with each read operation at or below `codex.viewer_tool_read_limit`.
-  
+# AGENTS.md - Prime Policies
 ## Execution Order
+
 - Before running tools, editing files, or executing commands, complete
   onboarding from `context_compass/AGENTS.md`.
 - If there is any conflict between repository-root `agents.md` and
@@ -40,36 +29,29 @@
 - You MUST determine whether a file exceeds `codex.read_loc_max` LOC before reading it.
   - If the file might exceed `codex.read_loc_max`, compute the line count (LOC) first.
   - If the file is clearly <= `codex.read_loc_max`, do NOT waste tool calls on LOC counting.
+- You must read every required **baseline** onboarding file completely.
+  - Do not skip required-baseline files.
+  - Do NOT claim a file was read unless it was actually read.
+  - On-demand files are required only when the active task triggers them.
+- Loop-based document reads are forbidden except for line counts. Content reads
+  must be manual per file path.
+- Files larger than `codex.read_loc_max` LOC must be read in sequential chunks
+  with each read operation at or below `codex.viewer_tool_read_limit`.
+- Repository-root `agents.md`; canonical onboarding and
+  execution policy lives in `context_compass/AGENTS.md`.
 
-## Compaction Directive (Fidelity-First)
+## Compaction Directive
 
 - Highest priority adherence: after any context compaction or handoff,
   immediately re-onboard before any action.
 - Re-read `context_compass/AGENTS.md` and
   `context_compass/agent_onboarding/default/general/skills/compaction_requirements.md`
   before continuing work.
-- Compaction summary objective (non-negotiable):
-  - **Maximize semantic fidelity of system/skills/policy state across compaction.**
-  - Default target mix for the compaction summary:
-    - **~90%**: system/skills/policy state (role skills chain, gates, invariants, definitions)
-    - **~10%**: operational pointers (routing, active tickets, immediate next actions)
-  - Compactness is a constraint, not the objective. Use as much summary budget as the platform allows.
-  - Do NOT intentionally minimize the compaction summary by default.
-- After compaction/handoff, re-entry is **DIFF-ONBOARDING + SKILL-CHECK mode**:
-  - Re-entry begins with `skill_gate_onboard` minimum-read measurement mode.
-  - Do NOT perform full role baseline rereads before blind test submission.
-  - Full rereads after compaction must be targeted to failed/weak docs after grading.
-  - You MUST run the knowledge gate (Skill Check) and report competence metrics
-    before certification.
-  - Canonical instructions live in:
-    - `context_compass/agent_onboarding/default/general/skills/compaction_diff_onboarding.md`
-    - `context_compass/skill_check/skill_check_policy.md`
-- Post `REONBOARD: COMPLETE` attestation **with read-integrity proof AND knowledge evidence**
-  before any action:
+- For compaction/handoff summaries, you MUST keep summaries empty when the runtime allows it;
+  otherwise you MUST use minimal file-pointer summaries only.
+- Post `REONBOARD: COMPLETE` attestation **with read-integrity proof** before any action:
   - `ROLE_SKILLS_READ`
-  - `FILES_REREAD`
   - `READ_INTEGRITY_PROOF`
-  - `SKILL_GATE_REPORT` (knowledge-score + P0 miss count + rank; anti-cheat passed)
   - `NO_ACTION_TAKEN_YET: true`
 
 ## Highest Priority Adherence (Compaction Re-Onboarding)
@@ -87,24 +69,18 @@ After any context compaction or handoff:
   full immediately after `AGENTS.md`.
 - Start from `config/context_compass_config.yaml`, then `SKILLS.MD`.
 - Re-read `agent_onboarding/default/general/skills/compaction_requirements.md`.
-- Re-read `agent_onboarding/default/general/skills/compaction_diff_onboarding.md`.
-- Re-read `skill_check/skill_check_policy.md`.
-- Re-read `skill_check/manifest/onboarding_manifest.yaml`.
-- Run `skill_gate_onboard` minimum-read stage from
-  `compaction_requirements.md` before blind testing.
-- Full role rereads in re-entry are targeted post-score relearns, not
-  pre-test baseline passes.
 - README reads are allowed for `new` first-time onboarding only; non-`new`
   roles use policy/skills docs.
 - Re-certify with exact phrase `CERTIFY: APPROVED` before acting.
 - If anything is unclear after re-onboarding, ask the user for instructions and
   get confirmation before acting.
+- During compaction/handoff summarization, you MUST keep summaries empty when allowed;
+  otherwise you MUST emit minimal file-pointer summaries only.
 - Before any action, publish a Re-Onboarding Attestation message with:
   - `REONBOARD: COMPLETE`
   - `ROLE_SKILLS_READ` (resolved role chain in parent-first order)
   - `FILES_REREAD` (at minimum: `attention_board.md` + active ticket paths)
   - `READ_INTEGRITY_PROOF` (concise comprehension proof; NOT tool logs)
-  - `SKILL_GATE_REPORT` (knowledge-gate results; rank; anti-cheat passed)
   - `NO_ACTION_TAKEN_YET: true`
 
 Performative compliance is forbidden during re-onboarding:
@@ -121,10 +97,6 @@ Performative compliance is forbidden during re-onboarding:
 
 Before any tooling, edits, or execution:
 
-- This section governs fresh-session `ONBOARD`.
-- Post-compaction `REONBOARD` flow is controlled by
-  `agent_onboarding/default/general/skills/compaction_requirements.md`,
-  including `skill_gate_onboard` minimum-read sequencing.
 - Read `agent_onboarding/default/general/skills/execution_contract.md` in full
   immediately after `AGENTS.md`.
 - Do not perform duplicate end-of-onboarding rereads of `AGENTS.md` or
@@ -200,7 +172,5 @@ When the user signals distrust or drift (e.g., "performative compliance", "playi
 2) State current status plainly: ONBOARD/REONBOARD complete? If uncertain, treat as NOT complete.
 3) Cite the controlling rule(s) (file + section name).
 4) Execute the single compliant next step. Do not present options unless multiple compliant paths truly exist.
-5) Prove, don't posture:
-   - repair/provide `READ_INTEGRITY_PROOF` (no tool-log theatre)
-   - if post-compaction, include the `SKILL_GATE_REPORT` measured score output
-6) If proof cannot be produced, mark `BLOCKED` and ask for instructions.
+5) Prove, don't posture: repair/provide `READ_INTEGRITY_PROOF` (no tool-log theatre).
+   If proof cannot be produced, mark `BLOCKED` and ask for instructions.

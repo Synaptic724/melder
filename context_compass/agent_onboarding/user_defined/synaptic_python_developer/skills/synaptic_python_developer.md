@@ -334,3 +334,5 @@ Cleanup nulling contract:
   prefer >=95% with density heuristics (>=10 tests per 100 LOC baseline;
   >=20 tests per 100 LOC for dense/high-complexity logic), without filler
   assertions.
+
+

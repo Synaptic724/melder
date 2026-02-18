@@ -1,5 +1,4 @@
 
-
 # AGENTS.MD - New Profile Onboarding Contract
 
 ## PRIME DIRECTIVE
@@ -34,11 +33,31 @@ While active profile is `new`:
 
 1) Explain system purpose and boundaries.
 2) Explain profile classes and inheritance:
-   `new`, `general`, `engineer`, `user_defined/*`.
+   - `new`
+   - `general`
+   - `engineer`
+   - `design_engineer`
+   - `platform_engineer`
+   - `qa_engineer`
+   - `security_engineer`
+   - `story_designer`
+   - `story_novel_artist`
+   - `researcher`
+   - `draft_writer`
+   - `developmental_editor`
+   - `line_copy_editor`
+   - `continuity_fact_checker`
+   - `proofreader`
+   - `user_defined/*`
 3) Explain config authority and exact file path:
    `context_compass/config/context_compass_config.yaml`.
 4) Ask user to choose steady-state profile:
-   recommend `engineer` for code development.
+   - Recommend `engineer` for general code development.
+   - Offer specialized defaults when needed:
+     `design_engineer`, `platform_engineer`, `qa_engineer`, `security_engineer`,
+     `story_designer`, `story_novel_artist`, `researcher`, `draft_writer`,
+     `developmental_editor`, `line_copy_editor`, `continuity_fact_checker`,
+     `proofreader`.
 5) Apply onboarding completion config writes:
    - set `profiles.active_profile` to selected steady-state profile,
    - set `profiles.onboarding.first_time_enabled: false`.
@@ -52,31 +71,18 @@ Required on onboarding completion:
 - `profiles.onboarding.first_time_enabled`
 
 Expected completion state:
-- `profiles.active_profile: <selected_profile>`
+- `profiles.active_profile: <selected_role>`
 - `profiles.onboarding.first_time_enabled: false`
 
-Do not remove onboarding defaults from config:
-- keep `profiles.onboarding.first_time_default_profile: new` for future
-  first-time sessions when onboarding is re-enabled.
+## 6) Notes
 
-## 6) Communication Contract
+- `new` is intentionally lightweight: it is not an excuse to skip policy.
+- After `new` completion, all work must route through the selected steady-state role and its `SKILLS.MD` chain.
 
-- Use concise technical language.
-- Be explicit and deterministic.
-- Use concrete file paths and key names when instructing user changes.
-- Do not handwave profile routing or config behavior.
+References
+- `SKILLS.MD`
+- `agent_onboarding/default/new/SKILLS.MD`
+- `agent_onboarding/default/new/skills/profile_model_explained.md`
+- `agent_onboarding/default/new/skills/first_time_profile_setup.md`
+- `agent_onboarding/default/new/skills/onboarding_completion_and_next_step.md`
 
-## 7) Exit Rule
-
-- `new` exits immediately after first-time setup is complete.
-- Post-onboarding execution must route through selected steady-state profile
-  `SKILLS.MD` inheritance order.
-- `new` must not remain active for normal code-development work.
-
-## 8) References
-
-- `context_compass/AGENTS.MD`
-- `context_compass/config/context_compass_config.yaml`
-- `context_compass/SKILLS.MD`
-- `context_compass/agent_onboarding/default/new/skills/first_time_profile_setup.md`
-- `context_compass/agent_onboarding/default/new/skills/onboarding_completion_and_next_step.md`

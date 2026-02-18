@@ -30,7 +30,10 @@ Example transitions
 - fresh -> needs_review after a significant refactor.
 
 References
-- `agent_onboarding/default/engineer/skills/src_architecture_instructions.md`
-- `agent_onboarding/default/engineer/skills/src_components_instructions.md`
-- `agent_onboarding/default/engineer/skills/tests_architecture_instructions.md`
-- `agent_onboarding/default/engineer/skills/tests_components_instructions.md`
+- `system_docs/src_architecture.md`
+- `system_docs/src_components.md`
+- `system_docs/tests_architecture.md`
+- `system_docs/tests_components.md`
+
+
+

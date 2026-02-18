@@ -3,7 +3,7 @@
 # system_orientation
 
 Purpose
-- Provide a consistent way to explain this repos workflow and docs.
+- Provide a consistent way to explain this repo's workflow and docs.
 - Translate agent stories and repo docs into clear, actionable guidance.
 
 When to use
@@ -25,10 +25,10 @@ Core references
 - Agent stories: `agent_onboarding/default/general/behavioral_guidelines/README.md`
 - Ticketing: `agent_onboarding/default/general/skills/workflow.md` and
   `templates/`
-- Architecture context: `agent_onboarding/default/engineer/skills/src_architecture_instructions.md`
-- Components context: `agent_onboarding/default/engineer/skills/src_components_instructions.md`
-- Test architecture context: `agent_onboarding/default/engineer/skills/tests_architecture_instructions.md`
-- Test components context: `agent_onboarding/default/engineer/skills/tests_components_instructions.md`
+- Architecture context: `system_docs/src_architecture.md`
+- Components context: `system_docs/src_components.md`
+- Test architecture context: `system_docs/tests_architecture.md`
+- Test components context: `system_docs/tests_components.md`
 - Repo examples: `examples/` (within context_compass)
 
 Artifact taxonomy (curated vs scratch)
@@ -54,3 +54,5 @@ Notes
 - Use clear, direct language; avoid restating full policy documents.
 - Keep explanations faithful to `AGENTS.MD`.
 - When discussing current work state, route via `attention_board.md` and linked tickets, not memory.
+
+

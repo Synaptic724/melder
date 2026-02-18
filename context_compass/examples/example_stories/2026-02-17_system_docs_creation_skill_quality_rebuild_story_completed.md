@@ -65,10 +65,10 @@ onboarding quality and compaction-safe system understanding.
 - transition_reason: user confirmed acceptance and requested closure.
 
 ## Dependencies / Related Work
-- `agent_onboarding/default/engineer/skills/src_architecture_instructions.md`
-- `agent_onboarding/default/engineer/skills/src_components_instructions.md`
-- `agent_onboarding/default/engineer/skills/tests_architecture_instructions.md`
-- `agent_onboarding/default/engineer/skills/tests_components_instructions.md`
+- `agent_onboarding/default/design_engineer/skills/src_architecture_instructions.md`
+- `agent_onboarding/default/design_engineer/skills/src_components_instructions.md`
+- `agent_onboarding/default/design_engineer/skills/tests_architecture_instructions.md`
+- `agent_onboarding/default/design_engineer/skills/tests_components_instructions.md`
 - `system_docs/src_architecture.md`
 - `system_docs/src_components.md`
 - `system_docs/tests_architecture.md`
@@ -95,10 +95,10 @@ onboarding quality and compaction-safe system understanding.
 - Story and active task notes capture decisions and evidence pointers.
 
 ## Validation / Test Plan
-- `rg -n "^## " context_compass/agent_onboarding/default/engineer/skills/src_architecture_instructions.md`
-- `rg -n "^## " context_compass/agent_onboarding/default/engineer/skills/src_components_instructions.md`
-- `rg -n "^## " context_compass/agent_onboarding/default/engineer/skills/tests_architecture_instructions.md`
-- `rg -n "^## " context_compass/agent_onboarding/default/engineer/skills/tests_components_instructions.md`
+- `rg -n "^## " context_compass/agent_onboarding/default/design_engineer/skills/src_architecture_instructions.md`
+- `rg -n "^## " context_compass/agent_onboarding/default/design_engineer/skills/src_components_instructions.md`
+- `rg -n "^## " context_compass/agent_onboarding/default/design_engineer/skills/tests_architecture_instructions.md`
+- `rg -n "^## " context_compass/agent_onboarding/default/design_engineer/skills/tests_components_instructions.md`
 - `Get-ChildItem context_compass/system_docs | Select-Object Name`
 
 ## UX / API / Data Notes
@@ -137,10 +137,10 @@ onboarding quality and compaction-safe system understanding.
     lane, with root cleanup applied in the tests-components lane.
   EVIDENCE:
   - templates/story_template.md:1-84
-  - agent_onboarding/default/engineer/skills/src_architecture_instructions.md:1-80
-  - agent_onboarding/default/engineer/skills/src_components_instructions.md:1-83
-  - agent_onboarding/default/engineer/skills/tests_architecture_instructions.md:1-55
-  - agent_onboarding/default/engineer/skills/tests_components_instructions.md:1-59
+  - agent_onboarding/default/design_engineer/skills/src_architecture_instructions.md:1-80
+  - agent_onboarding/default/design_engineer/skills/src_components_instructions.md:1-83
+  - agent_onboarding/default/design_engineer/skills/tests_architecture_instructions.md:1-55
+  - agent_onboarding/default/design_engineer/skills/tests_components_instructions.md:1-59
   IMPACT: Work is isolated, reviewable, and directly tied to requested lanes.
   NEXT: create the four child tasks and route attention to the first task.
   REREAD: REQUIRED
@@ -157,10 +157,10 @@ onboarding quality and compaction-safe system understanding.
   - tickets/tasks/completed/2026-02-17_src_components_skill_creation_protocol_rebuild_task_completed.md:1-97
   - tickets/tasks/completed/2026-02-17_tests_architecture_skill_creation_protocol_rebuild_task_completed.md:1-97
   - tickets/tasks/completed/2026-02-17_tests_components_skill_creation_protocol_rebuild_task_completed.md:1-104
-  - agent_onboarding/default/engineer/skills/src_architecture_instructions.md:1-97
-  - agent_onboarding/default/engineer/skills/src_components_instructions.md:1-99
-  - agent_onboarding/default/engineer/skills/tests_architecture_instructions.md:1-82
-  - agent_onboarding/default/engineer/skills/tests_components_instructions.md:1-95
+  - agent_onboarding/default/design_engineer/skills/src_architecture_instructions.md:1-97
+  - agent_onboarding/default/design_engineer/skills/src_components_instructions.md:1-99
+  - agent_onboarding/default/design_engineer/skills/tests_architecture_instructions.md:1-82
+  - agent_onboarding/default/design_engineer/skills/tests_components_instructions.md:1-95
   - system_docs/archive/what_is_commandops_architecture.md:1-1
   IMPACT: Story is ready for user review and acceptance confirmation.
   NEXT: confirm acceptance criteria with user and decide closure/move.
@@ -177,10 +177,10 @@ onboarding quality and compaction-safe system understanding.
   - system_docs/src_components.md:1-1646
   - system_docs/tests_architecture.md:1-101
   - system_docs/tests_components.md:1-105
-  - agent_onboarding/default/engineer/skills/src_architecture_instructions.md:1-97
-  - agent_onboarding/default/engineer/skills/src_components_instructions.md:1-99
-  - agent_onboarding/default/engineer/skills/tests_architecture_instructions.md:1-82
-  - agent_onboarding/default/engineer/skills/tests_components_instructions.md:1-95
+  - agent_onboarding/default/design_engineer/skills/src_architecture_instructions.md:1-97
+  - agent_onboarding/default/design_engineer/skills/src_components_instructions.md:1-99
+  - agent_onboarding/default/design_engineer/skills/tests_architecture_instructions.md:1-82
+  - agent_onboarding/default/design_engineer/skills/tests_components_instructions.md:1-95
   IMPACT: The location contract is now clean: `system_docs` holds outputs,
     engineer skills hold creation mechanics.
   NEXT: proceed with acceptance decision and closure routing.
@@ -200,3 +200,6 @@ onboarding quality and compaction-safe system understanding.
 ## Context / Handoff Summary
 All planned lanes are implemented and routed for review. Next action is user
 acceptance confirmation and closure decision.
+
+
+

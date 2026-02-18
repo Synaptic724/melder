@@ -16,7 +16,11 @@ Checklist (short form)
    - Read `agent_onboarding/default/new/README.md`
 4) Select working role
    - Read `agent_onboarding/default/general/SKILLS.MD` first.
-   - Read `agent_onboarding/default/engineer/SKILLS.MD` after baseline.
+   - Read the selected role `SKILLS.MD` after baseline (for example:
+     `engineer`, `design_engineer`, `platform_engineer`, `qa_engineer`,
+     `security_engineer`, `story_designer`, `story_novel_artist`,
+     `researcher`, `draft_writer`, `developmental_editor`,
+     `line_copy_editor`, `continuity_fact_checker`, `proofreader`).
 5) Certification gate
    - Request approval before any tool usage or edits.
    - Approval must include the exact token `CERTIFY: APPROVED`.
@@ -32,3 +36,5 @@ References
 - `AGENTS.MD`
 - `config/context_compass_config.yaml`
 - `context_compass/SKILLS.MD`
+
+

@@ -22,6 +22,15 @@ First-time setup focus
 - Use this profile to select a steady-state default profile.
 - `general`: shared system/policy/ticketing baseline.
 - `engineer`: programming/testing specialization layered on `general`.
+- Fiction-authoring specializations layered on `general`:
+  - `story_designer`
+  - `story_novel_artist`
+  - `researcher`
+  - `draft_writer`
+  - `developmental_editor`
+  - `line_copy_editor`
+  - `continuity_fact_checker`
+  - `proofreader`
 - `synaptic_python_developer`: user-defined overlay layered on `engineer`.
 
 Agent-read policy
@@ -38,3 +47,5 @@ Primary onboarding docs
 - `agent_onboarding/default/new/skills/configuration_map_guide.md`
 - `agent_onboarding/default/new/skills/onboarding_completion_and_next_step.md`
 - `PROFILE_CLASS_CREATION_GUIDE.md` (root user guide; mapped only in `new`)
+
+

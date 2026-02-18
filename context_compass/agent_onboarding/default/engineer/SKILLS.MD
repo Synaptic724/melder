@@ -46,11 +46,6 @@ Trigger conditions (any one makes these mandatory):
 - The user explicitly requests an architecture/components/tests deep dive.
 
 If triggered, you MUST read the relevant items below (do not skip):
-- `agent_onboarding/default/engineer/skills/architecture_contexts.md`
-- `agent_onboarding/default/engineer/skills/src_architecture_instructions.md`
-- `agent_onboarding/default/engineer/skills/src_components_instructions.md`
-- `agent_onboarding/default/engineer/skills/tests_architecture_instructions.md`
-- `agent_onboarding/default/engineer/skills/tests_components_instructions.md`
 - `system_docs/tests_architecture.md`
 - `system_docs/tests_components.md`
 - `system_docs/src_architecture.md`

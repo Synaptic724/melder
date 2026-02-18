@@ -3082,3 +3082,7 @@ This map describes where agentic mode affects locks and behavior.
 - Locks use symbolic handoff to waiting agents.
 - Registries use agent-aware Concurrent* structures.
 - Some cleanup paths wake sleeping agents explicitly.
+
+
+
+

@@ -207,8 +207,8 @@ As a ritual, after implementing a change:
 
 ### 8.5) Architecture and Components Docs Required
 
-* Maintain C4 architecture docs in `system_docs/` for src and tests.
-* Maintain C3/C2/C1 component docs in `system_docs/` for src and tests.
+* Read C4/C3/C2/C1 docs in `system_docs/` when architecture/components/tests
+  claims are required by the active task.
 * Use ASCII and Mermaid diagrams for readability.
 * Keep information sources, invariants, and lifecycle notes current as the system evolves.
 
@@ -445,3 +445,4 @@ If you find mistakes while writing tests (bugs, incorrect docstrings, missing cl
 ## 11) Test Mocks Skills
 
 For reusable test-only classes and helpers, see `tests/mocks/`.
+

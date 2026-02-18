@@ -20,12 +20,6 @@ Certification gate (mandatory)
 - Complete onboarding skills and request approval.
 - Require the approval message to include the exact token
   `CERTIFY: APPROVED`.
-
-
-Post-compaction additional gate (non-negotiable)
-- If a compaction/handoff/reset occurred, certification requires:
-  - `SKILL_GATE_REPORT` (knowledge-gate metrics + anti-cheat passed)
-- If `SKILL_GATE_REPORT` is missing, certification is blocked.
 - Do not use tools or edit files until the user provides this approval token.
 
 Required flow
@@ -46,11 +40,10 @@ Required flow
 - For onboarding/re-onboarding, complete role-driven onboarding reads from:
   - `context_compass/config/context_compass_config.yaml`
   - `context_compass/SKILLS.MD`
-  - resolved role `SKILLS.MD` chain:
-    `agent_onboarding/default/general/SKILLS.MD`,
-    `agent_onboarding/default/engineer/SKILLS.MD`,
-    and `agent_onboarding/user_defined/synaptic_python_developer/SKILLS.MD`
-    when active.
+  - resolved role `SKILLS.MD` chain in parent-first order:
+    `agent_onboarding/default/general/SKILLS.MD` plus the selected role map
+    entry from `context_compass/SKILLS.MD` (and user-defined overlay when
+    active).
 - Use manual source-document reads for onboarding; do not use onboarding dump
   artifacts as policy input.
 - Treat **Active skills** / **Required baseline skills** as mandatory reads.
@@ -151,3 +144,7 @@ Workflow
 4) Review relevant examples and mirror the pattern.
 5) If work is code-engineering, continue with engineer profile docs before
    implementation.
+
+
+
+

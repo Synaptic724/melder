@@ -46,3 +46,7 @@ Evidence reporting format
 Decision policy
 - If alias/direct ratio < 1.0: alias is faster.
 - If ratio is near 1.0 (noise band), keep whichever is more readable unless path is proven hot.
+
+
+
+

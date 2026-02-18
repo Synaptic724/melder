@@ -1,114 +1,106 @@
 
+# Context Compaction Policy
 
-# Context Compaction Policy (Fidelity-First)
+## Purpose
+Ensure continuity and minimize lost context when a session is compacted or
+handed off.
 
-## Objective
-1) **Primary objective:** maximize semantic fidelity of **system/skills/policy state** across compaction.
-2) **Secondary objective:** preserve minimal operational routing pointers so work can resume.
-3) **Default target mix for the compaction summary:**
-   - **~90%**: system/skills/policy state
-   - **~10%**: operational pointers (routing + immediate next actions)
-
-This is the opposite of a "tiny pointer summary" policy. Compactness is a constraint, not the objective.
-
-## Canonical Definition: What the Compaction Summary Is
-- The compaction summary is the *carried state* that survives a compaction event.
-- It is **not** a ticket recap and **not** a narrative replay.
-- It is a **high-fidelity mirror of onboarding/skills/policy state**, expressed as structured, checkable statements.
-
-## Required Compaction Summary Schema (System-First)
-The compaction summary MUST be structured with system/skills/policy first.
-
-### 1) Active Profile + Role Resolution (operational; keep short)
-- active profile / selected role
-- resolved `SKILLS.MD` chain (parent-first) and any on-demand triggers currently active
-- certification state requirement (must re-certify after compaction)
-- **skill_check snapshot** (short): last cycle_id, last global_score, last rank, requires_retest count
-- pointers: `attention_board.md`, active tickets, immediate next actions (13)
-
-### 2) System / Skills / Policy State Mirror (dominant; ~90% of budget)
-Provide a high-fidelity semantic mirror of the canonical docs:
-
-- `AGENTS.MD` (prime gates + anti-theater + compaction rules)
-- `agent_onboarding/default/general/skills/execution_contract.md`
-- `agent_onboarding/default/general/skills/compaction_requirements.md`
-- `agent_onboarding/default/general/skills/compaction_diff_onboarding.md`
-- `skill_check/skill_check_policy.md`
-- `skill_check/manifest/onboarding_manifest.yaml`
-- `agent_onboarding/default/general/policies/policy_skills.md`
-- certification docs:
-  - `agent_onboarding/default/general/skills/self_certification.md`
-  - `agent_onboarding/default/general/skills/user_approved_certification.md`
-- the resolved role `SKILLS.MD` chain (the SKILLS files themselves)
-- **every required baseline skill doc** referenced by that resolved chain
-
-**Rule for mirroring:** semantic parity, not verbatim copy.
-- Prefer structured bullets with explicit MUST/DO NOT constraints.
-- Preserve definitions, gates, ordering constraints, and "what changes my behavior" implications.
-- If you are unsure, mark `UNKNOWN` rather than invent.
-
-### 3) Knowledge Feedback Loop State (system; short but mandatory)
-- last `cycle_id` (if any)
-- top unresolved misses from `compacting_differential_board.md` (`knowledge_test` rows)
-- the top 5 `next_compaction_hint` corrections to apply next compaction
-  - prioritize policy-gate and sequence-order misses first
-
-### 4) Operational Pointers (secondary; ~10% of budget)
-- `attention_board.md` routing state (what is active and why)
-- active ticket paths + one-line status each
-- immediate next actions
-
-## Budget and Trimming Rules
-- Use as much compaction summary budget as the platform allows.
-- Only trim when the platform forces a hard limit.
-
-If trimming is required, the trimming order MUST protect system/skills/policy coverage first:
-
-1) Trim operational narrative/details first.
-2) Trim operational pointers beyond immediate routing.
-3) Trim lowest-priority system/skills items (P2) next.
-4) Trim medium-priority system/skills items (P1) next.
-5) **Never trim policy-gate system items (P0 policy gates).**
-
-## Pre-Compaction Checklist (Required)
-Before initiating compaction/handoff:
-
-1) Ensure durable operational state is current:
-   - `attention_board.md` matches reality (routing, status, blockers, next actions).
-   - active tickets have up-to-date checklists and `## Notes` with evidence pointers.
-2) Ensure the semantic-parity loop has inputs:
-   - Open `compacting_differential_board.md` and identify OPEN/HIGH items.
-   - Apply the latest `next_compaction_hint` corrections in the compaction summary.
-3) Generate the compaction summary using the required schema above.
+## External Memory Priority
+- Repository artifacts are the source of truth for durable context.
+- `attention_board.md` is the canonical active-attention state and is mandatory
+  during active work.
+- Compaction summaries MUST be empty when the runtime/platform allows empty summaries.
+- If empty summaries are not allowed, write only minimal pointer summaries:
+  - high-level outcomes (no narrative replay)
+  - critical policy anchor paths that MUST be re-read
+  - active ticket path(s)
+  - changed file path(s)
+  - next immediate action
+- Avoid narrative replay; keep durable state externalized to files.
 
 ## Required Review Set
-To author a high-fidelity system mirror, you MUST review:
+Before initiating compaction/handoff:
+- You MUST ensure the durable state is up to date:
+  - `attention_board.md` reflects the current routing, status, blockers, and next actions.
+  - Active tickets linked from `attention_board.md` have current checklists and `## Notes`.
 
-System/skills/policy review set (PRIMARY; system-first):
+Core review set (ALWAYS required) - review these files in order:
 - `AGENTS.MD`
+- `CONTEXT_COMPACTION.md`
 - `agent_onboarding/default/general/skills/execution_contract.md`
-- `agent_onboarding/default/general/skills/compaction_requirements.md`
-- `agent_onboarding/default/general/skills/compaction_diff_onboarding.md`
-- `skill_check/skill_check_policy.md`
-- `skill_check/manifest/onboarding_manifest.yaml`
 - `config/context_compass_config.yaml`
 - `SKILLS.MD`
 - resolved role `SKILLS.MD` chain (parent-first; the SKILLS files themselves)
-- `agent_onboarding/default/general/policies/policy_skills.md`
-- `agent_onboarding/default/general/skills/self_certification.md`
-- `agent_onboarding/default/general/skills/user_approved_certification.md`
-- every required baseline skill doc referenced by the resolved chain
-
-Operational review set (SECONDARY; keep short):
+- `agent_onboarding/default/general/skills/compaction_requirements.md`
+- `agent_onboarding/default/general/skills/workflow.md`
 - `attention_board.md`
-- active epic/story/task tickets referenced by `attention_board.md`
-- `artifact_board.md` and `artifacts/README.md` when artifact lifecycle is active
+- Active epic/story/task tickets in `tickets/epics/`, `tickets/stories/`, `tickets/tasks/`
 
-System-context / architecture docs remain **ON-DEMAND** unless a role baseline explicitly requires them.
+Conditional review set (ONLY when triggered):
+- `artifact_board.md` (when active tickets include artifacts or artifact disposition changes)
+- `artifacts/README.md` (when artifact lifecycle protocol is active)
+- System-context / architecture docs are **ON-DEMAND**:
+  - Do NOT force-read `system_docs/*` as a box-check.
+  - You MUST read the relevant system-context docs only when:
+    - the active ticket requires architecture/components/tests documentation work, OR
+    - this session modified `system_docs/*`, OR
+    - the next immediate action requires architecture/components/tests claims.
+  If triggered, review:
+  - `agent_onboarding/default/design_engineer/skills/src_architecture_instructions.md`
+  - `system_docs/src_architecture.md`
+  - `agent_onboarding/default/design_engineer/skills/tests_architecture_instructions.md`
+  - `system_docs/tests_architecture.md`
+  - `agent_onboarding/default/design_engineer/skills/src_components_instructions.md`
+  - `system_docs/src_components.md`
+  - `agent_onboarding/default/design_engineer/skills/tests_components_instructions.md`
+  - `system_docs/tests_components.md`
 
-## Post-Compaction Verification (Re-Entry)
+Read discipline (non-negotiable)
+- Review-set document reads must be manual per file path.
+- Loop-based/batch document-reading commands are forbidden (for/foreach/while
+  loops, xargs-style runners, or piped file-list iterators).
+- For files over 500 LOC, read in explicit 500-line chunks in sequential order.
+
+## Required Updates
+- Update `attention_board.md` during work so active items, status, blockers, and
+  next actions stay current.
+- Update `artifact_board.md` when active tickets have artifacts or artifact
+  disposition changes.
+- Before compaction/handoff, verify `attention_board.md` is current and matches
+  active ticket status.
+- Update the `## Notes` section of all active tickets with latest findings and
+  `path:start_line-end_line` evidence pointers (use `start=end` for single-line
+  evidence).
+- Ensure each meaningful finding was written as a note before the next
+  investigation tranche (no end-of-pass batching).
+- Ensure UNKNOWN-first discipline was followed (unverified claims remain
+  `UNKNOWN`).
+- Ensure note entries carry re-entry metadata:
+  - `REREAD` (`REQUIRED` or `HELPFUL`)
+  - `SCORE_0_TO_10` compaction usefulness score
+- Update the "Context / Handoff Summary" section of all active tickets.
+- Capture open questions, decisions, and next steps in the relevant ticket.
+- Ensure status fields and checkboxes are accurate.
+- Ensure tickets carry enough state so compaction summaries can stay empty or
+  minimal.
+- Ensure ticket `Artifact Links` sections and `artifact_board.md` stay
+  synchronized when artifacts exist.
+
+## Handoff Summary Checklist
+- Current state and progress (what is done vs remaining).
+- Key decisions and rationale.
+- Known risks and active blockers.
+- Immediate next steps (1-3 concrete actions).
+- References to any critical files or paths.
+
+## Post-Compaction Verification
 After compaction/handoff, before any action:
-
-- Apply `agent_onboarding/default/general/skills/compaction_requirements.md` (REONBOARD).
-- Produce a `SKILL_GATE_REPORT` (knowledge-gate test metrics + rank) before requesting certification.
-- Only after certification may you update `compacting_differential_board.md` with the new cycle rows.
+- `agent_onboarding/default/general/skills/compaction_requirements.md` has been
+  re-applied before any action.
+- A `REONBOARD: COMPLETE` attestation (with read-integrity proof) was posted before any action.
+- `attention_board.md` was re-opened and still matches active ticket state.
+- `artifact_board.md` was re-opened when artifact-linked tickets are active.
+- The active tickets still represent the correct plan.
+- The next steps are unambiguous.
+- Re-onboarding document reads were performed manually per file path (no
+  loop-based/batch document reads).

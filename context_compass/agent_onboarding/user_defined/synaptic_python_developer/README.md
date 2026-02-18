@@ -26,3 +26,6 @@ Overlay docs
 SKILLS.MD top-level sources
 - `context_compass/SKILLS.MD`
 - `context_compass/agent_onboarding/user_defined/synaptic_python_developer/SKILLS.MD`
+
+
+

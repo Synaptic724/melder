@@ -38,11 +38,10 @@ Required flow
 - For onboarding/re-onboarding, complete role-driven onboarding reads from:
   - `context_compass/config/context_compass_config.yaml`
   - `context_compass/SKILLS.md`
-  - resolved role `SKILLS.MD` chain:
-    `agent_onboarding/default/general/SKILLS.MD`,
-    `agent_onboarding/default/engineer/SKILLS.MD`,
-    and `agent_onboarding/user_defined/synaptic_python_developer/SKILLS.MD`
-    when active.
+  - resolved role `SKILLS.MD` chain in parent-first order:
+    `agent_onboarding/default/general/SKILLS.MD` plus the selected role map
+    entry from `context_compass/SKILLS.md` (and user-defined overlay when
+    active).
 - Use manual source-document reads for onboarding; do not use onboarding dump artifacts as policy input.
 - After any compaction/handoff/fresh-session re-entry, complete the same full readset before any non-onboarding action.
 - Read `context_compass/agent_onboarding/default/general/skills/execution_contract.md`

@@ -5,6 +5,7 @@
 Purpose
 - Central control plane for planning, execution memory, and architecture context.
 - Durable work state is ticket-first; board is routing-only.
+- Supports both software-engineering and fiction-authoring role workflows.
 
 Core operating model
 - Active work lives in `tickets/epics/`, `tickets/stories/`, and `tickets/tasks/`.
@@ -21,7 +22,6 @@ Primary docs
 - `agent_onboarding/default/general/skills/workflow.md`: ticket lifecycle and closure rules.
 - `agent_onboarding/default/general/skills/ticket_microcycle.md`: strict/relaxed ticket microcycle definition.
 - `agent_onboarding/default/general/skills/context_compaction.md`: compaction/handoff policy.
-- `skill_check/`: knowledge-gate tests + manifest + historical results (post-compaction competence).
 - `agent_onboarding/`: onboarding policy modules.
 - `system_docs/`: canonical docs:
   `src_architecture.md`, `src_components.md`,
@@ -53,3 +53,9 @@ Completed Archive
 - 2026-01-17 - Melder scan bind module work (see `completed/2026-01-17_melder_scan_bind_module_task_completed.md`).
 - 2026-01-18 - Melder src architecture doc (see `completed/2026-01-18_melder_src_architecture_doc_task_completed.md`).
 - 2026-01-18 - Melder src components doc (see `completed/2026-01-18_melder_src_components_doc_task_completed.md`).
+
+
+
+
+
+
