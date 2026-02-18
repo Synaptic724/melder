@@ -25,20 +25,21 @@ Attention details rule
 ## Active Items
 | work_item | status | mode | owner | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 |---|---|---|---|---|---|---|---|---|---|---|
-| board: idle | idle | standby | codex | none | wait for next directive | knowledge-test-only gate lane closed and archived | a new work item is assigned | `none` | 2026-02-18T18:21:41Z | HELPFUL |
+| task: phase8 occurrence-plan tranche | in_progress | implementation | codex | none | implement phase8 compile/reuse optimization within `run_phase_occurrence_plan` + input-signature boundary | phase8 optimization patch is ready with phase11 behavior preserved | phase8 task records implementation + validation notes and clears weighted gate | `tickets/tasks/2026-02-18_phase8_occurrence_plan_optimization_task.md` | 2026-02-18T19:32:27Z | REQUIRED |
 
 ## Active Attention Details
-- DATETIME: 2026-02-18T18:21:41Z
-  TYPE: FACT
-  CLAIM: The active fidelity-diff removal lane is closed; story and task are archived under completed routing.
+- DATETIME: 2026-02-18T19:32:27Z
+  TYPE: DECISION
+  CLAIM: Phase11 tranche is unblocked after weighted pass rerun; active routing has advanced to tranche #2 phase8 implementation.
   EVIDENCE:
-  - tickets/stories/completed/2026-02-18_knowledge_test_only_gate_story_completed.md:1-147
-  - tickets/tasks/completed/2026-02-18_remove_fidelity_diff_gate_surface_task_completed.md:1-102
-  IMPACT: Attention board has no active implementation lane.
-  NEXT: wait for the next user-directed ticket.
-  SWITCH_TRIGGER: user assigns a new active work item.
-  RESUME_HIERARCHY: board.
-  REREAD: HELPFUL
+  - tickets/tasks/2026-02-18_phase11_execution_plan_optimization_task.md:53-63
+  - tickets/tasks/2026-02-18_phase11_execution_plan_optimization_task.md:146-154
+  - tickets/tasks/2026-02-18_phase8_occurrence_plan_optimization_task.md:1-122
+  IMPACT: Epic execution continues without blocker; next risk is phase8 churn reduction without invalidating downstream signatures.
+  NEXT: implement phase8 tranche and log the first meaningful code-level finding in task notes.
+  SWITCH_TRIGGER: phase8 tranche reaches validation-ready state or reveals a cross-phase conflict requiring reroute.
+  RESUME_HIERARCHY: task -> story -> epic.
+  REREAD: REQUIRED
 
 ## Recently Closed Anchors
 | work_item | status | owner | blocker | next | ticket | updated_at | reread |

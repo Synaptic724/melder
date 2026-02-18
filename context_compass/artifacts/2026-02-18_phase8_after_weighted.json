@@ -1,0 +1,859 @@
+{
+  "affinity": {
+    "applied": true,
+    "debug": {
+      "efficiency_classes_present": [
+        0,
+        1
+      ],
+      "groups_present": [
+        0
+      ],
+      "max_efficiency_class": 1,
+      "record_count": 32,
+      "status": "detected"
+    },
+    "other_logical_cpus": [
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31
+    ],
+    "p_core_logical_cpus": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "platform": "nt",
+    "process_affinity_after": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "process_affinity_before": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31
+    ],
+    "reason": "pinned",
+    "requested": true,
+    "selected_affinity": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "strict": false
+  },
+  "baseline_delta_report": {
+    "baseline_medians_ns": {
+      "cold_compile_median_ns": 6632400,
+      "mixed_execute_median_ns": 22000,
+      "warm_execute_median_ns": 500
+    },
+    "current_medians_ns": {
+      "cold_compile_median_ns": 6641600,
+      "mixed_execute_median_ns": 21800,
+      "warm_execute_median_ns": 500
+    },
+    "failures": [],
+    "passed": true,
+    "ratios": {
+      "cold_compile_ratio": 1.0013871298474157,
+      "mixed_execute_ratio": 0.990909090909091,
+      "warm_execute_ratio": 1.0
+    },
+    "thresholds": {
+      "cold_compile_max_regression_ratio": 1.2,
+      "mixed_execute_max_regression_ratio": 1.2,
+      "warm_execute_max_regression_ratio": 1.2
+    }
+  },
+  "baseline_path": "context_compass/artifacts/2026-02-18_phase8_before_weighted.json",
+  "gate_report": {
+    "cold_compile_median_ns": 6641600,
+    "failures": [],
+    "mixed_execute_median_ns": 21800,
+    "mixed_to_cold_ratio": 0.003282341604432667,
+    "passed": true,
+    "thresholds": {
+      "mixed_to_cold_max_ratio": 0.6,
+      "warm_to_cold_max_ratio": 0.35
+    },
+    "warm_execute_median_ns": 500,
+    "warm_to_cold_ratio": 7.528306432185015e-05
+  },
+  "generated_at_unix": 1771446639.6128564,
+  "route_matrix_baseline_delta_report": {
+    "baseline_route_medians_ns": {
+      "warm_mixed_ns": 20500,
+      "warm_override_root_args_ns": 2000,
+      "warm_override_targeted_ns": 2700,
+      "warm_root_ns": 500,
+      "warm_spellspace_ns": 20700
+    },
+    "current_route_medians_ns": {
+      "warm_mixed_ns": 19900,
+      "warm_override_root_args_ns": 2000,
+      "warm_override_targeted_ns": 2800,
+      "warm_root_ns": 500,
+      "warm_spellspace_ns": 20300
+    },
+    "failures": [],
+    "passed": true,
+    "route_deltas_ns": {
+      "warm_mixed_ns_delta_ns": -600,
+      "warm_override_root_args_ns_delta_ns": 0,
+      "warm_override_targeted_ns_delta_ns": 100,
+      "warm_root_ns_delta_ns": 0,
+      "warm_spellspace_ns_delta_ns": -400
+    },
+    "route_ratios": {
+      "warm_mixed_ns": 0.9707317073170731,
+      "warm_override_root_args_ns": 1.0,
+      "warm_override_targeted_ns": 1.037037037037037,
+      "warm_root_ns": 1.0,
+      "warm_spellspace_ns": 0.9806763285024155
+    },
+    "thresholds": {
+      "route_max_regression_ratio": 1.2
+    }
+  },
+  "route_matrix_report": {
+    "failures": [],
+    "passed": true,
+    "route_medians_ns": {
+      "warm_mixed_ns": 19900,
+      "warm_override_root_args_ns": 2000,
+      "warm_override_targeted_ns": 2800,
+      "warm_root_ns": 500,
+      "warm_spellspace_ns": 20300
+    },
+    "route_to_cold_ratios": {
+      "warm_mixed_ns": 0.002996265960009636,
+      "warm_override_root_args_ns": 0.0003011322572874006,
+      "warm_override_targeted_ns": 0.00042158516020236085,
+      "warm_root_ns": 7.528306432185015e-05,
+      "warm_spellspace_ns": 0.0030564924114671165
+    },
+    "thresholds": {
+      "route_to_cold_max_ratio": 0.8
+    }
+  },
+  "route_profile_report": {
+    "profile_iteration_count": 5,
+    "profile_top_functions": 12,
+    "routes": {
+      "warm_mixed_ns": {
+        "cpu_seconds_per_iteration": 6.100000000000003e-05,
+        "cpu_total_seconds": 0.00030500000000000015,
+        "iteration_count": 5,
+        "primitive_calls": 759,
+        "primitive_calls_per_iteration": 151.8,
+        "top_functions_by_cumulative_time": [
+          {
+            "cumulative_time_seconds": 0.0002944,
+            "function": "<local-workspace>\\benchmarks\\testing_other_di\\run_codegen_benchmark_deltas.py:237:resolve_mixed_once",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 2.9e-06
+          },
+          {
+            "cumulative_time_seconds": 0.00028280000000000004,
+            "function": "<local-workspace>\\benchmarks\\testing_other_di\\run_codegen_benchmark_deltas.py:251:resolve_spellspace_once",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "total_time_seconds": 5.7000000000000005e-06
+          },
+          {
+            "cumulative_time_seconds": 0.0001873,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\conduit.py:2261:meld",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 1.32e-05
+          },
+          {
+            "cumulative_time_seconds": 0.00018500000000000002,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\spell_space\\spell_space.py:98:meld",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "total_time_seconds": 3.4e-06
+          },
+          {
+            "cumulative_time_seconds": 0.0001739,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\meld\\meld.py:215:meld",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 7.3e-06
+          },
+          {
+            "cumulative_time_seconds": 0.00016230000000000001,
+            "function": "<creation_context_no_overrides_only_template:spellspace:0:0>:10:_creation_context_execute_no_overrides_only",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "total_time_seconds": 6.4000000000000006e-06
+          },
+          {
+            "cumulative_time_seconds": 0.00015250000000000002,
+            "function": "<melder_phase12_no_overrides_step_executor>:1:_phase12_executor",
+            "primitive_calls": 3,
+            "total_calls": 3,
+            "total_time_seconds": 1.59e-05
+          },
+          {
+            "cumulative_time_seconds": 8.55e-05,
+            "function": "~:0:<built-in method builtins.next>",
+            "primitive_calls": 6,
+            "total_calls": 6,
+            "total_time_seconds": 2.3e-06
+          },
+          {
+            "cumulative_time_seconds": 8.36e-05,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\creations\\creations.py:526:register_spellspace_creation",
+            "primitive_calls": 6,
+            "total_calls": 6,
+            "total_time_seconds": 9.3e-06
+          },
+          {
+            "cumulative_time_seconds": 8.32e-05,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\conduit.py:473:enter_spellspace",
+            "primitive_calls": 6,
+            "total_calls": 6,
+            "total_time_seconds": 8.8e-06
+          },
+          {
+            "cumulative_time_seconds": 7.010000000000001e-05,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\creations\\creation.py:28:__init__",
+            "primitive_calls": 6,
+            "total_calls": 6,
+            "total_time_seconds": 9.100000000000001e-06
+          },
+          {
+            "cumulative_time_seconds": 6.050000000000001e-05,
+            "function": "<local-path>\\AppData\\Roaming\\Python\\Python313\\site-packages\\ulid\\__init__.py:119:__init__",
+            "primitive_calls": 9,
+            "total_calls": 18,
+            "total_time_seconds": 7.3e-06
+          }
+        ],
+        "total_calls": 777,
+        "total_calls_per_iteration": 155.4,
+        "wall_ns_per_iteration": 63780.0,
+        "wall_total_ns": 318900,
+        "warmup_count": 1
+      },
+      "warm_override_root_args_ns": {
+        "cpu_seconds_per_iteration": 1.1440000000000002e-05,
+        "cpu_total_seconds": 5.720000000000001e-05,
+        "iteration_count": 5,
+        "primitive_calls": 126,
+        "primitive_calls_per_iteration": 25.2,
+        "top_functions_by_cumulative_time": [
+          {
+            "cumulative_time_seconds": 4.64e-05,
+            "function": "<local-workspace>\\benchmarks\\testing_other_di\\run_codegen_benchmark_deltas.py:266:resolve_override_root_args_once",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 3.3e-06
+          },
+          {
+            "cumulative_time_seconds": 4.27e-05,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\conduit.py:2261:meld",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 5.600000000000001e-06
+          },
+          {
+            "cumulative_time_seconds": 3.65e-05,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\meld\\meld.py:215:meld",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 6.8e-06
+          },
+          {
+            "cumulative_time_seconds": 2.4e-05,
+            "function": "<creation_context_overrides_only_template:many:0>:13:_creation_context_execute_overrides_only",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 3.7e-06
+          },
+          {
+            "cumulative_time_seconds": 2.0300000000000002e-05,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\meld\\creation_context\\creation_context.py:565:_execute_with_overrides",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 8.1e-06
+          },
+          {
+            "cumulative_time_seconds": 1.08e-05,
+            "function": "~:0:<method 'disable' of '_lsprof.Profiler' objects>",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "total_time_seconds": 1.08e-05
+          },
+          {
+            "cumulative_time_seconds": 6.8e-06,
+            "function": "<melder_phase12_overrides_executor>:1:_phase12_executor",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 5.600000000000001e-06
+          },
+          {
+            "cumulative_time_seconds": 4.9000000000000005e-06,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\meld\\creation_context\\creation_context.py:702:_split_override_payload",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 3.1000000000000004e-06
+          },
+          {
+            "cumulative_time_seconds": 3.3e-06,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\meld\\meld.py:906:_normalize_spell_override",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 2.3e-06
+          },
+          {
+            "cumulative_time_seconds": 2.2e-06,
+            "function": "~:0:<built-in method builtins.isinstance>",
+            "primitive_calls": 35,
+            "total_calls": 35,
+            "total_time_seconds": 2.2e-06
+          },
+          {
+            "cumulative_time_seconds": 2.0000000000000003e-06,
+            "function": "~:0:<built-in method builtins.len>",
+            "primitive_calls": 20,
+            "total_calls": 20,
+            "total_time_seconds": 2.0000000000000003e-06
+          },
+          {
+            "cumulative_time_seconds": 1.7e-06,
+            "function": "<local-workspace>\\src\\melder\\utilities\\synchronization\\counter_switch.py:89:state",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 1.2000000000000002e-06
+          }
+        ],
+        "total_calls": 126,
+        "total_calls_per_iteration": 25.2,
+        "wall_ns_per_iteration": 14440.0,
+        "wall_total_ns": 72200,
+        "warmup_count": 1
+      },
+      "warm_override_targeted_ns": {
+        "cpu_seconds_per_iteration": 1.64e-05,
+        "cpu_total_seconds": 8.199999999999999e-05,
+        "iteration_count": 5,
+        "primitive_calls": 171,
+        "primitive_calls_per_iteration": 34.2,
+        "top_functions_by_cumulative_time": [
+          {
+            "cumulative_time_seconds": 7.15e-05,
+            "function": "<local-workspace>\\benchmarks\\testing_other_di\\run_codegen_benchmark_deltas.py:281:resolve_override_targeted_once",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 5.2e-06
+          },
+          {
+            "cumulative_time_seconds": 6.55e-05,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\conduit.py:2261:meld",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 5.3e-06
+          },
+          {
+            "cumulative_time_seconds": 5.9600000000000005e-05,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\meld\\meld.py:215:meld",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 6.6e-06
+          },
+          {
+            "cumulative_time_seconds": 4.8100000000000004e-05,
+            "function": "<creation_context_overrides_only_template:many:0>:13:_creation_context_execute_overrides_only",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 3.4e-06
+          },
+          {
+            "cumulative_time_seconds": 4.47e-05,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\meld\\creation_context\\creation_context.py:565:_execute_with_overrides",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 1.0300000000000001e-05
+          },
+          {
+            "cumulative_time_seconds": 2.23e-05,
+            "function": "<melder_phase12_overrides_executor>:1:_phase12_executor",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 1.1900000000000001e-05
+          },
+          {
+            "cumulative_time_seconds": 1.2100000000000001e-05,
+            "function": "<local-workspace>\\src\\melder\\spellbook\\spell_crafter\\blueprints\\patch_maps.py:268:_apply_with_socket_shape_prechecked",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 8.200000000000001e-06
+          },
+          {
+            "cumulative_time_seconds": 1.0500000000000001e-05,
+            "function": "~:0:<method 'disable' of '_lsprof.Profiler' objects>",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "total_time_seconds": 1.0500000000000001e-05
+          },
+          {
+            "cumulative_time_seconds": 4.6e-06,
+            "function": "<local-workspace>\\src\\melder\\spellbook\\spell_crafter\\blueprints\\phase12_overrides_executor.py:2614:_raise_override_on_existing_instance",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 1.4000000000000001e-06
+          },
+          {
+            "cumulative_time_seconds": 3.8e-06,
+            "function": "<local-workspace>\\src\\melder\\spellbook\\spell_crafter\\blueprints\\phase12_no_overrides_executor.py:1256:_get_existing_creation",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 2.8000000000000003e-06
+          },
+          {
+            "cumulative_time_seconds": 3.2000000000000003e-06,
+            "function": "<local-workspace>\\src\\melder\\spellbook\\bind\\spell_index.py:99:current",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 2.3e-06
+          },
+          {
+            "cumulative_time_seconds": 2.4000000000000003e-06,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\meld\\meld.py:906:_normalize_spell_override",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 2.0000000000000003e-06
+          }
+        ],
+        "total_calls": 171,
+        "total_calls_per_iteration": 34.2,
+        "wall_ns_per_iteration": 19160.0,
+        "wall_total_ns": 95800,
+        "warmup_count": 1
+      },
+      "warm_root_ns": {
+        "cpu_seconds_per_iteration": 7.120000000000001e-06,
+        "cpu_total_seconds": 3.5600000000000005e-05,
+        "iteration_count": 5,
+        "primitive_calls": 61,
+        "primitive_calls_per_iteration": 12.2,
+        "top_functions_by_cumulative_time": [
+          {
+            "cumulative_time_seconds": 2.44e-05,
+            "function": "<local-workspace>\\benchmarks\\testing_other_di\\run_codegen_benchmark_deltas.py:225:resolve_root_once",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 2.9e-06
+          },
+          {
+            "cumulative_time_seconds": 2.1000000000000002e-05,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\conduit.py:2261:meld",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 5.9e-06
+          },
+          {
+            "cumulative_time_seconds": 1.4700000000000002e-05,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\meld\\meld.py:215:meld",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 9.4e-06
+          },
+          {
+            "cumulative_time_seconds": 1.1200000000000001e-05,
+            "function": "~:0:<method 'disable' of '_lsprof.Profiler' objects>",
+            "primitive_calls": 1,
+            "total_calls": 1,
+            "total_time_seconds": 1.1200000000000001e-05
+          },
+          {
+            "cumulative_time_seconds": 2.9e-06,
+            "function": "<creation_context_no_overrides_only_template:shared:0:0>:10:_creation_context_execute_no_overrides_only",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 2.0000000000000003e-06
+          },
+          {
+            "cumulative_time_seconds": 1.4000000000000001e-06,
+            "function": "<local-workspace>\\src\\melder\\utilities\\synchronization\\counter_switch.py:89:state",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 9.000000000000001e-07
+          },
+          {
+            "cumulative_time_seconds": 1.2000000000000002e-06,
+            "function": "~:0:<method 'get' of 'dict' objects>",
+            "primitive_calls": 10,
+            "total_calls": 10,
+            "total_time_seconds": 1.2000000000000002e-06
+          },
+          {
+            "cumulative_time_seconds": 9.000000000000001e-07,
+            "function": "~:0:<built-in method builtins.isinstance>",
+            "primitive_calls": 10,
+            "total_calls": 10,
+            "total_time_seconds": 9.000000000000001e-07
+          },
+          {
+            "cumulative_time_seconds": 5.000000000000001e-07,
+            "function": "~:0:<built-in method builtins.len>",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 5.000000000000001e-07
+          },
+          {
+            "cumulative_time_seconds": 4.0000000000000003e-07,
+            "function": "<local-workspace>\\src\\melder\\utilities\\general_base\\cleanable.py:39:check_cleaned",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 4.0000000000000003e-07
+          },
+          {
+            "cumulative_time_seconds": 3.0000000000000004e-07,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\creations\\creation.py:76:value",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 3.0000000000000004e-07
+          }
+        ],
+        "total_calls": 61,
+        "total_calls_per_iteration": 12.2,
+        "wall_ns_per_iteration": 13800.0,
+        "wall_total_ns": 69000,
+        "warmup_count": 1
+      },
+      "warm_spellspace_ns": {
+        "cpu_seconds_per_iteration": 9.434000000000004e-05,
+        "cpu_total_seconds": 0.0004717000000000002,
+        "iteration_count": 5,
+        "primitive_calls": 1218,
+        "primitive_calls_per_iteration": 243.6,
+        "top_functions_by_cumulative_time": [
+          {
+            "cumulative_time_seconds": 0.0004602,
+            "function": "<local-workspace>\\benchmarks\\testing_other_di\\run_codegen_benchmark_deltas.py:251:resolve_spellspace_once",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 1.04e-05
+          },
+          {
+            "cumulative_time_seconds": 0.0002969,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\spell_space\\spell_space.py:98:meld",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 5.1e-06
+          },
+          {
+            "cumulative_time_seconds": 0.0002896,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\conduit.py:2261:meld",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 5.9e-06
+          },
+          {
+            "cumulative_time_seconds": 0.0002831,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\meld\\meld.py:215:meld",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 7.4e-06
+          },
+          {
+            "cumulative_time_seconds": 0.0002724,
+            "function": "<creation_context_no_overrides_only_template:spellspace:0:0>:10:_creation_context_execute_no_overrides_only",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 1.23e-05
+          },
+          {
+            "cumulative_time_seconds": 0.0002549,
+            "function": "<melder_phase12_no_overrides_step_executor>:1:_phase12_executor",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 2.6700000000000002e-05
+          },
+          {
+            "cumulative_time_seconds": 0.0001418,
+            "function": "~:0:<built-in method builtins.next>",
+            "primitive_calls": 10,
+            "total_calls": 10,
+            "total_time_seconds": 3.9e-06
+          },
+          {
+            "cumulative_time_seconds": 0.00013790000000000002,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\conduit.py:473:enter_spellspace",
+            "primitive_calls": 10,
+            "total_calls": 10,
+            "total_time_seconds": 1.4000000000000001e-05
+          },
+          {
+            "cumulative_time_seconds": 0.0001364,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\creations\\creations.py:526:register_spellspace_creation",
+            "primitive_calls": 10,
+            "total_calls": 10,
+            "total_time_seconds": 1.4900000000000001e-05
+          },
+          {
+            "cumulative_time_seconds": 0.00011460000000000001,
+            "function": "<local-workspace>\\src\\melder\\aether\\conduit\\creations\\creation.py:28:__init__",
+            "primitive_calls": 10,
+            "total_calls": 10,
+            "total_time_seconds": 1.46e-05
+          },
+          {
+            "cumulative_time_seconds": 9.810000000000001e-05,
+            "function": "<local-path>\\AppData\\Roaming\\Python\\Python313\\site-packages\\ulid\\__init__.py:119:__init__",
+            "primitive_calls": 15,
+            "total_calls": 30,
+            "total_time_seconds": 1.3500000000000001e-05
+          },
+          {
+            "cumulative_time_seconds": 9.070000000000001e-05,
+            "function": "C:\\Program Files\\Python313\\Lib\\contextlib.py:136:__enter__",
+            "primitive_calls": 5,
+            "total_calls": 5,
+            "total_time_seconds": 2.0000000000000003e-06
+          }
+        ],
+        "total_calls": 1248,
+        "total_calls_per_iteration": 249.6,
+        "wall_ns_per_iteration": 97560.0,
+        "wall_total_ns": 487800,
+        "warmup_count": 1
+      }
+    },
+    "warmup_count": 1
+  },
+  "route_samples_ns": {
+    "warm_mixed_ns": [
+      46000,
+      1300,
+      22600,
+      900,
+      22500,
+      900,
+      19900,
+      1000,
+      20200
+    ],
+    "warm_override_root_args_ns": [
+      8200,
+      3600,
+      2200,
+      2100,
+      1500,
+      2000,
+      1500,
+      1500,
+      1400
+    ],
+    "warm_override_targeted_ns": [
+      11600,
+      5400,
+      3800,
+      3200,
+      2800,
+      2600,
+      2700,
+      2700,
+      2500
+    ],
+    "warm_root_ns": [
+      700,
+      500,
+      500,
+      500,
+      400,
+      500,
+      400,
+      500,
+      500
+    ],
+    "warm_spellspace_ns": [
+      21400,
+      21100,
+      20300,
+      24700,
+      20100,
+      20700,
+      20100,
+      20300,
+      19600
+    ]
+  },
+  "sample_count": 9,
+  "samples_ns": {
+    "cold_compile_ns": [
+      6420400,
+      6468000,
+      6747000,
+      6530400,
+      6646400,
+      6687500,
+      6549800,
+      6641600,
+      6868000
+    ],
+    "mixed_execute_ns": [
+      157000,
+      1800,
+      33100,
+      1200,
+      24500,
+      1200,
+      21800,
+      1000,
+      22400
+    ],
+    "warm_execute_ns": [
+      1300,
+      600,
+      500,
+      500,
+      500,
+      500,
+      500,
+      500,
+      400
+    ]
+  },
+  "schema_version": "codegen_benchmark_report_v3",
+  "warmup_count": 1,
+  "weighted_score_report": {
+    "failures": [
+      "warm_override_targeted_ns weighted ratio 1.0093 exceeded 1.0000",
+      "overall weighted ratio 1.0031 exceeded 1.0000"
+    ],
+    "overall_weighted_ratio": 1.0030864197530864,
+    "passed": false,
+    "route_scores": {
+      "warm_override_root_args_ns": {
+        "baseline_profile_calls_per_iteration": 25.2,
+        "baseline_time_median_ns": 2000,
+        "cprofile_ratio": 1.0,
+        "current_profile_calls_per_iteration": 25.2,
+        "current_time_median_ns": 2000,
+        "passed": true,
+        "time_ratio": 1.0,
+        "weighted_ratio": 1.0
+      },
+      "warm_override_targeted_ns": {
+        "baseline_profile_calls_per_iteration": 34.2,
+        "baseline_time_median_ns": 2700,
+        "cprofile_ratio": 1.0,
+        "current_profile_calls_per_iteration": 34.2,
+        "current_time_median_ns": 2800,
+        "passed": false,
+        "time_ratio": 1.037037037037037,
+        "weighted_ratio": 1.0092592592592593
+      },
+      "warm_root_ns": {
+        "baseline_profile_calls_per_iteration": 12.2,
+        "baseline_time_median_ns": 500,
+        "cprofile_ratio": 1.0,
+        "current_profile_calls_per_iteration": 12.2,
+        "current_time_median_ns": 500,
+        "passed": true,
+        "time_ratio": 1.0,
+        "weighted_ratio": 1.0
+      }
+    },
+    "thresholds": {
+      "weighted_max_regression_ratio": 1.0
+    },
+    "weighted_routes": [
+      "warm_root_ns",
+      "warm_override_root_args_ns",
+      "warm_override_targeted_ns"
+    ],
+    "weights": {
+      "cprofile": 0.75,
+      "time": 0.25
+    }
+  }
+}

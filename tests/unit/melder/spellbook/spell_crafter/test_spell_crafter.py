@@ -5899,6 +5899,167 @@ def test_run_phase_occurrence_plan_rebuilds_when_input_signature_changes(
     assert crafter._phase8_occurrence_plan_input_signature == "phase8-signature-b"
 
 
+def test_run_phase_occurrence_plan_reuses_signature_via_fast_key_when_no_mutations(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify phase8 reuses cached signature via fast key on no-mutation warm runs.
+    Contract:
+        With stable no-mutation inputs and identical fast key, phase8 should
+        avoid a second deep signature build call while preserving cache-hit reuse.
+    Args:
+        monkeypatch: Pytest fixture for replacing phase8 collaborators.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If warm rerun still rebuilds deep signature.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_id="root")
+    crafter._root_blueprint_phase5 = types.SimpleNamespace(
+        root_spell_id="root",
+        ordered_node_ids=("root",),
+        path_registry=object(),
+        socket_refs=(),
+    )
+
+    builder_init_calls = 0
+    build_calls = 0
+    signature_calls: list[str] = []
+    mark_calls: list[str] = []
+
+    class _OccurrencePlanBuilderStub:
+        def __init__(self, **_kwargs: object) -> None:
+            nonlocal builder_init_calls
+            builder_init_calls += 1
+
+        def build(self) -> object:
+            nonlocal build_calls
+            build_calls += 1
+            return types.SimpleNamespace(
+                execution_order=(),
+                root_instance_key=("root", None),
+                shared_spell_ids=set(),
+                contract_dependencies_complete=True,
+                occurrence_graph={},
+                instance_keys_by_spell_id={},
+                canonical_occurrences_by_spell_id={},
+                contract_overrides_by_occurrence={},
+                contract_overrides_by_spell_id={},
+            )
+
+    def _signature_stub(
+        self: SpellCrafter,
+        *,
+        root_blueprint: object,
+        spell_lookup: dict[str, object],
+    ) -> str:
+        del self, root_blueprint, spell_lookup
+        signature_calls.append("called")
+        return "stable-phase8-signature"
+
+    def _mark_stub(self: SpellCrafter) -> None:
+        mark_calls.append("mark")
+        self._phase8_11_codegen_ir_dirty = True
+
+    monkeypatch.setattr(spell_crafter_module, "OccurrencePlanBuilder", _OccurrencePlanBuilderStub)
+    monkeypatch.setattr(SpellCrafter, "_build_phase8_occurrence_plan_input_signature", _signature_stub)
+    monkeypatch.setattr(SpellCrafter, "_mark_phase8_11_codegen_ir_dirty", _mark_stub)
+
+    crafter.run_phase_occurrence_plan("cid")
+    first_plan = crafter._occurrence_plan_phase8
+    crafter.run_phase_occurrence_plan("cid")
+
+    assert signature_calls == ["called"]
+    assert builder_init_calls == 1
+    assert build_calls == 1
+    assert mark_calls == ["mark"]
+    assert first_plan is not None
+    assert crafter._occurrence_plan_phase8 is first_plan
+    assert crafter._phase8_occurrence_plan_fast_key is not None
+
+
+def test_run_phase_occurrence_plan_fast_key_falls_back_when_mutation_override_active(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Verify phase8 fast key is disabled when mutation overrides are active.
+    Contract:
+        Any active mutation override must force deep-signature execution on each
+        run to keep mutation payload semantics in the signature path.
+    Args:
+        monkeypatch: Pytest fixture for replacing phase8 collaborators.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If mutation-active runs incorrectly reuse fast key.
+    """
+    crafter, spell, _ = _build_spell_and_crafter(spell_id="root")
+    crafter._root_blueprint_phase5 = types.SimpleNamespace(
+        root_spell_id="root",
+        ordered_node_ids=("root",),
+        path_registry=object(),
+        socket_refs=(),
+    )
+    spell._mutation_override = {"flag": {"enabled": True}}
+
+    builder_init_calls = 0
+    build_calls = 0
+    signature_calls: list[str] = []
+    mark_calls: list[str] = []
+
+    class _OccurrencePlanBuilderStub:
+        def __init__(self, **_kwargs: object) -> None:
+            nonlocal builder_init_calls
+            builder_init_calls += 1
+
+        def build(self) -> object:
+            nonlocal build_calls
+            build_calls += 1
+            return types.SimpleNamespace(
+                execution_order=(),
+                root_instance_key=("root", None),
+                shared_spell_ids=set(),
+                contract_dependencies_complete=True,
+                occurrence_graph={},
+                instance_keys_by_spell_id={},
+                canonical_occurrences_by_spell_id={},
+                contract_overrides_by_occurrence={},
+                contract_overrides_by_spell_id={},
+            )
+
+    def _signature_stub(
+        self: SpellCrafter,
+        *,
+        root_blueprint: object,
+        spell_lookup: dict[str, object],
+    ) -> str:
+        del self, root_blueprint, spell_lookup
+        signature_calls.append("called")
+        return "stable-phase8-signature"
+
+    def _mark_stub(self: SpellCrafter) -> None:
+        mark_calls.append("mark")
+        self._phase8_11_codegen_ir_dirty = True
+
+    monkeypatch.setattr(spell_crafter_module, "OccurrencePlanBuilder", _OccurrencePlanBuilderStub)
+    monkeypatch.setattr(SpellCrafter, "_build_phase8_occurrence_plan_input_signature", _signature_stub)
+    monkeypatch.setattr(SpellCrafter, "_mark_phase8_11_codegen_ir_dirty", _mark_stub)
+
+    crafter.run_phase_occurrence_plan("cid")
+    first_plan = crafter._occurrence_plan_phase8
+    crafter.run_phase_occurrence_plan("cid")
+
+    assert signature_calls == ["called", "called"]
+    assert builder_init_calls == 1
+    assert build_calls == 1
+    assert mark_calls == ["mark"]
+    assert first_plan is not None
+    assert crafter._occurrence_plan_phase8 is first_plan
+    assert crafter._phase8_occurrence_plan_fast_key is None
+
+
 def test_run_phase_injection_plan_reuses_cached_plan_when_input_signature_unchanged(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

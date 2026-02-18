@@ -1,0 +1,62 @@
+﻿{
+    "generated_at_utc":  "2026-02-18T20:31:03Z",
+    "dataset":  "matched_cprofile_graph_timings",
+    "before_fast_jsonl":  "context_compass/artifacts/2026-02-18_phase8_before_fast_graphs_cprofile.jsonl",
+    "after_fast_jsonl":  "context_compass/artifacts/2026-02-18_phase8_after_fast_graphs_cprofile.jsonl",
+    "before_override_jsonl":  "context_compass/artifacts/2026-02-18_phase8_before_override_graphs_cprofile.jsonl",
+    "after_override_jsonl":  "context_compass/artifacts/2026-02-18_phase8_after_override_graphs_cprofile.jsonl",
+    "means_ms":  {
+                     "fast":  {
+                                  "solo":  {
+                                               "before_mean_ms":  0.071669299999484792,
+                                               "after_mean_ms":  0.072298999992199242,
+                                               "delta_ms":  0.00062969999271444976,
+                                               "delta_pct":  0.878618868495962
+                                           },
+                                  "shallow":  {
+                                                  "before_mean_ms":  0.10438750000321306,
+                                                  "after_mean_ms":  0.10458610000205226,
+                                                  "delta_ms":  0.00019859999883919954,
+                                                  "delta_pct":  0.19025266323370768
+                                              },
+                                  "wide":  {
+                                               "before_mean_ms":  0.11222740000812335,
+                                               "after_mean_ms":  0.11132900000666268,
+                                               "delta_ms":  -0.00089840000146067245,
+                                               "delta_pct":  -0.80051752192035419
+                                           },
+                                  "diamond":  {
+                                                  "before_mean_ms":  0.10695709998253732,
+                                                  "after_mean_ms":  0.1073962000082247,
+                                                  "delta_ms":  0.0004391000256873806,
+                                                  "delta_pct":  0.41053845491236357
+                                              }
+                              },
+                     "override":  {
+                                      "solo":  {
+                                                   "before_mean_ms":  0.0028002999897580594,
+                                                   "after_mean_ms":  0.0028602000093087554,
+                                                   "delta_ms":  5.9900019550696015E-05,
+                                                   "delta_pct":  2.139057235645359
+                                               },
+                                      "shallow":  {
+                                                      "before_mean_ms":  0.00807329997769557,
+                                                      "after_mean_ms":  0.00806300001568161,
+                                                      "delta_ms":  -1.0299962013959885E-05,
+                                                      "delta_pct":  -0.12758056857067129
+                                                  },
+                                      "wide":  {
+                                                   "before_mean_ms":  0.01147510000737384,
+                                                   "after_mean_ms":  0.011283500003628433,
+                                                   "delta_ms":  -0.00019160000374540687,
+                                                   "delta_pct":  -1.6697022563836976
+                                               },
+                                      "diamond":  {
+                                                      "before_mean_ms":  0.0094620000163558888,
+                                                      "after_mean_ms":  0.00968839999404736,
+                                                      "delta_ms":  0.00022639997769147158,
+                                                      "delta_pct":  2.3927285700710161
+                                                  }
+                                  }
+                 }
+}

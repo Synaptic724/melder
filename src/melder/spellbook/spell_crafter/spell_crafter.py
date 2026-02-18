@@ -190,6 +190,7 @@ class SpellCrafter(Cleanable):
         "_validated",
         "_root_blueprint_phase5",
         "_phase8_occurrence_plan_input_signature",
+        "_phase8_occurrence_plan_fast_key",
         "_occurrence_plan_phase8",
         "_phase9_injection_plan_input_signature",
         "_injection_plan_phase9",
@@ -202,6 +203,7 @@ class SpellCrafter(Cleanable):
         "_phase12_no_overrides_executor",
         "_phase12_no_overrides_executor_signature",
         "_phase11_no_overrides_input_signature",
+        "_phase11_no_overrides_fast_key",
         "_codegen_ir",
         "_phase8_11_codegen_ir_dirty",
         "_spell_system_index_phase5",
@@ -241,6 +243,7 @@ class SpellCrafter(Cleanable):
         self._validated_phase6: bool = False
         self._root_blueprint_phase5: Optional[RootResolutionBlueprint] = None
         self._phase8_occurrence_plan_input_signature: Optional[str] = None
+        self._phase8_occurrence_plan_fast_key: Optional[Tuple[Any, ...]] = None
         self._occurrence_plan_phase8: Optional[OccurrencePlan] = None
         self._phase9_injection_plan_input_signature: Optional[str] = None
         self._injection_plan_phase9: Optional[InjectionPlan] = None
@@ -253,6 +256,7 @@ class SpellCrafter(Cleanable):
         self._phase12_no_overrides_executor: Optional[Callable[..., Any]] = None
         self._phase12_no_overrides_executor_signature: Optional[str] = None
         self._phase11_no_overrides_input_signature: Optional[str] = None
+        self._phase11_no_overrides_fast_key: Optional[Tuple[Any, ...]] = None
         self._codegen_ir: Optional[Dict[str, Any]] = None
         self._phase8_11_codegen_ir_dirty: bool = False
         self._spell_system_index_phase5: Optional[SpellSystemIndex] = None
@@ -346,6 +350,7 @@ class SpellCrafter(Cleanable):
                     pass
             self._root_blueprint_phase5 = None
             self._phase8_occurrence_plan_input_signature = None
+            self._phase8_occurrence_plan_fast_key = None
             self._occurrence_plan_phase8 = None
             self._phase9_injection_plan_input_signature = None
             self._injection_plan_phase9 = None
@@ -358,6 +363,7 @@ class SpellCrafter(Cleanable):
             self._phase12_no_overrides_executor = None
             self._phase12_no_overrides_executor_signature = None
             self._phase11_no_overrides_input_signature = None
+            self._phase11_no_overrides_fast_key = None
             self._codegen_ir = None
             self._phase8_11_codegen_ir_dirty = False
             self._spell_system_index_phase5 = None
@@ -694,6 +700,7 @@ class SpellCrafter(Cleanable):
         """
         self._root_blueprint_phase5 = None
         self._phase8_occurrence_plan_input_signature = None
+        self._phase8_occurrence_plan_fast_key = None
         if self._occurrence_plan_phase8 is not None:
             try:
                 self._occurrence_plan_phase8.cleanup()
@@ -778,6 +785,138 @@ class SpellCrafter(Cleanable):
             path_registry_identity,
             socket_ref_count,
             ordered_node_count,
+        )
+
+    def _build_phase8_occurrence_plan_fast_key(
+            self,
+            *,
+            root_blueprint: Optional[RootResolutionBlueprint],
+            spell_lookup: Optional[Dict[str, ISpell]],
+    ) -> Optional[Tuple[Any, ...]]:
+        """
+        Build a lightweight deterministic key for phase8 signature reuse.
+
+        Purpose:
+            Avoid recomputing deep phase8 signature hashing when no-mutation
+            inputs are unchanged between warm runs.
+        Contract:
+            - Returns None when required inputs are unavailable.
+            - Returns None when any spell has a mutation override, forcing the
+              deep signature path that includes mutation payload semantics.
+            - Mirrors no-mutation phase8 signature surfaces used for plan reuse.
+        Args:
+            root_blueprint:
+                Phase5 root blueprint for this spell.
+            spell_lookup:
+                Spell lookup map keyed by spell id.
+        Returns:
+            Optional[Tuple[Any, ...]]:
+                Deterministic fast-key tuple or None when deep-signature
+                fallback is required.
+        """
+        if root_blueprint is None or spell_lookup is None:
+            return None
+
+        try:
+            ordered_node_ids = tuple(root_blueprint.ordered_node_ids)
+            path_registry_identity = id(root_blueprint.path_registry)
+            blueprint_socket_rows = tuple(
+                (
+                    socket_ref.node_id,
+                    socket_ref.param_name,
+                    socket_ref.param_path_id,
+                    tuple(sorted(socket_ref.target_spell_ids)),
+                )
+                for socket_ref in (root_blueprint.socket_refs or ())
+            )
+        except Exception:
+            return None
+
+        try:
+            spell_rows_list: List[Tuple[Any, ...]] = []
+            for spell_id, spell in sorted(spell_lookup.items()):
+                if spell.mutation_override:
+                    return None
+                spell_rows_list.append(
+                    (
+                        spell_id,
+                        spell.spell_index.current,
+                        spell.existence.name,
+                        bool(spell.is_existing_creation),
+                    )
+                )
+            spell_rows = tuple(spell_rows_list)
+        except Exception:
+            return None
+
+        topology_rows: Tuple[Any, ...] = ()
+        local_topologies = None
+        if self._spell_system_states is not None:
+            local_topologies = getattr(self._spell_system_states, "_local_topologies", None)
+        if local_topologies is not None:
+            try:
+                topology_rows_list: List[Tuple[Any, ...]] = []
+                for spell_id in sorted(local_topologies.keys()):
+                    topology = local_topologies.get(spell_id)
+                    if topology is None:
+                        continue
+                    socket_rows = tuple(
+                        (
+                            socket.param_name,
+                            tuple(sorted(socket.target_spell_ids)),
+                        )
+                        for socket in topology.sockets
+                    )
+                    topology_rows_list.append((spell_id, socket_rows))
+                topology_rows = tuple(topology_rows_list)
+            except Exception:
+                return None
+
+        try:
+            spellbook = self._spell._spellbook
+            contracted_lookup = spellbook._lookup_contracted_spells
+            contracted_maps = spellbook._contracted_spells
+            system_state = spellbook._configuration.get_property("system_state")
+        except Exception:
+            return None
+
+        try:
+            contracted_rows_list: List[Tuple[Any, ...]] = []
+            for conduit_id in sorted(contracted_lookup.keys()):
+                lookup_map = contracted_lookup.get(conduit_id)
+                if lookup_map is None:
+                    continue
+                contracted_map = contracted_maps.get(conduit_id)
+                for contract_key in sorted(lookup_map.keys()):
+                    spell_index = lookup_map.get(contract_key)
+                    if spell_index is None:
+                        continue
+                    provider_spell_id = None
+                    if contracted_map is not None:
+                        provider_spell = contracted_map.get(spell_index)
+                        if provider_spell is not None:
+                            provider_spell_id = provider_spell.spell_index.current
+                    contracted_rows_list.append(
+                        (
+                            conduit_id,
+                            contract_key[0],
+                            contract_key[1],
+                            provider_spell_id,
+                        )
+                    )
+            contracted_rows = tuple(contracted_rows_list)
+        except Exception:
+            return None
+
+        return (
+            root_blueprint.root_spell_id,
+            ordered_node_ids,
+            path_registry_identity,
+            blueprint_socket_rows,
+            spell_rows,
+            topology_rows,
+            system_state,
+            contracted_rows,
         )
 
     def _build_phase8_occurrence_plan_input_signature(
@@ -2684,9 +2823,11 @@ class SpellCrafter(Cleanable):
         self._phase12_no_overrides_executor_signature = None
         self._spell.resolution_complete = False
         self._phase8_occurrence_plan_input_signature = None
+        self._phase8_occurrence_plan_fast_key = None
         self._phase9_injection_plan_input_signature = None
         self._phase10_patch_maps_input_signature = None
         self._phase11_no_overrides_input_signature = None
+        self._phase11_no_overrides_fast_key = None
 
 
     def _notify_dependencies_updated(self, dependency_ids: List[str]) -> None:
@@ -4087,10 +4228,26 @@ class SpellCrafter(Cleanable):
             return
         root_blueprint = self._root_blueprint_phase5
         spell_lookup = self._spell._spellbook._spell_id_pool
-        occurrence_plan_input_signature = self._build_phase8_occurrence_plan_input_signature(
+        phase8_occurrence_plan_fast_key = self._build_phase8_occurrence_plan_fast_key(
             root_blueprint=root_blueprint,
             spell_lookup=spell_lookup,
         )
+        can_reuse_phase8_signature_fast_key = (
+            phase8_occurrence_plan_fast_key is not None
+            and self._phase8_occurrence_plan_fast_key == phase8_occurrence_plan_fast_key
+            and self._phase8_occurrence_plan_input_signature is not None
+        )
+        if can_reuse_phase8_signature_fast_key:
+            occurrence_plan_input_signature = self._phase8_occurrence_plan_input_signature
+        else:
+            occurrence_plan_input_signature = self._build_phase8_occurrence_plan_input_signature(
+                root_blueprint=root_blueprint,
+                spell_lookup=spell_lookup,
+            )
+        if phase8_occurrence_plan_fast_key is not None:
+            self._phase8_occurrence_plan_fast_key = phase8_occurrence_plan_fast_key
+        else:
+            self._phase8_occurrence_plan_fast_key = None
         if (
                 occurrence_plan_input_signature is not None
                 and occurrence_plan_input_signature == self._phase8_occurrence_plan_input_signature
@@ -4379,11 +4536,39 @@ class SpellCrafter(Cleanable):
         injection_plan = self._injection_plan_phase9
         spell_lookup = self._spell._spellbook._spell_id_pool
 
-        no_overrides_input_signature = self._build_phase11_no_overrides_input_signature(
-            occurrence_plan=occurrence_plan,
-            injection_plan=injection_plan,
-            spell_lookup=spell_lookup,
+        # Fast key avoids rebuilding the deep phase11 no-overrides signature
+        # when phase8/phase9 inputs and plan references are unchanged.
+        phase11_no_overrides_fast_key = (
+            self._phase8_occurrence_plan_input_signature,
+            self._phase9_injection_plan_input_signature,
+            id(occurrence_plan),
+            id(injection_plan),
+            id(spell_lookup),
         )
+        can_reuse_no_overrides_fast_key = (
+            self._phase8_occurrence_plan_input_signature is not None
+            and (
+                injection_plan is None
+                or self._phase9_injection_plan_input_signature is not None
+            )
+        )
+        if (
+                can_reuse_no_overrides_fast_key
+                and
+                self._phase11_no_overrides_fast_key == phase11_no_overrides_fast_key
+                and self._phase11_no_overrides_input_signature is not None
+        ):
+            no_overrides_input_signature = self._phase11_no_overrides_input_signature
+        else:
+            no_overrides_input_signature = self._build_phase11_no_overrides_input_signature(
+                occurrence_plan=occurrence_plan,
+                injection_plan=injection_plan,
+                spell_lookup=spell_lookup,
+            )
+            if can_reuse_no_overrides_fast_key:
+                self._phase11_no_overrides_fast_key = phase11_no_overrides_fast_key
+            else:
+                self._phase11_no_overrides_fast_key = None
         previous_no_overrides_signature = self._phase11_no_overrides_input_signature
         no_overrides_signature_unchanged = (
             no_overrides_input_signature is not None
