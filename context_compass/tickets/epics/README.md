@@ -53,12 +53,12 @@ When completed, move to `context_compass/tickets/epics/completed/` and rename to
 - Keep notes program-level; reference story/task notes for tactical evidence.
 
 ## Completion Rules
-- Add completion header at the top of the file (see `context_compass/agent_onboarding/default/general/skills/workflow.md`).
+- Add completion header at the top of the file (see `context_compass/WORKFLOW.md`).
 - Move the file to `context_compass/tickets/epics/completed/` with the `_completed` suffix.
 
 ## References
 - `context_compass/SKILLS.MD` (deep descriptive model and naming rules)
-- `context_compass/agent_onboarding/default/general/skills/workflow.md` (ticket lifecycle and completion format)
+- `context_compass/WORKFLOW.md` (ticket lifecycle and completion format)
 - `context_compass/templates/epic_template.md`
 
 

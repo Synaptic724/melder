@@ -1798,9 +1798,9 @@ Use this to jump from component descriptions to concrete implementation.
 - `src/melder/command_center/strategic_command/strategic_command.py` (StrategicCommand)
 - `src/melder/command_center/strategic_command/base.py` (BaseStrategy)
 - `src/melder/command_center/strategic_command/command_center/deploy/load_balanced.py` (Load-balanced deploy)
-- `src/melder/command_center/strategic_command/command_center/tickets/tasks/task_round_robin.py` (Round-robin task)
+- `src/melder/command_center/strategic_command/command_center/tasks/task_round_robin.py` (Round-robin task)
 - `src/melder/command_center/strategic_command/command_group/deploy/pool_affinity.py` (Pool affinity deploy)
-- `src/melder/command_center/strategic_command/command_group/tickets/tasks/task_round_robin.py` (Tagged round-robin task)
+- `src/melder/command_center/strategic_command/command_group/tasks/task_round_robin.py` (Tagged round-robin task)
 
 ### Concurrency
 - `src/melder/concurrency/data_structures/concurrent_dict.py` (ConcurrentDict)
@@ -2007,5 +2007,4 @@ graph TD
 This document provides the component-level map for Melder core.
 It details C3 components, C2 subcomponents, and a C1 code map.
 Use this along with the architecture doc to reorient quickly after compaction.
-
 
