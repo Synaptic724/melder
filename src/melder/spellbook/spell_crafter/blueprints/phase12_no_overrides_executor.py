@@ -1089,13 +1089,20 @@ def _construct_spell_instance(
     if raw_args is _MISSING:
         args = []
         call_kwargs = kwargs
-    elif isinstance(raw_args, Sequence) and not isinstance(raw_args, (str, bytes)):
-        if isinstance(raw_args, tuple):
-            args = raw_args
+    elif isinstance(raw_args, tuple):
+        args = raw_args
+        if len(kwargs) == 1:
+            call_kwargs = {}
         else:
-            args = tuple(raw_args)
-        call_kwargs = dict(kwargs)
-        call_kwargs.pop("__args__", None)
+            call_kwargs = dict(kwargs)
+            call_kwargs.pop("__args__", None)
+    elif isinstance(raw_args, list):
+        args = raw_args
+        if len(kwargs) == 1:
+            call_kwargs = {}
+        else:
+            call_kwargs = dict(kwargs)
+            call_kwargs.pop("__args__", None)
     else:
         raise MeldExecutionError(
             spell_id=spell.spell_index.current,

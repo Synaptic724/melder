@@ -1,3 +1,5 @@
+
+
 # Plan: Codex Todo Ticketing System + Skills Docs (2026-01-17)
 
 - Completed: 2026-01-17
@@ -11,7 +13,7 @@
 - Add supporting docs that explain the workflow, structure, and usage.
 
 ## Scope (files and folders)
-- New folders: `epics/`, `stories/`, `tasks/`, `templates/`.
+- New folders: `tickets/epics/`, `tickets/stories/`, `tickets/tasks/`, `templates/`.
 - New templates: `templates/epic_template.md`, `templates/story_template.md`, `templates/task_template.md`.
 - New guidance: `SKILLS.MD` and `WORKFLOW.md`.
 - Updates: `AGENTS.MD` to reference `SKILLS.MD` and the workflow.
@@ -27,7 +29,8 @@
 - [x] (Optional) Update `README.md` to reflect the new structure.
 
 ## Deliverables
-- Folder structure and templates for epics/stories/tasks.
+- Folder structure and templates for `tickets/epics/`, `tickets/stories/`, and
+  `tickets/tasks/`.
 - `SKILLS.MD`, `WORKFLOW.md`, and `CONTEXT_COMPACTION.md` documentation.
 - `AGENTS.MD` references to the new docs.
 - (Optional) `README.md` structure update.
@@ -36,3 +39,7 @@
 - Assumption: the new workflow docs should live in `` for proximity.
 - Assumption: templates will be GitHub-issue style with checklists and deep descriptive sections.
 - Assumption: checkboxes (`- [ ]`) are the preferred way to "scratch off" completed items.
+
+
+
+

@@ -1,3 +1,5 @@
+
+
 # Stories
 
 ## Purpose
@@ -53,12 +55,15 @@ When completed, move to `context_compass/tickets/stories/completed/` and rename 
 - Keep notes synthesis-focused (task outcomes, dependency shifts, gate changes).
 
 ## Completion Rules
-- Add completion header at the top of the file (see `context_compass/WORKFLOW.md`).
+- Add completion header at the top of the file (see `context_compass/agent_onboarding/default/general/skills/workflow.md`).
 - Move the file to `context_compass/tickets/stories/completed/` with the `_completed` suffix.
 
 ## References
 - `context_compass/SKILLS.MD` (deep descriptive model and naming rules)
-- `context_compass/WORKFLOW.md` (ticket lifecycle and completion format)
+- `context_compass/agent_onboarding/default/general/skills/workflow.md` (ticket lifecycle and completion format)
 - `context_compass/templates/story_template.md`
+
+
+
 
 

@@ -1,3 +1,5 @@
+
+
 # Src Architecture (C4)
 
 ## Metadata
@@ -1155,4 +1157,7 @@ sequenceDiagram
 - `src/melder/utilities/synchronization/phase_scheduler.py`: phase orchestration.
 - `src/melder/utilities/logger/safe_logger.py`: logging adapter.
 - `src/melder/utilities/helpers/id_builder.py`: id generation.
+
+
+
 

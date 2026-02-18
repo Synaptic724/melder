@@ -1,3 +1,5 @@
+
+
 # Tickets
 
 Purpose
@@ -18,3 +20,6 @@ Backlog locations
 Notes
 - Active routing still comes from `attention_board.md`.
 - Durable execution memory still lives in each active ticket `## Notes`.
+
+
+

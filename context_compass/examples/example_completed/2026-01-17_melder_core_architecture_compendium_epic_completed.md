@@ -1,3 +1,5 @@
+
+
 - Completed: 2026-01-17
 - Summary: Delivered deep architecture and components documentation for Melder core.
 
@@ -48,7 +50,7 @@ This deep documentation is part of the holistic core. It codifies how Melder act
 
 ## Dependencies / External References
 - `src/melder/` core packages and modules.
-- `system_docs/` and `system_docs/` docs.
+- `system_docs/src_architecture.md` and `system_docs/src_components.md` docs.
 
 ## Milestones (Track Progress)
 - [x] Milestone 1: Source inventory complete (core entrypoints and lifecycle).
@@ -84,4 +86,8 @@ This deep documentation is part of the holistic core. It codifies how Melder act
 
 ## Context / Handoff Summary
 - Epic complete. Deep architecture and components documentation delivered for Melder core.
+
+
+
+
 

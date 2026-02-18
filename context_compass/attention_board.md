@@ -1,3 +1,5 @@
+
+
 # Attention Board
 
 Purpose
@@ -19,37 +21,56 @@ Attention details rule
   (`YYYY-MM-DDTHH:MM:SSZ`).
 - Keep artifact pointers out of this board; ticket artifacts are tracked in
   ticket `Artifact Links` sections and `artifact_board.md`.
-- During ticket closure, run deterministic board sync (remove/replace active rows, prune stale details, add compact closed anchor, cap anchors).
-
-Attention detail notation (required for non-empty entries)
-- `DATETIME`: ISO-8601 UTC timestamp for the detail entry.
-- `TYPE`: one allowed type from the list above.
-- `CLAIM`: concise routing-relevant claim.
-- `EVIDENCE`: one or more `path:start_line-end_line` pointers.
-- `IMPACT`: what this changes for active execution.
-- `NEXT`: the immediate next action.
-- `SWITCH_TRIGGER`: explicit condition to rotate active routing.
-- `RESUME_HIERARCHY`: compact resume chain (`task -> story -> epic`).
-- `REREAD`: `REQUIRED` or `HELPFUL`.
 
 ## Active Items
 | work_item | status | mode | owner | blocker | next | outcome | exit_signal | ticket | updated_at | reread |
 |---|---|---|---|---|---|---|---|---|---|---|
-| phase12 codegen measurement reset | in_progress | validation | codex | none | run higher-sample pinned measurement pass before next code edit | reduce false positives from low-sample regressions and pick next hotspot confidently | next candidate change is chosen from higher-confidence benchmark evidence | tickets/stories/2026-02-18_codegen_baseline_and_hotspot_map_story.md | 2026-02-18T10:42:12Z | REQUIRED |
+| task: historical language hard-cut purge | in_progress | implementation | codex | none | summarize completion and request closure confirmation | forward-only wording is consistent across full context_compass docs | user confirms task closure | `tickets/tasks/2026-02-18_historical_language_hard_cut_purge_task.md` | 2026-02-18T00:38:29Z | REQUIRED |
 
 ## Active Attention Details
-- DATETIME: 2026-02-18T10:42:12Z
+- DATETIME: 2026-02-18T00:35:09Z
   TYPE: PLAN
-  CLAIM: Tranche 4 was also reverted; active routing shifts to higher-sample measurement before further edits.
+  CLAIM: User requested continuation after closure; a follow-up hard-cut purge
+    task is active to remove remaining historical wording across
+    `context_compass`.
   EVIDENCE:
-  - tickets/tasks/2026-02-18_phase12_invoke_no_args_fastpath_task.md:106-125
-  IMPACT: Next optimization decision should be driven by stronger signal than two 3-sample reruns.
-  NEXT: Run pinned benchmark with higher sample count and refresh route ranking.
-  SWITCH_TRIGGER: high-sample results identify a new top candidate with acceptable confidence.
-  RESUME_HIERARCHY: task -> story -> epic
+  - tickets/tasks/2026-02-18_historical_language_hard_cut_purge_task.md:1-62
+  - artifacts/README.md:34-34
+  - agent_onboarding/default/new/README.md:29-29
+  - agent_onboarding/user_defined/synaptic_python_developer/README.md:24-24
+  IMPACT: Completes forward-only language enforcement across active and
+    historical documentation surfaces.
+  NEXT: patch matched files and re-run verification.
+  SWITCH_TRIGGER: verification search returns zero targeted matches.
+  RESUME_HIERARCHY: task.
+  REREAD: REQUIRED
+
+- DATETIME: 2026-02-18T00:38:29Z
+  TYPE: MEASURE
+  CLAIM: Wording normalization pass completed and verification scan returned no
+    matches for the targeted terminology set.
+  EVIDENCE:
+  - tickets/tasks/2026-02-18_historical_language_hard_cut_purge_task.md:41-74
+  - artifacts/README.md:34-34
+  - agent_onboarding/default/new/README.md:29-29
+  - agent_onboarding/user_defined/synaptic_python_developer/README.md:24-24
+  - examples/example_epics/2026-02-16_system_representation_documentation_improvement_epic_completed.md:143-143
+  IMPACT: Active work can move to closure confirmation without additional patch
+    rounds.
+  NEXT: present completion summary and request user closure decision.
+  SWITCH_TRIGGER: user confirms task closure.
+  RESUME_HIERARCHY: task.
   REREAD: REQUIRED
 
 ## Recently Closed Anchors
 | work_item | status | owner | blocker | next | ticket | updated_at | reread |
 |---|---|---|---|---|---|---|---|
-| board cleanup: bulk closure set | done | codex | none | none | `attention_board.md` | 2026-02-17T00:00:00Z | REQUIRED |
+| epic: onboarding policy drift hardening | done | codex | none | none | `tickets/epics/completed/2026-02-17_onboarding_policy_drift_hardening_epic_completed.md` | 2026-02-18T00:29:25Z | REQUIRED |
+| story: onboarding policy language alignment | done | codex | none | none | `tickets/stories/completed/2026-02-17_onboarding_policy_language_alignment_story_completed.md` | 2026-02-18T00:29:25Z | REQUIRED |
+| story: certification token-only policy | done | codex | none | none | `tickets/stories/completed/2026-02-18_certification_token_only_story_completed.md` | 2026-02-18T00:29:25Z | REQUIRED |
+| task: onboarding policy skills/certify/reonboard sweep | done | codex | none | none | `tickets/tasks/completed/2026-02-17_onboarding_policy_skills_certify_reonboard_sweep_task_completed.md` | 2026-02-18T00:29:25Z | REQUIRED |
+| task: benchmark p-core baseline and weighted scoring | done | codex | none | route to story-level discovery and location tasks | `tickets/tasks/completed/2026-02-17_codegen_benchmark_pcore_baseline_and_scoring_task_completed.md` | 2026-02-17T16:20:08Z | REQUIRED |
+| task: split root AGENTS into bootstrap and profile-owned policies | done | codex | none | none | `tickets/tasks/completed/2026-02-17_agents_bootstrap_split_and_profile_distribution_task_completed.md` | 2026-02-17T15:53:33Z | HELPFUL |
+
+
+

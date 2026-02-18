@@ -1,7 +1,9 @@
+
+
 # Task: Document Pytest Policy in AGENTS
 
 - Completed: 2026-01-17
-- Summary: Documented pytest requirement and legacy unittest context in AGENTS.
+- Summary: Documented pytest requirement and existing unittest context in AGENTS.
 
 ## Metadata
 - Task ID: TASK-2026-01-17-pytest-policy
@@ -13,7 +15,7 @@
 - Updated: 2026-01-17
 
 ## Objective
-Document the pytest requirement in AGENTS and clarify the unittest legacy context.
+Document the pytest requirement in AGENTS and clarify the existing unittest context.
 
 ## Scope Boundaries
 - In scope: `AGENTS.MD`.
@@ -21,7 +23,7 @@ Document the pytest requirement in AGENTS and clarify the unittest legacy contex
 
 ## Steps / Checklist
 - [x] Add pytest requirement note.
-- [x] Mention that legacy tests are unittest-based.
+- [x] Mention that existing tests are unittest-based.
 
 ## Deliverables
 - Updated `AGENTS.MD`
@@ -44,4 +46,7 @@ Document the pytest requirement in AGENTS and clarify the unittest legacy contex
 - [x] Validation status recorded
 
 ## Context / Handoff Summary
-AGENTS now documents pytest requirement and acknowledges legacy unittest tests.
+AGENTS now documents pytest requirement and acknowledges existing unittest tests.
+
+
+

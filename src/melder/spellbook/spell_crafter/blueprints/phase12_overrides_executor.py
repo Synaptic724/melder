@@ -1576,16 +1576,20 @@ def _append_overrides_invoke_source(
                 f"{body_indent}if raw_args_{step_index} is _MISSING:",
                 f"{body_indent}    args_{step_index} = []",
                 f"{body_indent}    call_kwargs_{step_index} = kwargs_{step_index}",
-                (
-                    f"{body_indent}elif isinstance(raw_args_{step_index}, Sequence) "
-                    f"and not isinstance(raw_args_{step_index}, (str, bytes)):"
-                ),
-                f"{body_indent}    if isinstance(raw_args_{step_index}, tuple):",
-                f"{body_indent}        args_{step_index} = raw_args_{step_index}",
+                f"{body_indent}elif isinstance(raw_args_{step_index}, tuple):",
+                f"{body_indent}    args_{step_index} = raw_args_{step_index}",
+                f"{body_indent}    if len(kwargs_{step_index}) == 1:",
+                f"{body_indent}        call_kwargs_{step_index} = {{}}",
                 f"{body_indent}    else:",
-                f"{body_indent}        args_{step_index} = tuple(raw_args_{step_index})",
-                f"{body_indent}    call_kwargs_{step_index} = dict(kwargs_{step_index})",
-                f"{body_indent}    call_kwargs_{step_index}.pop(\"__args__\", None)",
+                f"{body_indent}        call_kwargs_{step_index} = dict(kwargs_{step_index})",
+                f"{body_indent}        call_kwargs_{step_index}.pop(\"__args__\", None)",
+                f"{body_indent}elif isinstance(raw_args_{step_index}, list):",
+                f"{body_indent}    args_{step_index} = raw_args_{step_index}",
+                f"{body_indent}    if len(kwargs_{step_index}) == 1:",
+                f"{body_indent}        call_kwargs_{step_index} = {{}}",
+                f"{body_indent}    else:",
+                f"{body_indent}        call_kwargs_{step_index} = dict(kwargs_{step_index})",
+                f"{body_indent}        call_kwargs_{step_index}.pop(\"__args__\", None)",
                 f"{body_indent}else:",
                 f"{body_indent}    raise MeldExecutionError(",
                 f"{body_indent}        spell_id=plan_step_{step_index}.spell.spell_index.current,",
@@ -2927,13 +2931,20 @@ def _invoke_spell_with_kwargs(
     if raw_args is _MISSING:
         args = []
         call_kwargs = kwargs
-    elif isinstance(raw_args, Sequence) and not isinstance(raw_args, (str, bytes)):
-        if isinstance(raw_args, tuple):
-            args = raw_args
+    elif isinstance(raw_args, tuple):
+        args = raw_args
+        if len(kwargs) == 1:
+            call_kwargs = {}
         else:
-            args = tuple(raw_args)
-        call_kwargs = dict(kwargs)
-        call_kwargs.pop("__args__", None)
+            call_kwargs = dict(kwargs)
+            call_kwargs.pop("__args__", None)
+    elif isinstance(raw_args, list):
+        args = raw_args
+        if len(kwargs) == 1:
+            call_kwargs = {}
+        else:
+            call_kwargs = dict(kwargs)
+            call_kwargs.pop("__args__", None)
     else:
         raise MeldExecutionError(
             spell_id=spell.spell_index.current,
