@@ -3,6 +3,11 @@ import threading
 from unittest.mock import MagicMock, patch, ANY
 from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
+from melder.aether.aetheric_rift_system.aetheric_rift_system import AethericRiftSystem
+from melder.aether.aetheric_rift_system.aetheric_rift.aetheric_rift import AethericRift
+from melder.aether.aetheric_rift_system.aetheric_rift_state.aetheric_rift_state import (
+    AethericRiftState,
+)
 from melder.utilities.interfaces.interfaces import IConduit, IConduitCloud
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence
@@ -89,6 +94,8 @@ def test_initialization_creates_default_frame(mock_frame_cls):
     assert "default" in a._aetheric_frames
     mock_frame_cls.assert_called_with("default")
     assert a._default_frame is mock_frame_cls.return_value
+    assert isinstance(a._get_aetheric_rift_system(), AethericRiftSystem)
+    assert a._is_aetheric_rift_system_enabled() is False
 
 def test_cleanup_clears_state(aether_with_mocks):
     """
@@ -108,6 +115,7 @@ def test_cleanup_clears_state(aether_with_mocks):
     assert a._cleaned is True
     assert a._aetheric_frames is None
     assert a._default_frame is None
+    assert a._aetheric_rift_system is None
     default_frame.cleanup.assert_called_once()
     
     # Verify Singleton reset
@@ -264,6 +272,113 @@ def test_add_conduit_delegates_to_default(aether_with_mocks):
     
     assert "c1" in conduits_dict
     assert conduits_dict["c1"] is conduit
+
+
+def test_rift_facade_delegates_to_hosted_system(aether_with_mocks):
+    """
+    Verify Aether hosts the AR system and delegates Rift registry access to it.
+    """
+    a = aether_with_mocks
+    system_config = a._get_aetheric_rift_system_configuration()
+    system_config.with_rift_creation_enabled(True)
+    system_config.with_direct_rift_access(True)
+    system_config.with_direct_state_access(True)
+    a._enable_aetheric_rift_system()
+    rift = a._create_rift(rift_name="alpha")
+
+    assert a._get_rift(rift.id) is rift
+    assert a._get_rift_by_name("alpha") is rift
+    assert a._get_rift_state(rift.id) is rift.state
+    assert a._list_rifts() == [rift.id]
+
+    # Ownership stays in the hosted system.
+    system = a._get_aetheric_rift_system()
+    assert rift.id in system._rifts_by_id
+    assert rift.id in system._rift_states_by_id
+    assert "alpha" in system._rift_ids_by_name
+
+    a._remove_rift(rift.id)
+    assert a._list_rifts() == []
+
+
+def test_rift_facade_can_program_external_shell(aether_with_mocks):
+    a = aether_with_mocks
+    system_config = a._get_aetheric_rift_system_configuration()
+    system_config.with_rift_creation_enabled(True)
+    system_config.with_allow_external_rift_registration(True)
+    a._enable_aetheric_rift_system()
+    rift = AethericRift(a._get_aetheric_rift_system(), rift_name="alpha")
+
+    programmed = a._register_external_rift(rift)
+
+    assert programmed is rift
+    assert programmed.has_state is True
+
+
+def test_rift_facade_can_create_state_for_external_programming(aether_with_mocks):
+    a = aether_with_mocks
+    system_config = a._get_aetheric_rift_system_configuration()
+    system_config.with_rift_creation_enabled(True)
+    a._enable_aetheric_rift_system()
+    rift = AethericRift(a._get_aetheric_rift_system(), rift_name="alpha")
+    state = a._create_rift_state(rift_id=rift.id, rift_name="alpha")
+    programmed = a._program_rift(rift, state)
+
+    assert programmed is rift
+    assert programmed.state is state
+
+    # Ownership stays in the hosted system.
+    system = a._get_aetheric_rift_system()
+    assert state.rift_id in system._rifts_by_id
+    assert state.rift_id in system._rift_states_by_id
+    assert "alpha" in system._rift_ids_by_name
+
+
+def test_aether_returns_system_configuration_and_per_rift_configuration(aether_with_mocks):
+    a = aether_with_mocks
+
+    system_config = a._get_aetheric_rift_system_configuration()
+    fresh_system_config = a._create_aetheric_rift_system_configuration()
+    rift_config = a._create_rift_configuration()
+
+    assert system_config.get_property("allow_rift_creation") is False
+    assert fresh_system_config.get_property("shared_system_frame_enabled") is True
+    assert rift_config.get_property("target_frame_name") == "default"
+    assert rift_config.get_property("auto_activate_on_program") is True
+
+
+def test_state_access_token_can_be_enforced_through_aether(aether_with_mocks):
+    a = aether_with_mocks
+    system_config = a._get_aetheric_rift_system_configuration()
+    system_config.with_rift_creation_enabled(True)
+    system_config.with_direct_state_access(True)
+    system_config.with_state_access_token_required(True)
+    system_config.with_state_access_token("secret")
+    a._enable_aetheric_rift_system()
+    rift = a._create_rift(rift_name="alpha")
+
+    with pytest.raises(ValueError, match="Valid state access token"):
+        a._get_rift_state(rift.id)
+
+    assert a._get_rift_state(rift.id, access_token="secret") is rift.state
+
+
+def test_aether_can_enable_and_disable_hosted_rift_system(aether_with_mocks):
+    """
+    Verify Aether facades AR system enable/disable against the hosted
+    subsystem.
+    """
+    a = aether_with_mocks
+    assert a._is_aetheric_rift_system_enabled() is False
+
+    system_config = a._get_aetheric_rift_system_configuration()
+    system_config.with_rift_creation_enabled(True)
+    a._enable_aetheric_rift_system()
+
+    assert a._is_aetheric_rift_system_enabled() is True
+
+    a._disable_aetheric_rift_system()
+    assert a._is_aetheric_rift_system_enabled() is False
 
 def test_add_conduit_delegates_to_custom_frame(aether_with_mocks):
     """_add_conduit delegates to a specific frame."""

@@ -3,11 +3,16 @@ from threading import RLock
 from typing import Optional, Any, Dict, List, Set
 import ulid
 # Melder Imports
+from melder.aether.aetheric_rift_system.configuration.aetheric_rift_system_configuration import (
+    AethericRiftSystemConfiguration,
+)
+from melder.aether.aetheric_rift_system.aetheric_rift_system import AethericRiftSystem
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_cluster import ConduitCluster
 from melder.utilities.interfaces.interfaces import IConduit, IConduitCloud, IChannelLogger, IConfiguration, \
-    IDevOpsManager, ISpellSystemStates, IIncidentManager, IChangeControlManager, IAether
+    IDevOpsManager, ISpellSystemStates, IIncidentManager, IChangeControlManager, IAether, \
+    IAethericRiftSystem, IAethericRiftSystemConfiguration, IAethericRiftConfiguration, IAethericRift, IAethericRiftState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame import AethericFrame
 from melder.utilities.helpers.init_helpers import InitHelpers
@@ -46,6 +51,8 @@ class Aether(Cleanable, IAether):
             # Initialize potentially nullable fields early for safe cleanup
             self._aetheric_frames = None
             self._default_frame = None
+            self._aetheric_rift_system_configuration = None
+            self._aetheric_rift_system = None
 
             Aether._initialized = True
 
@@ -55,6 +62,12 @@ class Aether(Cleanable, IAether):
             # --- Frame setup ---
             self._aetheric_frames: Dict[str, AethericFrame] = {"default": AethericFrame("default")}
             self._default_frame: AethericFrame = self._aetheric_frames["default"]
+            self._aetheric_rift_system_configuration: IAethericRiftSystemConfiguration = (
+                AethericRiftSystemConfiguration().with_defaults()
+            )
+            self._aetheric_rift_system: IAethericRiftSystem = AethericRiftSystem(
+                configuration=self._aetheric_rift_system_configuration,
+            )
 
     def cleanup(self):
         """
@@ -74,6 +87,13 @@ class Aether(Cleanable, IAether):
                     self.cleanup_aetheric_frames() # This will clean each individual frame
                     self._aetheric_frames.clear() # This cleans the ConcurrentDictionary
                     self._aetheric_frames = None
+
+                if self._aetheric_rift_system is not None:
+                    self._aetheric_rift_system.cleanup()
+                    self._aetheric_rift_system = None
+
+                if self._aetheric_rift_system_configuration is not None:
+                    self._aetheric_rift_system_configuration = None
                 
                 self._default_frame = None
                 
@@ -220,6 +240,376 @@ class Aether(Cleanable, IAether):
         self._lock.release()
 
     #endregion Context Manager
+
+    #region Aetheric Rift System
+    def _get_aetheric_rift_system(self) -> IAethericRiftSystem:
+        """
+        Internal
+
+        Purpose:
+            Return the hosted AR subsystem root.
+
+        Contract:
+            - `Aether` hosts exactly one `AethericRiftSystem`.
+            - The hosted system is created during `Aether` initialization.
+            - After `check_cleaned()` passes, the hosted system is expected to
+              exist and is returned directly.
+
+        Returns:
+            IAethericRiftSystem: The hosted subsystem root.
+        """
+        self.check_cleaned()
+        return self._aetheric_rift_system
+
+    def _get_aetheric_rift_system_configuration(self) -> IAethericRiftSystemConfiguration:
+        """
+        Internal
+
+        Purpose:
+            Return the hosted AR system configuration.
+
+        Returns:
+            IAethericRiftSystemConfiguration: The hosted system configuration.
+        """
+        self.check_cleaned()
+        return self._aetheric_rift_system_configuration
+
+    def _create_aetheric_rift_system_configuration(self) -> IAethericRiftSystemConfiguration:
+        """
+        Internal
+
+        Create a fresh mutable AR system configuration through the hosted AR
+        system.
+
+        Returns:
+            IAethericRiftSystemConfiguration: Fresh mutable AR system config.
+        """
+        self.check_cleaned()
+        return self._aetheric_rift_system.create_system_configuration()
+
+    def _enable_aetheric_rift_system(
+            self,
+            configuration: Optional[IAethericRiftSystemConfiguration] = None,
+    ) -> None:
+        """
+        Internal
+
+        Enable the hosted AR system with the provided configuration.
+
+        Args:
+            configuration:
+                Optional replacement AR system configuration. When omitted, the
+                currently hosted configuration is enabled.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if configuration is not None:
+            self._aetheric_rift_system_configuration = configuration
+        self._aetheric_rift_system.enable(self._aetheric_rift_system_configuration)
+        self._aetheric_rift_system_configuration = self._aetheric_rift_system.configuration
+        if self._aetheric_rift_system_configuration.get_property("shared_system_frame_enabled"):
+            if self._aetheric_rift_system_configuration.get_property("auto_create_system_frame"):
+                self._ensure_frame(self._aetheric_rift_system_configuration.get_property("default_system_frame_name"))
+
+    def _disable_aetheric_rift_system(self) -> None:
+        """
+        Internal
+
+        Disable the hosted AR system runtime.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        self._aetheric_rift_system.disable()
+
+    def _is_aetheric_rift_system_enabled(self) -> bool:
+        """
+        Internal
+
+        Return whether the hosted AR system runtime is enabled.
+
+        Returns:
+            bool: True when the hosted AR system is enabled.
+        """
+        self.check_cleaned()
+        return self._aetheric_rift_system.is_enabled
+
+    def _create_rift_configuration(self) -> IAethericRiftConfiguration:
+        """
+        Internal
+
+        Delegate per-Rift configuration creation to the hosted AR system.
+
+        Returns:
+            IAethericRiftConfiguration: Mutable per-Rift configuration.
+        """
+        self.check_cleaned()
+        return self._aetheric_rift_system.create_rift_configuration()
+
+    def _create_rift_state(
+            self,
+            *,
+            configuration: Optional[IAethericRiftConfiguration] = None,
+            rift_id: Optional[str] = None,
+            rift_name: Optional[str] = None,
+            local_conduit_id: Optional[str] = None,
+            active_space_id: Optional[str] = None,
+            metadata: Optional[Dict[str, object]] = None,
+    ) -> IAethericRiftState:
+        """
+        Internal
+
+        Delegate canonical RiftState creation to the hosted AR system.
+
+        Returns:
+            IAethericRiftState: Newly created canonical state.
+        """
+        self.check_cleaned()
+        state = self._aetheric_rift_system.create_rift_state(
+            configuration=configuration,
+            rift_id=rift_id,
+            rift_name=rift_name,
+            local_conduit_id=local_conduit_id,
+            active_space_id=active_space_id,
+            metadata=metadata,
+        )
+        self._ensure_frames_for_rift_state(state)
+        return state
+
+    def _create_rift(
+            self,
+            *,
+            configuration: Optional[IAethericRiftConfiguration] = None,
+            rift_name: Optional[str] = None,
+            rift_id: Optional[str] = None,
+            local_conduit_id: Optional[str] = None,
+            active_space_id: Optional[str] = None,
+            metadata: Optional[Dict[str, object]] = None,
+            creation_token: Optional[str] = None,
+    ) -> IAethericRift:
+        """
+        Internal
+
+        Delegate Rift creation/programming to the hosted AR system.
+
+        Returns:
+            IAethericRift: Live/programmed Rift shell.
+        """
+        self.check_cleaned()
+        rift = self._aetheric_rift_system.create_rift(
+            configuration=configuration,
+            rift_name=rift_name,
+            rift_id=rift_id,
+            local_conduit_id=local_conduit_id,
+            active_space_id=active_space_id,
+            metadata=metadata,
+            creation_token=creation_token,
+        )
+        self._ensure_frames_for_rift_state(rift.state)
+        return rift
+
+    def _program_rift(
+            self,
+            rift: IAethericRift,
+            state: IAethericRiftState,
+            *,
+            creation_token: Optional[str] = None,
+    ) -> IAethericRift:
+        """
+        Internal
+
+        Delegate Rift programming/binding to the hosted AR system.
+
+        Returns:
+            IAethericRift: Live/programmed Rift shell.
+        """
+        self.check_cleaned()
+        programmed_rift = self._aetheric_rift_system.program_rift(
+            rift,
+            state,
+            creation_token=creation_token,
+        )
+        self._ensure_frames_for_rift_state(programmed_rift.state)
+        return programmed_rift
+
+    def _register_external_rift(
+            self,
+            rift: IAethericRift,
+            state: Optional[IAethericRiftState] = None,
+            *,
+            configuration: Optional[IAethericRiftConfiguration] = None,
+            local_conduit_id: Optional[str] = None,
+            active_space_id: Optional[str] = None,
+            metadata: Optional[Dict[str, object]] = None,
+            creation_token: Optional[str] = None,
+    ) -> IAethericRift:
+        """
+        Internal
+
+        Delegate external Rift registration/programming to the hosted AR
+        system.
+
+        Returns:
+            IAethericRift: Live/programmed Rift shell.
+        """
+        self.check_cleaned()
+        programmed_rift = self._aetheric_rift_system.register_external_rift(
+            rift,
+            state=state,
+            configuration=configuration,
+            local_conduit_id=local_conduit_id,
+            active_space_id=active_space_id,
+            metadata=metadata,
+            creation_token=creation_token,
+        )
+        self._ensure_frames_for_rift_state(programmed_rift.state)
+        return programmed_rift
+
+    def _add_rift(self, rift: IAethericRift, state: IAethericRiftState) -> None:
+        """
+        Internal
+
+        Purpose:
+            Delegate Rift registration to the hosted AR system.
+
+        Contract:
+            - `Aether` remains a facade and never owns the Rift dictionaries.
+            - Registration is performed by `AethericRiftSystem`.
+
+        Args:
+            rift:
+                Public Rift shell to register.
+            state:
+                Canonical Rift state bound to that shell.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        self._aetheric_rift_system.add_rift(rift, state)
+
+    def _get_rift(
+            self,
+            rift_id: str,
+            access_token: Optional[str] = None,
+    ) -> IAethericRift:
+        """
+        Internal
+
+        Purpose:
+            Delegate Rift lookup by id to the hosted AR system.
+
+        Args:
+            rift_id:
+                Canonical Rift id.
+
+        Returns:
+            IAethericRift: The registered Rift shell.
+        """
+        self.check_cleaned()
+        return self._aetheric_rift_system.get_rift(rift_id, access_token=access_token)
+
+    def _get_rift_by_name(
+            self,
+            rift_name: str,
+            access_token: Optional[str] = None,
+    ) -> IAethericRift:
+        """
+        Internal
+
+        Purpose:
+            Delegate Rift lookup by name to the hosted AR system.
+
+        Args:
+            rift_name:
+                Stable Rift name.
+
+        Returns:
+            IAethericRift: The registered Rift shell.
+        """
+        self.check_cleaned()
+        return self._aetheric_rift_system.get_rift_by_name(
+            rift_name,
+            access_token=access_token,
+        )
+
+    def _get_rift_state(
+            self,
+            rift_id: str,
+            access_token: Optional[str] = None,
+    ) -> IAethericRiftState:
+        """
+        Internal
+
+        Purpose:
+            Delegate RiftState lookup to the hosted AR system.
+
+        Args:
+            rift_id:
+                Canonical Rift id.
+
+        Returns:
+            IAethericRiftState: The canonical Rift state.
+        """
+        self.check_cleaned()
+        return self._aetheric_rift_system.get_rift_state(
+            rift_id,
+            access_token=access_token,
+        )
+
+    def _remove_rift(self, rift_id: str) -> None:
+        """
+        Internal
+
+        Purpose:
+            Delegate Rift removal to the hosted AR system.
+
+        Args:
+            rift_id:
+                Canonical Rift id.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        self._aetheric_rift_system.remove_rift(rift_id)
+
+    def _list_rifts(self) -> List[str]:
+        """
+        Internal
+
+        Purpose:
+            Delegate Rift id listing to the hosted AR system.
+
+        Returns:
+            List[str]: Snapshot of registered Rift ids.
+        """
+        self.check_cleaned()
+        return self._aetheric_rift_system.list_rift_ids()
+
+    def _ensure_frames_for_rift_state(self, state: IAethericRiftState) -> None:
+        """
+        Internal
+
+        Ensure the frames referenced by one canonical Rift state exist in
+        `Aether`.
+
+        Args:
+            state:
+                Canonical Rift state whose internal and target frame anchors
+                should exist.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        self._ensure_frame(state.target_frame_name)
+        if self._aetheric_rift_system_configuration.get_property("auto_create_system_frame"):
+            self._ensure_frame(state.system_frame_name)
+    #endregion Aetheric Rift System
 
 
     @property
