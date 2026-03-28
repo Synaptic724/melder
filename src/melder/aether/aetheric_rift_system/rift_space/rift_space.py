@@ -95,6 +95,11 @@ class RiftSpace(Cleanable, IRiftSpace):
         Idempotently cleanup room-local state and the attached event
         configuration.
 
+        Contract:
+            - Cleans the owned event configuration before dropping references.
+            - Clears room identity metadata and room-local metadata maps.
+            - Leaves the room unusable after cleanup.
+
         Returns:
             None.
         """
@@ -176,6 +181,10 @@ class RiftSpace(Cleanable, IRiftSpace):
         """
         Purpose:
             Return the room-level event configuration.
+
+        Contract:
+            This is the room-local configuration seam for future action/memory
+            enrichment, not a global ARS configuration object.
 
         Returns:
             IRiftEventConfiguration: The room event configuration object.

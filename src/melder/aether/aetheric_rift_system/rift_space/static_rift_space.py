@@ -13,7 +13,10 @@ class StaticRiftSpace(RiftSpace, IStaticRiftSpace):
         Represent the lower-risk concrete room type.
 
     Contract:
-        Inherits all base room behavior and fixes `space_kind` to `static`.
+        - Inherits all base room behavior.
+        - Fixes `space_kind` to `static`.
+        - Represents the lower-risk room surface where declared targets are the
+          primary operational model.
     """
 
     def __init__(
@@ -44,6 +47,10 @@ class StaticRiftSpace(RiftSpace, IStaticRiftSpace):
 
         Returns:
             None.
+
+        Contract:
+            Delegates all storage and lifecycle behavior to `RiftSpace` while
+            fixing the room kind to `static`.
         """
         super().__init__(
             owner_rift_id,

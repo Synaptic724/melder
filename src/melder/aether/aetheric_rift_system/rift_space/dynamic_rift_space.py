@@ -14,7 +14,10 @@ class DynamicRiftSpace(RiftSpace, IDynamicRiftSpace):
         workflows.
 
     Contract:
-        Inherits all base room behavior and fixes `space_kind` to `dynamic`.
+        - Inherits all base room behavior.
+        - Fixes `space_kind` to `dynamic`.
+        - Represents the richer room surface intended for local construction
+          and more open-ended workflows.
     """
 
     def __init__(
@@ -45,6 +48,10 @@ class DynamicRiftSpace(RiftSpace, IDynamicRiftSpace):
 
         Returns:
             None.
+
+        Contract:
+            Delegates all storage and lifecycle behavior to `RiftSpace` while
+            fixing the room kind to `dynamic`.
         """
         super().__init__(
             owner_rift_id,

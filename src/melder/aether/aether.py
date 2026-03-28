@@ -45,7 +45,28 @@ class Aether(Cleanable, IAether):
         return cls._instance
 
     def __init__(self, logger: Any | None = None):
-        """Initializes the Aether singleton, creating the 'default' frame."""
+        """
+        Initialize the Aether singleton and its always-on frame substrate.
+
+        Purpose:
+            Create the root `Aether` host, bootstrap the default
+            `AethericFrame`, and prepare optional hosted subsystems such as
+            `AethericRiftSystem`.
+
+        Contract:
+            - Initializes the default frame eagerly.
+            - Initializes the hosted AR system eagerly as an object, but leaves
+              it unconfigured and disabled until a user explicitly engages it.
+            - Does not preinstall an AR system configuration during normal boot.
+
+        Args:
+            logger:
+                Optional logger instance or logger-like object used to seed the
+                SafeLogger facade.
+
+        Returns:
+            None.
+        """
         if not Aether._initialized:
             super().__init__()
             # Initialize potentially nullable fields early for safe cleanup
@@ -62,19 +83,26 @@ class Aether(Cleanable, IAether):
             # --- Frame setup ---
             self._aetheric_frames: Dict[str, AethericFrame] = {"default": AethericFrame("default")}
             self._default_frame: AethericFrame = self._aetheric_frames["default"]
-            self._aetheric_rift_system_configuration: IAethericRiftSystemConfiguration = (
-                AethericRiftSystemConfiguration().with_defaults()
-            )
-            self._aetheric_rift_system: IAethericRiftSystem = AethericRiftSystem(
-                configuration=self._aetheric_rift_system_configuration,
-            )
+            self._aetheric_rift_system_configuration: Optional[IAethericRiftSystemConfiguration] = None
+            self._aetheric_rift_system: IAethericRiftSystem = AethericRiftSystem()
 
     def cleanup(self):
         """
-        Cleans up the entire Aether, recursively cleaning all frames and conduits.
+        Cleanup the entire Aether, recursively cleaning all frames and hosted
+        subsystems.
 
-        Clears all registries and renders the Aether unusable.
-        This operation is idempotent.
+        Purpose:
+            Tear down the global runtime root and all owned frame or subsystem
+            state so the singleton can be safely reinitialized.
+
+        Contract:
+            - Idempotent.
+            - Cleans frames before resetting singleton state.
+            - Cleans the hosted AR system if it exists.
+            - Drops any pending or installed AR system configuration reference.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -266,26 +294,58 @@ class Aether(Cleanable, IAether):
         Internal
 
         Purpose:
-            Return the hosted AR system configuration.
+            Return the installed AR system configuration.
+
+        Contract:
+            - ARS configuration is optional and is not installed during normal
+              Aether boot.
+            - Raises until the user explicitly creates or installs a
+              configuration through the ARS facade.
 
         Returns:
-            IAethericRiftSystemConfiguration: The hosted system configuration.
+            IAethericRiftSystemConfiguration: The installed system configuration.
+
+        Raises:
+            RuntimeError: If the hosted AR system has not been configured yet.
         """
         self.check_cleaned()
+        if self._aetheric_rift_system_configuration is None:
+            raise RuntimeError("AethericRiftSystem is not configured.")
         return self._aetheric_rift_system_configuration
+
+    def _is_aetheric_rift_system_configured(self) -> bool:
+        """
+        Internal
+
+        Return whether the hosted AR system currently has an installed
+        configuration.
+
+        Returns:
+            bool: True when ARS is configured.
+        """
+        self.check_cleaned()
+        return self._aetheric_rift_system.is_configured
 
     def _create_aetheric_rift_system_configuration(self) -> IAethericRiftSystemConfiguration:
         """
         Internal
 
-        Create a fresh mutable AR system configuration through the hosted AR
-        system.
+        Create and retain a fresh mutable AR system configuration through the
+        hosted AR system.
+
+        Contract:
+            - Creates a new configuration object from ARS defaults.
+            - Stores it on `Aether` as the current pending or installed ARS
+              configuration reference.
+            - Does not enable ARS by itself.
 
         Returns:
             IAethericRiftSystemConfiguration: Fresh mutable AR system config.
         """
         self.check_cleaned()
-        return self._aetheric_rift_system.create_system_configuration()
+        configuration = self._aetheric_rift_system.create_system_configuration()
+        self._aetheric_rift_system_configuration = configuration
+        return configuration
 
     def _enable_aetheric_rift_system(
             self,
@@ -294,30 +354,39 @@ class Aether(Cleanable, IAether):
         """
         Internal
 
-        Enable the hosted AR system with the provided configuration.
+        Install a configuration into ARS and enable runtime operations.
 
         Args:
             configuration:
                 Optional replacement AR system configuration. When omitted, the
-                currently hosted configuration is enabled.
+                currently retained ARS configuration is used.
 
         Returns:
             None.
+
+        Raises:
+            RuntimeError: If ARS has not been configured yet.
         """
         self.check_cleaned()
         if configuration is not None:
             self._aetheric_rift_system_configuration = configuration
+        if self._aetheric_rift_system_configuration is None:
+            raise RuntimeError("AethericRiftSystem is not configured.")
         self._aetheric_rift_system.enable(self._aetheric_rift_system_configuration)
         self._aetheric_rift_system_configuration = self._aetheric_rift_system.configuration
-        if self._aetheric_rift_system_configuration.get_property("shared_system_frame_enabled"):
-            if self._aetheric_rift_system_configuration.get_property("auto_create_system_frame"):
-                self._ensure_frame(self._aetheric_rift_system_configuration.get_property("default_system_frame_name"))
+        if self._aetheric_rift_system_configuration.get_property("auto_create_system_frames"):
+            self._ensure_frame(self._aetheric_rift_system_configuration.get_property("default_system_frame_name"))
 
     def _disable_aetheric_rift_system(self) -> None:
         """
         Internal
 
-        Disable the hosted AR system runtime.
+        Disable the hosted AR system runtime while preserving any installed
+        configuration.
+
+        Contract:
+            Delegates runtime disablement to the hosted AR system without
+            discarding the currently retained ARS configuration reference.
 
         Returns:
             None.
@@ -331,6 +400,10 @@ class Aether(Cleanable, IAether):
 
         Return whether the hosted AR system runtime is enabled.
 
+        Contract:
+            Reflects the hosted AR system runtime flag only. This does not imply
+            that ARS is configured when false.
+
         Returns:
             bool: True when the hosted AR system is enabled.
         """
@@ -342,6 +415,10 @@ class Aether(Cleanable, IAether):
         Internal
 
         Delegate per-Rift configuration creation to the hosted AR system.
+
+        Contract:
+            - Requires ARS to be configured.
+            - Does not require ARS to be enabled.
 
         Returns:
             IAethericRiftConfiguration: Mutable per-Rift configuration.
@@ -363,6 +440,11 @@ class Aether(Cleanable, IAether):
         Internal
 
         Delegate canonical RiftState creation to the hosted AR system.
+
+        Contract:
+            - Requires ARS to be configured and enabled.
+            - Ensures the resulting target/system frames exist in `Aether`
+              after state creation succeeds.
 
         Returns:
             IAethericRiftState: Newly created canonical state.
@@ -395,6 +477,11 @@ class Aether(Cleanable, IAether):
 
         Delegate Rift creation/programming to the hosted AR system.
 
+        Contract:
+            - Requires ARS to be configured and enabled.
+            - Ensures the resulting target/system frames exist in `Aether`
+              after creation succeeds.
+
         Returns:
             IAethericRift: Live/programmed Rift shell.
         """
@@ -422,6 +509,11 @@ class Aether(Cleanable, IAether):
         Internal
 
         Delegate Rift programming/binding to the hosted AR system.
+
+        Contract:
+            - Requires ARS to be configured and enabled.
+            - Ensures the resulting target/system frames exist in `Aether`
+              after programming succeeds.
 
         Returns:
             IAethericRift: Live/programmed Rift shell.
@@ -451,6 +543,11 @@ class Aether(Cleanable, IAether):
 
         Delegate external Rift registration/programming to the hosted AR
         system.
+
+        Contract:
+            - Requires ARS to be configured and enabled.
+            - Ensures the resulting target/system frames exist in `Aether`
+              after registration succeeds.
 
         Returns:
             IAethericRift: Live/programmed Rift shell.
@@ -487,6 +584,10 @@ class Aether(Cleanable, IAether):
 
         Returns:
             None.
+
+        Raises:
+            RuntimeError: If the hosted ARS is not configured or enabled.
+            ValueError: If the hosted ARS rejects the registration.
         """
         self.check_cleaned()
         self._aetheric_rift_system.add_rift(rift, state)
@@ -505,9 +606,18 @@ class Aether(Cleanable, IAether):
         Args:
             rift_id:
                 Canonical Rift id.
+            access_token:
+                Optional direct-access token supplied to ARS.
+
+        Contract:
+            Delegates lookup and access-policy enforcement to the hosted ARS.
 
         Returns:
             IAethericRift: The registered Rift shell.
+
+        Raises:
+            RuntimeError: If the hosted ARS is not configured or enabled.
+            ValueError: If lookup or access-policy enforcement fails.
         """
         self.check_cleaned()
         return self._aetheric_rift_system.get_rift(rift_id, access_token=access_token)
@@ -526,9 +636,19 @@ class Aether(Cleanable, IAether):
         Args:
             rift_name:
                 Stable Rift name.
+            access_token:
+                Optional direct-access token supplied to ARS.
+
+        Contract:
+            Delegates name lookup and access-policy enforcement to the hosted
+            ARS.
 
         Returns:
             IAethericRift: The registered Rift shell.
+
+        Raises:
+            RuntimeError: If the hosted ARS is not configured or enabled.
+            ValueError: If lookup or access-policy enforcement fails.
         """
         self.check_cleaned()
         return self._aetheric_rift_system.get_rift_by_name(
@@ -550,9 +670,19 @@ class Aether(Cleanable, IAether):
         Args:
             rift_id:
                 Canonical Rift id.
+            access_token:
+                Optional state-access token supplied to ARS.
+
+        Contract:
+            Delegates lookup and state-access policy enforcement to the hosted
+            ARS.
 
         Returns:
             IAethericRiftState: The canonical Rift state.
+
+        Raises:
+            RuntimeError: If the hosted ARS is not configured or enabled.
+            ValueError: If lookup or access-policy enforcement fails.
         """
         self.check_cleaned()
         return self._aetheric_rift_system.get_rift_state(
@@ -571,8 +701,15 @@ class Aether(Cleanable, IAether):
             rift_id:
                 Canonical Rift id.
 
+        Contract:
+            Delegates removal and registry cleanup to the hosted ARS.
+
         Returns:
             None.
+
+        Raises:
+            RuntimeError: If the hosted ARS is not configured or enabled.
+            ValueError: If the Rift id is not registered.
         """
         self.check_cleaned()
         self._aetheric_rift_system.remove_rift(rift_id)
@@ -584,8 +721,14 @@ class Aether(Cleanable, IAether):
         Purpose:
             Delegate Rift id listing to the hosted AR system.
 
+        Contract:
+            Delegates registry listing to the hosted ARS.
+
         Returns:
             List[str]: Snapshot of registered Rift ids.
+
+        Raises:
+            RuntimeError: If the hosted ARS is not configured or enabled.
         """
         self.check_cleaned()
         return self._aetheric_rift_system.list_rift_ids()
@@ -602,12 +745,21 @@ class Aether(Cleanable, IAether):
                 Canonical Rift state whose internal and target frame anchors
                 should exist.
 
+        Contract:
+            - Ensures the externally targeted frame always exists.
+            - Ensures the internal AR system frame exists only when the
+              installed ARS configuration allows auto-creation.
+
         Returns:
             None.
+
+        Raises:
+            RuntimeError: If the hosted ARS configuration has not been
+                installed but system-frame creation policy is queried.
         """
         self.check_cleaned()
         self._ensure_frame(state.target_frame_name)
-        if self._aetheric_rift_system_configuration.get_property("auto_create_system_frame"):
+        if self._aetheric_rift_system_configuration is not None and self._aetheric_rift_system_configuration.get_property("auto_create_system_frames"):
             self._ensure_frame(state.system_frame_name)
     #endregion Aetheric Rift System
 

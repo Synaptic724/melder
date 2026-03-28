@@ -26,6 +26,8 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
         - Stores typed properties in one property bag.
         - Provides fluent `with_*` helpers mirroring the Spellbook
           configuration style.
+        - Captures per-Rift runtime defaults only; process-wide governance lives
+          in `AethericRiftSystemConfiguration`.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -42,6 +44,9 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
         Internal
 
         Initialize an empty per-Rift configuration.
+
+        Returns:
+            None.
         """
         super().__init__()
         self._id: str = IDBuilder.create_id()
@@ -63,6 +68,13 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
         Internal
 
         Idempotently cleanup the configuration and clear all state.
+
+        Contract:
+            - Marks the object cleaned and frozen.
+            - Clears the property bag and property registry.
+
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -80,10 +92,41 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
 
     @property
     def frozen(self) -> bool:
+        """
+        Purpose:
+            Return whether further mutation is forbidden.
+
+        Returns:
+            bool: True when the configuration is finalized.
+        """
         self.check_cleaned()
         return self._frozen
 
     def set_property(self, key: str, value: object) -> None:
+        """
+        Internal
+
+        Set one per-Rift configuration property before freeze().
+
+        Args:
+            key:
+                Property name.
+            value:
+                Property value.
+
+        Contract:
+            - Rejects mutation after freeze().
+            - Normalizes enum-backed values before storage.
+            - Enforces the declared type contract for every property.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the configuration is already frozen.
+            ValueError: If the property name is unknown.
+            TypeError: If the supplied value does not satisfy the declared type.
+        """
         self.check_cleaned()
         if self._frozen:
             raise RuntimeError("Cannot modify AethericRiftConfiguration after freeze().")
@@ -102,14 +145,53 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
         self._properties[key] = converted_value
 
     def get_property(self, key: str) -> object:
+        """
+        Internal
+
+        Return one per-Rift configuration property value.
+
+        Args:
+            key:
+                Property name.
+
+        Returns:
+            object: Stored property value.
+
+        Raises:
+            KeyError: If the property has not been set.
+        """
         self.check_cleaned()
         return self._properties[key]
 
     def has_property(self, key: str) -> bool:
+        """
+        Internal
+
+        Return whether a property has been set.
+
+        Args:
+            key:
+                Property name.
+
+        Returns:
+            bool: True when present.
+        """
         self.check_cleaned()
         return key in self._properties
 
     def load_default_dictionary(self) -> None:
+        """
+        Internal
+
+        Load the standard default property set for one Rift.
+
+        Contract:
+            - Sets default target frame, room type, activation posture, and
+              validation mode used when ARS builds a Rift without overrides.
+
+        Returns:
+            None.
+        """
         self.check_cleaned()
         defaults = {
             "target_frame_name": "default",
@@ -124,6 +206,17 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
             self.set_property(key, value)
 
     def validate(self) -> bool:
+        """
+        Internal
+
+        Validate that every required per-Rift property is present.
+
+        Returns:
+            bool: True when the configuration is valid.
+
+        Raises:
+            ValueError: If a required property is missing.
+        """
         self.check_cleaned()
         for key in self.available_properties.keys():
             if key not in self._properties:
@@ -131,6 +224,17 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
         return True
 
     def freeze(self) -> None:
+        """
+        Internal
+
+        Validate and freeze the configuration.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: If validation fails.
+        """
         self.check_cleaned()
         if self._frozen:
             return
@@ -139,17 +243,51 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
         self._frozen = True
 
     def finalize(self) -> "IAethericRiftConfiguration":
+        """
+        Fluent
+
+        Validate and freeze the configuration, then return `self`.
+
+        Returns:
+            IAethericRiftConfiguration: This configuration instance.
+        """
         self.freeze()
         return self
 
     def build(self) -> "IAethericRiftConfiguration":
+        """
+        Fluent alias for finalize().
+
+        Returns:
+            IAethericRiftConfiguration: This configuration instance.
+        """
         return self.finalize()
 
     def with_defaults(self) -> "IAethericRiftConfiguration":
+        """
+        Fluent
+
+        Load the standard per-Rift defaults and return `self`.
+
+        Returns:
+            IAethericRiftConfiguration: This configuration instance.
+        """
         self.load_default_dictionary()
         return self
 
     def with_target_frame_name(self, frame_name: str) -> "IAethericRiftConfiguration":
+        """
+        Fluent
+
+        Set the target frame name for this Rift.
+
+        Args:
+            frame_name:
+                Target `AethericFrame` name to expose through the Rift.
+
+        Returns:
+            IAethericRiftConfiguration: This configuration instance.
+        """
         self.set_property("target_frame_name", frame_name)
         return self
 
@@ -157,6 +295,18 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
             self,
             space_type: Union[RiftSpaceType, str],
     ) -> "IAethericRiftConfiguration":
+        """
+        Fluent
+
+        Set the top-level room type for this Rift.
+
+        Args:
+            space_type:
+                Room-kind enum or string (`static` or `dynamic`).
+
+        Returns:
+            IAethericRiftConfiguration: This configuration instance.
+        """
         self.set_property("space_type", space_type)
         return self
 
@@ -164,6 +314,18 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
             self,
             space_name: Optional[str],
     ) -> "IAethericRiftConfiguration":
+        """
+        Fluent
+
+        Set the initial room name for this Rift, if any.
+
+        Args:
+            space_name:
+                Optional stable room name.
+
+        Returns:
+            IAethericRiftConfiguration: This configuration instance.
+        """
         self.set_property("space_name", space_name)
         return self
 
@@ -171,6 +333,18 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
             self,
             enabled: bool = True,
     ) -> "IAethericRiftConfiguration":
+        """
+        Fluent
+
+        Set whether the Rift activates immediately when programmed.
+
+        Args:
+            enabled:
+                True to mark the Rift active during programming.
+
+        Returns:
+            IAethericRiftConfiguration: This configuration instance.
+        """
         self.set_property("auto_activate_on_program", enabled)
         return self
 
@@ -178,6 +352,18 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
             self,
             enabled: bool = True,
     ) -> "IAethericRiftConfiguration":
+        """
+        Fluent
+
+        Set whether a room should be created automatically for the Rift.
+
+        Args:
+            enabled:
+                True to auto-create the initial room.
+
+        Returns:
+            IAethericRiftConfiguration: This configuration instance.
+        """
         self.set_property("auto_create_space", enabled)
         return self
 
@@ -185,6 +371,18 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
             self,
             mode: Union[RiftValidationMode, str],
     ) -> "IAethericRiftConfiguration":
+        """
+        Fluent
+
+        Set the validation posture for this Rift.
+
+        Args:
+            mode:
+                Validation mode enum or string.
+
+        Returns:
+            IAethericRiftConfiguration: This configuration instance.
+        """
         self.set_property("validation_mode", mode)
         return self
 
@@ -192,10 +390,36 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
             self,
             event_configuration: Optional[IRiftEventConfiguration],
     ) -> "IAethericRiftConfiguration":
+        """
+        Fluent
+
+        Set the room-level event configuration to attach to this Rift.
+
+        Args:
+            event_configuration:
+                Optional event configuration object for the room layer.
+
+        Returns:
+            IAethericRiftConfiguration: This configuration instance.
+        """
         self.set_property("event_configuration", event_configuration)
         return self
 
     def _convert_enum_if_needed(self, key: str, value: object) -> object:
+        """
+        Internal
+
+        Normalize enum-backed properties before storage.
+
+        Args:
+            key:
+                Property name being assigned.
+            value:
+                Candidate property value.
+
+        Returns:
+            object: Normalized property value.
+        """
         if key == "space_type":
             return EnumHelpers.convert_enum_and_check(value, RiftSpaceType)
         if key == "validation_mode":

@@ -81,6 +81,12 @@ class AethericRift(Cleanable, IAethericRift):
 
         Idempotently cleanup room registries and references.
 
+        Contract:
+            - Clears room registries without touching canonical state ownership
+              outside the shell.
+            - Detaches the shell from its hosted system and bound state.
+            - Leaves the shell unusable after cleanup.
+
         Returns:
             None.
         """
@@ -133,7 +139,7 @@ class AethericRift(Cleanable, IAethericRift):
             str: The canonical RiftState id.
 
         Raises:
-            RuntimeError: If no state is currently bound.
+            RuntimeError: If no canonical state is currently bound.
         """
         return self.state.rift_id
 
@@ -194,6 +200,10 @@ class AethericRift(Cleanable, IAethericRift):
         Raises:
             ValueError:
                 If the state belongs to a different Rift.
+
+        Contract:
+            Binds canonical state into the shell but does not itself register
+            the shell into ARS.
         """
         self.check_cleaned()
         if state.rift_id != self._id:
@@ -219,6 +229,12 @@ class AethericRift(Cleanable, IAethericRift):
                 collides with an existing registration.
             RuntimeError:
                 If this Rift shell has not yet been programmed with state.
+
+        Contract:
+            - Requires the shell to be live.
+            - Maintains both id -> room and name -> id indexes.
+            - Sets the first registered room as active when no active room has
+              been selected yet.
         """
         self._require_live_state()
         if space.owner_rift_id != self._id:
@@ -302,6 +318,10 @@ class AethericRift(Cleanable, IAethericRift):
         Raises:
             RuntimeError: If this Rift shell has not yet been programmed with state.
             ValueError: If the requested room id is not registered.
+
+        Contract:
+            Updates both the shell's active room pointer and the canonical state
+            active room id.
         """
         self._require_live_state()
         self.get_space(space_id)
@@ -332,6 +352,9 @@ class AethericRift(Cleanable, IAethericRift):
 
         Raises:
             RuntimeError: If no canonical state is currently bound.
+
+        Contract:
+            Treats the shell as inert until canonical state is bound.
         """
         self.check_cleaned()
         if self._state is None:

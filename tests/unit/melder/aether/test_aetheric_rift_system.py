@@ -15,26 +15,24 @@ def _create_enabled_system() -> AethericRiftSystem:
         access allowed.
     """
     system = AethericRiftSystem()
-    system.configuration.with_rift_creation_enabled(True)
-    system.configuration.with_direct_rift_access(True)
-    system.configuration.with_direct_state_access(True)
-    system.enable()
+    configuration = system.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_direct_rift_access(True)
+    configuration.with_direct_state_access(True)
+    system.enable(configuration)
     return system
 
 
-def test_system_starts_disabled_with_safe_defaults() -> None:
+def test_system_starts_unconfigured_and_disabled() -> None:
     """
-    Verify the AR system starts disabled and carries the expected locked-down
-    default configuration.
+    Verify the AR system starts unconfigured and disabled.
     """
     system = AethericRiftSystem()
 
+    assert system.is_configured is False
     assert system.is_enabled is False
-    assert system.configuration.get_property("allow_rift_creation") is False
-    assert system.configuration.get_property("allow_direct_rift_access") is False
-    assert system.configuration.get_property("allow_direct_state_access") is False
-    assert system.configuration.get_property("shared_system_frame_enabled") is True
-    assert system.configuration.get_property("default_system_frame_name") == "aetheric_rift_system"
+    with pytest.raises(RuntimeError, match="not configured"):
+        _ = system.configuration
 
 
 def test_create_rift_requires_enabled_system() -> None:
@@ -42,6 +40,9 @@ def test_create_rift_requires_enabled_system() -> None:
     Verify Rift creation is blocked while the AR system is disabled.
     """
     system = AethericRiftSystem()
+    configuration = system.create_system_configuration()
+    system.enable(configuration)
+    system.disable()
 
     with pytest.raises(RuntimeError, match="disabled"):
         system.create_rift(rift_name="alpha")
@@ -52,7 +53,9 @@ def test_create_rift_requires_creation_permission() -> None:
     Verify enabling the AR system alone does not open Rift creation.
     """
     system = AethericRiftSystem()
-    system.enable()
+    configuration = system.create_system_configuration()
+    configuration.with_rift_creation_enabled(False)
+    system.enable(configuration)
 
     with pytest.raises(ValueError, match="creation is disabled"):
         system.create_rift(rift_name="alpha")
@@ -85,6 +88,8 @@ def test_create_rift_configuration_uses_system_defaults() -> None:
     Verify per-Rift configuration derives from the installed system defaults.
     """
     system = AethericRiftSystem()
+    configuration = system.create_system_configuration()
+    system.enable(configuration)
     config = system.create_rift_configuration()
 
     assert config.get_property("target_frame_name") == "default"
@@ -133,11 +138,12 @@ def test_state_access_can_be_token_gated() -> None:
     creation.
     """
     system = AethericRiftSystem()
-    system.configuration.with_rift_creation_enabled(True)
-    system.configuration.with_direct_state_access(True)
-    system.configuration.with_state_access_token_required(True)
-    system.configuration.with_state_access_token("secret")
-    system.enable()
+    configuration = system.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_direct_state_access(True)
+    configuration.with_state_access_token_required(True)
+    configuration.with_state_access_token("secret")
+    system.enable(configuration)
 
     rift = system.create_rift(rift_name="alpha")
 
@@ -153,11 +159,12 @@ def test_rift_access_can_be_token_gated() -> None:
     creation.
     """
     system = AethericRiftSystem()
-    system.configuration.with_rift_creation_enabled(True)
-    system.configuration.with_direct_rift_access(True)
-    system.configuration.with_rift_access_token_required(True)
-    system.configuration.with_rift_access_token("secret")
-    system.enable()
+    configuration = system.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_direct_rift_access(True)
+    configuration.with_rift_access_token_required(True)
+    configuration.with_rift_access_token("secret")
+    system.enable(configuration)
 
     rift = system.create_rift(rift_name="alpha")
 
@@ -173,11 +180,12 @@ def test_target_frame_allow_and_deny_lists_are_enforced() -> None:
     deny precedence.
     """
     system = AethericRiftSystem()
-    system.configuration.with_rift_creation_enabled(True)
-    system.configuration.with_target_frame_override(True)
-    system.configuration.with_allowed_target_frame_names(("default", "ops"))
-    system.configuration.with_denied_target_frame_names(("ops",))
-    system.enable()
+    configuration = system.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_target_frame_override(True)
+    configuration.with_allowed_target_frame_names(("default", "ops"))
+    configuration.with_denied_target_frame_names(("ops",))
+    system.enable(configuration)
 
     blocked_config = system.create_rift_configuration().with_target_frame_name("ops")
     with pytest.raises(ValueError, match="denied"):
@@ -198,16 +206,17 @@ def test_shared_and_isolated_system_frame_names_are_assigned() -> None:
     """
     shared_system = _create_enabled_system()
     shared_rift = shared_system.create_rift(rift_name="shared")
-    assert shared_rift.state.system_frame_name == "aetheric_rift_system"
+    assert shared_rift.state.system_frame_name == "aetheric_frame_system"
 
     isolated_system = AethericRiftSystem()
-    isolated_system.configuration.with_rift_creation_enabled(True)
-    isolated_system.configuration.with_direct_rift_access(True)
-    isolated_system.configuration.with_direct_state_access(True)
-    isolated_system.configuration.with_shared_system_frame_enabled(False)
-    isolated_system.configuration.with_max_system_frame_count(2)
-    isolated_system.enable()
+    configuration = isolated_system.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_direct_rift_access(True)
+    configuration.with_direct_state_access(True)
+    configuration.with_system_frame_mode("one_per_workspace")
+    configuration.with_max_system_frame_count(2)
+    isolated_system.enable(configuration)
 
     isolated_rift = isolated_system.create_rift(rift_name="isolated")
-    assert isolated_rift.state.system_frame_name.startswith("aetheric_rift:")
+    assert isolated_rift.state.system_frame_name.startswith("aetheric_frame_system:")
     assert isolated_rift.state.system_frame_name.endswith(isolated_rift.id)

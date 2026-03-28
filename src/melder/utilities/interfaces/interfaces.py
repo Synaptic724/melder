@@ -5139,6 +5139,10 @@ class IAethericRiftSystemConfiguration(ICleanable, Protocol):
     def frozen(self) -> bool:
         ...
 
+    @property
+    def id(self) -> str:
+        ...
+
     def set_property(self, key: str, value: object) -> None:
         ...
 
@@ -5199,16 +5203,16 @@ class IAethericRiftSystemConfiguration(ICleanable, Protocol):
     def with_allow_nested_rift_creation(self, enabled: bool = True) -> "IAethericRiftSystemConfiguration":
         ...
 
-    def with_shared_system_frame_enabled(self, enabled: bool = True) -> "IAethericRiftSystemConfiguration":
+    def with_max_active_rift_count(self, count: int) -> "IAethericRiftSystemConfiguration":
+        ...
+
+    def with_system_frame_mode(self, mode: object) -> "IAethericRiftSystemConfiguration":
         ...
 
     def with_default_system_frame_name(self, frame_name: str) -> "IAethericRiftSystemConfiguration":
         ...
 
-    def with_isolated_system_frame_name_prefix(self, prefix: str) -> "IAethericRiftSystemConfiguration":
-        ...
-
-    def with_auto_create_system_frame(self, enabled: bool = True) -> "IAethericRiftSystemConfiguration":
+    def with_auto_create_system_frames(self, enabled: bool = True) -> "IAethericRiftSystemConfiguration":
         ...
 
     def with_max_system_frame_count(self, count: int) -> "IAethericRiftSystemConfiguration":
@@ -5449,6 +5453,10 @@ class IAethericRiftSystem(ICleanable, Protocol):
 
     @property
     def configuration(self) -> IAethericRiftSystemConfiguration:
+        ...
+
+    @property
+    def is_configured(self) -> bool:
         ...
 
     @property
@@ -5713,6 +5721,12 @@ class IAether(ICleanable, Protocol):
     def _get_aetheric_rift_system_configuration(self) -> IAethericRiftSystemConfiguration:
         """
         Returns the hosted AethericRiftSystemConfiguration.
+        """
+        ...
+
+    def _is_aetheric_rift_system_configured(self) -> bool:
+        """
+        Returns whether the hosted AethericRiftSystem has an installed configuration.
         """
         ...
 

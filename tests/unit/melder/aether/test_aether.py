@@ -95,6 +95,7 @@ def test_initialization_creates_default_frame(mock_frame_cls):
     mock_frame_cls.assert_called_with("default")
     assert a._default_frame is mock_frame_cls.return_value
     assert isinstance(a._get_aetheric_rift_system(), AethericRiftSystem)
+    assert a._is_aetheric_rift_system_configured() is False
     assert a._is_aetheric_rift_system_enabled() is False
 
 def test_cleanup_clears_state(aether_with_mocks):
@@ -279,7 +280,7 @@ def test_rift_facade_delegates_to_hosted_system(aether_with_mocks):
     Verify Aether hosts the AR system and delegates Rift registry access to it.
     """
     a = aether_with_mocks
-    system_config = a._get_aetheric_rift_system_configuration()
+    system_config = a._create_aetheric_rift_system_configuration()
     system_config.with_rift_creation_enabled(True)
     system_config.with_direct_rift_access(True)
     system_config.with_direct_state_access(True)
@@ -303,7 +304,7 @@ def test_rift_facade_delegates_to_hosted_system(aether_with_mocks):
 
 def test_rift_facade_can_program_external_shell(aether_with_mocks):
     a = aether_with_mocks
-    system_config = a._get_aetheric_rift_system_configuration()
+    system_config = a._create_aetheric_rift_system_configuration()
     system_config.with_rift_creation_enabled(True)
     system_config.with_allow_external_rift_registration(True)
     a._enable_aetheric_rift_system()
@@ -317,7 +318,7 @@ def test_rift_facade_can_program_external_shell(aether_with_mocks):
 
 def test_rift_facade_can_create_state_for_external_programming(aether_with_mocks):
     a = aether_with_mocks
-    system_config = a._get_aetheric_rift_system_configuration()
+    system_config = a._create_aetheric_rift_system_configuration()
     system_config.with_rift_creation_enabled(True)
     a._enable_aetheric_rift_system()
     rift = AethericRift(a._get_aetheric_rift_system(), rift_name="alpha")
@@ -334,22 +335,35 @@ def test_rift_facade_can_create_state_for_external_programming(aether_with_mocks
     assert "alpha" in system._rift_ids_by_name
 
 
-def test_aether_returns_system_configuration_and_per_rift_configuration(aether_with_mocks):
+def test_aether_requires_configuration_before_returning_system_configuration(aether_with_mocks):
     a = aether_with_mocks
 
-    system_config = a._get_aetheric_rift_system_configuration()
-    fresh_system_config = a._create_aetheric_rift_system_configuration()
+    assert a._is_aetheric_rift_system_configured() is False
+    with pytest.raises(RuntimeError, match="not configured"):
+        a._get_aetheric_rift_system_configuration()
+
+    system_config = a._create_aetheric_rift_system_configuration()
+
+    assert a._is_aetheric_rift_system_configured() is False
+    assert system_config.get_property("allow_rift_creation") is True
+    assert system_config.get_property("system_frame_mode").value == "single"
+    assert system_config.get_property("default_system_frame_name") == "aetheric_frame_system"
+
+
+def test_aether_can_create_per_rift_configuration_after_system_is_configured(aether_with_mocks):
+    a = aether_with_mocks
+    system_config = a._create_aetheric_rift_system_configuration()
+
+    a._enable_aetheric_rift_system(system_config)
     rift_config = a._create_rift_configuration()
 
-    assert system_config.get_property("allow_rift_creation") is False
-    assert fresh_system_config.get_property("shared_system_frame_enabled") is True
     assert rift_config.get_property("target_frame_name") == "default"
     assert rift_config.get_property("auto_activate_on_program") is True
 
 
 def test_state_access_token_can_be_enforced_through_aether(aether_with_mocks):
     a = aether_with_mocks
-    system_config = a._get_aetheric_rift_system_configuration()
+    system_config = a._create_aetheric_rift_system_configuration()
     system_config.with_rift_creation_enabled(True)
     system_config.with_direct_state_access(True)
     system_config.with_state_access_token_required(True)
@@ -369,12 +383,14 @@ def test_aether_can_enable_and_disable_hosted_rift_system(aether_with_mocks):
     subsystem.
     """
     a = aether_with_mocks
+    assert a._is_aetheric_rift_system_configured() is False
     assert a._is_aetheric_rift_system_enabled() is False
 
-    system_config = a._get_aetheric_rift_system_configuration()
+    system_config = a._create_aetheric_rift_system_configuration()
     system_config.with_rift_creation_enabled(True)
     a._enable_aetheric_rift_system()
 
+    assert a._is_aetheric_rift_system_configured() is True
     assert a._is_aetheric_rift_system_enabled() is True
 
     a._disable_aetheric_rift_system()

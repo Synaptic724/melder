@@ -98,6 +98,11 @@ class AethericRiftState(Cleanable, IAethericRiftState):
 
         Idempotently cleanup the canonical state container.
 
+        Contract:
+            - Cleans the owned per-Rift configuration first.
+            - Clears canonical identifiers, lifecycle flags, and metadata.
+            - Leaves the state object unusable after cleanup.
+
         Returns:
             None.
         """
@@ -149,6 +154,10 @@ class AethericRiftState(Cleanable, IAethericRiftState):
         Purpose:
             Return the canonical per-Rift configuration.
 
+        Contract:
+            The returned configuration is the owned, canonical configuration
+            used to build this Rift state.
+
         Returns:
             IAethericRiftConfiguration: The owned per-Rift configuration object.
         """
@@ -161,6 +170,10 @@ class AethericRiftState(Cleanable, IAethericRiftState):
         Purpose:
             Return the internal AR system frame anchor name for this Rift.
 
+        Contract:
+            This is the ARS-owned internal frame associated with this Rift's
+            runtime substrate, not the user-facing target frame.
+
         Returns:
             str: Internal AR system frame name.
         """
@@ -172,6 +185,10 @@ class AethericRiftState(Cleanable, IAethericRiftState):
         """
         Purpose:
             Return the target frame name bound to this Rift.
+
+        Contract:
+            This is the externally targeted `AethericFrame` the Rift is working
+            against, distinct from the internal AR system frame.
 
         Returns:
             str: The target `AethericFrame` name.
@@ -257,6 +274,10 @@ class AethericRiftState(Cleanable, IAethericRiftState):
 
         Mark this canonical Rift state as registered.
 
+        Contract:
+            Sets the registration flag only. Does not implicitly activate the
+            Rift.
+
         Returns:
             None.
         """
@@ -269,6 +290,10 @@ class AethericRiftState(Cleanable, IAethericRiftState):
 
         Mark this canonical Rift state as active/live.
 
+        Contract:
+            Sets the live-state flag only. Registration must be handled
+            separately by the caller.
+
         Returns:
             None.
         """
@@ -280,6 +305,9 @@ class AethericRiftState(Cleanable, IAethericRiftState):
         Internal
 
         Mark this canonical Rift state as inactive.
+
+        Contract:
+            Clears the live-state flag without removing registration.
 
         Returns:
             None.
