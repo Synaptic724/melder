@@ -2484,6 +2484,7 @@ class Conduit(Cleanable, IConduit):
             RuntimeError: If dynamic environment is not enabled.
             TypeError: If `target_conduit` is not an `IConduit` instance.
             RuntimeError: If the target conduit does not have a valid creation context.
+            RuntimeError: If the target conduit belongs to a different `AethericFrame`.
         """
         self.check_cleaned()
         if not self.__dynamic_environment__:

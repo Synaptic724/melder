@@ -586,6 +586,7 @@ class ConduitWard(Cleanable, IConduitWard):
             RuntimeError: If the Conduit is cleaned.
             RuntimeError: If attempting to link to a lesser conduit.
             RuntimeError: If attempting to link a conduit to itself.
+            RuntimeError: If attempting to link to a conduit in a different frame.
             RuntimeError: If dynamic environment is not enabled.
             RuntimeError: If policy forbids initiating outbound links or target forbids inbound links.
         """
@@ -606,6 +607,20 @@ class ConduitWard(Cleanable, IConduitWard):
                 mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
             )
             raise RuntimeError("Cannot link a conduit to itself.")
+        if self._conduit._aetheric_frame != target_conduit._aetheric_frame:
+            self._logger.error(
+                "link: target conduit is in a different frame",
+                method_name="_link",
+                owner_id=self._id, owner_display=self._display_name,
+                mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
+            )
+            raise RuntimeError(
+                "Cannot link conduits across different AethericFrames: "
+                "{0} != {1}".format(
+                    self._conduit._aetheric_frame,
+                    target_conduit._aetheric_frame,
+                )
+            )
         if not self._dynamic:
             self._logger.error(
                 "link: non-dynamic env",

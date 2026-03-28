@@ -26,6 +26,7 @@ def _make_conduit_with_ward(
     *,
     dynamic: bool = True,
     conduit_state: ConduitState = ConduitState.normal,
+    aetheric_frame: str = "default",
 ) -> tuple[MagicMock, ConduitWard]:
     """
     Build a conduit mock and its ConduitWard for lifecycle tests.
@@ -42,6 +43,7 @@ def _make_conduit_with_ward(
     conduit._id = conduit_id
     conduit._logger = MagicMock()
     conduit._conduit_state = conduit_state
+    conduit._aetheric_frame = aetheric_frame
     conduit._spellbook = MagicMock()
     ward = ConduitWard(conduit, dynamic, conduit_state, Policies.default)
     conduit._conduit_ward = ward
@@ -54,6 +56,7 @@ def mock_conduit():
     c._id = "conduit-1"
     c._logger = MagicMock()
     c._conduit_state = ConduitState.normal
+    c._aetheric_frame = "default"
     # Circular ref often needed
     return c
 
@@ -163,9 +166,23 @@ def test_link_lesser_fails(ward):
     """Verify linking to lesser conduit via _link is forbidden."""
     target = MagicMock(spec=IConduit)
     target._conduit_state = ConduitState.lesser
+    target._aetheric_frame = "default"
     
     with pytest.raises(RuntimeError, match="lesser conduit"):
         ward._link(target)
+
+def test_link_cross_frame_fails(ward):
+    """
+    Verify peer conduit linking is rejected across different frames.
+    """
+    target_conduit = MagicMock(spec=IConduit)
+    target_conduit._id = "conduit-2"
+    target_conduit._conduit_state = ConduitState.normal
+    target_conduit._aetheric_frame = "other_frame"
+    target_conduit._logger = MagicMock()
+
+    with pytest.raises(RuntimeError, match="different AethericFrames"):
+        ward._link(target_conduit)
 
 def test_create_new_contract_success(ward):
     """
@@ -174,6 +191,7 @@ def test_create_new_contract_success(ward):
     target_conduit = MagicMock(spec=IConduit)
     target_conduit._id = "conduit-2"
     target_conduit._conduit_state = ConduitState.normal
+    target_conduit._aetheric_frame = "default"
     target_conduit._logger = MagicMock()
     
     target_ward = ConduitWard(target_conduit, True, ConduitState.normal, Policies.default)
@@ -201,6 +219,7 @@ def test_sever_link_success(ward):
     # Setup link
     target_conduit = MagicMock(spec=IConduit)
     target_conduit._id = "conduit-2"
+    target_conduit._aetheric_frame = "default"
     target_conduit._logger = MagicMock()
     target_ward = ConduitWard(target_conduit, True, ConduitState.normal, Policies.default)
     target_conduit._conduit_ward = target_ward
@@ -470,6 +489,7 @@ def test_link_fails_when_inbound_only_policy(ward):
     target_conduit = MagicMock(spec=IConduit)
     target_conduit._id = "conduit-2"
     target_conduit._conduit_state = ConduitState.normal
+    target_conduit._aetheric_frame = "default"
 
     with pytest.raises(RuntimeError, match="inbound_only"):
         ward._link(target_conduit)
@@ -481,6 +501,7 @@ def test_link_fails_when_target_outbound_only_policy(ward):
     target_conduit = MagicMock(spec=IConduit)
     target_conduit._id = "conduit-2"
     target_conduit._conduit_state = ConduitState.normal
+    target_conduit._aetheric_frame = "default"
     target_conduit._logger = MagicMock()
 
     target_ward = ConduitWard(target_conduit, True, ConduitState.normal, Policies.default)
@@ -498,6 +519,7 @@ def test_link_fails_when_non_dynamic():
     target_conduit = MagicMock(spec=IConduit)
     target_conduit._id = "conduit-2"
     target_conduit._conduit_state = ConduitState.normal
+    target_conduit._aetheric_frame = "default"
 
     with pytest.raises(RuntimeError, match="Dynamic environment is not enabled"):
         local_ward._link(target_conduit)
@@ -509,6 +531,7 @@ def test_link_returns_true_when_contract_already_exists(ward):
     target_conduit = MagicMock(spec=IConduit)
     target_conduit._id = "conduit-2"
     target_conduit._conduit_state = ConduitState.normal
+    target_conduit._aetheric_frame = "default"
     target_conduit._logger = MagicMock()
     target_ward = ConduitWard(target_conduit, True, ConduitState.normal, Policies.default)
     target_conduit._conduit_ward = target_ward
@@ -530,6 +553,7 @@ def test_link_returns_false_when_target_not_normal(ward):
     target_conduit = MagicMock(spec=IConduit)
     target_conduit._id = "conduit-2"
     target_conduit._conduit_state = ConduitState.cleaned
+    target_conduit._aetheric_frame = "default"
 
     result = ward._link(target_conduit)
 
