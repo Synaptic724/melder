@@ -293,7 +293,7 @@ class _SpellbookStub:
         Provide a spellbook stub with validator and change control access.
     Contract:
         Exposes _spell_validator, _aether, _aetheric_frame, _spells_by_id,
-        and _spell_id_pool.
+        _spell_id_pool, contracted lookup maps, and minimal configuration.
     """
 
     def __init__(
@@ -320,8 +320,10 @@ class _SpellbookStub:
         self._aetheric_frame = frame_name
         self._spells: dict[object, object] = {}
         self._contracted_spells: dict[str, dict[object, object]] = {}
+        self._lookup_contracted_spells: dict[str, dict[object, object]] = {}
         self._spells_by_id: dict[str, object] = {}
         self._spell_id_pool: dict[str, object] = {}
+        self._configuration = _ConfigurationStub()
 
     @property
     def spells(self) -> dict[object, object]:
@@ -330,6 +332,33 @@ class _SpellbookStub:
     @property
     def contracted_spells(self) -> dict[str, dict[object, object]]:
         return self._contracted_spells
+
+
+class _ConfigurationStub:
+    """
+    Purpose:
+        Provide a minimal configuration surface for SpellCrafter unit tests.
+    Contract:
+        Exposes `get_property(...)` for the specific keys used by the tested
+        SpellCrafter fast-key code paths.
+    """
+
+    def get_property(self, key: str) -> object:
+        """
+        Purpose:
+            Return a stable property value for the requested key.
+        Contract:
+            Supports the minimal key set required by SpellCrafter unit tests.
+        Args:
+            key: Configuration property name.
+        Returns:
+            object: Stored test property value.
+        Raises:
+            KeyError: If the property is not supported by this stub.
+        """
+        if key == "system_state":
+            return "dynamic"
+        raise KeyError(key)
 
 
 class _SpellSystemStateStub:
@@ -634,10 +663,24 @@ class _SpellStub:
         self._spell_system_states = spell_system_states
         self._owner_conduit_id = owner_conduit_id
         self._crafter = None
+        self._mutation_override = None
         self.is_existing_creation = False
         self.dependencies: list[str] = []
         if include_dependency_graph:
             self.dependency_graph = dependency_graph
+
+    @property
+    def mutation_override(self) -> object | None:
+        """
+        Purpose:
+            Return the current mutation override payload for this spell stub.
+        Contract:
+            Mirrors the production spell surface used by the Phase 8 fast-key
+            builder.
+        Returns:
+            object | None: Stored mutation override payload, if any.
+        """
+        return self._mutation_override
 
     def _ensure_crafter(self) -> SpellCrafter:
         if self._crafter is None:

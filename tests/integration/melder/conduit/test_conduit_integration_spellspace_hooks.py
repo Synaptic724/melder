@@ -107,7 +107,7 @@ def test_conduit_hooks_fire_for_meld_link_contract_and_cleanup() -> None:
     Purpose:
         Validate Conduit hook wiring for meld, link/unlink, contracts, and cleanup.
     Contract:
-        - Meld hooks fire for both Conduit and Meld layers.
+        - Meld hooks fire through the configured Meld hook layer.
         - Link/unlink hooks fire on the calling conduit.
         - Contract hooks fire on the contracting conduit.
         - Cleanup hooks fire on the conduit that registered them.
@@ -271,8 +271,8 @@ def test_conduit_hooks_fire_for_meld_link_contract_and_cleanup() -> None:
         borrower.cleanup()
         owner.cleanup()
 
-    assert len(meld_pre_calls) == 2
-    assert len(meld_post_calls) == 2
+    assert len(meld_pre_calls) == 1
+    assert len(meld_post_calls) == 1
     assert len(link_calls) == 1
     assert len(unlink_calls) == 1
     assert len(contract_created_calls) == 1
