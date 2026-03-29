@@ -1,4 +1,0 @@
-"""
-Internal AethericRift model package.
-"""
-

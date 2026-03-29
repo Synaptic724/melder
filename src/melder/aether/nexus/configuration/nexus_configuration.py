@@ -2,25 +2,25 @@ import threading
 from typing import Dict, Optional, Sequence, Tuple, Type, Union
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.aetheric_rift_system.configuration.aetheric_rift_system_frame_mode import (
-    AethericRiftSystemFrameMode,
+from melder.aether.nexus.configuration.nexus_frame_mode import (
+    NexusFrameMode,
 )
-from melder.aether.aetheric_rift_system.configuration.rift_space_type import RiftSpaceType
-from melder.aether.aetheric_rift_system.configuration.rift_validation_mode import RiftValidationMode
+from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
+from melder.aether.nexus.configuration.rift_validation_mode import RiftValidationMode
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import IAethericRiftSystemConfiguration
+from melder.utilities.interfaces.interfaces import INexusConfiguration
 
 
-class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguration):
+class NexusConfiguration(Cleanable, INexusConfiguration):
     """
     Internal
 
-    Process-wide configuration for the hosted `AethericRiftSystem`.
+    Process-wide configuration for `Nexus`.
 
     Purpose:
-        Hold central ARS governance and default-programming behavior without
+        Hold central Nexus governance and default-programming behavior without
         pushing per-Rift room/history semantics up into the process-wide layer.
 
     Contract:
@@ -31,9 +31,9 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
         - Once finalized, property mutation is disallowed.
 
     Lifecycle:
-        Owned by `Aether` / `AethericRiftSystem` when a user explicitly engages
-        ARS and installs a configuration. Cleanup clears all stored properties
-        and freezes the object permanently.
+        Owned by `Nexus` once a user explicitly engages it and installs a
+        configuration. Cleanup clears all stored properties and freezes the
+        object permanently.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -49,7 +49,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
         """
         Internal
 
-        Initialize an empty AR system configuration.
+        Initialize an empty Nexus configuration.
 
         Returns:
             None.
@@ -72,7 +72,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
             "allow_external_rift_registration": bool,
             "allow_nested_rift_creation": bool,
             "max_active_rift_count": int,
-            "system_frame_mode": AethericRiftSystemFrameMode,
+            "system_frame_mode": NexusFrameMode,
             "default_system_frame_name": str,
             "auto_create_system_frames": bool,
             "max_system_frame_count": int,
@@ -167,9 +167,9 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
         """
         self.check_cleaned()
         if self._frozen:
-            raise RuntimeError("Cannot modify AethericRiftSystemConfiguration after freeze().")
+            raise RuntimeError("Cannot modify NexusConfiguration after freeze().")
         if key not in self.available_properties:
-            raise ValueError("Unknown AethericRiftSystemConfiguration property: '{0}'.".format(key))
+            raise ValueError("Unknown NexusConfiguration property: '{0}'.".format(key))
 
         expected_type = self.available_properties[key]
         converted_value = self._convert_property_value_if_needed(key, value)
@@ -232,7 +232,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
         """
         Internal
 
-        Load the standard default property set for ARS master-user engagement.
+        Load the standard default property set for Nexus master-user engagement.
 
         Contract:
             - Populates every required system-governance field.
@@ -257,7 +257,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
             "allow_external_rift_registration": True,
             "allow_nested_rift_creation": False,
             "max_active_rift_count": 0,
-            "system_frame_mode": AethericRiftSystemFrameMode.single,
+            "system_frame_mode": NexusFrameMode.single,
             "default_system_frame_name": "aetheric_frame_system",
             "auto_create_system_frames": True,
             "max_system_frame_count": 1,
@@ -319,7 +319,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
             raise ValueError("max_system_frame_count must be >= 1.")
         if max_target_frame_count < 1:
             raise ValueError("max_target_frame_count must be >= 1.")
-        if system_frame_mode == AethericRiftSystemFrameMode.single and max_system_frame_count != 1:
+        if system_frame_mode == NexusFrameMode.single and max_system_frame_count != 1:
             raise ValueError("max_system_frame_count must be 1 when system_frame_mode is single.")
         if not allow_multiple_target_frames and max_target_frame_count != 1:
             raise ValueError("max_target_frame_count must be 1 when allow_multiple_target_frames is False.")
@@ -349,38 +349,38 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
         if self._frozen:
             return
         if not self.validate():
-            raise ValueError("AethericRiftSystemConfiguration validation failed.")
+            raise ValueError("NexusConfiguration validation failed.")
         self._frozen = True
 
-    def finalize(self) -> "IAethericRiftSystemConfiguration":
+    def finalize(self) -> "INexusConfiguration":
         """
         Fluent
 
         Validate and freeze the configuration, then return `self`.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.freeze()
         return self
 
-    def build(self) -> "IAethericRiftSystemConfiguration":
+    def build(self) -> "INexusConfiguration":
         """
         Fluent alias for finalize().
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         return self.finalize()
 
-    def with_defaults(self) -> "IAethericRiftSystemConfiguration":
+    def with_defaults(self) -> "INexusConfiguration":
         """
         Fluent
 
         Load the standard AR system defaults and return `self`.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.load_default_dictionary()
         return self
@@ -388,11 +388,11 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
     def with_rift_creation_enabled(
             self,
             enabled: bool = True,
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
-        Set whether ARS may create or program new Rifts.
+        Set whether Nexus may create new Rifts.
 
         Args:
             enabled:
@@ -400,7 +400,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
                 policy gates.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("allow_rift_creation", enabled)
         return self
@@ -408,7 +408,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
     def with_creation_token_required(
             self,
             enabled: bool = True,
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
@@ -419,7 +419,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
                 True to require `creation_token_value` during creation.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("creation_token_required", enabled)
         return self
@@ -427,18 +427,18 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
     def with_creation_token(
             self,
             token_value: Optional[str],
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
-        Set the process-wide creation token value for ARS.
+        Set the process-wide creation token value for Nexus.
 
         Args:
             token_value:
                 Optional creation token string. `None` clears the token value.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("creation_token_value", token_value)
         return self
@@ -446,11 +446,11 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
     def with_direct_rift_access(
             self,
             enabled: bool = True,
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
-        Set whether callers may retrieve live Rift objects directly from ARS.
+        Set whether callers may retrieve live Rift objects directly from Nexus.
 
         Args:
             enabled:
@@ -458,7 +458,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
                 policy gates.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("allow_direct_rift_access", enabled)
         return self
@@ -466,7 +466,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
     def with_rift_access_token_required(
             self,
             enabled: bool = True,
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
@@ -478,7 +478,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
                 retrieval.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("rift_access_token_required", enabled)
         return self
@@ -486,7 +486,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
     def with_rift_access_token(
             self,
             token_value: Optional[str],
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
@@ -497,7 +497,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
                 Optional Rift-access token string. `None` clears the token.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("rift_access_token_value", token_value)
         return self
@@ -505,7 +505,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
     def with_direct_state_access(
             self,
             enabled: bool = True,
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
@@ -517,7 +517,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
                 gates.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("allow_direct_state_access", enabled)
         return self
@@ -525,7 +525,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
     def with_state_access_token_required(
             self,
             enabled: bool = True,
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
@@ -537,7 +537,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
                 retrieval.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("state_access_token_required", enabled)
         return self
@@ -545,7 +545,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
     def with_state_access_token(
             self,
             token_value: Optional[str],
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
@@ -556,7 +556,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
                 Optional state-access token string. `None` clears the token.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("state_access_token_value", token_value)
         return self
@@ -568,7 +568,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
         """
         Fluent
 
-        Set whether ARS may program externally created Rift shells.
+        Set whether Nexus may program externally created Rift shells.
 
         Args:
             enabled:
@@ -620,19 +620,19 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
 
     def with_system_frame_mode(
             self,
-            mode: Union[AethericRiftSystemFrameMode, str],
-    ) -> "IAethericRiftSystemConfiguration":
+            mode: Union[NexusFrameMode, str],
+    ) -> "INexusConfiguration":
         """
         Fluent
 
-        Set the internal ARS system-frame topology mode.
+        Set the internal Nexus system-frame topology mode.
 
         Args:
             mode:
                 Frame-topology mode enum or string.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("system_frame_mode", mode)
         return self
@@ -640,11 +640,11 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
     def with_default_system_frame_name(
             self,
             frame_name: str,
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
-        Set the default ARS-owned internal system frame name.
+        Set the default Nexus-owned internal system frame name.
 
         Args:
             frame_name:
@@ -652,7 +652,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
                 in other modes.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("default_system_frame_name", frame_name)
         return self
@@ -660,11 +660,12 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
     def with_auto_create_system_frames(
             self,
             enabled: bool = True,
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
-        Set whether `Aether` / ARS may auto-create internal system frames.
+        Set whether the runtime may auto-create internal system frames when Rift
+        activation later resolves them through `Aether`.
 
         Args:
             enabled:
@@ -672,7 +673,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
                 state creation.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("auto_create_system_frames", enabled)
         return self
@@ -680,18 +681,18 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
     def with_max_system_frame_count(
             self,
             count: int,
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
-        Set the cap on ARS-owned internal system frames.
+        Set the cap on Nexus-assigned internal system frames.
 
         Args:
             count:
                 Maximum number of internal system frames ARS may own.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("max_system_frame_count", count)
         return self
@@ -699,7 +700,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
     def with_default_target_frame_name(
             self,
             frame_name: str,
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
@@ -710,7 +711,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
                 Default target `AethericFrame` name.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("default_target_frame_name", frame_name)
         return self
@@ -718,7 +719,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
     def with_allowed_target_frame_names(
             self,
             frame_names: Sequence[str],
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
@@ -729,7 +730,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
                 Sequence of permitted target frame names.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("allowed_target_frame_names", frame_names)
         return self
@@ -737,7 +738,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
     def with_denied_target_frame_names(
             self,
             frame_names: Sequence[str],
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
@@ -748,7 +749,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
                 Sequence of denied target frame names.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("denied_target_frame_names", frame_names)
         return self
@@ -756,7 +757,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
     def with_target_frame_override(
             self,
             enabled: bool = True,
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
@@ -767,7 +768,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
                 True to allow per-Rift target-frame override requests.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("allow_target_frame_override", enabled)
         return self
@@ -775,18 +776,18 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
     def with_multiple_target_frames(
             self,
             enabled: bool = True,
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
-        Set whether ARS may target multiple external frames across its Rifts.
+        Set whether Nexus may target multiple external frames across its Rifts.
 
         Args:
             enabled:
                 True to permit more than one distinct target frame.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("allow_multiple_target_frames", enabled)
         return self
@@ -794,18 +795,18 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
     def with_max_target_frame_count(
             self,
             count: int,
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
-        Set the cap on distinct target frames ARS may use.
+        Set the cap on distinct target frames Nexus may use.
 
         Args:
             count:
                 Maximum number of distinct target frames.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("max_target_frame_count", count)
         return self
@@ -813,7 +814,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
     def with_default_space_type(
             self,
             space_type: Union[RiftSpaceType, str],
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
@@ -824,7 +825,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
                 Default room-kind enum or string.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("default_space_type", space_type)
         return self
@@ -832,7 +833,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
     def with_default_auto_activate_on_program(
             self,
             enabled: bool = True,
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
@@ -843,7 +844,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
                 True to mark new Rifts active during programming.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("default_auto_activate_on_program", enabled)
         return self
@@ -906,7 +907,7 @@ class AethericRiftSystemConfiguration(Cleanable, IAethericRiftSystemConfiguratio
             ValueError: If an enum conversion or frame-name normalization fails.
         """
         if key == "system_frame_mode":
-            return EnumHelpers.convert_enum_and_check(value, AethericRiftSystemFrameMode)
+            return EnumHelpers.convert_enum_and_check(value, NexusFrameMode)
         if key == "default_space_type":
             return EnumHelpers.convert_enum_and_check(value, RiftSpaceType)
         if key == "default_validation_mode":

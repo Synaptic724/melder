@@ -1,117 +1,152 @@
 import pytest
 
-from melder.aether.aetheric_rift_system.aetheric_rift.aetheric_rift import AethericRift
-from melder.aether.aetheric_rift_system.aetheric_rift_system import AethericRiftSystem
-from melder.aether.aetheric_rift_system.rift_space.rift_space import RiftSpace
+from melder.aether.nexus.rift.rift import Rift
+from melder.aether.nexus.configuration.rift_configuration import RiftConfiguration
+from melder.aether.nexus.nexus import Nexus
+from melder.aether.nexus.rift_space.rift_space import RiftSpace
 
 
-def _create_enabled_system() -> AethericRiftSystem:
+@pytest.fixture(autouse=True)
+def fresh_nexus() -> None:
     """
-    Create one enabled AR system with the minimal policy needed for the core
-    unit tests.
+    Reset the Nexus singleton around each test.
 
     Returns:
-        AethericRiftSystem: Enabled AR system with direct creation/Rift/state
-        access allowed.
+        None.
     """
-    system = AethericRiftSystem()
-    configuration = system.create_system_configuration()
+    Nexus._reset_singleton_for_tests()
+    yield
+    Nexus._reset_singleton_for_tests()
+
+
+def _create_enabled_nexus() -> Nexus:
+    """
+    Create one enabled Nexus with the minimal policy needed for the core unit
+    tests.
+
+    Returns:
+        Nexus: Enabled Nexus with direct creation and direct Rift access
+        allowed.
+    """
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
-    configuration.with_direct_state_access(True)
-    system.enable(configuration)
-    return system
+    nexus.enable(configuration)
+    return nexus
 
 
-def test_system_starts_unconfigured_and_disabled() -> None:
+def test_nexus_is_singleton() -> None:
     """
-    Verify the AR system starts unconfigured and disabled.
-    """
-    system = AethericRiftSystem()
+    Verify `Nexus` enforces the singleton contract.
 
-    assert system.is_configured is False
-    assert system.is_enabled is False
+    Returns:
+        None.
+    """
+    first = Nexus()
+    second = Nexus()
+
+    assert first is second
+
+
+def test_nexus_starts_unconfigured_and_disabled() -> None:
+    """
+    Verify Nexus starts unconfigured and disabled.
+
+    Returns:
+        None.
+    """
+    nexus = Nexus()
+
+    assert nexus.is_configured is False
+    assert nexus.is_enabled is False
     with pytest.raises(RuntimeError, match="not configured"):
-        _ = system.configuration
+        _ = nexus.configuration
 
 
-def test_create_rift_requires_enabled_system() -> None:
+def test_create_rift_requires_enabled_nexus() -> None:
     """
-    Verify Rift creation is blocked while the AR system is disabled.
+    Verify Rift creation is blocked while Nexus is disabled.
+
+    Returns:
+        None.
     """
-    system = AethericRiftSystem()
-    configuration = system.create_system_configuration()
-    system.enable(configuration)
-    system.disable()
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    nexus.enable(configuration)
+    nexus.disable()
 
     with pytest.raises(RuntimeError, match="disabled"):
-        system.create_rift(rift_name="alpha")
+        nexus.create_rift(rift_name="alpha")
 
 
 def test_create_rift_requires_creation_permission() -> None:
     """
-    Verify enabling the AR system alone does not open Rift creation.
+    Verify enabling Nexus alone does not open Rift creation.
+
+    Returns:
+        None.
     """
-    system = AethericRiftSystem()
-    configuration = system.create_system_configuration()
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
     configuration.with_rift_creation_enabled(False)
-    system.enable(configuration)
+    nexus.enable(configuration)
 
     with pytest.raises(ValueError, match="creation is disabled"):
-        system.create_rift(rift_name="alpha")
+        nexus.create_rift(rift_name="alpha")
 
 
-def test_create_rift_programs_shell_and_registers_state_after_enable() -> None:
+def test_create_rift_registers_live_rift_after_enable() -> None:
     """
-    Verify an enabled AR system can create, program, and register a Rift shell
-    and canonical state.
+    Verify an enabled Nexus can create and register a live Rift.
+
+    Returns:
+        None.
     """
-    system = _create_enabled_system()
-    rift = system.create_rift(rift_name="alpha")
+    nexus = _create_enabled_nexus()
+    rift = nexus.create_rift(rift_name="alpha")
 
-    assert system.has_rift(rift.id) is True
-    assert rift.has_state is True
-    assert rift.state.is_registered is True
-    assert rift.state.is_active is True
-    assert rift.state.system_frame_name == "aetheric_rift_system"
-    assert system.get_rift(rift.id) is rift
-    assert system.get_rift_state(rift.id) is rift.state
-    assert system.get_rift_by_name("alpha") is rift
-    assert system.list_rift_ids() == [rift.id]
+    assert nexus.has_rift(rift.id) is True
+    assert rift.is_registered is True
+    assert rift.is_active is True
+    assert rift.default_system_frame_name == "aetheric_frame_system"
+    assert rift.default_target_frame_name == "default"
+    assert rift.system_frame_names == ("aetheric_frame_system",)
+    assert rift.target_frame_names == ("default",)
+    assert nexus.get_rift(rift.id) is rift
+    assert nexus.get_rift_by_name("alpha") is rift
+    assert nexus.list_rift_ids() == [rift.id]
 
-    system.remove_rift(rift.id)
-    assert system.has_rift(rift.id) is False
+    nexus.remove_rift(rift.id)
+    assert nexus.has_rift(rift.id) is False
 
 
-def test_create_rift_configuration_uses_system_defaults() -> None:
+def test_create_rift_configuration_uses_nexus_defaults() -> None:
     """
-    Verify per-Rift configuration derives from the installed system defaults.
+    Verify per-Rift configuration derives from the installed Nexus defaults.
+
+    Returns:
+        None.
     """
-    system = AethericRiftSystem()
-    configuration = system.create_system_configuration()
-    system.enable(configuration)
-    config = system.create_rift_configuration()
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    nexus.enable(configuration)
+    config = nexus.create_rift_configuration()
 
     assert config.get_property("target_frame_name") == "default"
     assert config.get_property("auto_activate_on_program") is True
     assert config.get_property("auto_create_space") is False
 
 
-def test_external_shell_can_be_programmed_and_then_use_spaces() -> None:
+def test_rift_can_use_spaces_without_separate_state_object() -> None:
     """
-    Verify external shell registration still works once the AR system enables
-    creation and external registration.
+    Verify a live Rift directly owns its room registry state.
+
+    Returns:
+        None.
     """
-    system = _create_enabled_system()
-    system.configuration.with_allow_external_rift_registration(True)
-    system.enable()
-
-    rift = AethericRift(system, rift_name="alpha")
-    programmed_rift = system.register_external_rift(rift)
-
-    assert programmed_rift is rift
-    assert rift.has_state is True
-    assert rift.state.configuration.get_property("target_frame_name") == "default"
+    nexus = _create_enabled_nexus()
+    rift = nexus.create_rift(rift_name="alpha")
 
     space = RiftSpace(owner_rift_id=rift.id, space_name="main")
     rift.register_space(space)
@@ -121,102 +156,166 @@ def test_external_shell_can_be_programmed_and_then_use_spaces() -> None:
     assert rift.active_space_id == space.space_id
 
 
-def test_inert_rift_cannot_access_room_operations() -> None:
-    """
-    Verify an unprogrammed Rift shell remains inert.
-    """
-    system = AethericRiftSystem()
-    rift = AethericRift(system, rift_name="alpha")
-
-    with pytest.raises(RuntimeError, match="inert until state is bound"):
-        rift.list_space_ids()
-
-
-def test_state_access_can_be_token_gated() -> None:
-    """
-    Verify direct canonical state retrieval can be token-gated independently of
-    creation.
-    """
-    system = AethericRiftSystem()
-    configuration = system.create_system_configuration()
-    configuration.with_rift_creation_enabled(True)
-    configuration.with_direct_state_access(True)
-    configuration.with_state_access_token_required(True)
-    configuration.with_state_access_token("secret")
-    system.enable(configuration)
-
-    rift = system.create_rift(rift_name="alpha")
-
-    with pytest.raises(ValueError, match="Valid state access token"):
-        system.get_rift_state(rift.id)
-
-    assert system.get_rift_state(rift.id, access_token="secret") is rift.state
-
-
-def test_rift_access_can_be_token_gated() -> None:
+def test_direct_rift_access_can_be_token_gated() -> None:
     """
     Verify direct live-Rift retrieval can be token-gated independently of
     creation.
+
+    Returns:
+        None.
     """
-    system = AethericRiftSystem()
-    configuration = system.create_system_configuration()
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_rift_access_token_required(True)
     configuration.with_rift_access_token("secret")
-    system.enable(configuration)
+    nexus.enable(configuration)
 
-    rift = system.create_rift(rift_name="alpha")
+    rift = nexus.create_rift(rift_name="alpha")
 
     with pytest.raises(ValueError, match="Valid Rift access token"):
-        system.get_rift(rift.id)
+        nexus.get_rift(rift.id)
 
-    assert system.get_rift(rift.id, access_token="secret") is rift
+    assert nexus.get_rift(rift.id, access_token="secret") is rift
 
 
 def test_target_frame_allow_and_deny_lists_are_enforced() -> None:
     """
     Verify target-frame governance uses allow-list and deny-list policy with
     deny precedence.
+
+    Returns:
+        None.
     """
-    system = AethericRiftSystem()
-    configuration = system.create_system_configuration()
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_target_frame_override(True)
     configuration.with_allowed_target_frame_names(("default", "ops"))
     configuration.with_denied_target_frame_names(("ops",))
-    system.enable(configuration)
+    nexus.enable(configuration)
 
-    blocked_config = system.create_rift_configuration().with_target_frame_name("ops")
+    blocked_config = nexus.create_rift_configuration().with_target_frame_name("ops")
     with pytest.raises(ValueError, match="denied"):
-        system.create_rift(configuration=blocked_config, rift_name="blocked")
+        nexus.create_rift(configuration=blocked_config, rift_name="blocked")
 
-    system.configuration.with_denied_target_frame_names(tuple())
-    system.enable()
-    allowed_config = system.create_rift_configuration().with_target_frame_name("ops")
-    rift = system.create_rift(configuration=allowed_config, rift_name="allowed")
+    replacement_configuration = nexus.create_system_configuration()
+    replacement_configuration.with_rift_creation_enabled(True)
+    replacement_configuration.with_target_frame_override(True)
+    replacement_configuration.with_allowed_target_frame_names(("default", "ops"))
+    replacement_configuration.with_denied_target_frame_names(tuple())
+    nexus.enable(replacement_configuration)
+    allowed_config = nexus.create_rift_configuration().with_target_frame_name("ops")
+    rift = nexus.create_rift(configuration=allowed_config, rift_name="allowed")
 
-    assert rift.state.target_frame_name == "ops"
+    assert rift.target_frame_names == ("ops",)
+    assert rift.default_target_frame_name == "ops"
 
 
 def test_shared_and_isolated_system_frame_names_are_assigned() -> None:
     """
-    Verify the system-frame topology settings shape the canonical state anchor
-    name correctly.
-    """
-    shared_system = _create_enabled_system()
-    shared_rift = shared_system.create_rift(rift_name="shared")
-    assert shared_rift.state.system_frame_name == "aetheric_frame_system"
+    Verify system-frame topology settings shape the Rift's assigned internal
+    frame names correctly.
 
-    isolated_system = AethericRiftSystem()
-    configuration = isolated_system.create_system_configuration()
+    Returns:
+        None.
+    """
+    shared_nexus = _create_enabled_nexus()
+    shared_rift = shared_nexus.create_rift(rift_name="shared")
+    assert shared_rift.default_system_frame_name == "aetheric_frame_system"
+
+    isolated_nexus = Nexus()
+    configuration = isolated_nexus.create_system_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
-    configuration.with_direct_state_access(True)
     configuration.with_system_frame_mode("one_per_workspace")
     configuration.with_max_system_frame_count(2)
-    isolated_system.enable(configuration)
+    isolated_nexus.enable(configuration)
 
-    isolated_rift = isolated_system.create_rift(rift_name="isolated")
-    assert isolated_rift.state.system_frame_name.startswith("aetheric_frame_system:")
-    assert isolated_rift.state.system_frame_name.endswith(isolated_rift.id)
+    isolated_rift = isolated_nexus.create_rift(rift_name="isolated")
+    assert isolated_rift.default_system_frame_name.startswith("aetheric_frame_system:")
+    assert isolated_rift.default_system_frame_name.endswith(isolated_rift.id)
+    assert isolated_rift.system_frame_names == (isolated_rift.default_system_frame_name,)
+
+
+def test_direct_rift_construction_is_not_the_normal_registry_path() -> None:
+    """
+    Verify directly constructing a Rift does not register it automatically.
+
+    Returns:
+        None.
+    """
+    nexus = _create_enabled_nexus()
+    configuration = nexus.create_rift_configuration()
+    configuration.finalize()
+    rift = Rift(
+        nexus,
+        configuration=configuration,
+        system_frame_names=("aetheric_frame_system",),
+        default_system_frame_name="aetheric_frame_system",
+        target_frame_names=("default",),
+        default_target_frame_name="default",
+        rift_name="manual",
+    )
+
+    assert nexus.has_rift(rift.id) is False
+    assert rift.is_registered is False
+
+
+def test_direct_rift_construction_requires_configured_enabled_nexus() -> None:
+    """
+    Verify direct Rift construction fails fast unless Nexus is configured and
+    enabled.
+
+    Returns:
+        None.
+    """
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    rift_configuration = RiftConfiguration().with_defaults().finalize()
+
+    with pytest.raises(RuntimeError, match="configured Nexus"):
+        Rift(
+            nexus,
+            configuration=rift_configuration,
+            system_frame_names=("aetheric_frame_system",),
+            default_system_frame_name="aetheric_frame_system",
+            target_frame_names=("default",),
+            default_target_frame_name="default",
+            rift_name="manual",
+        )
+
+    nexus.enable(configuration)
+    nexus.disable()
+    with pytest.raises(RuntimeError, match="enabled Nexus"):
+        Rift(
+            nexus,
+            configuration=rift_configuration,
+            system_frame_names=("aetheric_frame_system",),
+            default_system_frame_name="aetheric_frame_system",
+            target_frame_names=("default",),
+            default_target_frame_name="default",
+            rift_name="manual",
+        )
+
+
+def test_direct_rift_construction_requires_nexus_argument() -> None:
+    """
+    Verify direct Rift construction fails if no Nexus is passed in.
+
+    Returns:
+        None.
+    """
+    configuration = RiftConfiguration().with_defaults().finalize()
+
+    with pytest.raises(TypeError, match="nexus cannot be None"):
+        Rift(
+            None,
+            configuration=configuration,
+            system_frame_names=("aetheric_frame_system",),
+            default_system_frame_name="aetheric_frame_system",
+            target_frame_names=("default",),
+            default_target_frame_name="default",
+            rift_name="manual",
+        )

@@ -2,24 +2,23 @@ import threading
 from typing import Dict, Optional, Tuple, Type, Union
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.aetheric_rift_system.configuration.rift_space_type import RiftSpaceType
-from melder.aether.aetheric_rift_system.configuration.rift_validation_mode import RiftValidationMode
+from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
+from melder.aether.nexus.configuration.rift_validation_mode import RiftValidationMode
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import IAethericRiftConfiguration, IRiftEventConfiguration
+from melder.utilities.interfaces.interfaces import IRiftConfiguration, IRiftEventConfiguration
 
 
-class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
+class RiftConfiguration(Cleanable, IRiftConfiguration):
     """
     Internal
 
-    Per-Rift configuration object used by the AR system to build/program one
-    canonical Rift state.
+    Per-Rift configuration object used by `Nexus` to build one live Rift.
 
     Purpose:
         Capture configurable runtime behavior for one Rift without making the
-        public Rift shell itself the configuration root.
+        live public `Rift` object itself the configuration root.
 
     Contract:
         - Mutable until frozen.
@@ -27,7 +26,7 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
         - Provides fluent `with_*` helpers mirroring the Spellbook
           configuration style.
         - Captures per-Rift runtime defaults only; process-wide governance lives
-          in `AethericRiftSystemConfiguration`.
+          in `NexusConfiguration`.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -129,9 +128,9 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
         """
         self.check_cleaned()
         if self._frozen:
-            raise RuntimeError("Cannot modify AethericRiftConfiguration after freeze().")
+            raise RuntimeError("Cannot modify RiftConfiguration after freeze().")
         if key not in self.available_properties:
-            raise ValueError(f"Unknown AethericRiftConfiguration property: '{key}'.")
+            raise ValueError(f"Unknown RiftConfiguration property: '{key}'.")
 
         expected_type = self.available_properties[key]
         converted_value = self._convert_enum_if_needed(key, value)
@@ -187,7 +186,7 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
 
         Contract:
             - Sets default target frame, room type, activation posture, and
-              validation mode used when ARS builds a Rift without overrides.
+              validation mode used when Nexus builds a Rift without overrides.
 
         Returns:
             None.
@@ -239,43 +238,43 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
         if self._frozen:
             return
         if not self.validate():
-            raise ValueError("AethericRiftConfiguration validation failed.")
+            raise ValueError("RiftConfiguration validation failed.")
         self._frozen = True
 
-    def finalize(self) -> "IAethericRiftConfiguration":
+    def finalize(self) -> "IRiftConfiguration":
         """
         Fluent
 
         Validate and freeze the configuration, then return `self`.
 
         Returns:
-            IAethericRiftConfiguration: This configuration instance.
+            IRiftConfiguration: This configuration instance.
         """
         self.freeze()
         return self
 
-    def build(self) -> "IAethericRiftConfiguration":
+    def build(self) -> "IRiftConfiguration":
         """
         Fluent alias for finalize().
 
         Returns:
-            IAethericRiftConfiguration: This configuration instance.
+            IRiftConfiguration: This configuration instance.
         """
         return self.finalize()
 
-    def with_defaults(self) -> "IAethericRiftConfiguration":
+    def with_defaults(self) -> "IRiftConfiguration":
         """
         Fluent
 
         Load the standard per-Rift defaults and return `self`.
 
         Returns:
-            IAethericRiftConfiguration: This configuration instance.
+            IRiftConfiguration: This configuration instance.
         """
         self.load_default_dictionary()
         return self
 
-    def with_target_frame_name(self, frame_name: str) -> "IAethericRiftConfiguration":
+    def with_target_frame_name(self, frame_name: str) -> "IRiftConfiguration":
         """
         Fluent
 
@@ -286,7 +285,7 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
                 Target `AethericFrame` name to expose through the Rift.
 
         Returns:
-            IAethericRiftConfiguration: This configuration instance.
+            IRiftConfiguration: This configuration instance.
         """
         self.set_property("target_frame_name", frame_name)
         return self
@@ -294,7 +293,7 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
     def with_space_type(
             self,
             space_type: Union[RiftSpaceType, str],
-    ) -> "IAethericRiftConfiguration":
+    ) -> "IRiftConfiguration":
         """
         Fluent
 
@@ -305,7 +304,7 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
                 Room-kind enum or string (`static` or `dynamic`).
 
         Returns:
-            IAethericRiftConfiguration: This configuration instance.
+            IRiftConfiguration: This configuration instance.
         """
         self.set_property("space_type", space_type)
         return self
@@ -313,7 +312,7 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
     def with_space_name(
             self,
             space_name: Optional[str],
-    ) -> "IAethericRiftConfiguration":
+    ) -> "IRiftConfiguration":
         """
         Fluent
 
@@ -324,7 +323,7 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
                 Optional stable room name.
 
         Returns:
-            IAethericRiftConfiguration: This configuration instance.
+            IRiftConfiguration: This configuration instance.
         """
         self.set_property("space_name", space_name)
         return self
@@ -332,7 +331,7 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
     def with_auto_activate_on_program(
             self,
             enabled: bool = True,
-    ) -> "IAethericRiftConfiguration":
+    ) -> "IRiftConfiguration":
         """
         Fluent
 
@@ -343,7 +342,7 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
                 True to mark the Rift active during programming.
 
         Returns:
-            IAethericRiftConfiguration: This configuration instance.
+            IRiftConfiguration: This configuration instance.
         """
         self.set_property("auto_activate_on_program", enabled)
         return self
@@ -351,7 +350,7 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
     def with_auto_create_space(
             self,
             enabled: bool = True,
-    ) -> "IAethericRiftConfiguration":
+    ) -> "IRiftConfiguration":
         """
         Fluent
 
@@ -362,7 +361,7 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
                 True to auto-create the initial room.
 
         Returns:
-            IAethericRiftConfiguration: This configuration instance.
+            IRiftConfiguration: This configuration instance.
         """
         self.set_property("auto_create_space", enabled)
         return self
@@ -370,7 +369,7 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
     def with_validation_mode(
             self,
             mode: Union[RiftValidationMode, str],
-    ) -> "IAethericRiftConfiguration":
+    ) -> "IRiftConfiguration":
         """
         Fluent
 
@@ -381,7 +380,7 @@ class AethericRiftConfiguration(Cleanable, IAethericRiftConfiguration):
                 Validation mode enum or string.
 
         Returns:
-            IAethericRiftConfiguration: This configuration instance.
+            IRiftConfiguration: This configuration instance.
         """
         self.set_property("validation_mode", mode)
         return self

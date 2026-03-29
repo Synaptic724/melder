@@ -4,17 +4,17 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import IRiftEventConfiguration, IRiftSpace
-from melder.aether.aetheric_rift_system.rift_space.rift_event_configuration import RiftEventConfiguration
+from melder.aether.nexus.rift_space.rift_event_configuration import RiftEventConfiguration
 
 
 class RiftSpace(Cleanable, IRiftSpace):
     """
     Internal
 
-    Base room/workspace class for AethericRift.
+    Base room/workspace class for `Rift`.
 
     Purpose:
-        Provide the base room/workspace contract for AethericRift.
+        Provide the base room/workspace contract for `Rift`.
 
     Contract:
         - Owns stable room identity and room-local metadata.
@@ -26,7 +26,7 @@ class RiftSpace(Cleanable, IRiftSpace):
           checkpoints, or disposition semantics.
 
     Lifecycle:
-        Owned by an `AethericRift`. Cleanup clears room-local fields and cleans
+        Owned by a `Rift`. Cleanup clears room-local fields and cleans
         the attached `RiftEventConfiguration`.
     """
 

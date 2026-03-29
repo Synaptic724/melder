@@ -1,7 +1,7 @@
 from typing import Dict, Optional
 
-from melder.aether.aetheric_rift_system.rift_space.rift_event_configuration import RiftEventConfiguration
-from melder.aether.aetheric_rift_system.rift_space.rift_space import RiftSpace
+from melder.aether.nexus.rift_space.rift_event_configuration import RiftEventConfiguration
+from melder.aether.nexus.rift_space.rift_space import RiftSpace
 from melder.utilities.interfaces.interfaces import IStaticRiftSpace, IRiftEventConfiguration
 
 

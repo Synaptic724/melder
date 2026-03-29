@@ -1,4 +1,0 @@
-"""
-Internal AethericRift configuration package.
-"""
-

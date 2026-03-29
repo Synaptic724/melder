@@ -5249,6 +5249,9 @@ class IAethericRiftSystemConfiguration(ICleanable, Protocol):
         ...
 
 
+INexusConfiguration = IAethericRiftSystemConfiguration
+
+
 @runtime_checkable
 class IAethericRiftConfiguration(ICleanable, Protocol):
     """
@@ -5285,6 +5288,9 @@ class IAethericRiftConfiguration(ICleanable, Protocol):
 
     def with_defaults(self) -> "IAethericRiftConfiguration":
         ...
+
+
+IRiftConfiguration = IAethericRiftConfiguration
 
 
 @runtime_checkable
@@ -5335,7 +5341,7 @@ class IDynamicRiftSpace(IRiftSpace, Protocol):
 @runtime_checkable
 class IAethericRiftState(ICleanable, Protocol):
     """
-    Interface for canonical Rift state.
+    Interface for legacy/internal canonical Rift-state records.
     """
 
     @property
@@ -5395,7 +5401,7 @@ class IAethericRiftState(ICleanable, Protocol):
 @runtime_checkable
 class IAethericRift(ICleanable, Protocol):
     """
-    Interface for the public Rift shell/runtime object.
+    Interface for the public live Rift runtime object.
     """
 
     @property
@@ -5407,7 +5413,27 @@ class IAethericRift(ICleanable, Protocol):
         ...
 
     @property
-    def rift_state_id(self) -> str:
+    def configuration(self) -> IAethericRiftConfiguration:
+        ...
+
+    @property
+    def system_frame_names(self) -> Tuple[str, ...]:
+        ...
+
+    @property
+    def default_system_frame_name(self) -> str:
+        ...
+
+    @property
+    def target_frame_names(self) -> Tuple[str, ...]:
+        ...
+
+    @property
+    def default_target_frame_name(self) -> str:
+        ...
+
+    @property
+    def local_conduit_id(self) -> Optional[str]:
         ...
 
     @property
@@ -5415,14 +5441,24 @@ class IAethericRift(ICleanable, Protocol):
         ...
 
     @property
-    def has_state(self) -> bool:
+    def metadata(self) -> Dict[str, object]:
         ...
 
     @property
-    def state(self) -> IAethericRiftState:
+    def is_registered(self) -> bool:
         ...
 
-    def bind_state(self, state: IAethericRiftState) -> None:
+    @property
+    def is_active(self) -> bool:
+        ...
+
+    def mark_registered(self) -> None:
+        ...
+
+    def mark_active(self) -> None:
+        ...
+
+    def mark_inactive(self) -> None:
         ...
 
     def register_space(self, space: IRiftSpace) -> None:
@@ -5441,10 +5477,13 @@ class IAethericRift(ICleanable, Protocol):
         ...
 
 
+IRift = IAethericRift
+
+
 @runtime_checkable
 class IAethericRiftSystem(ICleanable, Protocol):
     """
-    Interface for the hosted AR subsystem root.
+    Interface for the Nexus singleton root.
     """
 
     @property
@@ -5475,18 +5514,6 @@ class IAethericRiftSystem(ICleanable, Protocol):
     def disable(self) -> None:
         ...
 
-    def create_rift_state(
-            self,
-            *,
-            configuration: Optional[IAethericRiftConfiguration] = None,
-            rift_id: Optional[str] = None,
-            rift_name: Optional[str] = None,
-            local_conduit_id: Optional[str] = None,
-            active_space_id: Optional[str] = None,
-            metadata: Optional[Dict[str, object]] = None,
-    ) -> IAethericRiftState:
-        ...
-
     def create_rift_configuration(self) -> IAethericRiftConfiguration:
         ...
 
@@ -5503,29 +5530,7 @@ class IAethericRiftSystem(ICleanable, Protocol):
     ) -> IAethericRift:
         ...
 
-    def program_rift(
-            self,
-            rift: IAethericRift,
-            state: IAethericRiftState,
-            *,
-            creation_token: Optional[str] = None,
-    ) -> IAethericRift:
-        ...
-
-    def register_external_rift(
-            self,
-            rift: IAethericRift,
-            state: Optional[IAethericRiftState] = None,
-            *,
-            configuration: Optional[IAethericRiftConfiguration] = None,
-            local_conduit_id: Optional[str] = None,
-            active_space_id: Optional[str] = None,
-            metadata: Optional[Dict[str, object]] = None,
-            creation_token: Optional[str] = None,
-    ) -> IAethericRift:
-        ...
-
-    def add_rift(self, rift: IAethericRift, state: IAethericRiftState) -> None:
+    def add_rift(self, rift: IAethericRift) -> None:
         ...
 
     def get_rift(
@@ -5542,13 +5547,6 @@ class IAethericRiftSystem(ICleanable, Protocol):
     ) -> IAethericRift:
         ...
 
-    def get_rift_state(
-            self,
-            rift_id: str,
-            access_token: Optional[str] = None,
-    ) -> IAethericRiftState:
-        ...
-
     def has_rift(self, rift_id: str) -> bool:
         ...
 
@@ -5557,6 +5555,9 @@ class IAethericRiftSystem(ICleanable, Protocol):
 
     def list_rift_ids(self) -> List[str]:
         ...
+
+
+INexus = IAethericRiftSystem
 
 @runtime_checkable
 class IAether(ICleanable, Protocol):
@@ -5709,152 +5710,6 @@ class IAether(ICleanable, Protocol):
 
         Raises:
             ValueError: If the frame does not exist or the conduit is not found.
-        """
-        ...
-
-    def _get_aetheric_rift_system(self) -> IAethericRiftSystem:
-        """
-        Returns the hosted AethericRiftSystem.
-        """
-        ...
-
-    def _get_aetheric_rift_system_configuration(self) -> IAethericRiftSystemConfiguration:
-        """
-        Returns the hosted AethericRiftSystemConfiguration.
-        """
-        ...
-
-    def _is_aetheric_rift_system_configured(self) -> bool:
-        """
-        Returns whether the hosted AethericRiftSystem has an installed configuration.
-        """
-        ...
-
-    def _create_aetheric_rift_system_configuration(self) -> IAethericRiftSystemConfiguration:
-        """
-        Creates a fresh AethericRiftSystemConfiguration through the hosted AR system.
-        """
-        ...
-
-    def _enable_aetheric_rift_system(
-            self,
-            configuration: Optional[IAethericRiftSystemConfiguration] = None,
-    ) -> None:
-        """
-        Enables the hosted AethericRiftSystem with the provided configuration.
-        """
-        ...
-
-    def _disable_aetheric_rift_system(self) -> None:
-        """
-        Disables the hosted AethericRiftSystem.
-        """
-        ...
-
-    def _is_aetheric_rift_system_enabled(self) -> bool:
-        """
-        Returns whether the hosted AethericRiftSystem is enabled.
-        """
-        ...
-
-    def _create_rift_state(
-            self,
-            *,
-            configuration: Optional[IAethericRiftConfiguration] = None,
-            rift_id: Optional[str] = None,
-            rift_name: Optional[str] = None,
-            local_conduit_id: Optional[str] = None,
-            active_space_id: Optional[str] = None,
-            metadata: Optional[Dict[str, object]] = None,
-    ) -> IAethericRiftState:
-        ...
-
-    def _create_rift_configuration(self) -> IAethericRiftConfiguration:
-        """
-        Delegates per-Rift configuration creation to the hosted AethericRiftSystem.
-        """
-        ...
-
-    def _create_rift(
-            self,
-            *,
-            configuration: Optional[IAethericRiftConfiguration] = None,
-            rift_name: Optional[str] = None,
-            rift_id: Optional[str] = None,
-            local_conduit_id: Optional[str] = None,
-            active_space_id: Optional[str] = None,
-            metadata: Optional[Dict[str, object]] = None,
-            creation_token: Optional[str] = None,
-    ) -> IAethericRift:
-        ...
-
-    def _program_rift(
-            self,
-            rift: IAethericRift,
-            state: IAethericRiftState,
-            *,
-            creation_token: Optional[str] = None,
-    ) -> IAethericRift:
-        ...
-
-    def _register_external_rift(
-            self,
-            rift: IAethericRift,
-            state: Optional[IAethericRiftState] = None,
-            *,
-            configuration: Optional[IAethericRiftConfiguration] = None,
-            local_conduit_id: Optional[str] = None,
-            active_space_id: Optional[str] = None,
-            metadata: Optional[Dict[str, object]] = None,
-            creation_token: Optional[str] = None,
-    ) -> IAethericRift:
-        ...
-
-    def _add_rift(self, rift: IAethericRift, state: IAethericRiftState) -> None:
-        """
-        Delegates Rift registration to the hosted AethericRiftSystem.
-        """
-        ...
-
-    def _get_rift(
-            self,
-            rift_id: str,
-            access_token: Optional[str] = None,
-    ) -> IAethericRift:
-        """
-        Delegates Rift lookup by id to the hosted AethericRiftSystem.
-        """
-        ...
-
-    def _get_rift_by_name(
-            self,
-            rift_name: str,
-            access_token: Optional[str] = None,
-    ) -> IAethericRift:
-        """
-        Delegates Rift lookup by name to the hosted AethericRiftSystem.
-        """
-        ...
-
-    def _get_rift_state(
-            self,
-            rift_id: str,
-            access_token: Optional[str] = None,
-    ) -> IAethericRiftState:
-        """
-        Delegates RiftState lookup to the hosted AethericRiftSystem.
-        """
-        ...
-
-    def _remove_rift(self, rift_id: str) -> None:
-        """
-        Delegates Rift removal to the hosted AethericRiftSystem.
-        """
-        ...
-
-    def _list_rifts(self) -> List[str]:
-        """
-        Delegates Rift id listing to the hosted AethericRiftSystem.
         """
         ...
 
