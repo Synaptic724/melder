@@ -4,6 +4,7 @@ from typing import Iterable
 
 import pytest
 
+from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.spellbook.bind.spell_index import SpellIndex
@@ -64,7 +65,7 @@ def _make_frame(name: str = "frame-system-validation-component") -> AethericFram
     Returns:
         AethericFrame: A fresh AethericFrame instance.
     """
-    return AethericFrame(name)
+    return AethericFrame(Aether(), name)
 
 
 def _register_lineage(states, spell_id: str) -> SpellIndex:
@@ -928,3 +929,4 @@ def test_component_system_validation_collects_multiple_errors() -> None:
         assert conduit_state.get_spell_validity(root_id) is SpellValidity.invalid
     finally:
         frame.cleanup()
+

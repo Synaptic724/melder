@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
@@ -45,7 +46,7 @@ def test_component_root_blueprint_builder_traverses_state_topologies() -> None:
     Raises:
         AssertionError: If socket traversal or indexing is incorrect.
     """
-    frame = AethericFrame("component-root-blueprints")
+    frame = AethericFrame(Aether(), "component-root-blueprints")
     states = frame._spell_system_states
     root_id = "root-blueprint"
     mid_id = "mid-blueprint"
@@ -120,7 +121,7 @@ def test_component_root_blueprint_builder_skips_missing_topology() -> None:
     Raises:
         AssertionError: If socket collection ignores missing topologies.
     """
-    frame = AethericFrame("component-root-blueprints-missing")
+    frame = AethericFrame(Aether(), "component-root-blueprints-missing")
     states = frame._spell_system_states
     root_id = "root-missing-topo"
     mid_id = "mid-missing-topo"
@@ -174,7 +175,7 @@ def test_component_root_blueprint_builder_builds_multiple_roots() -> None:
     Raises:
         AssertionError: If blueprints or DAGs are incorrect.
     """
-    frame = AethericFrame("component-root-blueprints-multi")
+    frame = AethericFrame(Aether(), "component-root-blueprints-multi")
     states = frame._spell_system_states
     root_a = "root-a"
     root_b = "root-b"
@@ -210,7 +211,7 @@ def test_component_root_blueprint_builder_handles_shared_dependency() -> None:
     Raises:
         AssertionError: If shared dependencies are missing.
     """
-    frame = AethericFrame("component-root-blueprints-shared")
+    frame = AethericFrame(Aether(), "component-root-blueprints-shared")
     states = frame._spell_system_states
     root_a = "root-shared-a"
     root_b = "root-shared-b"
@@ -250,7 +251,7 @@ def test_component_root_blueprint_builder_records_empty_target_sockets() -> None
     Raises:
         AssertionError: If socket refs are missing.
     """
-    frame = AethericFrame("component-root-blueprints-empty-target")
+    frame = AethericFrame(Aether(), "component-root-blueprints-empty-target")
     states = frame._spell_system_states
     root_id = "root-empty-target"
     root_index = _register_lineage(states, root_id)
@@ -283,3 +284,4 @@ def test_component_root_blueprint_builder_records_empty_target_sockets() -> None
         assert blueprint.dag_index.get_by_exact_path(("config",)) != []
     finally:
         frame.cleanup()
+

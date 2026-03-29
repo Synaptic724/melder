@@ -1,5 +1,6 @@
 import pytest
 
+from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
 from melder.aether.dev_ops.change_control_manager.change_control_manager import (
     ChangeControlManager,
@@ -82,7 +83,7 @@ def test_component_change_control_rebuild_component_of_maps_root_and_dependency(
     Raises:
         AssertionError: If component-of mappings are missing.
     """
-    frame = AethericFrame("component-ccm-mapping")
+    frame = AethericFrame(Aether(), "component-ccm-mapping")
     states = frame.spell_system_states
     root_id = "root-ccm"
     dep_id = "dep-ccm"
@@ -116,7 +117,7 @@ def test_component_change_control_includes_deep_dependencies() -> None:
     Raises:
         AssertionError: If deep dependencies are not mapped.
     """
-    frame = AethericFrame("component-ccm-deep")
+    frame = AethericFrame(Aether(), "component-ccm-deep")
     states = frame.spell_system_states
     root_id = "root-deep"
     mid_id = "mid-deep"
@@ -155,7 +156,7 @@ def test_component_change_control_revalidate_dirty_roots_uses_blueprint_roots() 
     Raises:
         AssertionError: If dirty roots are not cleared.
     """
-    frame = AethericFrame("component-ccm-revalidate")
+    frame = AethericFrame(Aether(), "component-ccm-revalidate")
     states = frame.spell_system_states
     root_id = "root-revalidate"
     dep_id = "dep-revalidate"
@@ -214,7 +215,7 @@ def test_component_change_control_pending_change_round_trip() -> None:
     Raises:
         AssertionError: If pending-change tracking is incorrect.
     """
-    frame = AethericFrame("component-ccm-pending")
+    frame = AethericFrame(Aether(), "component-ccm-pending")
     states = frame.spell_system_states
     manager = frame.dev_ops_manager.change_control_manager
     index = SpellIndex("spell-pending-change")
@@ -256,7 +257,7 @@ def test_component_change_control_admit_request_disabled_tracks_in_flight() -> N
     Raises:
         AssertionError: If in-flight or staging state is incorrect.
     """
-    frame = AethericFrame("component-ccm-disabled-admit")
+    frame = AethericFrame(Aether(), "component-ccm-disabled-admit")
     manager = frame.dev_ops_manager.change_control_manager
     try:
         manager.disable_change_control()
@@ -284,7 +285,7 @@ def test_component_change_control_update_staged_request_disabled_returns_false()
     Raises:
         AssertionError: If disabled updates return True.
     """
-    frame = AethericFrame("component-ccm-update-disabled")
+    frame = AethericFrame(Aether(), "component-ccm-update-disabled")
     manager = frame.dev_ops_manager.change_control_manager
     try:
         manager.disable_change_control()
@@ -304,7 +305,7 @@ def test_component_change_control_commit_request_disabled_removes_in_flight() ->
     Raises:
         AssertionError: If in-flight state remains after commit.
     """
-    frame = AethericFrame("component-ccm-commit-disabled")
+    frame = AethericFrame(Aether(), "component-ccm-commit-disabled")
     manager = frame.dev_ops_manager.change_control_manager
     try:
         manager.disable_change_control()
@@ -331,7 +332,7 @@ def test_component_change_control_abort_request_disabled_removes_in_flight() -> 
     Raises:
         AssertionError: If in-flight state remains after abort.
     """
-    frame = AethericFrame("component-ccm-abort-disabled")
+    frame = AethericFrame(Aether(), "component-ccm-abort-disabled")
     manager = frame.dev_ops_manager.change_control_manager
     try:
         manager.disable_change_control()
@@ -358,7 +359,7 @@ def test_component_change_control_update_staged_request_extends_embargoes() -> N
     Raises:
         AssertionError: If embargo scopes are not extended.
     """
-    frame = AethericFrame("component-ccm-update-embargo")
+    frame = AethericFrame(Aether(), "component-ccm-update-embargo")
     manager = frame.dev_ops_manager.change_control_manager
     try:
         request = manager.transaction_manager().build_request(
@@ -396,7 +397,7 @@ def test_component_change_control_commit_hook_runs_after_dirty_marker() -> None:
     Raises:
         AssertionError: If hook order is incorrect.
     """
-    frame = AethericFrame("component-ccm-commit-hook-order")
+    frame = AethericFrame(Aether(), "component-ccm-commit-hook-order")
     manager = frame.dev_ops_manager.change_control_manager
     calls: list[str] = []
 
@@ -434,7 +435,7 @@ def test_component_change_control_commit_validator_runs_structural_first() -> No
     Raises:
         AssertionError: If validator order is incorrect.
     """
-    frame = AethericFrame("component-ccm-commit-validator-order")
+    frame = AethericFrame(Aether(), "component-ccm-commit-validator-order")
     manager = frame.dev_ops_manager.change_control_manager
     calls: list[str] = []
 
@@ -473,7 +474,7 @@ def test_component_change_control_describe_includes_manager_snapshots() -> None:
     Raises:
         AssertionError: If describe omits manager snapshots.
     """
-    frame = AethericFrame("component-ccm-describe")
+    frame = AethericFrame(Aether(), "component-ccm-describe")
     manager = frame.dev_ops_manager.change_control_manager
     try:
         request = manager.transaction_manager().build_request(
@@ -502,7 +503,7 @@ def test_component_change_control_admit_request_scope_hash_conflict() -> None:
     Raises:
         AssertionError: If hash conflicts are not enforced.
     """
-    frame = AethericFrame("component-ccm-hash-conflict")
+    frame = AethericFrame(Aether(), "component-ccm-hash-conflict")
     manager = frame.dev_ops_manager.change_control_manager
     try:
         request_a = manager.transaction_manager().build_request(
@@ -535,7 +536,7 @@ def test_component_change_control_commit_clears_staged_record() -> None:
     Raises:
         AssertionError: If staged entries persist after commit.
     """
-    frame = AethericFrame("component-ccm-commit-staged")
+    frame = AethericFrame(Aether(), "component-ccm-commit-staged")
     manager = frame.dev_ops_manager.change_control_manager
     try:
         request = manager.transaction_manager().build_request(
@@ -563,7 +564,7 @@ def test_component_change_control_abort_clears_staged_record() -> None:
     Raises:
         AssertionError: If staged entries persist after abort.
     """
-    frame = AethericFrame("component-ccm-abort-staged")
+    frame = AethericFrame(Aether(), "component-ccm-abort-staged")
     manager = frame.dev_ops_manager.change_control_manager
     try:
         request = manager.transaction_manager().build_request(
@@ -591,7 +592,7 @@ def test_component_change_control_update_staged_merges_metadata() -> None:
     Raises:
         AssertionError: If metadata is not merged.
     """
-    frame = AethericFrame("component-ccm-staged-metadata")
+    frame = AethericFrame(Aether(), "component-ccm-staged-metadata")
     manager = frame.dev_ops_manager.change_control_manager
     try:
         request = manager.transaction_manager().build_request(
@@ -624,7 +625,7 @@ def test_component_change_control_admit_request_rejects_conflict() -> None:
     Raises:
         AssertionError: If conflict admission is not enforced.
     """
-    frame = AethericFrame("component-ccm-conflict")
+    frame = AethericFrame(Aether(), "component-ccm-conflict")
     manager = frame.dev_ops_manager.change_control_manager
     try:
         request_a = manager.transaction_manager().build_request(
@@ -660,7 +661,7 @@ def test_component_change_control_admit_request_rejects_embargo() -> None:
     Raises:
         AssertionError: If embargo admission is not enforced.
     """
-    frame = AethericFrame("component-ccm-embargo")
+    frame = AethericFrame(Aether(), "component-ccm-embargo")
     manager = frame.dev_ops_manager.change_control_manager
     binding_scope = manager.transaction_manager().make_scope_key_binding(
         "frame",
@@ -698,7 +699,7 @@ def test_component_change_control_abort_request_releases_embargoes() -> None:
     Raises:
         AssertionError: If embargoes remain after abort.
     """
-    frame = AethericFrame("component-ccm-abort-embargo")
+    frame = AethericFrame(Aether(), "component-ccm-abort-embargo")
     manager = frame.dev_ops_manager.change_control_manager
     try:
         request = manager.transaction_manager().build_request(
@@ -727,7 +728,7 @@ def test_component_change_control_notify_unknown_spell_tracks_dirty() -> None:
     Raises:
         AssertionError: If dirty tracking is incorrect.
     """
-    frame = AethericFrame("component-ccm-unknown")
+    frame = AethericFrame(Aether(), "component-ccm-unknown")
     manager = frame.dev_ops_manager.change_control_manager
     try:
         manager.rebuild_component_of(CONDUIT_ID, {})
@@ -753,7 +754,7 @@ def test_component_change_control_revalidate_dirty_roots_failure_keeps_dirty() -
     Raises:
         AssertionError: If dirty roots are cleared after failure.
     """
-    frame = AethericFrame("component-ccm-revalidate-failure")
+    frame = AethericFrame(Aether(), "component-ccm-revalidate-failure")
     states = frame.spell_system_states
     root_id = "root-ccm-failure"
     dep_id = "dep-ccm-failure"
@@ -798,7 +799,7 @@ def test_component_change_control_revalidate_dirty_roots_no_revalidator_noop() -
     Raises:
         AssertionError: If dirty roots are cleared without a revalidator.
     """
-    frame = AethericFrame("component-ccm-revalidate-no-hook")
+    frame = AethericFrame(Aether(), "component-ccm-revalidate-no-hook")
     states = frame.spell_system_states
     root_id = "root-ccm-no-hook"
     dep_id = "dep-ccm-no-hook"
@@ -836,7 +837,7 @@ def test_component_change_control_revalidate_dirty_roots_respects_cancellation()
     Raises:
         AssertionError: If cancellation does not abort the revalidation.
     """
-    frame = AethericFrame("component-ccm-cancel")
+    frame = AethericFrame(Aether(), "component-ccm-cancel")
     states = frame.spell_system_states
     root_id = "root-ccm-cancel"
     dep_id = "dep-ccm-cancel"
@@ -872,3 +873,4 @@ def test_component_change_control_revalidate_dirty_roots_respects_cancellation()
         signal.cleanup()
         _cleanup_blueprints(blueprints)
         frame.cleanup()
+

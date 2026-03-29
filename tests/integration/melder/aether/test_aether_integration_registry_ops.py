@@ -67,10 +67,10 @@ def _make_configuration(
     return configuration
 
 
-def test_aether_default_frame_cleanup_blocks_default_access() -> None:
+def test_bottom_up_default_frame_cleanup_blocks_default_access() -> None:
     """
     Purpose:
-        Validate cleanup_frame("default") clears default-frame access.
+        Validate bottom-up default-frame cleanup clears default-frame access.
     Contract:
         - _ensure_default_frame raises after default is cleaned.
         - Default-frame accessors raise after cleanup.
@@ -80,7 +80,7 @@ def test_aether_default_frame_cleanup_blocks_default_access() -> None:
         AssertionError: If default access is still available after cleanup.
     """
     aether = Aether()
-    aether.cleanup_frame("default")
+    aether._default_frame.cleanup()
 
     with pytest.raises(RuntimeError, match="Default AethericFrame"):
         aether._ensure_default_frame()

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.spellbook.bind.spell_index import SpellIndex
@@ -98,7 +99,7 @@ def test_component_system_diagnostic_warning_roundtrip() -> None:
     Raises:
         AssertionError: If warnings are lost or resolution validity is not valid.
     """
-    frame = AethericFrame("component-system-diagnostic-warning")
+    frame = AethericFrame(Aether(), "component-system-diagnostic-warning")
     states = frame._spell_system_states
     root_id = "root-diagnostic-warning"
     root_index = _register_lineage(states, root_id)
@@ -158,7 +159,7 @@ def test_component_system_diagnostic_error_gates_states() -> None:
     Raises:
         AssertionError: If errors are not propagated or resolution validity is not invalid.
     """
-    frame = AethericFrame("component-system-diagnostic-error")
+    frame = AethericFrame(Aether(), "component-system-diagnostic-error")
     states = frame._spell_system_states
     root_id = "root-diagnostic-error"
     root_index = _register_lineage(states, root_id)
@@ -202,3 +203,4 @@ def test_component_system_diagnostic_error_gates_states() -> None:
         assert conduit_state.get_spell_validity(root_id) is SpellValidity.invalid
     finally:
         frame.cleanup()
+

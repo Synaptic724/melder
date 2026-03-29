@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence
@@ -78,7 +79,7 @@ def test_component_index_builds_nodes_from_states() -> None:
     Raises:
         AssertionError: If lineage ids or dependencies are incorrect.
     """
-    frame = AethericFrame("component-index-lineage")
+    frame = AethericFrame(Aether(), "component-index-lineage")
     states = frame._spell_system_states
     root_id = "root-index-lineage"
     dep_id = "dep-index-lineage"
@@ -113,7 +114,7 @@ def test_component_index_marks_root_flags_from_snapshot() -> None:
     Raises:
         AssertionError: If root flags are incorrect.
     """
-    frame = AethericFrame("component-index-roots")
+    frame = AethericFrame(Aether(), "component-index-roots")
     states = frame._spell_system_states
     root_id = "root-index"
     dep_id = "dep-index"
@@ -146,7 +147,7 @@ def test_component_index_validation_state_nodes_mapping_is_live() -> None:
     Raises:
         AssertionError: If node mappings diverge.
     """
-    frame = AethericFrame("component-index-live-mapping")
+    frame = AethericFrame(Aether(), "component-index-live-mapping")
     states = frame._spell_system_states
     root_id = "root-live"
     root_index = _register_lineage(states, root_id)
@@ -186,7 +187,7 @@ def test_component_index_preserves_node_metadata() -> None:
     Raises:
         AssertionError: If metadata is lost.
     """
-    frame = AethericFrame("component-index-metadata")
+    frame = AethericFrame(Aether(), "component-index-metadata")
     states = frame._spell_system_states
     root_id = "root-meta"
     root_index = _register_lineage(states, root_id)
@@ -235,7 +236,7 @@ def test_component_index_rebuild_reflects_dependency_changes() -> None:
     Raises:
         AssertionError: If rebuilt index is stale.
     """
-    frame = AethericFrame("component-index-rebuild")
+    frame = AethericFrame(Aether(), "component-index-rebuild")
     states = frame._spell_system_states
     root_id = "root-rebuild"
     dep_id = "dep-rebuild"
@@ -270,7 +271,7 @@ def test_component_index_handles_spells_without_dependencies() -> None:
     Raises:
         AssertionError: If dependencies or root flags are incorrect.
     """
-    frame = AethericFrame("component-index-no-deps")
+    frame = AethericFrame(Aether(), "component-index-no-deps")
     states = frame._spell_system_states
     root_id = "root-nodeps"
     root_index = _register_lineage(states, root_id)
@@ -299,7 +300,7 @@ def test_component_index_validation_with_graph_consistency_strategy() -> None:
     Raises:
         AssertionError: If validation incorrectly reports errors.
     """
-    frame = AethericFrame("component-index-graph-consistency")
+    frame = AethericFrame(Aether(), "component-index-graph-consistency")
     states = frame._spell_system_states
     root_id = "root-graph-consistency"
     dep_id = "dep-graph-consistency"
@@ -346,7 +347,7 @@ def test_component_index_validation_multiple_roots_stay_valid() -> None:
     Raises:
         AssertionError: If resolution validity is incorrect.
     """
-    frame = AethericFrame("component-index-multi-root-valid")
+    frame = AethericFrame(Aether(), "component-index-multi-root-valid")
     states = frame._spell_system_states
     root_a = "root-multi-a"
     root_b = "root-multi-b"
@@ -380,3 +381,4 @@ def test_component_index_validation_multiple_roots_stay_valid() -> None:
         assert conduit_state.get_spell_validity(root_b) is SpellValidity.valid
     finally:
         frame.cleanup()
+

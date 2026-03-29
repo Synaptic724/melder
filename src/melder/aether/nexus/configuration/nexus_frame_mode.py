@@ -7,19 +7,19 @@ class NexusFrameMode(Enum):
     """
     Internal
 
-    Topology mode for Nexus-assigned internal system frames.
+    Topology mode for Nexus-assigned internal frames.
 
     Purpose:
-        Define how many internal system frames exist and how new workspaces
+        Define how many internal Nexus frames exist and how new workspaces
         obtain them.
 
     Members:
         single:
-            One shared Nexus-assigned system frame is used for all workspaces.
+            One shared Nexus-assigned frame is used for all workspaces.
         indexed:
-            Nexus may manage multiple internal system frames from an indexed set.
+            Nexus may manage multiple internal frames from an indexed set.
         one_per_workspace:
-            Each workspace receives its own Nexus-assigned internal system frame.
+            Each workspace receives its own Nexus-assigned internal frame.
     """
 
     __melder_internal__ = _mrg.sentinel

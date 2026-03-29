@@ -26,7 +26,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     Contract:
         - Mutable until frozen.
         - Stores typed properties in one property bag.
-        - Governs process-wide creation/access policy, system-frame topology,
+        - Governs process-wide creation/access policy, Nexus-frame topology,
           target-frame restrictions, and per-Rift defaults.
         - Once finalized, property mutation is disallowed.
 
@@ -66,16 +66,13 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
             "allow_direct_rift_access": bool,
             "rift_access_token_required": bool,
             "rift_access_token_value": (str, type(None)),
-            "allow_direct_state_access": bool,
-            "state_access_token_required": bool,
-            "state_access_token_value": (str, type(None)),
             "allow_external_rift_registration": bool,
             "allow_nested_rift_creation": bool,
             "max_active_rift_count": int,
-            "system_frame_mode": NexusFrameMode,
-            "default_system_frame_name": str,
-            "auto_create_system_frames": bool,
-            "max_system_frame_count": int,
+            "nexus_frame_mode": NexusFrameMode,
+            "default_nexus_frame_name": str,
+            "auto_create_nexus_frames": bool,
+            "max_nexus_frame_count": int,
             "default_target_frame_name": str,
             "allowed_target_frame_names": tuple,
             "denied_target_frame_names": tuple,
@@ -235,9 +232,9 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
         Load the standard default property set for Nexus master-user engagement.
 
         Contract:
-            - Populates every required system-governance field.
-            - Uses the easy-start defaults agreed for master-user ARS setup:
-              `single` system-frame mode, `default` target frame, and no token
+            - Populates every required Nexus-governance field.
+            - Uses the easy-start defaults agreed for master-user Nexus setup:
+              `single` Nexus-frame mode, `default` target frame, and no token
               requirements.
 
         Returns:
@@ -251,16 +248,13 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
             "allow_direct_rift_access": True,
             "rift_access_token_required": False,
             "rift_access_token_value": None,
-            "allow_direct_state_access": True,
-            "state_access_token_required": False,
-            "state_access_token_value": None,
             "allow_external_rift_registration": True,
             "allow_nested_rift_creation": False,
             "max_active_rift_count": 0,
-            "system_frame_mode": NexusFrameMode.single,
-            "default_system_frame_name": "aetheric_frame_system",
-            "auto_create_system_frames": True,
-            "max_system_frame_count": 1,
+            "nexus_frame_mode": NexusFrameMode.single,
+            "default_nexus_frame_name": "aetheric_frame_system",
+            "auto_create_nexus_frames": True,
+            "max_nexus_frame_count": 1,
             "default_target_frame_name": "default",
             "allowed_target_frame_names": ("default",),
             "denied_target_frame_names": tuple(),
@@ -285,7 +279,8 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
         Contract:
             - Ensures every declared property has a value.
             - Enforces cross-field invariants such as single-frame mode budget,
-              target-frame allow/deny coherence, and target-frame caps.
+              Nexus-frame mode budget, target-frame allow/deny coherence, and
+              target-frame caps.
 
         Returns:
             bool: True when the configuration is valid.
@@ -300,27 +295,27 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 raise ValueError("Missing required configuration property: '{0}'.".format(key))
 
         max_active_rift_count = self.get_property("max_active_rift_count")
-        system_frame_mode = self.get_property("system_frame_mode")
-        default_system_frame_name = self.get_property("default_system_frame_name")
+        nexus_frame_mode = self.get_property("nexus_frame_mode")
+        default_nexus_frame_name = self.get_property("default_nexus_frame_name")
         default_target_frame_name = self.get_property("default_target_frame_name")
         allowed_target_frame_names = self.get_property("allowed_target_frame_names")
         denied_target_frame_names = self.get_property("denied_target_frame_names")
-        max_system_frame_count = self.get_property("max_system_frame_count")
+        max_nexus_frame_count = self.get_property("max_nexus_frame_count")
         allow_multiple_target_frames = self.get_property("allow_multiple_target_frames")
         max_target_frame_count = self.get_property("max_target_frame_count")
 
         if max_active_rift_count < 0:
             raise ValueError("max_active_rift_count must be >= 0.")
-        if not default_system_frame_name:
-            raise ValueError("default_system_frame_name cannot be empty.")
+        if not default_nexus_frame_name:
+            raise ValueError("default_nexus_frame_name cannot be empty.")
         if not default_target_frame_name:
             raise ValueError("default_target_frame_name cannot be empty.")
-        if max_system_frame_count < 1:
-            raise ValueError("max_system_frame_count must be >= 1.")
+        if max_nexus_frame_count < 1:
+            raise ValueError("max_nexus_frame_count must be >= 1.")
         if max_target_frame_count < 1:
             raise ValueError("max_target_frame_count must be >= 1.")
-        if system_frame_mode == NexusFrameMode.single and max_system_frame_count != 1:
-            raise ValueError("max_system_frame_count must be 1 when system_frame_mode is single.")
+        if nexus_frame_mode == NexusFrameMode.single and max_nexus_frame_count != 1:
+            raise ValueError("max_nexus_frame_count must be 1 when nexus_frame_mode is single.")
         if not allow_multiple_target_frames and max_target_frame_count != 1:
             raise ValueError("max_target_frame_count must be 1 when allow_multiple_target_frames is False.")
         if default_target_frame_name in denied_target_frame_names:
@@ -502,69 +497,10 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
         self.set_property("rift_access_token_value", token_value)
         return self
 
-    def with_direct_state_access(
-            self,
-            enabled: bool = True,
-    ) -> "INexusConfiguration":
-        """
-        Fluent
-
-        Set whether callers may retrieve canonical Rift state directly from ARS.
-
-        Args:
-            enabled:
-                True to allow direct state access under the remaining policy
-                gates.
-
-        Returns:
-            INexusConfiguration: This configuration instance.
-        """
-        self.set_property("allow_direct_state_access", enabled)
-        return self
-
-    def with_state_access_token_required(
-            self,
-            enabled: bool = True,
-    ) -> "INexusConfiguration":
-        """
-        Fluent
-
-        Set whether direct canonical state access requires a token.
-
-        Args:
-            enabled:
-                True to require `state_access_token_value` for direct state
-                retrieval.
-
-        Returns:
-            INexusConfiguration: This configuration instance.
-        """
-        self.set_property("state_access_token_required", enabled)
-        return self
-
-    def with_state_access_token(
-            self,
-            token_value: Optional[str],
-    ) -> "INexusConfiguration":
-        """
-        Fluent
-
-        Set the token value used for direct canonical state access.
-
-        Args:
-            token_value:
-                Optional state-access token string. `None` clears the token.
-
-        Returns:
-            INexusConfiguration: This configuration instance.
-        """
-        self.set_property("state_access_token_value", token_value)
-        return self
-
     def with_allow_external_rift_registration(
             self,
             enabled: bool = True,
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
@@ -575,7 +511,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 True to permit external Rift registration/programming.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("allow_external_rift_registration", enabled)
         return self
@@ -583,7 +519,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_allow_nested_rift_creation(
             self,
             enabled: bool = True,
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
@@ -594,7 +530,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 True to permit nested Rift creation flows.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("allow_nested_rift_creation", enabled)
         return self
@@ -602,7 +538,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_max_active_rift_count(
             self,
             count: int,
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
@@ -613,19 +549,19 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 Maximum number of active Rifts. `0` means unlimited.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("max_active_rift_count", count)
         return self
 
-    def with_system_frame_mode(
+    def with_nexus_frame_mode(
             self,
             mode: Union[NexusFrameMode, str],
     ) -> "INexusConfiguration":
         """
         Fluent
 
-        Set the internal Nexus system-frame topology mode.
+        Set the internal Nexus frame topology mode.
 
         Args:
             mode:
@@ -634,67 +570,67 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
         Returns:
             INexusConfiguration: This configuration instance.
         """
-        self.set_property("system_frame_mode", mode)
+        self.set_property("nexus_frame_mode", mode)
         return self
 
-    def with_default_system_frame_name(
+    def with_default_nexus_frame_name(
             self,
             frame_name: str,
     ) -> "INexusConfiguration":
         """
         Fluent
 
-        Set the default Nexus-owned internal system frame name.
+        Set the default Nexus-owned internal frame name.
 
         Args:
             frame_name:
-                System-frame name used in `single` mode and as the base name
+                Frame name used in `single` mode and as the base name
                 in other modes.
 
         Returns:
             INexusConfiguration: This configuration instance.
         """
-        self.set_property("default_system_frame_name", frame_name)
+        self.set_property("default_nexus_frame_name", frame_name)
         return self
 
-    def with_auto_create_system_frames(
+    def with_auto_create_nexus_frames(
             self,
             enabled: bool = True,
     ) -> "INexusConfiguration":
         """
         Fluent
 
-        Set whether the runtime may auto-create internal system frames when Rift
+        Set whether the runtime may auto-create internal Nexus frames when Rift
         activation later resolves them through `Aether`.
 
         Args:
             enabled:
-                True to auto-create required system frames on engagement or
+                True to auto-create required Nexus frames on engagement or
                 state creation.
 
         Returns:
             INexusConfiguration: This configuration instance.
         """
-        self.set_property("auto_create_system_frames", enabled)
+        self.set_property("auto_create_nexus_frames", enabled)
         return self
 
-    def with_max_system_frame_count(
+    def with_max_nexus_frame_count(
             self,
             count: int,
     ) -> "INexusConfiguration":
         """
         Fluent
 
-        Set the cap on Nexus-assigned internal system frames.
+        Set the cap on Nexus-assigned internal frames.
 
         Args:
             count:
-                Maximum number of internal system frames ARS may own.
+                Maximum number of internal Nexus frames allowed.
 
         Returns:
             INexusConfiguration: This configuration instance.
         """
-        self.set_property("max_system_frame_count", count)
+        self.set_property("max_nexus_frame_count", count)
         return self
 
     def with_default_target_frame_name(
@@ -852,7 +788,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_default_auto_create_space(
             self,
             enabled: bool = True,
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
@@ -863,7 +799,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 True to create the initial room automatically.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("default_auto_create_space", enabled)
         return self
@@ -871,7 +807,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
     def with_default_validation_mode(
             self,
             mode: Union[RiftValidationMode, str],
-    ) -> "IAethericRiftSystemConfiguration":
+    ) -> "INexusConfiguration":
         """
         Fluent
 
@@ -882,7 +818,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
                 Validation mode enum or string.
 
         Returns:
-            IAethericRiftSystemConfiguration: This configuration instance.
+            INexusConfiguration: This configuration instance.
         """
         self.set_property("default_validation_mode", mode)
         return self
@@ -906,7 +842,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
             TypeError: If a frame-name collection is invalid.
             ValueError: If an enum conversion or frame-name normalization fails.
         """
-        if key == "system_frame_mode":
+        if key == "nexus_frame_mode":
             return EnumHelpers.convert_enum_and_check(value, NexusFrameMode)
         if key == "default_space_type":
             return EnumHelpers.convert_enum_and_check(value, RiftSpaceType)

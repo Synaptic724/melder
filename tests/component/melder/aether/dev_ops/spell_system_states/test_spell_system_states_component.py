@@ -1,3 +1,4 @@
+from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
@@ -70,7 +71,7 @@ def test_component_spell_system_states_registers_local_topology_round_trip() -> 
     Raises:
         AssertionError: If the topology is not retrievable.
     """
-    frame = AethericFrame("component-states-topology-roundtrip")
+    frame = AethericFrame(Aether(), "component-states-topology-roundtrip")
     states = frame.spell_system_states
     root_id = "root-topology-roundtrip"
     dep_id = "dep-topology-roundtrip"
@@ -95,7 +96,7 @@ def test_component_spell_system_states_registers_local_topology_replacement() ->
     Raises:
         AssertionError: If the topology is not replaced.
     """
-    frame = AethericFrame("component-states-topology-replace")
+    frame = AethericFrame(Aether(), "component-states-topology-replace")
     states = frame.spell_system_states
     root_id = "root-topology-replace"
     dep_a = "dep-topology-a"
@@ -124,7 +125,7 @@ def test_component_spell_system_states_cleanup_cleans_local_topologies() -> None
     Raises:
         AssertionError: If topology cleanup does not occur.
     """
-    frame = AethericFrame("component-states-topology-cleanup")
+    frame = AethericFrame(Aether(), "component-states-topology-cleanup")
     states = frame.spell_system_states
     root_id = "root-topology-cleanup"
     dep_id = "dep-topology-cleanup"
@@ -148,7 +149,7 @@ def test_component_spell_system_states_register_lineage_sets_change_reason() -> 
     Raises:
         AssertionError: If change-reason or flags are missing.
     """
-    frame = AethericFrame("component-states-register-flags")
+    frame = AethericFrame(Aether(), "component-states-register-flags")
     states = frame.spell_system_states
     index = _register_lineage(states, "spell-register-flags")
     try:
@@ -175,7 +176,7 @@ def test_component_spell_system_states_dependency_change_sets_reason() -> None:
     Raises:
         AssertionError: If dependency-change flags are not set.
     """
-    frame = AethericFrame("component-states-dependency-reason")
+    frame = AethericFrame(Aether(), "component-states-dependency-reason")
     states = frame.spell_system_states
     root_index = _register_lineage(states, "root-dep-reason")
     dep_index = _register_lineage(states, "dep-dep-reason")
@@ -203,7 +204,7 @@ def test_component_spell_system_states_rebind_updates_spell_id_index() -> None:
     Raises:
         AssertionError: If the spell-id index is not refreshed.
     """
-    frame = AethericFrame("component-states-rebind")
+    frame = AethericFrame(Aether(), "component-states-rebind")
     states = frame.spell_system_states
     index = _register_lineage(states, "spell-rebind-v1")
     try:
@@ -236,7 +237,7 @@ def test_component_spell_system_states_impact_closure_preserves_root_state() -> 
     Raises:
         AssertionError: If impact closure flags are incorrect.
     """
-    frame = AethericFrame("component-states-impact-closure")
+    frame = AethericFrame(Aether(), "component-states-impact-closure")
     states = frame.spell_system_states
     root_index = _register_lineage(states, "root-impact-closure")
     dep_index = _register_lineage(states, "dep-impact-closure")
@@ -275,7 +276,7 @@ def test_component_spell_system_states_mark_structural_change_marks_dirty() -> N
     Raises:
         AssertionError: If dirty tracking or flags are incorrect.
     """
-    frame = AethericFrame("component-states-structural-dirty")
+    frame = AethericFrame(Aether(), "component-states-structural-dirty")
     states = frame.spell_system_states
     index = _register_lineage(states, "spell-structural-dirty")
     states.consume_dirty_lineages()
@@ -305,7 +306,7 @@ def test_component_spell_system_states_update_dependencies_tracks_reverse_edges(
     Raises:
         AssertionError: If edges are not wired correctly.
     """
-    frame = AethericFrame("component-states-reverse-edges")
+    frame = AethericFrame(Aether(), "component-states-reverse-edges")
     states = frame.spell_system_states
     root_index = _register_lineage(states, "root-reverse-edges")
     dep_index = _register_lineage(states, "dep-reverse-edges")
@@ -341,7 +342,7 @@ def test_component_spell_system_states_consume_dirty_lineages_clears() -> None:
     Raises:
         AssertionError: If the dirty queue is not cleared.
     """
-    frame = AethericFrame("component-states-consume-dirty")
+    frame = AethericFrame(Aether(), "component-states-consume-dirty")
     states = frame.spell_system_states
     index_a = _register_lineage(states, "spell-dirty-a")
     index_b = _register_lineage(states, "spell-dirty-b")
@@ -365,7 +366,7 @@ def test_component_spell_system_states_cleanup_cleans_spell_system_state() -> No
     Raises:
         AssertionError: If state objects remain uncleaned.
     """
-    frame = AethericFrame("component-states-cleanup-state")
+    frame = AethericFrame(Aether(), "component-states-cleanup-state")
     states = frame.spell_system_states
     index = _register_lineage(states, "spell-state-cleanup")
     state = states.get_by_index_id(index.id)
@@ -386,7 +387,7 @@ def test_component_spell_system_states_clear_dirty_resets_state_flags() -> None:
     Raises:
         AssertionError: If flags or validity remain dirty after clear.
     """
-    frame = AethericFrame("component-states-clear-dirty")
+    frame = AethericFrame(Aether(), "component-states-clear-dirty")
     states = frame.spell_system_states
     root_index = _register_lineage(states, "root-clear-dirty")
     dep_index = _register_lineage(states, "dep-clear-dirty")
@@ -417,7 +418,7 @@ def test_component_spell_system_states_rebind_preserves_old_spell_id_mapping() -
     Raises:
         AssertionError: If old spell ids are not still resolvable.
     """
-    frame = AethericFrame("component-states-rebind-old-id")
+    frame = AethericFrame(Aether(), "component-states-rebind-old-id")
     states = frame.spell_system_states
     index = _register_lineage(states, "spell-rebind-old-id")
     try:
@@ -444,7 +445,7 @@ def test_component_spell_system_states_update_dependencies_with_unknown_dep() ->
     Raises:
         AssertionError: If unknown dependency tracking is incorrect.
     """
-    frame = AethericFrame("component-states-unknown-dep")
+    frame = AethericFrame(Aether(), "component-states-unknown-dep")
     states = frame.spell_system_states
     root_index = _register_lineage(states, "root-unknown-dep")
     states.consume_dirty_lineages()
@@ -472,7 +473,7 @@ def test_component_spell_system_states_impact_closure_handles_cycle() -> None:
     Raises:
         AssertionError: If closure does not handle cycles correctly.
     """
-    frame = AethericFrame("component-states-cycle")
+    frame = AethericFrame(Aether(), "component-states-cycle")
     states = frame.spell_system_states
     index_a = _register_lineage(states, "spell-cycle-a")
     index_b = _register_lineage(states, "spell-cycle-b")
@@ -507,7 +508,7 @@ def test_component_spell_system_states_clear_dirty_preserves_non_topology_flags(
     Raises:
         AssertionError: If non-topology flags are cleared.
     """
-    frame = AethericFrame("component-states-flag-persist")
+    frame = AethericFrame(Aether(), "component-states-flag-persist")
     states = frame.spell_system_states
     index = _register_lineage(states, "spell-flag-persist")
     try:
@@ -534,3 +535,4 @@ def test_component_spell_system_states_clear_dirty_preserves_non_topology_flags(
         assert SpellState.impacted_by_dependency not in flags
     finally:
         frame.cleanup()
+

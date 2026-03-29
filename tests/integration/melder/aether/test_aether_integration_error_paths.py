@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from melder.aether.aether import Aether
+from melder.aether.aetheric_frame import AethericFrame
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
@@ -77,10 +78,10 @@ def test_aether_ensure_frame_rejects_non_string() -> None:
         aether._ensure_frame(123)
 
 
-def test_aether_cleanup_frame_missing_is_noop() -> None:
+def test_unregistered_frame_cleanup_is_noop_for_aether_registry() -> None:
     """
     Purpose:
-        Validate cleanup_frame is a no-op for missing frames.
+        Validate direct cleanup of an unregistered frame is a no-op for Aether.
     Contract:
         - Missing frame cleanup does not raise.
         - Default frame remains available.
@@ -90,7 +91,8 @@ def test_aether_cleanup_frame_missing_is_noop() -> None:
         AssertionError: If cleanup mutates default frame state.
     """
     aether = Aether()
-    aether.cleanup_frame("missing-frame")
+    frame = AethericFrame(Aether(), "missing-frame")
+    frame.cleanup()
     aether._ensure_default_frame()
     assert aether._default_frame is not None
 

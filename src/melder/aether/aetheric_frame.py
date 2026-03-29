@@ -3,7 +3,7 @@ from typing import Set, Dict
 
 import ulid
 # Melder Imports
-from melder.utilities.interfaces.interfaces import IConduit, IAethericFrame
+from melder.utilities.interfaces.interfaces import IConduit, IAether, IAethericFrame
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.conduit_cloud import ConduitCloud
 from melder.spellbook.bind.spell_index import SpellIndex
@@ -30,19 +30,27 @@ class AethericFrame(Cleanable, IAethericFrame):
     This object is thread-safe.
     """
     __melder_internal__ = _mrg.sentinel
-    def __init__(self, name: str) -> None:
+    def __init__(self, aether: IAether, name: str) -> None:
         """
         Initialize a new AethericFrame.
 
         Args:
+            aether:
+                Owning `Aether` singleton responsible for registry attachment
+                and detachment of this frame.
             name: Human-readable name for this frame. Used for identification
                   and logging; uniqueness is expected but not enforced here.
         """
         super().__init__()
 
+        if aether is None:
+            raise TypeError("aether cannot be None")
+        if not isinstance(aether, IAether):
+            raise TypeError("aether must satisfy IAether")
         if not name:
             raise ValueError("name cannot be empty")
 
+        self._aether: IAether = aether
         self.name: str = name
         self._id: str = str(ulid.ULID())
         self._lock: threading.RLock = threading.RLock()
@@ -101,20 +109,25 @@ class AethericFrame(Cleanable, IAethericFrame):
         if self._cleaned:
             return
 
+        owner_aether = None
+        frame_name = None
+
         with self._lock:
             if self._cleaned:
                 return
 
+            owner_aether = self._aether
+            frame_name = self.name
             self._cleaned = True
             self._cleanup_data_structures()
 
-            # Configuration + identifiers
+            self._aether = None
             self._configuration = None
             self.name = None
             self._id = None
 
-        # Drop lock last.
         self._lock = None
+        owner_aether._detach_cleaned_frame(frame_name, self)
 
 
     def _cleanup_data_structures(self) -> None:

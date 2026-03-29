@@ -1,7 +1,8 @@
 import threading
-from typing import Dict, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.aether.nexus.nexus_frame_record import NexusFrameRecord
 from melder.aether.nexus.configuration.rift_configuration import RiftConfiguration
 from melder.aether.nexus.configuration.nexus_configuration import (
     NexusConfiguration,
@@ -9,11 +10,13 @@ from melder.aether.nexus.configuration.nexus_configuration import (
 from melder.aether.nexus.configuration.nexus_frame_mode import (
     NexusFrameMode,
 )
+from melder.aether.nexus.rift_space.rift_event_configuration import RiftEventConfiguration
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import (
     INexus,
     INexusConfiguration,
+    IRiftEventConfiguration,
     IRift,
     IRiftConfiguration,
 )
@@ -56,8 +59,11 @@ class Nexus(Cleanable, INexus):
         "_enabled",
         "_rifts_by_id",
         "_rift_ids_by_name",
+        "_next_default_rift_number",
+        "_next_indexed_nexus_frame_number",
+        "_rift_profiles_by_name",
         "_target_frame_ref_counts",
-        "_system_frame_ref_counts",
+        "_nexus_frames_by_name",
     ]
 
     def __new__(cls):
@@ -100,8 +106,11 @@ class Nexus(Cleanable, INexus):
             self._enabled: bool = False
             self._rifts_by_id: Dict[str, IRift] = {}
             self._rift_ids_by_name: Dict[str, str] = {}
+            self._next_default_rift_number: int = 1
+            self._next_indexed_nexus_frame_number: int = 1
+            self._rift_profiles_by_name: Dict[str, IRiftConfiguration] = {}
             self._target_frame_ref_counts: Dict[str, int] = {}
-            self._system_frame_ref_counts: Dict[str, int] = {}
+            self._nexus_frames_by_name: Dict[str, NexusFrameRecord] = {}
             Nexus._initialized = True
 
     @classmethod
@@ -200,18 +209,28 @@ class Nexus(Cleanable, INexus):
                 rift.cleanup()
             if self._configuration is not None:
                 self._configuration.cleanup()
+            for profile in self._rift_profiles_by_name.values():
+                profile.cleanup()
+            for nexus_frame_record in self._nexus_frames_by_name.values():
+                nexus_frame_record.cleanup()
 
             self._configuration = None
             self._configured = None
             self._enabled = None
             self._rifts_by_id.clear()
             self._rift_ids_by_name.clear()
+            self._next_default_rift_number = None
+            self._next_indexed_nexus_frame_number = None
+            self._rift_profiles_by_name.clear()
             self._target_frame_ref_counts.clear()
-            self._system_frame_ref_counts.clear()
+            self._nexus_frames_by_name.clear()
             self._rifts_by_id = None
             self._rift_ids_by_name = None
+            self._next_default_rift_number = None
+            self._next_indexed_nexus_frame_number = None
+            self._rift_profiles_by_name = None
             self._target_frame_ref_counts = None
-            self._system_frame_ref_counts = None
+            self._nexus_frames_by_name = None
             self._id = None
         self._lock = None
         with Nexus._singleton_lock:
@@ -273,19 +292,36 @@ class Nexus(Cleanable, INexus):
         with self._lock:
             self._enabled = False
 
-    def create_rift_configuration(self) -> IRiftConfiguration:
+    def create_rift_configuration(
+            self,
+            profile_name: Optional[str] = None,
+    ) -> IRiftConfiguration:
         """
         Internal
 
         Create a per-Rift configuration initialized from Nexus defaults.
+
+        Args:
+            profile_name:
+                Optional registered profile name. When supplied, the returned
+                configuration is cloned from the stored profile template.
 
         Returns:
             IRiftConfiguration: Mutable per-Rift configuration.
 
         Raises:
             RuntimeError: If Nexus is not configured.
+            ValueError: If `profile_name` is unknown.
         """
         self._require_configured()
+        if profile_name is not None:
+            with self._lock:
+                try:
+                    template = self._rift_profiles_by_name[profile_name]
+                except KeyError as exc:
+                    raise ValueError("Rift profile '{0}' was not found.".format(profile_name)) from exc
+            return self._clone_rift_configuration(template)
+
         configuration = RiftConfiguration().with_defaults()
         configuration.with_target_frame_name(self._configuration.get_property("default_target_frame_name"))
         configuration.with_space_type(self._configuration.get_property("default_space_type"))
@@ -293,6 +329,44 @@ class Nexus(Cleanable, INexus):
         configuration.with_auto_create_space(self._configuration.get_property("default_auto_create_space"))
         configuration.with_validation_mode(self._configuration.get_property("default_validation_mode"))
         return configuration
+
+    def register_rift_profile(
+            self,
+            name: str,
+            configuration: IRiftConfiguration,
+    ) -> None:
+        """
+        Internal
+
+        Register one named Rift configuration profile template on Nexus.
+
+        Args:
+            name:
+                Stable profile name.
+            configuration:
+                Rift configuration to store as the profile template source.
+
+        Contract:
+            - Stores a frozen cloned template, not the original configuration
+              object.
+            - Replaces any existing template with the same name.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError: If `name` is empty.
+        """
+        self.check_cleaned()
+        if not name:
+            raise ValueError("Rift profile name cannot be empty.")
+        template = self._clone_rift_configuration(configuration)
+        template.finalize()
+        with self._lock:
+            existing_profile = self._rift_profiles_by_name.get(name)
+            if existing_profile is not None:
+                existing_profile.cleanup()
+            self._rift_profiles_by_name[name] = template
 
     def create_rift(
             self,
@@ -334,22 +408,25 @@ class Nexus(Cleanable, INexus):
 
         canonical_rift_id = rift_id or IDBuilder.create_id()
         bound_configuration = configuration or self.create_rift_configuration()
+        if bound_configuration.consumed:
+            raise ValueError("RiftConfiguration has already been consumed.")
         if not bound_configuration.frozen:
             bound_configuration.finalize()
 
         self._validate_target_frame_configuration(bound_configuration)
-        system_frame_name = self._determine_system_frame_name(canonical_rift_id)
         target_frame_name = bound_configuration.get_property("target_frame_name")
 
         with self._lock:
+            canonical_rift_name = rift_name or self._allocate_default_rift_name()
+            nexus_frame_name = self._determine_nexus_frame_name(canonical_rift_id)
             rift = Rift(
                 self,
                 configuration=bound_configuration,
-                system_frame_names=(system_frame_name,),
-                default_system_frame_name=system_frame_name,
+                nexus_frame_names=(nexus_frame_name,),
+                default_nexus_frame_name=nexus_frame_name,
                 target_frame_names=(target_frame_name,),
                 default_target_frame_name=target_frame_name,
-                rift_name=rift_name,
+                rift_name=canonical_rift_name,
                 rift_id=canonical_rift_id,
                 local_conduit_id=local_conduit_id,
                 active_space_id=active_space_id,
@@ -358,6 +435,7 @@ class Nexus(Cleanable, INexus):
             if bound_configuration.get_property("auto_activate_on_program"):
                 rift.mark_active()
             self.add_rift(rift)
+            bound_configuration.mark_consumed()
             return rift
 
     def add_rift(self, rift: IRift) -> None:
@@ -384,7 +462,7 @@ class Nexus(Cleanable, INexus):
                 raise ValueError("Rift name '{0}' already exists.".format(rift.rift_name))
 
             self._validate_target_frame_budget(rift.target_frame_names)
-            self._validate_system_frame_budget(rift.system_frame_names)
+            self._validate_nexus_frame_budget(rift.nexus_frame_names)
             self._validate_active_rift_budget()
 
             self._rifts_by_id[rift.id] = rift
@@ -392,8 +470,7 @@ class Nexus(Cleanable, INexus):
                 self._rift_ids_by_name[rift.rift_name] = rift.id
             for target_frame_name in rift.target_frame_names:
                 self._increment_ref_count(self._target_frame_ref_counts, target_frame_name)
-            for system_frame_name in rift.system_frame_names:
-                self._increment_ref_count(self._system_frame_ref_counts, system_frame_name)
+            self._attach_rift_to_nexus_frames(rift)
             rift.mark_registered()
 
     def get_rift(
@@ -467,7 +544,7 @@ class Nexus(Cleanable, INexus):
         """
         Internal
 
-        Remove one Rift from Nexus and update frame ref counts.
+        Remove one Rift from Nexus and update frame lifecycle state.
 
         Args:
             rift_id:
@@ -477,6 +554,7 @@ class Nexus(Cleanable, INexus):
             None.
         """
         self._require_enabled()
+        frame_names_to_cleanup: List[str] = []
         with self._lock:
             try:
                 rift = self._rifts_by_id.pop(rift_id)
@@ -487,8 +565,11 @@ class Nexus(Cleanable, INexus):
                 self._rift_ids_by_name.pop(rift.rift_name, None)
             for target_frame_name in rift.target_frame_names:
                 self._decrement_ref_count(self._target_frame_ref_counts, target_frame_name)
-            for system_frame_name in rift.system_frame_names:
-                self._decrement_ref_count(self._system_frame_ref_counts, system_frame_name)
+            frame_names_to_cleanup.extend(self._detach_rift_from_nexus_frames(rift))
+
+        for frame_name in frame_names_to_cleanup:
+            rift.dispose_nexus_frame(frame_name)
+        rift.cleanup()
 
     def list_rift_ids(self) -> list[str]:
         """
@@ -501,6 +582,36 @@ class Nexus(Cleanable, INexus):
         """
         self._require_enabled()
         return list(self._rifts_by_id.keys())
+
+    def check_for_aetheric_frame(self, frame_name: str) -> None:
+        """
+        Internal
+
+        Drop Nexus frame-record state when `Aether` is about to dispose a
+        frame directly.
+
+        Args:
+            frame_name:
+                Frame name about to be removed from `Aether`.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned or not self._enabled or self._nexus_frames_by_name is None:
+                return
+            nexus_frame_record = self._nexus_frames_by_name.pop(frame_name, None)
+            if nexus_frame_record is None:
+                return
+
+            attached_rift_ids = nexus_frame_record.attached_rift_ids
+            for attached_rift_id in attached_rift_ids:
+                attached_rift = self._rifts_by_id.get(attached_rift_id)
+                if attached_rift is not None:
+                    attached_rift.on_nexus_frame_disposed(frame_name)
+            nexus_frame_record.cleanup()
 
     def _require_configured(self) -> None:
         """
@@ -644,28 +755,28 @@ class Nexus(Cleanable, INexus):
                 "max_target_frame_count"):
             raise ValueError("Nexus target-frame cap has been reached.")
 
-    def _validate_system_frame_budget(self, system_frame_names: Sequence[str]) -> None:
+    def _validate_nexus_frame_budget(self, nexus_frame_names: Sequence[str]) -> None:
         """
         Internal
 
-        Validate internal system-frame budget before registration.
+        Validate internal Nexus-frame budget before registration.
 
         Args:
-            system_frame_names:
-                Candidate system frame names on the Rift.
+            nexus_frame_names:
+                Candidate Nexus frame names on the Rift.
 
         Returns:
             None.
         """
-        unique_new_system_frames = []
-        for system_frame_name in system_frame_names:
-            if system_frame_name not in self._system_frame_ref_counts and system_frame_name not in unique_new_system_frames:
-                unique_new_system_frames.append(system_frame_name)
-        if not unique_new_system_frames:
+        unique_new_nexus_frames = []
+        for nexus_frame_name in nexus_frame_names:
+            if nexus_frame_name not in self._nexus_frames_by_name and nexus_frame_name not in unique_new_nexus_frames:
+                unique_new_nexus_frames.append(nexus_frame_name)
+        if not unique_new_nexus_frames:
             return
-        if len(self._system_frame_ref_counts) + len(unique_new_system_frames) > self._configuration.get_property(
-                "max_system_frame_count"):
-            raise ValueError("Nexus internal system-frame cap has been reached.")
+        if len(self._nexus_frames_by_name) + len(unique_new_nexus_frames) > self._configuration.get_property(
+                "max_nexus_frame_count"):
+            raise ValueError("Nexus internal frame cap has been reached.")
 
     def _validate_active_rift_budget(self) -> None:
         """
@@ -682,11 +793,11 @@ class Nexus(Cleanable, INexus):
         if len(self._rifts_by_id) >= max_active_rift_count:
             raise ValueError("Nexus active Rift cap has been reached.")
 
-    def _determine_system_frame_name(self, rift_id: str) -> str:
+    def _determine_nexus_frame_name(self, rift_id: str) -> str:
         """
         Internal
 
-        Determine the internal system frame name for one Rift from Nexus
+        Determine the internal Nexus frame name for one Rift from Nexus
         topology policy.
 
         Args:
@@ -695,13 +806,90 @@ class Nexus(Cleanable, INexus):
                 `one_per_workspace`.
 
         Returns:
-            str: Assigned system frame name.
+            str: Assigned Nexus frame name.
         """
-        system_frame_mode = self._configuration.get_property("system_frame_mode")
-        default_system_frame_name = self._configuration.get_property("default_system_frame_name")
-        if system_frame_mode == NexusFrameMode.one_per_workspace:
-            return "{0}:{1}".format(default_system_frame_name, rift_id)
-        return default_system_frame_name
+        nexus_frame_mode = self._configuration.get_property("nexus_frame_mode")
+        default_nexus_frame_name = self._configuration.get_property("default_nexus_frame_name")
+        if nexus_frame_mode == NexusFrameMode.one_per_workspace:
+            return "{0}:{1}".format(default_nexus_frame_name, rift_id)
+        if nexus_frame_mode == NexusFrameMode.indexed:
+            indexed_frame_name = "{0}:{1}".format(
+                default_nexus_frame_name,
+                self._next_indexed_nexus_frame_number,
+            )
+            self._next_indexed_nexus_frame_number = self._next_indexed_nexus_frame_number + 1
+            return indexed_frame_name
+        return default_nexus_frame_name
+
+    def _allocate_default_rift_name(self) -> str:
+        """
+        Internal
+
+        Allocate the next deterministic default Rift name.
+
+        Returns:
+            str: Newly allocated default Rift name.
+        """
+        while True:
+            rift_name = "nexus_rift_{0}".format(self._next_default_rift_number)
+            self._next_default_rift_number = self._next_default_rift_number + 1
+            if rift_name not in self._rift_ids_by_name:
+                return rift_name
+
+    def _attach_rift_to_nexus_frames(self, rift: IRift) -> None:
+        """
+        Internal
+
+        Attach one Rift to its realized Nexus-frame records.
+
+        Args:
+            rift:
+                Rift being registered.
+
+        Returns:
+            None.
+        """
+        nexus_frame_mode = self._configuration.get_property("nexus_frame_mode")
+        for nexus_frame_name in rift.nexus_frame_names:
+            nexus_frame_record = self._nexus_frames_by_name.get(nexus_frame_name)
+            if nexus_frame_record is None:
+                nexus_frame_record = NexusFrameRecord(
+                    frame_name=nexus_frame_name,
+                    frame=rift.get_nexus_frame_object(nexus_frame_name),
+                    nexus_frame_mode=nexus_frame_mode,
+                    creator_rift_id=rift.id,
+                    owner_rift_id=rift.id,
+                    immutable=False,
+                )
+                self._nexus_frames_by_name[nexus_frame_name] = nexus_frame_record
+            nexus_frame_record.attach_rift_id(rift.id)
+
+    def _detach_rift_from_nexus_frames(self, rift: IRift) -> List[str]:
+        """
+        Internal
+
+        Detach one Rift from its Nexus-frame records and determine which
+        frames should be disposed.
+
+        Args:
+            rift:
+                Rift being removed.
+
+        Returns:
+            List[str]: Frame names that should be disposed through `Aether`.
+        """
+        frame_names_to_cleanup = []
+        for nexus_frame_name in rift.nexus_frame_names:
+            nexus_frame_record = self._nexus_frames_by_name.get(nexus_frame_name)
+            if nexus_frame_record is None:
+                continue
+            nexus_frame_record.detach_rift_id(rift.id)
+            if nexus_frame_record.has_attached_rifts():
+                continue
+            if nexus_frame_record.immutable:
+                continue
+            frame_names_to_cleanup.append(nexus_frame_name)
+        return frame_names_to_cleanup
 
     def _increment_ref_count(self, ref_counts: Dict[str, int], key: str) -> None:
         """
@@ -744,3 +932,49 @@ class Nexus(Cleanable, INexus):
             ref_counts.pop(key, None)
             return
         ref_counts[key] = ref_counts[key] - 1
+
+    def _clone_rift_configuration(self, configuration: IRiftConfiguration) -> RiftConfiguration:
+        """
+        Internal
+
+        Clone one Rift configuration into a fresh `RiftConfiguration` object.
+
+        Args:
+            configuration:
+                Source configuration to clone.
+
+        Returns:
+            RiftConfiguration: Fresh cloned configuration.
+        """
+        cloned_configuration = RiftConfiguration()
+        for key in configuration.available_properties.keys():
+            if not configuration.has_property(key):
+                continue
+            value = configuration.get_property(key)
+            if key == "event_configuration" and value is not None:
+                value = self._clone_rift_event_configuration(value)
+            cloned_configuration.set_property(key, value)
+        return cloned_configuration
+
+    def _clone_rift_event_configuration(
+            self,
+            event_configuration: IRiftEventConfiguration,
+    ) -> RiftEventConfiguration:
+        """
+        Internal
+
+        Clone one `RiftEventConfiguration` into a fresh room-event config.
+
+        Args:
+            event_configuration:
+                Source event configuration.
+
+        Returns:
+            RiftEventConfiguration: Fresh cloned event configuration.
+        """
+        return RiftEventConfiguration(
+            action_enrichers=list(event_configuration._action_enrichers),
+            memory_enrichers=list(event_configuration._memory_enrichers),
+            action_observers=list(event_configuration._action_observers),
+            memory_observers=list(event_configuration._memory_observers),
+        )

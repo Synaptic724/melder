@@ -218,17 +218,17 @@ def test_aetheric_frame_version_registry_tracks_bound_spells() -> None:
         conduit.cleanup()
 
 
-def test_aether_cleanup_frame_cleans_conduits_and_removes_frame() -> None:
+def test_bottom_up_frame_cleanup_cleans_conduits_and_removes_frame() -> None:
     """
     Purpose:
-        Validate cleanup_frame cleans conduits and removes the frame.
+        Validate bottom-up frame cleanup cleans conduits and removes the frame.
     Contract:
-        - cleanup_frame cleans the frame and its conduits.
+        - `frame.cleanup()` cleans the frame and its conduits.
         - Aether no longer resolves the cleaned frame.
     Returns:
         None.
     Raises:
-        AssertionError: If cleanup_frame does not clear frame state.
+        AssertionError: If frame cleanup does not clear frame state.
     """
     aether = Aether()
     frame_name = "frame-clean"
@@ -244,7 +244,7 @@ def test_aether_cleanup_frame_cleans_conduits_and_removes_frame() -> None:
     )
     conduit = spellbook.conjure(name="root")
 
-    aether.cleanup_frame(frame_name)
+    frame.cleanup()
 
     assert frame.cleaned is True
     assert conduit.cleaned is True

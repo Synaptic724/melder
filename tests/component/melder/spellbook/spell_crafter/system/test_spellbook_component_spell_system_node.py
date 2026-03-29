@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.spellbook.bind.spell_index import SpellIndex
@@ -53,7 +54,7 @@ def test_component_node_metadata_roundtrip_in_validation_state() -> None:
     Raises:
         AssertionError: If node metadata is lost.
     """
-    frame = AethericFrame("component-node-metadata")
+    frame = AethericFrame(Aether(), "component-node-metadata")
     states = frame._spell_system_states
     root_id = "node-meta"
     root_index = _register_lineage(states, root_id)
@@ -101,7 +102,7 @@ def test_component_node_dependency_change_triggers_graph_mismatch() -> None:
     Raises:
         AssertionError: If graph mismatch diagnostics are missing.
     """
-    frame = AethericFrame("component-node-mismatch")
+    frame = AethericFrame(Aether(), "component-node-mismatch")
     states = frame._spell_system_states
     root_id = "node-root"
     dep_id = "node-dep"
@@ -176,7 +177,7 @@ def test_component_node_survives_validation_state_cleanup() -> None:
     Raises:
         AssertionError: If nodes are cleaned by validation state cleanup.
     """
-    frame = AethericFrame("component-node-cleanup")
+    frame = AethericFrame(Aether(), "component-node-cleanup")
     states = frame._spell_system_states
     root_id = "node-cleanup"
     root_index = _register_lineage(states, root_id)
@@ -207,3 +208,4 @@ def test_component_node_survives_validation_state_cleanup() -> None:
         assert node.cleaned is False
     finally:
         frame.cleanup()
+

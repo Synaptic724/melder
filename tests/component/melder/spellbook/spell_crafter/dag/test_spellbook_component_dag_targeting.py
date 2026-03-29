@@ -1,3 +1,4 @@
+from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.spell_crafter.dag.dag_index import DagTargetingEngine
@@ -64,7 +65,7 @@ def _build_blueprint():
     Returns:
         tuple: (blueprint, ids) where ids is a dict of spell ids.
     """
-    frame = AethericFrame("component-dag-targeting")
+    frame = AethericFrame(Aether(), "component-dag-targeting")
     states = frame.spell_system_states
 
     root_index = _register_lineage(states, "root-targeting")
@@ -275,3 +276,4 @@ def test_component_dag_targeting_path_ignores_same_name_elsewhere() -> None:
         assert socket.node_id == ids["root"]
     finally:
         blueprint.cleanup()
+

@@ -7,11 +7,10 @@ class RiftAccessMode(Enum):
     """
     Internal
 
-    System-level policy for direct Rift or RiftState retrieval.
+    System-level policy for direct Rift retrieval.
     """
 
     __melder_internal__ = _mrg.sentinel
     open = "open"
     token_required = "token_required"
     system_only = "system_only"
-

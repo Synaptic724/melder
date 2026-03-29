@@ -1,12 +1,26 @@
 import threading
 import pytest
 from unittest.mock import MagicMock, patch, ANY
+from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
 from melder.spellbook.bind.spell_index import SpellIndex
 
 # ----------------------------------------------------------------------
 # Fixtures
 # ----------------------------------------------------------------------
+
+@pytest.fixture(autouse=True)
+def fresh_aether() -> None:
+    """
+    Reset the Aether singleton around each frame test.
+
+    Returns:
+        None.
+    """
+    Aether._reset_singleton_for_tests()
+    yield
+    Aether._reset_singleton_for_tests()
+
 
 @pytest.fixture
 def mock_dependencies():
@@ -28,7 +42,7 @@ def mock_dependencies():
 @pytest.fixture
 def frame(mock_dependencies):
     """Returns a fresh AethericFrame instance with mocked dependencies."""
-    return AethericFrame("test_frame")
+    return AethericFrame(Aether(), "test_frame")
 
 # ----------------------------------------------------------------------
 # 1. Initialization Tests
@@ -45,7 +59,7 @@ def test_init_success(mock_dependencies):
     - All sub-managers (cloud, mr, sss, dom) are instantiated using mocks.
     - Registries start empty.
     """
-    f = AethericFrame("my_frame")
+    f = AethericFrame(Aether(), "my_frame")
     assert f.name == "my_frame"
     assert f._id is not None
     assert isinstance(f._lock, type(threading.RLock()))
@@ -62,15 +76,25 @@ def test_init_success(mock_dependencies):
     assert f._spell_system_states is mock_dependencies["sss"].return_value
     assert f._dev_ops_manager is mock_dependencies["dom"].return_value
 
+def test_init_missing_aether_raises() -> None:
+    """
+    Verify a frame cannot be constructed without an owning Aether.
+
+    Returns:
+        None.
+    """
+    with pytest.raises(TypeError, match="aether cannot be None"):
+        AethericFrame(None, "my_frame")
+
 def test_init_empty_name_raises():
     """Test that empty name raises ValueError."""
     with pytest.raises(ValueError, match="cannot be empty"):
-        AethericFrame("")
+        AethericFrame(Aether(), "")
 
 def test_init_none_name_raises():
     """Test that None name raises ValueError (via type check or bool check)."""
     with pytest.raises(ValueError): # or TypeError depending on impl detail, but ValueError expected
-        AethericFrame(None)
+        AethericFrame(Aether(), None)
 
 # ----------------------------------------------------------------------
 # 2. Context Manager Tests
@@ -413,3 +437,4 @@ def test_cleaned_checks_on_methods(frame):
 def test_init_sets_configuration_none(frame):
     """Ensure configuration starts as None."""
     assert frame._configuration is None
+

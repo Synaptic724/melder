@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
@@ -43,7 +44,7 @@ def test_component_adjacency_builder_tracks_reverse_edges_and_topologies() -> No
     Raises:
         AssertionError: If snapshot contents are incorrect.
     """
-    frame = AethericFrame("component-adjacency-builder")
+    frame = AethericFrame(Aether(), "component-adjacency-builder")
     states = frame._spell_system_states
     root_id = "root-adj"
     dep_a = "dep-a"
@@ -103,7 +104,7 @@ def test_component_adjacency_builder_reflects_dependency_updates() -> None:
     Raises:
         AssertionError: If snapshot does not reflect updated state.
     """
-    frame = AethericFrame("component-adjacency-updates")
+    frame = AethericFrame(Aether(), "component-adjacency-updates")
     states = frame._spell_system_states
     root_id = "root-update"
     dep_a = "dep-a-update"
@@ -136,7 +137,7 @@ def test_component_adjacency_builder_empty_states_snapshot() -> None:
     Raises:
         AssertionError: If snapshot contains unexpected entries.
     """
-    frame = AethericFrame("component-adjacency-empty")
+    frame = AethericFrame(Aether(), "component-adjacency-empty")
     states = frame._spell_system_states
     try:
         snapshot = SpellSystemAdjacencyBuilder.build(states)
@@ -161,7 +162,7 @@ def test_component_adjacency_builder_ignores_unregistered_dependency_ids() -> No
     Raises:
         AssertionError: If unregistered dependencies affect roots unexpectedly.
     """
-    frame = AethericFrame("component-adjacency-ghost")
+    frame = AethericFrame(Aether(), "component-adjacency-ghost")
     states = frame._spell_system_states
     root_id = "root-ghost"
     root_index = _register_lineage(states, root_id)
@@ -187,7 +188,7 @@ def test_component_adjacency_builder_tracks_multiple_dependents() -> None:
     Raises:
         AssertionError: If reverse dependencies are incomplete.
     """
-    frame = AethericFrame("component-adjacency-multi-parent")
+    frame = AethericFrame(Aether(), "component-adjacency-multi-parent")
     states = frame._spell_system_states
     root_a = "root-parent-a"
     root_b = "root-parent-b"
@@ -220,7 +221,7 @@ def test_component_adjacency_builder_collects_dependency_topologies() -> None:
     Raises:
         AssertionError: If dependency topologies are missing.
     """
-    frame = AethericFrame("component-adjacency-dep-topology")
+    frame = AethericFrame(Aether(), "component-adjacency-dep-topology")
     states = frame._spell_system_states
     root_id = "root-no-topology"
     dep_id = "dep-with-topology"
@@ -251,7 +252,7 @@ def test_component_adjacency_builder_ignores_unregistered_topology_entry() -> No
     Raises:
         AssertionError: If ghost topologies are included.
     """
-    frame = AethericFrame("component-adjacency-ghost-topology")
+    frame = AethericFrame(Aether(), "component-adjacency-ghost-topology")
     states = frame._spell_system_states
     root_id = "root-ghost-topo"
     root_index = _register_lineage(states, root_id)
@@ -266,3 +267,4 @@ def test_component_adjacency_builder_ignores_unregistered_topology_entry() -> No
         assert snapshot.topologies == {root_id: None}
     finally:
         frame.cleanup()
+

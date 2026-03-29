@@ -34,6 +34,7 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
         "_id",
         "_lock",
         "_frozen",
+        "_consumed",
         "_properties",
         "available_properties",
     ]
@@ -51,6 +52,7 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._frozen: bool = False
+        self._consumed: bool = False
         self._properties: Dict[str, object] = {}
         self.available_properties: Dict[str, Union[Type, Tuple[Type, ...]]] = {
             "target_frame_name": str,
@@ -82,6 +84,7 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
                 return
             self._cleaned = True
             self._frozen = True
+            self._consumed = True
             self._properties.clear()
             self._properties = None
             self.available_properties.clear()
@@ -100,6 +103,19 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
         """
         self.check_cleaned()
         return self._frozen
+
+    @property
+    def consumed(self) -> bool:
+        """
+        Purpose:
+            Return whether this configuration has already been consumed by Rift
+            creation.
+
+        Returns:
+            bool: True when consumed.
+        """
+        self.check_cleaned()
+        return self._consumed
 
     def set_property(self, key: str, value: object) -> None:
         """
@@ -129,6 +145,8 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
         self.check_cleaned()
         if self._frozen:
             raise RuntimeError("Cannot modify RiftConfiguration after freeze().")
+        if self._consumed:
+            raise RuntimeError("Cannot modify RiftConfiguration after it has been consumed.")
         if key not in self.available_properties:
             raise ValueError(f"Unknown RiftConfiguration property: '{key}'.")
 
@@ -252,6 +270,22 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
         """
         self.freeze()
         return self
+
+    def mark_consumed(self) -> None:
+        """
+        Internal
+
+        Mark this configuration as consumed by successful Rift creation.
+
+        Contract:
+            - Consumed configurations are not reusable for another Rift.
+            - Does not imply cleanup.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        self._consumed = True
 
     def build(self) -> "IRiftConfiguration":
         """
@@ -388,7 +422,7 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
     def with_event_configuration(
             self,
             event_configuration: Optional[IRiftEventConfiguration],
-    ) -> "IAethericRiftConfiguration":
+    ) -> "IRiftConfiguration":
         """
         Fluent
 
@@ -399,7 +433,7 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
                 Optional event configuration object for the room layer.
 
         Returns:
-            IAethericRiftConfiguration: This configuration instance.
+            IRiftConfiguration: This configuration instance.
         """
         self.set_property("event_configuration", event_configuration)
         return self

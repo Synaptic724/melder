@@ -1,5 +1,6 @@
 import pytest
 
+from melder.aether.aether import Aether
 from melder.aether.nexus.rift.rift import Rift
 from melder.aether.nexus.configuration.rift_configuration import RiftConfiguration
 from melder.aether.nexus.nexus import Nexus
@@ -14,9 +15,11 @@ def fresh_nexus() -> None:
     Returns:
         None.
     """
+    Aether._reset_singleton_for_tests()
     Nexus._reset_singleton_for_tests()
     yield
     Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
 
 
 def _create_enabled_nexus() -> Nexus:
@@ -109,9 +112,9 @@ def test_create_rift_registers_live_rift_after_enable() -> None:
     assert nexus.has_rift(rift.id) is True
     assert rift.is_registered is True
     assert rift.is_active is True
-    assert rift.default_system_frame_name == "aetheric_frame_system"
+    assert rift.default_nexus_frame_name == "aetheric_frame_system"
     assert rift.default_target_frame_name == "default"
-    assert rift.system_frame_names == ("aetheric_frame_system",)
+    assert rift.nexus_frame_names == ("aetheric_frame_system",)
     assert rift.target_frame_names == ("default",)
     assert nexus.get_rift(rift.id) is rift
     assert nexus.get_rift_by_name("alpha") is rift
@@ -119,6 +122,41 @@ def test_create_rift_registers_live_rift_after_enable() -> None:
 
     nexus.remove_rift(rift.id)
     assert nexus.has_rift(rift.id) is False
+
+
+def test_unnamed_rifts_receive_deterministic_default_names() -> None:
+    """
+    Verify unnamed Rifts receive deterministic Nexus-owned default names.
+
+    Returns:
+        None.
+    """
+    nexus = _create_enabled_nexus()
+
+    first = nexus.create_rift()
+    second = nexus.create_rift()
+
+    assert first.rift_name == "nexus_rift_1"
+    assert second.rift_name == "nexus_rift_2"
+
+
+def test_create_rift_consumes_configuration_after_success() -> None:
+    """
+    Verify a `RiftConfiguration` is single-use and cannot be reused after
+    successful Rift creation.
+
+    Returns:
+        None.
+    """
+    nexus = _create_enabled_nexus()
+    configuration = nexus.create_rift_configuration()
+    rift = nexus.create_rift(configuration=configuration, rift_name="alpha")
+
+    assert configuration.consumed is True
+    assert rift.configuration is configuration
+
+    with pytest.raises(ValueError, match="already been consumed"):
+        nexus.create_rift(configuration=configuration, rift_name="beta")
 
 
 def test_create_rift_configuration_uses_nexus_defaults() -> None:
@@ -136,6 +174,33 @@ def test_create_rift_configuration_uses_nexus_defaults() -> None:
     assert config.get_property("target_frame_name") == "default"
     assert config.get_property("auto_activate_on_program") is True
     assert config.get_property("auto_create_space") is False
+
+
+def test_create_rift_configuration_can_clone_registered_profile() -> None:
+    """
+    Verify Nexus can register a named profile template and return fresh cloned
+    `RiftConfiguration` objects from it.
+
+    Returns:
+        None.
+    """
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    nexus.enable(configuration)
+
+    profile = nexus.create_rift_configuration()
+    profile.with_target_frame_name("ops")
+    profile.with_space_name("ops-room")
+    nexus.register_rift_profile("ops_profile", profile)
+
+    profiled_configuration = nexus.create_rift_configuration(profile_name="ops_profile")
+    second_profiled_configuration = nexus.create_rift_configuration(profile_name="ops_profile")
+
+    assert profiled_configuration is not second_profiled_configuration
+    assert profiled_configuration.get_property("target_frame_name") == "ops"
+    assert profiled_configuration.get_property("space_name") == "ops-room"
+    assert profiled_configuration.consumed is False
+    assert second_profiled_configuration.consumed is False
 
 
 def test_rift_can_use_spaces_without_separate_state_object() -> None:
@@ -213,9 +278,9 @@ def test_target_frame_allow_and_deny_lists_are_enforced() -> None:
     assert rift.default_target_frame_name == "ops"
 
 
-def test_shared_and_isolated_system_frame_names_are_assigned() -> None:
+def test_shared_and_isolated_nexus_frame_names_are_assigned() -> None:
     """
-    Verify system-frame topology settings shape the Rift's assigned internal
+    Verify Nexus-frame topology settings shape the Rift's assigned internal
     frame names correctly.
 
     Returns:
@@ -223,20 +288,89 @@ def test_shared_and_isolated_system_frame_names_are_assigned() -> None:
     """
     shared_nexus = _create_enabled_nexus()
     shared_rift = shared_nexus.create_rift(rift_name="shared")
-    assert shared_rift.default_system_frame_name == "aetheric_frame_system"
+    assert shared_rift.default_nexus_frame_name == "aetheric_frame_system"
 
     isolated_nexus = Nexus()
     configuration = isolated_nexus.create_system_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
-    configuration.with_system_frame_mode("one_per_workspace")
-    configuration.with_max_system_frame_count(2)
+    configuration.with_nexus_frame_mode("one_per_workspace")
+    configuration.with_max_nexus_frame_count(2)
     isolated_nexus.enable(configuration)
 
     isolated_rift = isolated_nexus.create_rift(rift_name="isolated")
-    assert isolated_rift.default_system_frame_name.startswith("aetheric_frame_system:")
-    assert isolated_rift.default_system_frame_name.endswith(isolated_rift.id)
-    assert isolated_rift.system_frame_names == (isolated_rift.default_system_frame_name,)
+    assert isolated_rift.default_nexus_frame_name.startswith("aetheric_frame_system:")
+    assert isolated_rift.default_nexus_frame_name.endswith(isolated_rift.id)
+    assert isolated_rift.nexus_frame_names == (isolated_rift.default_nexus_frame_name,)
+
+
+def test_shared_nexus_frame_survives_until_last_rift_is_removed() -> None:
+    """
+    Verify the shared Nexus frame stays alive until the last attached Rift is
+    removed.
+
+    Returns:
+        None.
+    """
+    nexus = _create_enabled_nexus()
+    aether = Aether()
+    first = nexus.create_rift(rift_name="first")
+    second = nexus.create_rift(rift_name="second")
+
+    assert first.default_nexus_frame_name in aether._aetheric_frames
+
+    nexus.remove_rift(first.id)
+    assert second.default_nexus_frame_name in aether._aetheric_frames
+
+    nexus.remove_rift(second.id)
+    assert second.default_nexus_frame_name not in aether._aetheric_frames
+    assert second.default_nexus_frame_name not in nexus._nexus_frames_by_name
+
+
+def test_one_per_workspace_nexus_frame_is_removed_with_its_rift() -> None:
+    """
+    Verify a one-per-workspace Nexus frame is disposed when its owning Rift is
+    removed.
+
+    Returns:
+        None.
+    """
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_direct_rift_access(True)
+    configuration.with_nexus_frame_mode("one_per_workspace")
+    configuration.with_max_nexus_frame_count(2)
+    nexus.enable(configuration)
+
+    rift = nexus.create_rift(rift_name="isolated")
+    frame_name = rift.default_nexus_frame_name
+
+    assert frame_name in Aether()._aetheric_frames
+
+    nexus.remove_rift(rift.id)
+
+    assert frame_name not in Aether()._aetheric_frames
+    assert frame_name not in nexus._nexus_frames_by_name
+
+
+def test_external_aether_frame_cleanup_clears_nexus_frame_record() -> None:
+    """
+    Verify direct Aether frame disposal clears the corresponding Nexus frame
+    record first.
+
+    Returns:
+        None.
+    """
+    nexus = _create_enabled_nexus()
+    rift = nexus.create_rift(rift_name="alpha")
+    frame_name = rift.default_nexus_frame_name
+
+    assert frame_name in nexus._nexus_frames_by_name
+
+    rift.get_nexus_frame_object(frame_name).cleanup()
+
+    assert frame_name not in nexus._nexus_frames_by_name
 
 
 def test_direct_rift_construction_is_not_the_normal_registry_path() -> None:
@@ -252,8 +386,8 @@ def test_direct_rift_construction_is_not_the_normal_registry_path() -> None:
     rift = Rift(
         nexus,
         configuration=configuration,
-        system_frame_names=("aetheric_frame_system",),
-        default_system_frame_name="aetheric_frame_system",
+        nexus_frame_names=("aetheric_frame_system",),
+        default_nexus_frame_name="aetheric_frame_system",
         target_frame_names=("default",),
         default_target_frame_name="default",
         rift_name="manual",
@@ -279,8 +413,8 @@ def test_direct_rift_construction_requires_configured_enabled_nexus() -> None:
         Rift(
             nexus,
             configuration=rift_configuration,
-            system_frame_names=("aetheric_frame_system",),
-            default_system_frame_name="aetheric_frame_system",
+            nexus_frame_names=("aetheric_frame_system",),
+            default_nexus_frame_name="aetheric_frame_system",
             target_frame_names=("default",),
             default_target_frame_name="default",
             rift_name="manual",
@@ -292,8 +426,8 @@ def test_direct_rift_construction_requires_configured_enabled_nexus() -> None:
         Rift(
             nexus,
             configuration=rift_configuration,
-            system_frame_names=("aetheric_frame_system",),
-            default_system_frame_name="aetheric_frame_system",
+            nexus_frame_names=("aetheric_frame_system",),
+            default_nexus_frame_name="aetheric_frame_system",
             target_frame_names=("default",),
             default_target_frame_name="default",
             rift_name="manual",
@@ -313,8 +447,8 @@ def test_direct_rift_construction_requires_nexus_argument() -> None:
         Rift(
             None,
             configuration=configuration,
-            system_frame_names=("aetheric_frame_system",),
-            default_system_frame_name="aetheric_frame_system",
+            nexus_frame_names=("aetheric_frame_system",),
+            default_nexus_frame_name="aetheric_frame_system",
             target_frame_names=("default",),
             default_target_frame_name="default",
             rift_name="manual",

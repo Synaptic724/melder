@@ -5083,6 +5083,7 @@ class IAethericFrame(ICleanable, Protocol):
     """
     name: str
     _id: str
+    _aether: "IAether"
     _configuration: Optional[Any]  # Use 'Configuration' if it's a known type
     _conduit_cloud: IConduitCloud
     _conduits: 'Dict[str, IConduit]'
@@ -5130,9 +5131,9 @@ class IRiftMemory(ICleanable, Protocol):
 
 
 @runtime_checkable
-class IAethericRiftSystemConfiguration(ICleanable, Protocol):
+class INexusConfiguration(ICleanable, Protocol):
     """
-    Interface for central AethericRiftSystem configuration.
+    Interface for central Nexus configuration.
     """
 
     @property
@@ -5161,105 +5162,99 @@ class IAethericRiftSystemConfiguration(ICleanable, Protocol):
     def freeze(self) -> None:
         ...
 
-    def finalize(self) -> "IAethericRiftSystemConfiguration":
+    def finalize(self) -> "INexusConfiguration":
         ...
 
-    def build(self) -> "IAethericRiftSystemConfiguration":
+    def build(self) -> "INexusConfiguration":
         ...
 
-    def with_defaults(self) -> "IAethericRiftSystemConfiguration":
+    def with_defaults(self) -> "INexusConfiguration":
         ...
 
-    def with_rift_creation_enabled(self, enabled: bool = True) -> "IAethericRiftSystemConfiguration":
+    def with_rift_creation_enabled(self, enabled: bool = True) -> "INexusConfiguration":
         ...
 
-    def with_creation_token_required(self, enabled: bool = True) -> "IAethericRiftSystemConfiguration":
+    def with_creation_token_required(self, enabled: bool = True) -> "INexusConfiguration":
         ...
 
-    def with_creation_token(self, token_value: Optional[str]) -> "IAethericRiftSystemConfiguration":
+    def with_creation_token(self, token_value: Optional[str]) -> "INexusConfiguration":
         ...
 
-    def with_direct_rift_access(self, enabled: bool = True) -> "IAethericRiftSystemConfiguration":
+    def with_direct_rift_access(self, enabled: bool = True) -> "INexusConfiguration":
         ...
 
-    def with_rift_access_token_required(self, enabled: bool = True) -> "IAethericRiftSystemConfiguration":
+    def with_rift_access_token_required(self, enabled: bool = True) -> "INexusConfiguration":
         ...
 
-    def with_rift_access_token(self, token_value: Optional[str]) -> "IAethericRiftSystemConfiguration":
+    def with_rift_access_token(self, token_value: Optional[str]) -> "INexusConfiguration":
         ...
 
-    def with_direct_state_access(self, enabled: bool = True) -> "IAethericRiftSystemConfiguration":
+    def with_allow_external_rift_registration(self, enabled: bool = True) -> "INexusConfiguration":
         ...
 
-    def with_state_access_token_required(self, enabled: bool = True) -> "IAethericRiftSystemConfiguration":
+    def with_allow_nested_rift_creation(self, enabled: bool = True) -> "INexusConfiguration":
         ...
 
-    def with_state_access_token(self, token_value: Optional[str]) -> "IAethericRiftSystemConfiguration":
+    def with_max_active_rift_count(self, count: int) -> "INexusConfiguration":
         ...
 
-    def with_allow_external_rift_registration(self, enabled: bool = True) -> "IAethericRiftSystemConfiguration":
+    def with_nexus_frame_mode(self, mode: object) -> "INexusConfiguration":
         ...
 
-    def with_allow_nested_rift_creation(self, enabled: bool = True) -> "IAethericRiftSystemConfiguration":
+    def with_default_nexus_frame_name(self, frame_name: str) -> "INexusConfiguration":
         ...
 
-    def with_max_active_rift_count(self, count: int) -> "IAethericRiftSystemConfiguration":
+    def with_auto_create_nexus_frames(self, enabled: bool = True) -> "INexusConfiguration":
         ...
 
-    def with_system_frame_mode(self, mode: object) -> "IAethericRiftSystemConfiguration":
+    def with_max_nexus_frame_count(self, count: int) -> "INexusConfiguration":
         ...
 
-    def with_default_system_frame_name(self, frame_name: str) -> "IAethericRiftSystemConfiguration":
+    def with_default_target_frame_name(self, frame_name: str) -> "INexusConfiguration":
         ...
 
-    def with_auto_create_system_frames(self, enabled: bool = True) -> "IAethericRiftSystemConfiguration":
+    def with_allowed_target_frame_names(self, frame_names: Sequence[str]) -> "INexusConfiguration":
         ...
 
-    def with_max_system_frame_count(self, count: int) -> "IAethericRiftSystemConfiguration":
+    def with_denied_target_frame_names(self, frame_names: Sequence[str]) -> "INexusConfiguration":
         ...
 
-    def with_default_target_frame_name(self, frame_name: str) -> "IAethericRiftSystemConfiguration":
+    def with_target_frame_override(self, enabled: bool = True) -> "INexusConfiguration":
         ...
 
-    def with_allowed_target_frame_names(self, frame_names: Sequence[str]) -> "IAethericRiftSystemConfiguration":
+    def with_multiple_target_frames(self, enabled: bool = True) -> "INexusConfiguration":
         ...
 
-    def with_denied_target_frame_names(self, frame_names: Sequence[str]) -> "IAethericRiftSystemConfiguration":
+    def with_max_target_frame_count(self, count: int) -> "INexusConfiguration":
         ...
 
-    def with_target_frame_override(self, enabled: bool = True) -> "IAethericRiftSystemConfiguration":
+    def with_default_space_type(self, space_type: object) -> "INexusConfiguration":
         ...
 
-    def with_multiple_target_frames(self, enabled: bool = True) -> "IAethericRiftSystemConfiguration":
+    def with_default_auto_activate_on_program(self, enabled: bool = True) -> "INexusConfiguration":
         ...
 
-    def with_max_target_frame_count(self, count: int) -> "IAethericRiftSystemConfiguration":
+    def with_default_auto_create_space(self, enabled: bool = True) -> "INexusConfiguration":
         ...
 
-    def with_default_space_type(self, space_type: object) -> "IAethericRiftSystemConfiguration":
+    def with_default_validation_mode(self, mode: object) -> "INexusConfiguration":
         ...
-
-    def with_default_auto_activate_on_program(self, enabled: bool = True) -> "IAethericRiftSystemConfiguration":
-        ...
-
-    def with_default_auto_create_space(self, enabled: bool = True) -> "IAethericRiftSystemConfiguration":
-        ...
-
-    def with_default_validation_mode(self, mode: object) -> "IAethericRiftSystemConfiguration":
-        ...
-
-
-INexusConfiguration = IAethericRiftSystemConfiguration
 
 
 @runtime_checkable
-class IAethericRiftConfiguration(ICleanable, Protocol):
+class IRiftConfiguration(ICleanable, Protocol):
     """
     Interface for per-Rift programming/build configuration.
     """
 
+    available_properties: Dict[str, object]
+
     @property
     def frozen(self) -> bool:
+        ...
+
+    @property
+    def consumed(self) -> bool:
         ...
 
     def set_property(self, key: str, value: object) -> None:
@@ -5280,17 +5275,17 @@ class IAethericRiftConfiguration(ICleanable, Protocol):
     def freeze(self) -> None:
         ...
 
-    def finalize(self) -> "IAethericRiftConfiguration":
+    def finalize(self) -> "IRiftConfiguration":
         ...
 
-    def build(self) -> "IAethericRiftConfiguration":
+    def build(self) -> "IRiftConfiguration":
         ...
 
-    def with_defaults(self) -> "IAethericRiftConfiguration":
+    def with_defaults(self) -> "IRiftConfiguration":
         ...
 
-
-IRiftConfiguration = IAethericRiftConfiguration
+    def mark_consumed(self) -> None:
+        ...
 
 
 @runtime_checkable
@@ -5339,67 +5334,7 @@ class IDynamicRiftSpace(IRiftSpace, Protocol):
 
 
 @runtime_checkable
-class IAethericRiftState(ICleanable, Protocol):
-    """
-    Interface for legacy/internal canonical Rift-state records.
-    """
-
-    @property
-    def rift_id(self) -> str:
-        ...
-
-    @property
-    def rift_name(self) -> Optional[str]:
-        ...
-
-    @property
-    def target_frame_name(self) -> str:
-        ...
-
-    @property
-    def system_frame_name(self) -> str:
-        ...
-
-    @property
-    def mode(self) -> str:
-        ...
-
-    @property
-    def local_conduit_id(self) -> Optional[str]:
-        ...
-
-    @property
-    def active_space_id(self) -> Optional[str]:
-        ...
-
-    @property
-    def metadata(self) -> Dict[str, object]:
-        ...
-
-    @property
-    def configuration(self) -> IAethericRiftConfiguration:
-        ...
-
-    @property
-    def is_registered(self) -> bool:
-        ...
-
-    @property
-    def is_active(self) -> bool:
-        ...
-
-    def mark_registered(self) -> None:
-        ...
-
-    def mark_active(self) -> None:
-        ...
-
-    def mark_inactive(self) -> None:
-        ...
-
-
-@runtime_checkable
-class IAethericRift(ICleanable, Protocol):
+class IRift(ICleanable, Protocol):
     """
     Interface for the public live Rift runtime object.
     """
@@ -5413,15 +5348,15 @@ class IAethericRift(ICleanable, Protocol):
         ...
 
     @property
-    def configuration(self) -> IAethericRiftConfiguration:
+    def configuration(self) -> IRiftConfiguration:
         ...
 
     @property
-    def system_frame_names(self) -> Tuple[str, ...]:
+    def nexus_frame_names(self) -> Tuple[str, ...]:
         ...
 
     @property
-    def default_system_frame_name(self) -> str:
+    def default_nexus_frame_name(self) -> str:
         ...
 
     @property
@@ -5476,12 +5411,18 @@ class IAethericRift(ICleanable, Protocol):
     def list_space_ids(self) -> List[str]:
         ...
 
+    def get_nexus_frame_object(self, frame_name: str) -> "IAethericFrame":
+        ...
 
-IRift = IAethericRift
+    def dispose_nexus_frame(self, frame_name: str) -> None:
+        ...
+
+    def on_nexus_frame_disposed(self, frame_name: str) -> None:
+        ...
 
 
 @runtime_checkable
-class IAethericRiftSystem(ICleanable, Protocol):
+class INexus(ICleanable, Protocol):
     """
     Interface for the Nexus singleton root.
     """
@@ -5491,7 +5432,7 @@ class IAethericRiftSystem(ICleanable, Protocol):
         ...
 
     @property
-    def configuration(self) -> IAethericRiftSystemConfiguration:
+    def configuration(self) -> INexusConfiguration:
         ...
 
     @property
@@ -5502,49 +5443,59 @@ class IAethericRiftSystem(ICleanable, Protocol):
     def is_enabled(self) -> bool:
         ...
 
-    def create_system_configuration(self) -> IAethericRiftSystemConfiguration:
+    def create_system_configuration(self) -> INexusConfiguration:
         ...
 
     def enable(
             self,
-            configuration: Optional[IAethericRiftSystemConfiguration] = None,
+            configuration: Optional[INexusConfiguration] = None,
     ) -> None:
         ...
 
     def disable(self) -> None:
         ...
 
-    def create_rift_configuration(self) -> IAethericRiftConfiguration:
+    def create_rift_configuration(
+            self,
+            profile_name: Optional[str] = None,
+    ) -> IRiftConfiguration:
+        ...
+
+    def register_rift_profile(
+            self,
+            name: str,
+            configuration: IRiftConfiguration,
+    ) -> None:
         ...
 
     def create_rift(
             self,
             *,
-            configuration: Optional[IAethericRiftConfiguration] = None,
+            configuration: Optional[IRiftConfiguration] = None,
             rift_name: Optional[str] = None,
             rift_id: Optional[str] = None,
             local_conduit_id: Optional[str] = None,
             active_space_id: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
             creation_token: Optional[str] = None,
-    ) -> IAethericRift:
+    ) -> IRift:
         ...
 
-    def add_rift(self, rift: IAethericRift) -> None:
+    def add_rift(self, rift: IRift) -> None:
         ...
 
     def get_rift(
             self,
             rift_id: str,
             access_token: Optional[str] = None,
-    ) -> IAethericRift:
+    ) -> IRift:
         ...
 
     def get_rift_by_name(
             self,
             rift_name: str,
             access_token: Optional[str] = None,
-    ) -> IAethericRift:
+    ) -> IRift:
         ...
 
     def has_rift(self, rift_id: str) -> bool:
@@ -5556,9 +5507,8 @@ class IAethericRiftSystem(ICleanable, Protocol):
     def list_rift_ids(self) -> List[str]:
         ...
 
-
-INexus = IAethericRiftSystem
-
+    def check_for_aetheric_frame(self, frame_name: str) -> None:
+        ...
 @runtime_checkable
 class IAether(ICleanable, Protocol):
     """
@@ -5624,6 +5574,25 @@ class IAether(ICleanable, Protocol):
 
         Lifecycle:
             Frames created via this method are owned by Aether and cleaned by it.
+        """
+        ...
+
+    def _detach_cleaned_frame(
+            self,
+            frame_name: str,
+            frame: "IAethericFrame",
+    ) -> None:
+        """
+        Remove one already-cleaned frame from the Aether registry.
+
+        Args:
+            frame_name:
+                Name of the cleaned frame.
+            frame:
+                Cleaned frame instance requesting detachment.
+
+        Returns:
+            None.
         """
         ...
 

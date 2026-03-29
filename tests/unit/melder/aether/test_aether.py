@@ -86,11 +86,11 @@ def test_initialization_creates_default_frame(mock_frame_cls):
     Contract:
     - `_aetheric_frames` must contain "default".
     - `_default_frame` property must point to this frame.
-    - AethericFrame constructor must be called with "default".
+    - AethericFrame constructor must be called with the owning Aether plus "default".
     """
     a = Aether()
     assert "default" in a._aetheric_frames
-    mock_frame_cls.assert_called_with("default")
+    mock_frame_cls.assert_called_with(ANY, "default")
     assert a._default_frame is mock_frame_cls.return_value
     assert isinstance(a._nexus, Nexus)
     assert a._nexus.is_configured is False
@@ -178,73 +178,64 @@ def test_internal_lock_integrity():
 # 2. Frame Management Tests
 # ----------------------------------------------------------------------
 
-def test_cleanup_specific_frame(aether_with_mocks):
+def test_bottom_up_frame_cleanup_removes_custom_frame() -> None:
     """
-    Verify `cleanup_frame` correctly removes and cleans a targeted frame.
+    Verify bottom-up frame cleanup removes a custom frame from Aether.
 
     Contract:
-    - The frame object's `cleanup()` method is called.
-    - The frame is removed from the internal registry.
+    - Calling `frame.cleanup()` unregisters the frame from Aether.
+    - The cleaned frame disappears from the internal registry.
     """
-    a = aether_with_mocks
-    mock_custom = MagicMock()
-    a._aetheric_frames["custom"] = mock_custom
-    
-    a.cleanup_frame("custom")
-    
-    assert "custom" not in a._aetheric_frames
-    mock_custom.cleanup.assert_called_once()
+    a = Aether()
+    frame = a._ensure_frame("custom")
 
-def test_cleanup_default_frame_clears_reference(aether_with_mocks):
-    """Cleaning the 'default' frame also clears the _default_frame property."""
-    a = aether_with_mocks
+    frame.cleanup()
+
+    assert "custom" not in a._aetheric_frames
+
+def test_bottom_up_default_frame_cleanup_clears_reference() -> None:
+    """Cleaning the default frame bottom-up clears the default reference."""
+    a = Aether()
     default_frame = a._default_frame
-    
-    a.cleanup_frame("default")
-    
+
+    default_frame.cleanup()
+
     assert "default" not in a._aetheric_frames
     assert a._default_frame is None
-    default_frame.cleanup.assert_called_once()
 
-def test_cleanup_frame_not_found(aether_with_mocks):
-    """cleanup_frame() handles non-existent frames gracefully."""
-    a = aether_with_mocks
-    a.cleanup_frame("non_existent")
+def test_cleanup_unregistered_frame_is_safe() -> None:
+    """A direct unregistered frame cleanup does not mutate Aether registry."""
+    a = Aether()
+    frame = AethericFrame(a, "non_existent")
+    frame.cleanup()
+    assert "non_existent" not in a._aetheric_frames
 
-def test_cleanup_frame_handles_concurrent_removal(aether_with_mocks):
-    """
-    Verify robustness against concurrent frame removal.
+def test_cleanup_aetheric_frames_iterates_all() -> None:
+    """cleanup_aetheric_frames should call cleanup on all registered frames."""
+    a = Aether()
+    frame_one = a._ensure_frame("f1")
+    frame_two = a._ensure_frame("f2")
 
-    Contract:
-    - If a frame is present during check but removed before cleanup, no error is raised.
-    """
-    a = aether_with_mocks
-    a.cleanup_frame("missing")
-
-def test_cleanup_aetheric_frames_iterates_all(aether_with_mocks):
-    """cleanup_aetheric_frames should call cleanup on all frames."""
-    a = aether_with_mocks
-    mock_f1 = MagicMock()
-    mock_f2 = MagicMock()
-    a._aetheric_frames = {"f1": mock_f1, "f2": mock_f2}
-    
     a.cleanup_aetheric_frames()
-    
-    mock_f1.cleanup.assert_called_once()
-    mock_f2.cleanup.assert_called_once()
+
+    assert frame_one.cleaned is True
+    assert frame_two.cleaned is True
+    assert "f1" not in a._aetheric_frames
+    assert "f2" not in a._aetheric_frames
 
 def test_cleanup_aetheric_frames_tolerant_of_errors(aether_with_mocks):
     """If one frame fails cleanup, others should still be cleaned."""
     a = aether_with_mocks
     mock_f1 = MagicMock()
+    mock_f1.name = "f1"
     mock_f1.cleanup.side_effect = RuntimeError("Boom")
     mock_f2 = MagicMock()
-    
+    mock_f2.name = "f2"
+
     a._aetheric_frames = {"f1": mock_f1, "f2": mock_f2}
-    
-    # Should not raise
+
     a.cleanup_aetheric_frames()
-    
+
     mock_f1.cleanup.assert_called_once()
     mock_f2.cleanup.assert_called_once()
 

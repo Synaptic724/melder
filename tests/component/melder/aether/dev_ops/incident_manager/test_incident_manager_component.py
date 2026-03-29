@@ -1,3 +1,4 @@
+from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
 from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSeverity
 from melder.aether.dev_ops.incident_manager.incident_status import IncidentStatus
@@ -16,7 +17,7 @@ def test_component_incident_manager_cleanup_through_frame_cleans_incident() -> N
     Raises:
         AssertionError: If cleanup does not clean incident objects.
     """
-    frame = AethericFrame("component-incident-cleanup")
+    frame = AethericFrame(Aether(), "component-incident-cleanup")
     incident_manager = frame.dev_ops_manager.incident_manager
     incident = incident_manager.create_incident(
         kind="validation_failed",
@@ -40,7 +41,7 @@ def test_component_incident_manager_shared_reference_in_devops() -> None:
     Raises:
         AssertionError: If incident manager references diverge.
     """
-    frame = AethericFrame("component-incident-shared")
+    frame = AethericFrame(Aether(), "component-incident-shared")
     devops = frame.dev_ops_manager
     manager_a = devops.incident_manager
     manager_b = devops.incident_manager
@@ -69,7 +70,7 @@ def test_component_incident_manager_filters_by_status_kind_and_lineage() -> None
     Raises:
         AssertionError: If filters return incorrect incidents.
     """
-    frame = AethericFrame("component-incident-filters")
+    frame = AethericFrame(Aether(), "component-incident-filters")
     manager = frame.dev_ops_manager.incident_manager
     lineage = SpellIndex("spell-incident-filter")
     try:
@@ -117,7 +118,7 @@ def test_component_incident_manager_list_is_snapshot() -> None:
     Raises:
         AssertionError: If list mutations affect the registry.
     """
-    frame = AethericFrame("component-incident-list-snapshot")
+    frame = AethericFrame(Aether(), "component-incident-list-snapshot")
     manager = frame.dev_ops_manager.incident_manager
     try:
         incident = manager.create_incident(
@@ -144,9 +145,10 @@ def test_component_incident_manager_get_unknown_returns_none() -> None:
     Raises:
         AssertionError: If get_incident does not return None.
     """
-    frame = AethericFrame("component-incident-missing")
+    frame = AethericFrame(Aether(), "component-incident-missing")
     manager = frame.dev_ops_manager.incident_manager
     try:
         assert manager.get_incident("missing-id") is None
     finally:
         frame.cleanup()
+

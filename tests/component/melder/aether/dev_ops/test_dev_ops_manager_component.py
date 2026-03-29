@@ -1,3 +1,4 @@
+from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
 from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSeverity
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
@@ -71,7 +72,7 @@ def test_component_dev_ops_revalidate_dirty_roots_clears_change_control_state() 
     Raises:
         AssertionError: If dirty roots are not cleared.
     """
-    frame = AethericFrame("component-devops-revalidate")
+    frame = AethericFrame(Aether(), "component-devops-revalidate")
     states = frame.spell_system_states
     devops = frame.dev_ops_manager
     root_id = "root-devops"
@@ -128,7 +129,7 @@ def test_component_dev_ops_cleanup_cleans_children_and_states() -> None:
     Raises:
         AssertionError: If cleanup does not cascade properly.
     """
-    frame = AethericFrame("component-devops-cleanup")
+    frame = AethericFrame(Aether(), "component-devops-cleanup")
     devops = frame.dev_ops_manager
     states = devops.spell_system_states
     incident_manager = devops.incident_manager
@@ -152,3 +153,4 @@ def test_component_dev_ops_cleanup_cleans_children_and_states() -> None:
         assert incident.cleaned is True
     finally:
         frame.cleanup()
+

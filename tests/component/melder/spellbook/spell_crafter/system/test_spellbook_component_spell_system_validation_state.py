@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
@@ -161,7 +162,7 @@ def test_component_validation_state_from_system_validation_tracks_diagnostics() 
     Raises:
         AssertionError: If diagnostics are not captured or cleaned.
     """
-    frame = AethericFrame("component-validation-state-diagnostics")
+    frame = AethericFrame(Aether(), "component-validation-state-diagnostics")
     states = frame._spell_system_states
     root_id = "root-validation-state"
     root_index = _register_lineage(states, root_id)
@@ -199,3 +200,4 @@ def test_component_validation_state_from_system_validation_tracks_diagnostics() 
         assert warning.cleaned is True
     finally:
         frame.cleanup()
+

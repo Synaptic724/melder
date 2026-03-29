@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
@@ -45,7 +46,7 @@ def test_component_snapshot_tracks_unregistered_dependency_ids() -> None:
     Raises:
         AssertionError: If ghost dependencies are mishandled.
     """
-    frame = AethericFrame("component-snapshot-ghost")
+    frame = AethericFrame(Aether(), "component-snapshot-ghost")
     states = frame._spell_system_states
     root_id = "root-ghost-snap"
     root_index = _register_lineage(states, root_id)
@@ -73,7 +74,7 @@ def test_component_snapshot_cleanup_does_not_clean_topologies() -> None:
     Raises:
         AssertionError: If topology is cleaned by snapshot cleanup.
     """
-    frame = AethericFrame("component-snapshot-cleanup")
+    frame = AethericFrame(Aether(), "component-snapshot-cleanup")
     states = frame._spell_system_states
     root_id = "root-topology"
     root_index = _register_lineage(states, root_id)
@@ -115,7 +116,7 @@ def test_component_snapshot_roots_change_after_dependency_removed() -> None:
     Raises:
         AssertionError: If root ids do not update.
     """
-    frame = AethericFrame("component-snapshot-root-shift")
+    frame = AethericFrame(Aether(), "component-snapshot-root-shift")
     states = frame._spell_system_states
     root_id = "root-shift"
     dep_id = "dep-shift"
@@ -142,7 +143,7 @@ def test_component_snapshot_collects_multiple_topologies() -> None:
     Raises:
         AssertionError: If topologies are missing.
     """
-    frame = AethericFrame("component-snapshot-multi-topology")
+    frame = AethericFrame(Aether(), "component-snapshot-multi-topology")
     states = frame._spell_system_states
     root_id = "root-topo"
     dep_id = "dep-topo"
@@ -175,7 +176,7 @@ def test_component_snapshot_helpers_resolve_shared_dependency() -> None:
     Raises:
         AssertionError: If helper outputs are incorrect.
     """
-    frame = AethericFrame("component-snapshot-shared")
+    frame = AethericFrame(Aether(), "component-snapshot-shared")
     states = frame._spell_system_states
     root_a = "root-share-a"
     root_b = "root-share-b"
@@ -206,7 +207,7 @@ def test_component_snapshot_mutation_drives_blueprint_builder() -> None:
     Raises:
         AssertionError: If blueprint ignores snapshot dependency changes.
     """
-    frame = AethericFrame("component-snapshot-mutation")
+    frame = AethericFrame(Aether(), "component-snapshot-mutation")
     states = frame._spell_system_states
     root_id = "root-mutation"
     dep_id = "dep-mutation"
@@ -245,7 +246,7 @@ def test_component_snapshot_topologies_feed_blueprint_builder() -> None:
     Raises:
         AssertionError: If socket refs are not recorded.
     """
-    frame = AethericFrame("component-snapshot-topology-blueprint")
+    frame = AethericFrame(Aether(), "component-snapshot-topology-blueprint")
     states = frame._spell_system_states
     root_id = "root-topology-blueprint"
     dep_id = "dep-topology-blueprint"
@@ -280,3 +281,4 @@ def test_component_snapshot_topologies_feed_blueprint_builder() -> None:
         assert blueprint.dag_index.get_by_exact_path(("dep",)) != []
     finally:
         frame.cleanup()
+

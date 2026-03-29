@@ -7,6 +7,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import (
     IAether,
+    IAethericFrame,
     INexus,
     IRift,
     IRiftConfiguration,
@@ -46,8 +47,8 @@ class Rift(Cleanable, IRift):
         "_nexus",
         "_aether",
         "_configuration",
-        "_system_frame_names",
-        "_default_system_frame_name",
+        "_nexus_frame_names",
+        "_default_nexus_frame_name",
         "_target_frame_names",
         "_default_target_frame_name",
         "_local_conduit_id",
@@ -55,6 +56,7 @@ class Rift(Cleanable, IRift):
         "_is_registered",
         "_is_active",
         "_metadata",
+        "_nexus_frame_objects_by_name",
         "_spaces_by_id",
         "_space_ids_by_name",
     ]
@@ -64,8 +66,8 @@ class Rift(Cleanable, IRift):
             nexus: INexus,
             *,
             configuration: IRiftConfiguration,
-            system_frame_names: Sequence[str],
-            default_system_frame_name: str,
+            nexus_frame_names: Sequence[str],
+            default_nexus_frame_name: str,
             target_frame_names: Sequence[str],
             default_target_frame_name: str,
             rift_name: Optional[str] = None,
@@ -84,10 +86,10 @@ class Rift(Cleanable, IRift):
                 Owning Nexus singleton.
             configuration:
                 Finalized per-Rift configuration snapshot.
-            system_frame_names:
-                Assigned internal system-frame names for this Rift.
-            default_system_frame_name:
-                Default internal system-frame name for this Rift.
+            nexus_frame_names:
+                Assigned internal Nexus frame names for this Rift.
+            default_nexus_frame_name:
+                Default internal Nexus frame name for this Rift.
             target_frame_names:
                 Assigned target/userland frame names for this Rift.
             default_target_frame_name:
@@ -117,10 +119,10 @@ class Rift(Cleanable, IRift):
             raise RuntimeError("Rift requires an enabled Nexus.")
         if not configuration.frozen:
             raise RuntimeError("Rift requires a finalized RiftConfiguration.")
-        if not system_frame_names:
-            raise ValueError("system_frame_names cannot be empty.")
-        if default_system_frame_name not in system_frame_names:
-            raise ValueError("default_system_frame_name must be present in system_frame_names.")
+        if not nexus_frame_names:
+            raise ValueError("nexus_frame_names cannot be empty.")
+        if default_nexus_frame_name not in nexus_frame_names:
+            raise ValueError("default_nexus_frame_name must be present in nexus_frame_names.")
         if not target_frame_names:
             raise ValueError("target_frame_names cannot be empty.")
         if default_target_frame_name not in target_frame_names:
@@ -133,8 +135,8 @@ class Rift(Cleanable, IRift):
         self._nexus: INexus = nexus
         self._aether: IAether = Aether()
         self._configuration: IRiftConfiguration = configuration
-        self._system_frame_names: Tuple[str, ...] = tuple(system_frame_names)
-        self._default_system_frame_name: str = default_system_frame_name
+        self._nexus_frame_names: Tuple[str, ...] = tuple(nexus_frame_names)
+        self._default_nexus_frame_name: str = default_nexus_frame_name
         self._target_frame_names: Tuple[str, ...] = tuple(target_frame_names)
         self._default_target_frame_name: str = default_target_frame_name
         self._local_conduit_id: Optional[str] = local_conduit_id
@@ -142,8 +144,10 @@ class Rift(Cleanable, IRift):
         self._is_registered: bool = False
         self._is_active: bool = False
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
+        self._nexus_frame_objects_by_name: Dict[str, IAethericFrame] = {}
         self._spaces_by_id: Dict[str, IRiftSpace] = {}
         self._space_ids_by_name: Dict[str, str] = {}
+        self._realize_nexus_frames()
 
     def cleanup(self) -> None:
         """
@@ -173,8 +177,8 @@ class Rift(Cleanable, IRift):
             self._nexus = None
             self._aether = None
             self._configuration = None
-            self._system_frame_names = None
-            self._default_system_frame_name = None
+            self._nexus_frame_names = None
+            self._default_nexus_frame_name = None
             self._target_frame_names = None
             self._default_target_frame_name = None
             self._local_conduit_id = None
@@ -182,6 +186,8 @@ class Rift(Cleanable, IRift):
             self._is_registered = None
             self._is_active = None
             self._metadata = None
+            self._nexus_frame_objects_by_name.clear()
+            self._nexus_frame_objects_by_name = None
             self._spaces_by_id = None
             self._space_ids_by_name = None
             self._rift_name = None
@@ -225,28 +231,28 @@ class Rift(Cleanable, IRift):
         return self._configuration
 
     @property
-    def system_frame_names(self) -> Tuple[str, ...]:
+    def nexus_frame_names(self) -> Tuple[str, ...]:
         """
         Purpose:
-            Return the assigned internal system-frame names for this Rift.
+            Return the assigned internal Nexus frame names for this Rift.
 
         Returns:
-            Tuple[str, ...]: Internal system-frame names.
+            Tuple[str, ...]: Internal Nexus frame names.
         """
         self.check_cleaned()
-        return self._system_frame_names
+        return self._nexus_frame_names
 
     @property
-    def default_system_frame_name(self) -> str:
+    def default_nexus_frame_name(self) -> str:
         """
         Purpose:
-            Return the default internal system-frame name for this Rift.
+            Return the default internal Nexus frame name for this Rift.
 
         Returns:
-            str: Default system-frame name.
+            str: Default Nexus frame name.
         """
         self.check_cleaned()
-        return self._default_system_frame_name
+        return self._default_nexus_frame_name
 
     @property
     def target_frame_names(self) -> Tuple[str, ...]:
@@ -470,3 +476,70 @@ class Rift(Cleanable, IRift):
         """
         self.check_cleaned()
         return list(self._spaces_by_id.keys())
+
+    def get_nexus_frame_object(self, frame_name: str) -> IAethericFrame:
+        """
+        Internal
+
+        Return the realized Nexus frame object for one assigned frame name.
+
+        Args:
+            frame_name:
+                Assigned Nexus frame name.
+
+        Returns:
+            IAethericFrame: Realized frame object.
+
+        Raises:
+            ValueError: If the frame is not currently realized on this Rift.
+        """
+        self.check_cleaned()
+        try:
+            return self._nexus_frame_objects_by_name[frame_name]
+        except KeyError as exc:
+            raise ValueError("Nexus frame '{0}' is not realized on this Rift.".format(frame_name)) from exc
+
+    def dispose_nexus_frame(self, frame_name: str) -> None:
+        """
+        Internal
+
+        Dispose one realized Nexus frame through hidden `Aether`.
+
+        Args:
+            frame_name:
+                Assigned Nexus frame name to dispose.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        self.get_nexus_frame_object(frame_name).cleanup()
+
+    def on_nexus_frame_disposed(self, frame_name: str) -> None:
+        """
+        Internal
+
+        Drop the local strong reference when `Aether` disposes a Nexus frame.
+
+        Args:
+            frame_name:
+                Frame name that was disposed externally.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._nexus_frame_objects_by_name.pop(frame_name, None)
+
+    def _realize_nexus_frames(self) -> None:
+        """
+        Internal
+
+        Realize assigned Nexus frames through hidden `Aether`.
+
+        Returns:
+            None.
+        """
+        for nexus_frame_name in self._nexus_frame_names:
+            self._nexus_frame_objects_by_name[nexus_frame_name] = self._aether._ensure_frame(nexus_frame_name)

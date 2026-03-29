@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.spellbook.bind.spell_index import SpellIndex
@@ -75,7 +76,7 @@ def test_component_system_validation_reports_missing_index_node() -> None:
     """
     root_id = "root-missing-index"
     dep_id = "dep-missing-index"
-    frame = AethericFrame("component-graph-consistency-missing-index")
+    frame = AethericFrame(Aether(), "component-graph-consistency-missing-index")
     states = frame._spell_system_states
     root_index = _register_lineage(states, root_id)
     _register_lineage(states, dep_id)
@@ -132,7 +133,7 @@ def test_component_system_validation_reports_edge_mismatch_index() -> None:
     """
     root_id = "root-edge-mismatch"
     dep_id = "dep-edge-mismatch"
-    frame = AethericFrame("component-graph-consistency-edge-mismatch")
+    frame = AethericFrame(Aether(), "component-graph-consistency-edge-mismatch")
     states = frame._spell_system_states
     root_index = _register_lineage(states, root_id)
     dep_index = _register_lineage(states, dep_id)
@@ -197,7 +198,7 @@ def test_component_system_validation_does_not_add_root_viability_for_unscoped_er
     """
     root_id = "root-unscoped"
     dep_id = "dep-unscoped"
-    frame = AethericFrame("component-graph-consistency-unscoped")
+    frame = AethericFrame(Aether(), "component-graph-consistency-unscoped")
     states = frame._spell_system_states
     root_index = _register_lineage(states, root_id)
     dep_index = _register_lineage(states, dep_id)
@@ -253,3 +254,4 @@ def test_component_system_validation_does_not_add_root_viability_for_unscoped_er
         assert conduit_state.get_spell_validity(dep_id) is SpellValidity.invalid
     finally:
         frame.cleanup()
+

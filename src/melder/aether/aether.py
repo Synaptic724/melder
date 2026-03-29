@@ -51,9 +51,10 @@ class Aether(Cleanable, IAether):
 
         Contract:
             - Initializes the default frame eagerly.
-            - Initializes the hosted AR system eagerly as an object, but leaves
-              it unconfigured and disabled until a user explicitly engages it.
-            - Does not preinstall an AR system configuration during normal boot.
+            - Initializes the hosted Nexus singleton eagerly as an object, but
+              leaves it unconfigured and disabled until a user explicitly
+              engages it.
+            - Does not preinstall a Nexus configuration during normal boot.
 
         Args:
             logger:
@@ -76,7 +77,7 @@ class Aether(Cleanable, IAether):
             # --- Safe logger facade (ChannelLogger or std logger) ---
             self._logger = InitHelpers.resolve_safe_logger(logger)
             # --- Frame setup ---
-            self._aetheric_frames: Dict[str, AethericFrame] = {"default": AethericFrame("default")}
+            self._aetheric_frames: Dict[str, AethericFrame] = {"default": AethericFrame(self, "default")}
             self._default_frame: AethericFrame = self._aetheric_frames["default"]
             self._nexus: INexus = Nexus()
 
@@ -92,8 +93,8 @@ class Aether(Cleanable, IAether):
         Contract:
             - Idempotent.
             - Cleans frames before resetting singleton state.
-            - Cleans the hosted AR system if it exists.
-            - Drops any pending or installed AR system configuration reference.
+            - Cleans the hosted Nexus singleton if it exists.
+            - Drops any pending or installed Nexus configuration reference.
 
         Returns:
             None.
@@ -172,78 +173,75 @@ class Aether(Cleanable, IAether):
         if self._default_frame is None:
             raise RuntimeError("Default AethericFrame has been cleaned or is unavailable.")
 
-    def cleanup_frame(self, frame_name: str) -> None:
+    def _detach_cleaned_frame(
+            self,
+            frame_name: str,
+            frame: AethericFrame,
+    ) -> None:
         """
-        Clean and dispose a single AethericFrame by name.
+        Internal
 
-        This is a top-down operation:
-        - Calls cleanup() on the target frame (which cleans its root conduits and per-frame state).
-        - Removes the frame from Aether's internal frame mapping.
-        - If the frame is the current default, clears _default_frame.
+        Remove one already-cleaned frame from the Aether registry.
 
-        Calling this method on a non-existent or already-cleaned frame is a no-op.
+        Contract:
+            - Used by `AethericFrame.cleanup()` after frame-owned teardown has
+              already completed.
+            - Removes the frame from the Aether registry only when the
+              registered object matches the cleaned frame instance.
+            - Clears the default-frame pointer when the removed frame was the
+              default.
+            - Drops any matching Nexus frame record before the registry entry is
+              removed.
+
+        Args:
+            frame_name:
+                Name of the cleaned frame.
+            frame:
+                Cleaned frame instance requesting detachment.
+
+        Returns:
+            None.
         """
-        if self._cleaned:
+        if not frame_name:
             return
 
-        if not isinstance(frame_name, str):
-            raise TypeError("frame_name must be a string.")
-
         with self._lock:
-            if self._cleaned:
-                return
-
             if self._aetheric_frames is None:
                 return
 
-            frame = self._aetheric_frames.get(frame_name)
-            if frame is None:
+            registered_frame = self._aetheric_frames.get(frame_name)
+            if registered_frame is None or registered_frame is not frame:
                 return
 
-            is_default = frame is self._default_frame
-            conduit_count = 0
-            try:
-                if frame._conduits is not None:
-                    conduit_count = len(frame._conduits)
-            except Exception:
-                conduit_count = 0
-
-            try:
-                self._logger.info(
-                    f"Cleaning frame '{frame_name}' "
-                    f"(default={is_default}, conduits={conduit_count})",
-                    "cleanup_frame",
-                )
-                frame.cleanup()
-            except Exception as e:
-                self._logger.error(
-                    f"Error cleaning frame '{frame_name}': {e}",
-                    "cleanup_frame",
-                    exc_info=True,
-                )
-                return
+            if self._nexus is not None:
+                try:
+                    self._nexus.check_for_aetheric_frame(frame_name)
+                except Exception as e:
+                    self._logger.error(
+                        f"Error detaching Nexus frame record for '{frame_name}': {e}",
+                        "_detach_cleaned_frame",
+                        exc_info=True,
+                    )
 
             self._aetheric_frames.pop(frame_name, None)
-            if is_default:
+            if self._default_frame is frame:
                 self._default_frame = None
 
             self._logger.info(
                 f"Frame '{frame_name}' removed from Aether "
-                f"(default_cleared={is_default})",
-                "cleanup_frame",
+                f"(default_cleared={self._default_frame is None})",
+                "_detach_cleaned_frame",
             )
 
     def cleanup_aetheric_frames(self):
         """
         Signs all aetheric frames and their contents.
         """
-
-        for frame_name, frame in self._aetheric_frames.items():
+        for frame in list(self._aetheric_frames.values()):
             try:
                 frame.cleanup()
             except Exception as e:
-                # Tolerant behavior: log and continue
-                self._logger.error(f"Error cleaning frame '{frame_name}': {e}", "cleanup_aetheric_frames", exc_info=True)
+                self._logger.error(f"Error cleaning frame '{frame.name}': {e}", "cleanup_aetheric_frames", exc_info=True)
 
     # region Configuration
 
@@ -334,7 +332,7 @@ class Aether(Cleanable, IAether):
             if frame is not None:
                 return frame
 
-            frame = AethericFrame(aetheric_frame_name)
+            frame = AethericFrame(self, aetheric_frame_name)
             self._aetheric_frames[aetheric_frame_name] = frame
             if aetheric_frame_name == "default":
                 self._default_frame = frame
