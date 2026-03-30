@@ -236,15 +236,17 @@ def test_aether_cleanup_aetheric_frames_cleans_conduits() -> None:
     )
     conduit_a = book_a.conjure(name="root-a")
     conduit_b = book_b.conjure(name="root-b")
+    frame_a = aether._aetheric_frames["frame-clean-a"]
+    frame_b = aether._aetheric_frames["frame-clean-b"]
 
     aether.cleanup_aetheric_frames()
 
-    frame_a = aether._aetheric_frames["frame-clean-a"]
-    frame_b = aether._aetheric_frames["frame-clean-b"]
     assert frame_a.cleaned is True
     assert frame_b.cleaned is True
     assert conduit_a.cleaned is True
     assert conduit_b.cleaned is True
+    assert "frame-clean-a" not in aether._aetheric_frames
+    assert "frame-clean-b" not in aether._aetheric_frames
 
     book_b.cleanup()
     book_a.cleanup()

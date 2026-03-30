@@ -120,8 +120,9 @@ def test_create_rift_registers_live_rift_after_enable() -> None:
     assert nexus.get_rift_by_name("alpha") is rift
     assert nexus.list_rift_ids() == [rift.id]
 
-    nexus.remove_rift(rift.id)
-    assert nexus.has_rift(rift.id) is False
+    rift_id = rift.id
+    nexus.remove_rift(rift_id)
+    assert nexus.has_rift(rift_id) is False
 
 
 def test_unnamed_rifts_receive_deterministic_default_names() -> None:
@@ -317,15 +318,16 @@ def test_shared_nexus_frame_survives_until_last_rift_is_removed() -> None:
     aether = Aether()
     first = nexus.create_rift(rift_name="first")
     second = nexus.create_rift(rift_name="second")
+    shared_frame_name = second.default_nexus_frame_name
 
     assert first.default_nexus_frame_name in aether._aetheric_frames
 
     nexus.remove_rift(first.id)
-    assert second.default_nexus_frame_name in aether._aetheric_frames
+    assert shared_frame_name in aether._aetheric_frames
 
     nexus.remove_rift(second.id)
-    assert second.default_nexus_frame_name not in aether._aetheric_frames
-    assert second.default_nexus_frame_name not in nexus._nexus_frames_by_name
+    assert shared_frame_name not in aether._aetheric_frames
+    assert shared_frame_name not in nexus._nexus_frames_by_name
 
 
 def test_one_per_workspace_nexus_frame_is_removed_with_its_rift() -> None:

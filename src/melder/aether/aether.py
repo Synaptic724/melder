@@ -260,11 +260,17 @@ class Aether(Cleanable, IAether):
         """
         Signs all aetheric frames and their contents.
         """
-        for frame in list(self._aetheric_frames.values()):
+        if self._aetheric_frames is None:
+            return
+        for frame_name, frame in list(self._aetheric_frames.items()):
             try:
                 frame.cleanup()
             except Exception as e:
-                self._logger.error(f"Error cleaning frame '{frame.name}': {e}", "cleanup_aetheric_frames", exc_info=True)
+                self._logger.error(
+                    f"Error cleaning frame '{frame_name}': {e}",
+                    "cleanup_aetheric_frames",
+                    exc_info=True,
+                )
 
     # region Configuration
 
