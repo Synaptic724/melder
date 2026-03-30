@@ -7,8 +7,6 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.interfaces.interfaces import IConfiguration
-from melder.utilities.helpers.package import Pack
-from melder.utilities.logger.std_logger_factory import StdLoggerFactory
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 class Configuration(Cleanable, IConfiguration):
@@ -29,7 +27,6 @@ class Configuration(Cleanable, IConfiguration):
         "_lock",
         "_aether_frame",
         "_frozen",
-        "_logger_factory",
         "_properties",
         "available_properties",
         "_idempotent_keys",
@@ -68,8 +65,6 @@ class Configuration(Cleanable, IConfiguration):
         self._lock = threading.RLock()
         self._aether_frame: str = aether_frame
         self._frozen = False
-
-        self._logger_factory: Pack[[object], Any] | None = None  # Pack is used for management of callables
 
         # Private dictionary storing all properties.
         self._properties: Dict = {}
@@ -114,11 +109,6 @@ class Configuration(Cleanable, IConfiguration):
                 return
             self._cleaned = True
             self._frozen = True
-
-            if self._logger_factory is not None:
-                if hasattr(self._logger_factory, "cleanup"):
-                    self._logger_factory.cleanup()
-                self._logger_factory = None
 
             if self._properties is not None:
                 self._properties.clear()
@@ -180,51 +170,6 @@ class Configuration(Cleanable, IConfiguration):
             if self._frozen:
                 raise RuntimeError("Cannot clear properties after configuration is frozen")
             self._properties.clear()
-
-    def set_logger_factory(self, factory: Callable[[object], Any] = None) -> None:
-        """
-        Set the logger factory used to produce per-object loggers.
-
-        Contract:
-            factory(obj: object) -> Any   # e.g., Iris ChannelLogger, SafeLogger, stdlib Logger, or None
-
-        Usage:
-            - Call with no arguments to install the implementation's default factory
-              (the concrete Configuration uses StdLoggerFactory()).
-            - Or pass a specific factory to override the default.
-
-        Rules:
-            - Must be set BEFORE freeze().
-        """
-        self.check_cleaned()
-        if factory is None:
-            factory = StdLoggerFactory()
-        if self._frozen:
-            raise RuntimeError("Cannot modify logger factory after configuration is frozen.")
-        if not callable(factory):
-            raise TypeError("logger_factory must be callable(obj) -> Any")
-
-        packed_callable = Pack.bundle(factory)
-        if packed_callable.is_async:
-            raise TypeError("logger_factory must be a synchronous callable.")
-
-        with self._lock:
-            self._logger_factory = packed_callable
-
-
-    def get_logger_for(self, obj: object) -> Any | None:
-        """
-        Resolve a logger-like for 'obj' using the current logger factory.
-
-        Returns:
-            Any: Whatever the factory returns (Iris logger, SafeLogger, stdlib logger, or None).
-        """
-        self.check_cleaned()
-        with self._lock:
-            factory = self._logger_factory
-        if factory is None:
-            return None
-        return factory(obj)
 
     def freeze(self) -> None:
         """
@@ -450,12 +395,6 @@ class Configuration(Cleanable, IConfiguration):
         for key, value in defaults.items():
             if key not in self._properties:
                 self._properties[key] = value
-
-    def has_logger_factory(self) -> bool:
-        """Return True if a logger factory has been set."""
-        self.check_cleaned()
-        with self._lock:
-            return self._logger_factory is not None
 
     # ------------------------------------------------------------------
     # System hook API (Meld / Conduit / Link / Contract) – normal style
@@ -769,28 +708,6 @@ class Configuration(Cleanable, IConfiguration):
         """
         self.add_hooks(spellbook_id, **hooks)
         return self
-
-    def clear_logger_factory(self) -> IConfiguration:
-        """
-        Clear the logger factory (pre-freeze only) and return `self`.
-        """
-        self.check_cleaned()
-        if self._frozen:
-            raise RuntimeError("Cannot modify logger factory after configuration is frozen.")
-        with self._lock:
-            self._logger_factory = None
-        return self
-
-    def with_logger_factory(self, factory: Callable[[object], Any]) -> IConfiguration:
-        """
-        Fluent
-
-        Set the logger factory (factory(obj) -> Any) and return `self`.
-        Must be called before freeze().
-        """
-        self.set_logger_factory(factory)
-        return self
-
 
     def with_defaults(self) -> IConfiguration:
         """

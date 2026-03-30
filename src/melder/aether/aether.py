@@ -3,6 +3,7 @@ from threading import RLock
 from typing import Optional, Any, Dict, List, Set
 import ulid
 # Melder Imports
+from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.nexus.nexus import Nexus
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence
@@ -32,7 +33,7 @@ class Aether(Cleanable, IAether):
     _lock = RLock()
     _initialized = False
 
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         """Ensures that Aether is a singleton."""
         if cls._instance is None:
             with cls._lock:
@@ -70,16 +71,35 @@ class Aether(Cleanable, IAether):
             self._aetheric_frames = None
             self._default_frame = None
             self._nexus = None
+            self._aether_utility_system = None
+            self._logger = InitHelpers.resolve_safe_logger(None)
 
             Aether._initialized = True
 
             self._id: str = str(ulid.ULID())
-            # --- Safe logger facade (ChannelLogger or std logger) ---
-            self._logger = InitHelpers.resolve_safe_logger(logger)
+            self._aether_utility_system: AetherUtilitySystem = AetherUtilitySystem()
+            try:
+                if logger is None:
+                    self._logger = InitHelpers.resolve_channel_logger(
+                        self,
+                        groups=["aether", "lifecycle"],
+                        system_groups=["aether"],
+                        props={"component": "aether"},
+                        channels="system",
+                    )
+                else:
+                    self._logger = InitHelpers.resolve_safe_logger(logger)
+            except Exception as e:
+                self._logger = InitHelpers.resolve_safe_logger(None)
+                self._logger.error(
+                    f"Failed to initialize Aether logger: {e}",
+                    "__init__",
+                    exc_info=True,
+                )
             # --- Frame setup ---
             self._aetheric_frames: Dict[str, AethericFrame] = {"default": AethericFrame(self, "default")}
             self._default_frame: AethericFrame = self._aetheric_frames["default"]
-            self._nexus: INexus = Nexus()
+            self._nexus: INexus = Nexus(aether=self)
 
     def cleanup(self):
         """
@@ -114,6 +134,9 @@ class Aether(Cleanable, IAether):
                 if self._nexus is not None:
                     self._nexus.cleanup()
                     self._nexus = None
+                if self._aether_utility_system is not None:
+                    self._aether_utility_system.cleanup()
+                    self._aether_utility_system = None
                 self._default_frame = None
                 
                 # Reset Singleton state to allow re-initialization (e.g. in tests)

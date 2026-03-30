@@ -3,20 +3,6 @@ import pytest
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.helpers.general_helpers import EnumHelpers
-from melder.utilities.logger.std_logger_factory import StdLoggerFactory
-
-
-class DummyFactory:
-    def __init__(self):
-        self.calls = []
-        self.cleaned = False
-
-    def __call__(self, obj):
-        self.calls.append(obj)
-        return f"logger-for-{id(obj)}"
-
-    def cleanup(self):
-        self.cleaned = True
 
 
 def test_load_defaults_populates_all_required_properties():
@@ -140,50 +126,6 @@ def test_freeze_is_idempotent_and_blocks_mutation():
         cfg.set_property("debugging", True)
 
 
-def test_set_logger_factory_default_and_custom():
-    cfg = Configuration()
-    cfg.set_logger_factory()
-    assert cfg.has_logger_factory() is True
-    custom = DummyFactory()
-    cfg = Configuration()
-    cfg.set_logger_factory(custom)
-    logger = cfg.get_logger_for(object())
-    assert isinstance(logger, str)
-    assert custom.calls  # factory invoked
-
-
-def test_set_logger_factory_rejects_async_callable():
-    async def async_factory(obj):  # pragma: no cover - ensure async path rejected
-        return StdLoggerFactory()(obj)
-
-    cfg = Configuration()
-    with pytest.raises(TypeError):
-        cfg.set_logger_factory(async_factory)  # type: ignore[arg-type]
-
-
-def test_set_logger_factory_rejects_non_callable():
-    cfg = Configuration()
-    with pytest.raises(TypeError):
-        cfg.set_logger_factory(123)  # type: ignore[arg-type]
-
-
-def test_clear_logger_factory_blocks_when_frozen():
-    cfg = Configuration()
-    cfg.load_default_dictionary()
-    cfg.set_logger_factory()
-    cfg.freeze()
-    with pytest.raises(RuntimeError):
-        cfg.clear_logger_factory()
-
-
-def test_clear_logger_factory_resets_factory():
-    cfg = Configuration()
-    cfg.set_logger_factory()
-    assert cfg.has_logger_factory() is True
-    cfg.clear_logger_factory()
-    assert cfg.has_logger_factory() is False
-
-
 def test_add_hook_returns_shared_map():
     cfg = Configuration()
 
@@ -290,21 +232,12 @@ def test_iter_returns_keys():
 def test_cleanup_idempotent_and_nulls_references():
     cfg = Configuration()
     cfg.load_default_dictionary()
-    cfg.set_logger_factory(DummyFactory())
     cfg.cleanup()
     cfg.cleanup()
     with pytest.raises(RuntimeError):
         cfg.set_property("debugging", True)
     assert cfg._properties is None
     assert cfg._hooks is None
-
-
-def test_cleanup_runs_logger_factory_cleanup():
-    cfg = Configuration()
-    factory = DummyFactory()
-    cfg.set_logger_factory(factory)
-    cfg.cleanup()
-    assert factory.cleaned is False
 
 
 def test_convert_enum_helper_matches_configuration_usage():
@@ -433,38 +366,6 @@ def test_add_hooks_rejects_generator_with_bad_entry():
         cfg.add_hooks("sb", on_conduit_pre_created=gen())
 
 
-def test_get_logger_for_returns_none_without_factory():
-    cfg = Configuration()
-    assert cfg.get_logger_for(object()) is None
-
-
-def test_set_logger_factory_after_freeze_raises():
-    cfg = Configuration()
-    cfg.load_default_dictionary()
-    cfg.freeze()
-    with pytest.raises(RuntimeError):
-        cfg.set_logger_factory(DummyFactory())
-
-
-def test_clear_logger_factory_after_cleanup_raises():
-    cfg = Configuration()
-    cfg.set_logger_factory(DummyFactory())
-    cfg.cleanup()
-    with pytest.raises(RuntimeError):
-        cfg.clear_logger_factory()
-
-
-def test_custom_logger_factory_exception_propagates():
-    class ExplodingFactory:
-        def __call__(self, obj):
-            raise RuntimeError("boom")
-
-    cfg = Configuration()
-    cfg.set_logger_factory(ExplodingFactory())
-    with pytest.raises(RuntimeError):
-        cfg.get_logger_for(object())
-
-
 def test_with_hooks_fluent_returns_self():
     cfg = Configuration()
     result = cfg.with_hooks("sb", on_conduit_pre_created=lambda: None)
@@ -574,24 +475,6 @@ def test_get_hooks_after_cleanup_raises():
     cfg.cleanup()
     with pytest.raises(RuntimeError):
         cfg.get_hooks("sb")
-
-
-def test_clear_logger_factory_when_not_set_is_noop():
-    cfg = Configuration()
-    assert cfg.has_logger_factory() is False
-    cfg.clear_logger_factory()
-    assert cfg.has_logger_factory() is False
-
-
-def test_get_logger_for_after_freeze_uses_existing_factory():
-    cfg = Configuration()
-    factory = DummyFactory()
-    cfg.set_logger_factory(factory)
-    cfg.load_default_dictionary()
-    cfg.freeze()
-    logger = cfg.get_logger_for(object())
-    assert isinstance(logger, str)
-    assert factory.calls
 
 
 def test_with_hooks_after_defaults_before_freeze_allowed():

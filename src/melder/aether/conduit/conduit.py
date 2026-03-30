@@ -135,14 +135,13 @@ class Conduit(Cleanable, IConduit):
             raise TypeError(f"Expected IConfiguration instance, got {type(configuration).__name__}")
 
         self._configuration: IConfiguration = configuration
-        self._logger: ISafeLogger = self._configure_logger(logger, configuration)
+        self._conduit_state: ConduitState = conduit_state  # can be normal, lesser
+        self._logger: ISafeLogger = self._configure_logger(logger)
         # Now that configuration/logger are set, apply flags.
         self._apply_configuration_flags()
         # Override dynamic environment if caller requested automatic/dynamic explicitly.
         if automatic is not None:
             self.__dynamic_environment__ = not automatic
-
-        self._conduit_state: ConduitState = conduit_state  # can be normal, lesser
 
         if conduit_state is ConduitState.lesser:
             self._root_conduit_id: str = root_conduit_id
@@ -508,21 +507,29 @@ class Conduit(Cleanable, IConduit):
 
 
 
-    def _configure_logger(self, logger: Any, configuration: IConfiguration) -> Any:
+    def _configure_logger(self, logger: Any) -> Any:
         """
         Internal
 
         Configures the logger for this Conduit.
 
         Args:
-            logger (Any): The logger instance or configuration.
+            logger (Any): The explicit logger instance, if one was supplied.
         Returns:
             SafeLogger: The configured SafeLogger instance.
         """
         if logger is not None:
             return InitHelpers.resolve_safe_logger(logger)
-        else:
-            return self._resolve_logger_from_config(configuration)
+        return InitHelpers.resolve_channel_logger(
+            self,
+            groups=["lifecycle", "organization"],
+            system_groups=["spellbook", "aether"],
+            props={
+                "aether_frame": self._aetheric_frame,
+                "conduit_state": str(self._conduit_state),
+            },
+            channels="system",
+        )
 
     def _configure_conduit_state(self):
         """
@@ -658,20 +665,6 @@ class Conduit(Cleanable, IConduit):
 
     #endregion Context Management
     #region Logger
-    def _resolve_logger_from_config(self, configuration: IConfiguration) -> ISafeLogger:
-        """
-        This internal method resolves the logger for this Conduit based on the provided configuration.
-
-        Args:
-            configuration (IConfiguration): The locked system configuration.
-
-        Returns:
-            SafeLogger: The resolved SafeLogger instance.
-        """
-        if configuration.has_logger_factory():
-            return InitHelpers.resolve_safe_logger(configuration.get_logger_for(self))
-        return InitHelpers.resolve_safe_logger(None)
-
     #endregion Logger
     #region Utilities
     def __repr__(self):

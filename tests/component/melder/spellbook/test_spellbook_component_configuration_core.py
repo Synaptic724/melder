@@ -92,46 +92,18 @@ def test_component_configuration_freeze_blocks_hooks_and_properties() -> None:
         config.clear_properties()
 
 
-def test_component_configuration_logger_factory_roundtrip() -> None:
+def test_component_configuration_stays_logger_free() -> None:
     """
     Purpose:
-        Validate logger factories are stored and invoked.
+        Validate configuration no longer owns logger-factory behavior.
     Contract:
-        - get_logger_for returns factory output.
-        - clear_logger_factory disables logging.
+        - Core configuration defaults and validation still work without any
+          logger-factory API.
     Returns:
         None.
     """
-    config = Configuration().with_defaults()
-
-    def factory(obj: object) -> str:
-        return f"logger:{obj}"
-
-    config.set_logger_factory(factory)
-    assert config.has_logger_factory() is True
-    assert config.get_logger_for("root") == "logger:root"
-
-    config.clear_logger_factory()
-    assert config.has_logger_factory() is False
-    assert config.get_logger_for("root") is None
-
-
-def test_component_configuration_logger_factory_rejects_async() -> None:
-    """
-    Purpose:
-        Validate async logger factories are rejected.
-    Contract:
-        - set_logger_factory raises TypeError for async callables.
-    Returns:
-        None.
-    """
-    config = Configuration().with_defaults()
-
-    async def async_factory(obj: object) -> object:
-        return obj
-
-    with pytest.raises(TypeError):
-        config.set_logger_factory(async_factory)
+    config = Configuration().with_defaults().finalize()
+    assert config.get_property("system_state") is SystemState.automatic
 
 
 def test_component_configuration_validate_requires_required_properties() -> None:
@@ -167,47 +139,6 @@ def test_component_configuration_with_hook_registers_hook() -> None:
     assert result is config
     hooks = config.get_hooks("spellbook-1")
     assert hooks["on_meld_pre_resolve"] == [hook]
-
-
-def test_component_configuration_with_logger_factory_sets_factory() -> None:
-    """
-    Purpose:
-        Validate with_logger_factory installs a logger factory fluently.
-    Contract:
-        - Returns the same configuration instance.
-        - Factory is used by get_logger_for.
-    Returns:
-        None.
-    """
-    config = Configuration()
-
-    def factory(obj: object) -> str:
-        return f"logger:{obj}"
-
-    result = config.with_logger_factory(factory)
-    assert result is config
-    assert config.has_logger_factory() is True
-    assert config.get_logger_for("root") == "logger:root"
-
-
-def test_component_configuration_clear_logger_factory_after_with_logger_factory() -> None:
-    """
-    Purpose:
-        Validate clear_logger_factory removes a previously set factory.
-    Contract:
-        - Logger factory is cleared and get_logger_for returns None.
-    Returns:
-        None.
-    """
-    config = Configuration()
-
-    def factory(obj: object) -> str:
-        return f"logger:{obj}"
-
-    config.with_logger_factory(factory)
-    config.clear_logger_factory()
-    assert config.has_logger_factory() is False
-    assert config.get_logger_for("root") is None
 
 
 def test_component_configuration_with_disposal_method_names_sets_list() -> None:
@@ -267,9 +198,6 @@ def test_component_configuration_fluent_chain_validates_without_defaults() -> No
     """
     config = Configuration()
 
-    def factory(obj: object) -> str:
-        return f"logger:{obj}"
-
     config.with_system_state("automatic")
     config.with_debugging(True)
     config.with_disposal(True)
@@ -279,7 +207,6 @@ def test_component_configuration_fluent_chain_validates_without_defaults() -> No
     config.with_phase_scheduler_barrier_timeout(1000)
     config.with_ai_native(True)
     config.with_ai_profiles(False)
-    config.with_logger_factory(factory)
     config.finalize()
 
     assert config.get_property("system_state") is SystemState.automatic
@@ -291,4 +218,3 @@ def test_component_configuration_fluent_chain_validates_without_defaults() -> No
     assert config.get_property("phase_scheduler_barrier_timeout_milliseconds") == 1000
     assert config.get_property("ai_native_enabled") is True
     assert config.get_property("ai_profiles_enabled") is False
-    assert config.get_logger_for("root") == "logger:root"

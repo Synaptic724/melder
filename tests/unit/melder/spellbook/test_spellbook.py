@@ -8,6 +8,7 @@ import pytest
 
 import melder.spellbook.spellbook as spellbook_module
 from melder.aether.aether import Aether
+from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
@@ -380,7 +381,6 @@ class DummyConfig:
     def __init__(
             self,
             hooks=None,
-            logger_factory=None,
             system_state=None,
             frozen=False,
             validate_ok=True,
@@ -390,10 +390,9 @@ class DummyConfig:
         Purpose:
             Initialize the configuration stub.
         Contract:
-            Stores hook data, logger factory, and validation flags.
+            Stores hook data and validation flags.
         Args:
             hooks: Optional hook mapping.
-            logger_factory: Optional logger factory.
             system_state: Optional SystemState override.
             frozen: Initial frozen flag.
             validate_ok: Whether validate() should succeed.
@@ -403,8 +402,6 @@ class DummyConfig:
             None.
         """
         self._hooks = hooks or {}
-        self._logger_factory = logger_factory
-        self._logger_for = {}
         self._system_state = system_state or SystemState.automatic
         self._full_ahead_of_time_compilation = full_ahead_of_time_compilation
         self.cleaned = False
@@ -424,31 +421,6 @@ class DummyConfig:
             dict: Hook mapping configured on the stub.
         """
         return self._hooks
-
-    def has_logger_factory(self):
-        """
-        Purpose:
-            Indicate whether a logger factory is available.
-        Contract:
-            Returns True when _logger_factory is set.
-        Returns:
-            bool: True when logger_factory exists.
-        """
-        return self._logger_factory is not None
-
-    def get_logger_for(self, _owner):
-        """
-        Purpose:
-            Return a logger for the given owner.
-        Contract:
-            Records the factory used and returns it.
-        Args:
-            _owner: Spellbook owner identifier.
-        Returns:
-            object: The stored logger factory.
-        """
-        self._logger_for[_owner] = self._logger_factory
-        return self._logger_factory
 
     def get_property(self, name):
         """
@@ -891,7 +863,19 @@ def patch_init_helpers(monkeypatch):
             return logger
         return DummySafeLogger(logger if logger is not None else DummyLogger())
 
+    def resolve_channel_logger(*args, **kwargs):
+        """
+        Purpose:
+            Resolve channel logger instances for tests.
+        Contract:
+            Returns a wrapped DummyLogger.
+        Returns:
+            DummySafeLogger: Safe logger wrapper.
+        """
+        return DummySafeLogger(DummyLogger())
+
     monkeypatch.setattr("melder.spellbook.spellbook.InitHelpers.resolve_safe_logger", resolve_safe_logger)
+    monkeypatch.setattr("melder.spellbook.spellbook.InitHelpers.resolve_channel_logger", resolve_channel_logger)
     yield
 
 
@@ -927,6 +911,19 @@ def patch_initialize_configuration(monkeypatch):
 
     monkeypatch.setattr("melder.spellbook.spellbook.Spellbook._initialize_configuration", _stub_init_config)
     yield
+
+
+@pytest.fixture(autouse=True)
+def fresh_utility_system() -> None:
+    """
+    Reset the utility-system singleton around each test.
+
+    Returns:
+        None.
+    """
+    AetherUtilitySystem._reset_singleton_for_tests()
+    yield
+    AetherUtilitySystem._reset_singleton_for_tests()
 
 
 # -------------------------
@@ -983,10 +980,10 @@ def test_initialize_logging_explicit_logger():
     assert sb._logger is logger
 
 
-def test_initialize_logging_from_config(monkeypatch):
+def test_initialize_logging_from_provider(monkeypatch):
     """
     Purpose:
-        Ensure Spellbook resolves a logger from configuration.
+        Ensure Spellbook resolves a logger from the provider path.
     Contract:
         The resolved logger is wrapped in DummySafeLogger.
     Args:
@@ -996,11 +993,18 @@ def test_initialize_logging_from_config(monkeypatch):
     Raises:
         AssertionError: If logger resolution is incorrect.
     """
-    logger_factory = DummyLogger()
-    cfg = DummyConfig(logger_factory=logger_factory)
+    seen = {"called": False}
+
+    def resolve_channel_logger(*args, **kwargs):
+        seen["called"] = True
+        return DummySafeLogger(DummyLogger())
+
+    monkeypatch.setattr("melder.spellbook.spellbook.InitHelpers.resolve_channel_logger", resolve_channel_logger)
+    cfg = DummyConfig()
     sb = Spellbook(configuration=cfg)
     assert isinstance(sb._logger, DummySafeLogger)
     assert isinstance(sb._logger._logger, DummyLogger)
+    assert seen["called"] is True
 
 
 def test_initialize_logging_failure_fallback(monkeypatch):
@@ -1973,45 +1977,6 @@ def test_context_manager_acquires_and_releases_lock():
     sb._lock.release()
 
 
-def test_initialize_logging_upgrade_aether_logger(monkeypatch):
-    """
-    Purpose:
-        Ensure upgrade does not replace an existing aether logger.
-    Contract:
-        _upgrade_aether_logger_if_possible keeps the existing logger.
-    Args:
-        monkeypatch: Pytest fixture for patching dependencies.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If aether logger is replaced.
-    """
-    sb = Spellbook(configuration=DummyConfig(logger_factory=DummyLogger()))
-    sb._logger = DummySafeLogger()
-    original_logger = Spellbook._aether._logger
-    # Force Aether logger to appear already-real so no upgrade occurs.
-    sb._upgrade_aether_logger_if_possible()
-    assert Spellbook._aether._logger is original_logger
-
-
-def test_initialize_logging_does_not_upgrade_without_factory():
-    """
-    Purpose:
-        Verify logger upgrade is skipped when no factory exists.
-    Contract:
-        _upgrade_aether_logger_if_possible leaves the logger unchanged.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If the logger is replaced without a factory.
-    """
-    sb = Spellbook(configuration=DummyConfig(logger_factory=None))
-    original = Spellbook._aether._logger
-    sb._logger = DummySafeLogger()
-    sb._upgrade_aether_logger_if_possible()
-    assert Spellbook._aether._logger is original
-
-
 def test_run_resolution_phases_scheduler_cleanup_failure_logged(monkeypatch):
     """
     Purpose:
@@ -2653,62 +2618,12 @@ def test_get_conjure_hook_map_handles_exception():
     assert SpellbookCreationSystem.get_conjure_hook_map(sb) is None
 
 
-def test_upgrade_aether_logger_ignores_factory_errors(monkeypatch):
+def test_initialize_logging_fallback_on_provider_failure(monkeypatch):
     """
     Purpose:
-        Verify logger upgrade ignores factory exceptions.
+        Ensure initialization falls back when provider resolution fails.
     Contract:
-        _upgrade_aether_logger_if_possible does not propagate factory errors.
-    Args:
-        monkeypatch: Pytest fixture for patching dependencies.
-    Returns:
-        None.
-    Raises:
-        AssertionError: If logger upgrade fails incorrectly.
-    """
-    class BadConfig(DummyConfig):
-        """
-        Purpose:
-            Provide a configuration stub that raises when building loggers.
-        Contract:
-            get_logger_for raises RuntimeError.
-        """
-        def has_logger_factory(self):
-            """
-            Purpose:
-                Indicate a logger factory is present.
-            Contract:
-                Always returns True.
-            Returns:
-                bool: True for the stub.
-            """
-            return True
-
-        def get_logger_for(self, _owner):
-            """
-            Purpose:
-                Simulate logger factory failure.
-            Contract:
-                Raises RuntimeError unconditionally.
-            Args:
-                _owner: Spellbook owner identifier.
-            Raises:
-                RuntimeError: Always raised for the stub.
-            """
-            raise RuntimeError("boom")
-
-    sb = Spellbook(configuration=BadConfig())
-    sb._logger = DummySafeLogger()
-    sb._upgrade_aether_logger_if_possible()
-    assert isinstance(sb._logger, DummySafeLogger)
-
-
-def test_initialize_logging_fallback_on_factory_failure(monkeypatch):
-    """
-    Purpose:
-        Ensure initialization falls back when logger factory fails.
-    Contract:
-        Spellbook uses DummySafeLogger even if factory raises.
+        Spellbook uses DummySafeLogger even if provider resolution raises.
     Args:
         monkeypatch: Pytest fixture for patching dependencies.
     Returns:
@@ -2716,38 +2631,12 @@ def test_initialize_logging_fallback_on_factory_failure(monkeypatch):
     Raises:
         AssertionError: If fallback logger is not set.
     """
-    class BadConfig(DummyConfig):
-        """
-        Purpose:
-            Provide a configuration stub that raises during logger resolution.
-        Contract:
-            get_logger_for raises RuntimeError.
-        """
-        def has_logger_factory(self):
-            """
-            Purpose:
-                Indicate a logger factory is present.
-            Contract:
-                Always returns True.
-            Returns:
-                bool: True for the stub.
-            """
-            return True
+    monkeypatch.setattr(
+        "melder.spellbook.spellbook.InitHelpers.resolve_channel_logger",
+        lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("boom")),
+    )
 
-        def get_logger_for(self, _owner):
-            """
-            Purpose:
-                Simulate logger factory failure.
-            Contract:
-                Raises RuntimeError unconditionally.
-            Args:
-                _owner: Spellbook owner identifier.
-            Raises:
-                RuntimeError: Always raised for the stub.
-            """
-            raise RuntimeError("boom")
-
-    sb = Spellbook(configuration=BadConfig())
+    sb = Spellbook(configuration=DummyConfig())
     assert isinstance(sb._logger, DummySafeLogger)
 
 

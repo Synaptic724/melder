@@ -289,6 +289,7 @@ def test_shared_and_isolated_nexus_frame_names_are_assigned() -> None:
     shared_nexus = _create_enabled_nexus()
     shared_rift = shared_nexus.create_rift(rift_name="shared")
     assert shared_rift.default_nexus_frame_name == "aetheric_frame_system"
+    assert shared_rift.get_nexus_frame() is shared_nexus.get_nexus_frame_for_rift(shared_rift.id)
 
     isolated_nexus = Nexus()
     configuration = isolated_nexus.create_system_configuration()
@@ -368,9 +369,94 @@ def test_external_aether_frame_cleanup_clears_nexus_frame_record() -> None:
 
     assert frame_name in nexus._nexus_frames_by_name
 
-    rift.get_nexus_frame_object(frame_name).cleanup()
+    rift.get_nexus_frame().cleanup()
 
     assert frame_name not in nexus._nexus_frames_by_name
+
+
+def test_shared_mode_returns_the_same_frame_to_any_rift() -> None:
+    """
+    Verify shared mode returns the same Nexus frame to all Rifts.
+
+    Returns:
+        None.
+    """
+    nexus = _create_enabled_nexus()
+    first = nexus.create_rift(rift_name="first")
+    second = nexus.create_rift(rift_name="second")
+
+    assert first.get_nexus_frame() is second.get_nexus_frame()
+
+
+def test_one_per_workspace_mode_rejects_other_rift_frame_access() -> None:
+    """
+    Verify one-per-workspace mode only returns the calling Rift's private
+    Nexus frame.
+
+    Returns:
+        None.
+    """
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_direct_rift_access(True)
+    configuration.with_nexus_frame_mode("one_per_workspace")
+    configuration.with_max_nexus_frame_count(3)
+    nexus.enable(configuration)
+
+    first = nexus.create_rift(rift_name="first")
+    second = nexus.create_rift(rift_name="second")
+
+    with pytest.raises(ValueError, match="private Nexus frame"):
+        nexus.get_nexus_frame_for_rift(first.id, frame_name=second.default_nexus_frame_name)
+
+
+def test_indexed_mode_allows_shared_lookup_by_explicit_name() -> None:
+    """
+    Verify indexed mode allows a Rift to request another indexed frame by name.
+
+    Returns:
+        None.
+    """
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_direct_rift_access(True)
+    configuration.with_nexus_frame_mode("indexed")
+    configuration.with_max_nexus_frame_count(4)
+    nexus.enable(configuration)
+
+    first = nexus.create_rift(rift_name="first")
+    second = nexus.create_rift(rift_name="second")
+
+    shared_frame = first.get_nexus_frame()
+    looked_up_frame = second.get_nexus_frame(frame_name=first.default_nexus_frame_name)
+
+    assert looked_up_frame is shared_frame
+    assert first.default_nexus_frame_name in second.nexus_frame_names
+
+
+def test_indexed_mode_can_create_explicit_new_frame() -> None:
+    """
+    Verify indexed mode can create a new named Nexus frame explicitly.
+
+    Returns:
+        None.
+    """
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_direct_rift_access(True)
+    configuration.with_nexus_frame_mode("indexed")
+    configuration.with_max_nexus_frame_count(4)
+    nexus.enable(configuration)
+
+    rift = nexus.create_rift(rift_name="builder")
+    created_frame = rift.create_nexus_frame(frame_name="ops", immutable=True)
+
+    assert "ops" in nexus._nexus_frames_by_name
+    assert rift.get_nexus_frame("ops") is created_frame
+    assert "ops" in rift.list_accessible_nexus_frame_names()
 
 
 def test_direct_rift_construction_is_not_the_normal_registry_path() -> None:

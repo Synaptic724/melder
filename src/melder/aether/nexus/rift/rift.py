@@ -56,7 +56,6 @@ class Rift(Cleanable, IRift):
         "_is_registered",
         "_is_active",
         "_metadata",
-        "_nexus_frame_objects_by_name",
         "_spaces_by_id",
         "_space_ids_by_name",
     ]
@@ -144,10 +143,8 @@ class Rift(Cleanable, IRift):
         self._is_registered: bool = False
         self._is_active: bool = False
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
-        self._nexus_frame_objects_by_name: Dict[str, IAethericFrame] = {}
         self._spaces_by_id: Dict[str, IRiftSpace] = {}
         self._space_ids_by_name: Dict[str, str] = {}
-        self._realize_nexus_frames()
 
     def cleanup(self) -> None:
         """
@@ -186,8 +183,6 @@ class Rift(Cleanable, IRift):
             self._is_registered = None
             self._is_active = None
             self._metadata = None
-            self._nexus_frame_objects_by_name.clear()
-            self._nexus_frame_objects_by_name = None
             self._spaces_by_id = None
             self._space_ids_by_name = None
             self._rift_name = None
@@ -477,49 +472,66 @@ class Rift(Cleanable, IRift):
         self.check_cleaned()
         return list(self._spaces_by_id.keys())
 
-    def get_nexus_frame_object(self, frame_name: str) -> IAethericFrame:
+    def get_nexus_frame(self, frame_name: Optional[str] = None) -> IAethericFrame:
         """
         Internal
 
-        Return the realized Nexus frame object for one assigned frame name.
+        Return one Nexus-managed frame through Nexus policy.
 
         Args:
             frame_name:
-                Assigned Nexus frame name.
+                Optional explicit Nexus frame name.
 
         Returns:
-            IAethericFrame: Realized frame object.
-
-        Raises:
-            ValueError: If the frame is not currently realized on this Rift.
+            IAethericFrame: Resolved Nexus frame.
         """
         self.check_cleaned()
-        try:
-            return self._nexus_frame_objects_by_name[frame_name]
-        except KeyError as exc:
-            raise ValueError("Nexus frame '{0}' is not realized on this Rift.".format(frame_name)) from exc
+        return self._nexus.get_nexus_frame_for_rift(self._id, frame_name=frame_name)
 
-    def dispose_nexus_frame(self, frame_name: str) -> None:
+    def create_nexus_frame(
+            self,
+            frame_name: Optional[str] = None,
+            immutable: bool = False,
+    ) -> IAethericFrame:
         """
         Internal
 
-        Dispose one realized Nexus frame through hidden `Aether`.
+        Create one Nexus-managed frame through Nexus policy.
 
         Args:
             frame_name:
-                Assigned Nexus frame name to dispose.
+                Optional explicit Nexus frame name.
+            immutable:
+                Immutable flag for indexed/shared creation.
 
         Returns:
-            None.
+            IAethericFrame: Created or recovered Nexus frame.
         """
         self.check_cleaned()
-        self.get_nexus_frame_object(frame_name).cleanup()
+        return self._nexus.create_nexus_frame_for_rift(
+            self._id,
+            frame_name=frame_name,
+            immutable=immutable,
+        )
+
+    def list_accessible_nexus_frame_names(self) -> Tuple[str, ...]:
+        """
+        Internal
+
+        Return the Nexus frame names this Rift may currently access.
+
+        Returns:
+            Tuple[str, ...]: Accessible Nexus frame names.
+        """
+        self.check_cleaned()
+        return self._nexus.list_accessible_nexus_frame_names(self._id)
 
     def on_nexus_frame_disposed(self, frame_name: str) -> None:
         """
         Internal
 
-        Drop the local strong reference when `Aether` disposes a Nexus frame.
+        Placeholder hook for later Rift/workspace frame-disposal event
+        propagation.
 
         Args:
             frame_name:
@@ -529,17 +541,23 @@ class Rift(Cleanable, IRift):
             None.
         """
         self.check_cleaned()
-        with self._lock:
-            self._nexus_frame_objects_by_name.pop(frame_name, None)
+        return
 
-    def _realize_nexus_frames(self) -> None:
+    def _attach_nexus_frame_name(self, frame_name: str) -> None:
         """
         Internal
 
-        Realize assigned Nexus frames through hidden `Aether`.
+        Add one Nexus frame name to this Rift's known attachment set.
+
+        Args:
+            frame_name:
+                Frame name to append if missing.
 
         Returns:
             None.
         """
-        for nexus_frame_name in self._nexus_frame_names:
-            self._nexus_frame_objects_by_name[nexus_frame_name] = self._aether._ensure_frame(nexus_frame_name)
+        self.check_cleaned()
+        with self._lock:
+            if frame_name in self._nexus_frame_names:
+                return
+            self._nexus_frame_names = self._nexus_frame_names + (frame_name,)

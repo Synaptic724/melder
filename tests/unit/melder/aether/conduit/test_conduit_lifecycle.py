@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
@@ -10,6 +11,19 @@ from melder.aether.conduit.spell_space.spell_space import SpellSpace
 from melder.spellbook.configuration.configuration import Configuration
 from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
 from melder.utilities.logger.safe_logger import SafeLogger
+
+
+@pytest.fixture(autouse=True)
+def fresh_utility_system() -> None:
+    """
+    Reset the utility-system singleton around each test.
+
+    Returns:
+        None.
+    """
+    AetherUtilitySystem._reset_singleton_for_tests()
+    yield
+    AetherUtilitySystem._reset_singleton_for_tests()
 
 
 class _LockProbe:
@@ -324,15 +338,15 @@ def test_context_manager_acquires_and_releases_lock(conduit_lesser: Conduit) -> 
     assert lock.release_calls == 1
 
 
-def test_logger_factory_used_when_logger_missing(
+def test_provider_used_when_logger_missing(
     configuration_automatic: Configuration,
     spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify a logger factory is used when no logger is provided.
+    Verify the provider is used when no logger is provided.
 
     Contract:
-        - Configuration factory is called with the conduit instance.
+        - Provider resolver is called with the conduit instance.
         - The resulting SafeLogger is assigned to the conduit.
 
     Args:
@@ -340,24 +354,24 @@ def test_logger_factory_used_when_logger_missing(
         spellbook_stub (MagicMock): Spellbook stub used for construction.
 
     Raises:
-        AssertionError: If factory usage or logger assignment fails.
+        AssertionError: If provider usage or logger assignment fails.
     """
     seen = []
 
-    def factory(obj: object) -> logging.Logger:
+    def resolver(*, registrant: object, groups=None, system_groups=None, props=None, channels=None) -> logging.Logger:
         """
         Produce a logger for the given object and record the call.
 
         Args:
-            obj (object): The object requesting a logger.
+            registrant (object): The object requesting a logger.
 
         Returns:
             logging.Logger: A standard library logger instance.
         """
-        seen.append(obj)
+        seen.append(registrant)
         return logging.getLogger("conduit-factory")
 
-    configuration_automatic.set_logger_factory(factory)
+    AetherUtilitySystem().register_channel_logger_resolver(resolver)
     conduit = Conduit(
         spellbook=spellbook_stub,
         configuration=configuration_automatic,
@@ -372,15 +386,15 @@ def test_logger_factory_used_when_logger_missing(
         conduit.cleanup()
 
 
-def test_explicit_logger_skips_factory(
+def test_explicit_logger_skips_provider(
     configuration_automatic: Configuration,
     spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify an explicit logger bypasses the configuration factory.
+    Verify an explicit logger bypasses the provider.
 
     Contract:
-        - Logger factory is not called when logger is provided.
+        - Provider resolver is not called when logger is provided.
         - The conduit receives a SafeLogger wrapper.
 
     Args:
@@ -392,20 +406,20 @@ def test_explicit_logger_skips_factory(
     """
     seen = []
 
-    def factory(obj: object) -> logging.Logger:
+    def resolver(*, registrant: object, groups=None, system_groups=None, props=None, channels=None) -> logging.Logger:
         """
         Produce a logger for the given object and record the call.
 
         Args:
-            obj (object): The object requesting a logger.
+            registrant (object): The object requesting a logger.
 
         Returns:
             logging.Logger: A standard library logger instance.
         """
-        seen.append(obj)
+        seen.append(registrant)
         return logging.getLogger("unused-factory")
 
-    configuration_automatic.set_logger_factory(factory)
+    AetherUtilitySystem().register_channel_logger_resolver(resolver)
     explicit_logger = logging.getLogger("explicit")
     conduit = Conduit(
         spellbook=spellbook_stub,

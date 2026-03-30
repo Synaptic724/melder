@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
@@ -15,6 +16,19 @@ from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.logger.safe_logger import SafeLogger
+
+
+@pytest.fixture(autouse=True)
+def fresh_utility_system() -> None:
+    """
+    Reset the utility-system singleton around each test.
+
+    Returns:
+        None.
+    """
+    AetherUtilitySystem._reset_singleton_for_tests()
+    yield
+    AetherUtilitySystem._reset_singleton_for_tests()
 
 
 def test_configure_logger_rejects_invalid_logger(
@@ -45,14 +59,14 @@ def test_configure_logger_rejects_invalid_logger(
         )
 
 
-def test_configure_logger_prefers_explicit_logger_over_factory(
+def test_configure_logger_prefers_explicit_logger_over_provider(
     spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify explicit logger overrides any configuration logger factory.
+    Verify explicit logger overrides the provider.
 
     Contract:
-        - When logger is supplied, configuration factory is not called.
+        - When logger is supplied, provider resolver is not called.
 
     Args:
         spellbook_stub (MagicMock): Spellbook stub for construction.
@@ -62,22 +76,22 @@ def test_configure_logger_prefers_explicit_logger_over_factory(
     """
     configuration = Configuration()
     configuration.automatic_defaults()
-    factory_called = {"value": False}
+    resolver_called = {"value": False}
 
-    def factory(obj: object) -> logging.Logger:
+    def resolver(*, registrant: object, groups=None, system_groups=None, props=None, channels=None) -> logging.Logger:
         """
-        Record whether the factory is invoked.
+        Record whether the resolver is invoked.
 
         Args:
-            obj (object): Conduit instance passed to the factory.
+            registrant (object): Conduit instance passed to the resolver.
 
         Returns:
             logging.Logger: Logger instance for the conduit.
         """
-        factory_called["value"] = True
+        resolver_called["value"] = True
         return logging.Logger("factory")
 
-    configuration.set_logger_factory(factory)
+    AetherUtilitySystem().register_channel_logger_resolver(resolver)
     explicit_logger = logging.Logger("explicit")
     conduit = Conduit(
         spellbook=spellbook_stub,
@@ -88,47 +102,47 @@ def test_configure_logger_prefers_explicit_logger_over_factory(
         logger=explicit_logger,
     )
     try:
-        assert factory_called["value"] is False
+        assert resolver_called["value"] is False
         assert isinstance(conduit._logger, SafeLogger)
     finally:
         conduit.cleanup()
 
 
-def test_resolve_logger_from_config_uses_factory_and_passes_conduit(
+def test_resolve_logger_uses_provider_and_passes_conduit(
     spellbook_stub: MagicMock,
 ) -> None:
     """
-    Verify configuration logger factory is used and receives the conduit.
+    Verify the provider resolver is used and receives the conduit.
 
     Contract:
-        - Configuration factory is called with the conduit.
+        - The provider resolver is called with the conduit.
         - Conduit stores a SafeLogger instance.
 
     Args:
         spellbook_stub (MagicMock): Spellbook stub for construction.
 
     Raises:
-        AssertionError: If factory is not called or logger wrapper missing.
+        AssertionError: If resolver is not called or logger wrapper missing.
     """
     configuration = Configuration()
     configuration.set_property("system_state", "automatic")
     configuration.with_defaults()
     seen: dict[str, object] = {}
 
-    def factory(obj: object) -> logging.Logger:
+    def resolver(*, registrant: object, groups=None, system_groups=None, props=None, channels=None) -> logging.Logger:
         """
         Capture the conduit instance for verification.
 
         Args:
-            obj (object): Conduit instance passed to the factory.
+            registrant (object): Conduit instance passed to the resolver.
 
         Returns:
             logging.Logger: Logger instance for the conduit.
         """
-        seen["obj"] = obj
+        seen["obj"] = registrant
         return logging.Logger("factory-logger")
 
-    configuration.set_logger_factory(factory)
+    AetherUtilitySystem().register_channel_logger_resolver(resolver)
     conduit = Conduit(
         spellbook=spellbook_stub,
         configuration=configuration,

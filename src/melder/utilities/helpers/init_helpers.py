@@ -1,6 +1,7 @@
 import logging
 from melder.utilities.logger.safe_logger import SafeLogger
 from melder.utilities.interfaces.interfaces import IChannelLogger
+from melder.aether.aether_utility_system import AetherUtilitySystem
 
 
 class InitHelpers:
@@ -29,10 +30,40 @@ class InitHelpers:
         Returns:
             SafeLogger: The resolved, ready-to-use SafeLogger instance.
         """
-        if logger is None:
-            return SafeLogger(None)
-        if not isinstance(logger, IChannelLogger | logging.Logger):
-            raise TypeError(
-                "Expected logger to be an IChannelLogger, logging.Logger, or None."
-            )
-        return SafeLogger(logger)
+        return AetherUtilitySystem().resolve_safe_logger(logger)
+
+    @staticmethod
+    def resolve_channel_logger(
+            registrant: object,
+            *,
+            groups=None,
+            system_groups=None,
+            props=None,
+            channels=None,
+    ) -> SafeLogger:
+        """
+        Resolve a channel-style logger through the hosted utility system.
+
+        Args:
+            registrant:
+                Object requesting the logger.
+            groups:
+                Optional group tokens.
+            system_groups:
+                Optional system-group tokens.
+            props:
+                Optional flat property map.
+            channels:
+                Optional channel or channel list.
+
+        Returns:
+            SafeLogger: Iris-backed logger when configured, otherwise a null
+            `SafeLogger`.
+        """
+        return AetherUtilitySystem().resolve_channel_logger(
+            registrant,
+            groups=groups,
+            system_groups=system_groups,
+            props=props,
+            channels=channels,
+        )

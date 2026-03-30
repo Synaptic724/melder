@@ -857,51 +857,28 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Internal
 
-        Establish the Spellbook logger, then ensure Aether has a real logger if a
-        configuration-backed factory exists.
+        Establish the Spellbook logger through the hosted utility system.
 
         Priority:
             1) Explicit logger arg
-            2) Configuration's logger factory
+            2) AetherUtilitySystem channel logger
             3) Silent no-op logger
-
-        Side-effect:
-            If Aether is still on a null logger and a factory exists, upgrade Aether
-            to a real logger exactly once.
         """
-        cfg = self._configuration
         try:
             if logger is not None:
                 self._logger = InitHelpers.resolve_safe_logger(logger)
-            elif cfg is not None and cfg.has_logger_factory():
-                self._logger = InitHelpers.resolve_safe_logger(cfg.get_logger_for(self))
             else:
-                self._logger = InitHelpers.resolve_safe_logger(None)
-            self._upgrade_aether_logger_if_possible()
+                self._logger = InitHelpers.resolve_channel_logger(
+                    self,
+                    groups=["spellbook", "lifecycle"],
+                    system_groups=["spellbook", "aether"],
+                    props={"aether_frame": self._aetheric_frame},
+                    channels="system",
+                )
         except Exception as e:
             # fallback to silent logger if anything blows up
             self._logger = InitHelpers.resolve_safe_logger(None)
             self._logger.error(f"Failed to initialize logger: {e}", "_initialize_logging", exc_info=True)
-
-    def _upgrade_aether_logger_if_possible(self) -> None:
-        """
-        Internal
-
-        If a Configuration-backed logger factory exists, and the Aether singleton
-        is still using a null/no-op SafeLogger, upgrade Aether to a real logger.
-
-        This runs at Spellbook construction time when a Configuration finally exists.
-        """
-        cfg = self._configuration
-        if cfg is None or not cfg.has_logger_factory():
-            return
-        aether = Spellbook._aether
-        try:
-            if aether._logger is not None and getattr(aether._logger, "_logger", None) is None:
-                aether_logger = cfg.get_logger_for(aether)
-                aether._logger = InitHelpers.resolve_safe_logger(aether_logger)
-        except Exception as e:
-            self._logger.error(f"Failed to upgrade Aether logger: {e}", "_upgrade_aether_logger_if_possible", exc_info=True)
 
     #endregion Logging
     #region Properties

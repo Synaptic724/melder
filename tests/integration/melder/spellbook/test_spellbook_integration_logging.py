@@ -5,6 +5,7 @@ import logging
 import pytest
 
 from melder.aether.aether import Aether
+from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.spellbook import Spellbook
@@ -22,52 +23,61 @@ def reset_aether_singleton_for_integration() -> None:
     Returns:
         None.
     """
+    AetherUtilitySystem._reset_singleton_for_tests()
     Aether._reset_singleton_for_tests()
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
     yield
+    AetherUtilitySystem._reset_singleton_for_tests()
     Aether._reset_singleton_for_tests()
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
 
 
-def test_spellbook_logger_factory_upgrades_aether_logger() -> None:
+def test_spellbook_uses_registered_channel_logger_provider() -> None:
     """
     Purpose:
-        Validate a logger factory upgrades the Aether logger.
+        Validate Spellbook and Aether use the registered channel logger provider.
     Contract:
-        - The logger factory is invoked for the Spellbook and Aether.
-        - Aether's SafeLogger wraps a non-null underlying logger.
+        - The provider resolver is invoked for both Aether and Spellbook.
+        - Aether and Spellbook both end up with non-null underlying loggers.
     Returns:
         None.
     Raises:
-        AssertionError: If the Aether logger is not upgraded.
+        AssertionError: If the provider path is not used.
     """
     created_for: list[object] = []
 
-    def logger_factory(obj: object) -> logging.Logger:
+    def resolver(*, registrant: object, groups=None, system_groups=None, props=None, channels=None) -> logging.Logger:
         """
         Purpose:
-            Provide a stable stdlib logger for the requested object.
+            Provide a stable stdlib logger for the requested registrant.
         Contract:
-            - Records each object for verification.
+            - Records each registrant for verification.
             - Returns a stdlib logger instance.
         Args:
-            obj: Object requesting a logger.
+            registrant: Object requesting a logger.
         Returns:
             logging.Logger: The logger instance.
         """
-        created_for.append(obj)
-        return logging.getLogger(f"spellbook-integration.{obj.__class__.__name__}")
+        created_for.append(registrant)
+        return logging.getLogger(f"spellbook-integration.{registrant.__class__.__name__}")
+
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem().register_channel_logger_resolver(resolver)
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
 
     configuration = Configuration(aether_frame="log-frame")
-    configuration.set_logger_factory(logger_factory)
-
     spellbook = Spellbook(aetheric_frame="log-frame", configuration=configuration)
 
     assert any(isinstance(obj, Aether) for obj in created_for)
+    assert any(isinstance(obj, Spellbook) for obj in created_for)
     assert Spellbook._aether._logger is not None
     assert Spellbook._aether._logger._logger is not None
     assert spellbook._logger is not None
+    assert spellbook._logger._logger is not None

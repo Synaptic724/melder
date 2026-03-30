@@ -2120,19 +2120,15 @@ class ISpellbook(ICleanable, Protocol):
             debugging: Optional[bool],
             disposal: Optional[bool],
             disposal_method_names: Optional[List[str]],
-            logger_factory: Optional[Callable[[object], Any]] = None,
-            use_default_std_logger: bool = False,
     ) -> None:
         """
         Public API
 
         Consolidated setup for this Spellbook's **Aether frame**:
 
-          1. (Optional) Install a logger factory on the configuration.
-          2. Apply provided configuration properties.
-          3. Validate + freeze configuration.
-          4. Bind the configuration to the Aether.
-          5. Optionally upgrade the Aether logger.
+          1. Apply provided configuration properties.
+          2. Validate + freeze configuration.
+          3. Bind the configuration to the Aether.
 
         Once frozen during this call, the configuration becomes
         immutable.
@@ -2149,11 +2145,6 @@ class ISpellbook(ICleanable, Protocol):
             disposal_method_names:
                 Method names to invoke on created objects during
                 disposal.
-            logger_factory:
-                Optional logger factory to install before freezing.
-            use_default_std_logger:
-                If True and `logger_factory` is not provided, installs
-                the default StdLoggerFactory via `set_logger_factory()`.
 
         Raises:
             RuntimeError:
@@ -2162,8 +2153,6 @@ class ISpellbook(ICleanable, Protocol):
                 If an unknown configuration key is provided.
             ValueError:
                 If configuration fails validation.
-            TypeError:
-                If the provided logger factory is invalid.
         """
         ...
 
@@ -5411,10 +5400,17 @@ class IRift(ICleanable, Protocol):
     def list_space_ids(self) -> List[str]:
         ...
 
-    def get_nexus_frame_object(self, frame_name: str) -> "IAethericFrame":
+    def get_nexus_frame(self, frame_name: Optional[str] = None) -> "IAethericFrame":
         ...
 
-    def dispose_nexus_frame(self, frame_name: str) -> None:
+    def create_nexus_frame(
+            self,
+            frame_name: Optional[str] = None,
+            immutable: bool = False,
+    ) -> "IAethericFrame":
+        ...
+
+    def list_accessible_nexus_frame_names(self) -> Tuple[str, ...]:
         ...
 
     def on_nexus_frame_disposed(self, frame_name: str) -> None:
@@ -5505,6 +5501,24 @@ class INexus(ICleanable, Protocol):
         ...
 
     def list_rift_ids(self) -> List[str]:
+        ...
+
+    def get_nexus_frame_for_rift(
+            self,
+            rift_id: str,
+            frame_name: Optional[str] = None,
+    ) -> "IAethericFrame":
+        ...
+
+    def create_nexus_frame_for_rift(
+            self,
+            rift_id: str,
+            frame_name: Optional[str] = None,
+            immutable: bool = False,
+    ) -> "IAethericFrame":
+        ...
+
+    def list_accessible_nexus_frame_names(self, rift_id: str) -> Tuple[str, ...]:
         ...
 
     def check_for_aetheric_frame(self, frame_name: str) -> None:
@@ -6432,7 +6446,6 @@ class IConfiguration(ICleanable, Protocol):
     # --- Attributes (surface expectations only) ---
     _frozen: bool
     available_properties: 'Dict[str, Type]'
-    _logger_factory: 'Pack[[object], Any] | None'
     _aether_frame: str
     _id: str
 
@@ -6447,39 +6460,6 @@ class IConfiguration(ICleanable, Protocol):
         ...
 
     # --- Core property API ---
-
-    def set_logger_factory(self, factory: Callable[[object], Any] = None) -> None:
-        """
-        Set the logger factory used to produce per-object loggers.
-
-        Contract:
-            factory(obj: object) -> Any   # e.g., Iris ChannelLogger, SafeLogger, stdlib Logger, or None
-
-        Usage:
-            - Call with no arguments to install the implementation's default factory
-              (the concrete Configuration uses StdLoggerFactory()).
-            - Or pass a specific factory to override the default.
-
-        Rules:
-            - Must be set BEFORE freeze().
-        """
-        ...
-
-    def get_logger_for(self, obj: object) -> Any | None:
-        """
-        Resolve a logger-like for 'obj' using the current logger factory.
-
-        Returns:
-            Any | None: Whatever the factory returns, or None if no factory is set.
-        """
-        ...
-
-    def has_logger_factory(self) -> bool:
-        """
-        Returns:
-            bool: True if a logger factory has been set; False otherwise.
-        """
-        ...
 
     def set_property(self, key: str, value: Any) -> None:
         """
@@ -6706,21 +6686,6 @@ class IConfiguration(ICleanable, Protocol):
                 .finalize())
         """
         ...
-    def clear_logger_factory(self) -> 'IConfiguration':
-        """
-        Clear the logger factory (pre-freeze only) and return `self`.
-        """
-        ...
-
-    def with_logger_factory(self, factory: Callable[[object], Any]) -> 'IConfiguration':
-        """
-        Fluent
-
-        Set the logger factory (factory(obj) -> Any) and return `self`.
-        Must be called before freeze().
-        """
-        ...
-
     def with_defaults(self) -> 'IConfiguration':
         """
         Fluent
