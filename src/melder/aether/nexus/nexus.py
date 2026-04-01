@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.nexus_frame_record import NexusFrameRecord
@@ -10,17 +10,22 @@ from melder.aether.nexus.configuration.nexus_configuration import (
 from melder.aether.nexus.configuration.nexus_frame_mode import (
     NexusFrameMode,
 )
+from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.rift_space.rift_event_configuration import RiftEventConfiguration
+from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.interfaces.interfaces import (
     IAether,
     IAethericFrame,
+    IConfiguration,
     INexus,
     INexusConfiguration,
     IRiftEventConfiguration,
     IRift,
     IRiftConfiguration,
+    ISafeLogger,
 )
 
 
@@ -58,6 +63,7 @@ class Nexus(Cleanable, INexus):
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",
+        "_logger",
         "_aether",
         "_configuration",
         "_configured",
@@ -89,6 +95,7 @@ class Nexus(Cleanable, INexus):
             *,
             aether: Optional[IAether] = None,
             configuration: Optional[INexusConfiguration] = None,
+            logger: Optional[Any] = None,
     ) -> None:
         """
         Internal
@@ -102,29 +109,76 @@ class Nexus(Cleanable, INexus):
             configuration:
                 Optional preinstalled Nexus configuration. When omitted, Nexus
                 starts unconfigured and disabled.
+            logger:
+                Optional logger instance or logger-like object used to override
+                the default provider-backed logger.
 
         Returns:
             None.
         """
-        if not Nexus._initialized:
-            if aether is None:
-                from melder.aether.aether import Aether
-                aether = Aether()
-            super().__init__()
-            self._id: str = IDBuilder.create_id()
-            self._lock: threading.RLock = threading.RLock()
-            self._aether: IAether = aether
-            self._configuration: Optional[INexusConfiguration] = configuration
-            self._configured: bool = configuration is not None
-            self._enabled: bool = False
-            self._rifts_by_id: Dict[str, IRift] = {}
-            self._rift_ids_by_name: Dict[str, str] = {}
-            self._next_default_rift_number: int = 1
-            self._next_indexed_nexus_frame_number: int = 1
-            self._rift_profiles_by_name: Dict[str, IRiftConfiguration] = {}
-            self._target_frame_ref_counts: Dict[str, int] = {}
-            self._nexus_frames_by_name: Dict[str, NexusFrameRecord] = {}
-            Nexus._initialized = True
+        if Nexus._initialized:
+            if logger is not None:
+                self._logger.cleanup()
+                self._logger = InitHelpers.resolve_safe_logger(logger)
+            return
+
+        if aether is None:
+            from melder.aether.aether import Aether
+            aether = Aether()
+        super().__init__()
+        self._id: str = IDBuilder.create_id()
+        self._lock: threading.RLock = threading.RLock()
+        self._logger: ISafeLogger = InitHelpers.resolve_safe_logger(None)
+        self._aether: IAether = aether
+        self._configuration: Optional[INexusConfiguration] = configuration
+        self._configured: bool = configuration is not None
+        self._enabled: bool = False
+        self._rifts_by_id: Dict[str, IRift] = {}
+        self._rift_ids_by_name: Dict[str, str] = {}
+        self._next_default_rift_number: int = 1
+        self._next_indexed_nexus_frame_number: int = 1
+        self._rift_profiles_by_name: Dict[str, IRiftConfiguration] = {}
+        self._target_frame_ref_counts: Dict[str, int] = {}
+        self._nexus_frames_by_name: Dict[str, NexusFrameRecord] = {}
+        self._initialize_logging(logger)
+        Nexus._initialized = True
+
+    def _initialize_logging(self, logger: Optional[Any]) -> None:
+        """
+        Internal
+
+        Establish the Nexus logger through the hosted utility system.
+
+        Priority:
+            1) Explicit logger arg
+            2) AetherUtilitySystem channel logger
+            3) Silent no-op logger
+
+        Args:
+            logger:
+                Optional explicit logger override.
+
+        Returns:
+            None.
+        """
+        try:
+            if logger is not None:
+                self._logger = InitHelpers.resolve_safe_logger(logger)
+            else:
+                self._logger = InitHelpers.resolve_channel_logger(
+                    self,
+                    groups=["nexus", "lifecycle"],
+                    system_groups=["nexus", "aether"],
+                    props={"component": "nexus"},
+                    channels="system",
+                )
+        except Exception as e:
+            self._logger = InitHelpers.resolve_safe_logger(None)
+            self._logger.error(
+                f"Failed to initialize Nexus logger: {e}",
+                "_initialize_logging",
+                exc_info=True,
+            )
 
     @classmethod
     def _reset_singleton_for_tests(cls) -> None:
@@ -217,6 +271,7 @@ class Nexus(Cleanable, INexus):
         with lock:
             if self._cleaned:
                 return
+            self._logger.info("Cleaning Nexus singleton state.", "cleanup")
             self._cleaned = True
             for rift in self._rifts_by_id.values():
                 rift.cleanup()
@@ -246,6 +301,9 @@ class Nexus(Cleanable, INexus):
             self._target_frame_ref_counts = None
             self._nexus_frames_by_name = None
             self._id = None
+        if self._logger is not None:
+            self._logger.cleanup()
+            self._logger = None
         self._lock = None
         with Nexus._singleton_lock:
             Nexus._instance = None
@@ -291,6 +349,7 @@ class Nexus(Cleanable, INexus):
             if not self._configuration.frozen:
                 self._configuration.finalize()
             self._enabled = True
+            self._logger.info("Nexus enabled.", "enable")
 
     def disable(self) -> None:
         """
@@ -305,6 +364,7 @@ class Nexus(Cleanable, INexus):
         self.check_cleaned()
         with self._lock:
             self._enabled = False
+            self._logger.info("Nexus disabled.", "disable")
 
     def create_rift_configuration(
             self,
@@ -392,6 +452,7 @@ class Nexus(Cleanable, INexus):
             active_space_id: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
             creation_token: Optional[str] = None,
+            logger: Optional[Any] = None,
     ) -> IRift:
         """
         Internal
@@ -413,6 +474,9 @@ class Nexus(Cleanable, INexus):
                 Optional Rift-level metadata.
             creation_token:
                 Optional creation token when creation is token-gated.
+            logger:
+                Optional explicit logger override passed through to the created
+                Rift.
 
         Returns:
             IRift: Newly created and registered live Rift.
@@ -445,11 +509,16 @@ class Nexus(Cleanable, INexus):
                 local_conduit_id=local_conduit_id,
                 active_space_id=active_space_id,
                 metadata=metadata,
+                logger=logger,
             )
             if bound_configuration.get_property("auto_activate_on_program"):
                 rift.mark_active()
             self.add_rift(rift)
             bound_configuration.mark_consumed()
+            self._logger.info(
+                "Created Rift '{0}' (id={1}).".format(rift.rift_name, rift.id),
+                "create_rift",
+            )
             return rift
 
     def add_rift(self, rift: IRift) -> None:
@@ -569,12 +638,14 @@ class Nexus(Cleanable, INexus):
         """
         self._require_enabled()
         frame_names_to_cleanup: List[str] = []
+        rift_name: Optional[str] = None
         with self._lock:
             try:
                 rift = self._rifts_by_id.pop(rift_id)
             except KeyError as exc:
                 raise ValueError("Rift with id '{0}' was not found.".format(rift_id)) from exc
 
+            rift_name = rift.rift_name
             if rift.rift_name:
                 self._rift_ids_by_name.pop(rift.rift_name, None)
             for target_frame_name in rift.target_frame_names:
@@ -584,6 +655,10 @@ class Nexus(Cleanable, INexus):
         for frame_name in frame_names_to_cleanup:
             self._dispose_nexus_frame(frame_name)
         rift.cleanup()
+        self._logger.info(
+            "Removed Rift '{0}' (id={1}).".format(rift_name, rift_id),
+            "remove_rift",
+        )
 
     def list_rift_ids(self) -> list[str]:
         """
@@ -689,7 +764,12 @@ class Nexus(Cleanable, INexus):
                 if rift.id not in nexus_frame_record.attached_rift_ids:
                     nexus_frame_record.attach_rift_id(rift.id)
                     rift._attach_nexus_frame_name(shared_frame_name)
-                return nexus_frame_record.frame
+                frame = nexus_frame_record.frame
+                self._logger.info(
+                    "Resolved Nexus frame '{0}' for Rift id={1}.".format(frame.name, rift_id),
+                    "create_nexus_frame_for_rift",
+                )
+                return frame
 
             if nexus_frame_mode == NexusFrameMode.one_per_workspace:
                 if immutable:
@@ -704,7 +784,12 @@ class Nexus(Cleanable, INexus):
                 )
                 if rift.id not in nexus_frame_record.attached_rift_ids:
                     nexus_frame_record.attach_rift_id(rift.id)
-                return nexus_frame_record.frame
+                frame = nexus_frame_record.frame
+                self._logger.info(
+                    "Resolved Nexus frame '{0}' for Rift id={1}.".format(frame.name, rift_id),
+                    "create_nexus_frame_for_rift",
+                )
+                return frame
 
             new_frame_name = frame_name or self._allocate_indexed_nexus_frame_name()
             if new_frame_name in self._nexus_frames_by_name:
@@ -717,7 +802,12 @@ class Nexus(Cleanable, INexus):
             )
             nexus_frame_record.attach_rift_id(rift.id)
             rift._attach_nexus_frame_name(new_frame_name)
-            return nexus_frame_record.frame
+            frame = nexus_frame_record.frame
+            self._logger.info(
+                "Resolved Nexus frame '{0}' for Rift id={1}.".format(frame.name, rift_id),
+                "create_nexus_frame_for_rift",
+            )
+            return frame
 
     def list_accessible_nexus_frame_names(self, rift_id: str) -> Tuple[str, ...]:
         """
@@ -774,6 +864,10 @@ class Nexus(Cleanable, INexus):
                 if attached_rift is not None:
                     attached_rift.on_nexus_frame_disposed(frame_name)
             nexus_frame_record.cleanup()
+        self._logger.info(
+            "Dropped Nexus frame record for '{0}' during Aether detach.".format(frame_name),
+            "check_for_aetheric_frame",
+        )
 
     def _require_configured(self) -> None:
         """
@@ -865,10 +959,200 @@ class Nexus(Cleanable, INexus):
         """
         requested_target_frame_name = configuration.get_property("target_frame_name")
         default_target_frame_name = self._configuration.get_property("default_target_frame_name")
+        requested_space_type = configuration.get_property("space_type")
         if not self._configuration.get_property("allow_target_frame_override"):
             if requested_target_frame_name != default_target_frame_name:
                 raise ValueError("Target frame override is disabled.")
         self._validate_target_frame_names((requested_target_frame_name,))
+        self._validate_target_frame_runtime_requirements(
+            requested_target_frame_name,
+            requested_space_type,
+        )
+
+    def _validate_target_frame_runtime_requirements(
+            self,
+            target_frame_name: str,
+            requested_space_type: RiftSpaceType,
+    ) -> None:
+        """
+        Internal
+
+        Validate that one target frame exposes the minimum Melder runtime
+        posture required by the requested Rift room mode.
+
+        Rules:
+            - AR always requires `ai_profiles_enabled=True` on the target
+              frame configuration.
+            - Dynamic Rift spaces additionally require
+              `ai_native_enabled=True`.
+            - Dynamic Rift spaces additionally require
+              `system_state == dynamic`.
+            - If a frame declares `ai_native_enabled=True`, it must also be in
+              dynamic system state.
+
+        Args:
+            target_frame_name:
+                Melder frame the Rift will attach to.
+            requested_space_type:
+                Requested top-level Rift room mode.
+
+        Returns:
+            None.
+        """
+        target_frame_configuration = self._get_required_target_frame_configuration(
+            target_frame_name
+        )
+        ai_profiles_enabled = self._get_required_target_frame_boolean(
+            target_frame_configuration,
+            target_frame_name,
+            "ai_profiles_enabled",
+        )
+        if not ai_profiles_enabled:
+            raise ValueError(
+                "AR requires ai_profiles_enabled on target frame '{0}'.".format(
+                    target_frame_name
+                )
+            )
+
+        ai_native_enabled = self._get_required_target_frame_boolean(
+            target_frame_configuration,
+            target_frame_name,
+            "ai_native_enabled",
+        )
+        target_system_state = self._get_required_target_frame_system_state(
+            target_frame_configuration,
+            target_frame_name,
+        )
+
+        if ai_native_enabled and target_system_state != SystemState.dynamic:
+            raise ValueError(
+                "Target frame '{0}' has ai_native_enabled but is not in dynamic system_state.".format(
+                    target_frame_name
+                )
+            )
+
+        if requested_space_type == RiftSpaceType.dynamic:
+            if not ai_native_enabled:
+                raise ValueError(
+                    "Dynamic AR requires ai_native_enabled on target frame '{0}'.".format(
+                        target_frame_name
+                    )
+                )
+            if target_system_state != SystemState.dynamic:
+                raise ValueError(
+                    "Dynamic AR requires target frame '{0}' to be in dynamic system_state.".format(
+                        target_frame_name
+                    )
+                )
+
+    def _get_required_target_frame_configuration(
+            self,
+            target_frame_name: str,
+    ) -> IConfiguration:
+        """
+        Internal
+
+        Return the bound Melder configuration for one target frame or raise.
+
+        Args:
+            target_frame_name:
+                Target frame name being validated.
+
+        Returns:
+            IConfiguration: Bound Melder configuration.
+        """
+        try:
+            target_frame_configuration = self._aether._get_configuration(
+                target_frame_name
+            )
+        except ValueError as exc:
+            raise ValueError(
+                "Target frame '{0}' does not exist.".format(target_frame_name)
+            ) from exc
+        if target_frame_configuration is None:
+            raise ValueError(
+                "Target frame '{0}' must have a bound Configuration for AR use.".format(
+                    target_frame_name
+                )
+            )
+        return target_frame_configuration
+
+    def _get_required_target_frame_boolean(
+            self,
+            target_frame_configuration: IConfiguration,
+            target_frame_name: str,
+            property_name: str,
+    ) -> bool:
+        """
+        Internal
+
+        Read one required boolean property from a target frame configuration.
+
+        Args:
+            target_frame_configuration:
+                Bound Melder configuration for the target frame.
+            target_frame_name:
+                Target frame name being validated.
+            property_name:
+                Required boolean property name.
+
+        Returns:
+            bool: Property value.
+        """
+        try:
+            value = target_frame_configuration.get_property(property_name)
+        except KeyError as exc:
+            raise ValueError(
+                "Target frame '{0}' must define '{1}' for AR use.".format(
+                    target_frame_name,
+                    property_name,
+                )
+            ) from exc
+        if not isinstance(value, bool):
+            raise ValueError(
+                "Target frame '{0}' has invalid '{1}' value '{2}'.".format(
+                    target_frame_name,
+                    property_name,
+                    value,
+                )
+            )
+        return value
+
+    def _get_required_target_frame_system_state(
+            self,
+            target_frame_configuration: IConfiguration,
+            target_frame_name: str,
+    ) -> SystemState:
+        """
+        Internal
+
+        Read the bound Melder system_state for one target frame.
+
+        Args:
+            target_frame_configuration:
+                Bound Melder configuration for the target frame.
+            target_frame_name:
+                Target frame name being validated.
+
+        Returns:
+            SystemState: Bound target-frame system state.
+        """
+        try:
+            system_state = target_frame_configuration.get_property("system_state")
+        except KeyError as exc:
+            raise ValueError(
+                "Target frame '{0}' must define 'system_state' for AR use.".format(
+                    target_frame_name
+                )
+            ) from exc
+        if not isinstance(system_state, SystemState):
+            raise ValueError(
+                "Target frame '{0}' has invalid system_state '{1}'.".format(
+                    target_frame_name,
+                    system_state,
+                )
+            )
+        return system_state
 
     def _validate_target_frame_names(self, target_frame_names: Sequence[str]) -> None:
         """
@@ -1075,6 +1359,10 @@ class Nexus(Cleanable, INexus):
         nexus_frame_record = self._nexus_frames_by_name.get(frame_name)
         if nexus_frame_record is None:
             return
+        self._logger.info(
+            "Disposing Nexus frame '{0}'.".format(frame_name),
+            "_dispose_nexus_frame",
+        )
         nexus_frame_record.frame.cleanup()
 
     def _get_required_rift(self, rift_id: str) -> IRift:

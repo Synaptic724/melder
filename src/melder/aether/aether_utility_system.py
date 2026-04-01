@@ -5,7 +5,6 @@ from typing import Any, Callable, Dict, Iterable, Optional, Union
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import IChannelLogger
-from melder.utilities.logger.iris_logger_factory import IrisLoggerFactory
 from melder.utilities.logger.safe_logger import SafeLogger
 
 
@@ -26,8 +25,7 @@ class AetherUtilitySystem(Cleanable):
         - Singleton.
         - Starts unconfigured and returns a null `SafeLogger` by default.
         - Supports late registration of one channel-logger resolver.
-        - Uses `IrisLoggerFactory` only as an internal adapter once a resolver
-          has been registered.
+        - Resolves channel loggers directly through the registered resolver.
         - Explicit logger objects may still be resolved bottom-up via
           `resolve_safe_logger(...)`.
 
@@ -43,7 +41,7 @@ class AetherUtilitySystem(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_channel_logger_resolver",
-        "_iris_logger_factory",
+        "_default_logger",
     ]
 
     def __new__(cls, *args, **kwargs):
@@ -72,7 +70,7 @@ class AetherUtilitySystem(Cleanable):
             super().__init__()
             self._lock: threading.RLock = threading.RLock()
             self._channel_logger_resolver: Optional[Callable[..., Any]] = None
-            self._iris_logger_factory: Optional[IrisLoggerFactory] = None
+            self._default_logger: Optional[logging.Logger] = None
             AetherUtilitySystem._initialized = True
 
     @classmethod
@@ -109,10 +107,8 @@ class AetherUtilitySystem(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            if self._iris_logger_factory is not None:
-                self._iris_logger_factory.cleanup()
             self._channel_logger_resolver = None
-            self._iris_logger_factory = None
+            self._default_logger = None
         self._lock = None
         with AetherUtilitySystem._singleton_lock:
             AetherUtilitySystem._instance = None
@@ -140,8 +136,7 @@ class AetherUtilitySystem(Cleanable):
 
         Args:
             resolver:
-                Callable accepting the resolver signature used by
-                `IrisLoggerFactory`.
+                Callable accepting the channel-logger resolver signature.
 
         Returns:
             None.
@@ -150,10 +145,52 @@ class AetherUtilitySystem(Cleanable):
         if not callable(resolver):
             raise TypeError("resolver must be callable.")
         with self._lock:
-            if self._iris_logger_factory is not None:
-                self._iris_logger_factory.cleanup()
             self._channel_logger_resolver = resolver
-            self._iris_logger_factory = IrisLoggerFactory(resolver)
+
+    def has_default_logger(self) -> bool:
+        """
+        Purpose:
+            Return whether a plain stdlib logger fallback has been registered.
+
+        Returns:
+            bool: True when configured.
+        """
+        self.check_cleaned()
+        return self._default_logger is not None
+
+    def register_default_logger(self, logger: logging.Logger) -> None:
+        """
+        Internal
+
+        Register one process-wide default stdlib logger for message-only
+        fallback behavior when no channel resolver is available.
+
+        Args:
+            logger:
+                Standard library logger instance to use as the provider
+                fallback.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if not isinstance(logger, logging.Logger):
+            raise TypeError("logger must be a logging.Logger.")
+        with self._lock:
+            self._default_logger = logger
+
+    def clear_default_logger(self) -> None:
+        """
+        Internal
+
+        Remove the currently registered default stdlib logger fallback.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._default_logger = None
 
     def clear_channel_logger_resolver(self) -> None:
         """
@@ -166,10 +203,7 @@ class AetherUtilitySystem(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            if self._iris_logger_factory is not None:
-                self._iris_logger_factory.cleanup()
             self._channel_logger_resolver = None
-            self._iris_logger_factory = None
 
     def resolve_safe_logger(
             self,
@@ -224,16 +258,21 @@ class AetherUtilitySystem(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            factory = self._iris_logger_factory
-        if factory is None:
+            resolver = self._channel_logger_resolver
+            default_logger = self._default_logger
+        if resolver is None:
+            if default_logger is not None:
+                return SafeLogger(default_logger)
             return SafeLogger(None)
         try:
-            return factory(
-                registrant,
+            return SafeLogger(resolver(
                 groups=groups,
                 system_groups=system_groups,
                 props=props,
                 channels=channels,
-            )
+                registrant=registrant,
+            ))
         except Exception:
+            if default_logger is not None:
+                return SafeLogger(default_logger)
             return SafeLogger(None)

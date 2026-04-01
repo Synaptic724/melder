@@ -1,10 +1,11 @@
 import threading
-from typing import Dict, Optional, Sequence, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aether import Aether
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.interfaces.interfaces import (
     IAether,
     IAethericFrame,
@@ -12,6 +13,7 @@ from melder.utilities.interfaces.interfaces import (
     IRift,
     IRiftConfiguration,
     IRiftSpace,
+    ISafeLogger,
 )
 
 
@@ -37,6 +39,12 @@ class Rift(Cleanable, IRift):
     Lifecycle:
         Created by `Nexus`, then registered into the Nexus registry. Cleanup
         clears room registries and owned live-state references.
+
+    TODO:
+        When Rift-owned Melder frames are introduced for local conduit hosting,
+        bind them in the most permissive AR posture by default:
+        `ai_profiles_enabled=True`, `ai_native_enabled=True`, and
+        `system_state=dynamic`.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -44,6 +52,7 @@ class Rift(Cleanable, IRift):
         "_id",
         "_rift_name",
         "_lock",
+        "_logger",
         "_nexus",
         "_aether",
         "_configuration",
@@ -74,6 +83,7 @@ class Rift(Cleanable, IRift):
             local_conduit_id: Optional[str] = None,
             active_space_id: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
+            logger: Optional[Any] = None,
     ) -> None:
         """
         Internal
@@ -103,6 +113,9 @@ class Rift(Cleanable, IRift):
                 Optional active room id.
             metadata:
                 Optional Rift-level metadata.
+            logger:
+                Optional explicit logger override used instead of the default
+                provider-backed logger.
 
         Returns:
             None.
@@ -131,6 +144,7 @@ class Rift(Cleanable, IRift):
         self._id: str = rift_id or IDBuilder.create_id()
         self._rift_name: Optional[str] = rift_name
         self._lock: threading.RLock = threading.RLock()
+        self._logger: ISafeLogger = InitHelpers.resolve_safe_logger(None)
         self._nexus: INexus = nexus
         self._aether: IAether = Aether()
         self._configuration: IRiftConfiguration = configuration
@@ -145,6 +159,48 @@ class Rift(Cleanable, IRift):
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
         self._spaces_by_id: Dict[str, IRiftSpace] = {}
         self._space_ids_by_name: Dict[str, str] = {}
+        self._initialize_logging(logger)
+
+    def _initialize_logging(self, logger: Optional[Any]) -> None:
+        """
+        Internal
+
+        Establish the Rift logger through the hosted utility system.
+
+        Priority:
+            1) Explicit logger arg
+            2) AetherUtilitySystem channel logger
+            3) Silent no-op logger
+
+        Args:
+            logger:
+                Optional explicit logger override.
+
+        Returns:
+            None.
+        """
+        try:
+            if logger is not None:
+                self._logger = InitHelpers.resolve_safe_logger(logger)
+            else:
+                self._logger = InitHelpers.resolve_channel_logger(
+                    self,
+                    groups=["rift", "lifecycle"],
+                    system_groups=["nexus", "aether"],
+                    props={
+                        "rift_id": self._id,
+                        "rift_name": self._rift_name,
+                        "default_nexus_frame_name": self._default_nexus_frame_name,
+                    },
+                    channels="system",
+                )
+        except Exception as e:
+            self._logger = InitHelpers.resolve_safe_logger(None)
+            self._logger.error(
+                f"Failed to initialize Rift logger: {e}",
+                "_initialize_logging",
+                exc_info=True,
+            )
 
     def cleanup(self) -> None:
         """
@@ -166,6 +222,7 @@ class Rift(Cleanable, IRift):
         with lock:
             if self._cleaned:
                 return
+            self._logger.info("Cleaning Rift runtime state.", "cleanup")
             self._cleaned = True
             self._spaces_by_id.clear()
             self._space_ids_by_name.clear()
@@ -187,6 +244,9 @@ class Rift(Cleanable, IRift):
             self._space_ids_by_name = None
             self._rift_name = None
             self._id = None
+        if self._logger is not None:
+            self._logger.cleanup()
+            self._logger = None
         self._lock = None
 
     @property
@@ -402,6 +462,10 @@ class Rift(Cleanable, IRift):
                 self._space_ids_by_name[space.space_name] = space.space_id
             if self._active_space_id is None:
                 self._active_space_id = space.space_id
+            self._logger.info(
+                "Registered RiftSpace '{0}' (id={1}).".format(space.space_name, space.space_id),
+                "register_space",
+            )
 
     def get_space(self, space_id: str) -> IRiftSpace:
         """
@@ -459,6 +523,10 @@ class Rift(Cleanable, IRift):
         with self._lock:
             self.get_space(space_id)
             self._active_space_id = space_id
+            self._logger.info(
+                "Active RiftSpace set to id={0}.".format(space_id),
+                "set_active_space",
+            )
 
     def list_space_ids(self) -> list[str]:
         """
@@ -541,6 +609,10 @@ class Rift(Cleanable, IRift):
             None.
         """
         self.check_cleaned()
+        self._logger.info(
+            "Observed disposal of Nexus frame '{0}'.".format(frame_name),
+            "on_nexus_frame_disposed",
+        )
         return
 
     def _attach_nexus_frame_name(self, frame_name: str) -> None:

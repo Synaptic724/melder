@@ -5474,6 +5474,7 @@ class INexus(ICleanable, Protocol):
             active_space_id: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
             creation_token: Optional[str] = None,
+            logger: Optional[Any] = None,
     ) -> IRift:
         ...
 

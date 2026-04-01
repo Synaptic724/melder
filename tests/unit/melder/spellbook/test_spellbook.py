@@ -506,7 +506,10 @@ class DummyLogger:
             None.
         """
         self.debugs = []
+        self.infos = []
+        self.warnings = []
         self.errors = []
+        self.criticals = []
         self.cleaned = False
         self.fail_debug = fail_debug
 
@@ -533,6 +536,66 @@ class DummyLogger:
         """
         Purpose:
             Record an error call.
+        Contract:
+            Appends (msg, method) to the error log.
+        Args:
+            msg: Error message.
+            method: Optional method name.
+            **kwargs: Additional logging context.
+        Returns:
+            None.
+        """
+        self.errors.append((msg, method))
+
+    def info(self, msg, method=None, **kwargs):
+        """
+        Purpose:
+            Record an info call.
+        Contract:
+            Appends (msg, method) to the info log.
+        Args:
+            msg: Info message.
+            method: Optional method name.
+            **kwargs: Additional logging context.
+        Returns:
+            None.
+        """
+        self.infos.append((msg, method))
+
+    def warning(self, msg, method=None, **kwargs):
+        """
+        Purpose:
+            Record a warning call.
+        Contract:
+            Appends (msg, method) to the warning log.
+        Args:
+            msg: Warning message.
+            method: Optional method name.
+            **kwargs: Additional logging context.
+        Returns:
+            None.
+        """
+        self.warnings.append((msg, method))
+
+    def critical(self, msg, method=None, **kwargs):
+        """
+        Purpose:
+            Record a critical call.
+        Contract:
+            Appends (msg, method) to the critical log.
+        Args:
+            msg: Critical message.
+            method: Optional method name.
+            **kwargs: Additional logging context.
+        Returns:
+            None.
+        """
+        self.criticals.append((msg, method))
+
+    def exception(self, msg, method=None, **kwargs):
+        """
+        Purpose:
+            Record an exception-style error call.
         Contract:
             Appends (msg, method) to the error log.
         Args:
@@ -576,7 +639,10 @@ class DummySafeLogger:
         """
         self._logger = inner or DummyLogger()
         self.debug_calls = []
+        self.info_calls = []
+        self.warning_calls = []
         self.error_calls = []
+        self.critical_calls = []
         self.cleaned = False
 
     def debug(self, msg, method=None, **kwargs):
@@ -598,6 +664,66 @@ class DummySafeLogger:
         """
         Purpose:
             Record an error call.
+        Contract:
+            Appends (msg, method) to error_calls.
+        Args:
+            msg: Error message.
+            method: Optional method name.
+            **kwargs: Additional logging context.
+        Returns:
+            None.
+        """
+        self.error_calls.append((msg, method))
+
+    def info(self, msg, method=None, **kwargs):
+        """
+        Purpose:
+            Record an info call.
+        Contract:
+            Appends (msg, method) to info_calls.
+        Args:
+            msg: Info message.
+            method: Optional method name.
+            **kwargs: Additional logging context.
+        Returns:
+            None.
+        """
+        self.info_calls.append((msg, method))
+
+    def warning(self, msg, method=None, **kwargs):
+        """
+        Purpose:
+            Record a warning call.
+        Contract:
+            Appends (msg, method) to warning_calls.
+        Args:
+            msg: Warning message.
+            method: Optional method name.
+            **kwargs: Additional logging context.
+        Returns:
+            None.
+        """
+        self.warning_calls.append((msg, method))
+
+    def critical(self, msg, method=None, **kwargs):
+        """
+        Purpose:
+            Record a critical call.
+        Contract:
+            Appends (msg, method) to critical_calls.
+        Args:
+            msg: Critical message.
+            method: Optional method name.
+            **kwargs: Additional logging context.
+        Returns:
+            None.
+        """
+        self.critical_calls.append((msg, method))
+
+    def exception(self, msg, method=None, **kwargs):
+        """
+        Purpose:
+            Record an exception-style error call.
         Contract:
             Appends (msg, method) to error_calls.
         Args:

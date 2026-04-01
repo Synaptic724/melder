@@ -1,10 +1,16 @@
+import logging
+
 import pytest
 
 from melder.aether.aether import Aether
+from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.nexus.rift.rift import Rift
+from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.configuration.rift_configuration import RiftConfiguration
 from melder.aether.nexus.nexus import Nexus
 from melder.aether.nexus.rift_space.rift_space import RiftSpace
+from melder.spellbook.configuration.configuration import Configuration
+from melder.spellbook.configuration.system_state import SystemState
 
 
 @pytest.fixture(autouse=True)
@@ -15,11 +21,19 @@ def fresh_nexus() -> None:
     Returns:
         None.
     """
+    AetherUtilitySystem._reset_singleton_for_tests()
     Aether._reset_singleton_for_tests()
     Nexus._reset_singleton_for_tests()
+    _bind_target_frame_configuration(
+        "default",
+        ai_profiles_enabled=True,
+        ai_native_enabled=False,
+        system_state=SystemState.automatic,
+    )
     yield
     Nexus._reset_singleton_for_tests()
     Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
 
 
 def _create_enabled_nexus() -> Nexus:
@@ -39,6 +53,41 @@ def _create_enabled_nexus() -> Nexus:
     return nexus
 
 
+def _bind_target_frame_configuration(
+    frame_name: str,
+    *,
+    ai_profiles_enabled: bool,
+    ai_native_enabled: bool = False,
+    system_state: SystemState = SystemState.automatic,
+) -> None:
+    """
+    Bind one Melder frame configuration for target-frame eligibility tests.
+
+    Args:
+        frame_name:
+            Target frame name to configure.
+        ai_profiles_enabled:
+            Whether the frame enables AI profiles.
+        ai_native_enabled:
+            Whether the frame enables AI-native mode.
+        system_state:
+            Target frame Melder system state.
+
+    Returns:
+        None.
+    """
+    aether = Aether()
+    aether._ensure_frame(frame_name)
+    frame_configuration = Configuration()
+    if system_state == SystemState.dynamic:
+        frame_configuration.dynamic_defaults()
+    else:
+        frame_configuration.automatic_defaults()
+    frame_configuration.with_ai_profiles(ai_profiles_enabled)
+    frame_configuration.with_ai_native(ai_native_enabled)
+    aether._bind_configuration(frame_configuration, frame_name)
+
+
 def test_nexus_is_singleton() -> None:
     """
     Verify `Nexus` enforces the singleton contract.
@@ -50,6 +99,64 @@ def test_nexus_is_singleton() -> None:
     second = Nexus()
 
     assert first is second
+
+
+def test_nexus_uses_registered_channel_logger_provider() -> None:
+    """
+    Verify Nexus resolves its default logger through the hosted provider.
+
+    Returns:
+        None.
+    """
+    created_for = []
+
+    def resolver(*, registrant: object, groups=None, system_groups=None, props=None, channels=None) -> logging.Logger:
+        """
+        Provide a stable stdlib logger and record the requesting object.
+
+        Args:
+            registrant:
+                Object requesting a logger.
+
+        Returns:
+            logging.Logger: Logger instance for the registrant.
+        """
+        created_for.append(registrant)
+        return logging.getLogger("nexus-provider.{0}".format(registrant.__class__.__name__))
+
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem().register_channel_logger_resolver(resolver)
+    _bind_target_frame_configuration(
+        "default",
+        ai_profiles_enabled=True,
+        ai_native_enabled=False,
+        system_state=SystemState.automatic,
+    )
+
+    aether = Aether()
+    nexus = Nexus()
+
+    assert aether._nexus is nexus
+    assert any(isinstance(obj, Nexus) for obj in created_for)
+    assert nexus._logger is not None
+    assert nexus._logger._logger is not None
+
+
+def test_nexus_explicit_logger_override_is_used() -> None:
+    """
+    Verify an explicit Nexus logger override replaces the provider default.
+
+    Returns:
+        None.
+    """
+    explicit_logger = logging.getLogger("nexus-explicit")
+
+    Aether()
+    nexus = Nexus(logger=explicit_logger)
+
+    assert nexus._logger._logger is explicit_logger
 
 
 def test_nexus_starts_unconfigured_and_disabled() -> None:
@@ -123,6 +230,54 @@ def test_create_rift_registers_live_rift_after_enable() -> None:
     rift_id = rift.id
     nexus.remove_rift(rift_id)
     assert nexus.has_rift(rift_id) is False
+
+
+def test_create_rift_uses_registered_channel_logger_provider() -> None:
+    """
+    Verify Rift resolves its default logger through the hosted provider.
+
+    Returns:
+        None.
+    """
+    created_for = []
+
+    def resolver(*, registrant: object, groups=None, system_groups=None, props=None, channels=None) -> logging.Logger:
+        """
+        Provide a stable stdlib logger and record the requesting object.
+
+        Args:
+            registrant:
+                Object requesting a logger.
+
+        Returns:
+            logging.Logger: Logger instance for the registrant.
+        """
+        created_for.append(registrant)
+        return logging.getLogger("rift-provider.{0}".format(registrant.__class__.__name__))
+
+    AetherUtilitySystem().register_channel_logger_resolver(resolver)
+
+    nexus = _create_enabled_nexus()
+    rift = nexus.create_rift(rift_name="alpha")
+
+    assert any(isinstance(obj, Rift) for obj in created_for)
+    assert rift._logger is not None
+    assert rift._logger._logger is not None
+
+
+def test_create_rift_explicit_logger_override_is_used() -> None:
+    """
+    Verify an explicit Rift logger override is preserved on creation.
+
+    Returns:
+        None.
+    """
+    nexus = _create_enabled_nexus()
+    explicit_logger = logging.getLogger("rift-explicit")
+
+    rift = nexus.create_rift(rift_name="alpha", logger=explicit_logger)
+
+    assert rift._logger._logger is explicit_logger
 
 
 def test_unnamed_rifts_receive_deterministic_default_names() -> None:
@@ -254,6 +409,12 @@ def test_target_frame_allow_and_deny_lists_are_enforced() -> None:
     Returns:
         None.
     """
+    _bind_target_frame_configuration(
+        "ops",
+        ai_profiles_enabled=True,
+        ai_native_enabled=False,
+        system_state=SystemState.automatic,
+    )
     nexus = Nexus()
     configuration = nexus.create_system_configuration()
     configuration.with_rift_creation_enabled(True)
@@ -277,6 +438,155 @@ def test_target_frame_allow_and_deny_lists_are_enforced() -> None:
 
     assert rift.target_frame_names == ("ops",)
     assert rift.default_target_frame_name == "ops"
+
+
+def test_static_rift_requires_target_frame_ai_profiles() -> None:
+    """
+    Verify AR refuses to attach to a target frame without AI profiles enabled.
+
+    Returns:
+        None.
+    """
+    _bind_target_frame_configuration("ops", ai_profiles_enabled=False)
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_target_frame_override(True)
+    configuration.with_allowed_target_frame_names(("default", "ops"))
+    nexus.enable(configuration)
+
+    rift_configuration = (
+        nexus.create_rift_configuration()
+        .with_target_frame_name("ops")
+        .with_space_type(RiftSpaceType.static)
+    )
+
+    with pytest.raises(ValueError, match="ai_profiles_enabled"):
+        nexus.create_rift(configuration=rift_configuration, rift_name="ops-static")
+
+
+def test_dynamic_rift_requires_target_frame_ai_native_enabled() -> None:
+    """
+    Verify dynamic AR refuses frames that do not enable AI-native mode.
+
+    Returns:
+        None.
+    """
+    _bind_target_frame_configuration(
+        "ops",
+        ai_profiles_enabled=True,
+        ai_native_enabled=False,
+        system_state=SystemState.dynamic,
+    )
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_target_frame_override(True)
+    configuration.with_allowed_target_frame_names(("default", "ops"))
+    nexus.enable(configuration)
+
+    rift_configuration = (
+        nexus.create_rift_configuration()
+        .with_target_frame_name("ops")
+        .with_space_type(RiftSpaceType.dynamic)
+    )
+
+    with pytest.raises(ValueError, match="ai_native_enabled"):
+        nexus.create_rift(configuration=rift_configuration, rift_name="ops-dynamic")
+
+
+def test_dynamic_rift_requires_dynamic_target_frame_system_state() -> None:
+    """
+    Verify dynamic AR refuses frames that are not in dynamic system_state.
+
+    Returns:
+        None.
+    """
+    _bind_target_frame_configuration(
+        "ops",
+        ai_profiles_enabled=True,
+        ai_native_enabled=True,
+        system_state=SystemState.automatic,
+    )
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_target_frame_override(True)
+    configuration.with_allowed_target_frame_names(("default", "ops"))
+    nexus.enable(configuration)
+
+    rift_configuration = (
+        nexus.create_rift_configuration()
+        .with_target_frame_name("ops")
+        .with_space_type(RiftSpaceType.dynamic)
+    )
+
+    with pytest.raises(ValueError, match="dynamic system_state"):
+        nexus.create_rift(configuration=rift_configuration, rift_name="ops-dynamic")
+
+
+def test_dynamic_rift_can_attach_to_dynamic_ai_native_target_frame() -> None:
+    """
+    Verify dynamic AR attaches successfully when the target frame is fully
+    eligible.
+
+    Returns:
+        None.
+    """
+    _bind_target_frame_configuration(
+        "ops",
+        ai_profiles_enabled=True,
+        ai_native_enabled=True,
+        system_state=SystemState.dynamic,
+    )
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_target_frame_override(True)
+    configuration.with_allowed_target_frame_names(("default", "ops"))
+    nexus.enable(configuration)
+
+    rift_configuration = (
+        nexus.create_rift_configuration()
+        .with_target_frame_name("ops")
+        .with_space_type(RiftSpaceType.dynamic)
+    )
+    rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops-dynamic")
+
+    assert rift.target_frame_names == ("ops",)
+    assert rift.configuration.get_property("space_type") == RiftSpaceType.dynamic
+
+
+def test_static_rift_can_attach_to_automatic_target_frame_when_ai_profiles_enabled() -> None:
+    """
+    Verify static AR can attach to an automatic frame when AI profiles are
+    enabled.
+
+    Returns:
+        None.
+    """
+    _bind_target_frame_configuration(
+        "ops",
+        ai_profiles_enabled=True,
+        ai_native_enabled=False,
+        system_state=SystemState.automatic,
+    )
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_target_frame_override(True)
+    configuration.with_allowed_target_frame_names(("default", "ops"))
+    nexus.enable(configuration)
+
+    rift_configuration = (
+        nexus.create_rift_configuration()
+        .with_target_frame_name("ops")
+        .with_space_type(RiftSpaceType.static)
+    )
+    rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops-static")
+
+    assert rift.target_frame_names == ("ops",)
+    assert rift.configuration.get_property("space_type") == RiftSpaceType.static
 
 
 def test_shared_and_isolated_nexus_frame_names_are_assigned() -> None:

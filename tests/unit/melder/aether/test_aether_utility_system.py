@@ -99,3 +99,68 @@ def test_clear_channel_logger_resolver_restores_null_fallback() -> None:
 
     assert isinstance(logger, SafeLogger)
     assert logger._logger is None
+
+
+def test_register_default_logger_is_used_when_channel_resolver_is_missing() -> None:
+    """
+    Verify a registered plain stdlib logger becomes the provider fallback when
+    no channel resolver exists.
+
+    Returns:
+        None.
+    """
+    raw = logging.getLogger("default-fallback")
+    system = AetherUtilitySystem()
+    system.register_default_logger(raw)
+
+    logger = system.resolve_channel_logger(object(), channels="system")
+
+    assert isinstance(logger, SafeLogger)
+    assert logger._logger is raw
+
+
+def test_default_logger_is_used_when_channel_resolver_raises() -> None:
+    """
+    Verify the default stdlib logger fallback is used when channel resolution
+    fails.
+
+    Returns:
+        None.
+    """
+    raw = logging.getLogger("default-on-error")
+
+    def resolver(**_: object) -> logging.Logger:
+        """
+        Raise to simulate channel resolver failure.
+
+        Returns:
+            logging.Logger: Never returns successfully.
+        """
+        raise RuntimeError("resolver failed")
+
+    system = AetherUtilitySystem()
+    system.register_default_logger(raw)
+    system.register_channel_logger_resolver(resolver)
+
+    logger = system.resolve_channel_logger(object(), channels="system")
+
+    assert isinstance(logger, SafeLogger)
+    assert logger._logger is raw
+
+
+def test_clear_default_logger_restores_null_fallback_without_channel_resolver() -> None:
+    """
+    Verify clearing the default logger restores null fallback mode when no
+    channel resolver exists.
+
+    Returns:
+        None.
+    """
+    system = AetherUtilitySystem()
+    system.register_default_logger(logging.getLogger("temp-default"))
+    system.clear_default_logger()
+
+    logger = system.resolve_channel_logger(object(), channels="system")
+
+    assert isinstance(logger, SafeLogger)
+    assert logger._logger is None
