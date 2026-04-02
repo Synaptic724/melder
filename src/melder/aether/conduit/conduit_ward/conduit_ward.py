@@ -160,8 +160,8 @@ class ConduitWard(Cleanable, IConduitWard):
             )
 
         # Null logger metadata last (outside lock)
-        if self._logger is not None and hasattr(self._logger, "_cleanup"):
-            self._logger._cleanup()
+        if self._logger is not None and hasattr(self._logger, "cleanup"):
+            self._logger.cleanup()
         self._logger = None
 
 
