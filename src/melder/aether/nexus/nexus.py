@@ -11,7 +11,7 @@ from melder.aether.nexus.configuration.nexus_frame_mode import (
     NexusFrameMode,
 )
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
-from melder.aether.nexus.rift_space.rift_event_configuration import RiftEventConfiguration
+from melder.aether.nexus.rift.rift_space.rift_event_configuration import RiftEventConfiguration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -123,8 +123,7 @@ class Nexus(Cleanable, INexus):
             return
 
         if aether is None:
-            from melder.aether.aether import Aether
-            aether = Aether()
+            raise ValueError("Aether must be provided to initialize Nexus.")
         super().__init__()
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()

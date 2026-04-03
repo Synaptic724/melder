@@ -8,7 +8,7 @@ from melder.aether.nexus.rift.rift import Rift
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.configuration.rift_configuration import RiftConfiguration
 from melder.aether.nexus.nexus import Nexus
-from melder.aether.nexus.rift_space.rift_space import RiftSpace
+from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.configuration.system_state import SystemState
 

@@ -1,22 +1,22 @@
 from typing import Dict, Optional
 
-from melder.aether.nexus.rift_space.rift_event_configuration import RiftEventConfiguration
-from melder.aether.nexus.rift_space.rift_space import RiftSpace
-from melder.utilities.interfaces.interfaces import IStaticRiftSpace, IRiftEventConfiguration
+from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
+from melder.utilities.interfaces.interfaces import IDynamicRiftSpace, IRiftEventConfiguration
 
 
-class StaticRiftSpace(RiftSpace, IStaticRiftSpace):
+class DynamicRiftSpace(RiftSpace, IDynamicRiftSpace):
     """
     Internal
 
     Purpose:
-        Represent the lower-risk concrete room type.
+        Represent the richer concrete room type for dynamic/local-construction
+        workflows.
 
     Contract:
         - Inherits all base room behavior.
-        - Fixes `space_kind` to `static`.
-        - Represents the lower-risk room surface where declared targets are the
-          primary operational model.
+        - Fixes `space_kind` to `dynamic`.
+        - Represents the richer room surface intended for local construction
+          and more open-ended workflows.
     """
 
     def __init__(
@@ -31,7 +31,7 @@ class StaticRiftSpace(RiftSpace, IStaticRiftSpace):
         """
         Internal
 
-        Initialize a static room.
+        Initialize a dynamic room.
 
         Args:
             owner_rift_id:
@@ -50,12 +50,12 @@ class StaticRiftSpace(RiftSpace, IStaticRiftSpace):
 
         Contract:
             Delegates all storage and lifecycle behavior to `RiftSpace` while
-            fixing the room kind to `static`.
+            fixing the room kind to `dynamic`.
         """
         super().__init__(
             owner_rift_id,
             space_name=space_name,
-            space_kind="static",
+            space_kind="dynamic",
             metadata=metadata,
             event_configuration=event_configuration,
             space_id=space_id,

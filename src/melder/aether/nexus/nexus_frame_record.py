@@ -30,6 +30,15 @@ class NexusFrameRecord(Cleanable):
     Lifecycle:
         Owned by `Nexus`. Cleanup clears only record metadata and attachment
         state. The underlying frame is disposed separately through `Aether`.
+
+    TODO:
+        Keep the record/event relationship explicit when the Rift system-event
+        queue is built out further. `Nexus.check_for_aetheric_frame(...)`
+        already uses the attached Rift ids stored here to notify
+        `Rift.on_nexus_frame_disposed(...)` before the record is cleaned. When
+        that hook becomes a real event path instead of a placeholder, this
+        record should remain the authoritative attachment source for deciding
+        which live Rifts receive the disposal notification.
     """
 
     __melder_internal__ = _mrg.sentinel
