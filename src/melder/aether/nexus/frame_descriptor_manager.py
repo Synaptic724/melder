@@ -1,13 +1,13 @@
 import threading
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
-from melder.aether.nexus.aetheric_frame_descriptor import AethericFrameDescriptor
-from melder.aether.nexus.canonical_store.conduit_record import ConduitRecord
-from melder.aether.nexus.canonical_store.frame_record import FrameRecord
-from melder.aether.nexus.canonical_store.spell_record import SpellRecord
+from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
+from melder.aether.nexus.frame_descriptor.conduit_record import ConduitRecord
+from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
+from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.aether.nexus.configuration.nexus_frame_mode import NexusFrameMode
 from melder.aether.nexus.nexus_frame_record import NexusFrameRecord
 from melder.spellbook.spell_crafter.spell_examiner.profiles.ai_profile import SpellAIProfile
@@ -39,7 +39,6 @@ class FrameDescriptorManager(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_aether",
-        "_frame_acl_manager",
         "_frame_descriptors_by_name",
     ]
 
@@ -63,8 +62,7 @@ class FrameDescriptorManager(Cleanable):
             raise TypeError("aether cannot be None.")
         self._lock: threading.RLock = threading.RLock()
         self._aether: IAether = aether
-        self._frame_acl_manager: Optional[Any] = None
-        self._frame_descriptors_by_name: Dict[str, AethericFrameDescriptor] = {}
+        self._frame_descriptors_by_name: Dict[str, FrameDescriptor] = {}
 
     def cleanup(self) -> None:
         """
@@ -84,26 +82,7 @@ class FrameDescriptorManager(Cleanable):
             self._frame_descriptors_by_name.clear()
             self._frame_descriptors_by_name = None
             self._aether = None
-            self._frame_acl_manager = None
         self._lock = None
-
-    def bind_frame_acl_manager(self, frame_acl_manager: Any) -> None:
-        """
-        Bind the Nexus-owned Frame ACL manager used to provision per-frame ACL
-        containers when descriptors are created.
-
-        Args:
-            frame_acl_manager:
-                Nexus-owned frame ACL manager.
-
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        if frame_acl_manager is None:
-            raise TypeError("frame_acl_manager cannot be None.")
-        with self._lock:
-            self._frame_acl_manager = frame_acl_manager
 
     def _refresh_frame_posture_cache(
             self,
@@ -423,7 +402,7 @@ class FrameDescriptorManager(Cleanable):
     def _get_required_frame_descriptor(
             self,
             frame_name: str,
-    ) -> AethericFrameDescriptor:
+    ) -> FrameDescriptor:
         """
         Return one existing frame descriptor or raise.
 
@@ -432,7 +411,7 @@ class FrameDescriptorManager(Cleanable):
                 Frame name to resolve.
 
         Returns:
-            AethericFrameDescriptor:
+            FrameDescriptor:
                 Existing descriptor for the frame.
 
         Raises:
@@ -448,7 +427,7 @@ class FrameDescriptorManager(Cleanable):
     def _get_or_create_frame_descriptor(
             self,
             frame_name: str,
-    ) -> AethericFrameDescriptor:
+    ) -> FrameDescriptor:
         """
         Return one existing frame descriptor or create it.
 
@@ -457,18 +436,31 @@ class FrameDescriptorManager(Cleanable):
                 Frame name to resolve.
 
         Returns:
-            AethericFrameDescriptor:
+            FrameDescriptor:
                 Existing or newly created descriptor.
         """
         self.check_cleaned()
         with self._lock:
             descriptor = self._frame_descriptors_by_name.get(frame_name)
             if descriptor is None:
-                descriptor = AethericFrameDescriptor(frame_name)
+                descriptor = FrameDescriptor(frame_name)
                 self._frame_descriptors_by_name[frame_name] = descriptor
-                if self._frame_acl_manager is not None:
-                    self._frame_acl_manager._ensure_frame_acl_container(frame_name)
             return descriptor
+
+    def _has_frame_descriptor(self, frame_name: str) -> bool:
+        """
+        Return whether a descriptor currently exists for the given frame name.
+
+        Args:
+            frame_name:
+                Frame name to inspect.
+
+        Returns:
+            bool: True when a descriptor exists for the frame.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return frame_name in self._frame_descriptors_by_name
 
     def _get_nexus_frame_record(
             self,

@@ -132,3 +132,46 @@ def test_frame_acl_builder_rejects_parallel_change_sessions_and_can_discard() ->
     builder.discard_change()
 
     assert builder.change_active is False
+
+
+def test_frame_acl_manager_remove_container_cleans_it_and_reports_status() -> None:
+    """
+    Verify manager removal cleans the container and reports whether it existed.
+
+    Returns:
+        None.
+    """
+    Aether()
+    nexus = Nexus()
+    nexus._get_or_create_frame_descriptor("ops")
+    container = nexus._frame_acl_manager._get_required_frame_acl_container("ops")
+
+    assert nexus._frame_acl_manager._remove_frame_acl_container("ops") is True
+    assert container.cleaned is True
+    assert nexus._frame_acl_manager._remove_frame_acl_container("ops") is False
+
+
+def test_frame_detach_also_removes_matching_acl_container() -> None:
+    """
+    Verify the Nexus frame-detach façade also removes the matching ACL
+    container.
+
+    Returns:
+        None.
+    """
+    aether = Aether()
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_direct_rift_access(True)
+    nexus.enable(configuration)
+
+    nexus._get_or_create_frame_descriptor("ops")
+    container = nexus._frame_acl_manager._get_required_frame_acl_container("ops")
+
+    assert "ops" in nexus._frame_acl_manager.frame_acl_containers_by_name
+
+    nexus.check_for_aetheric_frame("ops")
+
+    assert container.cleaned is True
+    assert "ops" not in nexus._frame_acl_manager.frame_acl_containers_by_name

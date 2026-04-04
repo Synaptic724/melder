@@ -117,6 +117,26 @@ class FrameACLManager(Cleanable):
         container = self._ensure_frame_acl_container(frame_name)
         return container.frame_acl_builder
 
+    def _remove_frame_acl_container(self, frame_name: str) -> bool:
+        """
+        Remove and cleanup one frame ACL container by frame name.
+
+        Args:
+            frame_name:
+                Owning frame name.
+
+        Returns:
+            bool: True when a container existed and was removed, otherwise
+            False.
+        """
+        self.check_cleaned()
+        with self._lock:
+            container = self._frame_acl_containers_by_name.pop(frame_name, None)
+            if container is None:
+                return False
+            container.cleanup()
+            return True
+
     def cleanup(self) -> None:
         """
         Idempotently clear the manager and all owned containers.

@@ -3,15 +3,15 @@ from typing import Dict, Optional, Set, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
-from melder.aether.nexus.canonical_store.conduit_record import ConduitRecord
-from melder.aether.nexus.canonical_store.frame_record import FrameRecord
-from melder.aether.nexus.canonical_store.spell_record import SpellRecord
+from melder.aether.nexus.frame_descriptor.conduit_record import ConduitRecord
+from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
+from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.aether.nexus.nexus_frame_record import NexusFrameRecord
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import IAethericFrame
 
 
-class AethericFrameDescriptor(Cleanable):
+class FrameDescriptor(Cleanable):
     """
     Internal
 

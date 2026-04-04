@@ -3,10 +3,10 @@ from types import SimpleNamespace
 import pytest
 
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
-from melder.aether.nexus.aetheric_frame_descriptor import AethericFrameDescriptor
-from melder.aether.nexus.canonical_store.conduit_record import ConduitRecord
-from melder.aether.nexus.canonical_store.frame_record import FrameRecord
-from melder.aether.nexus.canonical_store.spell_record import SpellRecord
+from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
+from melder.aether.nexus.frame_descriptor.conduit_record import ConduitRecord
+from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
+from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.aether.nexus.nexus_frame_record import NexusFrameRecord
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
@@ -27,7 +27,7 @@ def test_descriptor_replaces_owned_frame_overview_and_nexus_frame_record() -> No
     Returns:
         None.
     """
-    descriptor = AethericFrameDescriptor("ops")
+    descriptor = FrameDescriptor("ops")
     frame_handle = SimpleNamespace(name="ops")
 
     first_overview = FrameRecord(
@@ -101,7 +101,7 @@ def test_descriptor_cleanup_cleans_owned_metadata_and_releases_lock() -> None:
     Returns:
         None.
     """
-    descriptor = AethericFrameDescriptor("ops")
+    descriptor = FrameDescriptor("ops")
     frame_handle = SimpleNamespace(name="ops")
     frame_configuration = AethericFrameConfiguration(
         origin_spellbook_id="spellbook-1",
@@ -157,7 +157,7 @@ def test_descriptor_collection_properties_return_snapshots() -> None:
     Returns:
         None.
     """
-    descriptor = AethericFrameDescriptor("ops")
+    descriptor = FrameDescriptor("ops")
     conduit_record = ConduitRecord(
         conduit_id="conduit-1",
         root_conduit_id="conduit-1",
@@ -221,7 +221,7 @@ def test_descriptor_replaces_and_removes_conduit_records_cleanly() -> None:
     Returns:
         None.
     """
-    descriptor = AethericFrameDescriptor("ops")
+    descriptor = FrameDescriptor("ops")
     first_record = ConduitRecord(
         conduit_id="conduit-1",
         root_conduit_id="conduit-1",
@@ -267,7 +267,7 @@ def test_descriptor_replaces_spell_record_and_refreshes_indexes() -> None:
     Returns:
         None.
     """
-    descriptor = AethericFrameDescriptor("ops")
+    descriptor = FrameDescriptor("ops")
     first_record = SpellRecord(
         origin_spellbook_id="spellbook-1",
         frame_name="ops",
@@ -320,7 +320,7 @@ def test_descriptor_remove_spell_record_cleans_record_and_indexes() -> None:
     Returns:
         None.
     """
-    descriptor = AethericFrameDescriptor("ops")
+    descriptor = FrameDescriptor("ops")
     record = SpellRecord(
         origin_spellbook_id="spellbook-1",
         frame_name="ops",
@@ -359,7 +359,7 @@ def test_descriptor_detach_nexus_frame_record_clears_property_without_cleaning_r
     Returns:
         None.
     """
-    descriptor = AethericFrameDescriptor("ops")
+    descriptor = FrameDescriptor("ops")
     frame_handle = SimpleNamespace(name="ops")
     nexus_frame_record = NexusFrameRecord(
         frame_name="ops",
@@ -385,7 +385,7 @@ def test_descriptor_set_frame_handle_and_configuration_round_trip() -> None:
     Returns:
         None.
     """
-    descriptor = AethericFrameDescriptor("ops")
+    descriptor = FrameDescriptor("ops")
     frame_handle = SimpleNamespace(name="ops")
     frame_configuration = AethericFrameConfiguration(
         origin_spellbook_id="spellbook-1",
@@ -408,7 +408,7 @@ def test_descriptor_remove_missing_records_is_no_op() -> None:
     Returns:
         None.
     """
-    descriptor = AethericFrameDescriptor("ops")
+    descriptor = FrameDescriptor("ops")
 
     descriptor.remove_conduit_record("missing-conduit")
     descriptor.remove_spell_record(("spellbook-1", "missing-spell"))
@@ -425,7 +425,7 @@ def test_descriptor_properties_raise_after_cleanup() -> None:
     Returns:
         None.
     """
-    descriptor = AethericFrameDescriptor("ops")
+    descriptor = FrameDescriptor("ops")
     descriptor.cleanup()
 
     with pytest.raises(RuntimeError):

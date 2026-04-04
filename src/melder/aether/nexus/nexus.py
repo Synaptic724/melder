@@ -3,8 +3,8 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
-from melder.aether.nexus.aetheric_frame_descriptor import AethericFrameDescriptor
-from melder.aether.nexus.acl.frame_acl_manager import FrameACLManager
+from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
+from melder.aether.nexus.frame_acl_manager import FrameACLManager
 from melder.aether.nexus.frame_descriptor_manager import FrameDescriptorManager
 from melder.aether.nexus.nexus_frame_record import NexusFrameRecord
 from melder.aether.nexus.configuration.rift_configuration import RiftConfiguration
@@ -147,7 +147,6 @@ class Nexus(Cleanable, INexus):
         self._target_frame_ref_counts: Dict[str, int] = {}
 
         self._frame_descriptor_manager: FrameDescriptorManager = FrameDescriptorManager(aether)
-        self._frame_descriptor_manager.bind_frame_acl_manager(self._frame_acl_manager)
         self._initialize_logging(logger)
         Nexus._initialized = True
 
@@ -686,7 +685,10 @@ class Nexus(Cleanable, INexus):
             Optional[AethericFrameConfiguration]: Bound frame posture when
             available, otherwise None.
         """
-        return self._frame_descriptor_manager._refresh_frame_posture_cache(frame_name)
+        frame_posture = self._frame_descriptor_manager._refresh_frame_posture_cache(frame_name)
+        if self._frame_descriptor_manager._has_frame_descriptor(frame_name):
+            self._ensure_frame_acl_container(frame_name)
+        return frame_posture
 
     def _get_publishable_frame_posture(
             self,
@@ -706,7 +708,10 @@ class Nexus(Cleanable, INexus):
             Optional[AethericFrameConfiguration]: Publishable frame posture or
             None when publication should short-circuit.
         """
-        return self._frame_descriptor_manager._get_publishable_frame_posture(frame_name)
+        frame_posture = self._frame_descriptor_manager._get_publishable_frame_posture(frame_name)
+        if self._frame_descriptor_manager._has_frame_descriptor(frame_name):
+            self._ensure_frame_acl_container(frame_name)
+        return frame_posture
 
     def _publish_frame_record(self, spellbook: Any) -> bool:
         """
@@ -722,7 +727,10 @@ class Nexus(Cleanable, INexus):
             bool: True when the record was published, False when publication
             short-circuited.
         """
-        return self._frame_descriptor_manager._publish_frame_record(spellbook)
+        published = self._frame_descriptor_manager._publish_frame_record(spellbook)
+        if self._frame_descriptor_manager._has_frame_descriptor(spellbook._aetheric_frame):
+            self._ensure_frame_acl_container(spellbook._aetheric_frame)
+        return published
 
     def _publish_conduit_record(self, conduit: Any) -> bool:
         """
@@ -739,7 +747,10 @@ class Nexus(Cleanable, INexus):
             bool: True when the record was published, False when publication
             short-circuited.
         """
-        return self._frame_descriptor_manager._publish_conduit_record(conduit)
+        published = self._frame_descriptor_manager._publish_conduit_record(conduit)
+        if self._frame_descriptor_manager._has_frame_descriptor(conduit._aetheric_frame):
+            self._ensure_frame_acl_container(conduit._aetheric_frame)
+        return published
 
     def _remove_conduit_record(
             self,
@@ -761,10 +772,13 @@ class Nexus(Cleanable, INexus):
             bool: True when the remove path executed, False when publication
             short-circuited.
         """
-        return self._frame_descriptor_manager._remove_conduit_record(
+        removed = self._frame_descriptor_manager._remove_conduit_record(
             conduit_id,
             frame_name,
         )
+        if self._frame_descriptor_manager._has_frame_descriptor(frame_name):
+            self._ensure_frame_acl_container(frame_name)
+        return removed
 
     def _publish_spell_record(
             self,
@@ -789,11 +803,14 @@ class Nexus(Cleanable, INexus):
             bool: True when the record was published, False when publication
             short-circuited.
         """
-        return self._frame_descriptor_manager._publish_spell_record(
+        published = self._frame_descriptor_manager._publish_spell_record(
             spellbook,
             spell,
             owner_conduit_id,
         )
+        if self._frame_descriptor_manager._has_frame_descriptor(spellbook._aetheric_frame):
+            self._ensure_frame_acl_container(spellbook._aetheric_frame)
+        return published
 
     def _remove_spell_record(
             self,
@@ -818,11 +835,14 @@ class Nexus(Cleanable, INexus):
             bool: True when the remove path executed, False when publication
             short-circuited.
         """
-        return self._frame_descriptor_manager._remove_spell_record(
+        removed = self._frame_descriptor_manager._remove_spell_record(
             origin_spellbook_id,
             spell_id,
             frame_name,
         )
+        if self._frame_descriptor_manager._has_frame_descriptor(frame_name):
+            self._ensure_frame_acl_container(frame_name)
+        return removed
 
     def list_rift_ids(self) -> list[str]:
         """
@@ -1019,7 +1039,17 @@ class Nexus(Cleanable, INexus):
             if self._cleaned or not self._enabled or self._frame_descriptor_manager is None:
                 return
             nexus_frame_record = self._frame_descriptor_manager._detach_nexus_frame_record(frame_name)
+            acl_container_removed = self._frame_acl_manager._remove_frame_acl_container(
+                frame_name
+            )
             if nexus_frame_record is None:
+                if acl_container_removed:
+                    self._logger.info(
+                        "Removed frame ACL container for '{0}' during Aether detach.".format(
+                            frame_name
+                        ),
+                        "check_for_aetheric_frame",
+                    )
                 return
 
             attached_rift_ids = nexus_frame_record.attached_rift_ids
@@ -1028,6 +1058,13 @@ class Nexus(Cleanable, INexus):
                 if attached_rift is not None:
                     attached_rift.on_nexus_frame_disposed(frame_name)
             nexus_frame_record.cleanup()
+            if acl_container_removed:
+                self._logger.info(
+                    "Removed frame ACL container for '{0}' during Aether detach.".format(
+                        frame_name
+                    ),
+                    "check_for_aetheric_frame",
+                )
         self._logger.info(
             "Dropped Nexus frame record for '{0}' during Aether detach.".format(frame_name),
             "check_for_aetheric_frame",
@@ -1585,7 +1622,7 @@ class Nexus(Cleanable, INexus):
     def _get_required_frame_descriptor(
             self,
             frame_name: str,
-    ) -> AethericFrameDescriptor:
+    ) -> FrameDescriptor:
         """
         Internal
 
@@ -1596,14 +1633,14 @@ class Nexus(Cleanable, INexus):
                 Frame name to resolve.
 
         Returns:
-            AethericFrameDescriptor: Existing descriptor.
+            FrameDescriptor: Existing descriptor.
         """
         return self._frame_descriptor_manager._get_required_frame_descriptor(frame_name)
 
     def _get_or_create_frame_descriptor(
             self,
             frame_name: str,
-    ) -> AethericFrameDescriptor:
+    ) -> FrameDescriptor:
         """
         Internal
 
@@ -1614,9 +1651,11 @@ class Nexus(Cleanable, INexus):
                 Frame name to resolve.
 
         Returns:
-            AethericFrameDescriptor: Existing or newly created descriptor.
+            FrameDescriptor: Existing or newly created descriptor.
         """
-        return self._frame_descriptor_manager._get_or_create_frame_descriptor(frame_name)
+        descriptor = self._frame_descriptor_manager._get_or_create_frame_descriptor(frame_name)
+        self._ensure_frame_acl_container(frame_name)
+        return descriptor
 
     def _get_nexus_frame_record(
             self,
@@ -1717,12 +1756,14 @@ class Nexus(Cleanable, INexus):
             NexusFrameRecord: Existing or newly created record.
         """
         nexus_frame_mode = self._configuration.get_property("nexus_frame_mode")
-        return self._frame_descriptor_manager._get_or_create_nexus_frame_record(
+        nexus_frame_record = self._frame_descriptor_manager._get_or_create_nexus_frame_record(
             frame_name,
             creator_rift_id=creator_rift_id,
             immutable=immutable,
             nexus_frame_mode=nexus_frame_mode,
         )
+        self._ensure_frame_acl_container(frame_name)
+        return nexus_frame_record
 
     def _create_nexus_frame_record(
             self,
@@ -1748,12 +1789,30 @@ class Nexus(Cleanable, INexus):
             NexusFrameRecord: Newly created record.
         """
         nexus_frame_mode = self._configuration.get_property("nexus_frame_mode")
-        return self._frame_descriptor_manager._create_nexus_frame_record(
+        nexus_frame_record = self._frame_descriptor_manager._create_nexus_frame_record(
             frame_name,
             creator_rift_id=creator_rift_id,
             immutable=immutable,
             nexus_frame_mode=nexus_frame_mode,
         )
+        self._ensure_frame_acl_container(frame_name)
+        return nexus_frame_record
+
+    def _ensure_frame_acl_container(self, frame_name: str) -> None:
+        """
+        Internal
+
+        Ensure the matching frame ACL container exists for a frame once the
+        descriptor/runtime side has been resolved by the root.
+
+        Args:
+            frame_name:
+                Frame name whose ACL container should exist.
+
+        Returns:
+            None.
+        """
+        self._frame_acl_manager._ensure_frame_acl_container(frame_name)
 
     def _increment_ref_count(self, ref_counts: Dict[str, int], key: str) -> None:
         """
