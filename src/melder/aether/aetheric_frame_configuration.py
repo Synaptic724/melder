@@ -20,7 +20,7 @@ class AethericFrameConfiguration(Cleanable):
 
     Contract:
         - Captures exactly three frame-level posture values:
-          `system_state`, `ai_native_enabled`, and `ai_profiles_enabled`.
+          `system_state`, `ai_native_enabled`, and `rift_enabled`.
         - Carries provenance via `origin_spellbook_id`.
         - Is immutable by convention after construction; callers bind one
           instance into an `AethericFrame` and later same-frame attempts do not
@@ -38,7 +38,7 @@ class AethericFrameConfiguration(Cleanable):
         "_origin_spellbook_id",
         "_system_state",
         "_ai_native_enabled",
-        "_ai_profiles_enabled",
+        "_rift_enabled",
     ]
 
     def __init__(
@@ -47,7 +47,7 @@ class AethericFrameConfiguration(Cleanable):
             origin_spellbook_id: Optional[str],
             system_state: SystemState,
             ai_native_enabled: bool,
-            ai_profiles_enabled: bool,
+            rift_enabled: bool,
     ) -> None:
         """
         Initialize one frame-level posture object.
@@ -60,7 +60,7 @@ class AethericFrameConfiguration(Cleanable):
                 Frame system state. Must resolve to a concrete `SystemState`.
             ai_native_enabled:
                 Whether the frame allows AI-native runtime behavior.
-            ai_profiles_enabled:
+            rift_enabled:
                 Whether the frame allows AI-profile publication / AR-observable
                 posture.
 
@@ -79,14 +79,14 @@ class AethericFrameConfiguration(Cleanable):
         )
         if not isinstance(ai_native_enabled, bool):
             raise TypeError("ai_native_enabled must be a bool.")
-        if not isinstance(ai_profiles_enabled, bool):
-            raise TypeError("ai_profiles_enabled must be a bool.")
+        if not isinstance(rift_enabled, bool):
+            raise TypeError("rift_enabled must be a bool.")
 
         self._id: str = IDBuilder.create_id()
         self._origin_spellbook_id: Optional[str] = origin_spellbook_id
         self._system_state: SystemState = normalized_system_state
         self._ai_native_enabled: bool = ai_native_enabled
-        self._ai_profiles_enabled: bool = ai_profiles_enabled
+        self._rift_enabled: bool = rift_enabled
 
     @classmethod
     def from_spellbook_configuration(
@@ -120,13 +120,13 @@ class AethericFrameConfiguration(Cleanable):
 
         system_state = configuration.get_property("system_state")
         ai_native_enabled = configuration.get_property("ai_native_enabled")
-        ai_profiles_enabled = configuration.get_property("ai_profiles_enabled")
+        rift_enabled = configuration.get_property("rift_enabled")
 
         return cls(
             origin_spellbook_id=origin_spellbook_id,
             system_state=system_state,
             ai_native_enabled=ai_native_enabled,
-            ai_profiles_enabled=ai_profiles_enabled,
+            rift_enabled=rift_enabled,
         )
 
     @property
@@ -174,7 +174,7 @@ class AethericFrameConfiguration(Cleanable):
         return self._ai_native_enabled
 
     @property
-    def ai_profiles_enabled(self) -> bool:
+    def rift_enabled(self) -> bool:
         """
         Return whether AI-profile publication is enabled for the frame.
 
@@ -182,7 +182,7 @@ class AethericFrameConfiguration(Cleanable):
             bool: True when AI-profile posture is enabled.
         """
         self.check_cleaned()
-        return self._ai_profiles_enabled
+        return self._rift_enabled
 
     def matches_posture(
             self,
@@ -204,7 +204,7 @@ class AethericFrameConfiguration(Cleanable):
         return (
             self.system_state == other.system_state
             and self.ai_native_enabled == other.ai_native_enabled
-            and self.ai_profiles_enabled == other.ai_profiles_enabled
+            and self.rift_enabled == other.rift_enabled
         )
 
     def describe_posture(self) -> Dict[str, Any]:
@@ -219,7 +219,7 @@ class AethericFrameConfiguration(Cleanable):
             "origin_spellbook_id": self._origin_spellbook_id,
             "system_state": self._system_state,
             "ai_native_enabled": self._ai_native_enabled,
-            "ai_profiles_enabled": self._ai_profiles_enabled,
+            "rift_enabled": self._rift_enabled,
         }
 
     def cleanup(self) -> None:
@@ -236,4 +236,4 @@ class AethericFrameConfiguration(Cleanable):
         self._origin_spellbook_id = None
         self._system_state = None
         self._ai_native_enabled = None
-        self._ai_profiles_enabled = None
+        self._rift_enabled = None

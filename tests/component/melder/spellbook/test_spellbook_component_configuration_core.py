@@ -217,4 +217,4 @@ def test_component_configuration_fluent_chain_validates_without_defaults() -> No
     assert config.get_property("phase_scheduler_workers_per_spellbook") == 2
     assert config.get_property("phase_scheduler_barrier_timeout_milliseconds") == 1000
     assert config.get_property("ai_native_enabled") is True
-    assert config.get_property("ai_profiles_enabled") is False
+    assert config.get_property("rift_enabled") is False

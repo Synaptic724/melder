@@ -980,7 +980,7 @@ class Nexus(Cleanable, INexus):
         posture required by the requested Rift room mode.
 
         Rules:
-            - AR always requires `ai_profiles_enabled=True` on the target
+            - AR always requires `rift_enabled=True` on the target
               frame configuration.
             - Dynamic Rift spaces additionally require
               `ai_native_enabled=True`.
@@ -1001,10 +1001,10 @@ class Nexus(Cleanable, INexus):
         target_frame_configuration = self._get_required_target_frame_runtime_configuration(
             target_frame_name
         )
-        ai_profiles_enabled = target_frame_configuration.ai_profiles_enabled
-        if not ai_profiles_enabled:
+        rift_enabled = target_frame_configuration.rift_enabled
+        if not rift_enabled:
             raise ValueError(
-                "AR requires ai_profiles_enabled on target frame '{0}'.".format(
+                "AR requires rift_enabled on target frame '{0}'.".format(
                     target_frame_name
                 )
             )
@@ -1054,7 +1054,7 @@ class Nexus(Cleanable, INexus):
 
         Returns:
             Any: Runtime posture object exposing `system_state`,
-            `ai_native_enabled`, and `ai_profiles_enabled`.
+            `ai_native_enabled`, and `rift_enabled`.
 
         Raises:
             ValueError: If the target frame does not exist or neither frame

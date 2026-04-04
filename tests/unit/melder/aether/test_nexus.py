@@ -26,7 +26,7 @@ def fresh_nexus() -> None:
     Nexus._reset_singleton_for_tests()
     _bind_target_frame_configuration(
         "default",
-        ai_profiles_enabled=True,
+        rift_enabled=True,
         ai_native_enabled=False,
         system_state=SystemState.automatic,
     )
@@ -56,7 +56,7 @@ def _create_enabled_nexus() -> Nexus:
 def _bind_target_frame_configuration(
     frame_name: str,
     *,
-    ai_profiles_enabled: bool,
+    rift_enabled: bool,
     ai_native_enabled: bool = False,
     system_state: SystemState = SystemState.automatic,
 ) -> None:
@@ -66,7 +66,7 @@ def _bind_target_frame_configuration(
     Args:
         frame_name:
             Target frame name to configure.
-        ai_profiles_enabled:
+        rift_enabled:
             Whether the frame enables AI profiles.
         ai_native_enabled:
             Whether the frame enables AI-native mode.
@@ -83,7 +83,7 @@ def _bind_target_frame_configuration(
         frame_configuration.dynamic_defaults()
     else:
         frame_configuration.automatic_defaults()
-    frame_configuration.with_ai_profiles(ai_profiles_enabled)
+    frame_configuration.with_ai_profiles(rift_enabled)
     frame_configuration.with_ai_native(ai_native_enabled)
     aether._bind_configuration(frame_configuration, frame_name)
 
@@ -130,7 +130,7 @@ def test_nexus_uses_registered_channel_logger_provider() -> None:
     AetherUtilitySystem().register_channel_logger_resolver(resolver)
     _bind_target_frame_configuration(
         "default",
-        ai_profiles_enabled=True,
+        rift_enabled=True,
         ai_native_enabled=False,
         system_state=SystemState.automatic,
     )
@@ -411,7 +411,7 @@ def test_target_frame_allow_and_deny_lists_are_enforced() -> None:
     """
     _bind_target_frame_configuration(
         "ops",
-        ai_profiles_enabled=True,
+        rift_enabled=True,
         ai_native_enabled=False,
         system_state=SystemState.automatic,
     )
@@ -447,7 +447,7 @@ def test_static_rift_requires_target_frame_ai_profiles() -> None:
     Returns:
         None.
     """
-    _bind_target_frame_configuration("ops", ai_profiles_enabled=False)
+    _bind_target_frame_configuration("ops", rift_enabled=False)
     nexus = Nexus()
     configuration = nexus.create_system_configuration()
     configuration.with_rift_creation_enabled(True)
@@ -461,7 +461,7 @@ def test_static_rift_requires_target_frame_ai_profiles() -> None:
         .with_space_type(RiftSpaceType.static)
     )
 
-    with pytest.raises(ValueError, match="ai_profiles_enabled"):
+    with pytest.raises(ValueError, match="rift_enabled"):
         nexus.create_rift(configuration=rift_configuration, rift_name="ops-static")
 
 
@@ -474,7 +474,7 @@ def test_dynamic_rift_requires_target_frame_ai_native_enabled() -> None:
     """
     _bind_target_frame_configuration(
         "ops",
-        ai_profiles_enabled=True,
+        rift_enabled=True,
         ai_native_enabled=False,
         system_state=SystemState.dynamic,
     )
@@ -504,7 +504,7 @@ def test_dynamic_rift_requires_dynamic_target_frame_system_state() -> None:
     """
     _bind_target_frame_configuration(
         "ops",
-        ai_profiles_enabled=True,
+        rift_enabled=True,
         ai_native_enabled=True,
         system_state=SystemState.automatic,
     )
@@ -535,7 +535,7 @@ def test_dynamic_rift_can_attach_to_dynamic_ai_native_target_frame() -> None:
     """
     _bind_target_frame_configuration(
         "ops",
-        ai_profiles_enabled=True,
+        rift_enabled=True,
         ai_native_enabled=True,
         system_state=SystemState.dynamic,
     )
@@ -557,7 +557,7 @@ def test_dynamic_rift_can_attach_to_dynamic_ai_native_target_frame() -> None:
     assert rift.configuration.get_property("space_type") == RiftSpaceType.dynamic
 
 
-def test_static_rift_can_attach_to_automatic_target_frame_when_ai_profiles_enabled() -> None:
+def test_static_rift_can_attach_to_automatic_target_frame_when_rift_enabled() -> None:
     """
     Verify static AR can attach to an automatic frame when AI profiles are
     enabled.
@@ -567,7 +567,7 @@ def test_static_rift_can_attach_to_automatic_target_frame_when_ai_profiles_enabl
     """
     _bind_target_frame_configuration(
         "ops",
-        ai_profiles_enabled=True,
+        rift_enabled=True,
         ai_native_enabled=False,
         system_state=SystemState.automatic,
     )

@@ -63,14 +63,14 @@ class SpellExaminer:
         self.max_repr = max_repr
         self._configuration = configuration
 
-    def _ai_profiles_enabled(self) -> bool:
+    def _rift_enabled(self) -> bool:
         config = self._configuration
         if config is None:
             return False
         try:
-            if not config.has_property("ai_profiles_enabled"):
+            if not config.has_property("rift_enabled"):
                 return False
-            enabled = config.get_property("ai_profiles_enabled")
+            enabled = config.get_property("rift_enabled")
         except Exception:
             return False
         return isinstance(enabled, bool) and enabled
@@ -146,7 +146,7 @@ class SpellExaminer:
                 "ai_profile_for_spell expects a Spell instance. "
                 f"Got: {type(spell)!r}"
             )
-        if not self._ai_profiles_enabled():
+        if not self._rift_enabled():
             raise RuntimeError(
                 "AI profiles are disabled. Enable with Configuration.with_ai_profiles(True)."
             )

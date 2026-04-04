@@ -43,7 +43,7 @@ class Rift(Cleanable, IRift):
     TODO:
         When Rift-owned Melder frames are introduced for local conduit hosting,
         bind them in the most permissive AR posture by default:
-        `ai_profiles_enabled=True`, `ai_native_enabled=True`, and
+        `rift_enabled=True`, `ai_native_enabled=True`, and
         `system_state=dynamic`.
     """
 

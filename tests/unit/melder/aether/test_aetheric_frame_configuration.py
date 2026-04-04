@@ -45,7 +45,7 @@ def test_frame_configuration_derives_from_spellbook_configuration() -> None:
     assert frame_configuration.origin_spellbook_id == "spellbook-alpha"
     assert frame_configuration.system_state == SystemState.dynamic
     assert frame_configuration.ai_native_enabled is True
-    assert frame_configuration.ai_profiles_enabled is True
+    assert frame_configuration.rift_enabled is True
 
 
 def test_aetheric_frame_configuration_first_writer_wins() -> None:
@@ -63,13 +63,13 @@ def test_aetheric_frame_configuration_first_writer_wins() -> None:
         origin_spellbook_id="spellbook-alpha",
         system_state=SystemState.automatic,
         ai_native_enabled=False,
-        ai_profiles_enabled=True,
+        rift_enabled=True,
     )
     conflicting = AethericFrameConfiguration(
         origin_spellbook_id="spellbook-beta",
         system_state=SystemState.dynamic,
         ai_native_enabled=True,
-        ai_profiles_enabled=True,
+        rift_enabled=True,
     )
 
     aether._bind_aetheric_frame_configuration(first, "ops")
@@ -81,7 +81,7 @@ def test_aetheric_frame_configuration_first_writer_wins() -> None:
     assert bound.origin_spellbook_id == "spellbook-alpha"
     assert bound.system_state == SystemState.automatic
     assert bound.ai_native_enabled is False
-    assert bound.ai_profiles_enabled is True
+    assert bound.rift_enabled is True
 
     with pytest.raises(RuntimeError):
         _ = conflicting.id
@@ -101,7 +101,7 @@ def test_nexus_runtime_posture_accepts_bound_frame_configuration() -> None:
         origin_spellbook_id="spellbook-alpha",
         system_state=SystemState.automatic,
         ai_native_enabled=False,
-        ai_profiles_enabled=True,
+        rift_enabled=True,
     )
     aether._bind_aetheric_frame_configuration(frame_configuration, "ops")
 

@@ -77,7 +77,7 @@ class Configuration(Cleanable, IConfiguration):
             "full_ahead_of_time_compilation": bool,
             "phase_scheduler_workers_per_spellbook": int,
             "ai_native_enabled": bool,
-            "ai_profiles_enabled": bool,
+            "rift_enabled": bool,
             "phase_scheduler_barrier_timeout_milliseconds": int,
         }
 
@@ -206,7 +206,7 @@ class Configuration(Cleanable, IConfiguration):
         self._validate_enum_properties()
         self._validate_phase_scheduler_workers()
         self._validate_ai_native_enabled()
-        self._validate_ai_profiles_enabled()
+        self._validate_rift_enabled()
         self._validate_ai_runtime_posture()
 
         return True
@@ -266,14 +266,14 @@ class Configuration(Cleanable, IConfiguration):
         if not isinstance(enabled, bool):
             raise ValueError("ai_native_enabled must be a boolean.")
 
-    def _validate_ai_profiles_enabled(self) -> None:
+    def _validate_rift_enabled(self) -> None:
         """
-        Ensures ai_profiles_enabled is a boolean.
+        Ensures rift_enabled is a boolean.
         """
-        enabled = self._properties.get("ai_profiles_enabled")
+        enabled = self._properties.get("rift_enabled")
 
         if not isinstance(enabled, bool):
-            raise ValueError("ai_profiles_enabled must be a boolean.")
+            raise ValueError("rift_enabled must be a boolean.")
 
     def _validate_ai_runtime_posture(self) -> None:
         """
@@ -281,7 +281,7 @@ class Configuration(Cleanable, IConfiguration):
 
         Contract:
             - `ai_native_enabled=True` requires `system_state == dynamic`.
-            - `ai_profiles_enabled` remains valid in either automatic or
+            - `rift_enabled` remains valid in either automatic or
               dynamic mode.
 
         Raises:
@@ -410,7 +410,7 @@ class Configuration(Cleanable, IConfiguration):
             "full_ahead_of_time_compilation": True,
             "phase_scheduler_workers_per_spellbook": 5,
             "ai_native_enabled": False,
-            "ai_profiles_enabled": False,
+            "rift_enabled": False,
             "phase_scheduler_barrier_timeout_milliseconds": 60000,
         }
         if "system_state" not in self._properties:
@@ -657,8 +657,8 @@ class Configuration(Cleanable, IConfiguration):
             IConfiguration: This same configuration instance (for chaining).
         """
         if not isinstance(enabled, bool):
-            raise TypeError("ai_profiles_enabled must be a bool.")
-        self.set_property("ai_profiles_enabled", enabled)
+            raise TypeError("rift_enabled must be a bool.")
+        self.set_property("rift_enabled", enabled)
         return self
 
     def with_full_ahead_of_time_compilation(self, enabled: bool = True) -> IConfiguration:

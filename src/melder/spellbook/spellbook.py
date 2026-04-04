@@ -2965,7 +2965,7 @@ class Spellbook(Cleanable, ISpellbook):
               `get_property(...)`.
             - Missing fallback values resolve to the runtime-safe defaults:
               `system_state=automatic`, `ai_native_enabled=False`,
-              `ai_profiles_enabled=False`.
+              `rift_enabled=False`.
 
         Returns:
             Any: One `AethericFrameConfiguration` instance.
@@ -2987,15 +2987,15 @@ class Spellbook(Cleanable, ISpellbook):
         if ai_native_enabled is None:
             ai_native_enabled = False
 
-        ai_profiles_enabled = configuration.get_property("ai_profiles_enabled")
-        if ai_profiles_enabled is None:
-            ai_profiles_enabled = False
+        rift_enabled = configuration.get_property("rift_enabled")
+        if rift_enabled is None:
+            rift_enabled = False
 
         return AethericFrameConfiguration(
             origin_spellbook_id=self._id,
             system_state=system_state,
             ai_native_enabled=ai_native_enabled,
-            ai_profiles_enabled=ai_profiles_enabled,
+            rift_enabled=rift_enabled,
         )
 
 

@@ -328,7 +328,7 @@ def test_validate_disposal_method_names_type():
     cfg.set_property("full_ahead_of_time_compilation", True)
     cfg.set_property("phase_scheduler_workers_per_spellbook", 1)
     cfg.set_property("ai_native_enabled", False)
-    cfg.set_property("ai_profiles_enabled", False)
+    cfg.set_property("rift_enabled", False)
     cfg.set_property("phase_scheduler_barrier_timeout_milliseconds", 1)
     with pytest.raises(ValueError):
         cfg.validate()
