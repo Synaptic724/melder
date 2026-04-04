@@ -3,11 +3,42 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from melder.aether.aether import Aether
+from melder.aether.nexus.nexus import Nexus
+from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.spellbook.spellbook import Spellbook
 from melder.spellbook.configuration.configuration import Configuration
 from melder.utilities.synchronization.creation_gate_controller import CreationGateController
+
+
+@pytest.fixture(autouse=True)
+def fresh_singletons() -> None:
+    """
+    Reset singleton runtime surfaces around each conduit unit test.
+
+    Contract:
+        - AetherUtilitySystem, Nexus, and Aether are reset before and after
+          each test.
+        - Conduit._aether is rebound to a fresh Aether singleton so Conduit
+          construction can resolve its owned Nexus reference deterministically.
+
+    Returns:
+        None.
+    """
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    Conduit._aether = Aether()
+    Spellbook._aether = Aether()
+    yield
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    Conduit._aether = Aether()
+    Spellbook._aether = Aether()
 
 
 @pytest.fixture()

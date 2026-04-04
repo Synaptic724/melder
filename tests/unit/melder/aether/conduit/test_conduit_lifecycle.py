@@ -480,7 +480,11 @@ def test_cleanup_calls_spellbook_cleanup_for_normal_conduit(
     conduit_normal._conduit_ward = MagicMock()
     conduit_normal._meld = MagicMock()
     conduit_normal._creations = MagicMock()
+    conduit_normal._nexus_publish_enabled = True
+    conduit_normal._nexus = MagicMock()
+    nexus = conduit_normal._nexus
     spellbook = conduit_normal._spellbook
     conduit_normal.cleanup()
     assert spellbook.cleanup.called is True
+    nexus._publish_frame_record.assert_called_once_with(spellbook)
     assert conduit_normal._nexus is None

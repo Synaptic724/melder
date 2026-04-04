@@ -198,7 +198,7 @@ def test_component_configuration_fluent_chain_validates_without_defaults() -> No
     """
     config = Configuration()
 
-    config.with_system_state("automatic")
+    config.with_system_state("dynamic")
     config.with_debugging(True)
     config.with_disposal(True)
     config.with_disposal_method_names(["cleanup"])
@@ -209,7 +209,7 @@ def test_component_configuration_fluent_chain_validates_without_defaults() -> No
     config.with_ai_profiles(False)
     config.finalize()
 
-    assert config.get_property("system_state") is SystemState.automatic
+    assert config.get_property("system_state") is SystemState.dynamic
     assert config.get_property("debugging") is True
     assert config.get_property("disposal") is True
     assert config.get_property("disposal_method_names") == ["cleanup"]

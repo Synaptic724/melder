@@ -72,11 +72,52 @@ def test_publish_frame_record_does_not_require_nexus_enable() -> None:
     assert nexus.is_enabled is False
     assert nexus._publish_frame_record(spellbook) is True
 
-    record = nexus._canonical_store.frame_records_by_name["ops"]
+    record = nexus._frame_descriptors_by_name["ops"].frame_overview
 
     assert record.frame_name == "ops"
-    assert record.origin_spellbook_id == "spellbook-alpha"
+    assert record.config_origin_spellbook_id == "spellbook-alpha"
     assert record.rift_enabled is True
+    assert record.root_conduit_count == 0
+    assert record.root_conduit_ids == tuple()
+    assert record.named_root_conduits == tuple()
+    assert record.conduit_cloud_entry_count == 0
+    assert record.conduit_cloud_names == tuple()
+    assert record.cluster_count == 0
+    assert record.cluster_names == tuple()
+
+
+def test_publish_frame_record_captures_frame_summary() -> None:
+    """
+    Verify frame publication captures cheap topology summary fields.
+
+    Returns:
+        None.
+    """
+    _bind_frame_posture("ops", rift_enabled=True)
+    aether = Aether()
+    frame = aether._ensure_frame("ops")
+    conduit_alpha = types.SimpleNamespace(_id="conduit-a", _name="alpha")
+    conduit_beta = types.SimpleNamespace(_id="conduit-b", _name=None)
+    frame._conduits["conduit-a"] = conduit_alpha
+    frame._conduits["conduit-b"] = conduit_beta
+    frame._conduit_cloud._registry["alpha"] = conduit_alpha
+    frame._conduit_clusters["cluster-z"] = types.SimpleNamespace()
+    frame._conduit_clusters["cluster-a"] = types.SimpleNamespace()
+
+    nexus = Nexus()
+    spellbook = types.SimpleNamespace(_aetheric_frame="ops", _id="spellbook-alpha")
+
+    assert nexus._publish_frame_record(spellbook) is True
+
+    record = nexus._frame_descriptors_by_name["ops"].frame_overview
+
+    assert record.root_conduit_count == 2
+    assert record.root_conduit_ids == ("conduit-a", "conduit-b")
+    assert record.named_root_conduits == (("conduit-a", "alpha"),)
+    assert record.conduit_cloud_entry_count == 1
+    assert record.conduit_cloud_names == ("alpha",)
+    assert record.cluster_count == 2
+    assert record.cluster_names == ("cluster-a", "cluster-z")
 
 
 def test_publish_methods_short_circuit_when_frame_is_not_publishable() -> None:
@@ -117,9 +158,10 @@ def test_publish_methods_short_circuit_when_frame_is_not_publishable() -> None:
     assert nexus._publish_frame_record(spellbook) is False
     assert nexus._publish_conduit_record(conduit) is False
     assert nexus._publish_spell_record(spellbook, spell, "conduit-1") is False
-    assert nexus._canonical_store.frame_records_by_name == {}
-    assert nexus._canonical_store.conduit_records_by_id == {}
-    assert nexus._canonical_store.spell_records_by_key == {}
+    assert "ops" in nexus._frame_descriptors_by_name
+    assert nexus._frame_descriptors_by_name["ops"].frame_overview is None
+    assert nexus._frame_descriptors_by_name["ops"].conduit_records_by_id == {}
+    assert nexus._frame_descriptors_by_name["ops"].spell_records_by_key == {}
 
 
 def test_publish_spell_record_updates_primary_store_and_indexes() -> None:
@@ -147,10 +189,10 @@ def test_publish_spell_record_updates_primary_store_and_indexes() -> None:
     assert nexus._publish_spell_record(spellbook, spell, "conduit-1") is True
 
     record_key = ("spellbook-alpha", "spell-1")
-    assert record_key in nexus._canonical_store.spell_records_by_key
-    assert record_key in nexus._canonical_store.spell_keys_by_frame_name["ops"]
-    assert record_key in nexus._canonical_store.spell_keys_by_conduit_id["conduit-1"]
-    assert record_key in nexus._canonical_store.spell_keys_by_spellbook_id["spellbook-alpha"]
+    descriptor = nexus._frame_descriptors_by_name["ops"]
+    assert record_key in descriptor.spell_records_by_key
+    assert record_key in descriptor.spell_keys_by_conduit_id["conduit-1"]
+    assert record_key in descriptor.spell_keys_by_spellbook_id["spellbook-alpha"]
 
 
 def test_publish_conduit_record_ignores_lesser_conduits() -> None:
@@ -177,7 +219,9 @@ def test_publish_conduit_record_ignores_lesser_conduits() -> None:
     )
 
     assert nexus._publish_conduit_record(conduit) is False
-    assert nexus._canonical_store.conduit_records_by_id == {}
+    descriptor = nexus._frame_descriptors_by_name.get("ops")
+    if descriptor is not None:
+        assert descriptor.conduit_records_by_id == {}
 
 
 def test_remove_spell_and_conduit_records_clear_indexes() -> None:
@@ -220,9 +264,8 @@ def test_remove_spell_and_conduit_records_clear_indexes() -> None:
     nexus._remove_spell_record("spellbook-alpha", "spell-1", "ops")
     nexus._remove_conduit_record("conduit-1", "ops")
 
-    assert nexus._canonical_store.spell_records_by_key == {}
-    assert nexus._canonical_store.conduit_records_by_id == {}
-    assert nexus._canonical_store.spell_keys_by_frame_name == {}
-    assert nexus._canonical_store.spell_keys_by_conduit_id == {}
-    assert nexus._canonical_store.spell_keys_by_spellbook_id == {}
-    assert nexus._canonical_store.conduit_ids_by_frame_name == {}
+    descriptor = nexus._frame_descriptors_by_name["ops"]
+    assert descriptor.spell_records_by_key == {}
+    assert descriptor.conduit_records_by_id == {}
+    assert descriptor.spell_keys_by_conduit_id == {}
+    assert descriptor.spell_keys_by_spellbook_id == {}

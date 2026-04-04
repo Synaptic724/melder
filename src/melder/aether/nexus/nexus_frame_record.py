@@ -135,7 +135,8 @@ class NexusFrameRecord(Cleanable):
             IAethericFrame: Strongly held frame object.
         """
         self.check_cleaned()
-        return self._frame
+        with self._lock:
+            return self._frame
 
     @property
     def nexus_frame_mode(self) -> NexusFrameMode:
@@ -147,7 +148,8 @@ class NexusFrameRecord(Cleanable):
             NexusFrameMode: Owning topology mode.
         """
         self.check_cleaned()
-        return self._nexus_frame_mode
+        with self._lock:
+            return self._nexus_frame_mode
 
     @property
     def creator_rift_id(self) -> str:
@@ -159,7 +161,8 @@ class NexusFrameRecord(Cleanable):
             str: Creator Rift id.
         """
         self.check_cleaned()
-        return self._creator_rift_id
+        with self._lock:
+            return self._creator_rift_id
 
     @property
     def owner_rift_id(self) -> Optional[str]:
@@ -171,7 +174,8 @@ class NexusFrameRecord(Cleanable):
             Optional[str]: Current owner, if one exists.
         """
         self.check_cleaned()
-        return self._owner_rift_id
+        with self._lock:
+            return self._owner_rift_id
 
     @property
     def immutable(self) -> bool:
@@ -183,7 +187,8 @@ class NexusFrameRecord(Cleanable):
             bool: True when the frame is immutable.
         """
         self.check_cleaned()
-        return self._immutable
+        with self._lock:
+            return self._immutable
 
     @property
     def attached_rift_ids(self) -> Set[str]:
@@ -195,7 +200,8 @@ class NexusFrameRecord(Cleanable):
             Set[str]: Snapshot of current attachments.
         """
         self.check_cleaned()
-        return set(self._attached_rift_ids)
+        with self._lock:
+            return set(self._attached_rift_ids)
 
     @property
     def attached_rift_count(self) -> int:
@@ -207,7 +213,8 @@ class NexusFrameRecord(Cleanable):
             int: Number of attached Rifts.
         """
         self.check_cleaned()
-        return len(self._attached_rift_ids)
+        with self._lock:
+            return len(self._attached_rift_ids)
 
     def attach_rift_id(self, rift_id: str) -> None:
         """
@@ -256,7 +263,8 @@ class NexusFrameRecord(Cleanable):
             bool: True when at least one attachment remains.
         """
         self.check_cleaned()
-        return len(self._attached_rift_ids) > 0
+        with self._lock:
+            return len(self._attached_rift_ids) > 0
 
     def cleanup(self) -> None:
         """

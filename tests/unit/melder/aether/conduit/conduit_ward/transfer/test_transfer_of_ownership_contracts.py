@@ -535,6 +535,8 @@ class FakeSpellbook:
         self._spell_id_pool: Dict[str, SpellIndex] = {}
         self._risk_register_calls: List[Dict[str, Any]] = []
         self._risk_unregister_calls: List[Dict[str, Any]] = []
+        self._nexus_publish_enabled: bool = True
+        self._nexus_publish_calls: List[Any] = []
 
     def _register_spell_with_risk_manager(self, conduit_id: str, spell_obj: Any) -> None:
         """
@@ -555,6 +557,16 @@ class FakeSpellbook:
             spell_obj: Spell being unregistered.
         """
         self._risk_unregister_calls.append({"conduit_id": conduit_id, "spell": spell_obj})
+
+    def _publish_spell_record_to_nexus(self, spell_obj: Any) -> None:
+        """
+        Record one Nexus spell publication request.
+
+        Args:
+            spell_obj:
+                Spell object being published.
+        """
+        self._nexus_publish_calls.append(spell_obj)
 
     def _unregister_owned_spell_id(self, spell_id: str, spell_obj: Any) -> None:
         """

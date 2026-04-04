@@ -637,7 +637,7 @@ def test_shared_nexus_frame_survives_until_last_rift_is_removed() -> None:
 
     nexus.remove_rift(second.id)
     assert shared_frame_name not in aether._aetheric_frames
-    assert shared_frame_name not in nexus._nexus_frames_by_name
+    assert nexus._get_nexus_frame_record(shared_frame_name) is None
 
 
 def test_one_per_workspace_nexus_frame_is_removed_with_its_rift() -> None:
@@ -664,7 +664,7 @@ def test_one_per_workspace_nexus_frame_is_removed_with_its_rift() -> None:
     nexus.remove_rift(rift.id)
 
     assert frame_name not in Aether()._aetheric_frames
-    assert frame_name not in nexus._nexus_frames_by_name
+    assert nexus._get_nexus_frame_record(frame_name) is None
 
 
 def test_external_aether_frame_cleanup_clears_nexus_frame_record() -> None:
@@ -679,11 +679,11 @@ def test_external_aether_frame_cleanup_clears_nexus_frame_record() -> None:
     rift = nexus.create_rift(rift_name="alpha")
     frame_name = rift.default_nexus_frame_name
 
-    assert frame_name in nexus._nexus_frames_by_name
+    assert nexus._get_nexus_frame_record(frame_name) is not None
 
     rift.get_nexus_frame().cleanup()
 
-    assert frame_name not in nexus._nexus_frames_by_name
+    assert nexus._get_nexus_frame_record(frame_name) is None
 
 
 def test_shared_mode_returns_the_same_frame_to_any_rift() -> None:
@@ -766,7 +766,7 @@ def test_indexed_mode_can_create_explicit_new_frame() -> None:
     rift = nexus.create_rift(rift_name="builder")
     created_frame = rift.create_nexus_frame(frame_name="ops", immutable=True)
 
-    assert "ops" in nexus._nexus_frames_by_name
+    assert nexus._get_nexus_frame_record("ops") is not None
     assert rift.get_nexus_frame("ops") is created_frame
     assert "ops" in rift.list_accessible_nexus_frame_names()
 

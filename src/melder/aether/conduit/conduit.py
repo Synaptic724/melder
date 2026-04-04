@@ -339,6 +339,7 @@ class Conduit(Cleanable, IConduit):
             Conduit._aether._remove_conduit(self, self._aetheric_frame)
             if self.__dynamic_environment__ and self._name is not None:
                 Conduit._aether._unregister_conduit_cloud(self, self._aetheric_frame)
+            self._publish_frame_record_to_nexus()
         except Exception as e:
             self._logger.error(f"Error unregistering from Aether: {e}", "_cleanup_normal_conduit", exc_info=True)
 
@@ -393,6 +394,31 @@ class Conduit(Cleanable, IConduit):
             return
 
         self._nexus._publish_conduit_record(self)
+
+    def _publish_frame_record_to_nexus(self) -> None:
+        """
+        Internal
+
+        Republish the owning frame summary into Nexus when this conduit changes
+        frame-level overview data.
+
+        Contract:
+            - Uses the owning Spellbook as the frame-record publication source.
+            - Skips publication when Nexus publication is disabled for this
+              conduit.
+            - Intended only for mutations that affect frame summary fields such
+              as root-conduit inventory, conduit-cloud entries, or cluster
+              inventory.
+
+        Returns:
+            None.
+        """
+        if not self._nexus_publish_enabled:
+            return
+        if self._spellbook is None:
+            return
+
+        self._nexus._publish_frame_record(self._spellbook)
 
     def _remove_conduit_record_from_nexus(self) -> None:
         """
@@ -799,6 +825,7 @@ class Conduit(Cleanable, IConduit):
             self._logger.error("register_conduit_cloud called without conduit name", "register_conduit_cloud")
             raise RuntimeError("Conduit name is not set. Please set a name before registering in the conduit cloud.")
         Conduit._aether._register_conduit_cloud(conduit, self._aetheric_frame)
+        self._publish_frame_record_to_nexus()
 
     def register_conduit_hooks(
             self,
@@ -850,6 +877,7 @@ class Conduit(Cleanable, IConduit):
             self._logger.error("unregister_conduit_cloud called without conduit name", "unregister_conduit_cloud")
             raise RuntimeError("Conduit name is not set. Please set a name before unregistering from the conduit cloud.")
         Conduit._aether._unregister_conduit_cloud(conduit, self._aetheric_frame)
+        self._publish_frame_record_to_nexus()
 
     def _apply_configuration_flags(self):
         """
@@ -1283,6 +1311,7 @@ class Conduit(Cleanable, IConduit):
                 if hooks:
                     self.register_conduit_hooks(hooks)
 
+                self._publish_frame_record_to_nexus()
                 self._publish_conduit_record_to_nexus()
 
             except Exception as e:
@@ -2182,6 +2211,7 @@ class Conduit(Cleanable, IConduit):
         """
         self.check_cleaned()
         Conduit._aether._create_cluster(cluster_name, self._aetheric_frame)
+        self._publish_frame_record_to_nexus()
 
     def delete_cluster(self, cluster_name: str) -> None:
         """
@@ -2191,6 +2221,7 @@ class Conduit(Cleanable, IConduit):
         """
         self.check_cleaned()
         Conduit._aether._remove_cluster(cluster_name, self._aetheric_frame)
+        self._publish_frame_record_to_nexus()
 
     def join_cluster(self, cluster_name: str) -> None:
         """

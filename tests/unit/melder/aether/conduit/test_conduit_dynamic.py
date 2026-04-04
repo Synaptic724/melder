@@ -534,10 +534,15 @@ def test_register_conduit_cloud_delegates_to_aether(
         AssertionError: If delegation fails.
     """
     conduit_dynamic_normal.name = "alpha"
+    conduit_dynamic_normal._nexus_publish_enabled = True
+    conduit_dynamic_normal._nexus = MagicMock()
 
     conduit_dynamic_normal.register_conduit_cloud(conduit_dynamic_normal)
 
     aether_stub._register_conduit_cloud.assert_called_once_with(conduit_dynamic_normal, "default")
+    conduit_dynamic_normal._nexus._publish_frame_record.assert_called_once_with(
+        conduit_dynamic_normal._spellbook
+    )
 
 
 def test_unregister_conduit_cloud_raises_when_not_dynamic(conduit_normal: Conduit) -> None:
@@ -611,10 +616,15 @@ def test_unregister_conduit_cloud_delegates_to_aether(
         AssertionError: If delegation fails.
     """
     conduit_dynamic_normal.name = "alpha"
+    conduit_dynamic_normal._nexus_publish_enabled = True
+    conduit_dynamic_normal._nexus = MagicMock()
 
     conduit_dynamic_normal.unregister_conduit_cloud(conduit_dynamic_normal)
 
     aether_stub._unregister_conduit_cloud.assert_called_once_with(conduit_dynamic_normal, "default")
+    conduit_dynamic_normal._nexus._publish_frame_record.assert_called_once_with(
+        conduit_dynamic_normal._spellbook
+    )
 
 
 def test_create_cluster_delegates_to_aether(
@@ -634,9 +644,15 @@ def test_create_cluster_delegates_to_aether(
     Raises:
         AssertionError: If delegation fails.
     """
+    conduit_normal._nexus_publish_enabled = True
+    conduit_normal._nexus = MagicMock()
+
     conduit_normal.create_cluster("cluster-1")
 
     aether_stub._create_cluster.assert_called_once_with("cluster-1", "default")
+    conduit_normal._nexus._publish_frame_record.assert_called_once_with(
+        conduit_normal._spellbook
+    )
 
 
 def test_delete_cluster_delegates_to_aether(
@@ -656,9 +672,15 @@ def test_delete_cluster_delegates_to_aether(
     Raises:
         AssertionError: If delegation fails.
     """
+    conduit_normal._nexus_publish_enabled = True
+    conduit_normal._nexus = MagicMock()
+
     conduit_normal.delete_cluster("cluster-1")
 
     aether_stub._remove_cluster.assert_called_once_with("cluster-1", "default")
+    conduit_normal._nexus._publish_frame_record.assert_called_once_with(
+        conduit_normal._spellbook
+    )
 
 
 def test_join_cluster_delegates_to_aether(
