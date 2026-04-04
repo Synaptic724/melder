@@ -44,6 +44,7 @@ class Conduit(Cleanable, IConduit):
         can drain in-flight work before shutdown or dynamic reconfiguration.
     """
     _aether = Aether()
+    _DEFAULT_ROOT_CONDUIT_NAME = "default"
     __melder_internal__ = _mrg.sentinel
     _CONDUIT_HOOK_NAMES_FROM_CONFIGURATION = (
         "on_conduit_pre_created",
@@ -1246,10 +1247,10 @@ class Conduit(Cleanable, IConduit):
                             source_conduit_id
                         )
 
-                # Step 1: Change state + optional name
+                # Step 1: Change state + root name
                 self._conduit_state = ConduitState.normal
                 self._root_conduit_id = self._id
-                self._name = name
+                self._name = name or Conduit._DEFAULT_ROOT_CONDUIT_NAME
 
                 # Step 2: Keep the current creations object and sync state.
                 self._creations._conduit = self

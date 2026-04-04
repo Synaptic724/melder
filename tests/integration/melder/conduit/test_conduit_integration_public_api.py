@@ -74,9 +74,9 @@ def test_conduit_public_api_id_name_and_repr() -> None:
 def test_conduit_public_api_name_setter_blocks_rename() -> None:
     """
     Purpose:
-        Validate name can be set once and cannot be renamed.
+        Validate a root conduit cannot be renamed once its final name is set.
     Contract:
-        - name can be assigned once when unset.
+        - root conduit receives the default name when none is provided.
         - reassigning raises RuntimeError.
     Returns:
         None.
@@ -94,9 +94,7 @@ def test_conduit_public_api_name_setter_blocks_rename() -> None:
 
     conduit = spellbook.conjure()
     try:
-        assert conduit.name is None
-        conduit.name = "root"
-        assert conduit.name == "root"
+        assert conduit.name == "default"
         with pytest.raises(RuntimeError, match="Conduit name is set"):
             conduit.name = "rename"
     finally:

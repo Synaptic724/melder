@@ -193,7 +193,7 @@ def test_component_frame_level_phase_invocations_are_per_spell(
             "change_control",
         )
 
-        spellbook.conjure()
+        spellbook.conjure(name="root")
 
         assert counters["root_blueprints"] == 1
         assert counters["system_validation"] == 1

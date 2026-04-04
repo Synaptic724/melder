@@ -23,6 +23,7 @@ class AethericFrame(Cleanable, IAethericFrame):
 
     High-level responsibilities:
       - Owns root conduits and their spell registries.
+      - Owns a stable root-conduit name index for per-frame lookup.
       - Owns the version registry for all SpellIndex lineages in this frame.
       - Owns the MutationResearch hub for this frame.
       - Owns SpellSystemStates (graph / dirtiness brain).
@@ -61,6 +62,9 @@ class AethericFrame(Cleanable, IAethericFrame):
         # All root conduits created in this frame:
         #   conduit_id -> IConduit
         self._conduits: Dict[str, IConduit] = {}
+        # Stable root-conduit name registry:
+        #   conduit_name -> conduit_id
+        self._conduit_ids_by_name: Dict[str, str] = {}
 
         # SpellIndex registry per conduit:
         #   conduit_id -> Set[SpellIndex]
@@ -153,6 +157,10 @@ class AethericFrame(Cleanable, IAethericFrame):
                     pass
             self._conduits.clear()
             self._conduits = None
+
+        if self._conduit_ids_by_name is not None:
+            self._conduit_ids_by_name.clear()
+            self._conduit_ids_by_name = None
 
         # SpellIndex registry
         if self._spell_registry is not None:

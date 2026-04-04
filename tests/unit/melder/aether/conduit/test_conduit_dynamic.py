@@ -358,6 +358,29 @@ def test_upgrade_to_normal_transitions_and_registers(
     )
 
 
+def test_upgrade_to_normal_defaults_name_when_omitted(
+    conduit_dynamic_lesser: Conduit,
+    aether_stub: MagicMock,
+) -> None:
+    """
+    Verify upgrade_to_normal assigns the default root name when omitted.
+
+    Contract:
+        - Conduit becomes normal with the default name.
+        - Aether registration still occurs for the upgraded conduit.
+    """
+    conduit_dynamic_lesser._conduit_ward = MagicMock()
+    conduit_dynamic_lesser._spellbook.create_new_preset_spellbook = MagicMock()
+    conduit_dynamic_lesser._nexus_publish_enabled = True
+    conduit_dynamic_lesser._nexus = MagicMock()
+
+    conduit_dynamic_lesser.upgrade_to_normal(name=None)
+
+    assert conduit_dynamic_lesser._conduit_state == ConduitState.normal
+    assert conduit_dynamic_lesser._name == "default"
+    aether_stub._add_conduit.assert_called_once_with(conduit_dynamic_lesser, "default")
+
+
 def test_upgrade_to_normal_registers_hooks(
     conduit_dynamic_lesser: Conduit,
     aether_stub: MagicMock,

@@ -346,6 +346,35 @@ def test_conduit_upgrade_to_normal_allows_binding_and_lookup() -> None:
         root.cleanup()
 
 
+def test_conduit_upgrade_to_normal_rejects_duplicate_root_name() -> None:
+    """
+    Purpose:
+        Validate lesser -> normal upgrade respects the frame root-name invariant.
+    Contract:
+        - upgrading a lesser conduit to a root name already used in the frame
+          raises ValueError.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If duplicate root names are accepted during upgrade.
+    """
+    configuration = _make_dynamic_configuration()
+    spellbook = Spellbook(configuration=configuration)
+    spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    root = spellbook.conjure(automatic=False, name="root")
+    lesser = root.create_lesser_conduit()
+    try:
+        with pytest.raises(ValueError, match="Conduit with name root already exists"):
+            lesser.upgrade_to_normal(name="root")
+    finally:
+        root.cleanup()
+
+
 def test_conduit_transfer_spell_ownership_moves_registry_and_meld() -> None:
     """
     Purpose:
@@ -574,7 +603,7 @@ def test_conduit_get_mutation_research_rejects_automatic() -> None:
         conduit.cleanup()
 
 
-def test_conduit_register_conduit_cloud_requires_name() -> None:
+def test_root_conduit_defaults_name_before_dynamic_registration() -> None:
     """
     Purpose:
         Validate conduit cloud registration requires a name.
@@ -583,7 +612,8 @@ def test_conduit_register_conduit_cloud_requires_name() -> None:
     Returns:
         None.
     Raises:
-        AssertionError: If unnamed conduits can register in the cloud.
+        AssertionError: If unnamed root conduits do not receive the default
+            name.
     """
     configuration = _make_dynamic_configuration()
     spellbook = Spellbook(configuration=configuration)
@@ -593,9 +623,11 @@ def test_conduit_register_conduit_cloud_requires_name() -> None:
         permissions="create",
     )
 
-    conduit = spellbook.conjure(automatic=False)
+    conduit = None
     try:
-        with pytest.raises(RuntimeError, match="name is not set"):
-            conduit.register_conduit_cloud(conduit)
+        conduit = spellbook.conjure(automatic=False)
+        assert conduit.name == "default"
     finally:
-        conduit.cleanup()
+        if conduit is not None:
+            conduit.cleanup()
+        spellbook.cleanup()

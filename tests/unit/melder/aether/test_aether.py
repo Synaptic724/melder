@@ -45,6 +45,7 @@ def mock_frame_cls():
         mock_instance = MagicMock(spec=AethericFrame)
         # Setup specific attributes that are accessed directly
         mock_instance._conduits = {}
+        mock_instance._conduit_ids_by_name = {}
         mock_instance._conduit_clusters = {}
         mock_instance._spell_registry = {}
         # Ensure methods return sensible defaults
@@ -254,14 +255,17 @@ def test_add_conduit_delegates_to_default(aether_with_mocks):
     frame_mock = a._default_frame
     conduits_dict = {}
     frame_mock._conduits = conduits_dict
+    frame_mock._conduit_ids_by_name = {}
     
     conduit = MagicMock(spec=IConduit)
     conduit._id = "c1"
+    conduit.name = "root"
     
     a._add_conduit(conduit)
     
     assert "c1" in conduits_dict
     assert conduits_dict["c1"] is conduit
+    assert frame_mock._conduit_ids_by_name["root"] == "c1"
 
 
 def test_aether_privately_hosts_nexus_singleton(aether_with_mocks):
@@ -293,14 +297,17 @@ def test_add_conduit_delegates_to_custom_frame(aether_with_mocks):
     a = aether_with_mocks
     frame_mock = MagicMock()
     frame_mock._conduits = {}
+    frame_mock._conduit_ids_by_name = {}
     a._aetheric_frames["f1"] = frame_mock
     
     conduit = MagicMock(spec=IConduit)
     conduit._id = "c1"
+    conduit.name = "root"
     
     a._add_conduit(conduit, "f1")
     
     assert "c1" in frame_mock._conduits
+    assert frame_mock._conduit_ids_by_name["root"] == "c1"
 
 def test_add_conduit_duplicate_raises(aether_with_mocks):
     """_add_conduit raises ValueError if ID exists."""
@@ -308,10 +315,43 @@ def test_add_conduit_duplicate_raises(aether_with_mocks):
     frame_mock = a._default_frame
     conduit = MagicMock(spec=IConduit)
     conduit._id = "c1"
+    conduit.name = "root"
     frame_mock._conduits = {"c1": conduit}
+    frame_mock._conduit_ids_by_name = {"root": "c1"}
     
     with pytest.raises(ValueError, match="already exists"):
         a._add_conduit(conduit)
+
+
+def test_add_conduit_requires_root_name(aether_with_mocks):
+    """_add_conduit raises ValueError when the root conduit name is missing."""
+    a = aether_with_mocks
+    frame_mock = a._default_frame
+    frame_mock._conduits = {}
+    frame_mock._conduit_ids_by_name = {}
+    conduit = MagicMock(spec=IConduit)
+    conduit._id = "c1"
+    conduit.name = None
+
+    with pytest.raises(ValueError, match="Root conduit name is required"):
+        a._add_conduit(conduit)
+
+
+def test_add_conduit_duplicate_name_raises(aether_with_mocks):
+    """_add_conduit raises ValueError if the root conduit name already exists."""
+    a = aether_with_mocks
+    frame_mock = a._default_frame
+    existing = MagicMock(spec=IConduit)
+    existing._id = "c1"
+    existing.name = "root"
+    incoming = MagicMock(spec=IConduit)
+    incoming._id = "c2"
+    incoming.name = "root"
+    frame_mock._conduits = {"c1": existing}
+    frame_mock._conduit_ids_by_name = {"root": "c1"}
+
+    with pytest.raises(ValueError, match="Conduit with name root already exists"):
+        a._add_conduit(incoming)
 
 def test_remove_conduit_delegates(aether_with_mocks):
     """_remove_conduit removes from the frame's dict."""
@@ -319,11 +359,14 @@ def test_remove_conduit_delegates(aether_with_mocks):
     frame_mock = a._default_frame
     conduit = MagicMock(spec=IConduit)
     conduit._id = "c1"
+    conduit.name = "root"
     frame_mock._conduits = {"c1": conduit}
+    frame_mock._conduit_ids_by_name = {"root": "c1"}
     
     a._remove_conduit(conduit)
     
     assert "c1" not in frame_mock._conduits
+    assert "root" not in frame_mock._conduit_ids_by_name
 
 def test_remove_conduit_missing_raises(aether_with_mocks):
     """_remove_conduit raises ValueError if ID not found."""
@@ -354,7 +397,7 @@ def test_get_conduit_by_id_missing_raises(aether_with_mocks):
         a._get_conduit_by_id("missing")
 
 def test_get_conduit_by_name(aether_with_mocks):
-    """_get_conduit_by_name iterates frame dict."""
+    """_get_conduit_by_name resolves through the frame name registry."""
     a = aether_with_mocks
     frame_mock = a._default_frame
     c1 = MagicMock()
@@ -362,6 +405,7 @@ def test_get_conduit_by_name(aether_with_mocks):
     c2 = MagicMock()
     c2.name = "alice"
     frame_mock._conduits = {"id1": c1, "id2": c2}
+    frame_mock._conduit_ids_by_name = {"bob": "id1", "alice": "id2"}
     
     result = a._get_conduit_by_name("alice")
     assert result is c2

@@ -169,7 +169,7 @@ def test_conduit_scan_after_conjure() -> None:
         Conduit.scan binds decorated objects and returns spell IDs.
     """
     spellbook = _make_spellbook()
-    conduit = spellbook.conjure()
+    conduit = spellbook.conjure(name="root")
     module = _make_module("scan_bind_mod_conduit")
 
     @scan_bind(existence=Existence.unique, permissions="create")

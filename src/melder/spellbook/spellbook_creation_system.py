@@ -49,6 +49,7 @@ class SpellbookCreationSystem(Cleanable):
     """
 
     __melder_internal__ = _mrg.sentinel
+    _DEFAULT_ROOT_CONDUIT_NAME = "default"
     __slots__ = Cleanable.__slots__ + [
         "_automatic",
         "_conduit_cls",
@@ -315,9 +316,10 @@ class SpellbookCreationSystem(Cleanable):
         Raises:
             Exception: Propagates constructor failures from `conduit_cls`.
         """
+        resolved_name = name or SpellbookCreationSystem._DEFAULT_ROOT_CONDUIT_NAME
         return conduit_cls(
             spellbook=spellbook,
-            name=name,
+            name=resolved_name,
             conduit_state=ConduitState.normal,
             configuration=spellbook._configuration,
             aetheric_frame=spellbook._aetheric_frame,

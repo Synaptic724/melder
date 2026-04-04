@@ -323,16 +323,17 @@ def test_aether_get_conduit_by_spell_id_missing_frame_raises() -> None:
         aether._get_conduit_by_spell_id("spell-id", "missing-frame")
 
 
-def test_aether_conduit_cloud_missing_name_raises() -> None:
+def test_root_conduit_defaults_name_during_conjure() -> None:
     """
     Purpose:
-        Validate conduit cloud registration rejects conduits without names.
+        Validate root conduit creation defaults the root name.
     Contract:
-        - Register/unregister raise ValueError when conduit.name is None.
+        - Spellbook.conjure assigns `"default"` when no root conduit name is
+          provided.
     Returns:
         None.
     Raises:
-        AssertionError: If unnamed conduits are accepted.
+        AssertionError: If the default root conduit name is not assigned.
     """
     frame_name = "frame-cloud-missing-name"
     book = Spellbook(
@@ -344,15 +345,13 @@ def test_aether_conduit_cloud_missing_name_raises() -> None:
         existence=Existence.unique,
         permissions="create",
     )
-    conduit = book.conjure()
-    aether = Aether()
+    conduit = None
     try:
-        with pytest.raises(ValueError, match="cannot be None"):
-            aether._register_conduit_cloud(conduit, frame_name)
-        with pytest.raises(ValueError, match="cannot be None"):
-            aether._unregister_conduit_cloud(conduit, frame_name)
+        conduit = book.conjure()
+        assert conduit.name == "default"
     finally:
-        conduit.cleanup()
+        if conduit is not None:
+            conduit.cleanup()
         book.cleanup()
 
 

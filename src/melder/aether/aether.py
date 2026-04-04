@@ -627,16 +627,18 @@ class Aether(Cleanable, IAether):
         self.check_cleaned()
         if aetheric_frame_name != "default":
             try:
-                conduits = self._aetheric_frames[aetheric_frame_name]._conduits
+                frame = self._aetheric_frames[aetheric_frame_name]
             except KeyError:
                 self._logger.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_get_conduit_by_name", exc_info=True)
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
             self._ensure_default_frame()
-            conduits = self._default_frame._conduits
+            frame = self._default_frame
 
-        for conduit in conduits.values():
-            if conduit.name == name:
+        conduit_id = frame._conduit_ids_by_name.get(name)
+        if conduit_id is not None:
+            conduit = frame._conduits.get(conduit_id)
+            if conduit is not None:
                 return conduit
 
         self._logger.error(f"Conduit with name {name} not found.", "_get_conduit_by_name", exc_info=True)
@@ -682,26 +684,42 @@ class Aether(Cleanable, IAether):
             aetheric_frame_name (str): The name of the frame.
 
         Raises:
-            ValueError: If the frame does not exist or the conduit ID already exists.
+            ValueError: If the frame does not exist, the conduit id already
+                exists, the root conduit name is missing, or the root conduit
+                name already exists in the frame.
         """
         self.check_cleaned()
 
         if aetheric_frame_name != "default":
             try:
-                conduits = self._aetheric_frames[aetheric_frame_name]._conduits
+                frame = self._aetheric_frames[aetheric_frame_name]
             except KeyError:
                 self._logger.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_add_conduit", exc_info=True)
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
             self._ensure_default_frame()
-            conduits = self._default_frame._conduits
+            frame = self._default_frame
 
+        conduits = frame._conduits
         cid = conduit._id
+        conduit_name = conduit.name
+        if not conduit_name:
+            self._logger.error("Root conduit name is required.", "_add_conduit", exc_info=True)
+            raise ValueError("Root conduit name is required.")
         if cid in conduits:
             self._logger.error(f"Conduit with ID {cid} already exists.", "_add_conduit", exc_info=True)
             raise ValueError(f"Conduit with ID {cid} already exists.")
+        existing_name_id = frame._conduit_ids_by_name.get(conduit_name)
+        if existing_name_id is not None and existing_name_id != cid:
+            self._logger.error(
+                f"Conduit with name {conduit_name} already exists.",
+                "_add_conduit",
+                exc_info=True,
+            )
+            raise ValueError(f"Conduit with name {conduit_name} already exists.")
 
         conduits[cid] = conduit
+        frame._conduit_ids_by_name[conduit_name] = cid
 
     def _remove_conduit(self, conduit: IConduit, aetheric_frame_name: str = "default"):
         """
@@ -718,19 +736,25 @@ class Aether(Cleanable, IAether):
 
         if aetheric_frame_name != "default":
             try:
-                conduits = self._aetheric_frames[aetheric_frame_name]._conduits
+                frame = self._aetheric_frames[aetheric_frame_name]
             except KeyError:
                 self._logger.error(f"Aetheric frame '{aetheric_frame_name}' does not exist.", "_remove_conduit", exc_info=True)
                 raise ValueError(f"Aetheric frame '{aetheric_frame_name}' does not exist.")
         else:
             self._ensure_default_frame()
-            conduits = self._default_frame._conduits
+            frame = self._default_frame
 
+        conduits = frame._conduits
         conduit_id = conduit._id
         removed = conduits.pop(conduit_id, None)
         if removed is None:
             self._logger.error(f"Conduit with ID {conduit_id} does not exist.", "_remove_conduit", exc_info=True)
             raise ValueError(f"Conduit with ID {conduit_id} does not exist.")
+        conduit_name = removed.name
+        if conduit_name:
+            mapped_id = frame._conduit_ids_by_name.get(conduit_name)
+            if mapped_id == conduit_id:
+                frame._conduit_ids_by_name.pop(conduit_name, None)
 
 
     def _create_cluster(self, cluster_name: str, aetheric_frame_name: str = "default"):

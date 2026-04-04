@@ -3973,7 +3973,7 @@ def test_conjure_hooks_fire_in_order(monkeypatch):
     monkeypatch.setattr(spellbook_module, "Conduit", StubConduit)
     # Stub binder to avoid building a real conduit; return the stub directly.
     sb._bind.build_conduit = lambda *a, **k: StubConduit(None, None, None, None, None, None, None)
-    sb.conjure()
+    sb.conjure(name="root")
     assert hooks_called == ["pre", "activated", "post"]
 
 
@@ -4127,7 +4127,7 @@ def test_conjure_sets_conduit_and_marks_conjured(monkeypatch):
     monkeypatch.setattr("melder.spellbook.spellbook.Conduit", StubConduit)
     sb._validate_and_freeze_configuration = lambda: None
     sb._bind_configuration_to_aether = lambda: None
-    sb.conjure()
+    sb.conjure(name="root")
     assert sb._conjured is True
     assert isinstance(sb._conduit, StubConduit)
 
@@ -4205,9 +4205,9 @@ def test_conjure_twice_raises(monkeypatch):
     monkeypatch.setattr("melder.spellbook.spellbook.Conduit", StubConduit)
     sb._validate_and_freeze_configuration = lambda: None
     sb._bind_configuration_to_aether = lambda: None
-    sb.conjure()
+    sb.conjure(name="root")
     with pytest.raises(RuntimeError) as excinfo:
-        sb.conjure()
+        sb.conjure(name="root-2")
     message = str(excinfo.value)
     assert "spellbook_id=" in message
     assert "conduit_id=" in message

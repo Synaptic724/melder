@@ -184,6 +184,48 @@ def test_aether_add_remove_conduit_duplicate_errors() -> None:
         spellbook.cleanup()
 
 
+def test_aether_rejects_duplicate_root_conduit_names_per_frame() -> None:
+    """
+    Purpose:
+        Validate root conduit names are unique within one frame.
+
+    Contract:
+        - Conjuring a second root conduit with the same name in the same frame
+          raises ValueError.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If duplicate root conduit names are accepted.
+    """
+    frame_name = "frame-duplicate-root-names"
+    owner_book = Spellbook(
+        aetheric_frame=frame_name,
+        configuration=_make_configuration(aether_frame=frame_name),
+    )
+    borrower_book = Spellbook(
+        aetheric_frame=frame_name,
+        configuration=_make_configuration(aether_frame=frame_name),
+    )
+    owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    borrower_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    owner = owner_book.conjure(name="root")
+    try:
+        with pytest.raises(ValueError, match="Conduit with name root already exists"):
+            borrower_book.conjure(name="root")
+    finally:
+        owner.cleanup()
+        owner_book.cleanup()
+        borrower_book.cleanup()
+
+
 def test_aether_remove_single_spell_index_updates_registry() -> None:
     """
     Purpose:
