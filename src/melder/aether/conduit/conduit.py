@@ -1172,7 +1172,7 @@ class Conduit(Cleanable, IConduit):
 
     def upgrade_to_normal(
             self,
-            name: Optional[str] = None,
+            name: str,
             *,
             hooks: dict[str, Any] | None = None,
     ) -> None:
@@ -1250,7 +1250,7 @@ class Conduit(Cleanable, IConduit):
                 # Step 1: Change state + root name
                 self._conduit_state = ConduitState.normal
                 self._root_conduit_id = self._id
-                self._name = name or Conduit._DEFAULT_ROOT_CONDUIT_NAME
+                self._name = name
 
                 # Step 2: Keep the current creations object and sync state.
                 self._creations._conduit = self
