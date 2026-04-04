@@ -1,5 +1,7 @@
 from types import SimpleNamespace
 
+import pytest
+
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.nexus.aetheric_frame_descriptor import AethericFrameDescriptor
 from melder.aether.nexus.canonical_store.conduit_record import ConduitRecord
@@ -205,3 +207,232 @@ def test_descriptor_collection_properties_return_snapshots() -> None:
     assert descriptor.spell_keys_by_spellbook_id == {
         "spellbook-1": {("spellbook-1", "spell-1")},
     }
+
+
+def test_descriptor_replaces_and_removes_conduit_records_cleanly() -> None:
+    """
+    Verify conduit record replacement and removal cleanup old owned records.
+
+    Contract:
+        - Upserting the same conduit id replaces the old record.
+        - Replaced and removed records are cleaned.
+        - The final conduit record map reflects the last write.
+
+    Returns:
+        None.
+    """
+    descriptor = AethericFrameDescriptor("ops")
+    first_record = ConduitRecord(
+        conduit_id="conduit-1",
+        root_conduit_id="conduit-1",
+        conduit_name="alpha",
+        frame_name="ops",
+        origin_spellbook_id="spellbook-1",
+        conduit_state=ConduitState.normal,
+        policy=Policies.default,
+        peer_conduit_ids=tuple(),
+    )
+    second_record = ConduitRecord(
+        conduit_id="conduit-1",
+        root_conduit_id="conduit-1",
+        conduit_name="beta",
+        frame_name="ops",
+        origin_spellbook_id="spellbook-2",
+        conduit_state=ConduitState.normal,
+        policy=Policies.outbound_only,
+        peer_conduit_ids=("conduit-2",),
+    )
+
+    descriptor.upsert_conduit_record(first_record)
+    descriptor.upsert_conduit_record(second_record)
+
+    assert first_record.cleaned is True
+    assert descriptor.conduit_records_by_id == {"conduit-1": second_record}
+
+    descriptor.remove_conduit_record("conduit-1")
+
+    assert second_record.cleaned is True
+    assert descriptor.conduit_records_by_id == {}
+
+
+def test_descriptor_replaces_spell_record_and_refreshes_indexes() -> None:
+    """
+    Verify spell record replacement cleans old state and refreshes indexes.
+
+    Contract:
+        - Replacing a spell record with the same record key cleans the old
+          record.
+        - Conduit/spellbook indexes are rebuilt from the replacement record.
+
+    Returns:
+        None.
+    """
+    descriptor = AethericFrameDescriptor("ops")
+    first_record = SpellRecord(
+        origin_spellbook_id="spellbook-1",
+        frame_name="ops",
+        owner_conduit_id="conduit-1",
+        spell_id="spell-1",
+        lineage_id="lineage-1",
+        spell_name="SpellOne",
+        spellframe=None,
+        binding_name="spell_one",
+        permissions=Permissions.create,
+        existence=Existence.many,
+        binding_profile=None,
+        resolution_profile=None,
+        ai_profile=None,
+    )
+    second_record = SpellRecord(
+        origin_spellbook_id="spellbook-1",
+        frame_name="ops",
+        owner_conduit_id="conduit-2",
+        spell_id="spell-1",
+        lineage_id="lineage-1",
+        spell_name="SpellOneUpdated",
+        spellframe=None,
+        binding_name="spell_one",
+        permissions=Permissions.read,
+        existence=Existence.unique,
+        binding_profile=None,
+        resolution_profile=None,
+        ai_profile=None,
+    )
+
+    descriptor.upsert_spell_record(first_record)
+    descriptor.upsert_spell_record(second_record)
+
+    record_key = ("spellbook-1", "spell-1")
+    assert first_record.cleaned is True
+    assert descriptor.spell_records_by_key == {record_key: second_record}
+    assert descriptor.spell_keys_by_conduit_id == {"conduit-2": {record_key}}
+    assert descriptor.spell_keys_by_spellbook_id == {"spellbook-1": {record_key}}
+
+
+def test_descriptor_remove_spell_record_cleans_record_and_indexes() -> None:
+    """
+    Verify spell record removal clears the owned record and both indexes.
+
+    Contract:
+        - Removing a stored spell record cleans it.
+        - Conduit and spellbook secondary indexes are removed when empty.
+
+    Returns:
+        None.
+    """
+    descriptor = AethericFrameDescriptor("ops")
+    record = SpellRecord(
+        origin_spellbook_id="spellbook-1",
+        frame_name="ops",
+        owner_conduit_id="conduit-1",
+        spell_id="spell-1",
+        lineage_id="lineage-1",
+        spell_name="SpellOne",
+        spellframe=None,
+        binding_name="spell_one",
+        permissions=Permissions.create,
+        existence=Existence.many,
+        binding_profile=None,
+        resolution_profile=None,
+        ai_profile=None,
+    )
+    record_key = ("spellbook-1", "spell-1")
+
+    descriptor.upsert_spell_record(record)
+    descriptor.remove_spell_record(record_key)
+
+    assert record.cleaned is True
+    assert descriptor.spell_records_by_key == {}
+    assert descriptor.spell_keys_by_conduit_id == {}
+    assert descriptor.spell_keys_by_spellbook_id == {}
+
+
+def test_descriptor_detach_nexus_frame_record_clears_property_without_cleaning_record() -> None:
+    """
+    Verify detaching a Nexus frame record removes ownership without cleanup.
+
+    Contract:
+        - `detach_nexus_frame_record()` returns the current record.
+        - Descriptor property becomes None after detach.
+        - Detached record is not cleaned by the detach operation itself.
+
+    Returns:
+        None.
+    """
+    descriptor = AethericFrameDescriptor("ops")
+    frame_handle = SimpleNamespace(name="ops")
+    nexus_frame_record = NexusFrameRecord(
+        frame_name="ops",
+        frame=frame_handle,
+        nexus_frame_mode=NexusFrameMode.single,
+        creator_rift_id="rift-1",
+        owner_rift_id="rift-1",
+        immutable=False,
+    )
+
+    descriptor.set_nexus_frame_record(nexus_frame_record)
+    detached = descriptor.detach_nexus_frame_record()
+
+    assert detached is nexus_frame_record
+    assert descriptor.nexus_frame_record is None
+    assert nexus_frame_record.cleaned is False
+
+
+def test_descriptor_set_frame_handle_and_configuration_round_trip() -> None:
+    """
+    Verify frame handle and frame configuration are stored directly.
+
+    Returns:
+        None.
+    """
+    descriptor = AethericFrameDescriptor("ops")
+    frame_handle = SimpleNamespace(name="ops")
+    frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-1",
+        system_state=SystemState.dynamic,
+        ai_native_enabled=True,
+        rift_enabled=True,
+    )
+
+    descriptor.set_frame_handle(frame_handle)
+    descriptor.set_frame_configuration(frame_configuration)
+
+    assert descriptor.frame_handle is frame_handle
+    assert descriptor.frame_configuration is frame_configuration
+
+
+def test_descriptor_remove_missing_records_is_no_op() -> None:
+    """
+    Verify missing conduit/spell removal paths do not invent failures.
+
+    Returns:
+        None.
+    """
+    descriptor = AethericFrameDescriptor("ops")
+
+    descriptor.remove_conduit_record("missing-conduit")
+    descriptor.remove_spell_record(("spellbook-1", "missing-spell"))
+
+    assert descriptor.conduit_records_by_id == {}
+    assert descriptor.spell_records_by_key == {}
+
+
+def test_descriptor_properties_raise_after_cleanup() -> None:
+    """
+    Verify descriptor getters fail after cleanup rather than returning stale
+    state.
+
+    Returns:
+        None.
+    """
+    descriptor = AethericFrameDescriptor("ops")
+    descriptor.cleanup()
+
+    with pytest.raises(RuntimeError):
+        _ = descriptor.frame_name
+
+    with pytest.raises(RuntimeError):
+        _ = descriptor.frame_handle
+
+    with pytest.raises(RuntimeError):
+        _ = descriptor.frame_configuration

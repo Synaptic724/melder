@@ -4,12 +4,8 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.nexus.aetheric_frame_descriptor import AethericFrameDescriptor
-from melder.aether.conduit.conduit_state.conduit_state import ConduitState
-from melder.spellbook.spell_crafter.spell_examiner.profiles.ai_profile import SpellAIProfile
+from melder.aether.nexus.frame_descriptor_manager import FrameDescriptorManager
 from melder.aether.nexus.nexus_frame_record import NexusFrameRecord
-from melder.aether.nexus.canonical_store.conduit_record import ConduitRecord
-from melder.aether.nexus.canonical_store.frame_record import FrameRecord
-from melder.aether.nexus.canonical_store.spell_record import SpellRecord
 from melder.aether.nexus.configuration.rift_configuration import RiftConfiguration
 from melder.aether.nexus.configuration.nexus_configuration import (
     NexusConfiguration,
@@ -80,7 +76,7 @@ class Nexus(Cleanable, INexus):
         "_next_default_rift_number",
         "_next_indexed_nexus_frame_number",
         "_rift_profiles_by_name",
-        "_frame_descriptors_by_name",
+        "_frame_descriptor_manager",
         "_target_frame_ref_counts",
     ]
 
@@ -144,7 +140,7 @@ class Nexus(Cleanable, INexus):
         self._next_default_rift_number: int = 1
         self._next_indexed_nexus_frame_number: int = 1
         self._rift_profiles_by_name: Dict[str, IRiftConfiguration] = {}
-        self._frame_descriptors_by_name: Dict[str, AethericFrameDescriptor] = {}
+        self._frame_descriptor_manager: FrameDescriptorManager = FrameDescriptorManager(aether)
         self._target_frame_ref_counts: Dict[str, int] = {}
         self._initialize_logging(logger)
         Nexus._initialized = True
@@ -285,8 +281,8 @@ class Nexus(Cleanable, INexus):
                 self._configuration.cleanup()
             for profile in self._rift_profiles_by_name.values():
                 profile.cleanup()
-            for descriptor in self._frame_descriptors_by_name.values():
-                descriptor.cleanup()
+            if self._frame_descriptor_manager is not None:
+                self._frame_descriptor_manager.cleanup()
             self._configuration = None
             self._configured = None
             self._enabled = None
@@ -296,14 +292,13 @@ class Nexus(Cleanable, INexus):
             self._next_default_rift_number = None
             self._next_indexed_nexus_frame_number = None
             self._rift_profiles_by_name.clear()
-            self._frame_descriptors_by_name.clear()
             self._target_frame_ref_counts.clear()
             self._rifts_by_id = None
             self._rift_ids_by_name = None
             self._next_default_rift_number = None
             self._next_indexed_nexus_frame_number = None
             self._rift_profiles_by_name = None
-            self._frame_descriptors_by_name = None
+            self._frame_descriptor_manager = None
             self._target_frame_ref_counts = None
             self._id = None
         if self._logger is not None:
@@ -682,25 +677,7 @@ class Nexus(Cleanable, INexus):
             Optional[AethericFrameConfiguration]: Bound frame posture when
             available, otherwise None.
         """
-        self.check_cleaned()
-        descriptor = self._get_or_create_frame_descriptor(frame_name)
-        try:
-            frame_posture = self._aether._get_aetheric_frame_configuration(frame_name)
-        except ValueError:
-            descriptor.set_frame_configuration(None)
-            descriptor.set_frame_handle(None)
-            return None
-
-        if frame_posture is None:
-            descriptor.set_frame_configuration(None)
-            return None
-
-        descriptor.set_frame_configuration(frame_posture)
-        try:
-            descriptor.set_frame_handle(self._aether._ensure_frame(frame_name))
-        except Exception:
-            descriptor.set_frame_handle(None)
-        return frame_posture
+        return self._frame_descriptor_manager._refresh_frame_posture_cache(frame_name)
 
     def _get_publishable_frame_posture(
             self,
@@ -720,16 +697,7 @@ class Nexus(Cleanable, INexus):
             Optional[AethericFrameConfiguration]: Publishable frame posture or
             None when publication should short-circuit.
         """
-        self.check_cleaned()
-        descriptor = self._get_or_create_frame_descriptor(frame_name)
-        frame_posture = descriptor.frame_configuration
-        if frame_posture is None:
-            frame_posture = self._refresh_frame_posture_cache(frame_name)
-        if frame_posture is None:
-            return None
-        if not frame_posture.rift_enabled:
-            return None
-        return frame_posture
+        return self._frame_descriptor_manager._get_publishable_frame_posture(frame_name)
 
     def _publish_frame_record(self, spellbook: Any) -> bool:
         """
@@ -745,55 +713,7 @@ class Nexus(Cleanable, INexus):
             bool: True when the record was published, False when publication
             short-circuited.
         """
-        self.check_cleaned()
-        frame_name = spellbook._aetheric_frame
-        with self._lock:
-            frame_posture = self._get_publishable_frame_posture(frame_name)
-            if frame_posture is None:
-                return False
-
-            frame = self._aether._ensure_frame(frame_name)
-            descriptor = self._get_or_create_frame_descriptor(frame_name)
-            descriptor.set_frame_handle(frame)
-            descriptor.set_frame_configuration(frame_posture)
-            with frame:
-                root_conduit_ids = tuple(sorted(frame._conduits.keys()))
-                named_root_conduits = tuple(
-                    sorted(
-                        (conduit._id, conduit._name)
-                        for conduit in frame._conduits.values()
-                        if conduit is not None and conduit._name is not None
-                    )
-                )
-                conduit_cloud_names = tuple()
-                conduit_cloud_entry_count = 0
-                if frame._conduit_cloud is not None:
-                    conduit_cloud_names = tuple(
-                        sorted(frame._conduit_cloud._registry.keys())
-                    )
-                    conduit_cloud_entry_count = len(conduit_cloud_names)
-                cluster_names = tuple()
-                cluster_count = 0
-                if frame._conduit_clusters is not None:
-                    cluster_names = tuple(sorted(frame._conduit_clusters.keys()))
-                    cluster_count = len(cluster_names)
-            frame_record = FrameRecord(
-                frame_name=frame_name,
-                frame_id=frame._id,
-                config_origin_spellbook_id=spellbook._id,
-                system_state=frame_posture.system_state,
-                ai_native_enabled=frame_posture.ai_native_enabled,
-                rift_enabled=frame_posture.rift_enabled,
-                root_conduit_count=len(root_conduit_ids),
-                root_conduit_ids=root_conduit_ids,
-                named_root_conduits=named_root_conduits,
-                conduit_cloud_entry_count=conduit_cloud_entry_count,
-                conduit_cloud_names=conduit_cloud_names,
-                cluster_count=cluster_count,
-                cluster_names=cluster_names,
-            )
-            descriptor.set_frame_overview(frame_record)
-            return True
+        return self._frame_descriptor_manager._publish_frame_record(spellbook)
 
     def _publish_conduit_record(self, conduit: Any) -> bool:
         """
@@ -810,40 +730,7 @@ class Nexus(Cleanable, INexus):
             bool: True when the record was published, False when publication
             short-circuited.
         """
-        self.check_cleaned()
-        if conduit is None or conduit._conduit_state is not ConduitState.normal:
-            return False
-
-        frame_name = conduit._aetheric_frame
-        with self._lock:
-            frame_posture = self._get_publishable_frame_posture(frame_name)
-            if frame_posture is None:
-                return False
-            descriptor = self._get_or_create_frame_descriptor(frame_name)
-
-            peer_conduit_ids = tuple(
-                sorted(
-                    peer._id
-                    for peer in conduit._conduit_ward._get_links()
-                    if peer is not None
-                )
-            )
-            origin_spellbook_id = None
-            if conduit._spellbook is not None:
-                origin_spellbook_id = conduit._spellbook._id
-
-            conduit_record = ConduitRecord(
-                conduit_id=conduit._id,
-                root_conduit_id=conduit._root_conduit_id,
-                conduit_name=conduit._name,
-                frame_name=frame_name,
-                origin_spellbook_id=origin_spellbook_id,
-                conduit_state=conduit._conduit_state,
-                policy=conduit._conduit_ward._policy,
-                peer_conduit_ids=peer_conduit_ids,
-            )
-            descriptor.upsert_conduit_record(conduit_record)
-            return True
+        return self._frame_descriptor_manager._publish_conduit_record(conduit)
 
     def _remove_conduit_record(
             self,
@@ -865,14 +752,10 @@ class Nexus(Cleanable, INexus):
             bool: True when the remove path executed, False when publication
             short-circuited.
         """
-        self.check_cleaned()
-        with self._lock:
-            frame_posture = self._get_publishable_frame_posture(frame_name)
-            if frame_posture is None:
-                return False
-            descriptor = self._get_or_create_frame_descriptor(frame_name)
-            descriptor.remove_conduit_record(conduit_id)
-            return True
+        return self._frame_descriptor_manager._remove_conduit_record(
+            conduit_id,
+            frame_name,
+        )
 
     def _publish_spell_record(
             self,
@@ -897,44 +780,11 @@ class Nexus(Cleanable, INexus):
             bool: True when the record was published, False when publication
             short-circuited.
         """
-        self.check_cleaned()
-        frame_name = spellbook._aetheric_frame
-        with self._lock:
-            frame_posture = self._get_publishable_frame_posture(frame_name)
-            if frame_posture is None:
-                return False
-            descriptor = self._get_or_create_frame_descriptor(frame_name)
-
-            binding_profile = None
-            ai_profile = None
-            profile = spell.profile
-            if isinstance(profile, SpellAIProfile):
-                ai_profile = profile
-                binding_profile = profile.binding_profile
-            else:
-                binding_profile = profile
-
-            resolution_profile = spell.resolution_profile
-            if resolution_profile is None and ai_profile is not None:
-                resolution_profile = ai_profile.resolution_profile
-
-            spell_record = SpellRecord(
-                origin_spellbook_id=spellbook._id,
-                frame_name=frame_name,
-                owner_conduit_id=owner_conduit_id,
-                spell_id=spell.spell_id,
-                lineage_id=spell.spell_index.id,
-                spell_name=spell.spell_name,
-                spellframe=spell.spellframe,
-                binding_name=spell.binding_name,
-                permissions=spell.permissions,
-                existence=spell.existence,
-                binding_profile=binding_profile,
-                resolution_profile=resolution_profile,
-                ai_profile=ai_profile,
-            )
-            descriptor.upsert_spell_record(spell_record)
-            return True
+        return self._frame_descriptor_manager._publish_spell_record(
+            spellbook,
+            spell,
+            owner_conduit_id,
+        )
 
     def _remove_spell_record(
             self,
@@ -959,14 +809,11 @@ class Nexus(Cleanable, INexus):
             bool: True when the remove path executed, False when publication
             short-circuited.
         """
-        self.check_cleaned()
-        with self._lock:
-            frame_posture = self._get_publishable_frame_posture(frame_name)
-            if frame_posture is None:
-                return False
-            descriptor = self._get_or_create_frame_descriptor(frame_name)
-            descriptor.remove_spell_record((origin_spellbook_id, spell_id))
-            return True
+        return self._frame_descriptor_manager._remove_spell_record(
+            origin_spellbook_id,
+            spell_id,
+            frame_name,
+        )
 
     def list_rift_ids(self) -> list[str]:
         """
@@ -1160,12 +1007,9 @@ class Nexus(Cleanable, INexus):
         if self._cleaned:
             return
         with self._lock:
-            if self._cleaned or not self._enabled or self._frame_descriptors_by_name is None:
+            if self._cleaned or not self._enabled or self._frame_descriptor_manager is None:
                 return
-            descriptor = self._frame_descriptors_by_name.get(frame_name)
-            if descriptor is None:
-                return
-            nexus_frame_record = descriptor.detach_nexus_frame_record()
+            nexus_frame_record = self._frame_descriptor_manager._detach_nexus_frame_record(frame_name)
             if nexus_frame_record is None:
                 return
 
@@ -1728,11 +1572,7 @@ class Nexus(Cleanable, INexus):
         Returns:
             AethericFrameDescriptor: Existing descriptor.
         """
-        with self._lock:
-            try:
-                return self._frame_descriptors_by_name[frame_name]
-            except KeyError as exc:
-                raise KeyError(frame_name) from exc
+        return self._frame_descriptor_manager._get_required_frame_descriptor(frame_name)
 
     def _get_or_create_frame_descriptor(
             self,
@@ -1750,12 +1590,7 @@ class Nexus(Cleanable, INexus):
         Returns:
             AethericFrameDescriptor: Existing or newly created descriptor.
         """
-        with self._lock:
-            descriptor = self._frame_descriptors_by_name.get(frame_name)
-            if descriptor is None:
-                descriptor = AethericFrameDescriptor(frame_name)
-                self._frame_descriptors_by_name[frame_name] = descriptor
-            return descriptor
+        return self._frame_descriptor_manager._get_or_create_frame_descriptor(frame_name)
 
     def _get_nexus_frame_record(
             self,
@@ -1773,11 +1608,7 @@ class Nexus(Cleanable, INexus):
         Returns:
             Optional[NexusFrameRecord]: Current Nexus-managed frame record.
         """
-        with self._lock:
-            descriptor = self._frame_descriptors_by_name.get(frame_name)
-            if descriptor is None:
-                return None
-            return descriptor.nexus_frame_record
+        return self._frame_descriptor_manager._get_nexus_frame_record(frame_name)
 
     def _list_nexus_frame_names(self) -> List[str]:
         """
@@ -1789,12 +1620,7 @@ class Nexus(Cleanable, INexus):
         Returns:
             List[str]: Current Nexus-managed frame names.
         """
-        with self._lock:
-            frame_names: List[str] = []
-            for frame_name, descriptor in self._frame_descriptors_by_name.items():
-                if descriptor.nexus_frame_record is not None:
-                    frame_names.append(frame_name)
-            return frame_names
+        return self._frame_descriptor_manager._list_nexus_frame_names()
 
     def _count_nexus_frame_records(self) -> int:
         """
@@ -1805,8 +1631,7 @@ class Nexus(Cleanable, INexus):
         Returns:
             int: Number of descriptor-owned Nexus-managed frame records.
         """
-        with self._lock:
-            return len(self._list_nexus_frame_names())
+        return self._frame_descriptor_manager._count_nexus_frame_records()
 
     def _get_required_rift(self, rift_id: str) -> IRift:
         """
@@ -1839,14 +1664,7 @@ class Nexus(Cleanable, INexus):
         Returns:
             NexusFrameRecord: Existing frame record.
         """
-        with self._lock:
-            try:
-                nexus_frame_record = self._get_required_frame_descriptor(frame_name).nexus_frame_record
-            except KeyError as exc:
-                raise ValueError("Nexus frame '{0}' was not found.".format(frame_name)) from exc
-            if nexus_frame_record is None:
-                raise ValueError("Nexus frame '{0}' was not found.".format(frame_name))
-            return nexus_frame_record
+        return self._frame_descriptor_manager._get_required_nexus_frame_record(frame_name)
 
     def _get_or_create_nexus_frame_record(
             self,
@@ -1872,15 +1690,13 @@ class Nexus(Cleanable, INexus):
         Returns:
             NexusFrameRecord: Existing or newly created record.
         """
-        with self._lock:
-            nexus_frame_record = self._get_nexus_frame_record(frame_name)
-            if nexus_frame_record is not None:
-                return nexus_frame_record
-            return self._create_nexus_frame_record(
-                frame_name,
-                creator_rift_id=creator_rift_id,
-                immutable=immutable,
-            )
+        nexus_frame_mode = self._configuration.get_property("nexus_frame_mode")
+        return self._frame_descriptor_manager._get_or_create_nexus_frame_record(
+            frame_name,
+            creator_rift_id=creator_rift_id,
+            immutable=immutable,
+            nexus_frame_mode=nexus_frame_mode,
+        )
 
     def _create_nexus_frame_record(
             self,
@@ -1905,20 +1721,13 @@ class Nexus(Cleanable, INexus):
         Returns:
             NexusFrameRecord: Newly created record.
         """
-        realized_frame = self._aether._ensure_frame(frame_name)
         nexus_frame_mode = self._configuration.get_property("nexus_frame_mode")
-        nexus_frame_record = NexusFrameRecord(
-            frame_name=frame_name,
-            frame=realized_frame,
-            nexus_frame_mode=nexus_frame_mode,
+        return self._frame_descriptor_manager._create_nexus_frame_record(
+            frame_name,
             creator_rift_id=creator_rift_id,
-            owner_rift_id=creator_rift_id,
             immutable=immutable,
+            nexus_frame_mode=nexus_frame_mode,
         )
-        descriptor = self._get_or_create_frame_descriptor(frame_name)
-        descriptor.set_frame_handle(realized_frame)
-        descriptor.set_nexus_frame_record(nexus_frame_record)
-        return nexus_frame_record
 
     def _increment_ref_count(self, ref_counts: Dict[str, int], key: str) -> None:
         """

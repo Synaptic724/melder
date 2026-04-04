@@ -72,7 +72,7 @@ def test_publish_frame_record_does_not_require_nexus_enable() -> None:
     assert nexus.is_enabled is False
     assert nexus._publish_frame_record(spellbook) is True
 
-    record = nexus._frame_descriptors_by_name["ops"].frame_overview
+    record = nexus._get_required_frame_descriptor("ops").frame_overview
 
     assert record.frame_name == "ops"
     assert record.config_origin_spellbook_id == "spellbook-alpha"
@@ -109,7 +109,7 @@ def test_publish_frame_record_captures_frame_summary() -> None:
 
     assert nexus._publish_frame_record(spellbook) is True
 
-    record = nexus._frame_descriptors_by_name["ops"].frame_overview
+    record = nexus._get_required_frame_descriptor("ops").frame_overview
 
     assert record.root_conduit_count == 2
     assert record.root_conduit_ids == ("conduit-a", "conduit-b")
@@ -158,10 +158,10 @@ def test_publish_methods_short_circuit_when_frame_is_not_publishable() -> None:
     assert nexus._publish_frame_record(spellbook) is False
     assert nexus._publish_conduit_record(conduit) is False
     assert nexus._publish_spell_record(spellbook, spell, "conduit-1") is False
-    assert "ops" in nexus._frame_descriptors_by_name
-    assert nexus._frame_descriptors_by_name["ops"].frame_overview is None
-    assert nexus._frame_descriptors_by_name["ops"].conduit_records_by_id == {}
-    assert nexus._frame_descriptors_by_name["ops"].spell_records_by_key == {}
+    descriptor = nexus._get_required_frame_descriptor("ops")
+    assert descriptor.frame_overview is None
+    assert descriptor.conduit_records_by_id == {}
+    assert descriptor.spell_records_by_key == {}
 
 
 def test_publish_spell_record_updates_primary_store_and_indexes() -> None:
@@ -189,7 +189,7 @@ def test_publish_spell_record_updates_primary_store_and_indexes() -> None:
     assert nexus._publish_spell_record(spellbook, spell, "conduit-1") is True
 
     record_key = ("spellbook-alpha", "spell-1")
-    descriptor = nexus._frame_descriptors_by_name["ops"]
+    descriptor = nexus._get_required_frame_descriptor("ops")
     assert record_key in descriptor.spell_records_by_key
     assert record_key in descriptor.spell_keys_by_conduit_id["conduit-1"]
     assert record_key in descriptor.spell_keys_by_spellbook_id["spellbook-alpha"]
@@ -219,9 +219,9 @@ def test_publish_conduit_record_ignores_lesser_conduits() -> None:
     )
 
     assert nexus._publish_conduit_record(conduit) is False
-    descriptor = nexus._frame_descriptors_by_name.get("ops")
-    if descriptor is not None:
-        assert descriptor.conduit_records_by_id == {}
+    assert nexus._frame_descriptor_manager._get_nexus_frame_record("ops") is None
+    with pytest.raises(KeyError, match="ops"):
+        nexus._get_required_frame_descriptor("ops")
 
 
 def test_remove_spell_and_conduit_records_clear_indexes() -> None:
@@ -264,7 +264,7 @@ def test_remove_spell_and_conduit_records_clear_indexes() -> None:
     nexus._remove_spell_record("spellbook-alpha", "spell-1", "ops")
     nexus._remove_conduit_record("conduit-1", "ops")
 
-    descriptor = nexus._frame_descriptors_by_name["ops"]
+    descriptor = nexus._get_required_frame_descriptor("ops")
     assert descriptor.spell_records_by_key == {}
     assert descriptor.conduit_records_by_id == {}
     assert descriptor.spell_keys_by_conduit_id == {}
