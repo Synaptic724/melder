@@ -987,6 +987,7 @@ class TransferOfOwnership:
             )
             spell_obj.resolution_required = target_resolution_required
             spell_obj.resolution_complete = False
+            tgt_book._publish_spell_record_to_nexus(spell_obj)
         except Exception as e:
             raise RuntimeError(f"Failed to flip spellbooks: {e}")
 

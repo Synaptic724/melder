@@ -24,6 +24,7 @@ class _SpellStub:
             name (str): Label used for debugging and clarity in failures.
         """
         self.name = name
+        self.spell_id = name
 
 
 class _SpellbookStub:
@@ -217,6 +218,31 @@ def test_has_version_updates_after_update():
     idx.update("v2")
     assert idx.has_version("v2")
     assert idx.get_all_versions() == {"v1", "v2"}
+
+
+def test_update_syncs_spell_id_to_current_for_owned_and_contracted_spells() -> None:
+    """
+    Verify SpellIndex.update keeps attached spell objects aligned to the new
+    current version id.
+
+    Contract:
+        - Owned spell.spell_id is rewritten to the new current id.
+        - Contracted spell.spell_id is rewritten to the new current id.
+    """
+    idx = SpellIndex("v1")
+    owner_book = _SpellbookStub()
+    owner_spell = _SpellStub("owned")
+    contracted_book = _SpellbookStub()
+    contracted_spell = _SpellStub("contracted")
+
+    idx._attach_owner(owner_book, owner_spell)
+    idx._attach_contracted(contracted_book, "peer-1", contracted_spell)
+
+    idx.update("v2")
+
+    assert idx.current == "v2"
+    assert owner_spell.spell_id == "v2"
+    assert contracted_spell.spell_id == "v2"
 
 
 def test_repr_reflects_current():

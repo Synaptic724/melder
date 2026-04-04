@@ -37,7 +37,7 @@ from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
+from melder.aether.nexus.nexus import Nexus
 
 #region Spellbook
 class Spellbook(Cleanable, ISpellbook):
@@ -103,6 +103,7 @@ class Spellbook(Cleanable, ISpellbook):
         "_lock",
         "_logger",
         "_lookup_contracted_spells",
+        "_nexus_publish_enabled",
         "_lookup_spells",
         "_pending_binding_frame_keys",
         "_pending_structural_spells",
@@ -155,12 +156,14 @@ class Spellbook(Cleanable, ISpellbook):
         # Internal state
         self._lock: threading.RLock = threading.RLock()
         self._id: str = IDBuilder.create_id()
+        self._nexus: Optional[Nexus] = Nexus()
         self._conjured = False
         self._binding_transaction_active: bool = True
         self._active_change_request: Optional[ChangeControlTransactionRequest] = None
         self._pending_binding_frame_keys: Set[str] = set()
         self._pending_structural_spells: List[ISpell] = []
         self._conduit: Optional[Conduit] = None
+        self._nexus_publish_enabled: bool = False
         self._aetheric_frame: str = aetheric_frame
         if not isinstance(self._aetheric_frame, str):
             raise TypeError(f"aetheric_frame must be a string, got {type(self._aetheric_frame).__name__}")
@@ -236,6 +239,7 @@ class Spellbook(Cleanable, ISpellbook):
         """
         if self._conduit is not None:
             self._unregister_conduit_from_risk_manager(self._conduit._id)
+        self._remove_spells_from_nexus()
         # 1) Clean ONLY local spells (not contracted)
         self._cleanup_spells()
 
@@ -384,6 +388,8 @@ class Spellbook(Cleanable, ISpellbook):
         self._spell_system_states = None
         self._configuration_locked = None
         self._spellbook_validation_required = None
+        self._nexus_publish_enabled = None
+        self._nexus = None
 
         # Lock: just null it (no getattr/hasattr)
         self._lock = None
@@ -599,6 +605,7 @@ class Spellbook(Cleanable, ISpellbook):
             self._spell_id_pool[new_id] = spell
             if self._spell_versions is not None:
                 self._spell_versions.add(new_id)
+        self._replace_spell_record_in_nexus(old_id, spell)
 
     def _unregister_owned_spell_id(self, spell_id: str, spell: ISpell) -> None:
         """
@@ -653,6 +660,12 @@ class Spellbook(Cleanable, ISpellbook):
                     f"spell_id_pool mapped to a different spell (spell_id={spell_id})."
                 )
             self._spell_id_pool.pop(spell_id, None)
+        if self._nexus_publish_enabled:
+            self._nexus._remove_spell_record(
+                self._id,
+                spell_id,
+                self._aetheric_frame,
+            )
 
     def _register_contracted_spell_id(self, conduit_id: str, spell_id: str, spell: ISpell) -> None:
         """
@@ -2557,6 +2570,7 @@ class Spellbook(Cleanable, ISpellbook):
                     new_spell.spell_index,
                     self._aetheric_frame,
                 )
+                self._publish_spell_record_to_nexus(new_spell)
             return new_spell.spell_id
         except Exception as e:
             self._logger.error(f"Error while binding spell: {e}", "bind", exc_info=True)
@@ -2729,7 +2743,7 @@ class Spellbook(Cleanable, ISpellbook):
             devops = Spellbook._aether._get_devops_manager(self._aetheric_frame)
         except Exception:
             return None
-        return getattr(devops, "risk_manager", None)
+        return devops.risk_manager
 
     def _set_spellbook_validation_required(self, required: bool) -> None:
         """
@@ -2974,20 +2988,20 @@ class Spellbook(Cleanable, ISpellbook):
             Exception: Propagates failures from helper-based derivation or
                 posture normalization.
         """
-        configuration = self._configuration
-        helper = getattr(configuration, "to_aetheric_frame_configuration", None)
-        if callable(helper):
-            return helper(origin_spellbook_id=self._id)
+        if isinstance(self._configuration, Configuration):
+            return self._configuration.to_aetheric_frame_configuration(
+                origin_spellbook_id=self._id
+            )
 
-        system_state = configuration.get_property("system_state")
+        system_state = self._configuration.get_property("system_state")
         if system_state is None:
             system_state = SystemState.automatic
 
-        ai_native_enabled = configuration.get_property("ai_native_enabled")
+        ai_native_enabled = self._configuration.get_property("ai_native_enabled")
         if ai_native_enabled is None:
             ai_native_enabled = False
 
-        rift_enabled = configuration.get_property("rift_enabled")
+        rift_enabled = self._configuration.get_property("rift_enabled")
         if rift_enabled is None:
             rift_enabled = False
 
@@ -2997,6 +3011,120 @@ class Spellbook(Cleanable, ISpellbook):
             ai_native_enabled=ai_native_enabled,
             rift_enabled=rift_enabled,
         )
+
+    def _refresh_nexus_publish_enabled(self) -> bool:
+        """
+        Internal
+
+        Refresh the cached passive Nexus publication flag from the bound frame
+        posture.
+
+        Returns:
+            bool: True when the current frame is publishable into Nexus.
+        """
+        frame_configuration = Spellbook._aether._get_aetheric_frame_configuration(
+            self._aetheric_frame
+        )
+        self._nexus_publish_enabled = (
+            frame_configuration is not None and frame_configuration.rift_enabled
+        )
+        return self._nexus_publish_enabled
+
+    def _publish_nexus_state_for_conjure(self, conduit: Conduit) -> None:
+        """
+        Internal
+
+        Publish the frame/root-conduit spell state into Nexus after successful
+        conjure wiring.
+
+        Args:
+            conduit:
+                Root conduit created during conjure.
+
+        Returns:
+            None.
+        """
+        if not self._refresh_nexus_publish_enabled():
+            conduit._nexus_publish_enabled = False
+            return
+
+        conduit._nexus_publish_enabled = True
+        self._nexus._publish_frame_record(self)
+        self._nexus._publish_conduit_record(conduit)
+        for spell in self._spells.values():
+            self._nexus._publish_spell_record(self, spell, conduit._id)
+
+    def _publish_spell_record_to_nexus(self, spell: ISpell) -> None:
+        """
+        Internal
+
+        Publish one incremental spell record into Nexus after bind when the
+        Spellbook already has a root conduit.
+
+        Args:
+            spell:
+                Newly bound spell.
+
+        Returns:
+            None.
+        """
+        if not self._nexus_publish_enabled:
+            return
+        if not self._conjured or self._conduit is None:
+            return
+
+        owner_conduit_id = spell._owner_conduit_id or self._conduit._id
+        self._nexus._publish_spell_record(self, spell, owner_conduit_id)
+
+    def _replace_spell_record_in_nexus(
+            self,
+            old_spell_id: str,
+            spell: ISpell,
+    ) -> None:
+        """
+        Internal
+
+        Replace one published SpellRecord after the active version id changes.
+
+        Args:
+            old_spell_id:
+                Previous current spell/version id.
+            spell:
+                Spell whose `spell_id` now reflects the new current version id.
+
+        Returns:
+            None.
+        """
+        if not self._nexus_publish_enabled:
+            return
+
+        self._nexus._remove_spell_record(
+            self._id,
+            old_spell_id,
+            self._aetheric_frame,
+        )
+        self._nexus._publish_spell_record(self, spell, spell._owner_conduit_id)
+
+    def _remove_spells_from_nexus(self) -> None:
+        """
+        Internal
+
+        Remove all currently published local spell records for this Spellbook
+        from Nexus during Spellbook cleanup.
+
+        Returns:
+            None.
+        """
+        if not self._nexus_publish_enabled:
+            return
+        if self._spells is None:
+            return
+        for spell in self._spells.values():
+            self._nexus._remove_spell_record(
+                self._id,
+                spell.spell_id,
+                self._aetheric_frame,
+            )
 
 
 

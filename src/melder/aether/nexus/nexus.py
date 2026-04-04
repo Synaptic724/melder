@@ -2,7 +2,14 @@ import threading
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.aether.conduit.conduit_state.conduit_state import ConduitState
+from melder.spellbook.spell_crafter.spell_examiner.profiles.ai_profile import SpellAIProfile
 from melder.aether.nexus.nexus_frame_record import NexusFrameRecord
+from melder.aether.nexus.canonical_store.conduit_record import ConduitRecord
+from melder.aether.nexus.canonical_store.frame_record import FrameRecord
+from melder.aether.nexus.canonical_store.nexus_canonical_store import NexusCanonicalStore
+from melder.aether.nexus.canonical_store.spell_record import SpellRecord
 from melder.aether.nexus.configuration.rift_configuration import RiftConfiguration
 from melder.aether.nexus.configuration.nexus_configuration import (
     NexusConfiguration,
@@ -73,6 +80,8 @@ class Nexus(Cleanable, INexus):
         "_next_default_rift_number",
         "_next_indexed_nexus_frame_number",
         "_rift_profiles_by_name",
+        "_canonical_store",
+        "_frame_posture_by_name",
         "_target_frame_ref_counts",
         "_nexus_frames_by_name",
     ]
@@ -137,6 +146,8 @@ class Nexus(Cleanable, INexus):
         self._next_default_rift_number: int = 1
         self._next_indexed_nexus_frame_number: int = 1
         self._rift_profiles_by_name: Dict[str, IRiftConfiguration] = {}
+        self._canonical_store: NexusCanonicalStore = NexusCanonicalStore()
+        self._frame_posture_by_name: Dict[str, AethericFrameConfiguration] = {}
         self._target_frame_ref_counts: Dict[str, int] = {}
         self._nexus_frames_by_name: Dict[str, NexusFrameRecord] = {}
         self._initialize_logging(logger)
@@ -280,6 +291,8 @@ class Nexus(Cleanable, INexus):
                 profile.cleanup()
             for nexus_frame_record in self._nexus_frames_by_name.values():
                 nexus_frame_record.cleanup()
+            if self._canonical_store is not None:
+                self._canonical_store.cleanup()
 
             self._configuration = None
             self._configured = None
@@ -290,6 +303,8 @@ class Nexus(Cleanable, INexus):
             self._next_default_rift_number = None
             self._next_indexed_nexus_frame_number = None
             self._rift_profiles_by_name.clear()
+            self._canonical_store = None
+            self._frame_posture_by_name.clear()
             self._target_frame_ref_counts.clear()
             self._nexus_frames_by_name.clear()
             self._rifts_by_id = None
@@ -297,6 +312,7 @@ class Nexus(Cleanable, INexus):
             self._next_default_rift_number = None
             self._next_indexed_nexus_frame_number = None
             self._rift_profiles_by_name = None
+            self._frame_posture_by_name = None
             self._target_frame_ref_counts = None
             self._nexus_frames_by_name = None
             self._id = None
@@ -658,6 +674,269 @@ class Nexus(Cleanable, INexus):
             "Removed Rift '{0}' (id={1}).".format(rift_name, rift_id),
             "remove_rift",
         )
+
+    def _refresh_frame_posture_cache(
+            self,
+            frame_name: str,
+    ) -> Optional[AethericFrameConfiguration]:
+        """
+        Internal
+
+        Refresh the cached frame posture for one frame from Aether.
+
+        Args:
+            frame_name:
+                Target frame name.
+
+        Returns:
+            Optional[AethericFrameConfiguration]: Bound frame posture when
+            available, otherwise None.
+        """
+        self.check_cleaned()
+        try:
+            frame_posture = self._aether._get_aetheric_frame_configuration(frame_name)
+        except ValueError:
+            self._frame_posture_by_name.pop(frame_name, None)
+            return None
+
+        if frame_posture is None:
+            self._frame_posture_by_name.pop(frame_name, None)
+            return None
+
+        self._frame_posture_by_name[frame_name] = frame_posture
+        return frame_posture
+
+    def _get_publishable_frame_posture(
+            self,
+            frame_name: str,
+    ) -> Optional[AethericFrameConfiguration]:
+        """
+        Internal
+
+        Return the cached publishable frame posture when the frame may publish
+        passive Nexus records.
+
+        Args:
+            frame_name:
+                Target frame name.
+
+        Returns:
+            Optional[AethericFrameConfiguration]: Publishable frame posture or
+            None when publication should short-circuit.
+        """
+        self.check_cleaned()
+        frame_posture = self._frame_posture_by_name.get(frame_name)
+        if frame_posture is None:
+            frame_posture = self._refresh_frame_posture_cache(frame_name)
+        if frame_posture is None:
+            return None
+        if not frame_posture.rift_enabled:
+            return None
+        return frame_posture
+
+    def _publish_frame_record(self, spellbook: Any) -> bool:
+        """
+        Internal
+
+        Publish one canonical frame record for a Spellbook's frame.
+
+        Args:
+            spellbook:
+                Spellbook whose frame posture should be published.
+
+        Returns:
+            bool: True when the record was published, False when publication
+            short-circuited.
+        """
+        self.check_cleaned()
+        frame_name = spellbook._aetheric_frame
+        with self._lock:
+            frame_posture = self._get_publishable_frame_posture(frame_name)
+            if frame_posture is None:
+                return False
+
+            frame = self._aether._ensure_frame(frame_name)
+            frame_record = FrameRecord(
+                frame_name=frame_name,
+                frame_id=frame._id,
+                origin_spellbook_id=spellbook._id,
+                system_state=frame_posture.system_state,
+                ai_native_enabled=frame_posture.ai_native_enabled,
+                rift_enabled=frame_posture.rift_enabled,
+            )
+            self._canonical_store.upsert_frame_record(frame_record)
+            return True
+
+    def _publish_conduit_record(self, conduit: Any) -> bool:
+        """
+        Internal
+
+        Publish or update one canonical conduit record for a normal/root
+        conduit.
+
+        Args:
+            conduit:
+                Conduit instance to publish.
+
+        Returns:
+            bool: True when the record was published, False when publication
+            short-circuited.
+        """
+        self.check_cleaned()
+        if conduit is None or conduit._conduit_state is not ConduitState.normal:
+            return False
+
+        frame_name = conduit._aetheric_frame
+        with self._lock:
+            frame_posture = self._get_publishable_frame_posture(frame_name)
+            if frame_posture is None:
+                return False
+
+            peer_conduit_ids = tuple(
+                sorted(
+                    peer._id
+                    for peer in conduit._conduit_ward._get_links()
+                    if peer is not None
+                )
+            )
+            origin_spellbook_id = None
+            if conduit._spellbook is not None:
+                origin_spellbook_id = conduit._spellbook._id
+
+            conduit_record = ConduitRecord(
+                conduit_id=conduit._id,
+                root_conduit_id=conduit._root_conduit_id,
+                conduit_name=conduit._name,
+                frame_name=frame_name,
+                origin_spellbook_id=origin_spellbook_id,
+                conduit_state=conduit._conduit_state,
+                policy=conduit._conduit_ward._policy,
+                peer_conduit_ids=peer_conduit_ids,
+            )
+            self._canonical_store.upsert_conduit_record(conduit_record)
+            return True
+
+    def _remove_conduit_record(
+            self,
+            conduit_id: str,
+            frame_name: str,
+    ) -> bool:
+        """
+        Internal
+
+        Remove one canonical conduit record when the frame remains publishable.
+
+        Args:
+            conduit_id:
+                Conduit id to remove.
+            frame_name:
+                Owning frame name.
+
+        Returns:
+            bool: True when the remove path executed, False when publication
+            short-circuited.
+        """
+        self.check_cleaned()
+        with self._lock:
+            frame_posture = self._get_publishable_frame_posture(frame_name)
+            if frame_posture is None:
+                return False
+            self._canonical_store.remove_conduit_record(conduit_id)
+            return True
+
+    def _publish_spell_record(
+            self,
+            spellbook: Any,
+            spell: Any,
+            owner_conduit_id: Optional[str],
+    ) -> bool:
+        """
+        Internal
+
+        Publish or update one canonical spell record.
+
+        Args:
+            spellbook:
+                Owning Spellbook.
+            spell:
+                Spell instance to publish.
+            owner_conduit_id:
+                Owning conduit id when known.
+
+        Returns:
+            bool: True when the record was published, False when publication
+            short-circuited.
+        """
+        self.check_cleaned()
+        frame_name = spellbook._aetheric_frame
+        with self._lock:
+            frame_posture = self._get_publishable_frame_posture(frame_name)
+            if frame_posture is None:
+                return False
+
+            binding_profile = None
+            ai_profile = None
+            profile = spell.profile
+            if isinstance(profile, SpellAIProfile):
+                ai_profile = profile
+                binding_profile = profile.binding_profile
+            else:
+                binding_profile = profile
+
+            resolution_profile = spell.resolution_profile
+            if resolution_profile is None and ai_profile is not None:
+                resolution_profile = ai_profile.resolution_profile
+
+            spell_record = SpellRecord(
+                origin_spellbook_id=spellbook._id,
+                frame_name=frame_name,
+                owner_conduit_id=owner_conduit_id,
+                spell_id=spell.spell_id,
+                lineage_id=spell.spell_index.id,
+                spell_name=spell.spell_name,
+                spellframe=spell.spellframe,
+                binding_name=spell.binding_name,
+                permissions=spell.permissions,
+                existence=spell.existence,
+                binding_profile=binding_profile,
+                resolution_profile=resolution_profile,
+                ai_profile=ai_profile,
+            )
+            self._canonical_store.upsert_spell_record(spell_record)
+            return True
+
+    def _remove_spell_record(
+            self,
+            origin_spellbook_id: str,
+            spell_id: str,
+            frame_name: str,
+    ) -> bool:
+        """
+        Internal
+
+        Remove one canonical spell record by its composite storage key.
+
+        Args:
+            origin_spellbook_id:
+                Owning Spellbook id.
+            spell_id:
+                Current spell/version id.
+            frame_name:
+                Owning frame name.
+
+        Returns:
+            bool: True when the remove path executed, False when publication
+            short-circuited.
+        """
+        self.check_cleaned()
+        with self._lock:
+            frame_posture = self._get_publishable_frame_posture(frame_name)
+            if frame_posture is None:
+                return False
+            self._canonical_store.remove_spell_record(
+                (origin_spellbook_id, spell_id)
+            )
+            return True
 
     def list_rift_ids(self) -> list[str]:
         """

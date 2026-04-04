@@ -137,6 +137,14 @@ class SpellIndex(Cleanable, ISpellIndex):
             # Capture attachments to avoid calling into Spellbook while holding this lock.
             contracted_items = list(self._contracted_spellbooks.items())
 
+        # Commented out as not fully sure how mutations will work and if original spell is substituted or not
+        # we could even take a codegen version of the spell and store it and substitute, I
+        # am not sure how I plan to do this.
+        # if owner_spell is not None:
+        #     owner_spell.spell_id = new_id
+        # for (_, _), spell in contracted_items:
+        #     spell.spell_id = new_id
+
         if owner_spellbook is not None:
             if owner_spell is None:
                 raise RuntimeError("Owner spellbook is set but owner spell is missing.")

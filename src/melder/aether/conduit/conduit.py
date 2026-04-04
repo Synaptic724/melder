@@ -29,7 +29,7 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
     ChangeTransactionType,
 )
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-
+from melder.aether.nexus.nexus import Nexus
 #region Conduit
 class Conduit(Cleanable, IConduit):
     """
@@ -124,10 +124,13 @@ class Conduit(Cleanable, IConduit):
             )
         elif not conduit_id:
             raise ValueError("conduit_id cannot be empty.")
+
         self._id: str = conduit_id
         self._name: str = name
         self.__debugger_mode__: bool = False
         self.__dynamic_environment__: bool = False
+        self._nexus_publish_enabled: bool = False
+        self._nexus: Nexus = Nexus()
         self._automatic: bool = automatic
         self._aetheric_frame: str = aetheric_frame
         # Special Configuration
@@ -285,6 +288,7 @@ class Conduit(Cleanable, IConduit):
         self._spellbook = None
         self._configuration = None
         self._root_conduit_id = None
+        self._nexus = None
 
 
     def _cleanup_normal_conduit(self):
@@ -293,6 +297,7 @@ class Conduit(Cleanable, IConduit):
 
         Cleans up a normal Conduit.
         """
+        self._remove_conduit_record_from_nexus()
         # 1) Meld runtime (stop new object creation paths)
         if self._creation_gate_controller is not None:
             try:
@@ -364,6 +369,54 @@ class Conduit(Cleanable, IConduit):
         self._spellspace_registry = None
         self._aetheric_frame = None
         self._root_conduit_id = None
+        self._nexus = None
+
+    def _publish_conduit_record_to_nexus(self) -> None:
+        """
+        Internal
+
+        Publish this conduit's current canonical record into Nexus when the
+        conduit is eligible for passive ingest.
+
+        Contract:
+            - Only normal conduits publish in the current passive-ingest slice.
+            - Publication is skipped when Nexus publication is disabled for this
+              conduit.
+            - Uses the conduit-owned Nexus reference directly.
+
+        Returns:
+            None.
+        """
+        if not self._nexus_publish_enabled:
+            return
+        if self._conduit_state is not ConduitState.normal:
+            return
+
+        self._nexus._publish_conduit_record(self)
+
+    def _remove_conduit_record_from_nexus(self) -> None:
+        """
+        Internal
+
+        Remove this conduit's canonical record from Nexus when the conduit is
+        eligible for passive ingest.
+
+        Contract:
+            - Only normal conduits are tracked in the current passive-ingest
+              slice.
+            - Removal is skipped when Nexus publication is disabled for this
+              conduit.
+            - Uses the conduit-owned Nexus reference directly.
+
+        Returns:
+            None.
+        """
+        if not self._nexus_publish_enabled:
+            return
+        if self._conduit_state is not ConduitState.normal:
+            return
+
+        self._nexus._remove_conduit_record(self._id, self._aetheric_frame)
 
     def _cleanup_spellspaces(self) -> None:
         """
@@ -1230,6 +1283,8 @@ class Conduit(Cleanable, IConduit):
                 if hooks:
                     self.register_conduit_hooks(hooks)
 
+                self._publish_conduit_record_to_nexus()
+
             except Exception as e:
                 self._logger.error(f"upgrade_to_normal failed: {e}", "upgrade_to_normal", exc_info=True)
                 raise
@@ -1255,6 +1310,8 @@ class Conduit(Cleanable, IConduit):
             raise RuntimeError("Dynamic environment is not enabled. Cannot set new policy.")
         with self._lock:
             self._conduit_ward._set_new_policy(policy)
+
+        self._publish_conduit_record_to_nexus()
 
     def create_lesser_conduit(self, logger: Any | None = None) -> IConduit:
         """
@@ -1330,6 +1387,7 @@ class Conduit(Cleanable, IConduit):
             if new_conduit._conduit_ward is not None:
                 new_conduit._conduit_ward._root_conduit = root_conduit
             new_conduit._root_conduit_id = root_conduit_id
+            new_conduit._nexus_publish_enabled = self._nexus_publish_enabled
             if new_conduit._meld is not None:
                 new_conduit._meld._resolution_conduit_id = root_conduit_id
 
@@ -2500,6 +2558,12 @@ class Conduit(Cleanable, IConduit):
                 self,
                 target_conduit,
             )
+            self._publish_conduit_record_to_nexus()
+            if (
+                target_conduit._nexus_publish_enabled
+                and target_conduit._conduit_state is ConduitState.normal
+            ):
+                target_conduit._nexus._publish_conduit_record(target_conduit)
 
         return linked
 
@@ -2541,6 +2605,12 @@ class Conduit(Cleanable, IConduit):
                 self,
                 target_conduit,
             )
+            self._publish_conduit_record_to_nexus()
+            if (
+                target_conduit._nexus_publish_enabled
+                and target_conduit._conduit_state is ConduitState.normal
+            ):
+                target_conduit._nexus._publish_conduit_record(target_conduit)
 
         return unlinked
 

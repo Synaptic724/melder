@@ -3457,6 +3457,97 @@ def test_update_owned_spell_id_updates_map_and_versions():
     assert "new-id" in sb._spell_versions
 
 
+def test_update_owned_spell_id_replaces_nexus_record_when_publish_enabled(monkeypatch):
+    """
+    Purpose:
+        Verify owned spell-id updates replace the canonical Nexus spell record.
+    Contract:
+        `_update_owned_spell_id` removes the old Nexus record key and publishes
+        the new one when Nexus publication is enabled.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If Nexus remove/publish calls are not made as expected.
+    """
+    from melder.aether.aether import Aether
+    from melder.aether.nexus.nexus import Nexus
+
+    Aether._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Spellbook._aether = Aether()
+
+    sb = Spellbook()
+    sb._nexus_publish_enabled = True
+    sb._aetheric_frame = "default"
+    sb._spell_versions = {"old-id"}
+    spell = DummySpell(spell_id="new-id")
+    spell._owner_conduit_id = "owner-cid"
+    sb._register_owned_spell_id("old-id", spell)
+
+    removed = []
+    published = []
+
+    monkeypatch.setattr(
+        Nexus,
+        "_remove_spell_record",
+        lambda self, spellbook_id, spell_id, frame_name: removed.append(
+            (spellbook_id, spell_id, frame_name)
+        ) or True,
+    )
+    monkeypatch.setattr(
+        Nexus,
+        "_publish_spell_record",
+        lambda self, spellbook, spell_obj, owner_conduit_id: published.append(
+            (spellbook._id, spell_obj.spell_id, owner_conduit_id)
+        ) or True,
+    )
+
+    sb._update_owned_spell_id("old-id", "new-id", spell)
+
+    assert removed == [(sb._id, "old-id", "default")]
+    assert published == [(sb._id, "new-id", "owner-cid")]
+
+
+def test_unregister_owned_spell_id_removes_nexus_record_when_publish_enabled(monkeypatch):
+    """
+    Purpose:
+        Verify owned spell removal clears the canonical Nexus spell record.
+    Contract:
+        `_unregister_owned_spell_id` removes the Nexus record when publication
+        is enabled.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the Nexus remove call is missing.
+    """
+    from melder.aether.aether import Aether
+    from melder.aether.nexus.nexus import Nexus
+
+    Aether._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Spellbook._aether = Aether()
+
+    sb = Spellbook()
+    sb._nexus_publish_enabled = True
+    sb._aetheric_frame = "default"
+    spell = DummySpell(spell_id="owned-id")
+    sb._register_owned_spell_id("owned-id", spell)
+
+    removed = []
+
+    monkeypatch.setattr(
+        Nexus,
+        "_remove_spell_record",
+        lambda self, spellbook_id, spell_id, frame_name: removed.append(
+            (spellbook_id, spell_id, frame_name)
+        ) or True,
+    )
+
+    sb._unregister_owned_spell_id("owned-id", spell)
+
+    assert removed == [(sb._id, "owned-id", "default")]
+
+
 def test_spell_id_pool_matches_owned_and_contracted_union() -> None:
     """
     Purpose:

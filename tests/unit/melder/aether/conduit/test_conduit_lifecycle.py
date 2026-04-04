@@ -456,6 +456,7 @@ def test_cleanup_is_idempotent_for_lesser_conduit(conduit_lesser: Conduit) -> No
     conduit_lesser.cleanup()
     conduit_lesser.cleanup()
     assert conduit_lesser.cleaned is True
+    assert conduit_lesser._nexus is None
 
 
 def test_cleanup_calls_spellbook_cleanup_for_normal_conduit(
@@ -482,3 +483,4 @@ def test_cleanup_calls_spellbook_cleanup_for_normal_conduit(
     spellbook = conduit_normal._spellbook
     conduit_normal.cleanup()
     assert spellbook.cleanup.called is True
+    assert conduit_normal._nexus is None

@@ -568,6 +568,8 @@ class FakeSpellbook:
         self._spell_id_pool: Dict[str, SpellIndex] = {}
         self._risk_register_calls: List[Dict[str, Any]] = []
         self._risk_unregister_calls: List[Dict[str, Any]] = []
+        self._nexus_publish_enabled: bool = True
+        self._nexus_publish_calls: List[Dict[str, Any]] = []
 
     def _register_spell_with_risk_manager(self, conduit_id: str, spell_obj: Any) -> None:
         """
@@ -608,6 +610,21 @@ class FakeSpellbook:
         if existing_pool is not None and existing_pool is not spell_obj:
             raise RuntimeError(f"spell_id_pool mapped to a different spell (spell_id={spell_id}).")
         self._spell_id_pool.pop(spell_id, None)
+
+    def _publish_spell_record_to_nexus(self, spell_obj: Any) -> None:
+        """
+        Record a Nexus spell publish request for the transferred spell.
+
+        Args:
+            spell_obj: Spell being republished.
+        """
+        self._nexus_publish_calls.append(
+            {
+                "spell_id": spell_obj.spell_id,
+                "owner_conduit_id": spell_obj._owner_conduit_id,
+                "spell": spell_obj,
+            }
+        )
 
 
 class FakeConduitWard:
@@ -2748,6 +2765,32 @@ def test_flip_registry_and_spellbooks_moves_spell_id_map() -> None:
     assert env.target._spellbook._spells_by_id[spell_id] is env.spell
     assert env.spell.spell_index._owner_spellbook is env.target._spellbook
     assert env.spell.spell_index._owner_spell is env.spell
+
+
+def test_flip_registry_and_spellbooks_republishes_spell_to_nexus() -> None:
+    """
+    Verify ownership flip triggers the target Spellbook Nexus republish hook.
+
+    Contract:
+    - After ownership is restamped, the target Spellbook receives one Nexus
+      publish request for the transferred spell.
+    """
+    env = build_environment()
+    transfer = TransferOfOwnership(
+        source_conduit=env.source,
+        target_conduit=env.target,
+        spell=env.spell,
+    )
+
+    transfer._flip_registry_and_spellbooks(env.spell)
+
+    assert env.target._spellbook._nexus_publish_calls == [
+        {
+            "spell_id": DEFAULT_SPELL_ID,
+            "owner_conduit_id": TARGET_ID,
+            "spell": env.spell,
+        }
+    ]
 
 
 def test_flip_registry_and_spellbooks_stamps_resolution_required_from_target_defaults() -> None:

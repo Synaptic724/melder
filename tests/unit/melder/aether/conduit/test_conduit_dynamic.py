@@ -140,10 +140,15 @@ def test_set_new_policy_delegates_for_dynamic(conduit_dynamic_normal: Conduit) -
         AssertionError: If delegation does not occur.
     """
     conduit_dynamic_normal._conduit_ward = MagicMock()
+    conduit_dynamic_normal._nexus_publish_enabled = True
+    conduit_dynamic_normal._nexus = MagicMock()
 
     conduit_dynamic_normal.set_new_policy("default")
 
     conduit_dynamic_normal._conduit_ward._set_new_policy.assert_called_once_with("default")
+    conduit_dynamic_normal._nexus._publish_conduit_record.assert_called_once_with(
+        conduit_dynamic_normal
+    )
 
 
 def test_get_conduit_cloud_raises_for_lesser(conduit_lesser: Conduit) -> None:
@@ -334,6 +339,8 @@ def test_upgrade_to_normal_transitions_and_registers(
     old_creations = conduit_dynamic_lesser._creations
     conduit_dynamic_lesser._conduit_ward = MagicMock()
     conduit_dynamic_lesser._spellbook.create_new_preset_spellbook = MagicMock()
+    conduit_dynamic_lesser._nexus_publish_enabled = True
+    conduit_dynamic_lesser._nexus = MagicMock()
 
     conduit_dynamic_lesser.upgrade_to_normal(name="alpha")
 
@@ -346,6 +353,9 @@ def test_upgrade_to_normal_transitions_and_registers(
     conduit_dynamic_lesser._spellbook.create_new_preset_spellbook.assert_called_once_with()
     aether_stub._add_conduit.assert_called_once_with(conduit_dynamic_lesser, "default")
     aether_stub._register_conduit_cloud.assert_called_once_with(conduit_dynamic_lesser, "default")
+    conduit_dynamic_lesser._nexus._publish_conduit_record.assert_called_once_with(
+        conduit_dynamic_lesser
+    )
 
 
 def test_upgrade_to_normal_registers_hooks(

@@ -365,6 +365,7 @@ class SpellbookCreationSystem(Cleanable):
             spellbook=spellbook,
             conduit=conduit,
         )
+        spellbook._publish_nexus_state_for_conjure(conduit)
         spellbook._register_conduit_with_risk_manager(conduit)
         SpellbookCreationSystem.fire_conjure_hooks(
             spellbook,
