@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.nexus.aetheric_frame_descriptor import AethericFrameDescriptor
+from melder.aether.nexus.acl.frame_acl_manager import FrameACLManager
 from melder.aether.nexus.frame_descriptor_manager import FrameDescriptorManager
 from melder.aether.nexus.nexus_frame_record import NexusFrameRecord
 from melder.aether.nexus.configuration.rift_configuration import RiftConfiguration
@@ -76,6 +77,7 @@ class Nexus(Cleanable, INexus):
         "_next_default_rift_number",
         "_next_indexed_nexus_frame_number",
         "_rift_profiles_by_name",
+        "_frame_acl_manager",
         "_frame_descriptor_manager",
         "_target_frame_ref_counts",
     ]
@@ -135,13 +137,17 @@ class Nexus(Cleanable, INexus):
         self._configuration: Optional[INexusConfiguration] = configuration
         self._configured: bool = configuration is not None
         self._enabled: bool = False
+
         self._rifts_by_id: Dict[str, IRift] = {}
         self._rift_ids_by_name: Dict[str, str] = {}
         self._next_default_rift_number: int = 1
         self._next_indexed_nexus_frame_number: int = 1
         self._rift_profiles_by_name: Dict[str, IRiftConfiguration] = {}
-        self._frame_descriptor_manager: FrameDescriptorManager = FrameDescriptorManager(aether)
+        self._frame_acl_manager: FrameACLManager = FrameACLManager()
         self._target_frame_ref_counts: Dict[str, int] = {}
+
+        self._frame_descriptor_manager: FrameDescriptorManager = FrameDescriptorManager(aether)
+        self._frame_descriptor_manager.bind_frame_acl_manager(self._frame_acl_manager)
         self._initialize_logging(logger)
         Nexus._initialized = True
 
@@ -281,6 +287,8 @@ class Nexus(Cleanable, INexus):
                 self._configuration.cleanup()
             for profile in self._rift_profiles_by_name.values():
                 profile.cleanup()
+            if self._frame_acl_manager is not None:
+                self._frame_acl_manager.cleanup()
             if self._frame_descriptor_manager is not None:
                 self._frame_descriptor_manager.cleanup()
             self._configuration = None
@@ -298,6 +306,7 @@ class Nexus(Cleanable, INexus):
             self._next_default_rift_number = None
             self._next_indexed_nexus_frame_number = None
             self._rift_profiles_by_name = None
+            self._frame_acl_manager = None
             self._frame_descriptor_manager = None
             self._target_frame_ref_counts = None
             self._id = None
