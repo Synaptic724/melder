@@ -1460,12 +1460,29 @@ class Nexus(Cleanable, INexus):
 
         Returns:
             str: Newly allocated default Rift name.
+
+        Raises:
+            RuntimeError: If no free deterministic default Rift name can be
+                found within the bounded probe window.
         """
-        while True:
-            rift_name = "nexus_rift_{0}".format(self._next_default_rift_number)
-            self._next_default_rift_number = self._next_default_rift_number + 1
-            if rift_name not in self._rift_ids_by_name:
-                return rift_name
+        start_number = self._next_default_rift_number
+        max_attempts = len(self._rift_ids_by_name) + 1
+
+        for attempt_offset in range(max_attempts):
+            candidate_number = start_number + attempt_offset
+            rift_name = "nexus_rift_{0}".format(candidate_number)
+            if rift_name in self._rift_ids_by_name:
+                continue
+            self._next_default_rift_number = candidate_number + 1
+            return rift_name
+
+        raise RuntimeError(
+            "Failed to allocate a deterministic default Rift name after "
+            "{0} attempts starting at nexus_rift_{1}.".format(
+                max_attempts,
+                start_number,
+            )
+        )
 
     def _allocate_indexed_nexus_frame_name(self) -> str:
         """

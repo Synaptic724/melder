@@ -296,6 +296,50 @@ def test_unnamed_rifts_receive_deterministic_default_names() -> None:
     assert second.rift_name == "nexus_rift_2"
 
 
+def test_default_rift_name_allocator_skips_existing_names() -> None:
+    """
+    Verify the default Rift-name allocator skips already-registered names and
+    advances the stored incrementer.
+
+    Returns:
+        None.
+    """
+    nexus = _create_enabled_nexus()
+    nexus._rift_ids_by_name["nexus_rift_1"] = "rift-occupied-1"
+    nexus._rift_ids_by_name["nexus_rift_2"] = "rift-occupied-2"
+    nexus._next_default_rift_number = 1
+
+    allocated_name = nexus._allocate_default_rift_name()
+
+    assert allocated_name == "nexus_rift_3"
+    assert nexus._next_default_rift_number == 4
+
+
+def test_default_rift_name_allocator_fails_when_bounded_probe_is_exhausted() -> None:
+    """
+    Verify the default Rift-name allocator fails fast instead of looping
+    forever when the bounded probe cannot find a free name.
+
+    Returns:
+        None.
+    """
+    nexus = _create_enabled_nexus()
+
+    class AlwaysTakenNameMap(dict):
+        """
+        Force the allocator down the bounded failure path for unit coverage.
+        """
+
+        def __contains__(self, key) -> bool:
+            return True
+
+    nexus._rift_ids_by_name = AlwaysTakenNameMap({"nexus_rift_1": "rift-1"})
+    nexus._next_default_rift_number = 1
+
+    with pytest.raises(RuntimeError, match="Failed to allocate a deterministic default Rift name"):
+        nexus._allocate_default_rift_name()
+
+
 def test_create_rift_consumes_configuration_after_success() -> None:
     """
     Verify a `RiftConfiguration` is single-use and cannot be reused after
