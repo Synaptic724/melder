@@ -8,6 +8,61 @@ from melder.spellbook.mutations.research.research import Research
 from melder.utilities.interfaces.interfaces import IAethericFrame
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
+# TODO(MutationResearch): Implement the real mutation promotion contract here.
+#
+# Required contract:
+# - SpellIndex.id = stable lineage identity.
+# - SpellIndex.current = active concrete spell version id.
+# - Spell.spell_id = physical SHA256-backed identity of one specific Spell
+#   object.
+#
+# Do NOT implement mutation as "rewrite spell.spell_id on the existing Spell
+# object." A promoted mutation should behave like a new concrete spell version,
+# not an in-place identity rewrite.
+#
+# The likely implementation shape we need is:
+# 1. Build a brand new Spell object for the mutated version.
+#    - New spell gets its own new spell_id/fingerprint.
+#    - New spell keeps the existing SpellIndex lineage object.
+#    - New spell gets fresh profiles/runtime artifacts as needed.
+# 2. Register that new Spell object into the owning Spellbook under the same
+#    lineage.
+#    - Replace the active entry in Spellbook._spells[spell_index].
+#    - Update Spellbook._lookup_spells for the same logical spell key.
+#    - Update Spellbook._spells_by_id / _spell_id_pool from old spell_id to new
+#      spell_id.
+#    - Decide contracted-spell behavior explicitly instead of assuming the same
+#      object slides forward.
+# 3. Advance SpellIndex.current to the new spell_id only after the new Spell is
+#    fully registered.
+#    - SpellIndex.current should become the pointer to the promoted version.
+#    - Historical spell ids should remain in SpellIndex._versions.
+# 4. Refresh frame/runtime state for the new active version.
+#    - SpellSystemStates current_spell_id must move to the new version.
+#    - Any cached crafter / resolution / execution-plan artifacts tied to the
+#      old Spell object must not be silently reused unless explicitly valid.
+#    - Ownership stamping for the new Spell must be reapplied if the Spell is
+#      already conduit-owned.
+# 5. Update Nexus canonical state as a promotion, not an in-place rewrite.
+#    - Remove old SpellRecord keyed by (spellbook_id, old_spell_id).
+#    - Publish new SpellRecord keyed by (spellbook_id, new_spell_id).
+#    - Keep lineage_id stable across the swap.
+# 6. Define rollback semantics.
+#    - If registration/promotion fails partway through, the old Spell must stay
+#      active and SpellIndex.current must not move.
+#
+# Open design questions that still need explicit answers:
+# - Are contracted spells promoted to new Spell objects independently, or do
+#   they rebind to the newly promoted owner spell object?
+# - Do existing live creations remain bound to the old version, get invalidated,
+#   or migrate under an explicit compatibility rule?
+# - Which phase pipeline must rerun before a promoted version is considered
+#   publishable / meldable?
+#
+# Until this contract exists, keep mutation continuity logic provisional and do
+# not assume spell.spell_id must track SpellIndex.current by mutating the old
+# Spell object in place.
+
 class MutationResearch(Cleanable):
     """
     Top-level manager for all mutation research sessions within a Conduit or coordinating entity.
