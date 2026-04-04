@@ -294,7 +294,7 @@ def test_upgrade_to_normal_raises_when_not_dynamic(conduit_normal: Conduit) -> N
         AssertionError: If upgrade_to_normal does not raise.
     """
     with pytest.raises(RuntimeError, match="Dynamic environment is not enabled"):
-        conduit_normal.upgrade_to_normal()
+        conduit_normal.upgrade_to_normal("test")
 
 
 def test_upgrade_to_normal_raises_when_not_lesser(
@@ -313,7 +313,7 @@ def test_upgrade_to_normal_raises_when_not_lesser(
         AssertionError: If upgrade_to_normal does not raise.
     """
     with pytest.raises(RuntimeError, match="Only lesser conduits can be upgraded"):
-        conduit_dynamic_normal.upgrade_to_normal()
+        conduit_dynamic_normal.upgrade_to_normal("test")
 
 
 def test_upgrade_to_normal_transitions_and_registers(
@@ -374,7 +374,7 @@ def test_upgrade_to_normal_defaults_name_when_omitted(
     conduit_dynamic_lesser._nexus_publish_enabled = True
     conduit_dynamic_lesser._nexus = MagicMock()
 
-    conduit_dynamic_lesser.upgrade_to_normal(name=None)
+    conduit_dynamic_lesser.upgrade_to_normal(name="default")
 
     assert conduit_dynamic_lesser._conduit_state == ConduitState.normal
     assert conduit_dynamic_lesser._name == "default"
