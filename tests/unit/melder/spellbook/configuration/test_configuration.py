@@ -109,6 +109,21 @@ def test_validate_ai_native_enabled_type():
         cfg.validate()
 
 
+def test_validate_ai_native_requires_dynamic_system_state():
+    cfg = Configuration()
+    cfg.load_default_dictionary()
+    cfg.set_property("ai_native_enabled", True)
+    with pytest.raises(ValueError):
+        cfg.validate()
+
+
+def test_validate_ai_native_allowed_in_dynamic_system_state():
+    cfg = Configuration()
+    cfg.dynamic_defaults()
+    cfg.set_property("ai_native_enabled", True)
+    assert cfg.validate() is True
+
+
 def test_validate_full_ahead_of_time_compilation_type():
     cfg = Configuration()
     cfg.load_default_dictionary()

@@ -220,6 +220,7 @@ class SpellbookCreationSystem(Cleanable):
         if not spellbook.is_configuration_locked():
             spellbook._validate_and_freeze_configuration()
             spellbook._bind_configuration_to_aether()
+            spellbook._bind_aetheric_frame_configuration_to_aether()
         SpellbookCreationSystem.run_structural_phases(
             spellbook=spellbook,
             phase_scheduler_cls=phase_scheduler_cls,

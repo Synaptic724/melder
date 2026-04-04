@@ -1,10 +1,11 @@
 import threading
-from typing import Set, Dict
+from typing import Optional, Set, Dict
 
 import ulid
 # Melder Imports
 from melder.utilities.interfaces.interfaces import IConduit, IAether, IAethericFrame
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.conduit_cloud import ConduitCloud
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.mutations.mutation_research import MutationResearch
@@ -26,6 +27,8 @@ class AethericFrame(Cleanable, IAethericFrame):
       - Owns the MutationResearch hub for this frame.
       - Owns SpellSystemStates (graph / dirtiness brain).
       - Owns DevOpsManager (incidents + change-control over this frame).
+      - Owns one narrow frame-level AR posture object distinct from the
+        richer shared Spellbook configuration object.
 
     This object is thread-safe.
     """
@@ -83,8 +86,10 @@ class AethericFrame(Cleanable, IAethericFrame):
         # Per-frame DevOps hub: incidents + change-control over this frame.
         self._dev_ops_manager: DevOpsManager = DevOpsManager(self._spell_system_states)
 
-        # Frozen configuration for this frame (set elsewhere).
+        # Shared full Spellbook configuration for this frame (set elsewhere).
         self._configuration = None
+        # Narrow frame-level AR posture derived from Spellbook configuration.
+        self._frame_configuration: Optional[AethericFrameConfiguration] = None
 
     # ------------------------------------------------------------------
     # Cleanup
@@ -122,6 +127,9 @@ class AethericFrame(Cleanable, IAethericFrame):
             self._cleanup_data_structures()
 
             self._aether = None
+            if self._frame_configuration is not None:
+                self._frame_configuration.cleanup()
+                self._frame_configuration = None
             self._configuration = None
             self.name = None
             self._id = None
@@ -240,6 +248,18 @@ class AethericFrame(Cleanable, IAethericFrame):
         """
         self.check_cleaned()
         return self._dev_ops_manager
+
+    @property
+    def frame_configuration(self) -> Optional[AethericFrameConfiguration]:
+        """
+        Return the narrow frame-level AR posture, if one has been bound.
+
+        Returns:
+            Optional[AethericFrameConfiguration]: Bound frame posture or None
+            when no posture has been bound yet.
+        """
+        self.check_cleaned()
+        return self._frame_configuration
 
     @property
     def mutation_research(self) -> MutationResearch:

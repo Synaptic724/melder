@@ -26,6 +26,7 @@ from melder.utilities.interfaces.interfaces import (
     IUnitOfWork,
 )
 from melder.spellbook.configuration.configuration import Configuration
+from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.bind.bind import Bind
 from melder.spellbook.existence.existence import Existence
@@ -2898,6 +2899,104 @@ class Spellbook(Cleanable, ISpellbook):
                 exc_info=True,
             )
             raise
+
+    def _bind_aetheric_frame_configuration_to_aether(self) -> None:
+        """
+        Internal
+
+        Bind the narrow frame-level AR posture derived from this Spellbook's
+        configuration into Aether.
+
+        Contract:
+            - Derives an `AethericFrameConfiguration` from the current
+              Spellbook configuration.
+            - Binds it through the owning `Aether` under first-writer-wins
+              semantics.
+            - Does not replace the existing full Spellbook configuration path.
+
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If no Spellbook configuration exists.
+            Exception: Propagates failures from posture derivation or Aether
+                binding.
+        """
+        if self._configuration is None:
+            self._logger.error(
+                "No configuration instance available to derive frame posture.",
+                "_bind_aetheric_frame_configuration_to_aether",
+                exc_info=True,
+            )
+            raise RuntimeError(
+                "No configuration instance available to derive frame posture."
+            )
+
+        try:
+            frame_configuration = self._derive_aetheric_frame_configuration()
+            Spellbook._aether._bind_aetheric_frame_configuration(
+                frame_configuration,
+                self._aetheric_frame,
+            )
+        except Exception as e:
+            self._logger.error(
+                f"Failed to bind AethericFrameConfiguration to Aether: {e}",
+                "_bind_aetheric_frame_configuration_to_aether",
+                exc_info=True,
+            )
+            raise
+
+    def _derive_aetheric_frame_configuration(self) -> AethericFrameConfiguration:
+        """
+        Internal
+
+        Derive one narrow frame-level AR posture object from the current
+        Spellbook configuration.
+
+        Purpose:
+            Support the normal rich `Configuration` helper path while
+            remaining compatible with older or lightweight configuration test
+            doubles that only implement `get_property(...)`.
+
+        Contract:
+            - Prefers `to_aetheric_frame_configuration(...)` when the
+              configuration exposes it.
+            - Falls back to reading the three posture fields directly from
+              `get_property(...)`.
+            - Missing fallback values resolve to the runtime-safe defaults:
+              `system_state=automatic`, `ai_native_enabled=False`,
+              `ai_profiles_enabled=False`.
+
+        Returns:
+            Any: One `AethericFrameConfiguration` instance.
+
+        Raises:
+            Exception: Propagates failures from helper-based derivation or
+                posture normalization.
+        """
+        configuration = self._configuration
+        helper = getattr(configuration, "to_aetheric_frame_configuration", None)
+        if callable(helper):
+            return helper(origin_spellbook_id=self._id)
+
+        system_state = configuration.get_property("system_state")
+        if system_state is None:
+            system_state = SystemState.automatic
+
+        ai_native_enabled = configuration.get_property("ai_native_enabled")
+        if ai_native_enabled is None:
+            ai_native_enabled = False
+
+        ai_profiles_enabled = configuration.get_property("ai_profiles_enabled")
+        if ai_profiles_enabled is None:
+            ai_profiles_enabled = False
+
+        return AethericFrameConfiguration(
+            origin_spellbook_id=self._id,
+            system_state=system_state,
+            ai_native_enabled=ai_native_enabled,
+            ai_profiles_enabled=ai_profiles_enabled,
+        )
 
 
 

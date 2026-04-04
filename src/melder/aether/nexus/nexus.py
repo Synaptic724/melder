@@ -998,14 +998,10 @@ class Nexus(Cleanable, INexus):
         Returns:
             None.
         """
-        target_frame_configuration = self._get_required_target_frame_configuration(
+        target_frame_configuration = self._get_required_target_frame_runtime_configuration(
             target_frame_name
         )
-        ai_profiles_enabled = self._get_required_target_frame_boolean(
-            target_frame_configuration,
-            target_frame_name,
-            "ai_profiles_enabled",
-        )
+        ai_profiles_enabled = target_frame_configuration.ai_profiles_enabled
         if not ai_profiles_enabled:
             raise ValueError(
                 "AR requires ai_profiles_enabled on target frame '{0}'.".format(
@@ -1013,15 +1009,8 @@ class Nexus(Cleanable, INexus):
                 )
             )
 
-        ai_native_enabled = self._get_required_target_frame_boolean(
-            target_frame_configuration,
-            target_frame_name,
-            "ai_native_enabled",
-        )
-        target_system_state = self._get_required_target_frame_system_state(
-            target_frame_configuration,
-            target_frame_name,
-        )
+        ai_native_enabled = target_frame_configuration.ai_native_enabled
+        target_system_state = target_frame_configuration.system_state
 
         if ai_native_enabled and target_system_state != SystemState.dynamic:
             raise ValueError(
@@ -1043,6 +1032,52 @@ class Nexus(Cleanable, INexus):
                         target_frame_name
                     )
                 )
+
+    def _get_required_target_frame_runtime_configuration(
+            self,
+            target_frame_name: str,
+    ) -> Any:
+        """
+        Internal
+
+        Return the AR-relevant runtime posture for one target frame.
+
+        Purpose:
+            Prefer the dedicated `AethericFrameConfiguration` when one has been
+            bound during conjure, but tolerate older/manual paths by deriving
+            the same narrow posture from the full bound Spellbook
+            `Configuration` when needed.
+
+        Args:
+            target_frame_name:
+                Target frame name being validated.
+
+        Returns:
+            Any: Runtime posture object exposing `system_state`,
+            `ai_native_enabled`, and `ai_profiles_enabled`.
+
+        Raises:
+            ValueError: If the target frame does not exist or neither frame
+                posture nor full configuration is available.
+        """
+        try:
+            target_frame_configuration = self._aether._get_aetheric_frame_configuration(
+                target_frame_name
+            )
+        except ValueError as exc:
+            raise ValueError(
+                "Target frame '{0}' does not exist.".format(target_frame_name)
+            ) from exc
+
+        if target_frame_configuration is not None:
+            return target_frame_configuration
+
+        legacy_configuration = self._get_required_target_frame_configuration(
+            target_frame_name
+        )
+        return legacy_configuration.to_aetheric_frame_configuration(
+            origin_spellbook_id=None,
+        )
 
     def _get_required_target_frame_configuration(
             self,

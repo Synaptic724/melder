@@ -1,9 +1,10 @@
 import threading
 from enum import Enum
-from typing import Any, Dict, Type, Callable
+from typing import Any, Dict, Type, Callable, Optional
 import ulid
 # Melder imports
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.interfaces.interfaces import IConfiguration
@@ -206,6 +207,7 @@ class Configuration(Cleanable, IConfiguration):
         self._validate_phase_scheduler_workers()
         self._validate_ai_native_enabled()
         self._validate_ai_profiles_enabled()
+        self._validate_ai_runtime_posture()
 
         return True
 
@@ -272,6 +274,27 @@ class Configuration(Cleanable, IConfiguration):
 
         if not isinstance(enabled, bool):
             raise ValueError("ai_profiles_enabled must be a boolean.")
+
+    def _validate_ai_runtime_posture(self) -> None:
+        """
+        Enforce the semantic relationship between system state and AI posture.
+
+        Contract:
+            - `ai_native_enabled=True` requires `system_state == dynamic`.
+            - `ai_profiles_enabled` remains valid in either automatic or
+              dynamic mode.
+
+        Raises:
+            ValueError: If AI-native posture is enabled while the system state
+                is not dynamic.
+        """
+        system_state = self._properties.get("system_state")
+        ai_native_enabled = self._properties.get("ai_native_enabled")
+
+        if ai_native_enabled and system_state != SystemState.dynamic:
+            raise ValueError(
+                "ai_native_enabled requires system_state to be dynamic."
+            )
 
     def validate_enums(self) -> bool:
         """
@@ -795,6 +818,37 @@ class Configuration(Cleanable, IConfiguration):
             raise TypeError("disposal_method_names must be a list[str].")
         self.set_property("disposal_method_names", names)
         return self
+
+    def to_aetheric_frame_configuration(
+            self,
+            origin_spellbook_id: Optional[str] = None,
+    ) -> AethericFrameConfiguration:
+        """
+        Build the narrow frame-level AR posture object from this configuration.
+
+        Purpose:
+            Project the full Spellbook configuration down to the three
+            frame-level posture fields that matter to AR/Nexus-facing runtime
+            behavior.
+
+        Args:
+            origin_spellbook_id:
+                Spellbook id deriving the frame posture. May be None for
+                out-of-band callers.
+
+        Returns:
+            AethericFrameConfiguration: Narrow frame-level posture object.
+
+        Raises:
+            KeyError: If any required posture field is missing.
+            TypeError: If any posture field has the wrong type.
+            ValueError: If `system_state` is not a valid `SystemState`.
+        """
+        self.check_cleaned()
+        return AethericFrameConfiguration.from_spellbook_configuration(
+            origin_spellbook_id=origin_spellbook_id,
+            configuration=self,
+        )
 
     def add_disposal_methods(self, *names: str) -> IConfiguration:
         """

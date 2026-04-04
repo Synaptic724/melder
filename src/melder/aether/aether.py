@@ -12,6 +12,7 @@ from melder.utilities.interfaces.interfaces import IConduit, IConduitCloud, ICha
     IDevOpsManager, ISpellSystemStates, IIncidentManager, IChangeControlManager, IAether, INexus
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.aether.aetheric_frame import AethericFrame
+from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
@@ -419,6 +420,117 @@ class Aether(Cleanable, IAether):
             cfg = self._default_frame._configuration
 
         return cfg
+
+    def _bind_aetheric_frame_configuration(
+            self,
+            frame_configuration: AethericFrameConfiguration,
+            aetheric_frame_name: str = "default",
+    ) -> None:
+        """
+        Bind one narrow frame-level AR posture object to a specific frame.
+
+        Purpose:
+            Preserve one canonical AR posture for a frame without replacing the
+            richer shared Spellbook configuration object.
+
+        Contract:
+            - First writer wins for a given frame.
+            - Later identical posture attempts are treated as idempotent.
+            - Later conflicting posture attempts are ignored and logged.
+
+        Args:
+            frame_configuration:
+                Narrow frame-level posture object to bind.
+            aetheric_frame_name:
+                Target frame name.
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError: If `frame_configuration` is not an
+                `AethericFrameConfiguration`.
+            ValueError: If the specified frame does not exist.
+        """
+        self.check_cleaned()
+        if not isinstance(frame_configuration, AethericFrameConfiguration):
+            raise TypeError(
+                "frame_configuration must be an AethericFrameConfiguration."
+            )
+
+        with self._lock:
+            if aetheric_frame_name != "default":
+                try:
+                    frame = self._aetheric_frames[aetheric_frame_name]
+                except KeyError:
+                    self._logger.error(
+                        f"Aetheric frame '{aetheric_frame_name}' does not exist.",
+                        "_bind_aetheric_frame_configuration",
+                        exc_info=True,
+                    )
+                    raise ValueError(
+                        f"Aetheric frame '{aetheric_frame_name}' does not exist."
+                    )
+            else:
+                self._ensure_default_frame()
+                frame = self._default_frame
+
+            existing_frame_configuration = frame.frame_configuration
+            if existing_frame_configuration is None:
+                frame._frame_configuration = frame_configuration
+                return
+
+            if existing_frame_configuration.matches_posture(frame_configuration):
+                if existing_frame_configuration is not frame_configuration:
+                    frame_configuration.cleanup()
+                return
+
+            self._logger.warning(
+                "Ignored conflicting AethericFrameConfiguration for frame "
+                "'{0}'. Existing={1}, attempted={2}.".format(
+                    aetheric_frame_name,
+                    existing_frame_configuration.describe_posture(),
+                    frame_configuration.describe_posture(),
+                ),
+                "_bind_aetheric_frame_configuration",
+            )
+            frame_configuration.cleanup()
+
+    def _get_aetheric_frame_configuration(
+            self,
+            aetheric_frame_name: str = "default",
+    ) -> Optional[AethericFrameConfiguration]:
+        """
+        Return the narrow frame-level AR posture object for one frame.
+
+        Args:
+            aetheric_frame_name:
+                Target frame name.
+
+        Returns:
+            Optional[AethericFrameConfiguration]: Bound frame posture or None.
+
+        Raises:
+            ValueError: If the specified frame does not exist.
+        """
+        self.check_cleaned()
+        if aetheric_frame_name != "default":
+            try:
+                frame = self._aetheric_frames[aetheric_frame_name]
+            except KeyError:
+                self._logger.error(
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist.",
+                    "_get_aetheric_frame_configuration",
+                    exc_info=True,
+                )
+                raise ValueError(
+                    f"Aetheric frame '{aetheric_frame_name}' does not exist."
+                )
+        else:
+            self._ensure_default_frame()
+            frame = self._default_frame
+
+        return frame.frame_configuration
 
     # endregion Configuration
     # region Conduit Management
