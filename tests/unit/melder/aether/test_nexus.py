@@ -144,6 +144,75 @@ def test_nexus_uses_registered_channel_logger_provider() -> None:
     assert nexus._logger._logger is not None
 
 
+def test_nexus_default_logger_metadata_is_rich_and_stable() -> None:
+    """
+    Verify the default Nexus logger resolver receives the expected stable
+    metadata.
+
+    Returns:
+        None.
+    """
+    captured_args = []
+
+    def resolver(*, registrant: object, groups=None, system_groups=None, props=None, channels=None) -> logging.Logger:
+        """
+        Capture the logger metadata requested by Nexus.
+
+        Args:
+            registrant:
+                Object requesting a logger.
+            groups:
+                Requested logger groups.
+            system_groups:
+                Requested logger system groups.
+            props:
+                Requested logger properties.
+            channels:
+                Requested logger channels.
+
+        Returns:
+            logging.Logger: Stable stdlib logger for the request.
+        """
+        captured_args.append(
+            {
+                "registrant": registrant,
+                "groups": groups,
+                "system_groups": system_groups,
+                "props": props,
+                "channels": channels,
+            }
+        )
+        return logging.getLogger("nexus-provider.metadata")
+
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    AetherUtilitySystem().register_channel_logger_resolver(resolver)
+    _bind_target_frame_configuration(
+        "default",
+        rift_enabled=True,
+        ai_native_enabled=False,
+        system_state=SystemState.automatic,
+    )
+
+    nexus = Nexus()
+    nexus_calls = [
+        captured_call
+        for captured_call in captured_args
+        if captured_call["registrant"] is nexus
+    ]
+
+    assert len(nexus_calls) == 1
+    assert nexus_calls[0]["groups"] == ["nexus", "lifecycle", "registry"]
+    assert nexus_calls[0]["system_groups"] == ["nexus", "aether", "rift"]
+    assert nexus_calls[0]["channels"] == "system"
+    assert nexus_calls[0]["props"] == {
+        "component": "nexus",
+        "component_id": nexus.id,
+        "singleton": True,
+    }
+
+
 def test_nexus_explicit_logger_override_is_used() -> None:
     """
     Verify an explicit Nexus logger override replaces the provider default.

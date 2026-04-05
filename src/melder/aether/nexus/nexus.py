@@ -171,6 +171,8 @@ class Nexus(Cleanable, INexus):
         self._next_default_rift_number: int = 1
         self._next_indexed_nexus_frame_number: int = 1
         self._rift_profiles_by_name: Dict[str, IRiftConfiguration] = {}
+        self._frame_acl_manager: Optional[FrameACLManager] = None
+        self._frame_descriptor_manager: Optional[FrameDescriptorManager] = None
         self._frame_acl_manager: FrameACLManager = FrameACLManager()
         self._target_frame_ref_counts: Dict[str, int] = {}
 
@@ -272,9 +274,9 @@ class Nexus(Cleanable, INexus):
             else:
                 self._logger = InitHelpers.resolve_channel_logger(
                     self,
-                    groups=["nexus", "lifecycle"],
-                    system_groups=["nexus", "aether"],
-                    props={"component": "nexus"},
+                    groups=self._get_default_logger_groups(),
+                    system_groups=self._get_default_logger_system_groups(),
+                    props=self._get_default_logger_properties(),
                     channels="system",
                 )
         except Exception as e:
@@ -284,6 +286,62 @@ class Nexus(Cleanable, INexus):
                 "_initialize_logging",
                 exc_info=True,
             )
+
+    def _get_default_logger_groups(self) -> List[str]:
+        """
+        Build the default group metadata for the Nexus root logger.
+
+        Purpose:
+            Keep the default Nexus logger grouped as a lifecycle/registry root
+            instead of leaving the grouping inline in `_initialize_logging()`.
+
+        Contract:
+            Returns only stable root-level grouping metadata for the Nexus
+            object itself.
+
+        Returns:
+            List[str]: Default Nexus logger groups.
+        """
+        return ["nexus", "lifecycle", "registry"]
+
+    def _get_default_logger_system_groups(self) -> List[str]:
+        """
+        Build the default system-group metadata for the Nexus root logger.
+
+        Purpose:
+            Declare the substrate and runtime domains the Nexus root
+            participates in.
+
+        Contract:
+            Returns only stable system-level group metadata and does not encode
+            mutable runtime flags such as enabled/disabled state.
+
+        Returns:
+            List[str]: Default Nexus logger system groups.
+        """
+        return ["nexus", "aether", "rift"]
+
+    def _get_default_logger_properties(self) -> Dict[str, Any]:
+        """
+        Build the default property metadata for the Nexus root logger.
+
+        Purpose:
+            Attach stable provenance data to the default Nexus logger so Iris
+            output can identify the root object consistently.
+
+        Contract:
+            - Includes only stable root-object metadata.
+            - Avoids mutable runtime state that would drift after logger
+              creation.
+
+        Returns:
+            Dict[str, Any]: Default Nexus logger property map.
+        """
+        return {
+            "component": "nexus",
+            "component_id": self._id,
+            "singleton": True,
+        }
 
     @classmethod
     def _reset_singleton_for_tests(cls) -> None:

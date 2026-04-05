@@ -3,6 +3,7 @@ from typing import Dict, List, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.id_builder import IDBuilder
 
 from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
