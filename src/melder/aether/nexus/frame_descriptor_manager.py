@@ -12,31 +12,39 @@ from melder.aether.nexus.configuration.nexus_frame_mode import NexusFrameMode
 from melder.aether.nexus.nexus_frame_record import NexusFrameRecord
 from melder.spellbook.spell_crafter.spell_examiner.profiles.ai_profile import SpellAIProfile
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import IAether
 
 
 class FrameDescriptorManager(Cleanable):
     """
-    Internal
-
-    Thread-safe owner of Nexus frame-scoped descriptor and record state.
-
     Purpose:
-        Centralize frame-scoped Nexus state so `Nexus` can stay focused on
-        process-wide Rift registry, configuration, enablement, and topology
-        policy.
+        Own the Nexus frame-scoped descriptor and canonical-record subsystem.
 
     Contract:
-        - Owns the descriptor dictionary for all known frame names.
-        - Owns posture refresh and publishability checks for passive Nexus
+        - The manager is the sole owner of the
+          `frame_name -> FrameDescriptor` registry.
+        - It owns posture refresh and publishability checks for passive Nexus
           publication.
-        - Owns canonical frame/conduit/spell record publication and removal.
-        - Owns Nexus-managed internal frame-record lookup/create/list/count.
-        - Uses an instance `RLock` for multi-step state mutation.
+        - It owns canonical frame, conduit, and spell record publication and
+          removal.
+        - It owns Nexus-managed internal frame-record lookup, creation, and
+          enumeration.
+        - It does not own process-wide Rift registry or Nexus configuration
+          policy; those remain on `Nexus`.
+
+    Threading:
+        Uses one instance `threading.RLock` to serialize multi-step
+        descriptor-store mutation and publish/remove flows.
+
+    Lifecycle:
+        Cleanup is idempotent and cascades into every owned descriptor before
+        the manager drops its registry and substrate reference.
     """
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_id",
         "_lock",
         "_aether",
         "_frame_descriptors_by_name",
@@ -45,6 +53,14 @@ class FrameDescriptorManager(Cleanable):
     def __init__(self, aether: IAether) -> None:
         """
         Initialize one frame-scoped Nexus state manager.
+
+        Purpose:
+            Bind the manager to the hidden `Aether` substrate and prepare the
+            empty descriptor registry.
+
+        Contract:
+            - `aether` must be a live substrate reference.
+            - Descriptor registry starts empty.
 
         Args:
             aether:
@@ -60,6 +76,7 @@ class FrameDescriptorManager(Cleanable):
         super().__init__()
         if aether is None:
             raise TypeError("aether cannot be None.")
+        self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._aether: IAether = aether
         self._frame_descriptors_by_name: Dict[str, FrameDescriptor] = {}
@@ -67,6 +84,19 @@ class FrameDescriptorManager(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently cleanup the manager and all owned descriptors.
+
+        Purpose:
+            Tear down the descriptor registry and every owned descriptor in one
+            deterministic pass.
+
+        Contract:
+            - Safe to call more than once.
+            - Cleans each descriptor before clearing the registry.
+            - Drops the substrate reference after owned teardown completes.
+
+        Threading:
+            Acquires the manager lock so cleanup cannot interleave with publish,
+            lookup, or record-mutation work.
 
         Returns:
             None.
@@ -91,9 +121,19 @@ class FrameDescriptorManager(Cleanable):
         """
         Refresh cached frame posture from Aether for one frame.
 
+        Purpose:
+            Synchronize the descriptor's cached frame posture and live frame
+            handle from the hidden substrate.
+
+        Contract:
+            - Ensures a descriptor exists for the frame name.
+            - Clears cached posture/handle when the frame or posture is absent.
+            - Attempts to refresh the runtime frame handle opportunistically
+              after posture resolution.
+
         Args:
             frame_name:
-                Target frame name.
+                Stable frame name whose posture cache should be refreshed.
 
         Returns:
             Optional[AethericFrameConfiguration]:
@@ -126,9 +166,19 @@ class FrameDescriptorManager(Cleanable):
         """
         Return a frame posture only when passive Nexus publication is allowed.
 
+        Purpose:
+            Centralize the passive-publication gate for frame-scoped canonical
+            record publication.
+
+        Contract:
+            - Returns None when no frame posture is available.
+            - Returns None when the frame exists but is not Rift-enabled.
+            - Returns the cached/refreshed posture only when passive publication
+              is allowed.
+
         Args:
             frame_name:
-                Target frame name.
+                Stable frame name whose passive-publication posture is needed.
 
         Returns:
             Optional[AethericFrameConfiguration]:
@@ -149,6 +199,15 @@ class FrameDescriptorManager(Cleanable):
     def _publish_frame_record(self, spellbook: Any) -> bool:
         """
         Publish or update one canonical frame record.
+
+        Purpose:
+            Build or refresh the canonical `FrameRecord` summary for one
+            Spellbook-owning frame.
+
+        Contract:
+            - Short-circuits when the frame is not publishable.
+            - Refreshes descriptor frame handle and posture before publishing.
+            - Replaces the owned frame overview record on the descriptor.
 
         Args:
             spellbook:
@@ -213,6 +272,15 @@ class FrameDescriptorManager(Cleanable):
         """
         Publish or update one canonical conduit record.
 
+        Purpose:
+            Build or refresh the canonical `ConduitRecord` for one normal
+            conduit.
+
+        Contract:
+            - Only normal conduits are publishable in this slice.
+            - Short-circuits when the frame is not publishable.
+            - Replaces the descriptor-owned conduit record for the conduit id.
+
         Args:
             conduit:
                 Conduit instance to publish.
@@ -265,11 +333,14 @@ class FrameDescriptorManager(Cleanable):
         """
         Remove one canonical conduit record.
 
+        Purpose:
+            Remove a descriptor-owned conduit record for a publishable frame.
+
         Args:
             conduit_id:
-                Conduit id to remove.
+                Conduit id whose record should be removed.
             frame_name:
-                Owning frame name.
+                Stable frame name that owns the descriptor.
 
         Returns:
             bool:
@@ -294,13 +365,22 @@ class FrameDescriptorManager(Cleanable):
         """
         Publish or update one canonical spell record.
 
+        Purpose:
+            Build or refresh the canonical `SpellRecord` for one spell owned by
+            a Spellbook/frame pair.
+
+        Contract:
+            - Short-circuits when the frame is not publishable.
+            - Preserves the existing AI-profile extraction behavior.
+            - Replaces the descriptor-owned spell record for the canonical key.
+
         Args:
             spellbook:
                 Owning Spellbook.
             spell:
                 Spell instance to publish.
             owner_conduit_id:
-                Owning conduit id when known.
+                Owning conduit id when known; otherwise None.
 
         Returns:
             bool:
@@ -355,13 +435,16 @@ class FrameDescriptorManager(Cleanable):
         """
         Remove one canonical spell record by composite key.
 
+        Purpose:
+            Remove a descriptor-owned `SpellRecord` for a publishable frame.
+
         Args:
             origin_spellbook_id:
                 Owning Spellbook id.
             spell_id:
                 Current spell/version id.
             frame_name:
-                Owning frame name.
+                Stable frame name that owns the descriptor.
 
         Returns:
             bool:
@@ -383,6 +466,10 @@ class FrameDescriptorManager(Cleanable):
     ) -> Optional[NexusFrameRecord]:
         """
         Detach and return one Nexus-managed frame record.
+
+        Purpose:
+            Remove the current Nexus-managed frame record from a descriptor
+            without cleaning it.
 
         Args:
             frame_name:
@@ -406,16 +493,20 @@ class FrameDescriptorManager(Cleanable):
         """
         Return one existing frame descriptor or raise.
 
+        Purpose:
+            Resolve a descriptor only when absence is a real invariant break.
+
         Args:
             frame_name:
-                Frame name to resolve.
+                Stable frame name to resolve.
 
         Returns:
             FrameDescriptor:
                 Existing descriptor for the frame.
 
         Raises:
-            KeyError: If the frame has no descriptor yet.
+            KeyError:
+                If the frame has no descriptor yet.
         """
         self.check_cleaned()
         with self._lock:
@@ -430,6 +521,14 @@ class FrameDescriptorManager(Cleanable):
     ) -> FrameDescriptor:
         """
         Return one existing frame descriptor or create it.
+
+        Purpose:
+            Provide the canonical descriptor lookup/creation path for the
+            frame-scoped store.
+
+        Contract:
+            - Creates at most one descriptor per frame name.
+            - Reuses the existing descriptor when present.
 
         Args:
             frame_name:
@@ -451,6 +550,9 @@ class FrameDescriptorManager(Cleanable):
         """
         Return whether a descriptor currently exists for the given frame name.
 
+        Purpose:
+            Provide a lightweight existence check for the descriptor registry.
+
         Args:
             frame_name:
                 Frame name to inspect.
@@ -468,6 +570,10 @@ class FrameDescriptorManager(Cleanable):
     ) -> Optional[NexusFrameRecord]:
         """
         Return the descriptor-owned Nexus-managed frame record when present.
+
+        Purpose:
+            Resolve the current Nexus-managed frame record without creating a
+            descriptor or record on demand.
 
         Args:
             frame_name:
@@ -489,6 +595,10 @@ class FrameDescriptorManager(Cleanable):
         Return the frame names that currently carry a Nexus-managed frame
         record.
 
+        Purpose:
+            Enumerate frame names currently backed by Nexus-managed frame
+            records.
+
         Returns:
             List[str]:
                 Current Nexus-managed frame names.
@@ -505,6 +615,9 @@ class FrameDescriptorManager(Cleanable):
         """
         Return the current number of Nexus-managed frame records.
 
+        Purpose:
+            Expose the size of the Nexus-managed frame-record set.
+
         Returns:
             int:
                 Number of descriptor-owned Nexus-managed frame records.
@@ -520,16 +633,21 @@ class FrameDescriptorManager(Cleanable):
         """
         Return one existing Nexus-managed frame record or raise.
 
+        Purpose:
+            Resolve a Nexus-managed frame record only when absence is a real
+            error.
+
         Args:
             frame_name:
-                Nexus frame name to resolve.
+                Nexus-managed frame name to resolve.
 
         Returns:
             NexusFrameRecord:
                 Existing frame record.
 
         Raises:
-            ValueError: If the record does not exist.
+            ValueError:
+                If the record does not exist.
         """
         self.check_cleaned()
         with self._lock:
@@ -552,16 +670,20 @@ class FrameDescriptorManager(Cleanable):
         """
         Return one existing Nexus-managed frame record or create it.
 
+        Purpose:
+            Provide the canonical lookup/creation path for Nexus-managed frame
+            records.
+
         Args:
             frame_name:
-                Nexus frame name to resolve or create.
+                Nexus-managed frame name to resolve or create.
             creator_rift_id:
                 Rift id that should be recorded as creator when creation is
                 required.
             immutable:
-                Immutable flag to apply on creation.
+                Immutable flag to apply when creation is required.
             nexus_frame_mode:
-                Current Nexus frame topology mode.
+                Current Nexus frame topology mode recorded on new records.
 
         Returns:
             NexusFrameRecord:
@@ -590,15 +712,19 @@ class FrameDescriptorManager(Cleanable):
         """
         Create one new Nexus-managed frame record and realize its frame.
 
+        Purpose:
+            Realize the underlying frame through `Aether`, then create and
+            attach the matching Nexus-managed frame record.
+
         Args:
             frame_name:
-                Nexus frame name to create.
+                Nexus-managed frame name to create.
             creator_rift_id:
-                Rift id recorded as creator/initial owner.
+                Rift id recorded as creator and initial owner.
             immutable:
                 Immutable flag for the new record.
             nexus_frame_mode:
-                Current Nexus frame topology mode.
+                Current Nexus frame topology mode recorded on the new record.
 
         Returns:
             NexusFrameRecord:

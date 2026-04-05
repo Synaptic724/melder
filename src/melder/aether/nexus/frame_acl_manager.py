@@ -11,44 +11,108 @@ from melder.aether.nexus.acl.frame_acl_container import FrameACLContainer
 
 class FrameACLManager(Cleanable):
     """
-    Internal
-
-    Nexus-owned coordinator for frame-scoped ACL containers.
-
     Purpose:
-        Own the per-frame ACL containers and provide the root coordination
-        point for frame-scoped ACL access without pushing ACL history/builder
-        objects directly into the descriptor.
+        Coordinate all frame-scoped ACL containers owned by one `Nexus`
+        instance.
 
     Contract:
-        - Owned by `Nexus`.
-        - Owns `frame_name -> FrameACLContainer`.
-        - Ensures each frame has at most one container.
-        - Facades current/head/list/select/rollback mechanics for the
-          underlying chain per frame.
+        - This manager is owned by `Nexus`; callers should not construct or
+          share it independently.
+        - The manager is the sole owner of the
+          `frame_name -> FrameACLContainer` mapping.
+        - Each frame name resolves to at most one live container at a time.
+        - Container lookup, creation, removal, and snapshot reads are
+          serialized through the manager lock.
+        - The manager does not own descriptor state, compiled access surfaces,
+          or viewer/codegen consumers; it only coordinates frame ACL
+          containers and their chain-facing operations.
+
+    Threading:
+        Uses one instance `threading.RLock` to protect multi-step container-map
+        reads and writes.
+
+    Lifecycle:
+        Cleanup is idempotent. Cleanup cascades into all owned containers
+        before the manager drops its registry and lock references.
     """
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_id",
         "_lock",
         "_frame_acl_containers_by_name",
     ]
 
     def __init__(self) -> None:
         """
-        Initialize one Nexus-owned frame ACL manager.
+        Initialize one empty frame ACL manager.
+
+        Purpose:
+            Construct the manager-owned container registry used by `Nexus` for
+            frame-scoped ACL access.
+
+        Contract:
+            - Starts with no containers.
+            - Creates the manager lock immediately so future container-map
+              mutation is serialized from the beginning of the object's life.
+
+        Returns:
+            None.
         """
         super().__init__()
+        self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._frame_acl_containers_by_name: Dict[str, FrameACLContainer] = {}
+
+    def cleanup(self) -> None:
+        """
+        Idempotently cleanup the manager and all owned containers.
+
+        Purpose:
+            Tear down the manager-owned frame ACL container registry in one
+            deterministic pass.
+
+        Contract:
+            - Safe to call more than once.
+            - Cleans each owned container before clearing the registry.
+            - Leaves the manager unusable after completion.
+
+        Threading:
+            Acquires the manager lock so no other container-map mutation can
+            interleave with teardown.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            for container in self._frame_acl_containers_by_name.values():
+                container.cleanup()
+            self._frame_acl_containers_by_name.clear()
+            self._frame_acl_containers_by_name = None
+        self._lock = None
 
     @property
     def frame_acl_containers_by_name(self) -> Dict[str, FrameACLContainer]:
         """
-        Return a snapshot of the manager-owned frame ACL containers.
+        Return a snapshot of the manager-owned container registry.
+
+        Purpose:
+            Expose the current frame-to-container mapping for inspection
+            without handing callers the live mutable registry.
+
+        Contract:
+            - Returns a shallow copy of the mapping.
+            - The returned dictionary is detached from future manager writes.
+            - Container objects inside the snapshot remain manager-owned.
 
         Returns:
-            Dict[str, FrameACLContainer]: Snapshot of container mapping.
+            Dict[str, FrameACLContainer]:
+                Snapshot of the frame-name keyed container registry.
         """
         self.check_cleaned()
         with self._lock:
@@ -59,14 +123,25 @@ class FrameACLManager(Cleanable):
             frame_name: str,
     ) -> FrameACLContainer:
         """
-        Return the frame ACL container for one frame, creating it if missing.
+        Return the frame ACL container for one frame, creating it if needed.
+
+        Purpose:
+            Provide the canonical frame-local ACL container lookup/creation path
+            for all manager callers.
+
+        Contract:
+            - Creates at most one container per frame name.
+            - Reuses the existing container when one is already registered.
+            - Newly created containers start with their own default ACL chain,
+              validator, and builder objects.
 
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name that owns the target ACL container.
 
         Returns:
-            FrameACLContainer: Existing or newly created frame ACL container.
+            FrameACLContainer:
+                Existing or newly created frame ACL container for the frame.
         """
         self.check_cleaned()
         with self._lock:
@@ -83,15 +158,25 @@ class FrameACLManager(Cleanable):
         """
         Return one existing frame ACL container or raise.
 
+        Purpose:
+            Resolve a frame container only when absence is a real error instead
+            of an invitation to create defaults.
+
+        Contract:
+            - Does not create missing containers.
+            - Fails fast when the frame has no registered ACL container.
+
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name whose ACL container must already exist.
 
         Returns:
-            FrameACLContainer: Existing frame ACL container.
+            FrameACLContainer:
+                Existing frame ACL container for the frame.
 
         Raises:
-            KeyError: If no container exists for the frame.
+            KeyError:
+                If the frame has no registered ACL container.
         """
         self.check_cleaned()
         with self._lock:
@@ -107,12 +192,22 @@ class FrameACLManager(Cleanable):
         """
         Return the unique builder object for one frame.
 
+        Purpose:
+            Provide the frame-scoped ACL authoring surface without exposing the
+            container internals directly.
+
+        Contract:
+            - Ensures the frame container exists.
+            - Returns the same builder object for repeated calls against the
+              same frame.
+
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name whose builder should be returned.
 
         Returns:
-            FrameACLBuilder: Unique builder object for the frame container.
+            FrameACLBuilder:
+                The one builder object owned by the frame container.
         """
         self.check_cleaned()
         container = self._ensure_frame_acl_container(frame_name)
@@ -125,12 +220,17 @@ class FrameACLManager(Cleanable):
         """
         Return the current selected ACL configuration for one frame.
 
+        Purpose:
+            Surface the chain-selected live ACL configuration for a frame
+            through the manager boundary.
+
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name whose current configuration is requested.
 
         Returns:
-            FrameACLConfiguration: Current config for the frame.
+            FrameACLConfiguration:
+                The currently selected ACL configuration for the frame.
         """
         self.check_cleaned()
         container = self._ensure_frame_acl_container(frame_name)
@@ -143,12 +243,17 @@ class FrameACLManager(Cleanable):
         """
         Return the head ACL configuration for one frame.
 
+        Purpose:
+            Surface the newest committed ACL configuration node for a frame
+            through the manager boundary.
+
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name whose head configuration is requested.
 
         Returns:
-            FrameACLConfiguration: Head config for the frame.
+            FrameACLConfiguration:
+                The head ACL configuration node for the frame.
         """
         self.check_cleaned()
         container = self._ensure_frame_acl_container(frame_name)
@@ -162,14 +267,24 @@ class FrameACLManager(Cleanable):
         """
         Return one specific ACL configuration node for a frame.
 
+        Purpose:
+            Resolve one historical or current ACL configuration node by id for a
+            frame-scoped chain.
+
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name that owns the configuration chain.
             configuration_id:
-                Target config id.
+                Target configuration id inside the chain.
 
         Returns:
-            FrameACLConfiguration: Requested config node.
+            FrameACLConfiguration:
+                Requested configuration node.
+
+        Raises:
+            KeyError:
+                If the frame exists but the configuration id is not present in
+                its chain.
         """
         self.check_cleaned()
         container = self._ensure_frame_acl_container(frame_name)
@@ -185,14 +300,19 @@ class FrameACLManager(Cleanable):
         """
         Return ACL configurations for one frame from newest to oldest.
 
+        Purpose:
+            Provide an ordered history view over a frame's ACL configuration
+            chain.
+
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name that owns the configuration chain.
             limit:
-                Optional maximum count.
+                Optional maximum number of returned configuration nodes.
 
         Returns:
-            List[FrameACLConfiguration]: Ordered config-node list.
+            List[FrameACLConfiguration]:
+                Ordered configuration-node list from newest to oldest.
         """
         self.check_cleaned()
         container = self._ensure_frame_acl_container(frame_name)
@@ -208,14 +328,19 @@ class FrameACLManager(Cleanable):
         """
         Return ACL configuration ids for one frame from newest to oldest.
 
+        Purpose:
+            Provide a lightweight ordered history view without exposing the full
+            configuration nodes.
+
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name that owns the configuration chain.
             limit:
-                Optional maximum count.
+                Optional maximum number of returned ids.
 
         Returns:
-            List[str]: Ordered config id list.
+            List[str]:
+                Ordered configuration id list from newest to oldest.
         """
         self.check_cleaned()
         container = self._ensure_frame_acl_container(frame_name)
@@ -233,16 +358,26 @@ class FrameACLManager(Cleanable):
         """
         Insert one locked ACL config at the head of the frame chain.
 
+        Purpose:
+            Validate and commit a new configuration node into the frame's
+            history chain through the manager boundary.
+
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name that owns the target chain.
             configuration:
-                Config node to insert.
+                Locked configuration node to commit.
             select_as_current:
-                Whether the new head should also become current.
+                True when the inserted head should also become the current
+                selected configuration.
 
         Returns:
-            FrameACLConfiguration: Inserted config node.
+            FrameACLConfiguration:
+                Inserted configuration node.
+
+        Raises:
+            TypeError, ValueError:
+                Propagated when validation fails or the chain rejects the node.
         """
         self.check_cleaned()
         container = self._ensure_frame_acl_container(frame_name)
@@ -260,14 +395,19 @@ class FrameACLManager(Cleanable):
         """
         Select one existing config as current for a frame.
 
+        Purpose:
+            Move the frame's current configuration pointer without creating a
+            new configuration node.
+
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name that owns the configuration chain.
             configuration_id:
-                Config id to make current.
+                Existing configuration id to make current.
 
         Returns:
-            FrameACLConfiguration: Newly selected current config.
+            FrameACLConfiguration:
+                Newly selected current configuration.
         """
         self.check_cleaned()
         container = self._ensure_frame_acl_container(frame_name)
@@ -281,14 +421,19 @@ class FrameACLManager(Cleanable):
         """
         Roll current selection back to one historical config for a frame.
 
+        Purpose:
+            Provide a semantic rollback entrypoint over the underlying
+            current-selection mechanics.
+
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name that owns the configuration chain.
             configuration_id:
-                Historical config id to make current.
+                Historical configuration id to restore as current.
 
         Returns:
-            FrameACLConfiguration: Newly selected current config.
+            FrameACLConfiguration:
+                Newly selected current configuration.
         """
         self.check_cleaned()
         container = self._ensure_frame_acl_container(frame_name)
@@ -305,16 +450,21 @@ class FrameACLManager(Cleanable):
         Create a new draft config copied from an existing config in the frame
         chain.
 
+        Purpose:
+            Seed a new draft configuration from one existing node in the
+            frame-scoped history chain.
+
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name that owns the configuration chain.
             configuration_id:
-                Source config id.
+                Source configuration id to copy from.
             reason:
-                Human-readable creation reason.
+                Human-readable reason recorded on the new draft node.
 
         Returns:
-            FrameACLConfiguration: New unlocked config copied from the source.
+            FrameACLConfiguration:
+                New unlocked configuration copied from the source node.
         """
         self.check_cleaned()
         container = self._ensure_frame_acl_container(frame_name)
@@ -327,13 +477,22 @@ class FrameACLManager(Cleanable):
         """
         Remove and cleanup one frame ACL container by frame name.
 
+        Purpose:
+            Tear down a frame container when the frame-level ACL subsystem
+            should no longer exist for that frame.
+
+        Contract:
+            - Removes the container from the manager registry first.
+            - Cleans the container before returning.
+            - Returns False when the frame never had a registered container.
+
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name whose container should be removed.
 
         Returns:
-            bool: True when a container existed and was removed, otherwise
-            False.
+            bool:
+                True when a container existed and was removed; otherwise False.
         """
         self.check_cleaned()
         with self._lock:
@@ -342,22 +501,3 @@ class FrameACLManager(Cleanable):
                 return False
             container.cleanup()
             return True
-
-    def cleanup(self) -> None:
-        """
-        Idempotently clear the manager and all owned containers.
-
-        Returns:
-            None.
-        """
-        if self._cleaned:
-            return
-        with self._lock:
-            if self._cleaned:
-                return
-            self._cleaned = True
-            for container in self._frame_acl_containers_by_name.values():
-                container.cleanup()
-            self._frame_acl_containers_by_name.clear()
-            self._frame_acl_containers_by_name = None
-        self._lock = None

@@ -3,30 +3,36 @@ from typing import Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
-
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.utilities.helpers.id_builder import IDBuilder
 
 
 class FrameACLBuilder(Cleanable):
     """
-    Internal
-
-    Object-singleton builder for one frame ACL container.
-
     Purpose:
-        Represent the one mutable authoring surface for one frame's ACL
-        configuration without pretending to implement the full ACL mutation
-        engine in this placeholder slice.
+        Provide the frame-local mutable ACL authoring surface owned by one
+        `FrameACLContainer`.
 
     Contract:
-        - One builder object per frame ACL container.
-        - Can open one local change session at a time.
-        - Builds the next `FrameACLConfiguration` from a JSON payload string.
-        - Delegates installation/validation to the owning container.
+        - One builder object exists per container.
+        - At most one draft change session may be active at a time.
+        - Draft state is represented as a JSON payload string seeded from the
+          current configuration.
+        - Final installation and validation are delegated to the owning
+          container.
+
+    Threading:
+        Uses one instance `threading.RLock` to serialize draft-session state
+        changes.
+
+    Lifecycle:
+        Cleanup is idempotent and clears draft state plus the container
+        reference.
     """
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_id",
         "_lock",
         "_container",
         "_change_active",
@@ -37,22 +43,66 @@ class FrameACLBuilder(Cleanable):
         """
         Initialize one frame ACL builder for the owning container.
 
+        Purpose:
+            Bind the builder to one frame-local ACL container and prepare its
+            mutable draft-session state.
+
+        Contract:
+            - `container` must be a live owning container object.
+            - No draft is active at construction time.
+
         Args:
             container:
                 Owning frame ACL container.
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError:
+                If `container` is None.
         """
         super().__init__()
         if container is None:
             raise TypeError("container cannot be None.")
+
+        self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._container = container
         self._change_active: bool = False
         self._draft_json_configuration_string: Optional[str] = None
 
+    def cleanup(self) -> None:
+        """
+        Idempotently clear builder state.
+
+        Purpose:
+            Tear down the builder's mutable draft-session state and ownership
+            references.
+
+        Contract:
+            - Safe to call more than once.
+            - Discards any in-flight draft state.
+            - Leaves the builder unusable after completion.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        self._lock = None
+        self._container = None
+        self._change_active = None
+        self._draft_json_configuration_string = None
+
     @property
     def change_active(self) -> bool:
         """
         Return whether the builder currently owns one open change session.
+
+        Purpose:
+            Expose whether the builder is currently holding mutable draft state.
 
         Returns:
             bool: True when a change session is active.
@@ -65,11 +115,20 @@ class FrameACLBuilder(Cleanable):
         """
         Start one builder-owned change session.
 
+        Purpose:
+            Seed draft state from the container's current configuration and
+            mark the builder as actively editing.
+
+        Contract:
+            - Fails if another change session is already active.
+            - Uses the current configuration JSON payload as the draft seed.
+
         Returns:
             None.
 
         Raises:
-            RuntimeError: If a change session is already active.
+            RuntimeError:
+                If a change session is already active.
         """
         self.check_cleaned()
         with self._lock:
@@ -88,6 +147,10 @@ class FrameACLBuilder(Cleanable):
         """
         Replace the draft JSON payload string for the active change session.
 
+        Purpose:
+            Overwrite the builder-held draft payload during an active change
+            session.
+
         Args:
             json_configuration_string:
                 JSON payload string for the next configuration revision.
@@ -96,8 +159,10 @@ class FrameACLBuilder(Cleanable):
             None.
 
         Raises:
-            RuntimeError: If no change session is active.
-            TypeError: If `json_configuration_string` is not a string.
+            RuntimeError:
+                If no change session is active.
+            TypeError:
+                If `json_configuration_string` is not a string.
         """
         self.check_cleaned()
         with self._lock:
@@ -111,11 +176,22 @@ class FrameACLBuilder(Cleanable):
         """
         Build and install the next frame ACL configuration revision.
 
+        Purpose:
+            Materialize the current draft payload into a new configuration node
+            and install it through the owning container.
+
+        Contract:
+            - Requires an active change session.
+            - Copies from the current configuration node.
+            - Finalizes the new node before installation.
+            - Clears builder draft state after successful installation.
+
         Returns:
             FrameACLConfiguration: Newly installed configuration.
 
         Raises:
-            RuntimeError: If no change session is active.
+            RuntimeError:
+                If no change session is active.
         """
         self.check_cleaned()
         with self._lock:
@@ -140,6 +216,14 @@ class FrameACLBuilder(Cleanable):
         """
         Discard the current builder-owned change session.
 
+        Purpose:
+            Drop any active draft payload without creating a new configuration
+            node.
+
+        Contract:
+            Always clears builder draft state, even if no payload changes were
+            made after `begin_change()`.
+
         Returns:
             None.
         """
@@ -147,18 +231,3 @@ class FrameACLBuilder(Cleanable):
         with self._lock:
             self._draft_json_configuration_string = None
             self._change_active = False
-
-    def cleanup(self) -> None:
-        """
-        Idempotently clear builder state.
-
-        Returns:
-            None.
-        """
-        if self._cleaned:
-            return
-        self._cleaned = True
-        self._lock = None
-        self._container = None
-        self._change_active = None
-        self._draft_json_configuration_string = None

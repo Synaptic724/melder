@@ -37,29 +37,31 @@ from melder.utilities.interfaces.interfaces import (
 
 class Nexus(Cleanable, INexus):
     """
-    Internal
-
-    Public singleton root for Rift-domain state and lifecycle.
-
     Purpose:
-        Provide one process-wide registry and policy/configuration root for
-        live `Rift` objects while keeping `Aether` as hidden substrate rather
-        than the public API root for Rift work.
+        Provide the public singleton root for Rift-domain registry,
+        configuration, ACL-container access, and Nexus-managed frame policy.
 
     Contract:
-        - Singleton.
-        - Holds the hidden `Aether` substrate reference needed for Nexus-owned
-          frame realization and disposal.
-        - Owns Nexus configuration, configured/enabled state, and live Rift
-          registries.
-        - Creates `Rift` objects from policy-approved config and frame-name
-          assignments.
-        - Owns the lifecycle of Nexus-managed internal frames through
-          `NexusFrameRecord` objects.
+        - `Nexus` is a process-wide singleton.
+        - It owns Nexus configuration, configured/enabled state, live Rift
+          registries, Rift profile templates, frame-descriptor management, and
+          frame-local ACL manager access.
+        - It holds the hidden `Aether` substrate reference required for
+          Nexus-managed frame realization and disposal.
+        - It creates `Rift` objects from policy-approved configuration and
+          frame-name assignments.
+        - It owns the lifecycle of Nexus-managed internal frames through
+          `NexusFrameRecord` objects while leaving actual `AethericFrame`
+          ownership to the hidden substrate.
 
     Lifecycle:
         Created eagerly by `Aether` at package/runtime boot, but starts
-        unconfigured and disabled until a user explicitly engages it.
+        unconfigured and disabled until a caller explicitly enables Rift-domain
+        behavior.
+
+    Threading:
+        Uses one class-level singleton lock for instance creation and one
+        instance `threading.RLock` for multi-step mutable state transitions.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -88,6 +90,14 @@ class Nexus(Cleanable, INexus):
         """
         Ensure `Nexus` behaves as a singleton.
 
+        Purpose:
+            Return the one process-wide `Nexus` instance regardless of how many
+            times the constructor is called.
+
+        Threading:
+            Uses the class-level singleton lock to serialize first-instance
+            creation.
+
         Returns:
             Nexus: The one process-wide Nexus instance.
         """
@@ -105,23 +115,39 @@ class Nexus(Cleanable, INexus):
             logger: Optional[Any] = None,
     ) -> None:
         """
-        Internal
-
         Initialize the singleton Rift-domain root.
+
+        Purpose:
+            Bind the singleton to the hidden substrate, create its owned
+            registries/managers, and optionally install an initial
+            configuration.
+
+        Contract:
+            - First construction requires a non-None `Aether` substrate.
+            - Later constructor calls reuse the existing singleton and may only
+              refresh the logger override.
+            - Registry, manager, and counter state start empty on first
+              initialization.
+            - The singleton starts disabled even when configuration is supplied.
 
         Args:
             aether:
                 Hidden owning `Aether` singleton used for Nexus-managed frame
                 realization and disposal.
             configuration:
-                Optional preinstalled Nexus configuration. When omitted, Nexus
-                starts unconfigured and disabled.
+                Optional initial Nexus configuration. When omitted, Nexus starts
+                unconfigured and disabled.
             logger:
                 Optional logger instance or logger-like object used to override
                 the default provider-backed logger.
 
         Returns:
             None.
+
+        Raises:
+            ValueError:
+                If first-time initialization is attempted without an `Aether`
+                substrate reference.
         """
         if Nexus._initialized:
             if logger is not None:
@@ -152,11 +178,81 @@ class Nexus(Cleanable, INexus):
         self._initialize_logging(logger)
         Nexus._initialized = True
 
+    def cleanup(self) -> None:
+        """
+        Idempotently cleanup Nexus-owned state and reset singleton status.
+
+        Purpose:
+            Tear down the Rift-domain root, its owned registries/managers, and
+            the singleton bookkeeping used for later clean test reinitialization.
+
+        Contract:
+            - Safe to call more than once.
+            - Cleans registered Rifts, profile templates, installed
+              configuration, ACL manager, and descriptor manager before
+              dropping references.
+            - Resets class-level singleton state after instance teardown
+              completes.
+
+        Threading:
+            Acquires the instance lock for mutable-state teardown, then the
+            class-level singleton lock to reset singleton bookkeeping.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        lock = self._lock
+        with lock:
+            if self._cleaned:
+                return
+            self._logger.info("Cleaning Nexus singleton state.", "cleanup")
+            self._cleaned = True
+            for rift in self._rifts_by_id.values():
+                rift.cleanup()
+            if self._configuration is not None:
+                self._configuration.cleanup()
+            for profile in self._rift_profiles_by_name.values():
+                profile.cleanup()
+            if self._frame_acl_manager is not None:
+                self._frame_acl_manager.cleanup()
+            if self._frame_descriptor_manager is not None:
+                self._frame_descriptor_manager.cleanup()
+            self._configuration = None
+            self._configured = None
+            self._enabled = None
+            self._aether = None
+            self._rifts_by_id.clear()
+            self._rift_ids_by_name.clear()
+            self._next_default_rift_number = None
+            self._next_indexed_nexus_frame_number = None
+            self._rift_profiles_by_name.clear()
+            self._target_frame_ref_counts.clear()
+            self._rifts_by_id = None
+            self._rift_ids_by_name = None
+            self._next_default_rift_number = None
+            self._next_indexed_nexus_frame_number = None
+            self._rift_profiles_by_name = None
+            self._frame_acl_manager = None
+            self._frame_descriptor_manager = None
+            self._target_frame_ref_counts = None
+            self._id = None
+        if self._logger is not None:
+            self._logger.cleanup()
+            self._logger = None
+        self._lock = None
+        with Nexus._singleton_lock:
+            Nexus._instance = None
+            Nexus._initialized = False
+
     def _initialize_logging(self, logger: Optional[Any]) -> None:
         """
-        Internal
-
         Establish the Nexus logger through the hosted utility system.
+
+        Purpose:
+            Resolve the logger path used by Nexus lifecycle and registry
+            operations.
 
         Priority:
             1) Explicit logger arg
@@ -193,6 +289,10 @@ class Nexus(Cleanable, INexus):
     def _reset_singleton_for_tests(cls) -> None:
         """
         Reset the Nexus singleton for test isolation.
+
+        Purpose:
+            Provide deterministic singleton teardown for test environments that
+            need a clean `Nexus` bootstrap path.
 
         Returns:
             None.
@@ -259,71 +359,13 @@ class Nexus(Cleanable, INexus):
         self.check_cleaned()
         return self._enabled
 
-    def cleanup(self) -> None:
-        """
-        Internal
-
-        Idempotently cleanup Nexus-owned state and reset singleton status.
-
-        Contract:
-            - Cleans all registered Rifts.
-            - Cleans any installed configuration.
-            - Clears registries, ref counts, and configured/enabled flags.
-            - Resets Nexus singleton state so tests can reinitialize cleanly.
-
-        Returns:
-            None.
-        """
-        if self._cleaned:
-            return
-        lock = self._lock
-        with lock:
-            if self._cleaned:
-                return
-            self._logger.info("Cleaning Nexus singleton state.", "cleanup")
-            self._cleaned = True
-            for rift in self._rifts_by_id.values():
-                rift.cleanup()
-            if self._configuration is not None:
-                self._configuration.cleanup()
-            for profile in self._rift_profiles_by_name.values():
-                profile.cleanup()
-            if self._frame_acl_manager is not None:
-                self._frame_acl_manager.cleanup()
-            if self._frame_descriptor_manager is not None:
-                self._frame_descriptor_manager.cleanup()
-            self._configuration = None
-            self._configured = None
-            self._enabled = None
-            self._aether = None
-            self._rifts_by_id.clear()
-            self._rift_ids_by_name.clear()
-            self._next_default_rift_number = None
-            self._next_indexed_nexus_frame_number = None
-            self._rift_profiles_by_name.clear()
-            self._target_frame_ref_counts.clear()
-            self._rifts_by_id = None
-            self._rift_ids_by_name = None
-            self._next_default_rift_number = None
-            self._next_indexed_nexus_frame_number = None
-            self._rift_profiles_by_name = None
-            self._frame_acl_manager = None
-            self._frame_descriptor_manager = None
-            self._target_frame_ref_counts = None
-            self._id = None
-        if self._logger is not None:
-            self._logger.cleanup()
-            self._logger = None
-        self._lock = None
-        with Nexus._singleton_lock:
-            Nexus._instance = None
-            Nexus._initialized = False
-
     def create_system_configuration(self) -> INexusConfiguration:
         """
-        Internal
-
         Create a fresh mutable Nexus configuration with default values.
+
+        Purpose:
+            Provide callers with a mutable process-level Nexus configuration
+            seeded with repo defaults.
 
         Returns:
             INexusConfiguration: Fresh mutable Nexus config.
@@ -336,9 +378,16 @@ class Nexus(Cleanable, INexus):
             configuration: Optional[INexusConfiguration] = None,
     ) -> None:
         """
-        Internal
-
         Install configuration if needed and enable Nexus operations.
+
+        Purpose:
+            Transition Nexus into its enabled state for Rift-domain operations.
+
+        Contract:
+            - Optionally replaces the installed configuration before enabling.
+            - Finalizes the installed configuration before setting enabled.
+            - Does not create a default configuration automatically when none
+              is installed.
 
         Args:
             configuration:
@@ -348,7 +397,8 @@ class Nexus(Cleanable, INexus):
             None.
 
         Raises:
-            RuntimeError: If Nexus has no installed configuration.
+            RuntimeError:
+                If Nexus has no installed configuration.
         """
         self.check_cleaned()
         with self._lock:
@@ -363,10 +413,12 @@ class Nexus(Cleanable, INexus):
 
     def disable(self) -> None:
         """
-        Internal
-
         Disable Rift operations without discarding configuration or registry
         state.
+
+        Purpose:
+            Turn off Rift-domain operation entrypoints while preserving the
+            installed configuration and current registries.
 
         Returns:
             None.
@@ -381,9 +433,18 @@ class Nexus(Cleanable, INexus):
             profile_name: Optional[str] = None,
     ) -> IRiftConfiguration:
         """
-        Internal
-
         Create a per-Rift configuration initialized from Nexus defaults.
+
+        Purpose:
+            Produce a mutable `RiftConfiguration` for a future Rift creation
+            flow.
+
+        Contract:
+            - Requires Nexus to be configured.
+            - When `profile_name` is supplied, clones the stored profile
+              template instead of returning it directly.
+            - When `profile_name` is omitted, seeds a fresh configuration from
+              installed Nexus defaults.
 
         Args:
             profile_name:
@@ -394,8 +455,10 @@ class Nexus(Cleanable, INexus):
             IRiftConfiguration: Mutable per-Rift configuration.
 
         Raises:
-            RuntimeError: If Nexus is not configured.
-            ValueError: If `profile_name` is unknown.
+            RuntimeError:
+                If Nexus is not configured.
+            ValueError:
+                If `profile_name` is unknown.
         """
         self._require_configured()
         if profile_name is not None:
@@ -848,9 +911,14 @@ class Nexus(Cleanable, INexus):
 
     def list_rift_ids(self) -> list[str]:
         """
-        Internal
-
         Return the currently registered Rift ids.
+
+        Purpose:
+            Expose the current live Rift registry contents at the id level.
+
+        Contract:
+            Requires Nexus to be enabled before callers may inspect the live
+            Rift registry.
 
         Returns:
             list[str]: Snapshot of registered ids.
@@ -860,16 +928,24 @@ class Nexus(Cleanable, INexus):
 
     def get_frame_acl_builder(self, frame_name: str) -> FrameACLBuilder:
         """
-        Internal
-
         Return the unique frame ACL builder object for one frame.
+
+        Purpose:
+            Provide the root-level entrypoint for frame-scoped ACL authoring.
+
+        Contract:
+            - Ensures the matching frame ACL container exists before builder
+              lookup.
+            - Returns the same builder object for repeated calls against the
+              same frame.
 
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name whose ACL builder should be returned.
 
         Returns:
-            FrameACLBuilder: Unique builder object for the frame.
+            FrameACLBuilder:
+                The one builder object owned by the frame's ACL container.
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)
@@ -880,16 +956,19 @@ class Nexus(Cleanable, INexus):
             frame_name: str,
     ) -> FrameACLConfiguration:
         """
-        Internal
-
         Return the current selected frame ACL configuration for one frame.
+
+        Purpose:
+            Expose the currently selected ACL configuration for a frame through
+            the Nexus facade.
 
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name whose current ACL configuration is requested.
 
         Returns:
-            FrameACLConfiguration: Current config for the frame.
+            FrameACLConfiguration:
+                The currently selected ACL configuration for the frame.
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)
@@ -902,16 +981,19 @@ class Nexus(Cleanable, INexus):
             frame_name: str,
     ) -> FrameACLConfiguration:
         """
-        Internal
-
         Return the head frame ACL configuration for one frame.
+
+        Purpose:
+            Expose the newest committed ACL configuration for a frame through
+            the Nexus facade.
 
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name whose head ACL configuration is requested.
 
         Returns:
-            FrameACLConfiguration: Head config for the frame.
+            FrameACLConfiguration:
+                The head ACL configuration node for the frame.
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)
@@ -925,18 +1007,25 @@ class Nexus(Cleanable, INexus):
             configuration_id: str,
     ) -> FrameACLConfiguration:
         """
-        Internal
-
         Return one specific ACL configuration for a frame.
+
+        Purpose:
+            Resolve one historical or current ACL configuration node for a
+            frame-scoped chain through the Nexus facade.
 
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name that owns the ACL chain.
             configuration_id:
-                Target config id.
+                Target configuration id within the frame chain.
 
         Returns:
-            FrameACLConfiguration: Requested config node.
+            FrameACLConfiguration:
+                Requested configuration node.
+
+        Raises:
+            KeyError:
+                If the configuration id is not present for the frame.
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)
@@ -951,18 +1040,21 @@ class Nexus(Cleanable, INexus):
             limit: Optional[int] = None,
     ) -> List[FrameACLConfiguration]:
         """
-        Internal
-
         Return frame ACL configs newest-first for one frame.
+
+        Purpose:
+            Provide a root-level ordered history view over a frame's ACL
+            configuration chain.
 
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name that owns the ACL chain.
             limit:
-                Optional maximum count.
+                Optional maximum number of returned configuration nodes.
 
         Returns:
-            List[FrameACLConfiguration]: Ordered config list.
+            List[FrameACLConfiguration]:
+                Ordered configuration-node list from newest to oldest.
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)
@@ -977,18 +1069,21 @@ class Nexus(Cleanable, INexus):
             limit: Optional[int] = None,
     ) -> List[str]:
         """
-        Internal
-
         Return frame ACL config ids newest-first for one frame.
+
+        Purpose:
+            Provide a lightweight ordered history view without materializing the
+            full configuration nodes.
 
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name that owns the ACL chain.
             limit:
-                Optional maximum count.
+                Optional maximum number of returned ids.
 
         Returns:
-            List[str]: Ordered config id list.
+            List[str]:
+                Ordered configuration id list from newest to oldest.
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)
@@ -1005,20 +1100,28 @@ class Nexus(Cleanable, INexus):
             select_as_current: bool = True,
     ) -> FrameACLConfiguration:
         """
-        Internal
-
         Insert one locked ACL configuration at the head of a frame chain.
+
+        Purpose:
+            Commit a locked ACL configuration node into a frame chain through
+            the Nexus facade.
 
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name that owns the ACL chain.
             configuration:
-                Config node to insert.
+                Locked configuration node to insert.
             select_as_current:
-                Whether the new head should become current immediately.
+                True when the inserted head should also become the current
+                selected configuration.
 
         Returns:
-            FrameACLConfiguration: Inserted config node.
+            FrameACLConfiguration:
+                Inserted configuration node.
+
+        Raises:
+            TypeError, ValueError:
+                Propagated when validation fails or the chain rejects the node.
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)
@@ -1034,18 +1137,21 @@ class Nexus(Cleanable, INexus):
             configuration_id: str,
     ) -> FrameACLConfiguration:
         """
-        Internal
-
         Select one existing frame ACL config as current.
+
+        Purpose:
+            Move a frame chain's current-selection pointer through the Nexus
+            facade.
 
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name that owns the ACL chain.
             configuration_id:
-                Config id to make current.
+                Existing configuration id to make current.
 
         Returns:
-            FrameACLConfiguration: Newly selected current config.
+            FrameACLConfiguration:
+                Newly selected current configuration.
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)
@@ -1060,18 +1166,21 @@ class Nexus(Cleanable, INexus):
             configuration_id: str,
     ) -> FrameACLConfiguration:
         """
-        Internal
-
         Roll current selection back to one historical frame ACL config.
+
+        Purpose:
+            Provide a semantic rollback entrypoint over frame ACL
+            current-selection state.
 
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name that owns the ACL chain.
             configuration_id:
-                Historical config id to make current.
+                Historical configuration id to restore as current.
 
         Returns:
-            FrameACLConfiguration: Newly selected current config.
+            FrameACLConfiguration:
+                Newly selected current configuration.
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)
@@ -1088,20 +1197,23 @@ class Nexus(Cleanable, INexus):
             reason: str,
     ) -> FrameACLConfiguration:
         """
-        Internal
-
         Create one new draft ACL config copied from an existing frame config.
+
+        Purpose:
+            Seed a new unlocked ACL configuration node from an existing frame
+            configuration through the Nexus facade.
 
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name that owns the ACL chain.
             configuration_id:
-                Source config id.
+                Source configuration id to copy from.
             reason:
-                Human-readable creation reason.
+                Human-readable reason recorded on the new draft node.
 
         Returns:
-            FrameACLConfiguration: New unlocked config copied from the source.
+            FrameACLConfiguration:
+                New unlocked configuration copied from the source node.
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)

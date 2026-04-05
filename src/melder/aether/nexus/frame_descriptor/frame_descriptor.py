@@ -8,32 +8,38 @@ from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.aether.nexus.nexus_frame_record import NexusFrameRecord
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import IAethericFrame
 
 
 class FrameDescriptor(Cleanable):
     """
-    Internal
-
-    Nexus-owned aggregate for one frame-scoped state surface.
-
     Purpose:
-        Collect the frame-scoped state Nexus needs to reason about one frame in
-        one place instead of scattering that state across multiple flat Nexus
-        fields.
+        Aggregate the Nexus-owned metadata and indexes for one frame-scoped
+        state surface.
 
     Contract:
-        - One descriptor per frame name.
-        - May hold references to the live runtime frame and bound frame
-          configuration, but does not own their lifecycle.
-        - Owns Nexus-side metadata objects such as `FrameRecord` and
-          `NexusFrameRecord`.
+        - There is at most one descriptor per frame name.
+        - The descriptor may reference the live runtime frame and bound frame
+          posture, but it does not own their runtime lifecycle.
+        - The descriptor owns Nexus-side records and indexes derived from the
+          frame: `FrameRecord`, `NexusFrameRecord`, `ConduitRecord`,
+          `SpellRecord`, and the related secondary indexes.
         - Cleanup is idempotent and clears owned metadata while dropping any
           non-owned references.
+
+    Threading:
+        Uses one instance `threading.RLock` to serialize multi-step updates to
+        record ownership and secondary-index maintenance.
+
+    Lifecycle:
+        Cleanup cascades into all owned record objects before dropping indexes
+        and references.
     """
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_id",
         "_lock",
         "_frame_name",
         "_frame_handle",
@@ -50,11 +56,25 @@ class FrameDescriptor(Cleanable):
         """
         Initialize one empty Nexus-side frame descriptor.
 
+        Purpose:
+            Construct the per-frame Nexus aggregate that will later host frame,
+            conduit, and spell metadata records.
+
+        Contract:
+            - `frame_name` must remain the stable identity of the descriptor for
+              its entire lifetime.
+            - Runtime frame/configuration references start unset.
+            - All record/index stores start empty.
+
         Args:
             frame_name:
                 Stable frame name represented by this descriptor.
+
+        Returns:
+            None.
         """
         super().__init__()
+        self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
         self._frame_handle: Optional[IAethericFrame] = None
@@ -69,6 +89,19 @@ class FrameDescriptor(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently cleanup the descriptor.
+
+        Purpose:
+            Tear down all descriptor-owned records, indexes, and references in
+            one deterministic pass.
+
+        Contract:
+            - Safe to call more than once.
+            - Cleans owned records before clearing indexes.
+            - Drops non-owned runtime references after record cleanup.
+
+        Threading:
+            Acquires the descriptor lock so no other record/index mutation can
+            interleave with teardown.
 
         Returns:
             None.
@@ -108,6 +141,10 @@ class FrameDescriptor(Cleanable):
         """
         Return the stable descriptor frame name.
 
+        Purpose:
+            Expose the frame identity that anchors every record and index in
+            this descriptor.
+
         Returns:
             str: Frame name for this descriptor.
         """
@@ -118,6 +155,10 @@ class FrameDescriptor(Cleanable):
     def frame_handle(self) -> Optional[IAethericFrame]:
         """
         Return the current runtime frame reference when known.
+
+        Purpose:
+            Expose the live runtime frame reference cached on the descriptor
+            when available.
 
         Returns:
             Optional[IAethericFrame]: Current runtime frame handle.
@@ -130,6 +171,9 @@ class FrameDescriptor(Cleanable):
     def frame_configuration(self) -> Optional[AethericFrameConfiguration]:
         """
         Return the currently attached frame posture/configuration reference.
+
+        Purpose:
+            Expose the bound frame posture cached on the descriptor.
 
         Returns:
             Optional[AethericFrameConfiguration]: Bound frame configuration
@@ -144,6 +188,10 @@ class FrameDescriptor(Cleanable):
         """
         Return the owned frame overview record when published.
 
+        Purpose:
+            Expose the descriptor-owned frame summary record when one has been
+            published.
+
         Returns:
             Optional[FrameRecord]: Current frame overview record.
         """
@@ -156,6 +204,10 @@ class FrameDescriptor(Cleanable):
         """
         Return the owned Nexus-managed frame metadata record when present.
 
+        Purpose:
+            Expose the Nexus-managed internal frame record when one has been
+            attached to this descriptor.
+
         Returns:
             Optional[NexusFrameRecord]: Current Nexus-managed frame record.
         """
@@ -167,6 +219,10 @@ class FrameDescriptor(Cleanable):
     def conduit_records_by_id(self) -> Dict[str, ConduitRecord]:
         """
         Return a snapshot of the descriptor-owned conduit record map.
+
+        Purpose:
+            Expose the current conduit-record mapping without handing callers
+            the live mutable dictionary.
 
         Returns:
             Dict[str, ConduitRecord]: Snapshot of conduit records by conduit
@@ -181,6 +237,10 @@ class FrameDescriptor(Cleanable):
         """
         Return a snapshot of the descriptor-owned spell record map.
 
+        Purpose:
+            Expose the current spell-record mapping without handing callers the
+            live mutable dictionary.
+
         Returns:
             Dict[Tuple[str, str], SpellRecord]: Snapshot of spell records by
             `(spellbook_id, spell_id)`.
@@ -193,6 +253,9 @@ class FrameDescriptor(Cleanable):
     def spell_keys_by_conduit_id(self) -> Dict[str, Set[Tuple[str, str]]]:
         """
         Return a snapshot of the descriptor-owned conduit -> spell-key index.
+
+        Purpose:
+            Expose the secondary index from conduit id to owned spell keys.
 
         Returns:
             Dict[str, Set[Tuple[str, str]]]: Snapshot of spell keys grouped by
@@ -210,6 +273,9 @@ class FrameDescriptor(Cleanable):
         """
         Return a snapshot of the descriptor-owned spellbook -> spell-key index.
 
+        Purpose:
+            Expose the secondary index from spellbook id to owned spell keys.
+
         Returns:
             Dict[str, Set[Tuple[str, str]]]: Snapshot of spell keys grouped by
             spellbook id.
@@ -225,9 +291,17 @@ class FrameDescriptor(Cleanable):
         """
         Attach or replace the runtime frame reference.
 
+        Purpose:
+            Cache or clear the descriptor's live runtime frame reference.
+
+        Contract:
+            This method stores a reference only; it does not transfer frame
+            ownership into the descriptor.
+
         Args:
             frame_handle:
-                Live runtime frame handle or None.
+                Live runtime frame handle or None when clearing the cached
+                reference.
         """
         self.check_cleaned()
         with self._lock:
@@ -240,9 +314,18 @@ class FrameDescriptor(Cleanable):
         """
         Attach or replace the bound frame configuration reference.
 
+        Purpose:
+            Cache or clear the frame posture reference associated with this
+            descriptor.
+
+        Contract:
+            This method stores a reference only; it does not own or finalize the
+            supplied configuration.
+
         Args:
             frame_configuration:
-                Bound frame configuration reference or None.
+                Bound frame configuration reference or None when clearing the
+                cached posture.
         """
         self.check_cleaned()
         with self._lock:
@@ -252,9 +335,16 @@ class FrameDescriptor(Cleanable):
         """
         Replace the owned frame overview record.
 
+        Purpose:
+            Install a new descriptor-owned frame summary record.
+
+        Contract:
+            When a different overview record is already owned, the older record
+            is cleaned before replacement.
+
         Args:
             frame_overview:
-                New frame overview record.
+                New frame overview record to own.
         """
         self.check_cleaned()
         with self._lock:
@@ -270,9 +360,17 @@ class FrameDescriptor(Cleanable):
         """
         Replace the owned Nexus-managed frame metadata record.
 
+        Purpose:
+            Install or clear the Nexus-managed internal frame record owned by
+            the descriptor.
+
+        Contract:
+            When a different record is already owned, the older record is
+            cleaned before replacement.
+
         Args:
             nexus_frame_record:
-                New Nexus-managed frame record or None.
+                New Nexus-managed frame record or None when clearing ownership.
         """
         self.check_cleaned()
         with self._lock:
@@ -285,9 +383,17 @@ class FrameDescriptor(Cleanable):
         """
         Upsert one conduit record owned by this descriptor.
 
+        Purpose:
+            Store or replace one conduit record in the descriptor-owned primary
+            conduit registry.
+
+        Contract:
+            Replacing an existing different record cleans the older record
+            before storing the new one.
+
         Args:
             conduit_record:
-                Conduit record to store.
+                Conduit record to store and own.
         """
         self.check_cleaned()
         with self._lock:
@@ -300,9 +406,13 @@ class FrameDescriptor(Cleanable):
         """
         Remove one conduit record owned by this descriptor.
 
+        Purpose:
+            Remove a conduit record from the primary registry and clean it if it
+            exists.
+
         Args:
             conduit_id:
-                Conduit id to remove.
+                Conduit id whose record should be removed.
         """
         self.check_cleaned()
         with self._lock:
@@ -314,9 +424,19 @@ class FrameDescriptor(Cleanable):
         """
         Upsert one spell record and refresh descriptor-local indexes.
 
+        Purpose:
+            Store or replace a spell record and keep the descriptor's secondary
+            indexes consistent with the new state.
+
+        Contract:
+            - Existing different records are removed from indexes and cleaned
+              before replacement.
+            - The spellbook and conduit indexes are rebuilt from the new record
+              state.
+
         Args:
             spell_record:
-                Spell record to store.
+                Spell record to store and own.
         """
         self.check_cleaned()
         with self._lock:
@@ -339,9 +459,14 @@ class FrameDescriptor(Cleanable):
         """
         Remove one spell record and clear its descriptor-local indexes.
 
+        Purpose:
+            Remove a spell record from the primary registry and tear down its
+            secondary-index membership.
+
         Args:
             record_key:
-                Canonical `(spellbook_id, spell_id)` key.
+                Canonical `(spellbook_id, spell_id)` key for the record to
+                remove.
         """
         self.check_cleaned()
         with self._lock:
@@ -354,6 +479,13 @@ class FrameDescriptor(Cleanable):
     def detach_nexus_frame_record(self) -> Optional[NexusFrameRecord]:
         """
         Detach and return the owned Nexus-managed frame metadata record.
+
+        Purpose:
+            Remove the currently owned Nexus-managed frame record from the
+            descriptor without cleaning it.
+
+        Contract:
+            Ownership of the detached record transfers to the caller.
 
         Returns:
             Optional[NexusFrameRecord]: Detached record when present.
@@ -370,6 +502,9 @@ class FrameDescriptor(Cleanable):
     ) -> Set[Tuple[str, str]]:
         """
         Return the conduit -> spell-key index set, creating it when missing.
+
+        Purpose:
+            Provide mutable storage for the conduit-to-spell secondary index.
 
         Args:
             conduit_id:
@@ -391,6 +526,9 @@ class FrameDescriptor(Cleanable):
         """
         Return the spellbook -> spell-key index set, creating it when missing.
 
+        Purpose:
+            Provide mutable storage for the spellbook-to-spell secondary index.
+
         Args:
             spellbook_id:
                 Spellbook id.
@@ -408,9 +546,13 @@ class FrameDescriptor(Cleanable):
         """
         Remove one spell record's key from descriptor-local indexes.
 
+        Purpose:
+            Keep secondary indexes synchronized when a spell record is removed
+            or replaced.
+
         Args:
             spell_record:
-                Spell record whose indexes should be removed.
+                Spell record whose index memberships should be removed.
         """
         record_key = spell_record.record_key
         spellbook_spell_keys = self._spell_keys_by_spellbook_id.get(

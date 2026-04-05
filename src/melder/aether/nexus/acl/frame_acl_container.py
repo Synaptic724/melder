@@ -8,28 +8,34 @@ from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.frame_acl_configuration_chain import FrameACLConfigurationChain
 from melder.aether.nexus.acl.frame_acl_validator import FrameACLValidator
+from melder.utilities.helpers.id_builder import IDBuilder
 
 
 class FrameACLContainer(Cleanable):
     """
-    Internal
-
-    Holder for the unique ACL objects for one frame.
-
     Purpose:
-        Keep the one builder object, current configuration, bounded history,
-        and validator grouped together for one frame without confusing that ACL
-        state with the descriptor's canonical runtime state.
+        Hold all frame-local ACL subsystem objects for one frame in one place.
 
     Contract:
-        - One container per frame.
-        - Owns one builder object for that frame.
-        - Owns the current configuration plus bounded history.
-        - Owns one validator object for that frame.
+        - One container exists per frame ACL registration.
+        - The container owns one configuration chain, one validator, and one
+          builder for the frame.
+        - The builder is a stable object-singleton inside the container.
+        - The container is the handoff point between manager-level frame
+          targeting and chain-level ACL history mechanics.
+
+    Threading:
+        Uses one instance `threading.RLock` to serialize cleanup against other
+        container-owned operations.
+
+    Lifecycle:
+        Cleanup is idempotent and cascades into the builder, validator, and
+        configuration chain before dropping references.
     """
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_id",
         "_lock",
         "_frame_name",
         "_frame_acl_configuration_chain",
@@ -46,18 +52,38 @@ class FrameACLContainer(Cleanable):
         """
         Initialize one frame ACL container.
 
+        Purpose:
+            Create the frame-local ACL subsystem objects and seed the
+            configuration chain with its default head/current configuration.
+
+        Contract:
+            - `frame_name` must be a non-empty stable frame identifier.
+            - `history_limit` must allow at least one retained configuration.
+            - Builder, validator, and chain are created eagerly and owned by
+              the container from construction onward.
+
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name that owns this ACL container.
             history_limit:
-                Maximum number of prior configurations retained in history.
+                Maximum number of configuration nodes retained by the owned
+                chain.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If `frame_name` is empty or `history_limit` is less than 1.
+            TypeError:
+                If `history_limit` is not an integer.
         """
         super().__init__()
         if not frame_name:
             raise ValueError("frame_name cannot be empty.")
         if not isinstance(history_limit, int) or history_limit < 1:
             raise ValueError("history_limit must be an integer >= 1.")
-
+        self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
         self._frame_acl_configuration_chain: FrameACLConfigurationChain = (
@@ -69,10 +95,48 @@ class FrameACLContainer(Cleanable):
         self._frame_acl_validator: FrameACLValidator = FrameACLValidator(frame_name)
         self._frame_acl_builder: FrameACLBuilder = FrameACLBuilder(self)
 
+    def cleanup(self) -> None:
+        """
+        Idempotently cleanup the container and all owned ACL objects.
+
+        Purpose:
+            Tear down the frame-local ACL subsystem in dependency order.
+
+        Contract:
+            - Safe to call more than once.
+            - Cleans builder, validator, and configuration chain before
+              dropping references.
+            - Leaves the container unusable after completion.
+
+        Threading:
+            Acquires the container lock so teardown does not interleave with
+            other container-owned operations.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._frame_acl_builder.cleanup()
+            self._frame_acl_validator.cleanup()
+            self._frame_acl_configuration_chain.cleanup()
+            self._frame_acl_builder = None
+            self._frame_acl_validator = None
+            self._frame_acl_configuration_chain = None
+            self._frame_name = None
+        self._lock = None
+
     @property
     def frame_name(self) -> str:
         """
         Return the owning frame name.
+
+        Purpose:
+            Expose the stable frame identity that anchors the container.
 
         Returns:
             str: Owning frame name.
@@ -85,6 +149,12 @@ class FrameACLContainer(Cleanable):
         """
         Return the unique builder object for this frame container.
 
+        Purpose:
+            Expose the one builder object owned by the container.
+
+        Contract:
+            Repeated reads return the same builder object until cleanup.
+
         Returns:
             FrameACLBuilder: Unique builder object.
         """
@@ -95,6 +165,10 @@ class FrameACLContainer(Cleanable):
     def frame_acl_configuration(self) -> FrameACLConfiguration:
         """
         Return the current frame ACL configuration.
+
+        Purpose:
+            Expose the currently selected configuration node from the owned
+            configuration chain.
 
         Returns:
             FrameACLConfiguration: Current configuration.
@@ -107,6 +181,10 @@ class FrameACLContainer(Cleanable):
         """
         Return the frame-scoped ACL configuration chain.
 
+        Purpose:
+            Expose the owned history/current/head mechanics object for the
+            frame.
+
         Returns:
             FrameACLConfigurationChain: Frame-scoped configuration chain.
         """
@@ -118,6 +196,10 @@ class FrameACLContainer(Cleanable):
         """
         Return the frame-scoped ACL validator.
 
+        Purpose:
+            Expose the owned validator object that checks configuration/frame
+            alignment.
+
         Returns:
             FrameACLValidator: Frame-scoped validator.
         """
@@ -128,6 +210,14 @@ class FrameACLContainer(Cleanable):
     def frame_acl_history(self) -> List[FrameACLConfiguration]:
         """
         Return a snapshot of retained configuration history.
+
+        Purpose:
+            Provide the non-current retained configuration nodes for inspection
+            without exposing chain internals directly.
+
+        Contract:
+            - Excludes the current configuration node.
+            - Preserves newest-to-oldest ordering from the chain.
 
         Returns:
             List[FrameACLConfiguration]: Snapshot of prior configurations.
@@ -149,12 +239,25 @@ class FrameACLContainer(Cleanable):
         """
         Validate and install the next frame ACL configuration revision.
 
+        Purpose:
+            Commit a validated configuration node into the owned chain as the
+            new head/current node.
+
+        Contract:
+            - Validation runs before insertion.
+            - Successful installation inserts at the head and selects the new
+              node as current.
+
         Args:
             configuration:
-                New frame ACL configuration.
+                Locked configuration node to install.
 
         Returns:
             None.
+
+        Raises:
+            TypeError, ValueError:
+                Propagated when validation fails or the chain rejects the node.
         """
         self.check_cleaned()
         self._frame_acl_validator.validate_configuration(configuration)
@@ -170,9 +273,12 @@ class FrameACLContainer(Cleanable):
         """
         Select one existing configuration in the chain as current.
 
+        Purpose:
+            Move current selection to one already-owned configuration node.
+
         Args:
             configuration_id:
-                Config id to make current.
+                Existing configuration id to make current.
 
         Returns:
             FrameACLConfiguration: Newly selected current configuration.
@@ -189,9 +295,13 @@ class FrameACLContainer(Cleanable):
         """
         Roll current selection back to one historical config.
 
+        Purpose:
+            Provide a semantic rollback entrypoint over the underlying
+            current-selection mechanics.
+
         Args:
             configuration_id:
-                Config id to make current.
+                Historical configuration id to restore as current.
 
         Returns:
             FrameACLConfiguration: Newly selected current configuration.
@@ -200,25 +310,3 @@ class FrameACLContainer(Cleanable):
         return self._frame_acl_configuration_chain.rollback_to_configuration(
             configuration_id
         )
-
-    def cleanup(self) -> None:
-        """
-        Idempotently clear the container and all owned ACL objects.
-
-        Returns:
-            None.
-        """
-        if self._cleaned:
-            return
-        with self._lock:
-            if self._cleaned:
-                return
-            self._cleaned = True
-            self._frame_acl_builder.cleanup()
-            self._frame_acl_validator.cleanup()
-            self._frame_acl_configuration_chain.cleanup()
-            self._frame_acl_builder = None
-            self._frame_acl_validator = None
-            self._frame_acl_configuration_chain = None
-            self._frame_name = None
-        self._lock = None

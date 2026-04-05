@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.utilities.helpers.id_builder import IDBuilder
 
 
 class StructureHint(Cleanable):
@@ -24,6 +25,8 @@ class StructureHint(Cleanable):
         "confidence",
         "provenance",
         "scope",
+        "_id"
+
     ]
 
     def __init__(
@@ -46,6 +49,7 @@ class StructureHint(Cleanable):
             scope: Optional scope tag (frame/conduit/spellbook/spell).
         """
         super().__init__()
+        self._id: str = IDBuilder.create_id()
         if confidence < 0.0 or confidence > 1.0:
             raise ValueError("confidence must be between 0.0 and 1.0")
         self.kind = kind
@@ -83,6 +87,7 @@ class SpellStructureRecord(Cleanable):
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_id",
         "spell_id",
         "lineage_id",
         "owner_conduit_id",
@@ -128,6 +133,7 @@ class SpellStructureRecord(Cleanable):
             derived_hints: Optional list of derived StructureHint entries.
         """
         super().__init__()
+        self._id: str = IDBuilder.create_id()
         self.spell_id = spell_id
         self.lineage_id = lineage_id
         self.owner_conduit_id = owner_conduit_id
@@ -186,6 +192,7 @@ class ConduitStructureProfile(Cleanable):
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_id",
         "conduit_id",
         "conduit_name",
         "conduit_state",
@@ -193,6 +200,7 @@ class ConduitStructureProfile(Cleanable):
         "aetheric_frame",
         "spell_records",
         "derived_hints",
+
     ]
 
     def __init__(
@@ -219,6 +227,7 @@ class ConduitStructureProfile(Cleanable):
             derived_hints: Optional list of derived StructureHint entries.
         """
         super().__init__()
+        self._id: str = IDBuilder.create_id()
         self.conduit_id = conduit_id
         self.conduit_name = conduit_name
         self.conduit_state = conduit_state
@@ -272,6 +281,7 @@ class FrameStructureProfile(Cleanable):
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_id",
         "frame_id",
         "frame_name",
         "conduit_profiles",
@@ -305,6 +315,7 @@ class FrameStructureProfile(Cleanable):
             derived_hints: Optional list of derived StructureHint entries.
         """
         super().__init__()
+        self._id: str = IDBuilder.create_id()
         self.frame_id = frame_id
         self.frame_name = frame_name
         self.conduit_profiles = dict(conduit_profiles)

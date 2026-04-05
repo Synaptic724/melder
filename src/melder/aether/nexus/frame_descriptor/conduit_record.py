@@ -4,6 +4,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.id_builder import IDBuilder
 
 
 class ConduitRecord(Cleanable):
@@ -26,6 +27,7 @@ class ConduitRecord(Cleanable):
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_id",
         "conduit_id",
         "root_conduit_id",
         "conduit_name",
@@ -70,6 +72,7 @@ class ConduitRecord(Cleanable):
                 Sorted tuple of directly linked peer conduit ids.
         """
         super().__init__()
+        self._id: str = IDBuilder.create_id()
         self.conduit_id = conduit_id
         self.root_conduit_id = root_conduit_id
         self.conduit_name = conduit_name

@@ -4,6 +4,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.id_builder import IDBuilder
 
 
 class SpellRecord(Cleanable):
@@ -27,6 +28,7 @@ class SpellRecord(Cleanable):
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_id",
         "origin_spellbook_id",
         "frame_name",
         "owner_conduit_id",
@@ -91,6 +93,7 @@ class SpellRecord(Cleanable):
                 Current AI profile payload when available.
         """
         super().__init__()
+        self._id: str = IDBuilder.create_id()
         self.origin_spellbook_id = origin_spellbook_id
         self.frame_name = frame_name
         self.owner_conduit_id = owner_conduit_id

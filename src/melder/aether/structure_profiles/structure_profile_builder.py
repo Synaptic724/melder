@@ -18,6 +18,7 @@ from melder.aether.structure_profiles.structure_profile_models import (
     ConduitStructureProfile,
     FrameStructureProfile,
 )
+from melder.utilities.helpers.id_builder import IDBuilder
 
 
 class StructureProfileBuilder(Cleanable):
@@ -36,6 +37,7 @@ class StructureProfileBuilder(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_max_related",
+        "_id"
     ]
 
     def __init__(self, *, max_related: int = 10) -> None:
@@ -46,6 +48,7 @@ class StructureProfileBuilder(Cleanable):
             max_related: Default maximum related-spell count for tooling queries.
         """
         super().__init__()
+        self._id: str = IDBuilder.create_id()
         self._max_related: int = max_related
 
     def build_frame_profile(self, frame: AethericFrame) -> FrameStructureProfile:
@@ -295,6 +298,7 @@ class StructureProfileTooling(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_frame_profile",
+        "_id"
     ]
 
     def __init__(self, frame_profile: FrameStructureProfile) -> None:
@@ -305,7 +309,17 @@ class StructureProfileTooling(Cleanable):
             frame_profile: FrameStructureProfile snapshot to query.
         """
         super().__init__()
+        self._id: str = IDBuilder.create_id()
         self._frame_profile = frame_profile
+
+    def cleanup(self) -> None:
+        """
+        Idempotently clear tooling references.
+        """
+        if self._cleaned:
+            return
+        self._frame_profile = None
+        self._cleaned = True
 
     def describe_spell_structure(self, spell_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -429,15 +443,6 @@ class StructureProfileTooling(Cleanable):
             self._resolve_spell_id(lineage_id, lineage_index)
             for lineage_id in neighbors
         ]
-
-    def cleanup(self) -> None:
-        """
-        Idempotently clear tooling references.
-        """
-        if self._cleaned:
-            return
-        self._frame_profile = None
-        self._cleaned = True
 
     def _build_dependency_graph(self) -> Dict[str, List[str]]:
         """

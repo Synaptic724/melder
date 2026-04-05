@@ -3,6 +3,7 @@ from typing import Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.id_builder import IDBuilder
 
 
 class FrameRecord(Cleanable):
@@ -26,6 +27,7 @@ class FrameRecord(Cleanable):
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_id",
         "frame_name",
         "frame_id",
         "config_origin_spellbook_id",
@@ -93,6 +95,7 @@ class FrameRecord(Cleanable):
                 Sorted tuple of cluster names currently registered in the frame.
         """
         super().__init__()
+        self._id: str = IDBuilder.create_id()
         self.frame_name = frame_name
         self.frame_id = frame_id
         self.config_origin_spellbook_id = config_origin_spellbook_id

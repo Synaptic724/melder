@@ -9,24 +9,26 @@ from melder.utilities.helpers.id_builder import IDBuilder
 
 class FrameACLConfiguration(Cleanable):
     """
-    Internal
-
-    One frame-scoped ACL configuration node.
-
     Purpose:
-        Represent one committed or draft ACL configuration in the frame-level
-        configuration chain.
+        Represent one frame-scoped ACL configuration node owned by a
+        `FrameACLConfigurationChain`.
 
     Contract:
-        - Carries its own configuration id and linked-list metadata.
-        - Stores the canonical normalized JSON payload string used for display,
-          persistence, and copy-forward mechanics.
-        - May exist in an unlocked draft state before finalize.
-        - Must be locked before the chain may own it.
+        - Carries stable node identity plus linked-history metadata.
+        - Stores one canonical normalized JSON payload string that represents
+          the authored ACL state.
+        - May exist as an unlocked draft while being prepared by a builder or
+          chain-copy operation.
+        - Must be locked before a chain may commit and own it.
+
+    Lifecycle:
+        Cleanup is idempotent and clears all node metadata and payload
+        references.
     """
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_id",
         "_configuration_id",
         "_frame_name",
         "_source_configuration_id",
@@ -50,20 +52,40 @@ class FrameACLConfiguration(Cleanable):
         """
         Initialize one frame-scoped ACL configuration node.
 
+        Purpose:
+            Construct a single ACL configuration node with normalized payload
+            storage and chain-link metadata.
+
+        Contract:
+            - Generates a fresh configuration id at construction time.
+            - Records creation time immediately.
+            - Does not normalize or validate JSON beyond what the caller
+              already supplied in `normalized_json_configuration_string`.
+
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name that owns this configuration node.
             normalized_json_configuration_string:
-                Canonical normalized JSON payload string.
+                Canonical normalized JSON payload string for this node.
             source_configuration_id:
-                Source configuration id when copied from another config.
+                Source configuration id when this node was copied from another
+                node; otherwise None.
             previous_configuration_id:
-                Previous linked-list configuration id.
+                Previous chain node id when already known; otherwise None.
             reason:
-                Human-readable creation reason.
+                Human-readable creation reason recorded with the node.
             locked:
-                True when the configuration is finalized and safe for chain
+                True when the node starts finalized and safe for chain
                 ownership.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If `frame_name` or `reason` is empty.
+            TypeError:
+                If the JSON payload is not a string or `locked` is not a bool.
         """
         super().__init__()
         if not frame_name:
@@ -76,7 +98,7 @@ class FrameACLConfiguration(Cleanable):
             raise ValueError("reason cannot be empty.")
         if not isinstance(locked, bool):
             raise TypeError("locked must be a bool.")
-
+        self._id: str = IDBuilder.create_id()
         self._configuration_id: str = IDBuilder.create_id()
         self._frame_name: str = frame_name
         self._source_configuration_id: Optional[str] = source_configuration_id
@@ -90,6 +112,34 @@ class FrameACLConfiguration(Cleanable):
             normalized_json_configuration_string
         )
 
+    def cleanup(self) -> None:
+        """
+        Idempotently clear the configuration node.
+
+        Purpose:
+            Tear down the node metadata and payload once the node is no longer
+            usable.
+
+        Contract:
+            - Safe to call more than once.
+            - Clears identity, history metadata, timestamps, and payload
+              references.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        self._configuration_id = None
+        self._frame_name = None
+        self._source_configuration_id = None
+        self._previous_configuration_id = None
+        self._created_at = None
+        self._reason = None
+        self._locked = None
+        self._normalized_json_configuration_string = None
+
     @classmethod
     def create_default(
             cls,
@@ -98,9 +148,16 @@ class FrameACLConfiguration(Cleanable):
         """
         Create the default locked ACL configuration for a frame.
 
+        Purpose:
+            Seed a frame chain with one well-known empty ACL configuration node.
+
+        Contract:
+            - Produces a locked node immediately.
+            - Uses an empty `view_acl` and `codegen_acl` payload.
+
         Args:
             frame_name:
-                Owning frame name.
+                Stable frame name that will own the default node.
 
         Returns:
             FrameACLConfiguration: Default locked configuration node.
@@ -136,22 +193,37 @@ class FrameACLConfiguration(Cleanable):
         """
         Build one ACL configuration node from a JSON payload string.
 
+        Purpose:
+            Normalize a JSON payload string into a new configuration node.
+
+        Contract:
+            - Parses and re-emits the payload in normalized sorted-key form.
+            - Preserves the caller-provided frame, source, previous pointer,
+              reason, and locked state.
+
         Args:
             frame_name:
                 Owning frame name.
             json_configuration_string:
-                JSON payload string to normalize and store.
+                JSON payload string to parse and normalize.
             source_configuration_id:
-                Source configuration id when copied from another config.
+                Source configuration id when the new node is derived from an
+                older node; otherwise None.
             previous_configuration_id:
-                Previous linked-list configuration id.
+                Previous chain node id when already known; otherwise None.
             reason:
-                Human-readable creation reason.
+                Human-readable creation reason recorded with the new node.
             locked:
-                True when the created node should start finalized.
+                True when the new node should start finalized.
 
         Returns:
             FrameACLConfiguration: Normalized configuration node.
+
+        Raises:
+            TypeError:
+                If `json_configuration_string` is not a string.
+            ValueError:
+                If the payload is not valid JSON.
         """
         if not isinstance(json_configuration_string, str):
             raise TypeError("json_configuration_string must be a string.")
@@ -183,14 +255,22 @@ class FrameACLConfiguration(Cleanable):
         """
         Create a new draft configuration node from an existing configuration.
 
+        Purpose:
+            Copy one existing node into a new unlocked draft node for later
+            modification and commit.
+
         Args:
             source_configuration:
-                Existing source configuration to copy.
+                Existing source configuration node to copy from.
             reason:
-                Human-readable creation reason.
+                Human-readable creation reason recorded with the new draft.
 
         Returns:
             FrameACLConfiguration: New unlocked draft configuration node.
+
+        Raises:
+            TypeError:
+                If `source_configuration` is not a `FrameACLConfiguration`.
         """
         if not isinstance(source_configuration, FrameACLConfiguration):
             raise TypeError(
@@ -212,6 +292,9 @@ class FrameACLConfiguration(Cleanable):
         """
         Return the stable configuration id.
 
+        Purpose:
+            Expose the stable node identity generated at construction time.
+
         Returns:
             str: Stable configuration id.
         """
@@ -222,6 +305,9 @@ class FrameACLConfiguration(Cleanable):
     def frame_name(self) -> str:
         """
         Return the owning frame name.
+
+        Purpose:
+            Expose the stable frame identity that owns this node.
 
         Returns:
             str: Owning frame name.
@@ -234,6 +320,10 @@ class FrameACLConfiguration(Cleanable):
         """
         Return the source configuration id when this node was copied forward.
 
+        Purpose:
+            Expose the derivation source for copy-forward or rollback-style
+            draft creation.
+
         Returns:
             Optional[str]: Source configuration id.
         """
@@ -244,6 +334,10 @@ class FrameACLConfiguration(Cleanable):
     def previous_configuration_id(self) -> Optional[str]:
         """
         Return the previous linked-list configuration id.
+
+        Purpose:
+            Expose the prior chain node pointer used for newest-to-oldest
+            traversal.
 
         Returns:
             Optional[str]: Previous linked-list configuration id.
@@ -256,6 +350,10 @@ class FrameACLConfiguration(Cleanable):
         """
         Return the UTC creation timestamp for this node.
 
+        Purpose:
+            Expose the node creation timestamp for diagnostics and history
+            inspection.
+
         Returns:
             str: UTC timestamp string.
         """
@@ -266,6 +364,9 @@ class FrameACLConfiguration(Cleanable):
     def reason(self) -> str:
         """
         Return the human-readable creation reason.
+
+        Purpose:
+            Expose the reason recorded when the node was created.
 
         Returns:
             str: Creation reason.
@@ -278,6 +379,10 @@ class FrameACLConfiguration(Cleanable):
         """
         Return whether the configuration node is finalized.
 
+        Purpose:
+            Expose whether the node may still be mutated by builder/chain prep
+            code.
+
         Returns:
             bool: True when finalized/locked.
         """
@@ -288,6 +393,10 @@ class FrameACLConfiguration(Cleanable):
     def normalized_json_configuration_string(self) -> str:
         """
         Return the canonical normalized JSON payload string.
+
+        Purpose:
+            Expose the normalized payload form used for persistence, display,
+            and copy-forward mechanics.
 
         Returns:
             str: Normalized JSON payload string.
@@ -302,15 +411,20 @@ class FrameACLConfiguration(Cleanable):
         """
         Set the linked-list previous pointer while the config is still mutable.
 
+        Purpose:
+            Allow chain-preparation code to attach the prior-node pointer before
+            the node is finalized.
+
         Args:
             previous_configuration_id:
-                Previous linked-list configuration id.
+                Previous chain node id or None.
 
         Returns:
             None.
 
         Raises:
-            RuntimeError: If the configuration is already locked.
+            RuntimeError:
+                If the configuration is already locked.
         """
         self.check_cleaned()
         if self._locked:
@@ -322,6 +436,12 @@ class FrameACLConfiguration(Cleanable):
     def finalize(self) -> None:
         """
         Lock the configuration node so the chain may own it.
+
+        Purpose:
+            Mark the node as finalized so it is safe for chain ownership.
+
+        Contract:
+            Finalization is one-way; this method does not support unlocking.
 
         Returns:
             None.
@@ -337,17 +457,24 @@ class FrameACLConfiguration(Cleanable):
         Replace the JSON payload string while the configuration is still
         mutable.
 
+        Purpose:
+            Overwrite the draft payload and normalize it into canonical
+            sorted-key JSON form.
+
         Args:
             json_configuration_string:
-                JSON payload string to normalize and store.
+                JSON payload string to parse, normalize, and store.
 
         Returns:
             None.
 
         Raises:
-            RuntimeError: If the configuration is already locked.
-            TypeError: If the payload is not a string.
-            ValueError: If the payload is not valid JSON.
+            RuntimeError:
+                If the configuration is already locked.
+            TypeError:
+                If the payload is not a string.
+            ValueError:
+                If the payload is not valid JSON.
         """
         self.check_cleaned()
         if self._locked:
@@ -369,6 +496,10 @@ class FrameACLConfiguration(Cleanable):
         """
         Return the configuration payload as a detached JSON-compatible dict.
 
+        Purpose:
+            Provide a parsed payload view that callers may inspect without
+            mutating the stored normalized string.
+
         Returns:
             Dict[str, Any]: Parsed JSON payload.
         """
@@ -379,27 +510,12 @@ class FrameACLConfiguration(Cleanable):
         """
         Return the canonical normalized JSON payload string.
 
+        Purpose:
+            Provide the stored normalized payload for persistence, logging, or
+            display.
+
         Returns:
             str: Normalized JSON payload string.
         """
         self.check_cleaned()
         return self._normalized_json_configuration_string
-
-    def cleanup(self) -> None:
-        """
-        Idempotently clear the configuration node.
-
-        Returns:
-            None.
-        """
-        if self._cleaned:
-            return
-        self._cleaned = True
-        self._configuration_id = None
-        self._frame_name = None
-        self._source_configuration_id = None
-        self._previous_configuration_id = None
-        self._created_at = None
-        self._reason = None
-        self._locked = None
-        self._normalized_json_configuration_string = None
