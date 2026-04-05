@@ -213,7 +213,12 @@ class SpellCrafter(Cleanable):
         "_spell_system_states",
     ]
 
-    def __init__(self, spell: ISpell) -> None:
+    def __init__(
+            self,
+            spell: ISpell,
+            *,
+            resolution_profile: Optional[Any] = None,
+    ) -> None:
         """
         Create a new SpellCrafter for the given :class:`Spell`.
 
@@ -222,6 +227,10 @@ class SpellCrafter(Cleanable):
                 The owning Spell. The crafter treats it as read-only, except when
                 later phases push the final DAG back into the Spell via internal
                 methods like ``_add_build_details``.
+            resolution_profile:
+                Optional prebuilt resolution profile from the spell-owned
+                profile. When supplied, SpellCrafter seeds Phase 1 requirements
+                from it instead of rebuilding them immediately.
         """
         Cleanable.__init__(self)
 
@@ -233,6 +242,8 @@ class SpellCrafter(Cleanable):
         self._spell_validator: 'SpellValidationSystem' = self._spell._spellbook._spell_validator
         self._spell_system_states: Optional[ISpellSystemStates] = self._spell._spell_system_states
         self._requirements: Optional[SpellRequirements] = None
+        if resolution_profile is not None:
+            self._requirements = resolution_profile.requirements
         self._symbolic_graph: Optional[SpellSymbolicGraph] = None
         # Phase 3 artifact - currently a SpellResolutionFrame summarising the
         # concrete dependency DAG that is pushed into the owning Spell.
@@ -3233,6 +3244,9 @@ class SpellCrafter(Cleanable):
         """
         self.check_cleaned()
         self._throw_if_cancelled(cancel_event)
+
+        if self._requirements is not None:
+            return
 
         finder = SpellRequirementsFinder(self._spell)
         requirements = finder.build_requirements(cancel_event=cancel_event)

@@ -5,6 +5,9 @@ from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import 
 )
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence
+from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
+    SpellGeneralProfile,
+)
 from melder.spellbook.spell import Spell
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.utilities.general_base.cleanable import Cleanable
@@ -192,8 +195,8 @@ def test_cleanup_disposes_artifacts_and_nulls_references():
             super().cleanup()
 
     dependency_graph = _Disposable()
-    resolution_profile = _Disposable()
-    profile = _CleanableProfile()
+    resolution_profile = _CleanableProfile()
+    binding_profile = _CleanableProfile()
     crafter = _Disposable()
 
     spell = Spell(
@@ -212,15 +215,19 @@ def test_cleanup_disposes_artifacts_and_nulls_references():
 
     # Attach disposable artifacts
     spell.dependency_graph = dependency_graph
-    spell.resolution_profile = resolution_profile
-    spell.profile = profile
+    general_profile = SpellGeneralProfile(
+        binding_profile=binding_profile,
+        resolution_profile=resolution_profile,
+    )
+    spell.profile = general_profile
     spell._crafter = crafter  # internal attachment mimics SpellCrafter ownership
 
     spell.cleanup()
 
     assert dependency_graph.cleaned is True
     assert resolution_profile.cleaned is True
-    assert profile.cleaned is True
+    assert binding_profile.cleaned is True
+    assert spell.profile is None
     assert cleanup_calls == ["spell_index"]
 
     assert spell._cleaned is True
@@ -777,8 +784,8 @@ def test_cleanup_disposes_artifacts_and_nulls_references():
             super().cleanup()
 
     dependency_graph = _Disposable()
-    resolution_profile = _Disposable()
-    profile = _CleanableProfile()
+    resolution_profile = _CleanableProfile()
+    binding_profile = _CleanableProfile()
     crafter = _Disposable()
 
     spell = Spell(
@@ -796,15 +803,19 @@ def test_cleanup_disposes_artifacts_and_nulls_references():
     )
 
     spell.dependency_graph = dependency_graph
-    spell.resolution_profile = resolution_profile
-    spell.profile = profile
+    general_profile = SpellGeneralProfile(
+        binding_profile=binding_profile,
+        resolution_profile=resolution_profile,
+    )
+    spell.profile = general_profile
     spell._crafter = crafter
 
     spell.cleanup()
 
     assert dependency_graph.cleaned is True
     assert resolution_profile.cleaned is True
-    assert profile.was_cleaned is True
+    assert binding_profile.cleaned is True
+    assert spell.profile is None
     assert cleanup_calls == ["spell_index"]
 
     assert spell._cleaned is True
@@ -1055,8 +1066,9 @@ def test_ensure_crafter_lazy_creation_uses_imported_class(monkeypatch):
     created = {}
 
     class DummySpellCrafter:
-        def __init__(self, owner):
+        def __init__(self, owner, *, resolution_profile=None):
             created["owner"] = owner
+            created["resolution_profile"] = resolution_profile
 
     dummy_module = types.SimpleNamespace(SpellCrafter=DummySpellCrafter)
     module_name = "melder.spellbook.spell_crafter.spell_crafter"

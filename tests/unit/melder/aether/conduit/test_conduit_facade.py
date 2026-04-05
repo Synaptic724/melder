@@ -152,6 +152,7 @@ def test_bind_forwards_to_spellbook_for_normal_conduit(
         existence=Existence.unique,
         spellframe="frame",
         binding_name="main",
+        profile="general",
         permissions="read",
         extra=extra,
     )

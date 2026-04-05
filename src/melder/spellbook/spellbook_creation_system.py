@@ -5,14 +5,8 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.spellbook.configuration.system_state import SystemState
-from melder.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
-    SpellDetailedProfile,
-)
 from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
     ClassBindingProfile,
-)
-from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
-    SpellGeneralProfile,
 )
 from melder.spellbook.spell_crafter.system.system_diagnostic import (
     SystemDiagnostic,
@@ -23,7 +17,12 @@ from melder.utilities.custom_exceptions.spellbook_validation_error import Spellb
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import ISpell, IUnitOfWork
+from melder.utilities.interfaces.interfaces import (
+    ISpell,
+    ISpellDetailedProfile,
+    ISpellGeneralProfile,
+    IUnitOfWork,
+)
 from melder.utilities.synchronization.cancellation_event_signal import CancellationEventSignal
 from melder.utilities.synchronization.phase_scheduler import PhaseScheduler
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
@@ -456,7 +455,7 @@ class SpellbookCreationSystem(Cleanable):
             matched: List[str] = []
             profile = spell.profile
             binding_profile = profile
-            if isinstance(profile, (SpellGeneralProfile, SpellDetailedProfile)):
+            if isinstance(profile, (ISpellGeneralProfile, ISpellDetailedProfile)):
                 binding_profile = profile.binding_profile
             if isinstance(binding_profile, ClassBindingProfile):
                 method_names = set(binding_profile.method_names)

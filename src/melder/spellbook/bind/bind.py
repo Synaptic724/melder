@@ -79,6 +79,7 @@ class Bind(Cleanable, IBind):
             spell: Any = None,
             spellframe: Any = None,
             binding_name: str =None,
+            profile: str = "general",
     ) -> Union[ISpell, Any]:
         """
         Public API
@@ -98,6 +99,7 @@ class Bind(Cleanable, IBind):
             spell (Any, optional): The class, function, or existing object to bind. Required for direct usage.
             spellframe (Optional[Any]): Logical interface or Protocol used as the DI contract / grouping key.
             binding_name (Optional[str]): A specific key used to distinguish this spell among others in its frame.
+            profile (str): Spell profile family to attach to the final Spell.
             existence (Existence): The lifecycle scope for this spell (default is `Existence.unique`).
 
         Returns:
@@ -116,6 +118,7 @@ class Bind(Cleanable, IBind):
                     existence,
                     permissions,
                     aetheric_frame,
+                    profile,
                 )
 
             return decorator
@@ -128,6 +131,7 @@ class Bind(Cleanable, IBind):
                 existence,
                 permissions,
                 aetheric_frame,
+                profile,
             )
 
     def _bind_logic(
@@ -138,6 +142,7 @@ class Bind(Cleanable, IBind):
             existence: Existence,
             permissions: Permissions,
             aetheric_frame: str,
+            profile: str = "general",
     ) -> Spell:
         """
         Internal logic for processing the binding of a spell object.
@@ -162,6 +167,7 @@ class Bind(Cleanable, IBind):
             spellframe (Optional[Any]): Logical interface or category for grouping
                 (typically a Protocol used as a DI contract).
             binding_name (Optional[str]): A specific key used to distinguish this spell.
+            profile (str): Spell profile family to attach after Spell creation.
             existence (Existence): The lifecycle scope for this spell.
             permissions (Permissions): The access level for this spell.
             aetheric_frame (str): The Aetheric Frame this spell belongs to.
@@ -207,7 +213,7 @@ class Bind(Cleanable, IBind):
             # ------------------------------------------------------------------
             provisional_general_profile = self._spell_examiner.create_profile(
                 spell,
-                "general",
+                profile,
             )
             if not isinstance(provisional_general_profile, SpellGeneralProfile):
                 raise TypeError(
@@ -283,7 +289,6 @@ class Bind(Cleanable, IBind):
             )
 
             provisional_general_profile.complete_with_spell(new_spell)
-            new_spell.resolution_profile = provisional_general_profile.resolution_profile
 
             return new_spell
 

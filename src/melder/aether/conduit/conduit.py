@@ -2038,7 +2038,7 @@ class Conduit(Cleanable, IConduit):
         finally:
             self.end_binding_transaction()
 
-    def bind(self, *, spell, existence: str | Existence, permissions: str = "create", spellframe=None, binding_name=None, **kwargs) -> str:
+    def bind(self, *, spell, existence: str | Existence, permissions: str = "create", spellframe=None, binding_name=None, profile: str = "general", **kwargs) -> str:
         """
         Binds a spell into the Spellbook for future instantiation and dependency injection.
 
@@ -2105,6 +2105,7 @@ class Conduit(Cleanable, IConduit):
             permissions (str): Permission level exposed to other conduits ("read", "create", "block").
             spellframe (Optional[Any]): Logical interface or category for grouping.
             binding_name (Optional[str]): Name key to distinguish this spell among others in its frame.
+            profile (str): Spell profile family to attach after bind completion.
             **kwargs:
                 - pre_hooks (Optional[List[Callable]]): Hooks executed before casting.
                 - activation_hooks (Optional[List[Callable]]): Hooks executed during casting/construction.
@@ -2130,6 +2131,7 @@ class Conduit(Cleanable, IConduit):
                 existence=existence,
                 spellframe=spellframe,
                 binding_name=binding_name,
+                profile=profile,
                 permissions=permissions,
                 **kwargs,
             )

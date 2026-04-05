@@ -13,6 +13,9 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile impo
     ClassBindingProfile,
     InstanceBindingProfile,
 )
+from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
+    SpellGeneralProfile,
+)
 from melder.spellbook.spell_types.spell_types import SpellType
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
@@ -82,7 +85,8 @@ def test_component_bind_creates_class_spell_with_metadata() -> None:
         assert spell.permissions is Permissions.create
         assert spell.spell_index.current == spell.spell_id
         assert spell.spell_index.has_version(spell.spell_id) is True
-        assert isinstance(spell.profile, ClassBindingProfile)
+        assert isinstance(spell.profile, SpellGeneralProfile)
+        assert isinstance(spell.profile.binding_profile, ClassBindingProfile)
         assert spell._spellbook is spellbook
         assert Bind.spell_id_inspector(BasicService) == spell.spell_id
     finally:
@@ -166,7 +170,8 @@ def test_component_bind_lambda_requires_binding_name() -> None:
             binding_name="lam",
         )
         assert spell.spell_type is SpellType.LAMBDA_METHOD_WITH_BINDING_NAME
-        assert isinstance(spell.profile, CallableBindingProfile)
+        assert isinstance(spell.profile, SpellGeneralProfile)
+        assert isinstance(spell.profile.binding_profile, CallableBindingProfile)
     finally:
         binder.cleanup()
         spellbook.cleanup()
@@ -203,7 +208,8 @@ def test_component_bind_existing_object_requires_unique_existence() -> None:
         )
         assert spell.spell_type is SpellType.EXISTING_CREATION
         assert spell.user_created_object is instance
-        assert isinstance(spell.profile, InstanceBindingProfile)
+        assert isinstance(spell.profile, SpellGeneralProfile)
+        assert isinstance(spell.profile.binding_profile, InstanceBindingProfile)
     finally:
         binder.cleanup()
         spellbook.cleanup()

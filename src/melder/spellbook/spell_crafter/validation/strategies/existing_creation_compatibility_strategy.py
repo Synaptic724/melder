@@ -1,21 +1,19 @@
 from __future__ import annotations
 
 from melder.spellbook.existence.existence import Existence
-from melder.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
-    SpellDetailedProfile,
-)
 from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
     InstanceBindingProfile,
     OtherBindingProfile,
-)
-from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
-    SpellGeneralProfile,
 )
 from melder.spellbook.spell_crafter.validation.spell_validation_issue import (
     SpellValidationIssue,
 )
 from melder.spellbook.spell_crafter.validation.strategies.spell_validation_strategy import (
     SpellValidationStrategy,
+)
+from melder.utilities.interfaces.interfaces import (
+    ISpellDetailedProfile,
+    ISpellGeneralProfile,
 )
 
 
@@ -76,7 +74,7 @@ class ExistingCreationCompatibilityStrategy(SpellValidationStrategy):
 
         profile = spell.profile
         binding_profile = profile
-        if isinstance(profile, (SpellGeneralProfile, SpellDetailedProfile)):
+        if isinstance(profile, (ISpellGeneralProfile, ISpellDetailedProfile)):
             binding_profile = profile.binding_profile
         if binding_profile is None or not isinstance(
                 binding_profile,

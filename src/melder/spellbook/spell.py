@@ -6,13 +6,16 @@ from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import 
 from melder.aether.conduit.meld.creation_context.creation_context_factory import (
     CreationContextFactory,
 )
-from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
-    SpellResolutionProfile,
-)
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.utilities.interfaces.interfaces import ISpell, ISpellbook, ISpellSystemStates
+from melder.utilities.interfaces.interfaces import (
+    ISpell,
+    ISpellDetailedProfile,
+    ISpellGeneralProfile,
+    ISpellbook,
+    ISpellSystemStates,
+)
 from melder.utilities.synchronization.counter_switch import CounterSwitch
 from melder.utilities.synchronization.creation_gate_controller import (
     CreationGateController,
@@ -162,7 +165,6 @@ class Spell(Cleanable, ISpell):
         "owned_spell",
         "permissions",
         "profile",
-        "resolution_profile",
         "resolution_required",
         "resolution_complete",
         "execution_plan_step_count",
@@ -295,11 +297,6 @@ class Spell(Cleanable, ISpell):
         # Final build-time artifacts
         self.dependency_graph: Any = None
         self.dependencies: List[str] = []  # SHA256 spell IDs required for this spell to function
-
-        # Optional resolution profile mirror.
-        # When a general or detailed profile is attached, this may also point
-        # at that profile's resolution artifact for direct consumers.
-        self.resolution_profile: Optional[SpellResolutionProfile] = None
 
         # Phase 11 execution-plan metrics (populated during conjure).
         self.execution_plan_step_count: Optional[int] = None
@@ -540,12 +537,6 @@ class Spell(Cleanable, ISpell):
                     # Never let cleanup explosions propagate.
                     pass
 
-            if self.resolution_profile is not None:
-                try:
-                    self.resolution_profile.cleanup()
-                except Exception:
-                    pass
-
             if self.profile is not None and isinstance(self.profile, Cleanable):
                 try:
                     self.profile.cleanup()
@@ -607,7 +598,6 @@ class Spell(Cleanable, ISpell):
             self.disposal_method_names = None
             self.has_disposal_methods = None
             self.dependency_graph = None
-            self.resolution_profile = None
             self.execution_plan_step_count = None
             self.execution_plan_unique_spell_count = None
             self.execution_plan_max_occurrence_depth = None
@@ -684,7 +674,13 @@ class Spell(Cleanable, ISpell):
         """
         if self._crafter is None:
             from melder.spellbook.spell_crafter.spell_crafter import SpellCrafter
-            self._crafter = SpellCrafter(self)
+            resolution_profile = None
+            if isinstance(self.profile, (ISpellGeneralProfile, ISpellDetailedProfile)):
+                resolution_profile = self.profile.resolution_profile
+            self._crafter = SpellCrafter(
+                self,
+                resolution_profile=resolution_profile,
+            )
         return self._crafter
     #endregion Internal helpers
 

@@ -58,6 +58,7 @@ class ScanBindMetadata:
     permissions: Permissions | str
     spellframe: Any | None
     binding_name: str | None
+    profile: str
     pre_hooks: tuple[Callable[..., Any], ...] | None
     activation_hooks: tuple[Callable[..., Any], ...] | None
     post_hooks: tuple[Callable[..., Any], ...] | None
@@ -81,6 +82,7 @@ class ScanBindMetadata:
             kwargs["activation_hooks"] = list(self.activation_hooks)
         if self.post_hooks is not None:
             kwargs["post_hooks"] = list(self.post_hooks)
+        kwargs["profile"] = self.profile
         return kwargs
 
 
@@ -90,6 +92,7 @@ def scan_bind(
         permissions: Permissions | str,
         spellframe: Any = None,
         binding_name: str | None = None,
+        profile: str = "general",
         pre_hooks: Optional[Sequence[Callable[..., Any]]] = None,
         activation_hooks: Optional[Sequence[Callable[..., Any]]] = None,
         post_hooks: Optional[Sequence[Callable[..., Any]]] = None,
@@ -111,6 +114,8 @@ def scan_bind(
             Optional spellframe/Protocol grouping key.
         binding_name (Optional[str]):
             Optional binding name for disambiguation.
+        profile (str):
+            Spell profile family to attach after bind completion.
         pre_hooks (Optional[Sequence[Callable[..., Any]]]):
             Optional pre-activation hooks.
         activation_hooks (Optional[Sequence[Callable[..., Any]]]):
@@ -153,6 +158,7 @@ def scan_bind(
             permissions=permissions,
             spellframe=spellframe,
             binding_name=binding_name,
+            profile=profile,
             pre_hooks=pre_hooks_tuple,
             activation_hooks=activation_hooks_tuple,
             post_hooks=post_hooks_tuple,

@@ -48,9 +48,11 @@ class SpellBinder(Cleanable):
         "_weak_spellbook",
         "_default_existence",
         "_default_permissions",
+        "_default_profile",
         "_spell",
         "_existence",
         "_permissions",
+        "_profile",
         "_spellframe",
         "_binding_name",
         "_kwargs",
@@ -62,6 +64,7 @@ class SpellBinder(Cleanable):
             *,
             default_existence: Existence = Existence.unique,
             default_permissions: str = "create",
+            default_profile: str = "general",
     ) -> None:
         """
         Initialize a new `SpellBinder` linked to a specific `Spellbook`.
@@ -77,6 +80,9 @@ class SpellBinder(Cleanable):
             default_permissions (str):
                 The default permission level ("create", "read", "block") to use
                 if not explicitly set. Defaults to "create".
+            default_profile (str):
+                The default spell profile family to use when one is not
+                explicitly supplied on `bind(...)`.
 
         Raises:
             ValueError: If `spellbook` is None.
@@ -91,6 +97,7 @@ class SpellBinder(Cleanable):
         self._weak_spellbook: SyncWeakRef[ISpellbook] = SyncWeakRef(spellbook)
         self._default_existence = default_existence
         self._default_permissions = default_permissions
+        self._default_profile = default_profile
 
         # 3. Initialize Transient State directly (Satisfying __slots__)
         # We initialize these to None/Defaults immediately to ensure the object
@@ -98,6 +105,7 @@ class SpellBinder(Cleanable):
         self._spell: Any = None
         self._existence: Existence = default_existence
         self._permissions: str = default_permissions
+        self._profile: str = default_profile
         self._spellframe: Any | None = None
         self._binding_name: Optional[str] = None
         self._kwargs: dict[str, Any] = {}
@@ -127,6 +135,7 @@ class SpellBinder(Cleanable):
         self._spell = None
         self._existence = None
         self._permissions = None
+        self._profile = None
         self._spellframe = None
         self._binding_name = None
         self._kwargs = None
@@ -169,6 +178,7 @@ class SpellBinder(Cleanable):
         self._spell = None
         self._existence = self._default_existence
         self._permissions = self._default_permissions
+        self._profile = self._default_profile
         self._spellframe = None
         self._binding_name = None
         self._kwargs = {}
@@ -226,6 +236,7 @@ class SpellBinder(Cleanable):
             *,
             existence: Existence | None = None,
             permissions: str | None = None,
+            profile: str | None = None,
             spellframe: Any | None = None,
             binding_name: str | None = None,
             **kwargs: Any,
@@ -250,6 +261,8 @@ class SpellBinder(Cleanable):
                 Immediate override for lifecycle scope.
             permissions (str, optional):
                 Immediate override for access permissions.
+            profile (str, optional):
+                Immediate override for the spell profile family.
             spellframe (Any, optional):
                 The interface or protocol to bind this spell under.
             binding_name (str, optional):
@@ -274,6 +287,8 @@ class SpellBinder(Cleanable):
             self._existence = existence
         if permissions is not None:
             self._permissions = permissions
+        if profile is not None:
+            self._profile = profile
         if spellframe is not None:
             self._spellframe = spellframe
         if binding_name is not None:
@@ -631,6 +646,7 @@ class SpellBinder(Cleanable):
             spell=self._spell,
             existence=self._existence,
             permissions=self._permissions,
+            profile=self._profile,
             spellframe=self._spellframe,
             binding_name=self._binding_name,
             **self._kwargs,

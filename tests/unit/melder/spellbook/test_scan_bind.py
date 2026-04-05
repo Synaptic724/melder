@@ -124,6 +124,36 @@ def test_scan_bind_requires_explicit_metadata() -> None:
         scan_bind(existence=Existence.unique, permissions=None)
 
 
+def test_scan_bind_defaults_profile_to_general() -> None:
+    """
+    Purpose:
+        Verify scan_bind stores the default profile choice.
+    Contract:
+        - Missing explicit profile stores `general` in the metadata.
+    """
+    @scan_bind(existence=Existence.unique, permissions="create")
+    class Target:
+        pass
+
+    metadata = getattr(Target, "__melder_scan_bind__")
+    assert metadata.profile == "general"
+
+
+def test_scan_bind_preserves_explicit_profile_override() -> None:
+    """
+    Purpose:
+        Verify scan_bind stores an explicit profile override.
+    Contract:
+        - Explicit profile value is preserved in metadata and forwarded.
+    """
+    @scan_bind(existence=Existence.unique, permissions="create", profile="detailed")
+    class Target:
+        pass
+
+    metadata = getattr(Target, "__melder_scan_bind__")
+    assert metadata.profile == "detailed"
+
+
 def test_scan_duplicate_binding_raises() -> None:
     """
     Purpose:

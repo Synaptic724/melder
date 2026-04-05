@@ -2376,6 +2376,7 @@ class Spellbook(Cleanable, ISpellbook):
             permissions: str = "create",
             spellframe: Any = None,
             binding_name: str = None,
+            profile: str = "general",
             **kwargs,
     ) -> str:
         """
@@ -2453,6 +2454,7 @@ class Spellbook(Cleanable, ISpellbook):
             permissions (str): Permission level exposed to other conduits ("read", "create", "block").
             spellframe (Optional[Any]): Logical interface or category for grouping.
             binding_name (Optional[str]): Name key to distinguish this spell among others in its frame.
+            profile (str): Spell profile family to attach after bind completion.
             **kwargs:
                 - pre_hooks (Optional[List[Callable]]): Hooks executed before casting.
                 - activation_hooks (Optional[List[Callable]]): Hooks executed during casting/construction.
@@ -2480,6 +2482,7 @@ class Spellbook(Cleanable, ISpellbook):
                 spell=spell,
                 spellframe=spellframe,
                 binding_name=binding_name,
+                profile=profile,
                 existence=existence_enum,
                 aetheric_frame=self._aetheric_frame,
             )

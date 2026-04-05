@@ -10,15 +10,13 @@ from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.aether.nexus.configuration.nexus_frame_mode import NexusFrameMode
 from melder.aether.nexus.nexus_frame_record import NexusFrameRecord
-from melder.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
-    SpellDetailedProfile,
-)
-from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
-    SpellGeneralProfile,
+from melder.utilities.interfaces.interfaces import (
+    IAether,
+    ISpellDetailedProfile,
+    ISpellGeneralProfile,
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import IAether
 
 
 class FrameDescriptorManager(Cleanable):
@@ -402,17 +400,15 @@ class FrameDescriptorManager(Cleanable):
 
             binding_profile = None
             detailed_profile = None
-            resolution_profile = spell.resolution_profile
+            resolution_profile = None
             profile = spell.profile
-            if isinstance(profile, SpellDetailedProfile):
+            if isinstance(profile, ISpellDetailedProfile):
                 detailed_profile = profile
                 binding_profile = profile.binding_profile
-                if resolution_profile is None:
-                    resolution_profile = profile.resolution_profile
-            elif isinstance(profile, SpellGeneralProfile):
+                resolution_profile = profile.resolution_profile
+            elif isinstance(profile, ISpellGeneralProfile):
                 binding_profile = profile.binding_profile
-                if resolution_profile is None:
-                    resolution_profile = profile.resolution_profile
+                resolution_profile = profile.resolution_profile
             else:
                 binding_profile = profile
 

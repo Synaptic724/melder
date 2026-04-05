@@ -146,6 +146,7 @@ def test_finalize_calls_spellbook_bind_and_resets_state():
     assert call["spell"] == "spell"
     assert call["existence"] is Existence.unique_per_conduit
     assert call["permissions"] == "read"
+    assert call["profile"] == "general"
     assert call["spellframe"] == "Frame"
     assert call["binding_name"] == "name"
     assert call["extra"] == "x"
@@ -155,6 +156,15 @@ def test_finalize_calls_spellbook_bind_and_resets_state():
     assert binder._kwargs == {}
     assert binder._existence is binder._default_existence
     assert binder._permissions == binder._default_permissions
+
+
+def test_bind_profile_override_flows_through_finalize():
+    spellbook = SpellbookStub()
+    binder = _binder(spellbook=spellbook)
+    binder.bind("spell", profile="detailed")
+    binder.finalize()
+    call = spellbook.bind_calls[-1]
+    assert call["profile"] == "detailed"
 
 
 def test_finalize_returns_spell_id_from_spellbook():

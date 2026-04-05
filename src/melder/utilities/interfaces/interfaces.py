@@ -431,7 +431,6 @@ class ISpell(ICleanable, Protocol):
 
     # Per-spell resolution phase artifacts
     # Note: These are populated by the resolution pipeline via SpellCrafter
-    resolution_profile: Optional['SpellResolutionProfile']
     _crafter: Optional[Any] # 'SpellCrafter'
     _creation_context: Optional[Any]
     _creation_context_factory: Optional[Any]
@@ -1306,6 +1305,7 @@ class ISpellbook(ICleanable, Protocol):
             permissions: str = "create",
             spellframe: Any = None,
             binding_name: Any = None,
+            profile: str = "general",
             **kwargs: Any,
     ) -> str:
         """
@@ -2156,6 +2156,49 @@ class ISpellbook(ICleanable, Protocol):
         """
         ...
 
+
+@runtime_checkable
+class ISpellGeneralProfile(ICleanable, Protocol):
+    """
+    Structural contract for the normal combined spell profile.
+
+    Purpose:
+        Represent the spell-owned profile that carries bind-time and
+        resolution-time detail artifacts together.
+    """
+
+    binding_profile: Any
+    resolution_profile: Any
+
+    def complete_with_spell(self, spell: "ISpell") -> None:
+        """
+        Complete the profile using a fully formed spell.
+
+        Args:
+            spell: Fully formed spell instance.
+        Returns:
+            None.
+        """
+        ...
+
+
+@runtime_checkable
+class ISpellDetailedProfile(ISpellGeneralProfile, Protocol):
+    """
+    Structural contract for the richer detailed spell profile.
+
+    Purpose:
+        Extend the general profile with deep class/callable/member inspection
+        payloads for richer downstream consumers.
+    """
+
+    spell: Any
+    class_profile: Any
+    callable_profile: Any
+    metadata: Dict[str, Any]
+    instance_members: Dict[str, Any]
+    dynamic_access: Dict[str, bool]
+
     def get_configuration(self) -> 'IConfiguration':
         """
         Public API
@@ -2442,6 +2485,7 @@ class IBind(ICleanable, Protocol):
             spell=None,
             spellframe=None,
             binding_name=None,
+            profile: str = "general",
     ) -> Union[ISpell, Any]:
         """
         Binds a spell, creating its blueprint and returning it.
@@ -3946,6 +3990,7 @@ class IConduit(ICleanable, Protocol):
             permissions: str = "create",
             spellframe=None,
             binding_name=None,
+            profile: str = "general",
             **kwargs,
     ) -> str:
         """
