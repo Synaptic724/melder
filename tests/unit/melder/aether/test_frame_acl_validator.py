@@ -62,3 +62,21 @@ def test_frame_acl_validator_cleanup_clears_state() -> None:
     assert validator.cleaned is True
     assert validator._frame_name is None
     assert validator._last_validated_configuration_id is None
+
+
+def test_frame_acl_validator_properties_return_expected_values() -> None:
+    """
+    Verify validator properties expose the owning frame and last validated id.
+
+    Returns:
+        None.
+    """
+    validator = FrameACLValidator("ops")
+    configuration = FrameACLConfiguration.create_default("ops")
+
+    assert validator.frame_name == "ops"
+    assert validator.last_validated_configuration_id is None
+
+    validator.validate_configuration(configuration)
+
+    assert validator.last_validated_configuration_id == configuration.configuration_id

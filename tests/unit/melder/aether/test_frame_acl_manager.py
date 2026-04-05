@@ -93,6 +93,64 @@ def test_frame_acl_manager_snapshot_returns_copy() -> None:
     assert "ops" in manager.frame_acl_containers_by_name
 
 
+def test_frame_acl_manager_chain_facades_return_expected_configs() -> None:
+    """
+    Verify manager facades expose current/head/get/list behavior for one frame.
+
+    Returns:
+        None.
+    """
+    manager = FrameACLManager()
+    container = manager._ensure_frame_acl_container("ops")
+    current = manager._get_current_frame_acl_configuration("ops")
+    head = manager._get_head_frame_acl_configuration("ops")
+    fetched = manager._get_frame_acl_configuration("ops", current.configuration_id)
+
+    assert current is container.frame_acl_configuration
+    assert head is current
+    assert fetched is current
+    assert manager._list_frame_acl_configurations("ops") == [current]
+    assert manager._list_frame_acl_configuration_ids("ops") == [current.configuration_id]
+
+
+def test_frame_acl_manager_insert_select_rollback_and_create_from_facades() -> None:
+    """
+    Verify manager facades drive the chain mechanics for one frame.
+
+    Returns:
+        None.
+    """
+    manager = FrameACLManager()
+    original = manager._get_current_frame_acl_configuration("ops")
+    draft = manager._create_new_from_acl_configuration(
+        "ops",
+        original.configuration_id,
+        reason="copy",
+    )
+
+    assert draft.locked is False
+    draft.finalize()
+
+    inserted = manager._insert_head_frame_acl_configuration(
+        "ops",
+        draft,
+        select_as_current=True,
+    )
+    selected = manager._select_current_frame_acl_configuration(
+        "ops",
+        original.configuration_id,
+    )
+    rolled_back = manager._rollback_frame_acl_configuration(
+        "ops",
+        inserted.configuration_id,
+    )
+
+    assert inserted is draft
+    assert draft.previous_configuration_id == original.configuration_id
+    assert selected is original
+    assert rolled_back is inserted
+
+
 def test_frame_acl_manager_cleanup_cleans_all_owned_containers() -> None:
     """
     Verify cleanup cascades to all owned containers and clears manager state.

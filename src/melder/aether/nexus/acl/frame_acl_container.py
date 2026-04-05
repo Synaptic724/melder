@@ -6,6 +6,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.aether.nexus.acl.frame_acl_configuration_chain import FrameACLConfigurationChain
 from melder.aether.nexus.acl.frame_acl_validator import FrameACLValidator
 
 
@@ -31,9 +32,7 @@ class FrameACLContainer(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_frame_name",
-        "_history_limit",
-        "_frame_acl_configuration",
-        "_frame_acl_history",
+        "_frame_acl_configuration_chain",
         "_frame_acl_validator",
         "_frame_acl_builder",
     ]
@@ -61,11 +60,12 @@ class FrameACLContainer(Cleanable):
 
         self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
-        self._history_limit: int = history_limit
-        self._frame_acl_configuration: FrameACLConfiguration = (
-            FrameACLConfiguration.create_default(frame_name)
+        self._frame_acl_configuration_chain: FrameACLConfigurationChain = (
+            FrameACLConfigurationChain(
+                frame_name,
+                history_limit=history_limit,
+            )
         )
-        self._frame_acl_history: List[FrameACLConfiguration] = []
         self._frame_acl_validator: FrameACLValidator = FrameACLValidator(frame_name)
         self._frame_acl_builder: FrameACLBuilder = FrameACLBuilder(self)
 
@@ -100,8 +100,18 @@ class FrameACLContainer(Cleanable):
             FrameACLConfiguration: Current configuration.
         """
         self.check_cleaned()
-        with self._lock:
-            return self._frame_acl_configuration
+        return self._frame_acl_configuration_chain.get_current_configuration()
+
+    @property
+    def frame_acl_configuration_chain(self) -> FrameACLConfigurationChain:
+        """
+        Return the frame-scoped ACL configuration chain.
+
+        Returns:
+            FrameACLConfigurationChain: Frame-scoped configuration chain.
+        """
+        self.check_cleaned()
+        return self._frame_acl_configuration_chain
 
     @property
     def frame_acl_validator(self) -> FrameACLValidator:
@@ -123,8 +133,14 @@ class FrameACLContainer(Cleanable):
             List[FrameACLConfiguration]: Snapshot of prior configurations.
         """
         self.check_cleaned()
-        with self._lock:
-            return list(self._frame_acl_history)
+        current_configuration_id = (
+            self._frame_acl_configuration_chain.current_configuration_id
+        )
+        return [
+            configuration
+            for configuration in self._frame_acl_configuration_chain.list_configurations()
+            if configuration.configuration_id != current_configuration_id
+        ]
 
     def install_configuration(
             self,
@@ -142,13 +158,48 @@ class FrameACLContainer(Cleanable):
         """
         self.check_cleaned()
         self._frame_acl_validator.validate_configuration(configuration)
-        with self._lock:
-            previous_configuration = self._frame_acl_configuration
-            self._frame_acl_history.append(previous_configuration)
-            if len(self._frame_acl_history) > self._history_limit:
-                dropped_configuration = self._frame_acl_history.pop(0)
-                dropped_configuration.cleanup()
-            self._frame_acl_configuration = configuration
+        self._frame_acl_configuration_chain.insert_head_configuration(
+            configuration,
+            select_as_current=True,
+        )
+
+    def select_current_configuration(
+            self,
+            configuration_id: str,
+    ) -> FrameACLConfiguration:
+        """
+        Select one existing configuration in the chain as current.
+
+        Args:
+            configuration_id:
+                Config id to make current.
+
+        Returns:
+            FrameACLConfiguration: Newly selected current configuration.
+        """
+        self.check_cleaned()
+        return self._frame_acl_configuration_chain.select_current_configuration(
+            configuration_id
+        )
+
+    def rollback_to_configuration(
+            self,
+            configuration_id: str,
+    ) -> FrameACLConfiguration:
+        """
+        Roll current selection back to one historical config.
+
+        Args:
+            configuration_id:
+                Config id to make current.
+
+        Returns:
+            FrameACLConfiguration: Newly selected current configuration.
+        """
+        self.check_cleaned()
+        return self._frame_acl_configuration_chain.rollback_to_configuration(
+            configuration_id
+        )
 
     def cleanup(self) -> None:
         """
@@ -165,14 +216,9 @@ class FrameACLContainer(Cleanable):
             self._cleaned = True
             self._frame_acl_builder.cleanup()
             self._frame_acl_validator.cleanup()
-            self._frame_acl_configuration.cleanup()
-            for configuration in self._frame_acl_history:
-                configuration.cleanup()
-            self._frame_acl_history.clear()
+            self._frame_acl_configuration_chain.cleanup()
             self._frame_acl_builder = None
             self._frame_acl_validator = None
-            self._frame_acl_configuration = None
-            self._frame_acl_history = None
+            self._frame_acl_configuration_chain = None
             self._frame_name = None
-            self._history_limit = None
         self._lock = None

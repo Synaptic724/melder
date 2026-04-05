@@ -1,10 +1,11 @@
 import threading
-from typing import Dict
+from typing import Dict, List, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
 
 from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
+from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.frame_acl_container import FrameACLContainer
 
 
@@ -23,8 +24,8 @@ class FrameACLManager(Cleanable):
         - Owned by `Nexus`.
         - Owns `frame_name -> FrameACLContainer`.
         - Ensures each frame has at most one container.
-        - Returns the same builder object for repeated access to the same
-          frame container.
+        - Facades current/head/list/select/rollback mechanics for the
+          underlying chain per frame.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -116,6 +117,211 @@ class FrameACLManager(Cleanable):
         self.check_cleaned()
         container = self._ensure_frame_acl_container(frame_name)
         return container.frame_acl_builder
+
+    def _get_current_frame_acl_configuration(
+            self,
+            frame_name: str,
+    ) -> FrameACLConfiguration:
+        """
+        Return the current selected ACL configuration for one frame.
+
+        Args:
+            frame_name:
+                Owning frame name.
+
+        Returns:
+            FrameACLConfiguration: Current config for the frame.
+        """
+        self.check_cleaned()
+        container = self._ensure_frame_acl_container(frame_name)
+        return container.frame_acl_configuration_chain.get_current_configuration()
+
+    def _get_head_frame_acl_configuration(
+            self,
+            frame_name: str,
+    ) -> FrameACLConfiguration:
+        """
+        Return the head ACL configuration for one frame.
+
+        Args:
+            frame_name:
+                Owning frame name.
+
+        Returns:
+            FrameACLConfiguration: Head config for the frame.
+        """
+        self.check_cleaned()
+        container = self._ensure_frame_acl_container(frame_name)
+        return container.frame_acl_configuration_chain.get_head_configuration()
+
+    def _get_frame_acl_configuration(
+            self,
+            frame_name: str,
+            configuration_id: str,
+    ) -> FrameACLConfiguration:
+        """
+        Return one specific ACL configuration node for a frame.
+
+        Args:
+            frame_name:
+                Owning frame name.
+            configuration_id:
+                Target config id.
+
+        Returns:
+            FrameACLConfiguration: Requested config node.
+        """
+        self.check_cleaned()
+        container = self._ensure_frame_acl_container(frame_name)
+        return container.frame_acl_configuration_chain.get_configuration(
+            configuration_id
+        )
+
+    def _list_frame_acl_configurations(
+            self,
+            frame_name: str,
+            limit: Optional[int] = None,
+    ) -> List[FrameACLConfiguration]:
+        """
+        Return ACL configurations for one frame from newest to oldest.
+
+        Args:
+            frame_name:
+                Owning frame name.
+            limit:
+                Optional maximum count.
+
+        Returns:
+            List[FrameACLConfiguration]: Ordered config-node list.
+        """
+        self.check_cleaned()
+        container = self._ensure_frame_acl_container(frame_name)
+        return container.frame_acl_configuration_chain.list_configurations(
+            limit=limit
+        )
+
+    def _list_frame_acl_configuration_ids(
+            self,
+            frame_name: str,
+            limit: Optional[int] = None,
+    ) -> List[str]:
+        """
+        Return ACL configuration ids for one frame from newest to oldest.
+
+        Args:
+            frame_name:
+                Owning frame name.
+            limit:
+                Optional maximum count.
+
+        Returns:
+            List[str]: Ordered config id list.
+        """
+        self.check_cleaned()
+        container = self._ensure_frame_acl_container(frame_name)
+        return container.frame_acl_configuration_chain.list_configuration_ids(
+            limit=limit
+        )
+
+    def _insert_head_frame_acl_configuration(
+            self,
+            frame_name: str,
+            configuration: FrameACLConfiguration,
+            *,
+            select_as_current: bool,
+    ) -> FrameACLConfiguration:
+        """
+        Insert one locked ACL config at the head of the frame chain.
+
+        Args:
+            frame_name:
+                Owning frame name.
+            configuration:
+                Config node to insert.
+            select_as_current:
+                Whether the new head should also become current.
+
+        Returns:
+            FrameACLConfiguration: Inserted config node.
+        """
+        self.check_cleaned()
+        container = self._ensure_frame_acl_container(frame_name)
+        container.frame_acl_validator.validate_configuration(configuration)
+        return container.frame_acl_configuration_chain.insert_head_configuration(
+            configuration,
+            select_as_current=select_as_current,
+        )
+
+    def _select_current_frame_acl_configuration(
+            self,
+            frame_name: str,
+            configuration_id: str,
+    ) -> FrameACLConfiguration:
+        """
+        Select one existing config as current for a frame.
+
+        Args:
+            frame_name:
+                Owning frame name.
+            configuration_id:
+                Config id to make current.
+
+        Returns:
+            FrameACLConfiguration: Newly selected current config.
+        """
+        self.check_cleaned()
+        container = self._ensure_frame_acl_container(frame_name)
+        return container.select_current_configuration(configuration_id)
+
+    def _rollback_frame_acl_configuration(
+            self,
+            frame_name: str,
+            configuration_id: str,
+    ) -> FrameACLConfiguration:
+        """
+        Roll current selection back to one historical config for a frame.
+
+        Args:
+            frame_name:
+                Owning frame name.
+            configuration_id:
+                Historical config id to make current.
+
+        Returns:
+            FrameACLConfiguration: Newly selected current config.
+        """
+        self.check_cleaned()
+        container = self._ensure_frame_acl_container(frame_name)
+        return container.rollback_to_configuration(configuration_id)
+
+    def _create_new_from_acl_configuration(
+            self,
+            frame_name: str,
+            configuration_id: str,
+            *,
+            reason: str,
+    ) -> FrameACLConfiguration:
+        """
+        Create a new draft config copied from an existing config in the frame
+        chain.
+
+        Args:
+            frame_name:
+                Owning frame name.
+            configuration_id:
+                Source config id.
+            reason:
+                Human-readable creation reason.
+
+        Returns:
+            FrameACLConfiguration: New unlocked config copied from the source.
+        """
+        self.check_cleaned()
+        container = self._ensure_frame_acl_container(frame_name)
+        return container.frame_acl_configuration_chain.create_new_from_acl_configuration(
+            configuration_id,
+            reason=reason,
+        )
 
     def _remove_frame_acl_container(self, frame_name: str) -> bool:
         """

@@ -77,7 +77,7 @@ class FrameACLBuilder(Cleanable):
                 raise RuntimeError("FrameACLBuilder already has an active change.")
             current_configuration = self._container.frame_acl_configuration
             self._draft_json_configuration_string = (
-                current_configuration.normalized_json_configuration_string
+                current_configuration.to_json_string()
             )
             self._change_active = True
 
@@ -123,11 +123,14 @@ class FrameACLBuilder(Cleanable):
                 raise RuntimeError("FrameACLBuilder has no active change.")
 
             current_configuration = self._container.frame_acl_configuration
-            next_configuration = FrameACLConfiguration.from_json_configuration_string(
-                frame_name=self._container.frame_name,
-                json_configuration_string=self._draft_json_configuration_string,
-                previous_configuration_id=current_configuration.configuration_id,
+            next_configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+                current_configuration,
+                reason="builder_commit",
             )
+            next_configuration.set_json_configuration_string(
+                self._draft_json_configuration_string
+            )
+            next_configuration.finalize()
             self._container.install_configuration(next_configuration)
             self._draft_json_configuration_string = None
             self._change_active = False

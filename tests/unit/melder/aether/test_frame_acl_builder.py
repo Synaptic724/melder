@@ -76,9 +76,10 @@ def test_frame_acl_builder_commit_installs_new_configuration() -> None:
 
     assert isinstance(next_configuration, FrameACLConfiguration)
     assert container.frame_acl_configuration is next_configuration
-    assert next_configuration.previous_configuration_id == previous_configuration.configuration_id
-    assert builder.change_active is False
+    assert next_configuration.source_configuration_id == previous_configuration.configuration_id
+    assert next_configuration.locked is True
     assert builder._draft_json_configuration_string is None
+    assert builder.change_active is False
 
 
 def test_frame_acl_builder_discard_resets_session_state() -> None:
@@ -145,3 +146,27 @@ def test_frame_acl_builder_cleanup_clears_fields() -> None:
     assert builder._container is None
     assert builder._change_active is None
     assert builder._draft_json_configuration_string is None
+
+
+def test_frame_acl_builder_commit_uses_loaded_json_payload() -> None:
+    """
+    Verify commit_change writes the loaded JSON payload into the committed
+    config node.
+
+    Returns:
+        None.
+    """
+    container = FrameACLContainer("ops")
+    builder = container.frame_acl_builder
+
+    builder.begin_change()
+    builder.load_json_configuration_string(
+        '{"frame_name":"ops","view_acl":{"visible":true},"codegen_acl":{"allowed":true}}'
+    )
+    configuration = builder.commit_change()
+
+    assert configuration.to_json_dict() == {
+        "codegen_acl": {"allowed": True},
+        "frame_name": "ops",
+        "view_acl": {"visible": True},
+    }
