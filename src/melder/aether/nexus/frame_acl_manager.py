@@ -8,6 +8,7 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.frame_acl_container import FrameACLContainer
+from melder.aether.nexus.acl.frame_acl_profile import FrameACLProfile
 
 
 class FrameACLManager(Cleanable):
@@ -41,7 +42,9 @@ class FrameACLManager(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",
+        "_version",
         "_frame_acl_containers_by_name",
+        "_frame_acl_profiles_by_name",
     ]
 
     def __init__(self) -> None:
@@ -63,7 +66,9 @@ class FrameACLManager(Cleanable):
         super().__init__()
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
+        self._version: str = "0.0.1"
         self._frame_acl_containers_by_name: Dict[str, FrameACLContainer] = {}
+        self._frame_acl_profiles_by_name: Dict[str, FrameACLProfile] = {}
 
     def cleanup(self) -> None:
         """
@@ -93,9 +98,37 @@ class FrameACLManager(Cleanable):
             self._cleaned = True
             for container in self._frame_acl_containers_by_name.values():
                 container.cleanup()
+            for frame_acl_profile in self._frame_acl_profiles_by_name.values():
+                frame_acl_profile.cleanup()
             self._frame_acl_containers_by_name.clear()
+            self._frame_acl_profiles_by_name.clear()
             self._frame_acl_containers_by_name = None
+            self._frame_acl_profiles_by_name = None
+            self._version = None
+            self._id = None
         self._lock = None
+
+    @property
+    def id(self) -> str:
+        """
+        Return the stable manager identifier.
+
+        Returns:
+            str: Stable manager id.
+        """
+        self.check_cleaned()
+        return self._id
+
+    @property
+    def version(self) -> str:
+        """
+        Return the current placeholder ACL manager version string.
+
+        Returns:
+            str: Current ACL manager version.
+        """
+        self.check_cleaned()
+        return self._version
 
     @property
     def frame_acl_containers_by_name(self) -> Dict[str, FrameACLContainer]:
@@ -118,6 +151,19 @@ class FrameACLManager(Cleanable):
         self.check_cleaned()
         with self._lock:
             return dict(self._frame_acl_containers_by_name)
+
+    @property
+    def frame_acl_profiles_by_name(self) -> Dict[str, FrameACLProfile]:
+        """
+        Return a snapshot of the manager-owned ACL profile registry.
+
+        Returns:
+            Dict[str, FrameACLProfile]:
+                Snapshot of the profile-name keyed registry.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._frame_acl_profiles_by_name)
 
     def _ensure_frame_acl_container(
             self,
@@ -501,4 +547,88 @@ class FrameACLManager(Cleanable):
             if container is None:
                 return False
             container.cleanup()
+            return True
+
+    def _register_frame_acl_profile(
+            self,
+            frame_acl_profile: FrameACLProfile,
+    ) -> None:
+        """
+        Register or replace one named ACL profile in the manager registry.
+
+        Args:
+            frame_acl_profile:
+                Profile object to store by its own name.
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError:
+                If `frame_acl_profile` is not a `FrameACLProfile`.
+        """
+        self.check_cleaned()
+        if not isinstance(frame_acl_profile, FrameACLProfile):
+            raise TypeError("frame_acl_profile must be a FrameACLProfile.")
+        with self._lock:
+            existing = self._frame_acl_profiles_by_name.get(frame_acl_profile.name)
+            if existing is not None and existing is not frame_acl_profile:
+                existing.cleanup()
+            self._frame_acl_profiles_by_name[frame_acl_profile.name] = frame_acl_profile
+
+    def _get_required_frame_acl_profile(
+            self,
+            profile_name: str,
+    ) -> FrameACLProfile:
+        """
+        Return one existing ACL profile from the manager registry or raise.
+
+        Args:
+            profile_name:
+                Profile name to resolve.
+
+        Returns:
+            FrameACLProfile: Existing stored profile.
+
+        Raises:
+            KeyError: If the profile is not registered.
+        """
+        self.check_cleaned()
+        with self._lock:
+            try:
+                return self._frame_acl_profiles_by_name[profile_name]
+            except KeyError as exc:
+                raise KeyError(profile_name) from exc
+
+    def _list_frame_acl_profile_names(self) -> List[str]:
+        """
+        Return the current ACL profile names in insertion order.
+
+        Returns:
+            List[str]: Current profile names.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return list(self._frame_acl_profiles_by_name.keys())
+
+    def _remove_frame_acl_profile(self, profile_name: str) -> bool:
+        """
+        Remove and cleanup one ACL profile by name.
+
+        Args:
+            profile_name:
+                Profile name to remove.
+
+        Returns:
+            bool: True when the profile existed and was removed.
+        """
+        self.check_cleaned()
+        with self._lock:
+            frame_acl_profile = self._frame_acl_profiles_by_name.pop(
+                profile_name,
+                None,
+            )
+            if frame_acl_profile is None:
+                return False
+            frame_acl_profile.cleanup()
             return True

@@ -5,6 +5,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.aether.nexus.acl.frame_acl_profile import FrameACLProfile
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.aether.nexus.frame_acl_manager import FrameACLManager
 from melder.aether.nexus.frame_descriptor_manager import FrameDescriptorManager
@@ -983,6 +984,74 @@ class Nexus(Cleanable, INexus):
         """
         self._require_enabled()
         return list(self._rifts_by_id.keys())
+
+    def get_frame_acl_version(self) -> str:
+        """
+        Return the current placeholder ACL manager version string.
+
+        Returns:
+            str: Current ACL manager version.
+        """
+        self.check_cleaned()
+        return self._frame_acl_manager.version
+
+    def register_frame_acl_profile(
+            self,
+            frame_acl_profile: FrameACLProfile,
+    ) -> None:
+        """
+        Register or replace one named ACL profile on the Nexus-owned manager.
+
+        Args:
+            frame_acl_profile:
+                Profile object to store by its own name.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        self._frame_acl_manager._register_frame_acl_profile(frame_acl_profile)
+
+    def get_frame_acl_profile(self, profile_name: str) -> FrameACLProfile:
+        """
+        Return one registered ACL profile by name.
+
+        Args:
+            profile_name:
+                Profile name to resolve.
+
+        Returns:
+            FrameACLProfile: Existing stored profile.
+
+        Raises:
+            KeyError: If the profile is not registered.
+        """
+        self.check_cleaned()
+        return self._frame_acl_manager._get_required_frame_acl_profile(profile_name)
+
+    def list_frame_acl_profile_names(self) -> List[str]:
+        """
+        Return the current ACL profile names in insertion order.
+
+        Returns:
+            List[str]: Current profile names.
+        """
+        self.check_cleaned()
+        return self._frame_acl_manager._list_frame_acl_profile_names()
+
+    def remove_frame_acl_profile(self, profile_name: str) -> bool:
+        """
+        Remove and cleanup one registered ACL profile by name.
+
+        Args:
+            profile_name:
+                Profile name to remove.
+
+        Returns:
+            bool: True when the profile existed and was removed.
+        """
+        self.check_cleaned()
+        return self._frame_acl_manager._remove_frame_acl_profile(profile_name)
 
     def get_frame_acl_builder(self, frame_name: str) -> FrameACLBuilder:
         """
