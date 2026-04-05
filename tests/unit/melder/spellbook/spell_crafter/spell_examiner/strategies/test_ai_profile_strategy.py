@@ -20,6 +20,7 @@ def test_ai_profile_strategy_builds_class_profile(monkeypatch) -> None:
     binding_profile = object()
     resolution_profile = object()
     class_profile = SimpleNamespace(dynamic_access={})
+    callable_profile = object()
     captured = {}
 
     class DummyBindingStrategy:
@@ -91,6 +92,20 @@ def test_ai_profile_strategy_builds_class_profile(monkeypatch) -> None:
         """
         return class_profile
 
+    def _inspect_callable_stub(self, _spell):
+        """
+        Purpose:
+            Provide a stub callable inspection result for class-backed spells.
+        Contract:
+            Always returns the callable_profile sentinel.
+        Args:
+            self: Strategy instance invoking the inspection.
+            _spell: Spell object supplied by the caller.
+        Returns:
+            object: The sentinel callable profile.
+        """
+        return callable_profile
+
     monkeypatch.setattr(ai_module, "BindingProfileStrategy", DummyBindingStrategy)
     monkeypatch.setattr(ai_module, "ResolutionProfileStrategy", DummyResolutionStrategy)
 
@@ -102,6 +117,7 @@ def test_ai_profile_strategy_builds_class_profile(monkeypatch) -> None:
     )
     strategy = ai_module.AIProfileStrategy(show_dunders=True, max_repr=33)
     monkeypatch.setattr(ai_module.AIProfileStrategy, "_inspect_class", _inspect_class_stub)
+    monkeypatch.setattr(ai_module.AIProfileStrategy, "_inspect_callable", _inspect_callable_stub)
 
     profile = strategy.build_profile(spell)
 
@@ -109,7 +125,7 @@ def test_ai_profile_strategy_builds_class_profile(monkeypatch) -> None:
     assert profile.binding_profile is binding_profile
     assert profile.resolution_profile is resolution_profile
     assert profile.class_profile is class_profile
-    assert profile.callable_profile is None
+    assert profile.callable_profile is callable_profile
     assert captured["show_dunders"] is True
     assert captured["max_repr"] == 33
 

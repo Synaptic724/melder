@@ -70,7 +70,7 @@ def test_component_spell_examiner_ai_profile_includes_class_profile() -> None:
         Validate AI profile includes class profile for class spells.
     Contract:
         - class_profile is populated for class spells.
-        - callable_profile remains None for class spells.
+        - callable_profile is also populated for class spells.
     Returns:
         None.
     """
@@ -89,7 +89,7 @@ def test_component_spell_examiner_ai_profile_includes_class_profile() -> None:
         ai_profile = examiner.ai_profile_for_spell(spell)
 
         assert ai_profile.class_profile is not None
-        assert ai_profile.callable_profile is None
+        assert ai_profile.callable_profile is not None
         assert ai_profile.class_profile.name == "BasicService"
     finally:
         if ai_profile is not None:

@@ -83,7 +83,7 @@ def _bind_target_frame_configuration(
         frame_configuration.dynamic_defaults()
     else:
         frame_configuration.automatic_defaults()
-    frame_configuration.with_ai_profiles(rift_enabled)
+    frame_configuration.with_rift_enabled(rift_enabled)
     frame_configuration.with_ai_native(ai_native_enabled)
     aether._bind_configuration(frame_configuration, frame_name)
 

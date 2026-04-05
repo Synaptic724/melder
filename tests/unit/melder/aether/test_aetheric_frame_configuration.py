@@ -36,7 +36,7 @@ def test_frame_configuration_derives_from_spellbook_configuration() -> None:
     configuration = Configuration()
     configuration.with_system_state(SystemState.dynamic)
     configuration.with_ai_native(True)
-    configuration.with_ai_profiles(True)
+    configuration.with_rift_enabled(True)
 
     frame_configuration = configuration.to_aetheric_frame_configuration(
         origin_spellbook_id="spellbook-alpha",

@@ -84,6 +84,7 @@ class AIProfileStrategy:
         # Deep introspection depends on what kind of spell this is.
         if spell.is_class_spell:
             class_profile = self._inspect_class(spell)
+            callable_profile = self._inspect_callable(spell)
         elif spell.is_method_spell or spell.is_lambda_spell:
             callable_profile = self._inspect_callable(spell)
         else:

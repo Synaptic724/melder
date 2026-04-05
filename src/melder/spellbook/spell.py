@@ -294,7 +294,7 @@ class Spell(Cleanable, ISpell):
         self.dependencies: List[str] = []  # SHA256 spell IDs required for this spell to function
 
         # Optional resolution profile (DI contract), to be populated by the
-        # resolution pipeline (SpellExaminer â†’ ResolutionProfileStrategy).
+        # resolution pipeline (SpellExaminer ResolutionProfileStrategy).
         self.resolution_profile: Optional[SpellResolutionProfile] = None
 
         # Phase 11 execution-plan metrics (populated during conjure).

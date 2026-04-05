@@ -644,7 +644,7 @@ class Configuration(Cleanable, IConfiguration):
         self.set_property("ai_native_enabled", enabled)
         return self
 
-    def with_ai_profiles(self, enabled: bool = True) -> IConfiguration:
+    def with_rift_enabled(self, enabled: bool = True) -> IConfiguration:
         """
         Fluent
 

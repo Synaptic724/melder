@@ -206,7 +206,7 @@ def test_component_configuration_fluent_chain_validates_without_defaults() -> No
     config.with_phase_scheduler_workers(2)
     config.with_phase_scheduler_barrier_timeout(1000)
     config.with_ai_native(True)
-    config.with_ai_profiles(False)
+    config.with_rift_enabled(False)
     config.finalize()
 
     assert config.get_property("system_state") is SystemState.dynamic

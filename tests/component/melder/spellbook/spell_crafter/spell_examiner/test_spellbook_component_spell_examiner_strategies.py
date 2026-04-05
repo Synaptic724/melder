@@ -391,7 +391,7 @@ def test_component_ai_strategy_class_spell_builds_class_profile() -> None:
         Validate AI profiles include class profiles for class spells.
     Contract:
         - class_profile is populated for class spells.
-        - callable_profile remains None for class spells.
+        - callable_profile is also populated for class spells.
     Returns:
         None.
     """
@@ -408,7 +408,7 @@ def test_component_ai_strategy_class_spell_builds_class_profile() -> None:
 
         profile = AIProfileStrategy().build_profile(spell)
         assert profile.class_profile is not None
-        assert profile.callable_profile is None
+        assert profile.callable_profile is not None
         assert profile.class_profile.name == "BasicService"
     finally:
         if profile is not None:
