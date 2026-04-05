@@ -46,7 +46,7 @@ def _spell():
 def _ai_config(enabled: bool) -> Configuration:
     config = Configuration()
     config.with_defaults()
-    config.with_ai_profiles(enabled)
+    config.with_rift_enabled(enabled)
     return config
 
 
