@@ -39,11 +39,13 @@ class Bind(Cleanable, IBind):
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_spellbook",
+        "_spell_examiner",
     ]
     def __init__(self, spellbook: ISpellbook):
         super().__init__()
         self._spellbook: ISpellbook = spellbook
         self._lock = threading.RLock()
+        self._spell_examiner: SpellExaminer = SpellExaminer()
 
     def cleanup(self):
         """
@@ -60,6 +62,9 @@ class Bind(Cleanable, IBind):
                 return
             self._cleaned = True
             self._spellbook = None
+            if self._spell_examiner is not None:
+                self._spell_examiner.cleanup()
+            self._spell_examiner = None
         self._lock = None
 
     def bind(
@@ -195,8 +200,10 @@ class Bind(Cleanable, IBind):
             # ------------------------------------------------------------------
             # 2. Build binding profile and fingerprint
             # ------------------------------------------------------------------
-            examiner = SpellExaminer()
-            binding_profile: SpellBindingProfile = examiner.binding_profile_for_object(spell)
+            binding_profile: SpellBindingProfile = self._spell_examiner.create_profile(
+                spell,
+                "binding",
+            )
             fingerprint: str = Bind.sha256_profile(binding_profile)
             spell_index = SpellIndex(initial_id=fingerprint)
 
@@ -282,7 +289,7 @@ class Bind(Cleanable, IBind):
             str: A unique identifier string (SHA256 hash) for the spell.
         """
         examiner = SpellExaminer()
-        profile = examiner.binding_profile_for_object(spell)
+        profile = examiner.create_profile(spell, "binding")
         return Bind.sha256_profile(profile)
 
     @staticmethod

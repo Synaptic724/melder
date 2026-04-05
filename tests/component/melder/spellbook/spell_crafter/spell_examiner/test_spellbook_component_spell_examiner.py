@@ -7,10 +7,7 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile impo
     ClassBindingProfile,
     SpellBindingKind,
 )
-from melder.spellbook.spell_crafter.spell_examiner.spell_examiner import (
-    SpellExaminer,
-    SpellExaminationKind,
-)
+from melder.spellbook.spell_crafter.spell_examiner.spell_examiner import SpellExaminer
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.protocols import IService
@@ -127,7 +124,7 @@ def test_component_spell_examiner_resolution_profile_matches_spell_metadata() ->
         assert spell is not None
 
         examiner = SpellExaminer()
-        profile = examiner.resolution_profile_for_spell(spell)
+        profile = examiner.create_profile(spell, "resolution")
 
         assert profile.spell_id == spell.spell_index.current
         assert profile.existence == spell.existence
@@ -169,7 +166,7 @@ def test_component_spell_examiner_binding_profile_for_spell_uses_underlying_clas
         assert spell is not None
 
         examiner = SpellExaminer()
-        profile = examiner.examine(spell, SpellExaminationKind.BINDING)
+        profile = examiner.create_profile(spell, "binding")
 
         assert isinstance(profile, ClassBindingProfile)
         assert profile.kind is SpellBindingKind.CLASS
@@ -231,8 +228,8 @@ def test_component_spell_examiner_ai_profile_links_resolution_and_binding() -> N
         spell = _get_spell_by_version_id(spellbook, consumer_id)
         assert spell is not None
 
-        examiner = SpellExaminer(configuration=spellbook.get_configuration())
-        ai_profile = examiner.ai_profile_for_spell(spell)
+        examiner = SpellExaminer()
+        ai_profile = examiner.create_profile(spell, "ai")
 
         assert ai_profile.spell is spell
         assert ai_profile.binding_profile.original_object is Consumer

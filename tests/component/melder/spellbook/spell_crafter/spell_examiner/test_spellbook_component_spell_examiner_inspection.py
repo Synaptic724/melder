@@ -85,8 +85,8 @@ def test_component_spell_examiner_ai_profile_includes_class_profile() -> None:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        examiner = SpellExaminer(configuration=spellbook.get_configuration())
-        ai_profile = examiner.ai_profile_for_spell(spell)
+        examiner = SpellExaminer()
+        ai_profile = examiner.create_profile(spell, "ai")
 
         assert ai_profile.class_profile is not None
         assert ai_profile.callable_profile is not None
@@ -130,8 +130,8 @@ def test_component_spell_examiner_ai_profile_includes_callable_profile() -> None
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        examiner = SpellExaminer(configuration=spellbook.get_configuration())
-        ai_profile = examiner.ai_profile_for_spell(spell)
+        examiner = SpellExaminer()
+        ai_profile = examiner.create_profile(spell, "ai")
 
         assert ai_profile.class_profile is None
         assert ai_profile.callable_profile is not None

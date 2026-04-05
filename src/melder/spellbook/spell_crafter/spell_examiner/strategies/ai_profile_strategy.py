@@ -48,32 +48,26 @@ class AIProfileStrategy:
     def build_profile(
             self,
             spell: ISpell,
-            binding_profile: Optional[SpellBindingProfile] = None,
-            resolution_profile: Optional[SpellResolutionProfile] = None,
     ) -> SpellAIProfile:
         """
         Build a SpellAIProfile for the provided spell.
 
         Args:
             spell: Spell object providing the underlying callable/class.
-            binding_profile: Optional pre-built binding profile.
-            resolution_profile: Optional pre-built resolution profile.
 
         Returns:
             SpellAIProfile: Fully assembled AI profile.
         """
         # Ensure we have a binding profile for the underlying object.
-        if binding_profile is None:
-            binding_strategy = BindingProfileStrategy(
-                show_dunders=self.show_dunders,
-                max_repr=self.max_repr,
-            )
-            binding_profile = binding_strategy.build_profile(spell.spell)
+        binding_strategy = BindingProfileStrategy(
+            show_dunders=self.show_dunders,
+            max_repr=self.max_repr,
+        )
+        binding_profile = binding_strategy.build_profile(spell.spell)
 
         # Ensure we have a resolution profile for this spell.
-        if resolution_profile is None:
-            resolution_strategy = ResolutionProfileStrategy()
-            resolution_profile = resolution_strategy.build_profile(spell)
+        resolution_strategy = ResolutionProfileStrategy()
+        resolution_profile = resolution_strategy.build_profile(spell)
 
         class_profile: Optional[ClassProfile] = None
         callable_profile: Optional[MethodProfile] = None
