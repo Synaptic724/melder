@@ -1,10 +1,20 @@
 ﻿from types import SimpleNamespace
 
 import pytest
+from typing import Optional, Tuple
 
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.aether.nexus.frame_descriptor.conduit_descriptor_payload import (
+    ConduitDescriptorPayload,
+)
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.aether.nexus.frame_descriptor.conduit_record import ConduitRecord
+from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
+    FrameDescriptorPayload,
+)
+from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
+    SpellDescriptorPayload,
+)
 from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.aether.nexus.nexus_frame_record import NexusFrameRecord
@@ -34,31 +44,35 @@ def test_descriptor_replaces_owned_frame_overview_and_nexus_frame_record() -> No
         frame_name="ops",
         frame_id="frame-1",
         config_origin_spellbook_id="spellbook-1",
-        system_state=SystemState.automatic,
-        ai_native_enabled=False,
-        rift_enabled=True,
-        root_conduit_count=0,
-        root_conduit_ids=tuple(),
-        named_root_conduits=tuple(),
-        conduit_cloud_entry_count=0,
-        conduit_cloud_names=tuple(),
-        cluster_count=0,
-        cluster_names=tuple(),
+        payload=_frame_payload(
+            system_state=SystemState.automatic,
+            ai_native_enabled=False,
+            rift_enabled=True,
+            root_conduit_count=0,
+            root_conduit_ids=tuple(),
+            named_root_conduits=tuple(),
+            conduit_cloud_entry_count=0,
+            conduit_cloud_names=tuple(),
+            cluster_count=0,
+            cluster_names=tuple(),
+        ),
     )
     second_overview = FrameRecord(
         frame_name="ops",
         frame_id="frame-1",
         config_origin_spellbook_id="spellbook-2",
-        system_state=SystemState.dynamic,
-        ai_native_enabled=True,
-        rift_enabled=True,
-        root_conduit_count=1,
-        root_conduit_ids=("conduit-1",),
-        named_root_conduits=(("conduit-1", "alpha"),),
-        conduit_cloud_entry_count=1,
-        conduit_cloud_names=("alpha",),
-        cluster_count=1,
-        cluster_names=("cluster-1",),
+        payload=_frame_payload(
+            system_state=SystemState.dynamic,
+            ai_native_enabled=True,
+            rift_enabled=True,
+            root_conduit_count=1,
+            root_conduit_ids=("conduit-1",),
+            named_root_conduits=(("conduit-1", "alpha"),),
+            conduit_cloud_entry_count=1,
+            conduit_cloud_names=("alpha",),
+            cluster_count=1,
+            cluster_names=("cluster-1",),
+        ),
     )
 
     first_nexus_record = NexusFrameRecord(
@@ -113,16 +127,18 @@ def test_descriptor_cleanup_cleans_owned_metadata_and_releases_lock() -> None:
         frame_name="ops",
         frame_id="frame-1",
         config_origin_spellbook_id="spellbook-1",
-        system_state=SystemState.automatic,
-        ai_native_enabled=False,
-        rift_enabled=True,
-        root_conduit_count=0,
-        root_conduit_ids=tuple(),
-        named_root_conduits=tuple(),
-        conduit_cloud_entry_count=0,
-        conduit_cloud_names=tuple(),
-        cluster_count=0,
-        cluster_names=tuple(),
+        payload=_frame_payload(
+            system_state=SystemState.automatic,
+            ai_native_enabled=False,
+            rift_enabled=True,
+            root_conduit_count=0,
+            root_conduit_ids=tuple(),
+            named_root_conduits=tuple(),
+            conduit_cloud_entry_count=0,
+            conduit_cloud_names=tuple(),
+            cluster_count=0,
+            cluster_names=tuple(),
+        ),
     )
     nexus_frame_record = NexusFrameRecord(
         frame_name="ops",
@@ -161,12 +177,14 @@ def test_descriptor_collection_properties_return_snapshots() -> None:
     conduit_record = ConduitRecord(
         conduit_id="conduit-1",
         root_conduit_id="conduit-1",
-        conduit_name="alpha",
         frame_name="ops",
         origin_spellbook_id="spellbook-1",
-        conduit_state=ConduitState.normal,
-        policy=Policies.default,
-        peer_conduit_ids=tuple(),
+        payload=_conduit_payload(
+            conduit_name="alpha",
+            conduit_state=ConduitState.normal,
+            policy=Policies.default,
+            peer_conduit_ids=tuple(),
+        ),
     )
     spell_record = SpellRecord(
         origin_spellbook_id="spellbook-1",
@@ -179,9 +197,7 @@ def test_descriptor_collection_properties_return_snapshots() -> None:
         binding_name="spell_one",
         permissions=Permissions.create,
         existence=Existence.many,
-        binding_profile=None,
-        resolution_profile=None,
-        detailed_profile=None,
+        payload=_spell_payload(),
     )
 
     descriptor.upsert_conduit_record(conduit_record)
@@ -225,22 +241,26 @@ def test_descriptor_replaces_and_removes_conduit_records_cleanly() -> None:
     first_record = ConduitRecord(
         conduit_id="conduit-1",
         root_conduit_id="conduit-1",
-        conduit_name="alpha",
         frame_name="ops",
         origin_spellbook_id="spellbook-1",
-        conduit_state=ConduitState.normal,
-        policy=Policies.default,
-        peer_conduit_ids=tuple(),
+        payload=_conduit_payload(
+            conduit_name="alpha",
+            conduit_state=ConduitState.normal,
+            policy=Policies.default,
+            peer_conduit_ids=tuple(),
+        ),
     )
     second_record = ConduitRecord(
         conduit_id="conduit-1",
         root_conduit_id="conduit-1",
-        conduit_name="beta",
         frame_name="ops",
         origin_spellbook_id="spellbook-2",
-        conduit_state=ConduitState.normal,
-        policy=Policies.outbound_only,
-        peer_conduit_ids=("conduit-2",),
+        payload=_conduit_payload(
+            conduit_name="beta",
+            conduit_state=ConduitState.normal,
+            policy=Policies.outbound_only,
+            peer_conduit_ids=("conduit-2",),
+        ),
     )
 
     descriptor.upsert_conduit_record(first_record)
@@ -279,9 +299,7 @@ def test_descriptor_replaces_spell_record_and_refreshes_indexes() -> None:
         binding_name="spell_one",
         permissions=Permissions.create,
         existence=Existence.many,
-        binding_profile=None,
-        resolution_profile=None,
-        detailed_profile=None,
+        payload=_spell_payload("general"),
     )
     second_record = SpellRecord(
         origin_spellbook_id="spellbook-1",
@@ -294,9 +312,7 @@ def test_descriptor_replaces_spell_record_and_refreshes_indexes() -> None:
         binding_name="spell_one",
         permissions=Permissions.read,
         existence=Existence.unique,
-        binding_profile=None,
-        resolution_profile=None,
-        detailed_profile=None,
+        payload=_spell_payload(),
     )
 
     descriptor.upsert_spell_record(first_record)
@@ -332,9 +348,7 @@ def test_descriptor_remove_spell_record_cleans_record_and_indexes() -> None:
         binding_name="spell_one",
         permissions=Permissions.create,
         existence=Existence.many,
-        binding_profile=None,
-        resolution_profile=None,
-        detailed_profile=None,
+        payload=_spell_payload(),
     )
     record_key = ("spellbook-1", "spell-1")
 
@@ -437,3 +451,110 @@ def test_descriptor_properties_raise_after_cleanup() -> None:
     with pytest.raises(RuntimeError):
         _ = descriptor.frame_configuration
 
+def _spell_payload(profile_name: str = "detailed") -> SpellDescriptorPayload:
+    """
+    Build a minimal spell payload for descriptor tests.
+
+    Args:
+        profile_name:
+            Source spell profile family name.
+
+    Returns:
+        SpellDescriptorPayload: Descriptor-safe spell payload stub.
+    """
+    return SpellDescriptorPayload(
+        profile_name=profile_name,
+        binding_payload={},
+        resolution_payload={},
+        class_profile=None,
+        callable_profile=None,
+        metadata={},
+        instance_members={},
+        dynamic_access={},
+    )
+
+
+def _conduit_payload(
+        *,
+        conduit_name: Optional[str],
+        conduit_state: ConduitState,
+        policy: Optional[Policies],
+        peer_conduit_ids: Tuple[str, ...],
+) -> ConduitDescriptorPayload:
+    """
+    Build a minimal conduit payload for descriptor tests.
+
+    Args:
+        conduit_name:
+            Optional conduit display name.
+        conduit_state:
+            Conduit runtime state.
+        policy:
+            Optional conduit policy.
+        peer_conduit_ids:
+            Peer conduit ids carried by the payload.
+
+    Returns:
+        ConduitDescriptorPayload: Descriptor-safe conduit payload stub.
+    """
+    return ConduitDescriptorPayload(
+        conduit_name=conduit_name,
+        conduit_state=conduit_state,
+        policy=policy,
+        peer_conduit_ids=peer_conduit_ids,
+    )
+
+
+def _frame_payload(
+        *,
+        system_state: SystemState,
+        ai_native_enabled: bool,
+        rift_enabled: bool,
+        root_conduit_count: int,
+        root_conduit_ids: Tuple[str, ...],
+        named_root_conduits: Tuple[Tuple[str, str], ...],
+        conduit_cloud_entry_count: int,
+        conduit_cloud_names: Tuple[str, ...],
+        cluster_count: int,
+        cluster_names: Tuple[str, ...],
+) -> FrameDescriptorPayload:
+    """
+    Build a minimal frame payload for descriptor tests.
+
+    Args:
+        system_state:
+            Frame system state.
+        ai_native_enabled:
+            Whether AI-native posture is enabled.
+        rift_enabled:
+            Whether Rift publication is enabled.
+        root_conduit_count:
+            Count of root conduits.
+        root_conduit_ids:
+            Root conduit ids.
+        named_root_conduits:
+            Named root conduit pairs.
+        conduit_cloud_entry_count:
+            Conduit cloud entry count.
+        conduit_cloud_names:
+            Conduit cloud names.
+        cluster_count:
+            Cluster count.
+        cluster_names:
+            Cluster names.
+
+    Returns:
+        FrameDescriptorPayload: Descriptor-safe frame payload stub.
+    """
+    return FrameDescriptorPayload(
+        system_state=system_state,
+        ai_native_enabled=ai_native_enabled,
+        rift_enabled=rift_enabled,
+        root_conduit_count=root_conduit_count,
+        root_conduit_ids=root_conduit_ids,
+        named_root_conduits=named_root_conduits,
+        conduit_cloud_entry_count=conduit_cloud_entry_count,
+        conduit_cloud_names=conduit_cloud_names,
+        cluster_count=cluster_count,
+        cluster_names=cluster_names,
+    )

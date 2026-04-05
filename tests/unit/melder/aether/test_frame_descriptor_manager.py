@@ -71,7 +71,7 @@ def test_manager_publish_frame_record_creates_descriptor_and_overview() -> None:
     assert descriptor.frame_configuration is not None
     assert descriptor.frame_overview is not None
     assert descriptor.frame_overview.frame_name == "ops"
-    assert descriptor.frame_overview.rift_enabled is True
+    assert descriptor.frame_overview.payload.rift_enabled is True
 
 
 def test_manager_create_and_detach_nexus_frame_record_updates_descriptor_indexes() -> None:

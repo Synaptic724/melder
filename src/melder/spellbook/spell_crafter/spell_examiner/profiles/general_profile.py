@@ -1,6 +1,9 @@
 from typing import Any, Optional, Type, TypeVar
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
+    SpellDescriptorPayload,
+)
 from melder.spellbook.spell import Spell
 from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
     SpellBindingProfile,
@@ -41,6 +44,7 @@ class SpellGeneralProfile(Cleanable):
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "profile_name",
         "binding_profile",
         "resolution_profile",
     ]
@@ -64,6 +68,7 @@ class SpellGeneralProfile(Cleanable):
             None.
         """
         super().__init__()
+        self.profile_name = "general"
         self.binding_profile = binding_profile
         self.resolution_profile = resolution_profile
 
@@ -118,6 +123,25 @@ class SpellGeneralProfile(Cleanable):
             return
         self.resolution_profile = ResolutionProfileStrategy().build_profile(spell)
 
+    def to_descriptor_payload(self) -> SpellDescriptorPayload:
+        """
+        Build one descriptor-safe payload from this general profile.
+
+        Returns:
+            SpellDescriptorPayload: Sanitized descriptor payload.
+        """
+        self.check_cleaned()
+        return SpellDescriptorPayload.from_spell_profile(
+            self.profile_name,
+            self.binding_profile,
+            resolution_payload=self.resolution_profile,
+            class_profile=None,
+            callable_profile=None,
+            metadata={},
+            instance_members={},
+            dynamic_access={},
+        )
+
     def cleanup(self) -> None:
         """
         Idempotently clean the nested general-profile artifacts.
@@ -133,6 +157,7 @@ class SpellGeneralProfile(Cleanable):
                     profile.cleanup()
                 except Exception:
                     pass
+        self.profile_name = None
         self.binding_profile = None
         self.resolution_profile = None
         self._cleaned = True

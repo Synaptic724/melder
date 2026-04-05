@@ -3,6 +3,7 @@ from typing import Any, Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from melder.utilities.interfaces.interfaces import ISpellDescriptorPayload
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -39,9 +40,7 @@ class SpellRecord(Cleanable):
         "binding_name",
         "permissions",
         "existence",
-        "binding_profile",
-        "resolution_profile",
-        "detailed_profile",
+        "payload",
     ]
 
     def __init__(
@@ -57,9 +56,7 @@ class SpellRecord(Cleanable):
             binding_name: Optional[str],
             permissions: Permissions,
             existence: Existence,
-            binding_profile: Any,
-            resolution_profile: Any,
-            detailed_profile: Any,
+            payload: ISpellDescriptorPayload,
     ) -> None:
         """
         Initialize one canonical spell record.
@@ -85,14 +82,14 @@ class SpellRecord(Cleanable):
                 Spell permission posture.
             existence:
                 Spell existence policy.
-            binding_profile:
-                Current binding profile payload.
-            resolution_profile:
-                Current resolution profile payload when available.
-            detailed_profile:
-                Current detailed profile payload when available.
+            payload:
+                Sanitized spell descriptor payload for this record.
         """
         super().__init__()
+        if payload is None:
+            raise ValueError("payload cannot be None.")
+        if not isinstance(payload, ISpellDescriptorPayload):
+            raise TypeError("payload must satisfy ISpellDescriptorPayload.")
         self._id: str = IDBuilder.create_id()
         self.origin_spellbook_id = origin_spellbook_id
         self.frame_name = frame_name
@@ -104,9 +101,7 @@ class SpellRecord(Cleanable):
         self.binding_name = binding_name
         self.permissions = permissions
         self.existence = existence
-        self.binding_profile = binding_profile
-        self.resolution_profile = resolution_profile
-        self.detailed_profile = detailed_profile
+        self.payload = payload
 
     @property
     def record_key(self) -> Tuple[str, str]:
@@ -139,6 +134,6 @@ class SpellRecord(Cleanable):
         self.binding_name = None
         self.permissions = None
         self.existence = None
-        self.binding_profile = None
-        self.resolution_profile = None
-        self.detailed_profile = None
+        if self.payload is not None:
+            self.payload.cleanup()
+        self.payload = None

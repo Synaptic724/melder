@@ -1,211 +1,308 @@
 import pytest
 
 from melder.aether.nexus.acl.frame_acl_profile import (
-    CodegenACLDetails,
+    FrameACLCodegenProfile,
     FrameACLProfile,
-    ViewACLDetails,
+    FrameACLProfileBuilder,
+    FrameACLRule,
+    FrameACLRuleSet,
+    FrameACLViewProfile,
 )
 from melder.aether.nexus.frame_acl_manager import FrameACLManager
 
 
-def test_view_acl_details_default_payload_is_empty_json_object() -> None:
+def test_frame_acl_rule_requires_valid_core_fields() -> None:
     """
-    Verify view details default to the normalized empty-object payload.
+    Verify typed ACL rules fail fast on invalid required fields.
 
     Returns:
         None.
     """
-    details = ViewACLDetails()
+    with pytest.raises(ValueError, match="rule_name cannot be empty"):
+        FrameACLRule(rule_name="", operation="visible", effect="allow")
 
-    assert details.to_json_dict() == {}
-    assert details.to_json_string() == "{}"
+    with pytest.raises(ValueError, match="operation cannot be empty"):
+        FrameACLRule(rule_name="visible_rule", operation="", effect="allow")
+
+    with pytest.raises(ValueError, match="effect must be one of"):
+        FrameACLRule(
+            rule_name="visible_rule",
+            operation="visible",
+            effect="maybe",
+        )
+
+    with pytest.raises(TypeError, match="conditions must be a dict"):
+        FrameACLRule(
+            rule_name="visible_rule",
+            operation="visible",
+            effect="allow",
+            conditions=[],
+        )
 
 
-def test_view_acl_details_normalizes_payload_and_exposes_id() -> None:
+def test_frame_acl_rule_copies_conditions() -> None:
     """
-    Verify view details normalize JSON payloads and expose a stable id.
+    Verify typed ACL rules detach their condition mapping.
 
     Returns:
         None.
     """
-    details = ViewACLDetails('{"b":2,"a":1}')
-
-    assert details.id is not None
-    assert details.to_json_string() == '{"a": 1, "b": 2}'
-
-
-def test_view_acl_details_rejects_invalid_payloads() -> None:
-    """
-    Verify view details reject non-string and invalid-JSON payloads.
-
-    Returns:
-        None.
-    """
-    with pytest.raises(TypeError, match="json_payload_string must be a string"):
-        ViewACLDetails(None)
-
-    with pytest.raises(ValueError, match="must be valid JSON"):
-        ViewACLDetails("{invalid")
-
-
-def test_codegen_acl_details_default_payload_is_empty_json_object() -> None:
-    """
-    Verify codegen details default to the normalized empty-object payload.
-
-    Returns:
-        None.
-    """
-    details = CodegenACLDetails()
-
-    assert details.to_json_dict() == {}
-    assert details.to_json_string() == "{}"
-
-
-def test_codegen_acl_details_normalizes_payload_and_can_be_replaced() -> None:
-    """
-    Verify codegen details normalize payloads and support payload replacement.
-
-    Returns:
-        None.
-    """
-    details = CodegenACLDetails('{"b":2,"a":1}')
-    details.set_json_payload_string('{"z":1,"m":2}')
-
-    assert details.id is not None
-    assert details.to_json_string() == '{"m": 2, "z": 1}'
-
-
-def test_frame_acl_profile_builds_default_strategy_with_two_details_objects() -> None:
-    """
-    Verify a profile creates one default strategy entry on construction.
-
-    Returns:
-        None.
-    """
-    profile = FrameACLProfile("support")
-
-    assert profile.id is not None
-    assert profile.name == "support"
-    assert profile.list_strategy_names() == ["default"]
-    assert isinstance(profile.view_acl_details, ViewACLDetails)
-    assert isinstance(profile.codegen_acl_details, CodegenACLDetails)
-    assert profile.has_strategy("default") is True
-
-
-def test_frame_acl_profile_registers_and_returns_named_strategy() -> None:
-    """
-    Verify named strategy registration stores the supplied details tuple.
-
-    Returns:
-        None.
-    """
-    profile = FrameACLProfile("support")
-    view_acl_details = ViewACLDetails('{"view":"support"}')
-    codegen_acl_details = CodegenACLDetails('{"codegen":"support"}')
-
-    profile.register_strategy(
-        "support_readonly",
-        view_acl_details,
-        codegen_acl_details,
+    conditions = {"target": "spell", "section": "metadata"}
+    rule = FrameACLRule(
+        rule_name="show_metadata",
+        operation="show_metadata",
+        effect="allow",
+        conditions=conditions,
     )
 
-    stored_view_acl_details, stored_codegen_acl_details = (
-        profile.get_required_strategy("support_readonly")
+    conditions["mutated"] = True
+
+    assert rule.rule_name == "show_metadata"
+    assert rule.operation == "show_metadata"
+    assert rule.effect == "allow"
+    assert rule.conditions == {"target": "spell", "section": "metadata"}
+
+
+def test_frame_acl_ruleset_registers_replaces_and_removes_rules() -> None:
+    """
+    Verify rulesets own rules by name and clean replaced/removed rules.
+
+    Returns:
+        None.
+    """
+    ruleset = FrameACLRuleSet("spell_rules")
+    first_rule = FrameACLRule(
+        rule_name="visible",
+        operation="visible",
+        effect="allow",
+    )
+    second_rule = FrameACLRule(
+        rule_name="visible",
+        operation="visible",
+        effect="deny",
     )
 
-    assert stored_view_acl_details is view_acl_details
-    assert stored_codegen_acl_details is codegen_acl_details
-    assert profile.list_strategy_names() == ["default", "support_readonly"]
+    ruleset.register_rule(first_rule)
+    ruleset.register_rule(second_rule)
+
+    assert first_rule.cleaned is True
+    assert ruleset.get_required_rule("visible") is second_rule
+    assert ruleset.list_rule_names() == ["visible"]
+    assert ruleset.remove_rule("visible") is True
+    assert second_rule.cleaned is True
+    assert ruleset.remove_rule("visible") is False
 
 
-def test_frame_acl_profile_rejects_invalid_construction_and_strategy_registration() -> None:
+def test_view_and_codegen_profiles_create_named_default_catalog() -> None:
     """
-    Verify profile construction and strategy registration fail fast on bad
-    inputs.
+    Verify the named reusable ACL profile catalog is seeded with rule content.
+
+    Returns:
+        None.
+    """
+    view_profile = FrameACLViewProfile.create_default()
+    codegen_profile = FrameACLCodegenProfile.create_default()
+    hybrid_view_profile = FrameACLViewProfile.create_hybrid()
+    permissive_view_profile = FrameACLViewProfile.create_permissive()
+    hybrid_codegen_profile = FrameACLCodegenProfile.create_hybrid()
+    permissive_codegen_profile = FrameACLCodegenProfile.create_permissive()
+
+    assert view_profile.name == "safe"
+    assert view_profile.version == "0.0.1"
+    assert view_profile.minimum_spell_payload_profile_name == "detailed"
+    assert view_profile.frame_ruleset.list_rule_names() == [
+        "frame_visible",
+        "frame_show_payload",
+    ]
+    assert view_profile.conduit_ruleset.list_rule_names() == [
+        "conduit_visible",
+        "conduit_show_payload",
+        "conduit_hide_policy",
+        "conduit_hide_peer_links",
+    ]
+    assert "spell_hide_class_profile" in view_profile.spell_ruleset.list_rule_names()
+    assert "member_hide_dunder_pattern" in view_profile.member_ruleset.list_rule_names()
+
+    assert codegen_profile.name == "safe"
+    assert codegen_profile.version == "0.0.1"
+    assert codegen_profile.frame_ruleset.list_rule_names() == ["frame_query"]
+    assert "spell_local_create" in codegen_profile.spell_ruleset.list_rule_names()
+    assert "capability_mutation" in codegen_profile.capability_ruleset.list_rule_names()
+
+    assert hybrid_view_profile.name == "hybrid"
+    assert "spell_show_class_profile" in hybrid_view_profile.spell_ruleset.list_rule_names()
+    assert "spell_hide_instance_members" in hybrid_view_profile.spell_ruleset.list_rule_names()
+
+    assert permissive_view_profile.name == "permissive"
+    assert "spell_show_instance_members" in permissive_view_profile.spell_ruleset.list_rule_names()
+    assert "spell_show_dynamic_access" in permissive_view_profile.spell_ruleset.list_rule_names()
+
+    assert hybrid_codegen_profile.name == "hybrid"
+    assert "spell_invoke_method" in hybrid_codegen_profile.spell_ruleset.list_rule_names()
+    assert "spell_write_attribute" in hybrid_codegen_profile.spell_ruleset.list_rule_names()
+
+    assert permissive_codegen_profile.name == "permissive"
+    assert "spell_local_create" in permissive_codegen_profile.spell_ruleset.list_rule_names()
+    assert "capability_dynamic_access" in permissive_codegen_profile.capability_ruleset.list_rule_names()
+
+
+def test_frame_acl_profile_builder_seeds_defaults_and_composes_profiles() -> None:
+    """
+    Verify the builder seeds default reusable profiles and composes a frame ACL
+    profile from them.
+
+    Returns:
+        None.
+    """
+    builder = FrameACLProfileBuilder()
+
+    composed_profile = builder.create_profile("support")
+
+    assert builder.version == "0.0.1"
+    assert builder.list_view_profile_names() == ["safe", "hybrid", "permissive"]
+    assert builder.list_codegen_profile_names() == ["safe", "hybrid", "permissive"]
+    assert composed_profile.name == "support"
+    assert composed_profile.version == "0.0.1"
+    assert composed_profile.view_profile is builder.get_required_view_profile(
+        "safe"
+    )
+    assert (
+        composed_profile.codegen_profile
+        is builder.get_required_codegen_profile("safe")
+    )
+    assert composed_profile.view_override_ruleset.list_rule_names() == []
+    assert composed_profile.codegen_override_ruleset.list_rule_names() == []
+
+
+def test_frame_acl_profile_builder_registers_custom_profiles_and_blocks_default_removal() -> None:
+    """
+    Verify custom reusable profiles can be registered while default profiles
+    remain protected.
+
+    Returns:
+        None.
+    """
+    builder = FrameACLProfileBuilder()
+    support_view = FrameACLViewProfile(
+        "support_view",
+        minimum_spell_payload_profile_name="detailed",
+    )
+    support_codegen = FrameACLCodegenProfile("support_codegen")
+
+    builder.register_view_profile(support_view)
+    builder.register_codegen_profile(support_codegen)
+
+    assert builder.list_view_profile_names() == [
+        "safe",
+        "hybrid",
+        "permissive",
+        "support_view",
+    ]
+    assert builder.list_codegen_profile_names() == [
+        "safe",
+        "hybrid",
+        "permissive",
+        "support_codegen",
+    ]
+    assert builder.remove_view_profile("support_view") is True
+    assert builder.remove_codegen_profile("support_codegen") is True
+
+    with pytest.raises(RuntimeError, match="default view profile"):
+        builder.remove_view_profile("safe")
+
+    with pytest.raises(RuntimeError, match="default codegen profile"):
+        builder.remove_codegen_profile("safe")
+
+
+def test_frame_acl_profile_requires_typed_profiles() -> None:
+    """
+    Verify composed frame ACL profiles require typed reusable view/codegen
+    profiles.
 
     Returns:
         None.
     """
     with pytest.raises(ValueError, match="name cannot be empty"):
-        FrameACLProfile("")
+        FrameACLProfile(
+            "",
+            view_profile=FrameACLViewProfile.create_default(),
+            codegen_profile=FrameACLCodegenProfile.create_default(),
+        )
 
-    with pytest.raises(TypeError, match="view_acl_details must be a ViewACLDetails"):
-        FrameACLProfile("support", view_acl_details=object())
+    with pytest.raises(TypeError, match="view_profile must be a FrameACLViewProfile"):
+        FrameACLProfile(
+            "support",
+            view_profile=object(),
+            codegen_profile=FrameACLCodegenProfile.create_default(),
+        )
 
-    with pytest.raises(TypeError, match="codegen_acl_details must be a CodegenACLDetails"):
-        FrameACLProfile("support", codegen_acl_details=object())
-
-    profile = FrameACLProfile("support")
-
-    with pytest.raises(ValueError, match="strategy_name cannot be empty"):
-        profile.register_strategy("", ViewACLDetails(), CodegenACLDetails())
-
-    with pytest.raises(TypeError, match="view_acl_details must be a ViewACLDetails"):
-        profile.register_strategy("bad", object(), CodegenACLDetails())
-
-    with pytest.raises(TypeError, match="codegen_acl_details must be a CodegenACLDetails"):
-        profile.register_strategy("bad", ViewACLDetails(), object())
+    with pytest.raises(TypeError, match="codegen_profile must be a FrameACLCodegenProfile"):
+        FrameACLProfile(
+            "support",
+            view_profile=FrameACLViewProfile.create_default(),
+            codegen_profile=object(),
+        )
 
 
-def test_frame_acl_profile_cleanup_cleans_owned_details() -> None:
+def test_frame_acl_profile_cleanup_cleans_only_owned_overrides() -> None:
     """
-    Verify profile cleanup cascades through owned strategy details.
+    Verify composed profile cleanup clears owned override rulesets but leaves
+    shared reusable profiles alone.
 
     Returns:
         None.
     """
-    profile = FrameACLProfile("support")
-    default_view_acl_details = profile.view_acl_details
-    default_codegen_acl_details = profile.codegen_acl_details
-    extra_view_acl_details = ViewACLDetails('{"x":1}')
-    extra_codegen_acl_details = CodegenACLDetails('{"y":2}')
-    profile.register_strategy(
-        "support_readonly",
-        extra_view_acl_details,
-        extra_codegen_acl_details,
+    view_profile = FrameACLViewProfile.create_default()
+    codegen_profile = FrameACLCodegenProfile.create_default()
+    profile = FrameACLProfile(
+        "support",
+        view_profile=view_profile,
+        codegen_profile=codegen_profile,
     )
+
+    view_override_ruleset = profile.view_override_ruleset
+    codegen_override_ruleset = profile.codegen_override_ruleset
 
     profile.cleanup()
 
     assert profile.cleaned is True
-    assert default_view_acl_details.cleaned is True
-    assert default_codegen_acl_details.cleaned is True
-    assert extra_view_acl_details.cleaned is True
-    assert extra_codegen_acl_details.cleaned is True
+    assert view_override_ruleset.cleaned is True
+    assert codegen_override_ruleset.cleaned is True
+    assert view_profile.cleaned is False
+    assert codegen_profile.cleaned is False
 
 
-def test_frame_acl_manager_exposes_version_and_profile_registry_surface() -> None:
+def test_frame_acl_manager_exposes_profile_builder_and_profile_registry_surface() -> None:
     """
-    Verify the manager exposes the version string and profile registry
-    mechanics.
+    Verify the manager owns the ACL profile builder/library and the composed
+    profile registry separately.
 
     Returns:
         None.
     """
     manager = FrameACLManager()
-    support_profile = FrameACLProfile("support")
-
-    manager._register_frame_acl_profile(support_profile)
+    profile = manager._create_frame_acl_profile("support")
 
     assert manager.version == "0.0.1"
-    assert manager.id is not None
-    assert manager._get_required_frame_acl_profile("support") is support_profile
+    assert manager.frame_acl_profile_builder.version == "0.0.1"
+    assert manager._list_view_acl_profile_names() == ["safe", "hybrid", "permissive"]
+    assert manager._list_codegen_acl_profile_names() == ["safe", "hybrid", "permissive"]
+    assert manager._get_required_frame_acl_profile("support") is profile
     assert manager._list_frame_acl_profile_names() == ["support"]
-    assert manager.frame_acl_profiles_by_name == {"support": support_profile}
+    assert manager.frame_acl_profiles_by_name == {"support": profile}
 
 
 def test_frame_acl_manager_profile_replace_and_remove_cleanup_old_profiles() -> None:
     """
-    Verify manager profile replacement and removal clean old profile objects.
+    Verify composed profile replacement and removal clean old profile objects.
 
     Returns:
         None.
     """
     manager = FrameACLManager()
-    first_profile = FrameACLProfile("support")
-    second_profile = FrameACLProfile("support")
+    first_profile = manager._create_frame_acl_profile("support")
+    second_profile = manager.frame_acl_profile_builder.create_profile("support")
 
-    manager._register_frame_acl_profile(first_profile)
     manager._register_frame_acl_profile(second_profile)
 
     assert first_profile.cleaned is True

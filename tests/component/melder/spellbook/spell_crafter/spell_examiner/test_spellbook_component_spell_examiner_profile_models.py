@@ -275,7 +275,6 @@ def test_component_spell_ai_profile_cleanup_cascades_profiles() -> None:
         module="tests.component",
     )
     profile = SpellDetailedProfile(
-        spell=object(),
         binding_profile=binding_profile,
         resolution_profile=resolution_profile,
         class_profile=class_profile,
@@ -289,5 +288,4 @@ def test_component_spell_ai_profile_cleanup_cascades_profiles() -> None:
     assert resolution_profile.cleaned is True
     assert class_profile.cleaned is True
     assert profile.metadata is None
-    assert profile.spell is None
 

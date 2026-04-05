@@ -2,7 +2,9 @@ import inspect
 from typing import Any, Dict, List, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.spellbook.spell import Spell
+from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
+    SpellDescriptorPayload,
+)
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.class_inspector import (
     ClassInspector,
 )
@@ -22,6 +24,7 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile impo
     SpellGeneralProfile,
 )
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import ISpell
 
 
 class SpellDetailedProfile(SpellGeneralProfile):
@@ -46,7 +49,7 @@ class SpellDetailedProfile(SpellGeneralProfile):
     __slots__ = SpellGeneralProfile.__slots__ + [
         "_show_dunders",
         "_max_repr",
-        "spell",
+        "_detail_complete",
         "class_profile",
         "callable_profile",
         "metadata",
@@ -61,7 +64,6 @@ class SpellDetailedProfile(SpellGeneralProfile):
             resolution_profile=None,
             show_dunders: bool = True,
             max_repr: int = 120,
-            spell: Optional[Spell] = None,
             class_profile: Optional[ClassProfile] = None,
             callable_profile: Optional[MethodProfile] = None,
             metadata: Optional[dict[str, Any]] = None,
@@ -80,8 +82,6 @@ class SpellDetailedProfile(SpellGeneralProfile):
                 Whether dunder members should be included in deep inspection.
             max_repr:
                 Maximum representation length used by the deep inspectors.
-            spell:
-                Owning spell once phase 2 has completed.
             class_profile:
                 Optional class profile when the spell wraps a class.
             callable_profile:
@@ -102,7 +102,8 @@ class SpellDetailedProfile(SpellGeneralProfile):
         )
         self._show_dunders = show_dunders
         self._max_repr = max_repr
-        self.spell = spell
+        self.profile_name = "detailed"
+        self._detail_complete = False
         self.class_profile = class_profile
         self.callable_profile = callable_profile
         self.metadata = dict(metadata) if metadata is not None else {}
@@ -148,11 +149,11 @@ class SpellDetailedProfile(SpellGeneralProfile):
             show_dunders=show_dunders,
             max_repr=max_repr,
         )
-        if isinstance(target, Spell):
+        if isinstance(target, ISpell):
             profile.complete_with_spell(target)
         return profile
 
-    def complete_with_spell(self, spell: Spell) -> None:
+    def complete_with_spell(self, spell: ISpell) -> None:
         """
         Complete phase 2 of the detailed profile lifecycle.
 
@@ -166,22 +167,16 @@ class SpellDetailedProfile(SpellGeneralProfile):
 
         Raises:
             TypeError:
-                If `spell` is not a `Spell`.
-            RuntimeError:
-                If the profile is already completed for a different spell.
+                If `spell` does not satisfy the spell protocol.
         """
         self.check_cleaned()
-        if not isinstance(spell, Spell):
+        if not isinstance(spell, ISpell):
             raise TypeError("Detailed profile completion requires a Spell instance.")
-        if self.spell is not None and self.spell is not spell:
-            raise RuntimeError(
-                "Detailed profile is already completed for a different Spell."
-            )
         super().complete_with_spell(spell)
-        if self.spell is spell:
+        if self._detail_complete:
             return
 
-        self.spell = spell
+        self._detail_complete = True
         class_profile: Optional[ClassProfile] = None
         callable_profile: Optional[MethodProfile] = None
         instance_members: Dict[str, Dict[str, Any]] = {}
@@ -211,6 +206,25 @@ class SpellDetailedProfile(SpellGeneralProfile):
         self.instance_members = instance_members
         self.dynamic_access = dynamic_access
 
+    def to_descriptor_payload(self) -> SpellDescriptorPayload:
+        """
+        Build one descriptor-safe payload from this detailed profile.
+
+        Returns:
+            SpellDescriptorPayload: Sanitized descriptor payload.
+        """
+        self.check_cleaned()
+        return SpellDescriptorPayload.from_spell_profile(
+            self.profile_name,
+            self.binding_profile,
+            resolution_payload=self.resolution_profile,
+            class_profile=self.class_profile,
+            callable_profile=self.callable_profile,
+            metadata=self.metadata,
+            instance_members=self.instance_members,
+            dynamic_access=self.dynamic_access,
+        )
+
     def cleanup(self) -> None:
         """
         Idempotently clean the nested detailed-profile artifacts.
@@ -231,14 +245,14 @@ class SpellDetailedProfile(SpellGeneralProfile):
         super().cleanup()
         self._show_dunders = None
         self._max_repr = None
-        self.spell = None
+        self._detail_complete = None
         self.class_profile = None
         self.callable_profile = None
         self.metadata = None
         self.instance_members = None
         self.dynamic_access = None
 
-    def _inspect_class(self, spell: Spell) -> ClassProfile:
+    def _inspect_class(self, spell: ISpell) -> ClassProfile:
         """
         Inspect a class-backed spell and build a `ClassProfile`.
 
@@ -326,7 +340,7 @@ class SpellDetailedProfile(SpellGeneralProfile):
             dynamic_access=data.get("dynamic_access", {}),
         )
 
-    def _inspect_callable(self, spell: Spell) -> MethodProfile:
+    def _inspect_callable(self, spell: ISpell) -> MethodProfile:
         """
         Inspect a callable-backed spell and build a `MethodProfile`.
 

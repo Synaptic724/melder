@@ -421,16 +421,18 @@ def test_spell_crafter_contract_shapes_register_topology_without_dependencies() 
         conduit.cleanup()
 
 
-def test_spell_crafter_phase2_requires_phase1() -> None:
+def test_spell_crafter_phase2_uses_seeded_profile_requirements() -> None:
     """
     Purpose:
-        Validate Phase 2 refuses to run before Phase 1 requirements.
+        Validate Phase 2 can run immediately when requirements were already
+        seeded from the spell-owned profile.
     Contract:
-        - run_phase_symbolic_graph raises RuntimeError without requirements.
+        - Newly bound spells already carry seeded Phase 1 requirements through
+          their profile-held resolution payload.
+        - `run_phase_symbolic_graph()` succeeds without an explicit prior
+          `run_phase_requirements()` call.
     Returns:
         None.
-    Raises:
-        AssertionError: If Phase 2 runs without Phase 1 data.
     """
     spellbook = _make_spellbook()
 
@@ -451,8 +453,9 @@ def test_spell_crafter_phase2_requires_phase1() -> None:
     try:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
-        with pytest.raises(RuntimeError):
-            spell.run_phase_symbolic_graph()
+        spell.run_phase_symbolic_graph()
+        assert spell.requirements is not None
+        assert spell.symbolic_graph is not None
     finally:
         spellbook.cleanup()
 

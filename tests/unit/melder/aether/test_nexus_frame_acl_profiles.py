@@ -1,6 +1,10 @@
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
-from melder.aether.nexus.acl.frame_acl_profile import FrameACLProfile
+from melder.aether.nexus.acl.frame_acl_profile import (
+    FrameACLCodegenProfile,
+    FrameACLProfile,
+    FrameACLViewProfile,
+)
 from melder.aether.nexus.nexus import Nexus
 
 
@@ -48,7 +52,11 @@ def test_nexus_profile_registry_facades_register_get_list_and_remove() -> None:
         None.
     """
     nexus = Nexus(aether=Aether())
-    support_profile = FrameACLProfile("support")
+    support_profile = FrameACLProfile(
+        "support",
+        view_profile=FrameACLViewProfile.create_default(),
+        codegen_profile=FrameACLCodegenProfile.create_default(),
+    )
 
     nexus.register_frame_acl_profile(support_profile)
 

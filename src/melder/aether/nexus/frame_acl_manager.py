@@ -8,7 +8,12 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.frame_acl_container import FrameACLContainer
-from melder.aether.nexus.acl.frame_acl_profile import FrameACLProfile
+from melder.aether.nexus.acl.frame_acl_profile import (
+    FrameACLCodegenProfile,
+    FrameACLProfile,
+    FrameACLProfileBuilder,
+    FrameACLViewProfile,
+)
 
 
 class FrameACLManager(Cleanable):
@@ -43,6 +48,7 @@ class FrameACLManager(Cleanable):
         "_id",
         "_lock",
         "_version",
+        "_frame_acl_profile_builder",
         "_frame_acl_containers_by_name",
         "_frame_acl_profiles_by_name",
     ]
@@ -67,6 +73,9 @@ class FrameACLManager(Cleanable):
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._version: str = "0.0.1"
+        self._frame_acl_profile_builder: FrameACLProfileBuilder = (
+            FrameACLProfileBuilder()
+        )
         self._frame_acl_containers_by_name: Dict[str, FrameACLContainer] = {}
         self._frame_acl_profiles_by_name: Dict[str, FrameACLProfile] = {}
 
@@ -100,8 +109,10 @@ class FrameACLManager(Cleanable):
                 container.cleanup()
             for frame_acl_profile in self._frame_acl_profiles_by_name.values():
                 frame_acl_profile.cleanup()
+            self._frame_acl_profile_builder.cleanup()
             self._frame_acl_containers_by_name.clear()
             self._frame_acl_profiles_by_name.clear()
+            self._frame_acl_profile_builder = None
             self._frame_acl_containers_by_name = None
             self._frame_acl_profiles_by_name = None
             self._version = None
@@ -164,6 +175,17 @@ class FrameACLManager(Cleanable):
         self.check_cleaned()
         with self._lock:
             return dict(self._frame_acl_profiles_by_name)
+
+    @property
+    def frame_acl_profile_builder(self) -> FrameACLProfileBuilder:
+        """
+        Return the manager-owned ACL profile builder/library.
+
+        Returns:
+            FrameACLProfileBuilder: Manager-owned ACL profile builder/library.
+        """
+        self.check_cleaned()
+        return self._frame_acl_profile_builder
 
     def _ensure_frame_acl_container(
             self,
@@ -576,6 +598,40 @@ class FrameACLManager(Cleanable):
                 existing.cleanup()
             self._frame_acl_profiles_by_name[frame_acl_profile.name] = frame_acl_profile
 
+    def _register_view_acl_profile(
+            self,
+            view_profile: FrameACLViewProfile,
+    ) -> None:
+        """
+        Register or replace one reusable view ACL profile.
+
+        Args:
+            view_profile:
+                Reusable view profile to store.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        self._frame_acl_profile_builder.register_view_profile(view_profile)
+
+    def _register_codegen_acl_profile(
+            self,
+            codegen_profile: FrameACLCodegenProfile,
+    ) -> None:
+        """
+        Register or replace one reusable codegen ACL profile.
+
+        Args:
+            codegen_profile:
+                Reusable codegen profile to store.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        self._frame_acl_profile_builder.register_codegen_profile(codegen_profile)
+
     def _get_required_frame_acl_profile(
             self,
             profile_name: str,
@@ -611,6 +667,26 @@ class FrameACLManager(Cleanable):
         with self._lock:
             return list(self._frame_acl_profiles_by_name.keys())
 
+    def _list_view_acl_profile_names(self) -> List[str]:
+        """
+        Return the current reusable view-profile names.
+
+        Returns:
+            List[str]: Current view-profile names.
+        """
+        self.check_cleaned()
+        return self._frame_acl_profile_builder.list_view_profile_names()
+
+    def _list_codegen_acl_profile_names(self) -> List[str]:
+        """
+        Return the current reusable codegen-profile names.
+
+        Returns:
+            List[str]: Current codegen-profile names.
+        """
+        self.check_cleaned()
+        return self._frame_acl_profile_builder.list_codegen_profile_names()
+
     def _remove_frame_acl_profile(self, profile_name: str) -> bool:
         """
         Remove and cleanup one ACL profile by name.
@@ -632,3 +708,34 @@ class FrameACLManager(Cleanable):
                 return False
             frame_acl_profile.cleanup()
             return True
+
+    def _create_frame_acl_profile(
+            self,
+            profile_name: str,
+            *,
+            view_profile_name: str = "safe",
+            codegen_profile_name: str = "safe",
+    ) -> FrameACLProfile:
+        """
+        Compose and register one frame ACL profile from reusable view/codegen
+        profiles.
+
+        Args:
+            profile_name:
+                Stable composed profile name to create.
+            view_profile_name:
+                Reusable view-profile name to compose in.
+            codegen_profile_name:
+                Reusable codegen-profile name to compose in.
+
+        Returns:
+            FrameACLProfile: Newly composed and registered frame ACL profile.
+        """
+        self.check_cleaned()
+        frame_acl_profile = self._frame_acl_profile_builder.create_profile(
+            profile_name,
+            view_profile_name=view_profile_name,
+            codegen_profile_name=codegen_profile_name,
+        )
+        self._register_frame_acl_profile(frame_acl_profile)
+        return frame_acl_profile

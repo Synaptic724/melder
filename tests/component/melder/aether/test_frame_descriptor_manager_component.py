@@ -6,9 +6,13 @@ from melder.aether.aetheric_frame_configuration import AethericFrameConfiguratio
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
+    SpellDescriptorPayload,
+)
 from melder.aether.nexus.frame_descriptor_manager import FrameDescriptorManager
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
+from melder.utilities.general_base.cleanable import Cleanable
 
 
 def _bind_frame_posture(
@@ -38,6 +42,34 @@ def _bind_frame_posture(
     )
     aether._bind_aetheric_frame_configuration(frame_configuration, frame_name)
     return aether
+
+
+class _PayloadProfile(Cleanable):
+    def __init__(self, name: str = "detailed") -> None:
+        super().__init__()
+        self.profile_name = name
+        self.binding_profile = object()
+        self.resolution_profile = object()
+
+    def to_descriptor_payload(self) -> SpellDescriptorPayload:
+        return SpellDescriptorPayload(
+            profile_name=self.profile_name,
+            binding_payload={},
+            resolution_payload={},
+            class_profile=None,
+            callable_profile=None,
+            metadata={},
+            instance_members={},
+            dynamic_access={},
+        )
+
+    def complete_with_spell(self, spell) -> None:
+        return None
+
+    def cleanup(self) -> None:
+        if self._cleaned:
+            return
+        self._cleaned = True
 
 
 def test_component_manager_keeps_frame_conduit_and_spell_records_coherent() -> None:
@@ -71,8 +103,7 @@ def test_component_manager_keeps_frame_conduit_and_spell_records_coherent() -> N
         ),
     )
     spell = types.SimpleNamespace(
-        profile=None,
-        resolution_profile=None,
+        profile=_PayloadProfile(),
         spell_id="spell-1",
         spell_index=types.SimpleNamespace(id="lineage-1"),
         spell_name="SpellOne",
@@ -90,7 +121,8 @@ def test_component_manager_keeps_frame_conduit_and_spell_records_coherent() -> N
         descriptor = manager._get_required_frame_descriptor("ops")
         record_key = ("spellbook-alpha", "spell-1")
         assert descriptor.frame_overview is not None
-        assert descriptor.conduit_records_by_id["conduit-1"].conduit_name == "root"
+        assert descriptor.frame_overview.payload.rift_enabled is True
+        assert descriptor.conduit_records_by_id["conduit-1"].payload.conduit_name == "root"
         assert record_key in descriptor.spell_records_by_key
         assert descriptor.spell_keys_by_conduit_id == {"conduit-1": {record_key}}
         assert descriptor.spell_keys_by_spellbook_id == {"spellbook-alpha": {record_key}}

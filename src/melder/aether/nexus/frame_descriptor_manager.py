@@ -3,6 +3,15 @@ from typing import Any, Dict, List, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.aether.nexus.frame_descriptor.conduit_descriptor_payload import (
+    ConduitDescriptorPayload,
+)
+from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
+    FrameDescriptorPayload,
+)
+from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
+    SpellDescriptorPayload,
+)
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.aether.nexus.frame_descriptor.conduit_record import ConduitRecord
@@ -12,7 +21,6 @@ from melder.aether.nexus.configuration.nexus_frame_mode import NexusFrameMode
 from melder.aether.nexus.nexus_frame_record import NexusFrameRecord
 from melder.utilities.interfaces.interfaces import (
     IAether,
-    ISpellDetailedProfile,
     ISpellGeneralProfile,
 )
 from melder.utilities.general_base.cleanable import Cleanable
@@ -253,10 +261,7 @@ class FrameDescriptorManager(Cleanable):
                 if frame._conduit_clusters is not None:
                     cluster_names = tuple(sorted(frame._conduit_clusters.keys()))
                     cluster_count = len(cluster_names)
-            frame_record = FrameRecord(
-                frame_name=frame_name,
-                frame_id=frame._id,
-                config_origin_spellbook_id=spellbook._id,
+            payload = FrameDescriptorPayload(
                 system_state=frame_posture.system_state,
                 ai_native_enabled=frame_posture.ai_native_enabled,
                 rift_enabled=frame_posture.rift_enabled,
@@ -267,6 +272,12 @@ class FrameDescriptorManager(Cleanable):
                 conduit_cloud_names=conduit_cloud_names,
                 cluster_count=cluster_count,
                 cluster_names=cluster_names,
+            )
+            frame_record = FrameRecord(
+                frame_name=frame_name,
+                frame_id=frame._id,
+                config_origin_spellbook_id=spellbook._id,
+                payload=payload,
             )
             descriptor.set_frame_overview(frame_record)
             return True
@@ -315,15 +326,18 @@ class FrameDescriptorManager(Cleanable):
             if conduit._spellbook is not None:
                 origin_spellbook_id = conduit._spellbook._id
 
-            conduit_record = ConduitRecord(
-                conduit_id=conduit._id,
-                root_conduit_id=conduit._root_conduit_id,
+            payload = ConduitDescriptorPayload(
                 conduit_name=conduit._name,
-                frame_name=frame_name,
-                origin_spellbook_id=origin_spellbook_id,
                 conduit_state=conduit._conduit_state,
                 policy=conduit._conduit_ward._policy,
                 peer_conduit_ids=peer_conduit_ids,
+            )
+            conduit_record = ConduitRecord(
+                conduit_id=conduit._id,
+                root_conduit_id=conduit._root_conduit_id,
+                frame_name=frame_name,
+                origin_spellbook_id=origin_spellbook_id,
+                payload=payload,
             )
             descriptor.upsert_conduit_record(conduit_record)
             return True
@@ -398,19 +412,14 @@ class FrameDescriptorManager(Cleanable):
                 return False
             descriptor = self._get_or_create_frame_descriptor(frame_name)
 
-            binding_profile = None
-            detailed_profile = None
-            resolution_profile = None
             profile = spell.profile
-            if isinstance(profile, ISpellDetailedProfile):
-                detailed_profile = profile
-                binding_profile = profile.binding_profile
-                resolution_profile = profile.resolution_profile
-            elif isinstance(profile, ISpellGeneralProfile):
-                binding_profile = profile.binding_profile
-                resolution_profile = profile.resolution_profile
-            else:
-                binding_profile = profile
+            payload: Optional[SpellDescriptorPayload] = None
+            if isinstance(profile, ISpellGeneralProfile):
+                payload = profile.to_descriptor_payload()
+            if payload is None:
+                raise RuntimeError(
+                    "Spell publication requires a non-empty descriptor payload."
+                )
 
             spell_record = SpellRecord(
                 origin_spellbook_id=spellbook._id,
@@ -423,9 +432,7 @@ class FrameDescriptorManager(Cleanable):
                 binding_name=spell.binding_name,
                 permissions=spell.permissions,
                 existence=spell.existence,
-                binding_profile=binding_profile,
-                resolution_profile=resolution_profile,
-                detailed_profile=detailed_profile,
+                payload=payload,
             )
             descriptor.upsert_spell_record(spell_record)
             return True

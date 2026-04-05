@@ -2167,6 +2167,7 @@ class ISpellGeneralProfile(ICleanable, Protocol):
         resolution-time detail artifacts together.
     """
 
+    profile_name: str
     binding_profile: Any
     resolution_profile: Any
 
@@ -2181,6 +2182,15 @@ class ISpellGeneralProfile(ICleanable, Protocol):
         """
         ...
 
+    def to_descriptor_payload(self) -> "ISpellDescriptorPayload":
+        """
+        Export one descriptor-safe spell payload.
+
+        Returns:
+            ISpellDescriptorPayload: Descriptor-safe spell payload.
+        """
+        ...
+
 
 @runtime_checkable
 class ISpellDetailedProfile(ISpellGeneralProfile, Protocol):
@@ -2192,12 +2202,134 @@ class ISpellDetailedProfile(ISpellGeneralProfile, Protocol):
         payloads for richer downstream consumers.
     """
 
-    spell: Any
     class_profile: Any
     callable_profile: Any
     metadata: Dict[str, Any]
     instance_members: Dict[str, Any]
     dynamic_access: Dict[str, bool]
+
+
+@runtime_checkable
+class IDescriptorPayload(ICleanable, Protocol):
+    """
+    Base contract for descriptor-safe published payloads.
+
+    Purpose:
+        Define the minimum shape required for payloads stored on descriptor
+        records.
+    """
+
+    profile_name: str
+
+
+@runtime_checkable
+class ISpellDescriptorPayload(IDescriptorPayload, Protocol):
+    """
+    Descriptor-safe spell payload contract.
+
+    Purpose:
+        Define the minimum sanitized spell payload shape stored by `SpellRecord`.
+    """
+
+    binding_payload: Dict[str, Any]
+    resolution_payload: Any
+    class_profile: Any
+    callable_profile: Any
+    metadata: Dict[str, Any]
+    instance_members: Dict[str, Any]
+    dynamic_access: Dict[str, bool]
+
+
+@runtime_checkable
+class IConduitDescriptorPayload(IDescriptorPayload, Protocol):
+    """
+    Descriptor-safe conduit payload contract.
+
+    Purpose:
+        Define the minimum descriptor-safe conduit payload shape stored by
+        `ConduitRecord`.
+    """
+
+    conduit_name: Optional[str]
+    conduit_state: Any
+    policy: Any
+    peer_conduit_ids: Tuple[str, ...]
+
+
+@runtime_checkable
+class IFrameDescriptorPayload(IDescriptorPayload, Protocol):
+    """
+    Descriptor-safe frame payload contract.
+
+    Purpose:
+        Define the minimum descriptor-safe frame payload shape stored by
+        `FrameRecord`.
+    """
+
+    system_state: Any
+    ai_native_enabled: bool
+    rift_enabled: bool
+    root_conduit_count: int
+    root_conduit_ids: Tuple[str, ...]
+    named_root_conduits: Tuple[Tuple[str, str], ...]
+    conduit_cloud_entry_count: int
+    conduit_cloud_names: Tuple[str, ...]
+    cluster_count: int
+    cluster_names: Tuple[str, ...]
+
+
+@runtime_checkable
+class IFrameRecord(ICleanable, Protocol):
+    """
+    Descriptor-facing frame record contract.
+    """
+
+    frame_name: str
+    frame_id: str
+    config_origin_spellbook_id: Optional[str]
+    payload: IFrameDescriptorPayload
+
+
+@runtime_checkable
+class IConduitRecord(ICleanable, Protocol):
+    """
+    Descriptor-facing conduit record contract.
+    """
+
+    conduit_id: str
+    root_conduit_id: str
+    frame_name: str
+    origin_spellbook_id: Optional[str]
+    payload: IConduitDescriptorPayload
+
+
+@runtime_checkable
+class ISpellRecord(ICleanable, Protocol):
+    """
+    Descriptor-facing spell record contract.
+    """
+
+    origin_spellbook_id: str
+    frame_name: str
+    owner_conduit_id: Optional[str]
+    spell_id: str
+    lineage_id: str
+    spell_name: str
+    spellframe: Any
+    binding_name: Optional[str]
+    permissions: Permissions
+    existence: Existence
+    payload: ISpellDescriptorPayload
+
+    @property
+    def record_key(self) -> Tuple[str, str]:
+        """
+        Return the canonical spell-record key.
+
+        Returns:
+            Tuple[str, str]: `(origin_spellbook_id, spell_id)`.
+        """
+        ...
 
     def get_configuration(self) -> 'IConfiguration':
         """

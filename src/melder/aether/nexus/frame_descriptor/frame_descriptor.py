@@ -3,13 +3,15 @@ from typing import Dict, Optional, Set, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
-from melder.aether.nexus.frame_descriptor.conduit_record import ConduitRecord
-from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
-from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.aether.nexus.nexus_frame_record import NexusFrameRecord
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import IAethericFrame
+from melder.utilities.interfaces.interfaces import (
+    IAethericFrame,
+    IConduitRecord,
+    IFrameRecord,
+    ISpellRecord,
+)
 
 
 class FrameDescriptor(Cleanable):
@@ -79,10 +81,10 @@ class FrameDescriptor(Cleanable):
         self._frame_name: str = frame_name
         self._frame_handle: Optional[IAethericFrame] = None
         self._frame_configuration: Optional[AethericFrameConfiguration] = None
-        self._frame_overview: Optional[FrameRecord] = None
+        self._frame_overview: Optional[IFrameRecord] = None
         self._nexus_frame_record: Optional[NexusFrameRecord] = None
-        self._conduit_records_by_id: Dict[str, ConduitRecord] = {}
-        self._spell_records_by_key: Dict[Tuple[str, str], SpellRecord] = {}
+        self._conduit_records_by_id: Dict[str, IConduitRecord] = {}
+        self._spell_records_by_key: Dict[Tuple[str, str], ISpellRecord] = {}
         self._spell_keys_by_conduit_id: Dict[str, Set[Tuple[str, str]]] = {}
         self._spell_keys_by_spellbook_id: Dict[str, Set[Tuple[str, str]]] = {}
 
@@ -184,7 +186,7 @@ class FrameDescriptor(Cleanable):
             return self._frame_configuration
 
     @property
-    def frame_overview(self) -> Optional[FrameRecord]:
+    def frame_overview(self) -> Optional[IFrameRecord]:
         """
         Return the owned frame overview record when published.
 
@@ -216,7 +218,7 @@ class FrameDescriptor(Cleanable):
             return self._nexus_frame_record
 
     @property
-    def conduit_records_by_id(self) -> Dict[str, ConduitRecord]:
+    def conduit_records_by_id(self) -> Dict[str, IConduitRecord]:
         """
         Return a snapshot of the descriptor-owned conduit record map.
 
@@ -233,7 +235,7 @@ class FrameDescriptor(Cleanable):
             return dict(self._conduit_records_by_id)
 
     @property
-    def spell_records_by_key(self) -> Dict[Tuple[str, str], SpellRecord]:
+    def spell_records_by_key(self) -> Dict[Tuple[str, str], ISpellRecord]:
         """
         Return a snapshot of the descriptor-owned spell record map.
 
@@ -331,7 +333,7 @@ class FrameDescriptor(Cleanable):
         with self._lock:
             self._frame_configuration = frame_configuration
 
-    def set_frame_overview(self, frame_overview: FrameRecord) -> None:
+    def set_frame_overview(self, frame_overview: IFrameRecord) -> None:
         """
         Replace the owned frame overview record.
 
@@ -379,7 +381,7 @@ class FrameDescriptor(Cleanable):
                 existing.cleanup()
             self._nexus_frame_record = nexus_frame_record
 
-    def upsert_conduit_record(self, conduit_record: ConduitRecord) -> None:
+    def upsert_conduit_record(self, conduit_record: IConduitRecord) -> None:
         """
         Upsert one conduit record owned by this descriptor.
 
@@ -420,7 +422,7 @@ class FrameDescriptor(Cleanable):
             if existing is not None:
                 existing.cleanup()
 
-    def upsert_spell_record(self, spell_record: SpellRecord) -> None:
+    def upsert_spell_record(self, spell_record: ISpellRecord) -> None:
         """
         Upsert one spell record and refresh descriptor-local indexes.
 
@@ -542,7 +544,7 @@ class FrameDescriptor(Cleanable):
             self._spell_keys_by_spellbook_id[spellbook_id] = spell_keys
         return spell_keys
 
-    def _discard_spell_from_indexes(self, spell_record: SpellRecord) -> None:
+    def _discard_spell_from_indexes(self, spell_record: ISpellRecord) -> None:
         """
         Remove one spell record's key from descriptor-local indexes.
 

@@ -58,13 +58,11 @@ def test_metadata_copied_and_fields_assigned():
     binding = object()
     resolution = object()
     profile = SpellDetailedProfile(
-        spell=spell,
         binding_profile=binding,
         resolution_profile=resolution,
         metadata=meta,
     )
 
-    assert profile.spell is spell
     assert profile.binding_profile is binding
     assert profile.resolution_profile is resolution
     assert profile.metadata is not meta
@@ -83,7 +81,6 @@ def test_cleanup_cascades_and_nulls_references():
     class_prof = _CleanableStub()
     callable_prof = _CleanableStub()
     profile = SpellDetailedProfile(
-        spell=spell,
         binding_profile=binding,
         resolution_profile=resolution,
         class_profile=class_prof,
@@ -95,7 +92,6 @@ def test_cleanup_cascades_and_nulls_references():
 
     for stub in (binding, resolution, class_prof, callable_prof):
         assert getattr(stub, "cleaned", False) or stub.cleaned_calls > 0
-    assert profile.spell is None
     assert profile.binding_profile is None
     assert profile.resolution_profile is None
     assert profile.class_profile is None
@@ -108,7 +104,6 @@ def test_cleanup_cascades_and_nulls_references():
 
 def test_cleanup_idempotent():
     profile = SpellDetailedProfile(
-        spell=_make_spell(),
         binding_profile=_CleanableStub(),
         resolution_profile=_CleanableStub(),
     )
@@ -120,7 +115,6 @@ def test_cleanup_idempotent():
 
 def test_cleanup_swallows_child_errors():
     profile = SpellDetailedProfile(
-        spell=_make_spell(),
         binding_profile=_BoomCleanable(),
         resolution_profile=_BoomCleanable(),
         metadata={"a": 1},

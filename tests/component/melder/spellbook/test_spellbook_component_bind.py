@@ -13,6 +13,9 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile impo
     ClassBindingProfile,
     InstanceBindingProfile,
 )
+from melder.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
+    SpellDetailedProfile,
+)
 from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
     SpellGeneralProfile,
 )
@@ -210,6 +213,76 @@ def test_component_bind_existing_object_requires_unique_existence() -> None:
         assert spell.user_created_object is instance
         assert isinstance(spell.profile, SpellGeneralProfile)
         assert isinstance(spell.profile.binding_profile, InstanceBindingProfile)
+    finally:
+        binder.cleanup()
+        spellbook.cleanup()
+
+
+def test_component_bind_can_attach_detailed_profile_for_class_spell() -> None:
+    """
+    Purpose:
+        Validate Bind can attach the detailed profile for class spells.
+    Contract:
+        - `.profile` is a SpellDetailedProfile when requested explicitly.
+        - The detailed profile still carries the class binding profile.
+        - The detailed inspection payloads and resolution profile are populated.
+    Returns:
+        None.
+    """
+    spellbook = _make_spellbook()
+    binder = Bind(spellbook)
+    try:
+        spell = binder.bind(
+            Permissions.create,
+            Existence.unique,
+            aetheric_frame="default",
+            spell=BasicService,
+            profile="detailed",
+        )
+
+        assert isinstance(spell.profile, SpellDetailedProfile)
+        assert isinstance(spell.profile.binding_profile, ClassBindingProfile)
+        assert spell.profile.class_profile is not None
+        assert spell.profile.callable_profile is not None
+        assert spell.profile.resolution_profile is not None
+        assert spell.profile.resolution_profile.spell_id == spell.spell_index.current
+    finally:
+        binder.cleanup()
+        spellbook.cleanup()
+
+
+def test_component_bind_can_attach_detailed_profile_for_callable_spell() -> None:
+    """
+    Purpose:
+        Validate Bind can attach the detailed profile for callable spells.
+    Contract:
+        - `.profile` is a SpellDetailedProfile when requested explicitly.
+        - Callable spells keep callable binding and callable inspector payloads.
+        - Class-only inspector payloads remain absent.
+    Returns:
+        None.
+    """
+    spellbook = _make_spellbook()
+    binder = Bind(spellbook)
+
+    def build_service() -> BasicService:
+        return BasicService()
+
+    try:
+        spell = binder.bind(
+            Permissions.create,
+            Existence.unique,
+            aetheric_frame="default",
+            spell=build_service,
+            profile="detailed",
+        )
+
+        assert isinstance(spell.profile, SpellDetailedProfile)
+        assert isinstance(spell.profile.binding_profile, CallableBindingProfile)
+        assert spell.profile.class_profile is None
+        assert spell.profile.callable_profile is not None
+        assert spell.profile.resolution_profile is not None
+        assert spell.profile.resolution_profile.spell_id == spell.spell_index.current
     finally:
         binder.cleanup()
         spellbook.cleanup()

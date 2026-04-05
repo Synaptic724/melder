@@ -234,7 +234,6 @@ def test_component_spell_examiner_detailed_profile_links_resolution_and_binding(
         examiner = SpellExaminer()
         detailed_profile = examiner.create_profile(spell, "detailed")
 
-        assert detailed_profile.spell is spell
         assert detailed_profile.binding_profile.original_object is Consumer
         assert detailed_profile.resolution_profile.spell_id == spell.spell_index.current
 

@@ -1,4 +1,4 @@
-import types
+﻿import types
 
 import pytest
 
@@ -8,9 +8,13 @@ from melder.aether.aetheric_frame_configuration import AethericFrameConfiguratio
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
+    SpellDescriptorPayload,
+)
 from melder.aether.nexus.nexus import Nexus
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
+from melder.utilities.general_base.cleanable import Cleanable
 
 
 @pytest.fixture(autouse=True)
@@ -58,6 +62,34 @@ def _bind_frame_posture(
     aether._bind_aetheric_frame_configuration(frame_configuration, frame_name)
 
 
+class _PayloadProfile(Cleanable):
+    def __init__(self, name: str = "detailed") -> None:
+        super().__init__()
+        self.profile_name = name
+        self.binding_profile = object()
+        self.resolution_profile = object()
+
+    def to_descriptor_payload(self) -> SpellDescriptorPayload:
+        return SpellDescriptorPayload(
+            profile_name=self.profile_name,
+            binding_payload={},
+            resolution_payload={},
+            class_profile=None,
+            callable_profile=None,
+            metadata={},
+            instance_members={},
+            dynamic_access={},
+        )
+
+    def complete_with_spell(self, spell) -> None:
+        return None
+
+    def cleanup(self) -> None:
+        if self._cleaned:
+            return
+        self._cleaned = True
+
+
 def test_publish_frame_record_does_not_require_nexus_enable() -> None:
     """
     Verify frame publication succeeds before interactive Nexus enablement.
@@ -76,14 +108,14 @@ def test_publish_frame_record_does_not_require_nexus_enable() -> None:
 
     assert record.frame_name == "ops"
     assert record.config_origin_spellbook_id == "spellbook-alpha"
-    assert record.rift_enabled is True
-    assert record.root_conduit_count == 0
-    assert record.root_conduit_ids == tuple()
-    assert record.named_root_conduits == tuple()
-    assert record.conduit_cloud_entry_count == 0
-    assert record.conduit_cloud_names == tuple()
-    assert record.cluster_count == 0
-    assert record.cluster_names == tuple()
+    assert record.payload.rift_enabled is True
+    assert record.payload.root_conduit_count == 0
+    assert record.payload.root_conduit_ids == tuple()
+    assert record.payload.named_root_conduits == tuple()
+    assert record.payload.conduit_cloud_entry_count == 0
+    assert record.payload.conduit_cloud_names == tuple()
+    assert record.payload.cluster_count == 0
+    assert record.payload.cluster_names == tuple()
 
 
 def test_publish_frame_record_captures_frame_summary() -> None:
@@ -111,13 +143,13 @@ def test_publish_frame_record_captures_frame_summary() -> None:
 
     record = nexus._get_required_frame_descriptor("ops").frame_overview
 
-    assert record.root_conduit_count == 2
-    assert record.root_conduit_ids == ("conduit-a", "conduit-b")
-    assert record.named_root_conduits == (("conduit-a", "alpha"),)
-    assert record.conduit_cloud_entry_count == 1
-    assert record.conduit_cloud_names == ("alpha",)
-    assert record.cluster_count == 2
-    assert record.cluster_names == ("cluster-a", "cluster-z")
+    assert record.payload.root_conduit_count == 2
+    assert record.payload.root_conduit_ids == ("conduit-a", "conduit-b")
+    assert record.payload.named_root_conduits == (("conduit-a", "alpha"),)
+    assert record.payload.conduit_cloud_entry_count == 1
+    assert record.payload.conduit_cloud_names == ("alpha",)
+    assert record.payload.cluster_count == 2
+    assert record.payload.cluster_names == ("cluster-a", "cluster-z")
 
 
 def test_publish_methods_short_circuit_when_frame_is_not_publishable() -> None:
@@ -175,8 +207,7 @@ def test_publish_spell_record_updates_primary_store_and_indexes() -> None:
     nexus = Nexus()
     spellbook = types.SimpleNamespace(_aetheric_frame="ops", _id="spellbook-alpha")
     spell = types.SimpleNamespace(
-        profile=None,
-        resolution_profile=None,
+        profile=_PayloadProfile(),
         spell_id="spell-1",
         spell_index=types.SimpleNamespace(id="lineage-1"),
         spell_name="SpellOne",
@@ -247,8 +278,7 @@ def test_remove_spell_and_conduit_records_clear_indexes() -> None:
         ),
     )
     spell = types.SimpleNamespace(
-        profile=None,
-        resolution_profile=None,
+        profile=_PayloadProfile(),
         spell_id="spell-1",
         spell_index=types.SimpleNamespace(id="lineage-1"),
         spell_name="SpellOne",
@@ -269,3 +299,4 @@ def test_remove_spell_and_conduit_records_clear_indexes() -> None:
     assert descriptor.conduit_records_by_id == {}
     assert descriptor.spell_keys_by_conduit_id == {}
     assert descriptor.spell_keys_by_spellbook_id == {}
+
