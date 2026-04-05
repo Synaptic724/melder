@@ -1,4 +1,4 @@
-from types import SimpleNamespace
+﻿from types import SimpleNamespace
 
 import pytest
 
@@ -181,7 +181,7 @@ def test_descriptor_collection_properties_return_snapshots() -> None:
         existence=Existence.many,
         binding_profile=None,
         resolution_profile=None,
-        ai_profile=None,
+        detailed_profile=None,
     )
 
     descriptor.upsert_conduit_record(conduit_record)
@@ -281,7 +281,7 @@ def test_descriptor_replaces_spell_record_and_refreshes_indexes() -> None:
         existence=Existence.many,
         binding_profile=None,
         resolution_profile=None,
-        ai_profile=None,
+        detailed_profile=None,
     )
     second_record = SpellRecord(
         origin_spellbook_id="spellbook-1",
@@ -296,7 +296,7 @@ def test_descriptor_replaces_spell_record_and_refreshes_indexes() -> None:
         existence=Existence.unique,
         binding_profile=None,
         resolution_profile=None,
-        ai_profile=None,
+        detailed_profile=None,
     )
 
     descriptor.upsert_spell_record(first_record)
@@ -334,7 +334,7 @@ def test_descriptor_remove_spell_record_cleans_record_and_indexes() -> None:
         existence=Existence.many,
         binding_profile=None,
         resolution_profile=None,
-        ai_profile=None,
+        detailed_profile=None,
     )
     record_key = ("spellbook-1", "spell-1")
 
@@ -436,3 +436,4 @@ def test_descriptor_properties_raise_after_cleanup() -> None:
 
     with pytest.raises(RuntimeError):
         _ = descriptor.frame_configuration
+

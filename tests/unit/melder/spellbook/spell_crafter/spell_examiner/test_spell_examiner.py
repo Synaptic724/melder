@@ -1,32 +1,27 @@
-import types
-
 import pytest
 
+from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell import Spell
+from melder.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
+    SpellDetailedProfile,
+)
+from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
+    SpellGeneralProfile,
+)
 from melder.spellbook.spell_crafter.spell_examiner.spell_examiner import (
     SpellExaminer,
 )
-from melder.spellbook.spell_crafter.spell_examiner.strategies.ai_profile_strategy import (
-    AIProfileStrategy,
-)
-from melder.spellbook.spell_crafter.spell_examiner.strategies.binding_profile_strategy import (
-    BindingProfileStrategy,
-)
-from melder.spellbook.spell_crafter.spell_examiner.strategies.resolution_profile_strategy import (
-    ResolutionProfileStrategy,
-)
 from melder.spellbook.spell_types.spell_types import SpellType
-from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 
 
 class _StubSpellbook:
-    def __init__(self):
+    def __init__(self) -> None:
         self._spell_system_states = object()
 
 
-def _spell():
+def _spell() -> Spell:
     return Spell(
         spell=object(),
         spell_index=SpellIndex("v1"),
@@ -51,19 +46,17 @@ def test_spell_examiner_registers_default_profile_builders() -> None:
     """
     examiner = SpellExaminer()
 
-    assert examiner.has_profile_builder("binding") is True
-    assert examiner.has_profile_builder("resolution") is True
-    assert examiner.has_profile_builder("ai") is True
+    assert examiner.has_profile_builder("general") is True
+    assert examiner.has_profile_builder("detailed") is True
     assert examiner.list_profile_builder_names() == [
-        "binding",
-        "resolution",
-        "ai",
+        "general",
+        "detailed",
     ]
 
 
-def test_create_profile_binding_accepts_raw_object_and_spell(monkeypatch) -> None:
+def test_create_profile_general_accepts_raw_object_and_spell(monkeypatch) -> None:
     """
-    Verify binding-profile creation accepts raw objects and Spell instances.
+    Verify general-profile creation accepts raw objects and Spell instances.
 
     Args:
         monkeypatch:
@@ -73,32 +66,32 @@ def test_create_profile_binding_accepts_raw_object_and_spell(monkeypatch) -> Non
         None.
     """
     monkeypatch.setattr(
-        BindingProfileStrategy,
-        "build_profile",
-        lambda self, candidate: ("binding", candidate, self.show_dunders, self.max_repr),
+        SpellGeneralProfile,
+        "create_from_target",
+        classmethod(lambda cls, target, show_dunders=False, max_repr=120: ("general", target, show_dunders, max_repr)),
         raising=True,
     )
     examiner = SpellExaminer()
     raw_target = object()
     spell = _spell()
 
-    assert examiner.create_profile(raw_target, "binding", True, 42) == (
-        "binding",
+    assert examiner.create_profile(raw_target, "general", True, 42) == (
+        "general",
         raw_target,
         True,
         42,
     )
-    assert examiner.create_profile(spell, "binding", False, 9) == (
-        "binding",
-        spell.spell,
+    assert examiner.create_profile(spell, "general", False, 9) == (
+        "general",
+        spell,
         False,
         9,
     )
 
 
-def test_create_profile_resolution_requires_spell(monkeypatch) -> None:
+def test_create_profile_detailed_accepts_raw_object_and_spell(monkeypatch) -> None:
     """
-    Verify resolution-profile creation requires a Spell instance.
+    Verify detailed-profile creation accepts raw objects and Spell instances.
 
     Args:
         monkeypatch:
@@ -107,73 +100,25 @@ def test_create_profile_resolution_requires_spell(monkeypatch) -> None:
     Returns:
         None.
     """
+    monkeypatch.setattr(
+        SpellDetailedProfile,
+        "create_from_target",
+        classmethod(lambda cls, target, show_dunders=False, max_repr=120: ("detailed", target, show_dunders, max_repr)),
+        raising=True,
+    )
     examiner = SpellExaminer()
-    with pytest.raises(TypeError, match="requires a Spell instance"):
-        examiner.create_profile(object(), "resolution")
-
-    monkeypatch.setattr(
-        ResolutionProfileStrategy,
-        "build_profile",
-        lambda self, spell: ("resolution", spell),
-        raising=True,
-    )
+    raw_target = object()
     spell = _spell()
-    assert examiner.create_profile(spell, "resolution") == ("resolution", spell)
-
-
-def test_create_profile_ai_requires_spell_and_builds_from_default_subprofiles(
-        monkeypatch,
-) -> None:
-    """
-    Verify AI-profile creation requires a Spell and composes binding and
-    resolution profiles through the default builders.
-
-    Args:
-        monkeypatch:
-            Pytest monkeypatch fixture.
-
-    Returns:
-        None.
-    """
-    examiner = SpellExaminer()
-    with pytest.raises(TypeError, match="requires a Spell instance"):
-        examiner.create_profile(object(), "ai")
-
-    monkeypatch.setattr(
-        BindingProfileStrategy,
-        "build_profile",
-        lambda self, candidate: ("binding", candidate),
-        raising=True,
+    assert examiner.create_profile(raw_target, "detailed", False, 7) == (
+        "detailed",
+        raw_target,
+        False,
+        7,
     )
-    monkeypatch.setattr(
-        ResolutionProfileStrategy,
-        "build_profile",
-        lambda self, spell: ("resolution", spell),
-        raising=True,
-    )
-    monkeypatch.setattr(
-        AIProfileStrategy,
-        "build_profile",
-        lambda self, spell, binding_profile=None, resolution_profile=None: (
-            "ai",
-            spell,
-            binding_profile,
-            resolution_profile,
-            self.show_dunders,
-            self.max_repr,
-        ),
-        raising=True,
-    )
-
-    spell = _spell()
-    result = examiner.create_profile(spell, "ai", False, 7)
-
-    assert result == (
-        "ai",
+    assert examiner.create_profile(spell, "detailed", False, 7) == (
+        "detailed",
         spell,
-        ("binding", spell.spell),
-        ("resolution", spell),
-        True,
+        False,
         7,
     )
 
@@ -252,6 +197,5 @@ def test_spell_examiner_cleanup_clears_registry_and_id() -> None:
     examiner.cleanup()
 
     assert examiner.cleaned is True
-    assert examiner._lock is None
     assert examiner._profile_builders_by_name is None
     assert examiner._id is None

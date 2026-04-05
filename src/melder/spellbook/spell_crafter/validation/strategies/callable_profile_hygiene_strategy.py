@@ -8,6 +8,12 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile impo
     InstanceBindingProfile,
     OtherBindingProfile,
 )
+from melder.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
+    SpellDetailedProfile,
+)
+from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
+    SpellGeneralProfile,
+)
 from melder.spellbook.spell_crafter.validation.spell_validation_issue import (
     SpellValidationIssue,
 )
@@ -47,8 +53,11 @@ class CallableProfileHygieneStrategy(SpellValidationStrategy):
 
         spell = context.spell
         profile = spell.profile
+        binding_profile = profile
+        if isinstance(profile, (SpellGeneralProfile, SpellDetailedProfile)):
+            binding_profile = profile.binding_profile
 
-        if profile is None:
+        if binding_profile is None:
             context.issues.append(
                 SpellValidationIssue(
                     severity="error",
@@ -74,7 +83,7 @@ class CallableProfileHygieneStrategy(SpellValidationStrategy):
                         details={},
                     )
                 )
-            if not isinstance(profile, (InstanceBindingProfile, OtherBindingProfile)):
+            if not isinstance(binding_profile, (InstanceBindingProfile, OtherBindingProfile)):
                 context.issues.append(
                     SpellValidationIssue(
                         severity="error",
@@ -99,7 +108,7 @@ class CallableProfileHygieneStrategy(SpellValidationStrategy):
                         details={},
                     )
                 )
-            if not isinstance(profile, ClassBindingProfile):
+            if not isinstance(binding_profile, ClassBindingProfile):
                 context.issues.append(
                     SpellValidationIssue(
                         severity="error",
@@ -124,7 +133,7 @@ class CallableProfileHygieneStrategy(SpellValidationStrategy):
                         details={},
                     )
                 )
-            if not isinstance(profile, CallableBindingProfile):
+            if not isinstance(binding_profile, CallableBindingProfile):
                 context.issues.append(
                     SpellValidationIssue(
                         severity="error",

@@ -1,4 +1,4 @@
-import pytest
+﻿import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
@@ -9,8 +9,8 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile impo
     InstanceBindingProfile,
     SpellBindingKind,
 )
-from melder.spellbook.spell_crafter.spell_examiner.strategies.ai_profile_strategy import (
-    AIProfileStrategy,
+from melder.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
+    SpellDetailedProfile,
 )
 from melder.spellbook.spell_crafter.spell_examiner.strategies.binding_profile_strategy import (
     BindingProfileStrategy,
@@ -406,7 +406,7 @@ def test_component_ai_strategy_class_spell_builds_class_profile() -> None:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        profile = AIProfileStrategy().build_profile(spell)
+        profile = SpellDetailedProfile.create_from_target(spell)
         assert profile.class_profile is not None
         assert profile.callable_profile is not None
         assert profile.class_profile.name == "BasicService"
@@ -441,7 +441,7 @@ def test_component_ai_strategy_callable_spell_builds_callable_profile() -> None:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        profile = AIProfileStrategy().build_profile(spell)
+        profile = SpellDetailedProfile.create_from_target(spell)
         assert profile.class_profile is None
         assert profile.callable_profile is not None
         assert profile.callable_profile.name == "build_service"
@@ -473,23 +473,12 @@ def test_component_ai_strategy_uses_provided_profiles() -> None:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        binding_profile = BindingProfileStrategy().build_profile(BasicService)
-        resolution_profile = ResolutionProfileStrategy().build_profile(spell)
-
-        profile = AIProfileStrategy().build_profile(
-            spell,
-            binding_profile=binding_profile,
-            resolution_profile=resolution_profile,
-        )
-        assert profile.binding_profile is binding_profile
-        assert profile.resolution_profile is resolution_profile
+        profile = SpellDetailedProfile.create_from_target(spell)
+        assert profile.binding_profile.original_object is BasicService
+        assert profile.resolution_profile.spell_id == spell.spell_index.current
     finally:
         if profile is not None:
             profile.cleanup()
-        if binding_profile is not None:
-            binding_profile.cleanup()
-        if resolution_profile is not None:
-            resolution_profile.cleanup()
         spellbook.cleanup()
 
 
@@ -519,7 +508,7 @@ def test_component_ai_strategy_class_profile_includes_method_profile() -> None:
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        profile = AIProfileStrategy().build_profile(spell)
+        profile = SpellDetailedProfile.create_from_target(spell)
         class_profile = profile.class_profile
         assert class_profile is not None
         assert "run" in class_profile.methods
@@ -557,7 +546,7 @@ def test_component_ai_strategy_callable_fallback_for_existing_creation() -> None
         spell = _get_spell_by_version_id(spellbook, spell_id)
         assert spell is not None
 
-        profile = AIProfileStrategy().build_profile(spell)
+        profile = SpellDetailedProfile.create_from_target(spell)
         assert profile.class_profile is None
         assert profile.callable_profile is not None
         assert profile.callable_profile.signature is not None
@@ -566,3 +555,5 @@ def test_component_ai_strategy_callable_fallback_for_existing_creation() -> None
         if profile is not None:
             profile.cleanup()
         spellbook.cleanup()
+
+

@@ -1,4 +1,4 @@
-import pytest
+﻿import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
@@ -86,7 +86,7 @@ def test_component_spell_examiner_ai_profile_includes_class_profile() -> None:
         assert spell is not None
 
         examiner = SpellExaminer()
-        ai_profile = examiner.create_profile(spell, "ai")
+        ai_profile = examiner.create_profile(spell, "detailed")
 
         assert ai_profile.class_profile is not None
         assert ai_profile.callable_profile is not None
@@ -131,7 +131,7 @@ def test_component_spell_examiner_ai_profile_includes_callable_profile() -> None
         assert spell is not None
 
         examiner = SpellExaminer()
-        ai_profile = examiner.create_profile(spell, "ai")
+        ai_profile = examiner.create_profile(spell, "detailed")
 
         assert ai_profile.class_profile is None
         assert ai_profile.callable_profile is not None
@@ -140,3 +140,4 @@ def test_component_spell_examiner_ai_profile_includes_callable_profile() -> None
         if ai_profile is not None:
             ai_profile.cleanup()
         spellbook.cleanup()
+

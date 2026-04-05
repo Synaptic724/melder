@@ -5,8 +5,14 @@ from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.spellbook.configuration.system_state import SystemState
+from melder.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
+    SpellDetailedProfile,
+)
 from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
     ClassBindingProfile,
+)
+from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
+    SpellGeneralProfile,
 )
 from melder.spellbook.spell_crafter.system.system_diagnostic import (
     SystemDiagnostic,
@@ -449,8 +455,11 @@ class SpellbookCreationSystem(Cleanable):
         for spell in spellbook._spells.values():
             matched: List[str] = []
             profile = spell.profile
-            if isinstance(profile, ClassBindingProfile):
-                method_names = set(profile.method_names)
+            binding_profile = profile
+            if isinstance(profile, (SpellGeneralProfile, SpellDetailedProfile)):
+                binding_profile = profile.binding_profile
+            if isinstance(binding_profile, ClassBindingProfile):
+                method_names = set(binding_profile.method_names)
                 for method_name in target_methods:
                     if method_name in method_names:
                         matched.append(method_name)

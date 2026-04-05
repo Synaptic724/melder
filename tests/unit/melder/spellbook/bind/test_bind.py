@@ -17,6 +17,9 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile impo
     OtherBindingProfile,
     CallableParameterBindingSummary,
 )
+from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
+    SpellGeneralProfile,
+)
 
 
 # -------------------------
@@ -38,9 +41,12 @@ class StubExaminer:
         self.calls = 0
 
     def create_profile(self, obj, profile_name, show_dunders=False, max_repr=120):
-        assert profile_name == "binding"
+        assert profile_name == "general"
         self.calls += 1
-        return self.profile
+        return StubGeneralProfile(
+            binding_profile=self.profile,
+            resolution_profile=None,
+        )
 
     def cleanup(self):
         self.profile = None
@@ -48,6 +54,11 @@ class StubExaminer:
 
 class StubSpellbook:
     pass
+
+
+class StubGeneralProfile(SpellGeneralProfile):
+    def complete_with_spell(self, spell):
+        self.resolution_profile = object()
 
 
 class ProtoExample:
@@ -326,12 +337,22 @@ def test_sha256_profile_different_profiles_yield_different_hashes():
 
 def test_spell_id_inspector_uses_examiner(monkeypatch):
     prof = class_profile()
-    exam = StubExaminer(prof)
-    monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", lambda: exam)
+    calls = {"count": 0}
+
+    def _build_profile(self, target):
+        calls["count"] += 1
+        return StubGeneralProfile(binding_profile=prof, resolution_profile=None)
+
+    monkeypatch.setattr(
+        SpellGeneralProfile,
+        "create_from_target",
+        classmethod(lambda cls, target, show_dunders=False, max_repr=120: _build_profile(cls, target)),
+        raising=True,
+    )
     sid1 = Bind.spell_id_inspector(RealClassImplementingProto)
     sid2 = Bind.spell_id_inspector(RealClassImplementingProto)
     assert sid1 == sid2
-    assert exam.calls == 2
+    assert calls["count"] == 2
 
 
 # Tests: cleanup/idempotence -------------------------------------------
@@ -968,7 +989,10 @@ def test_examiner_instantiated_once_per_bind_instance(monkeypatch):
         def __init__(self):
             calls["count"] += 1
         def create_profile(self, obj, profile_name, show_dunders=False, max_repr=120):
-            return class_profile()
+            return StubGeneralProfile(
+                binding_profile=class_profile(),
+                resolution_profile=None,
+            )
         def cleanup(self):
             return None
     monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", CountingExaminer)
@@ -1016,8 +1040,8 @@ def test_examiner_returning_none_raises(monkeypatch):
             return None
     monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", NoneExaminer)
     b = Bind(StubSpellbook())
-    spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
-    assert isinstance(spell, StubSpell)
+    with pytest.raises(TypeError, match="SpellGeneralProfile"):
+        b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
 
 
 def test_examiner_returning_wrong_type_raises(monkeypatch):
@@ -1028,8 +1052,8 @@ def test_examiner_returning_wrong_type_raises(monkeypatch):
             return None
     monkeypatch.setattr("melder.spellbook.bind.bind.SpellExaminer", BadExaminer)
     b = Bind(StubSpellbook())
-    spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
-    assert isinstance(spell, StubSpell)
+    with pytest.raises(TypeError, match="SpellGeneralProfile"):
+        b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=RealClassImplementingProto)
 
 
 # Protocol with instance profile (allowed) ------------------------------

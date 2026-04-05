@@ -1,11 +1,11 @@
-import pytest
+﻿import pytest
 
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell import Spell
 from melder.spellbook.spell_types.spell_types import SpellType
-from melder.spellbook.spell_crafter.spell_examiner.profiles.ai_profile import (
-    SpellAIProfile,
+from melder.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
+    SpellDetailedProfile,
 )
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.general_base.cleanable import Cleanable
@@ -57,7 +57,7 @@ def test_metadata_copied_and_fields_assigned():
     spell = _make_spell()
     binding = object()
     resolution = object()
-    profile = SpellAIProfile(
+    profile = SpellDetailedProfile(
         spell=spell,
         binding_profile=binding,
         resolution_profile=resolution,
@@ -82,7 +82,7 @@ def test_cleanup_cascades_and_nulls_references():
     resolution = _CleanableStub()
     class_prof = _CleanableStub()
     callable_prof = _CleanableStub()
-    profile = SpellAIProfile(
+    profile = SpellDetailedProfile(
         spell=spell,
         binding_profile=binding,
         resolution_profile=resolution,
@@ -107,7 +107,7 @@ def test_cleanup_cascades_and_nulls_references():
 
 
 def test_cleanup_idempotent():
-    profile = SpellAIProfile(
+    profile = SpellDetailedProfile(
         spell=_make_spell(),
         binding_profile=_CleanableStub(),
         resolution_profile=_CleanableStub(),
@@ -119,7 +119,7 @@ def test_cleanup_idempotent():
 
 
 def test_cleanup_swallows_child_errors():
-    profile = SpellAIProfile(
+    profile = SpellDetailedProfile(
         spell=_make_spell(),
         binding_profile=_BoomCleanable(),
         resolution_profile=_BoomCleanable(),
@@ -128,3 +128,4 @@ def test_cleanup_swallows_child_errors():
     profile.cleanup()
     assert profile.cleaned is True
     assert profile.metadata is None
+

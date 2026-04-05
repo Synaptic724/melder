@@ -107,7 +107,7 @@ def test_component_spell_examiner_resolution_profile_matches_spell_metadata() ->
             self.service = service
             self.count = count
 
-    profile = None
+    general_profile = None
     try:
         spellbook.bind(
             spell=BasicService,
@@ -124,8 +124,10 @@ def test_component_spell_examiner_resolution_profile_matches_spell_metadata() ->
         assert spell is not None
 
         examiner = SpellExaminer()
-        profile = examiner.create_profile(spell, "resolution")
+        general_profile = examiner.create_profile(spell, "general")
+        profile = general_profile.resolution_profile
 
+        assert profile is not None
         assert profile.spell_id == spell.spell_index.current
         assert profile.existence == spell.existence
         assert profile.spellframe == spell.spellframe
@@ -139,8 +141,8 @@ def test_component_spell_examiner_resolution_profile_matches_spell_metadata() ->
         assert "service" in di_names
         assert "count" in required_holes
     finally:
-        if profile is not None:
-            profile.cleanup()
+        if general_profile is not None:
+            general_profile.cleanup()
         spellbook.cleanup()
 
 
@@ -155,7 +157,7 @@ def test_component_spell_examiner_binding_profile_for_spell_uses_underlying_clas
         None.
     """
     spellbook = _make_spellbook()
-    profile = None
+    general_profile = None
     try:
         spell_id = spellbook.bind(
             spell=BasicService,
@@ -166,18 +168,19 @@ def test_component_spell_examiner_binding_profile_for_spell_uses_underlying_clas
         assert spell is not None
 
         examiner = SpellExaminer()
-        profile = examiner.create_profile(spell, "binding")
+        general_profile = examiner.create_profile(spell, "general")
+        profile = general_profile.binding_profile
 
         assert isinstance(profile, ClassBindingProfile)
         assert profile.kind is SpellBindingKind.CLASS
         assert profile.original_object is BasicService
     finally:
-        if profile is not None:
-            profile.cleanup()
+        if general_profile is not None:
+            general_profile.cleanup()
         spellbook.cleanup()
 
 
-def test_component_spell_examiner_ai_profile_links_resolution_and_binding() -> None:
+def test_component_spell_examiner_detailed_profile_links_resolution_and_binding() -> None:
     """
     Purpose:
         Validate AI profiles link binding and resolution profiles for a Spell.
@@ -213,7 +216,7 @@ def test_component_spell_examiner_ai_profile_links_resolution_and_binding() -> N
             """
             self.service = service
 
-    ai_profile = None
+    detailed_profile = None
     try:
         spellbook.bind(
             spell=BasicService,
@@ -229,15 +232,18 @@ def test_component_spell_examiner_ai_profile_links_resolution_and_binding() -> N
         assert spell is not None
 
         examiner = SpellExaminer()
-        ai_profile = examiner.create_profile(spell, "ai")
+        detailed_profile = examiner.create_profile(spell, "detailed")
 
-        assert ai_profile.spell is spell
-        assert ai_profile.binding_profile.original_object is Consumer
-        assert ai_profile.resolution_profile.spell_id == spell.spell_index.current
+        assert detailed_profile.spell is spell
+        assert detailed_profile.binding_profile.original_object is Consumer
+        assert detailed_profile.resolution_profile.spell_id == spell.spell_index.current
 
-        requirement_names = {param.name for param in ai_profile.resolution_profile.requirements.parameters}
+        requirement_names = {
+            param.name
+            for param in detailed_profile.resolution_profile.requirements.parameters
+        }
         assert "service" in requirement_names
     finally:
-        if ai_profile is not None:
-            ai_profile.cleanup()
+        if detailed_profile is not None:
+            detailed_profile.cleanup()
         spellbook.cleanup()

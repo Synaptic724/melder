@@ -41,7 +41,7 @@ class SpellRecord(Cleanable):
         "existence",
         "binding_profile",
         "resolution_profile",
-        "ai_profile",
+        "detailed_profile",
     ]
 
     def __init__(
@@ -59,7 +59,7 @@ class SpellRecord(Cleanable):
             existence: Existence,
             binding_profile: Any,
             resolution_profile: Any,
-            ai_profile: Any,
+            detailed_profile: Any,
     ) -> None:
         """
         Initialize one canonical spell record.
@@ -89,8 +89,8 @@ class SpellRecord(Cleanable):
                 Current binding profile payload.
             resolution_profile:
                 Current resolution profile payload when available.
-            ai_profile:
-                Current AI profile payload when available.
+            detailed_profile:
+                Current detailed profile payload when available.
         """
         super().__init__()
         self._id: str = IDBuilder.create_id()
@@ -106,7 +106,7 @@ class SpellRecord(Cleanable):
         self.existence = existence
         self.binding_profile = binding_profile
         self.resolution_profile = resolution_profile
-        self.ai_profile = ai_profile
+        self.detailed_profile = detailed_profile
 
     @property
     def record_key(self) -> Tuple[str, str]:
@@ -141,4 +141,4 @@ class SpellRecord(Cleanable):
         self.existence = None
         self.binding_profile = None
         self.resolution_profile = None
-        self.ai_profile = None
+        self.detailed_profile = None

@@ -1,4 +1,4 @@
-import inspect
+﻿import inspect
 
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.class_profile import (
@@ -7,8 +7,8 @@ from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.class_pro
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_profile import (
     MethodProfile,
 )
-from melder.spellbook.spell_crafter.spell_examiner.profiles.ai_profile import (
-    SpellAIProfile,
+from melder.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
+    SpellDetailedProfile,
 )
 from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
     SpellBindingKind,
@@ -243,7 +243,7 @@ def test_component_spell_resolution_profile_cleanup_cascades_requirements() -> N
 def test_component_spell_ai_profile_cleanup_cascades_profiles() -> None:
     """
     Purpose:
-        Validate SpellAIProfile cleanup cascades to linked profiles.
+        Validate SpellDetailedProfile cleanup cascades to linked profiles.
     Contract:
         - Binding, resolution, and class profiles are cleaned.
         - Metadata is cleared.
@@ -274,7 +274,7 @@ def test_component_spell_ai_profile_cleanup_cascades_profiles() -> None:
         qualname="Worker",
         module="tests.component",
     )
-    profile = SpellAIProfile(
+    profile = SpellDetailedProfile(
         spell=object(),
         binding_profile=binding_profile,
         resolution_profile=resolution_profile,
@@ -290,3 +290,4 @@ def test_component_spell_ai_profile_cleanup_cascades_profiles() -> None:
     assert class_profile.cleaned is True
     assert profile.metadata is None
     assert profile.spell is None
+

@@ -1,25 +1,11 @@
-import threading
 from typing import Any, Callable, Dict, List
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.spellbook.spell import Spell
-from melder.spellbook.spell_crafter.spell_examiner.profiles.ai_profile import (
-    SpellAIProfile,
+from melder.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
+    SpellDetailedProfile,
 )
-from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
-    SpellBindingProfile,
-)
-from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import (
-    SpellResolutionProfile,
-)
-from melder.spellbook.spell_crafter.spell_examiner.strategies.ai_profile_strategy import (
-    AIProfileStrategy,
-)
-from melder.spellbook.spell_crafter.spell_examiner.strategies.binding_profile_strategy import (
-    BindingProfileStrategy,
-)
-from melder.spellbook.spell_crafter.spell_examiner.strategies.resolution_profile_strategy import (
-    ResolutionProfileStrategy,
+from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
+    SpellGeneralProfile,
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -28,22 +14,19 @@ from melder.utilities.helpers.id_builder import IDBuilder
 class SpellExaminer(Cleanable):
     """
     Purpose:
-        Provide one registry-driven profile factory for spell and object
-        examination.
+        Provide one registry-driven profile factory for spell examination.
 
     Contract:
-        - Default builders for `binding`, `resolution`, and `ai` are
-          registered at construction time.
-        - `create_profile(...)` is the primary entrypoint for producing
-          examination output.
-        - Binding creation accepts raw objects or `Spell` instances.
-        - Resolution and AI creation require a `Spell` instance.
-        - AI creation preserves the prior contract of always enabling dunder
-          inspection inside the AI strategy.
-
-    Threading:
-        Uses one instance `threading.RLock` to serialize registry mutation and
-        cleanup.
+        - `create_profile(...)` is the only public profile-creation entrypoint.
+        - The default registry exposes only `general` and `detailed`.
+        - Both profile kinds support a two-step lifecycle:
+          phase 1 from a raw candidate, phase 2 completion after `Spell`
+          exists.
+        - `create_profile(...)` returns a partial or complete profile depending
+          on whether the supplied target is a raw candidate or a fully formed
+          `Spell`.
+        - The registry is mutable through explicit `register_profile_builder(...)`
+          calls without carrying an additional explicit mutex on the examiner.
 
     Lifecycle:
         Cleanup is idempotent and clears the registered builder registry.
@@ -52,7 +35,6 @@ class SpellExaminer(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
-        "_lock",
         "_profile_builders_by_name",
     ]
 
@@ -60,16 +42,11 @@ class SpellExaminer(Cleanable):
         """
         Initialize one registry-driven SpellExaminer.
 
-        Purpose:
-            Construct the spell examiner and register the default profile
-            builders used by the runtime.
-
         Returns:
             None.
         """
         super().__init__()
-        self._id: str = IDBuilder.create_id()
-        self._lock: threading.RLock = threading.RLock()
+        self._id = IDBuilder.create_id()
         self._profile_builders_by_name: Dict[str, Callable[[Any, bool, int], Any]] = {}
         self._register_default_profile_builders()
 
@@ -82,14 +59,10 @@ class SpellExaminer(Cleanable):
         """
         if self._cleaned:
             return
-        with self._lock:
-            if self._cleaned:
-                return
-            self._cleaned = True
-            self._profile_builders_by_name.clear()
-            self._profile_builders_by_name = None
-            self._id = None
-        self._lock = None
+        self._cleaned = True
+        self._profile_builders_by_name.clear()
+        self._profile_builders_by_name = None
+        self._id = None
 
     @property
     def id(self) -> str:
@@ -130,8 +103,7 @@ class SpellExaminer(Cleanable):
             raise ValueError("profile_name cannot be empty.")
         if not callable(builder):
             raise TypeError("builder must be callable.")
-        with self._lock:
-            self._profile_builders_by_name[profile_name] = builder
+        self._profile_builders_by_name[profile_name] = builder
 
     def has_profile_builder(self, profile_name: str) -> bool:
         """
@@ -145,8 +117,7 @@ class SpellExaminer(Cleanable):
             bool: True when the builder is registered.
         """
         self.check_cleaned()
-        with self._lock:
-            return profile_name in self._profile_builders_by_name
+        return profile_name in self._profile_builders_by_name
 
     def list_profile_builder_names(self) -> List[str]:
         """
@@ -156,8 +127,7 @@ class SpellExaminer(Cleanable):
             List[str]: Current builder names.
         """
         self.check_cleaned()
-        with self._lock:
-            return list(self._profile_builders_by_name.keys())
+        return list(self._profile_builders_by_name.keys())
 
     def create_profile(
             self,
@@ -171,8 +141,7 @@ class SpellExaminer(Cleanable):
 
         Args:
             target:
-                Raw object for binding profiles or `Spell` for resolution/AI
-                profiles.
+                Raw candidate object or fully formed `Spell`.
             profile:
                 Registered profile-builder name.
             show_dunders:
@@ -188,8 +157,7 @@ class SpellExaminer(Cleanable):
                 If the requested profile name is not registered.
         """
         self.check_cleaned()
-        with self._lock:
-            builder = self._profile_builders_by_name.get(profile)
+        builder = self._profile_builders_by_name.get(profile)
         if builder is None:
             raise ValueError(
                 "Profile '{0}' is not registered on SpellExaminer.".format(
@@ -205,110 +173,19 @@ class SpellExaminer(Cleanable):
         Returns:
             None.
         """
-        self.register_profile_builder("binding", self._create_binding_profile)
-        self.register_profile_builder("resolution", self._create_resolution_profile)
-        self.register_profile_builder("ai", self._create_ai_profile)
-
-    def _create_binding_profile(
-            self,
-            target: Any,
-            show_dunders: bool,
-            max_repr: int,
-    ) -> SpellBindingProfile:
-        """
-        Build a binding profile for a raw object or `Spell`.
-
-        Args:
-            target:
-                Raw candidate object or `Spell`.
-            show_dunders:
-                Whether dunder members should be included.
-            max_repr:
-                Maximum repr length.
-
-        Returns:
-            SpellBindingProfile: Built binding profile.
-        """
-        if isinstance(target, Spell):
-            target = target.spell
-        strategy = BindingProfileStrategy(
-            show_dunders=show_dunders,
-            max_repr=max_repr,
+        self.register_profile_builder(
+            "general",
+            lambda target, show_dunders, max_repr: SpellGeneralProfile.create_from_target(
+                target,
+                show_dunders=show_dunders,
+                max_repr=max_repr,
+            ),
         )
-        return strategy.build_profile(target)
-
-    def _create_resolution_profile(
-            self,
-            target: Any,
-            show_dunders: bool,
-            max_repr: int,
-    ) -> SpellResolutionProfile:
-        """
-        Build a resolution profile for a `Spell`.
-
-        Args:
-            target:
-                Target `Spell`.
-            show_dunders:
-                Unused in this builder; accepted for uniform registry shape.
-            max_repr:
-                Unused in this builder; accepted for uniform registry shape.
-
-        Returns:
-            SpellResolutionProfile: Built resolution profile.
-
-        Raises:
-            TypeError:
-                If `target` is not a `Spell`.
-        """
-        if not isinstance(target, Spell):
-            raise TypeError(
-                "Resolution profile creation requires a Spell instance."
-            )
-        _ = show_dunders
-        _ = max_repr
-        strategy = ResolutionProfileStrategy()
-        return strategy.build_profile(target)
-
-    def _create_ai_profile(
-            self,
-            target: Any,
-            show_dunders: bool,
-            max_repr: int,
-    ) -> SpellAIProfile:
-        """
-        Build an AI profile for a `Spell`.
-
-        Args:
-            target:
-                Target `Spell`.
-            show_dunders:
-                Dunder preference supplied by the caller. The current AI path
-                intentionally forces dunders on to preserve the previous
-                contract.
-            max_repr:
-                Maximum repr length for deep reflection.
-
-        Returns:
-            SpellAIProfile: Built AI profile.
-
-        Raises:
-            TypeError:
-                If `target` is not a `Spell`.
-        """
-        if not isinstance(target, Spell):
-            raise TypeError(
-                "AI profile creation requires a Spell instance."
-            )
-        _ = show_dunders
-        binding_profile = self._create_binding_profile(target, show_dunders, max_repr)
-        resolution_profile = self._create_resolution_profile(target, show_dunders, max_repr)
-        strategy = AIProfileStrategy(
-            show_dunders=True,
-            max_repr=max_repr,
-        )
-        return strategy.build_profile(
-            spell=target,
-            binding_profile=binding_profile,
-            resolution_profile=resolution_profile,
+        self.register_profile_builder(
+            "detailed",
+            lambda target, show_dunders, max_repr: SpellDetailedProfile.create_from_target(
+                target,
+                show_dunders=show_dunders,
+                max_repr=max_repr,
+            ),
         )

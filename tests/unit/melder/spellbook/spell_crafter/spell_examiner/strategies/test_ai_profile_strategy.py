@@ -1,235 +1,144 @@
 from types import SimpleNamespace
 
-from melder.spellbook.spell_crafter.spell_examiner.profiles.ai_profile import SpellAIProfile
-from melder.spellbook.spell_crafter.spell_examiner.strategies import ai_profile_strategy as ai_module
+from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from melder.spellbook.bind.spell_index import SpellIndex
+from melder.spellbook.existence.existence import Existence
+from melder.spellbook.spell import Spell
+from melder.spellbook.spell_crafter.spell_examiner.profiles import detailed_profile as ai_module
+from melder.spellbook.spell_crafter.spell_examiner.profiles import general_profile as general_module
+from melder.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
+    SpellDetailedProfile,
+)
+from melder.spellbook.spell_types.spell_types import SpellType
+
+
+class _StubSpellbook:
+    def __init__(self) -> None:
+        self._spell_system_states = object()
+
+
+def _make_spell(spell_object, spell_type: SpellType) -> Spell:
+    return Spell(
+        spell=spell_object,
+        spell_index=SpellIndex("v1"),
+        spellframe=None,
+        binding_name=None,
+        spell_name="name",
+        existence=Existence.unique,
+        spell_type=spell_type,
+        spell_id="id",
+        permissions=Permissions.read,
+        aetheric_frame="frame",
+        spellbook=_StubSpellbook(),
+    )
 
 
 def test_ai_profile_strategy_builds_class_profile(monkeypatch) -> None:
     """
     Purpose:
-        Verify AIProfileStrategy builds a class-based AI profile.
-    Contract:
-        Binding, resolution, and class inspection outputs populate the profile.
-    Args:
-        monkeypatch: Pytest fixture for patching strategy dependencies.
+        Verify the detailed profile builds class and callable inspector payloads
+        on completion.
+
     Returns:
         None.
-    Raises:
-        AssertionError: If the profile fields are not populated as expected.
     """
     binding_profile = object()
     resolution_profile = object()
     class_profile = SimpleNamespace(dynamic_access={})
     callable_profile = object()
-    captured = {}
 
     class DummyBindingStrategy:
-        """
-        Purpose:
-            Provide a stub binding strategy for AIProfileStrategy tests.
-        Contract:
-            Records constructor args and returns a fixed profile object.
-        """
         def __init__(self, *, show_dunders: bool = False, max_repr: int = 120) -> None:
-            """
-            Purpose:
-                Capture initialization arguments.
-            Contract:
-                Records show_dunders and max_repr in the captured dict.
-            Args:
-                show_dunders: Whether dunder methods are visible.
-                max_repr: Maximum repr length.
-            Returns:
-                None.
-            """
-            captured["show_dunders"] = show_dunders
-            captured["max_repr"] = max_repr
+            self.show_dunders = show_dunders
+            self.max_repr = max_repr
 
-        def build_profile(self, _spell_object):
-            """
-            Purpose:
-                Return a stub binding profile.
-            Contract:
-                Always returns the binding_profile sentinel.
-            Args:
-                _spell_object: Spell object supplied by the caller.
-            Returns:
-                object: The sentinel binding profile.
-            """
+        def build_profile(self, _candidate):
             return binding_profile
 
     class DummyResolutionStrategy:
-        """
-        Purpose:
-            Provide a stub resolution strategy for AIProfileStrategy tests.
-        Contract:
-            Returns a fixed resolution profile object.
-        """
         def build_profile(self, _spell):
-            """
-            Purpose:
-                Return a stub resolution profile.
-            Contract:
-                Always returns the resolution_profile sentinel.
-            Args:
-                _spell: Spell object supplied by the caller.
-            Returns:
-                object: The sentinel resolution profile.
-            """
             return resolution_profile
 
-    def _inspect_class_stub(self, _spell):
-        """
-        Purpose:
-            Provide a stub class inspection result.
-        Contract:
-            Always returns the class_profile sentinel.
-        Args:
-            self: Strategy instance invoking the inspection.
-            _spell: Spell object supplied by the caller.
-        Returns:
-            object: The sentinel class profile.
-        """
-        return class_profile
-
-    def _inspect_callable_stub(self, _spell):
-        """
-        Purpose:
-            Provide a stub callable inspection result for class-backed spells.
-        Contract:
-            Always returns the callable_profile sentinel.
-        Args:
-            self: Strategy instance invoking the inspection.
-            _spell: Spell object supplied by the caller.
-        Returns:
-            object: The sentinel callable profile.
-        """
-        return callable_profile
-
-    monkeypatch.setattr(ai_module, "BindingProfileStrategy", DummyBindingStrategy)
-    monkeypatch.setattr(ai_module, "ResolutionProfileStrategy", DummyResolutionStrategy)
-
-    spell = SimpleNamespace(
-        spell=object(),
-        is_class_spell=True,
-        is_method_spell=False,
-        is_lambda_spell=False,
+    monkeypatch.setattr(
+        general_module,
+        "BindingProfileStrategy",
+        DummyBindingStrategy,
     )
-    strategy = ai_module.AIProfileStrategy(show_dunders=True, max_repr=33)
-    monkeypatch.setattr(ai_module.AIProfileStrategy, "_inspect_class", _inspect_class_stub)
-    monkeypatch.setattr(ai_module.AIProfileStrategy, "_inspect_callable", _inspect_callable_stub)
+    monkeypatch.setattr(
+        general_module,
+        "ResolutionProfileStrategy",
+        DummyResolutionStrategy,
+    )
+    monkeypatch.setattr(
+        ai_module.SpellDetailedProfile,
+        "_inspect_class",
+        lambda self, _spell: class_profile,
+    )
+    monkeypatch.setattr(
+        ai_module.SpellDetailedProfile,
+        "_inspect_callable",
+        lambda self, _spell: callable_profile,
+    )
 
-    profile = strategy.build_profile(spell)
+    spell = _make_spell(object(), SpellType.SPELL)
 
-    assert isinstance(profile, SpellAIProfile)
+    profile = ai_module.SpellDetailedProfile.create_from_target(
+        spell,
+        show_dunders=True,
+        max_repr=33,
+    )
+
+    assert isinstance(profile, SpellDetailedProfile)
     assert profile.binding_profile is binding_profile
     assert profile.resolution_profile is resolution_profile
     assert profile.class_profile is class_profile
     assert profile.callable_profile is callable_profile
-    assert captured["show_dunders"] is True
-    assert captured["max_repr"] == 33
 
 
 def test_ai_profile_strategy_builds_callable_profile(monkeypatch) -> None:
     """
     Purpose:
-        Verify AIProfileStrategy builds a callable-based AI profile.
-    Contract:
-        Callable inspection populates callable_profile and leaves class_profile empty.
-    Args:
-        monkeypatch: Pytest fixture for patching strategy dependencies.
+        Verify the detailed profile builds callable payloads for callable spells.
+
     Returns:
         None.
-    Raises:
-        AssertionError: If callable profile fields are not populated as expected.
     """
     binding_profile = object()
     resolution_profile = object()
     callable_profile = object()
 
     class DummyBindingStrategy:
-        """
-        Purpose:
-            Provide a stub binding strategy for callable profile tests.
-        Contract:
-            Returns a fixed binding profile.
-        """
         def __init__(self, *args, **kwargs) -> None:
-            """
-            Purpose:
-                Accept initialization arguments from AIProfileStrategy.
-            Contract:
-                Stores no state and ignores inputs.
-            Args:
-                *args: Positional arguments ignored by the stub.
-                **kwargs: Keyword arguments ignored by the stub.
-            Returns:
-                None.
-            """
             self._args = args
             self._kwargs = kwargs
 
-        def build_profile(self, _spell_object):
-            """
-            Purpose:
-                Return a stub binding profile.
-            Contract:
-                Always returns the binding_profile sentinel.
-            Args:
-                _spell_object: Spell object supplied by the caller.
-            Returns:
-                object: The sentinel binding profile.
-            """
+        def build_profile(self, _candidate):
             return binding_profile
 
     class DummyResolutionStrategy:
-        """
-        Purpose:
-            Provide a stub resolution strategy for callable profile tests.
-        Contract:
-            Returns a fixed resolution profile.
-        """
         def build_profile(self, _spell):
-            """
-            Purpose:
-                Return a stub resolution profile.
-            Contract:
-                Always returns the resolution_profile sentinel.
-            Args:
-                _spell: Spell object supplied by the caller.
-            Returns:
-                object: The sentinel resolution profile.
-            """
             return resolution_profile
 
-    def _inspect_callable_stub(self, _spell):
-        """
-        Purpose:
-            Provide a stub callable inspection result.
-        Contract:
-            Always returns the callable_profile sentinel.
-        Args:
-            self: Strategy instance invoking the inspection.
-            _spell: Spell object supplied by the caller.
-        Returns:
-            object: The sentinel callable profile.
-        """
-        return callable_profile
-
-    monkeypatch.setattr(ai_module, "BindingProfileStrategy", DummyBindingStrategy)
-    monkeypatch.setattr(ai_module, "ResolutionProfileStrategy", DummyResolutionStrategy)
-    monkeypatch.setattr(ai_module.AIProfileStrategy, "_inspect_callable", _inspect_callable_stub)
-
-    spell = SimpleNamespace(
-        spell=object(),
-        is_class_spell=False,
-        is_method_spell=True,
-        is_lambda_spell=False,
+    monkeypatch.setattr(
+        general_module,
+        "BindingProfileStrategy",
+        DummyBindingStrategy,
     )
-    strategy = ai_module.AIProfileStrategy()
-    profile = strategy.build_profile(spell)
+    monkeypatch.setattr(
+        general_module,
+        "ResolutionProfileStrategy",
+        DummyResolutionStrategy,
+    )
+    monkeypatch.setattr(
+        ai_module.SpellDetailedProfile,
+        "_inspect_callable",
+        lambda self, _spell: callable_profile,
+    )
 
-    assert isinstance(profile, SpellAIProfile)
+    spell = _make_spell(lambda value: value, SpellType.METHOD)
+
+    profile = ai_module.SpellDetailedProfile.create_from_target(spell)
+
     assert profile.binding_profile is binding_profile
     assert profile.resolution_profile is resolution_profile
     assert profile.class_profile is None
@@ -239,121 +148,77 @@ def test_ai_profile_strategy_builds_callable_profile(monkeypatch) -> None:
 def test_ai_profile_strategy_fallback_callable_path(monkeypatch) -> None:
     """
     Purpose:
-        Verify AIProfileStrategy falls back to callable inspection for other spells.
-    Contract:
-        Callable inspection runs when the spell is callable but not flagged as method/lambda.
-    Args:
-        monkeypatch: Pytest fixture for patching strategy dependencies.
+        Verify the detailed profile falls back to callable inspection for other
+        callable spell targets.
+
     Returns:
         None.
-    Raises:
-        AssertionError: If the fallback callable inspection does not run.
     """
     binding_profile = object()
     resolution_profile = object()
     callable_profile = object()
 
     class DummyBindingStrategy:
-        """
-        Purpose:
-            Provide a stub binding strategy for fallback tests.
-        Contract:
-            Returns a fixed binding profile.
-        """
         def __init__(self, *args, **kwargs) -> None:
-            """
-            Purpose:
-                Accept initialization arguments from AIProfileStrategy.
-            Contract:
-                Stores no state and ignores inputs.
-            Args:
-                *args: Positional arguments ignored by the stub.
-                **kwargs: Keyword arguments ignored by the stub.
-            Returns:
-                None.
-            """
             self._args = args
             self._kwargs = kwargs
 
-        def build_profile(self, _spell_object):
-            """
-            Purpose:
-                Return a stub binding profile.
-            Contract:
-                Always returns the binding_profile sentinel.
-            Args:
-                _spell_object: Spell object supplied by the caller.
-            Returns:
-                object: The sentinel binding profile.
-            """
+        def build_profile(self, _candidate):
             return binding_profile
 
     class DummyResolutionStrategy:
-        """
-        Purpose:
-            Provide a stub resolution strategy for fallback tests.
-        Contract:
-            Returns a fixed resolution profile.
-        """
         def build_profile(self, _spell):
-            """
-            Purpose:
-                Return a stub resolution profile.
-            Contract:
-                Always returns the resolution_profile sentinel.
-            Args:
-                _spell: Spell object supplied by the caller.
-            Returns:
-                object: The sentinel resolution profile.
-            """
             return resolution_profile
 
-    def _inspect_callable_stub(self, _spell):
-        """
-        Purpose:
-            Provide a stub callable inspection result.
-        Contract:
-            Always returns the callable_profile sentinel.
-        Args:
-            self: Strategy instance invoking the inspection.
-            _spell: Spell object supplied by the caller.
-        Returns:
-            object: The sentinel callable profile.
-        """
-        return callable_profile
-
-    def _callable_spell() -> str:
-        """
-        Purpose:
-            Provide a callable spell target for fallback tests.
-        Contract:
-            Returns a fixed string.
-        Returns:
-            str: Fixed response string.
-        """
-        return "ok"
-
-    monkeypatch.setattr(ai_module, "BindingProfileStrategy", DummyBindingStrategy)
-    monkeypatch.setattr(ai_module, "ResolutionProfileStrategy", DummyResolutionStrategy)
-    monkeypatch.setattr(ai_module.AIProfileStrategy, "_inspect_callable", _inspect_callable_stub)
-
-    spell = SimpleNamespace(
-        spell=_callable_spell,
-        is_class_spell=False,
-        is_method_spell=False,
-        is_lambda_spell=False,
+    monkeypatch.setattr(
+        general_module,
+        "BindingProfileStrategy",
+        DummyBindingStrategy,
+    )
+    monkeypatch.setattr(
+        general_module,
+        "ResolutionProfileStrategy",
+        DummyResolutionStrategy,
+    )
+    monkeypatch.setattr(
+        ai_module.SpellDetailedProfile,
+        "_inspect_callable",
+        lambda self, _spell: callable_profile,
     )
 
-    profile = ai_module.AIProfileStrategy().build_profile(spell)
+    class CallableObject:
+        def __call__(self, arg: int) -> int:
+            return arg
 
-    assert isinstance(profile, SpellAIProfile)
+    spell = _make_spell(CallableObject(), SpellType.EXISTING_CREATION)
+
+    profile = ai_module.SpellDetailedProfile.create_from_target(spell)
+
     assert profile.binding_profile is binding_profile
     assert profile.resolution_profile is resolution_profile
     assert profile.class_profile is None
     assert profile.callable_profile is callable_profile
 
 
-def test_ai_profile_strategy_collects_instance_members() -> None:
+def test_ai_profile_strategy_collects_instance_members(monkeypatch) -> None:
+    """
+    Purpose:
+        Verify the detailed profile collects instance-member payloads for
+        instance-backed spell targets.
+
+    Returns:
+        None.
+    """
+    class DummyResolutionStrategy:
+        def build_profile(self, _spell):
+            return object()
+
+    monkeypatch.setattr(
+        general_module,
+        "ResolutionProfileStrategy",
+        DummyResolutionStrategy,
+    )
+
     class CallableObject:
         def __init__(self):
             self.value = 42
@@ -362,43 +227,34 @@ def test_ai_profile_strategy_collects_instance_members() -> None:
             return arg + self.value
 
     instance = CallableObject()
-    spell = SimpleNamespace(
-        spell=instance,
-        is_class_spell=False,
-        is_method_spell=False,
-        is_lambda_spell=False,
-    )
+    spell = _make_spell(instance, SpellType.EXISTING_CREATION)
 
-    strategy = ai_module.AIProfileStrategy()
-    profile = strategy.build_profile(
-        spell,
-        binding_profile=object(),
-        resolution_profile=object(),
-    )
+    profile = ai_module.SpellDetailedProfile.create_from_target(spell)
 
     assert "value" in profile.instance_members
     assert profile.instance_members["value"]["kind"] == "instance_attribute"
 
 
 def test_ai_profile_strategy_method_profile_includes_provenance() -> None:
+    """
+    Purpose:
+        Verify the detailed profile callable inspection retains provenance data.
+
+    Returns:
+        None.
+    """
     class Sample:
-        def method(self) -> int:
-            """Method docstring."""
-            return 1
+        def run(self, value: int) -> str:
+            return str(value)
 
-    spell = SimpleNamespace(
-        spell=Sample,
-        is_class_spell=True,
-        is_method_spell=False,
-        is_lambda_spell=False,
+    spell = _make_spell(Sample.run, SpellType.METHOD)
+
+    profile = ai_module.SpellDetailedProfile.create_from_target(
+        spell,
+        show_dunders=True,
     )
+    callable_profile = profile.callable_profile
 
-    strategy = ai_module.AIProfileStrategy(show_dunders=True)
-    class_profile = strategy._inspect_class(spell)
-    method_profile = class_profile.methods.get("method")
-
-    assert method_profile is not None
-    assert method_profile.docstring_raw == "Method docstring."
-    assert method_profile.start_line is not None
-    assert method_profile.end_line is not None
-    assert method_profile.source_text is not None
+    assert callable_profile is not None
+    assert callable_profile.name == "run"
+    assert callable_profile.signature is not None

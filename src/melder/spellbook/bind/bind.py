@@ -12,6 +12,9 @@ from melder.spellbook.spell import Spell
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.spell_crafter.spell_examiner.spell_examiner import SpellExaminer
+from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
+    SpellGeneralProfile,
+)
 from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
     SpellBindingProfile,
     ClassBindingProfile,
@@ -151,6 +154,8 @@ class Bind(Cleanable, IBind):
         * Computes a deterministic fingerprint and SpellIndex from a `SpellBindingProfile`.
         * Determines the canonical SpellType.
         * Constructs the final `Spell` instance.
+        * Replaces the initial raw binding artifact with the combined
+          spell-facing general profile once the `Spell` exists.
 
         Args:
             spell (Any): The class, function, or existing object to bind.
@@ -200,10 +205,15 @@ class Bind(Cleanable, IBind):
             # ------------------------------------------------------------------
             # 2. Build binding profile and fingerprint
             # ------------------------------------------------------------------
-            binding_profile: SpellBindingProfile = self._spell_examiner.create_profile(
+            provisional_general_profile = self._spell_examiner.create_profile(
                 spell,
-                "binding",
+                "general",
             )
+            if not isinstance(provisional_general_profile, SpellGeneralProfile):
+                raise TypeError(
+                    "General profile creation must return SpellGeneralProfile."
+                )
+            binding_profile: SpellBindingProfile = provisional_general_profile.binding_profile
             fingerprint: str = Bind.sha256_profile(binding_profile)
             spell_index = SpellIndex(initial_id=fingerprint)
 
@@ -264,13 +274,16 @@ class Bind(Cleanable, IBind):
                 spell_name=spell_name,
                 existence=existence,
                 spell_type=spell_type,
-                profile=binding_profile,
+                profile=provisional_general_profile,
                 spell_id=fingerprint,
                 permissions=permissions,
                 aetheric_frame=aetheric_frame,
                 existing_object=spell if is_instance else None,
                 spellbook=self._spellbook,
             )
+
+            provisional_general_profile.complete_with_spell(new_spell)
+            new_spell.resolution_profile = provisional_general_profile.resolution_profile
 
             return new_spell
 
@@ -288,9 +301,8 @@ class Bind(Cleanable, IBind):
         Returns:
             str: A unique identifier string (SHA256 hash) for the spell.
         """
-        examiner = SpellExaminer()
-        profile = examiner.create_profile(spell, "binding")
-        return Bind.sha256_profile(profile)
+        profile = SpellGeneralProfile.create_from_target(spell)
+        return Bind.sha256_profile(profile.binding_profile)
 
     @staticmethod
     def sha256_profile(profile: SpellBindingProfile) -> str:

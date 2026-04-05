@@ -10,7 +10,12 @@ from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.aether.nexus.configuration.nexus_frame_mode import NexusFrameMode
 from melder.aether.nexus.nexus_frame_record import NexusFrameRecord
-from melder.spellbook.spell_crafter.spell_examiner.profiles.ai_profile import SpellAIProfile
+from melder.spellbook.spell_crafter.spell_examiner.profiles.detailed_profile import (
+    SpellDetailedProfile,
+)
+from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
+    SpellGeneralProfile,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import IAether
@@ -396,17 +401,20 @@ class FrameDescriptorManager(Cleanable):
             descriptor = self._get_or_create_frame_descriptor(frame_name)
 
             binding_profile = None
-            ai_profile = None
+            detailed_profile = None
+            resolution_profile = spell.resolution_profile
             profile = spell.profile
-            if isinstance(profile, SpellAIProfile):
-                ai_profile = profile
+            if isinstance(profile, SpellDetailedProfile):
+                detailed_profile = profile
                 binding_profile = profile.binding_profile
+                if resolution_profile is None:
+                    resolution_profile = profile.resolution_profile
+            elif isinstance(profile, SpellGeneralProfile):
+                binding_profile = profile.binding_profile
+                if resolution_profile is None:
+                    resolution_profile = profile.resolution_profile
             else:
                 binding_profile = profile
-
-            resolution_profile = spell.resolution_profile
-            if resolution_profile is None and ai_profile is not None:
-                resolution_profile = ai_profile.resolution_profile
 
             spell_record = SpellRecord(
                 origin_spellbook_id=spellbook._id,
@@ -421,7 +429,7 @@ class FrameDescriptorManager(Cleanable):
                 existence=spell.existence,
                 binding_profile=binding_profile,
                 resolution_profile=resolution_profile,
-                ai_profile=ai_profile,
+                detailed_profile=detailed_profile,
             )
             descriptor.upsert_spell_record(spell_record)
             return True

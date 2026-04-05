@@ -1,88 +1,198 @@
 import inspect
-from typing import Any, Optional, List, Dict
-# Melder Imports
-from melder.spellbook.spell_crafter.spell_examiner.inspectors.class_inspector import ClassInspector
-from melder.spellbook.spell_crafter.spell_examiner.inspectors.method_inspector import MethodInspector
-from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.class_profile import ClassProfile
-from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_profile import MethodProfile
-from melder.spellbook.spell_crafter.spell_examiner.profiles.ai_profile import SpellAIProfile
-from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import SpellBindingProfile
-from melder.spellbook.spell_crafter.spell_examiner.profiles.resolution_profile import SpellResolutionProfile
-from melder.spellbook.spell_crafter.spell_examiner.strategies.binding_profile_strategy import BindingProfileStrategy
-from melder.spellbook.spell_crafter.spell_examiner.strategies.resolution_profile_strategy import \
-    ResolutionProfileStrategy
-from melder.spellbook.spell_crafter.spell_examiner.inspectors.inspector_utility import InspectorUtility
-from melder.utilities.interfaces.interfaces import ISpell
+from typing import Any, Dict, List, Optional
+
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.spellbook.spell import Spell
+from melder.spellbook.spell_crafter.spell_examiner.inspectors.class_inspector import (
+    ClassInspector,
+)
+from melder.spellbook.spell_crafter.spell_examiner.inspectors.inspector_utility import (
+    InspectorUtility,
+)
+from melder.spellbook.spell_crafter.spell_examiner.inspectors.method_inspector import (
+    MethodInspector,
+)
+from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.class_profile import (
+    ClassProfile,
+)
+from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_profile import (
+    MethodProfile,
+)
+from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
+    SpellGeneralProfile,
+)
+from melder.utilities.general_base.cleanable import Cleanable
 
-class AIProfileStrategy:
+
+class SpellDetailedProfile(SpellGeneralProfile):
     """
-    Strategy for building **SpellAIProfile** from a Spell.
-
-    This is the heavy path:
-        * It assumes resolution semantics already exist (or builds them).
-        * It runs deep introspection (ClassInspector / MethodInspector).
-        * It packages everything into a SpellAIProfile suitable for
-          agent-based reasoning, mutation planning, etc.
+    Purpose:
+        Represent the richer detailed spell profile as a superset of general.
 
     Contract:
-        - Produces a SpellAIProfile with binding + resolution profiles.
-        - Includes class/callable profiles when applicable.
-        - Instance member inventory is collected for non-class instances.
-        - Dunder visibility is controlled by show_dunders (default True).
+        - Inherits the same two-step lifecycle as `SpellGeneralProfile`.
+        - Adds class, callable, metadata, instance-member, and dynamic-access
+          inspection on phase 2 completion.
+        - Keeps the binding and resolution detail artifacts directly on the
+          profile rather than wrapping a separate general profile object.
+
+    Lifecycle:
+        Phase 1 creates the profile with only binding data. Phase 2
+        `complete_with_spell(...)` fills the inherited resolution data and then
+        adds the richer inspector payloads.
     """
+
     __melder_internal__ = _mrg.sentinel
-    __slots__ = ("show_dunders", "max_repr")
+    __slots__ = SpellGeneralProfile.__slots__ + [
+        "_show_dunders",
+        "_max_repr",
+        "spell",
+        "class_profile",
+        "callable_profile",
+        "metadata",
+        "instance_members",
+        "dynamic_access",
+    ]
 
-    def __init__(self, *, show_dunders: bool = True, max_repr: int = 120) -> None:
-        """
-        Initialize the AI profile strategy.
-
-        Args:
-            show_dunders: Whether dunder members are included in inspection.
-            max_repr: Maximum length for repr strings in output.
-        """
-        self.show_dunders = show_dunders
-        self.max_repr = max_repr
-
-    def build_profile(
+    def __init__(
             self,
-            spell: ISpell,
-    ) -> SpellAIProfile:
+            *,
+            binding_profile,
+            resolution_profile=None,
+            show_dunders: bool = True,
+            max_repr: int = 120,
+            spell: Optional[Spell] = None,
+            class_profile: Optional[ClassProfile] = None,
+            callable_profile: Optional[MethodProfile] = None,
+            metadata: Optional[dict[str, Any]] = None,
+            instance_members: Optional[dict[str, dict[str, Any]]] = None,
+            dynamic_access: Optional[dict[str, bool]] = None,
+    ) -> None:
         """
-        Build a SpellAIProfile for the provided spell.
+        Initialize one detailed spell profile.
 
         Args:
-            spell: Spell object providing the underlying callable/class.
+            binding_profile:
+                Binding profile for the candidate object.
+            resolution_profile:
+                Resolution profile when phase 2 has completed.
+            show_dunders:
+                Whether dunder members should be included in deep inspection.
+            max_repr:
+                Maximum representation length used by the deep inspectors.
+            spell:
+                Owning spell once phase 2 has completed.
+            class_profile:
+                Optional class profile when the spell wraps a class.
+            callable_profile:
+                Optional callable profile when the spell wraps a callable.
+            metadata:
+                Free-form metadata map copied on assignment.
+            instance_members:
+                Optional instance-member inventory copied on assignment.
+            dynamic_access:
+                Dynamic access flags copied on assignment.
 
         Returns:
-            SpellAIProfile: Fully assembled AI profile.
+            None.
         """
-        # Ensure we have a binding profile for the underlying object.
-        binding_strategy = BindingProfileStrategy(
-            show_dunders=self.show_dunders,
-            max_repr=self.max_repr,
+        super().__init__(
+            binding_profile=binding_profile,
+            resolution_profile=resolution_profile,
         )
-        binding_profile = binding_strategy.build_profile(spell.spell)
+        self._show_dunders = show_dunders
+        self._max_repr = max_repr
+        self.spell = spell
+        self.class_profile = class_profile
+        self.callable_profile = callable_profile
+        self.metadata = dict(metadata) if metadata is not None else {}
+        self.instance_members = (
+            dict(instance_members) if instance_members is not None else {}
+        )
+        self.dynamic_access = (
+            dict(dynamic_access) if dynamic_access is not None else {}
+        )
 
-        # Ensure we have a resolution profile for this spell.
-        resolution_strategy = ResolutionProfileStrategy()
-        resolution_profile = resolution_strategy.build_profile(spell)
+    @classmethod
+    def create_from_target(
+            cls,
+            target: Any,
+            show_dunders: bool = True,
+            max_repr: int = 120,
+    ) -> "SpellDetailedProfile":
+        """
+        Create one detailed profile from a raw candidate or a fully formed spell.
 
+        Args:
+            target:
+                Raw candidate object or a fully formed `Spell`.
+            show_dunders:
+                Whether dunder members should be included in deep inspection.
+            max_repr:
+                Maximum representation length used by binding and deep
+                inspection.
+
+        Returns:
+            SpellDetailedProfile:
+                New profile object. If `target` is a `Spell`, the returned
+                profile is already fully completed.
+        """
+        base_profile = SpellGeneralProfile.create_from_target(
+            target,
+            show_dunders=show_dunders,
+            max_repr=max_repr,
+        )
+        profile = cls(
+            binding_profile=base_profile.binding_profile,
+            resolution_profile=base_profile.resolution_profile,
+            show_dunders=show_dunders,
+            max_repr=max_repr,
+        )
+        if isinstance(target, Spell):
+            profile.complete_with_spell(target)
+        return profile
+
+    def complete_with_spell(self, spell: Spell) -> None:
+        """
+        Complete phase 2 of the detailed profile lifecycle.
+
+        Args:
+            spell:
+                Fully formed spell whose runtime metadata should drive the
+                resolution and detailed inspection payloads.
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError:
+                If `spell` is not a `Spell`.
+            RuntimeError:
+                If the profile is already completed for a different spell.
+        """
+        self.check_cleaned()
+        if not isinstance(spell, Spell):
+            raise TypeError("Detailed profile completion requires a Spell instance.")
+        if self.spell is not None and self.spell is not spell:
+            raise RuntimeError(
+                "Detailed profile is already completed for a different Spell."
+            )
+        super().complete_with_spell(spell)
+        if self.spell is spell:
+            return
+
+        self.spell = spell
         class_profile: Optional[ClassProfile] = None
         callable_profile: Optional[MethodProfile] = None
-
         instance_members: Dict[str, Dict[str, Any]] = {}
         dynamic_access: Dict[str, bool] = {}
 
-        # Deep introspection depends on what kind of spell this is.
         if spell.is_class_spell:
             class_profile = self._inspect_class(spell)
             callable_profile = self._inspect_callable(spell)
         elif spell.is_method_spell or spell.is_lambda_spell:
             callable_profile = self._inspect_callable(spell)
         else:
-            # Fallback – if the spell wraps some other callable, we can still inspect it.
             if callable(spell.spell) and not inspect.isclass(spell.spell):
                 callable_profile = self._inspect_callable(spell)
                 if self._should_collect_instance_members(spell.spell):
@@ -95,40 +205,63 @@ class AIProfileStrategy:
         if class_profile is not None:
             dynamic_access = class_profile.dynamic_access or {}
 
-        return SpellAIProfile(
-            spell=spell,
-            binding_profile=binding_profile,
-            resolution_profile=resolution_profile,
-            class_profile=class_profile,
-            callable_profile=callable_profile,
-            metadata={},
-            instance_members=instance_members,
-            dynamic_access=dynamic_access,
-        )
+        self.class_profile = class_profile
+        self.callable_profile = callable_profile
+        self.metadata = {}
+        self.instance_members = instance_members
+        self.dynamic_access = dynamic_access
 
-    def _inspect_class(self, spell: ISpell) -> ClassProfile:
+    def cleanup(self) -> None:
         """
-        Inspect a class-based spell and build a ClassProfile.
+        Idempotently clean the nested detailed-profile artifacts.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        for profile in (self.class_profile, self.callable_profile):
+            if isinstance(profile, Cleanable):
+                try:
+                    profile.cleanup()
+                except Exception:
+                    pass
+        if isinstance(self.metadata, dict):
+            self.metadata.clear()
+        super().cleanup()
+        self._show_dunders = None
+        self._max_repr = None
+        self.spell = None
+        self.class_profile = None
+        self.callable_profile = None
+        self.metadata = None
+        self.instance_members = None
+        self.dynamic_access = None
+
+    def _inspect_class(self, spell: Spell) -> ClassProfile:
+        """
+        Inspect a class-backed spell and build a `ClassProfile`.
 
         Args:
-            spell: Spell wrapping a class object.
+            spell:
+                Spell wrapping a class object.
 
         Returns:
             ClassProfile: Structured class profile for the spell.
         """
         inspector = ClassInspector(
             spell.spell,
-            show_dunders=self.show_dunders,
-            max_repr=self.max_repr,
+            show_dunders=self._show_dunders,
+            max_repr=self._max_repr,
         )
         data = inspector.inspect()
 
-        method_profiles: dict[str, MethodProfile] = {}
+        method_profiles: Dict[str, MethodProfile] = {}
         for name, info in data["members"].items():
             if info.get("callable"):
                 try:
                     fn = getattr(spell.spell, name)
-                    method_data = MethodInspector(fn, max_repr=self.max_repr).inspect()
+                    method_data = MethodInspector(fn, max_repr=self._max_repr).inspect()
                     method_profiles[name] = MethodProfile(
                         name=method_data["name"],
                         qualname=method_data["qualname"],
@@ -193,17 +326,18 @@ class AIProfileStrategy:
             dynamic_access=data.get("dynamic_access", {}),
         )
 
-    def _inspect_callable(self, spell: ISpell) -> MethodProfile:
+    def _inspect_callable(self, spell: Spell) -> MethodProfile:
         """
-        Inspect a callable-based spell and build a MethodProfile.
+        Inspect a callable-backed spell and build a `MethodProfile`.
 
         Args:
-            spell: Spell wrapping a callable object.
+            spell:
+                Spell wrapping a callable object.
 
         Returns:
             MethodProfile: Structured callable profile for the spell.
         """
-        inspector = MethodInspector(spell.spell, max_repr=self.max_repr)
+        inspector = MethodInspector(spell.spell, max_repr=self._max_repr)
         data = inspector.inspect()
 
         return MethodProfile(
@@ -245,13 +379,14 @@ class AIProfileStrategy:
 
     def _should_collect_instance_members(self, obj: Any) -> bool:
         """
-        Determine whether instance members should be collected for an object.
+        Return whether instance-member collection makes sense for an object.
 
         Args:
-            obj: Object to evaluate.
+            obj:
+                Object to evaluate.
 
         Returns:
-            bool: True when the object is an instance (not class/function/method).
+            bool: True when the object is a non-class, non-routine instance.
         """
         if inspect.isclass(obj):
             return False
@@ -266,10 +401,11 @@ class AIProfileStrategy:
         Build a best-effort inventory of instance attributes.
 
         Args:
-            obj: Instance to inspect.
+            obj:
+                Instance to inspect.
 
         Returns:
-            Dict[str, Dict[str, Any]]: Map of attribute name to member record.
+            Dict[str, Dict[str, Any]]: Structured instance-member map.
         """
         members: Dict[str, Dict[str, Any]] = {}
         attr_names: List[str] = []
@@ -300,15 +436,18 @@ class AIProfileStrategy:
             value: Any,
     ) -> Dict[str, Any]:
         """
-        Build a tool-shaped record for an instance attribute.
+        Build one structured instance-member record.
 
         Args:
-            obj: Owning instance.
-            name: Attribute name.
-            value: Attribute value (best-effort; may be None).
+            obj:
+                Owning instance.
+            name:
+                Attribute name.
+            value:
+                Best-effort attribute value.
 
         Returns:
-            Dict[str, Any]: Structured member record.
+            Dict[str, Any]: Tool-shaped member record.
         """
         type_obj = type(obj)
         module = getattr(type_obj, "__module__", None)
@@ -331,7 +470,7 @@ class AIProfileStrategy:
             "docstring_summary": "",
             "behavior_summary": "",
             "tags": [],
-            "repr": InspectorUtility.safe_repr(value, self.max_repr),
+            "repr": InspectorUtility.safe_repr(value, self._max_repr),
             "signature": None,
             "parameters": [],
             "return_annotation": None,
@@ -344,13 +483,15 @@ class AIProfileStrategy:
 
     def _dynamic_access_flags(self, obj: Any) -> Dict[str, bool]:
         """
-        Compute dynamic attribute access flags for an object.
+        Compute dynamic attribute-access flags for an object.
 
         Args:
-            obj: Object to inspect.
+            obj:
+                Object to inspect.
 
         Returns:
-            Dict[str, bool]: Flags for __getattr__, __getattribute__, __setattr__.
+            Dict[str, bool]: Flags for `__getattr__`, `__getattribute__`, and
+            `__setattr__`.
         """
         cls = type(obj)
         return {
@@ -361,14 +502,16 @@ class AIProfileStrategy:
 
     def _has_attribute_in_mro(self, cls: type, attr: str) -> bool:
         """
-        Check whether a class or its bases define a given attribute.
+        Return whether an attribute appears anywhere in a class MRO.
 
         Args:
-            cls: Class to inspect.
-            attr: Attribute name to check.
+            cls:
+                Class to inspect.
+            attr:
+                Attribute name to check.
 
         Returns:
-            bool: True if attr appears in any __dict__ in the MRO.
+            bool: True when the attribute appears in any `__dict__` in the MRO.
         """
         for base in inspect.getmro(cls):
             if attr in base.__dict__:

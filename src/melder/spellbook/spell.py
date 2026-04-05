@@ -102,10 +102,12 @@ class Spell(Cleanable, ISpell):
             Optional reflective profile associated with this spell.
 
             Currently:
-            - The Bind pipeline attaches a **SpellBindingProfile** instance here.
-            - AI / analysis subsystems may later attach richer profiles (e.g. SpellAIProfile).
-            - Legacy usage expecting ClassProfile / MethodProfile should treat this as
-              an opaque introspection artifact.
+            - The Bind pipeline finishes by attaching a combined general or
+              detailed spell profile here.
+            - Those combined profiles still expose the underlying binding and
+              resolution artifacts for downstream consumers.
+            - Legacy usage expecting raw profile types should treat this field
+              as an opaque introspection artifact and normalize it first.
 
         existing_object (Optional[object]):
             Optional pre-instantiated object to attach to the spell (EXISTING_CREATION* types).
@@ -262,8 +264,9 @@ class Spell(Cleanable, ISpell):
         self.spell_name: str = spell_name
         self.existence: Existence = existence
 
-        # Reflective / binding profile (shape of the spell).
-        # Typically, a SpellBindingProfile, but treated as opaque here.
+        # Reflective spell profile.
+        # Treated as opaque here; downstream consumers normalize general or
+        # detailed profiles as needed.
         self.profile: Optional[Any] = profile
 
         self.aetheric_frame: str = aetheric_frame
@@ -293,8 +296,9 @@ class Spell(Cleanable, ISpell):
         self.dependency_graph: Any = None
         self.dependencies: List[str] = []  # SHA256 spell IDs required for this spell to function
 
-        # Optional resolution profile (DI contract), to be populated by the
-        # resolution pipeline (SpellExaminer ResolutionProfileStrategy).
+        # Optional resolution profile mirror.
+        # When a general or detailed profile is attached, this may also point
+        # at that profile's resolution artifact for direct consumers.
         self.resolution_profile: Optional[SpellResolutionProfile] = None
 
         # Phase 11 execution-plan metrics (populated during conjure).
