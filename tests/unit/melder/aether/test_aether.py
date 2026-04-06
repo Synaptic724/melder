@@ -1,12 +1,15 @@
+from concurrent.futures import ThreadPoolExecutor
 import pytest
 import threading
 from unittest.mock import MagicMock, patch, ANY
 from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
+from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.nexus.nexus import Nexus
 from melder.utilities.interfaces.interfaces import IConduit, IConduitCloud
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence
+from melder.spellbook.configuration.system_state import SystemState
 
 # ----------------------------------------------------------------------
 # Fixtures
@@ -79,6 +82,32 @@ def test_singleton_identity():
     a2 = Aether()
     assert a1 is a2
     assert id(a1) == id(a2)
+
+
+def test_singleton_identity_under_concurrent_construction() -> None:
+    """
+    Verify singleton construction remains stable under concurrent first access.
+
+    Contract:
+    - Parallel constructor calls must resolve to one shared instance.
+    - The class-level singleton reference must point to that shared instance.
+    """
+    worker_count = 16
+    start_barrier = threading.Barrier(worker_count)
+
+    Aether._reset_singleton_for_tests()
+
+    def build_instance_id() -> int:
+        start_barrier.wait()
+        return id(Aether())
+
+    with ThreadPoolExecutor(max_workers=worker_count) as executor:
+        futures = [executor.submit(build_instance_id) for _ in range(worker_count)]
+        instance_ids = [future.result() for future in futures]
+
+    assert len(set(instance_ids)) == 1
+    assert Aether._instance is not None
+    assert id(Aether._instance) == instance_ids[0]
 
 def test_initialization_creates_default_frame(mock_frame_cls):
     """
@@ -210,6 +239,50 @@ def test_cleanup_unregistered_frame_is_safe() -> None:
     frame = AethericFrame(a, "non_existent")
     frame.cleanup()
     assert "non_existent" not in a._aetheric_frames
+
+
+def test_detach_cleaned_frame_ignores_empty_frame_name() -> None:
+    """_detach_cleaned_frame should no-op when frame_name is empty."""
+    a = Aether()
+    frame = a._default_frame
+    before_default = a._default_frame
+    before_frames = dict(a._aetheric_frames)
+
+    a._detach_cleaned_frame("", frame)
+
+    assert a._default_frame is before_default
+    assert a._aetheric_frames == before_frames
+
+
+def test_detach_cleaned_frame_ignores_missing_registry() -> None:
+    """_detach_cleaned_frame should no-op when the frame registry is unavailable."""
+    a = Aether()
+    frame = a._default_frame
+    a._aetheric_frames = None
+    a._default_frame = frame
+
+    a._detach_cleaned_frame("default", frame)
+
+    assert a._default_frame is frame
+
+
+def test_detach_cleaned_frame_logs_nexus_error_but_removes_frame() -> None:
+    """_detach_cleaned_frame should tolerate Nexus record cleanup failures."""
+    a = Aether()
+    frame = a._default_frame
+    nexus = MagicMock()
+    nexus.check_for_aetheric_frame.side_effect = RuntimeError("nexus fail")
+    logger = MagicMock()
+
+    a._nexus = nexus
+    a._logger = logger
+
+    a._detach_cleaned_frame("default", frame)
+
+    nexus.check_for_aetheric_frame.assert_called_once_with("default")
+    logger.error.assert_called_once()
+    assert "default" not in a._aetheric_frames
+    assert a._default_frame is None
 
 def test_cleanup_aetheric_frames_iterates_all() -> None:
     """cleanup_aetheric_frames should call cleanup on all registered frames."""
@@ -474,6 +547,96 @@ def test_get_configuration(aether_with_mocks):
     
     assert a._get_configuration() is expected
 
+
+def test_bind_aetheric_frame_configuration_rejects_invalid_type() -> None:
+    """_bind_aetheric_frame_configuration should reject non-configuration inputs."""
+    a = Aether()
+
+    with pytest.raises(TypeError, match="AethericFrameConfiguration"):
+        a._bind_aetheric_frame_configuration("invalid")
+
+
+def test_bind_aetheric_frame_configuration_missing_frame_raises() -> None:
+    """_bind_aetheric_frame_configuration should fail clearly for missing custom frames."""
+    a = Aether()
+    frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-1",
+        system_state=SystemState.dynamic,
+        ai_native_enabled=True,
+        rift_enabled=True,
+    )
+
+    with pytest.raises(ValueError, match="does not exist"):
+        a._bind_aetheric_frame_configuration(
+            frame_configuration,
+            "missing_frame",
+        )
+
+    frame_configuration.cleanup()
+
+
+def test_bind_aetheric_frame_configuration_sets_default_frame_posture() -> None:
+    """First posture bind should attach the configuration to the default frame."""
+    a = Aether()
+    frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-1",
+        system_state=SystemState.dynamic,
+        ai_native_enabled=True,
+        rift_enabled=False,
+    )
+
+    a._bind_aetheric_frame_configuration(frame_configuration)
+
+    assert a._default_frame.frame_configuration is frame_configuration
+
+
+def test_bind_aetheric_frame_configuration_same_posture_cleans_duplicate() -> None:
+    """Same-posture rebind should keep the original configuration and clean the duplicate."""
+    a = Aether()
+    original = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-1",
+        system_state=SystemState.dynamic,
+        ai_native_enabled=True,
+        rift_enabled=False,
+    )
+    duplicate = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-2",
+        system_state=SystemState.dynamic,
+        ai_native_enabled=True,
+        rift_enabled=False,
+    )
+
+    a._bind_aetheric_frame_configuration(original)
+    a._bind_aetheric_frame_configuration(duplicate)
+
+    assert a._default_frame.frame_configuration is original
+    assert duplicate._cleaned is True
+
+
+def test_bind_aetheric_frame_configuration_conflict_keeps_original_and_logs_warning() -> None:
+    """Conflicting posture rebind should keep the original and clean the conflicting attempt."""
+    a = Aether()
+    a._logger = MagicMock()
+    original = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-1",
+        system_state=SystemState.dynamic,
+        ai_native_enabled=True,
+        rift_enabled=False,
+    )
+    conflicting = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-2",
+        system_state=SystemState.automatic,
+        ai_native_enabled=False,
+        rift_enabled=True,
+    )
+
+    a._bind_aetheric_frame_configuration(original)
+    a._bind_aetheric_frame_configuration(conflicting)
+
+    assert a._default_frame.frame_configuration is original
+    assert conflicting._cleaned is True
+    a._logger.warning.assert_called_once()
+
 def test_check_for_spell_delegates(aether_with_mocks):
     """_check_for_spell delegates to frame.has_version."""
     a = aether_with_mocks
@@ -629,6 +792,50 @@ def test_ensure_default_frame_raises_if_missing(aether_with_mocks):
     with pytest.raises(RuntimeError, match="unavailable"):
         a._ensure_default_frame()
 
+
+def test_ensure_frame_raises_when_registry_unavailable_before_lock() -> None:
+    """_ensure_frame should fail clearly when the frame registry is unavailable."""
+    a = Aether()
+    a._aetheric_frames = None
+
+    with pytest.raises(RuntimeError, match="unavailable"):
+        a._ensure_frame("custom")
+
+
+def test_ensure_frame_raises_when_registry_becomes_unavailable_inside_lock() -> None:
+    """_ensure_frame should fail if the registry disappears after the initial check."""
+    a = Aether()
+    original_lock = a._lock
+
+    class _LockThatDropsRegistry:
+        def __enter__(self_inner):
+            a._aetheric_frames = None
+            return self_inner
+
+        def __exit__(self_inner, exc_type, exc_value, traceback):
+            return False
+
+    try:
+        a._lock = _LockThatDropsRegistry()
+        with pytest.raises(RuntimeError, match="unavailable"):
+            a._ensure_frame("custom")
+    finally:
+        a._lock = original_lock
+
+
+def test_ensure_frame_recreates_default_and_updates_default_pointer() -> None:
+    """_ensure_frame should restore the default frame pointer when recreating the default frame."""
+    a = Aether()
+    original_default = a._default_frame
+    a._aetheric_frames.pop("default", None)
+    a._default_frame = None
+
+    recreated = a._ensure_frame("default")
+
+    assert recreated is a._default_frame
+    assert a._aetheric_frames["default"] is recreated
+    assert recreated is not original_default
+
 # ----------------------------------------------------------------------
 # 6. Cluster Management Tests
 # ----------------------------------------------------------------------
@@ -653,6 +860,29 @@ def test_create_cluster_duplicate(aether_with_mocks):
     
     with pytest.raises(ValueError, match="already exists"):
         a._create_cluster("c1")
+
+
+def test_remove_cluster_missing_custom_frame_raises(aether_with_mocks):
+    """_remove_cluster should raise clearly when a custom frame is missing."""
+    a = aether_with_mocks
+
+    with pytest.raises(ValueError, match="does not exist"):
+        a._remove_cluster("cluster1", "missing_frame")
+
+
+def test_remove_cluster_logs_cleanup_failure(aether_with_mocks):
+    """_remove_cluster should log cleanup failures and still remove the cluster."""
+    a = aether_with_mocks
+    cluster = MagicMock()
+    cluster.cleanup.side_effect = RuntimeError("cluster cleanup failed")
+    a._default_frame._conduit_clusters = {"cluster1": cluster}
+    a._logger = MagicMock()
+
+    a._remove_cluster("cluster1")
+
+    cluster.cleanup.assert_called_once()
+    assert "cluster1" not in a._default_frame._conduit_clusters
+    a._logger.error.assert_called()
 
 def test_get_cluster(aether_with_mocks):
     """_get_cluster returns cluster object."""
@@ -684,6 +914,26 @@ def test_add_conduit_to_cluster(aether_with_mocks):
         cluster_mock.add_member.assert_called_with("c1")
         mock_hook.assert_called_with(conduit, "cluster1", "default")
 
+
+def test_add_conduit_to_cluster_logs_join_hook_failure(aether_with_mocks):
+    """_add_conduit_to_cluster should log hook failures without undoing membership."""
+    a = aether_with_mocks
+    cluster_mock = MagicMock()
+    a._default_frame._conduit_clusters = {"cluster1": cluster_mock}
+    conduit = MagicMock()
+    conduit._id = "c1"
+    a._logger = MagicMock()
+
+    with patch.object(
+        a,
+        "_on_conduit_joined_cluster",
+        side_effect=RuntimeError("join hook failed"),
+    ):
+        a._add_conduit_to_cluster(conduit, "cluster1")
+
+    cluster_mock.add_member.assert_called_with("c1")
+    a._logger.error.assert_called()
+
 def test_remove_conduit_from_cluster(aether_with_mocks):
     """_remove_conduit_from_cluster removes member and calls hook."""
     a = aether_with_mocks
@@ -696,6 +946,26 @@ def test_remove_conduit_from_cluster(aether_with_mocks):
         a._remove_conduit_from_cluster(conduit, "c1")
         cluster.remove_member.assert_called_with("cid")
         hook.assert_called_with(conduit, "c1", "default")
+
+
+def test_remove_conduit_from_cluster_logs_leave_hook_failure(aether_with_mocks):
+    """_remove_conduit_from_cluster should log leave-hook failures after removal."""
+    a = aether_with_mocks
+    cluster = MagicMock()
+    a._default_frame._conduit_clusters = {"c1": cluster}
+    conduit = MagicMock()
+    conduit._id = "cid"
+    a._logger = MagicMock()
+
+    with patch.object(
+        a,
+        "_on_conduit_left_cluster",
+        side_effect=RuntimeError("leave hook failed"),
+    ):
+        a._remove_conduit_from_cluster(conduit, "c1")
+
+    cluster.remove_member.assert_called_with("cid")
+    a._logger.error.assert_called()
 
 def test_remove_conduit_from_cluster_error_propagate(aether_with_mocks):
     """_remove_conduit_from_cluster re-raises errors from cluster."""

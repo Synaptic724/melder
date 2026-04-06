@@ -8,40 +8,31 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class SpellBinder(Cleanable):
     """
-    A Fluent Interface for registering Spells into a `Spellbook`.
+    Fluent registration helper for configuring one Spellbook bind operation at a time.
 
-    The `SpellBinder` acts as a temporary configuration context. It allows you to
-    chain methods to define the lifecycle, permissions, and hooks for a spell
-    before committing it to the Spellbook via `finalize()`.
+    `SpellBinder` is a temporary configuration object layered on top of
+    `Spellbook.bind(...)`. It accumulates bind-time choices such as existence,
+    permissions, spellframe, binding name, and hook lists, then forwards the
+    assembled payload only when `finalize()` is called.
 
-    **Core Responsibilities:**
-    1.  **Fluent Configuration:** Accumulate binding parameters (e.g., `.as_unique()`, `.named()`).
-    2.  **State Management:** Holds in-flight configuration for exactly one registration at a time.
-    3.  **Safe Delegation:** Forwards the final configuration to `Spellbook.bind(...)` only when `finalize()` is called.
-
-    **Usage Example:**
-        ```python
-        binder = spellbook.create_binder()
-
-        # Complex registration with hooks and specific scoping
-        binder.bind(MyDatabaseService) \\
-              .as_unique() \\
-              .named("primary_db") \\
-              .under_spellframe(IDatabase) \\
-              .with_pre_hook(connect_db) \\
-              .finalize()
-        ```
-
-    **Note on Reusability:**
-    A single `SpellBinder` instance can be reused for multiple registrations.
-    Calling `finalize()` automatically clears the internal state, making the
-    binder ready for the next `bind(...)` call.
+    Contract:
+    - Holds in-flight configuration for exactly one pending registration at a
+      time.
+    - `bind(...)` resets any unfinished state before targeting a new spell.
+    - `finalize()` delegates the assembled payload to `Spellbook.bind(...)` and
+      then resets the binder for reuse.
+    - Uses a weak reference to the target Spellbook so the binder does not own
+      Spellbook lifetime.
+    - Becomes permanently unusable after `cleanup()` completes.
 
     Guardrails:
-    - Only one registration can be active at a time; every `bind(...)` call resets any in-flight state.
-    - All fluent methods guard with `_still_alive` and raise `RuntimeError` if the binder has been cleaned or its Spellbook weakref is dead.
+    - Only one registration can be active at a time; every `bind(...)` call resets
+      any in-flight state.
+    - All fluent methods guard with `_still_alive` and raise `RuntimeError` if the
+      binder has been cleaned or its Spellbook weak reference is dead.
     - This helper is not thread-safe; use one binder per thread or serialize access.
     - `cleanup()` is idempotent but permanently invalidates the binder for further use.
+
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = (
@@ -242,17 +233,16 @@ class SpellBinder(Cleanable):
             **kwargs: Any,
     ) -> "SpellBinder":
         """
-        **Start Here:** Begins a new registration chain for a spell.
+        Start a new fluent registration chain for one spell target.
 
-        This method clears any previous configuration and targets the provided
-        `spell`. You can supply arguments immediately or use fluent methods
-        (e.g., `.as_unique()`) to configure the registration subsequently.
-
-        Calling `bind(...)` always discards any un-finalized state from a prior
-        chain and reinitializes existence/permissions to the defaults captured
-        at construction. Additional `kwargs` are merged into the binder's
-        passthrough payload (later sent to `Spellbook.bind`); later calls
-        overwrite earlier keys.
+        Contract:
+        - Clears any previous unfinished registration state before targeting the
+          provided spell.
+        - Reinitializes existence, permissions, and profile to the defaults captured
+          at binder construction time.
+        - Applies any immediate overrides supplied in the call itself.
+        - Merges passthrough `kwargs` into the payload later sent to
+          `Spellbook.bind(...)`; later values overwrite earlier keys.
 
         Args:
             spell (Any):
@@ -264,17 +254,21 @@ class SpellBinder(Cleanable):
             profile (str, optional):
                 Immediate override for the spell profile family.
             spellframe (Any, optional):
-                The interface or protocol to bind this spell under.
+                Interface, protocol, or other frame key for the registration.
             binding_name (str, optional):
-                A unique string identifier for this specific binding.
+                Secondary key used to disambiguate this binding.
             **kwargs:
-                Pass-through arguments for the Spellbook (e.g., specific hooks).
+                Passthrough bind-time keyword arguments, including lifecycle hooks.
 
         Returns:
-            SpellBinder: Self, to enable fluent chaining.
+            SpellBinder:
+                This binder instance so the caller can continue the fluent chain.
 
         Raises:
-            RuntimeError: If the binder has been cleaned or its Spellbook weakref is no longer alive.
+            RuntimeError:
+                If the binder has been cleaned or its Spellbook weak reference is no
+                longer alive.
+
         """
         self._still_alive()
 
@@ -441,14 +435,23 @@ class SpellBinder(Cleanable):
 
     def with_permissions(self, permissions: str) -> "SpellBinder":
         """
-        Sets the access permissions for this spell ("create", "read", "block").
+        Set the access permissions for the pending registration.
 
-        **"create" (Default):** Other conduits can see and instantiate this spell.
-        **"read":** Other conduits can use an existing instance but cannot create new ones.
-        **"block":** Only the owning conduit can use this spell (private).
+        Contract:
+        - Stores the raw permission string for later validation inside
+          `Spellbook.bind(...)`.
+        - Does not normalize or validate the permission value by itself.
+        - Overwrites any permission value already staged on this binder.
+
+        Typical values:
+        - `create`
+        - `read`
+        - `block`
 
         Raises:
-            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
+            RuntimeError:
+                If the binder has been cleaned or its Spellbook weak reference is dead.
+
         """
         self._still_alive()
         self._permissions = permissions
@@ -456,16 +459,22 @@ class SpellBinder(Cleanable):
 
     def under_spellframe(self, spellframe: Any) -> "SpellBinder":
         """
-        Registers the spell under a specific **Interface** or **Protocol**.
+        Stage a spellframe for the pending registration.
 
-        This is the primary mechanism for Dependency Inversion. Consumers request
-        the `spellframe`, and Melder injects this specific spell implementation.
+        Purpose:
+            Bind the pending spell under a shared interface, protocol, or other frame
+            key so downstream resolution can target the frame instead of the concrete
+            implementation directly.
 
         Args:
-            spellframe (Any): The Protocol, Abstract Base Class, or String key.
+            spellframe (Any):
+                Protocol, abstract base class, or other frame key to associate with the
+                pending registration.
 
         Raises:
-            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
+            RuntimeError:
+                If the binder has been cleaned or its Spellbook weak reference is dead.
+
         """
         self._still_alive()
         self._spellframe = spellframe
@@ -473,13 +482,20 @@ class SpellBinder(Cleanable):
 
     def named(self, binding_name: str) -> "SpellBinder":
         """
-        Assigns a specific **Binding Name** to this registration.
+        Stage a binding name for the pending registration.
 
-        Useful when you have multiple implementations of the same Interface
-        (e.g., "primary_db", "replica_db") and need to disambiguate them.
+        Purpose:
+            Disambiguate multiple registrations that share the same spellframe but
+            should still resolve as distinct bindings.
+
+        Args:
+            binding_name (str):
+                Secondary key for the pending registration.
 
         Raises:
-            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
+            RuntimeError:
+                If the binder has been cleaned or its Spellbook weak reference is dead.
+
         """
         self._still_alive()
         self._binding_name = binding_name
@@ -618,24 +634,28 @@ class SpellBinder(Cleanable):
 
     def finalize(self) -> str:
         """
-        **Commit:** Finalizes the configuration and registers the spell.
+        Commit the current fluent configuration into the target Spellbook.
 
-        This gathers all the fluent configuration (lifecycle, names, hooks)
-        and calls `spellbook.bind(...)`.
-
-        **Behavior:**
-        1. Validates that a spell was actually selected via `.bind()`.
-        2. Performs the binding in the Spellbook.
-        3. **Resets** the binder's state, allowing it to be reused for the next spell.
-        4. Propagates any hook lists/kwargs collected during chaining directly to `Spellbook.bind(...)`.
+        Contract:
+        - Requires a prior `bind(...)` call to have selected a spell target.
+        - Delegates the assembled payload to `Spellbook.bind(...)`.
+        - Resets the binder's in-flight state after a successful bind so the instance
+          can be reused for another registration.
+        - Propagates any staged hook lists and passthrough kwargs directly into the
+          underlying Spellbook bind call.
 
         Returns:
-            str: The unique SHA256 `spell_id` of the registered spell.
+            str:
+                The unique SHA256 `spell_id` of the registered spell.
 
         Raises:
-            RuntimeError: If called without first calling `.bind()`.
-            RuntimeError: If the binder has been cleaned or its Spellbook weakref is dead.
-            Exception: Any error raised by `Spellbook.bind(...)` (e.g., duplicate spell ID, invalid hooks).
+            RuntimeError:
+                If called without first calling `bind()`, or if the binder has been
+                cleaned or its Spellbook weak reference is dead.
+            Exception:
+                Any error raised by `Spellbook.bind(...)`, such as duplicate bindings or
+                invalid hook payloads.
+
         """
         self._require_spell_selected()
 

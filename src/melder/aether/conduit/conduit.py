@@ -33,15 +33,44 @@ from melder.aether.nexus.nexus import Nexus
 #region Conduit
 class Conduit(Cleanable, IConduit):
     """
-    A Conduit is a modular graph node that behaves like a scope and a factory.
+    A `Conduit` is the runtime scope, execution boundary, and contract-aware access
+    surface for one branch of the Melder graph.
 
-    It can spawn lesser Conduits, link to other Conduits if dynamic mode is enabled,
-    and manage the lifecycle of services registered inside itself.
+    At runtime a conduit acts as the object that owns meld execution, spellspace
+    scope, contract/link behavior, lesser-conduit lineage, and access to the
+    frame-level services needed to create, share, and tear down spell-backed
+    objects safely.
+
+    Contract:
+    - Owns one meld runtime, one creations manager, one conduit ward, one creation
+      gate, spellspace tracking state, and conduit-local hook overlays.
+    - Can create lesser conduits beneath its current root lineage.
+    - Can link to peer conduits only when the runtime is in dynamic mode and the
+      active policy allows it.
+    - Uses a `CreationGate` to control meld entry and track in-flight meld work for
+      safe drain and shutdown behavior.
+    - Normal conduits own the Spellbook lifecycle; lesser conduits share the parent
+      Spellbook and do not unregister frame-level state directly.
+    - Becomes unusable after cleanup completes.
 
     Meld gating:
-        Each conduit owns a CreationGate that can block or deny new meld calls.
-        The gate tracks active melds via ticket registration so the system
-        can drain in-flight work before shutdown or dynamic reconfiguration.
+        Each conduit owns a `CreationGate` that can block or deny new meld calls.
+        The gate tracks active melds via ticket registration so the system can
+        drain in-flight work before shutdown or dynamic reconfiguration.
+
+    Threading / Concurrency:
+        - Uses an internal `RLock` for multi-step conduit state transitions.
+        - Relies on `CreationGate` and `CreationGateController` for meld admission
+          and lineage-aware gate control.
+        - Delegates broader frame-level coordination to Aether, DevOps, and the
+          conduit ward.
+
+    Lifecycle / Cleanup:
+        - Normal and lesser conduits follow different cleanup paths.
+        - Cleanup tears down meld/runtime state first, then contracts/links, then
+          owned registries and logger state.
+        - Logger cleanup is intentionally last.
+
     """
     _aether = Aether()
     _DEFAULT_ROOT_CONDUIT_NAME = "default"
@@ -198,14 +227,22 @@ class Conduit(Cleanable, IConduit):
         """
         Public API
 
-        Idempotently clean this Conduit, severing links, tearing down local
-        runtime, and (for normal conduits) unregistering from Aether. This is
-        local teardown only; it never cleans AethericFrame or Aether.
+        Idempotently clean this conduit and release its owned runtime state.
 
-        Hook integration:
-            - on_conduit_cleanup_start fires before teardown begins.
-            - on_conduit_cleanup_complete fires after teardown completes,
-              even if the Spellbook cleanup clears the Configuration hook registry.
+        Contract:
+            - Idempotent: repeated calls are safe after `_cleaned` flips.
+            - Fires `on_conduit_cleanup_start` before teardown and
+              `on_conduit_cleanup_complete` after teardown finishes.
+            - Dispatches to the lesser- or normal-conduit cleanup path based on the
+              current conduit state.
+            - Tears down logger state last, after the rest of the runtime surface has
+              been released.
+            - This is local conduit teardown only; it does not clean Aether or the
+              owning frame itself.
+
+        Returns:
+            None.
+
         """
         if self._cleaned:
             return
@@ -722,10 +759,16 @@ class Conduit(Cleanable, IConduit):
         """
         Public API
 
-        Enters the context of this Conduit.
+        Enter the conduit lock context and return `self`.
+
+        Purpose:
+            Allow internal or advanced coordinated operations to hold the conduit lock
+            across a controlled block without exposing `_lock` directly.
 
         Returns:
-            Conduit: The current Conduit instance.
+            Conduit:
+                This conduit instance while the lock is held.
+
         """
         self._lock.acquire()
         return self
@@ -734,12 +777,11 @@ class Conduit(Cleanable, IConduit):
         """
         Public API
 
-        Exits the context of this Conduit.
+        Exit the conduit lock context.
 
-        Args:
-            exc_type: The exception type, if any.
-            exc_value: The exception value, if any.
-            traceback: The traceback object, if any.
+        Returns:
+            None.
+
         """
         self._lock.release()
 
@@ -751,8 +793,12 @@ class Conduit(Cleanable, IConduit):
         """
         Public API
 
-        Returns a string representation of the Conduit instance.
-        :return:
+        Return a concise diagnostic representation of this conduit.
+
+        Returns:
+            str:
+                Human-readable representation including conduit name and id.
+
         """
         return (
             f"<Conduit name={self.name} "
@@ -767,7 +813,12 @@ class Conduit(Cleanable, IConduit):
         """
         Public API
 
-        Returns the unique identifier of this Conduit.
+        Return the unique identifier of this conduit.
+
+        Returns:
+            str:
+                This conduit's unique identifier.
+
         """
         return self._id
 
@@ -776,7 +827,12 @@ class Conduit(Cleanable, IConduit):
         """
         Public API
 
-        Returns the name of this Conduit. Name must be created during conduit creation.
+        Return the human-readable name for this conduit, if one exists.
+
+        Returns:
+            Optional[str]:
+                The configured conduit name, or `None` when the conduit is unnamed.
+
         """
         return self._name if self._name else None
 
@@ -786,10 +842,21 @@ class Conduit(Cleanable, IConduit):
         """
         Public API
 
-        Allows user to name conduit if available
+        Assign a name to this conduit exactly once.
+
+        Contract:
+            - Conduit names are write-once after creation.
+            - Intended primarily for normal conduits that will participate in cloud or
+              diagnostics surfaces.
+
+        Args:
+            name (str):
+                Name to assign to this conduit.
 
         Raises:
-            RuntimeError: If the Conduit name is already set.
+            RuntimeError:
+                If the conduit name is already set.
+
         """
         if self._name is not None:
             self._logger.error("Attempt to rename conduit after name set", "name")
@@ -2040,86 +2107,65 @@ class Conduit(Cleanable, IConduit):
 
     def bind(self, *, spell, existence: str | Existence, permissions: str = "create", spellframe=None, binding_name=None, profile: str = "general", **kwargs) -> str:
         """
-        Binds a spell into the Spellbook for future instantiation and dependency injection.
+        Bind a spell into the Spellbook for future instantiation and dependency injection.
 
-        The `bind()` method registers a class, function, or object into Melder’s system,
-        associating it with a lifecycle (`Existence`), a permission policy, and optional metadata.
-        Once bound, the spell becomes available for resolution and casting within its conduit
-        or across systems (depending on permissions).
+        Purpose:
+            Register one class, function, lambda, or existing object through this
+            conduit's Spellbook so later meld work can resolve it by spell identity,
+            `(spellframe, binding_name)` lookup key, and lifecycle policy.
 
-        ──────────────────────────────────────────────
-        🧠 Binding Overview:
-            - Profiles the spell via reflection.
-            - Computes a unique SHA256 `spell_id`.
-            - Stores the spell into the internal spell registry.
-            - Assigns its lookup key via `(spellframe, binding_name)`.
-            - Applies lifecycle and permission policies.
-            - Optionally attaches lifecycle hooks.
+        Contract:
+            - Only normal conduits may bind spells.
+            - Requires an active binding transaction.
+            - Delegates the actual bind pipeline to the owning Spellbook and returns
+              the resulting `spell_id`.
+            - Propagates lifecycle hooks only after validating that supplied hook values
+              are callable.
 
-        ──────────────────────────────────────────────
-        🛡️ Permissions (access control to other conduits):
-            - `"read"`:
-                Allows other conduits to *use* the spell but not create new instances.
-                Useful for shared utilities or resources.
+        Permissions:
+            - `read` lets other conduits consume the spell but not create new instances.
+            - `create` lets other conduits consume and instantiate the spell.
+            - `block` restricts access to the owning conduit.
 
-            - `"create"` (default):
-                Allows other conduits to both use *and* create instances from this spell.
+        Lookup semantics:
+            - `spellframe` provides the primary namespace or grouping key.
+            - `binding_name` provides the secondary disambiguation key inside that
+              frame.
 
-            - `"block"`:
-                Completely blocks access to the spell from other conduits.
-                Only the owning conduit can use or instantiate it.
+        Optional lifecycle hooks (`**kwargs`):
+            - `pre_hooks`
+            - `activation_hooks`
+            - `post_hooks`
 
-        🔄 Existence (spell lifecycle):
-            Determines how the spell instance is managed (singleton, transient, etc.).
-            Use `Existence.unique`, `Existence.many`, etc., for fine-grained control.
-
-        📦 Spellframe (optional):
-            Logical namespace or grouping label.
-            Often corresponds to a shared interface, protocol, or feature group.
-
-        🔑 Binding Name (optional):
-            Secondary key used to distinguish different versions or roles of the same type.
-            Useful when multiple spells are bound under the same interface.
-
-        ──────────────────────────────────────────────
-        🪝 Lifecycle Hooks (optional `**kwargs`):
-
-            - `pre_hooks`: List[Callable]
-                Executed *before* the spell is constructed or cast.
-                Can be used for validation, preparation, or logging.
-
-            - `activation_hooks`: List[Callable]
-                Executed *during* spell construction. Useful for modifying dependencies
-                or adapting runtime context.
-
-            - `post_hooks`: List[Callable]
-                Executed *after* the spell has been cast. Often used for initialization,
-                analytics, or final injection steps.
-
-            ⚠️ All hooks must be callables.
-
-        ──────────────────────────────────────────────
         Args:
-            spell (Any): The class, function, or object to bind into the spellbook.
-            existence (Existence): The lifecycle scope for this spell.
-            permissions (str): Permission level exposed to other conduits ("read", "create", "block").
-            spellframe (Optional[Any]): Logical interface or category for grouping.
-            binding_name (Optional[str]): Name key to distinguish this spell among others in its frame.
-            profile (str): Spell profile family to attach after bind completion.
+            spell (Any):
+                The class, function, lambda, or existing object to register.
+            existence (Existence):
+                Lifecycle scope for the spell.
+            permissions (str):
+                Permission level exposed to other conduits (`read`, `create`, or
+                `block`).
+            spellframe:
+                Logical interface, frame, or grouping key for the spell.
+            binding_name:
+                Secondary key used to distinguish this spell among others in the same
+                frame.
+            profile (str):
+                Spell profile family to attach after bind completion.
             **kwargs:
-                - pre_hooks (Optional[List[Callable]]): Hooks executed before casting.
-                - activation_hooks (Optional[List[Callable]]): Hooks executed during casting/construction.
-                - post_hooks (Optional[List[Callable]]): Hooks executed after casting/construction.
+                Optional lifecycle hooks and related bind-time metadata.
 
         Returns:
-            str: The unique SHA256 `spell_id` associated with the bound spell.
+            str:
+                The unique SHA256 `spell_id` associated with the bound spell.
 
         Raises:
-            RuntimeError: If the Conduit is cleaned.
-            RuntimeError: If the Conduit is not a 'normal' conduit (only normal conduits can bind spells).
-            RuntimeError: If no binding transaction is active for this Spellbook.
-            RuntimeError: If the spell is already bound in the registry.
-            TypeError: If invalid hook types are provided.
+            RuntimeError:
+                If the conduit is cleaned, is not normal, no binding transaction is
+                active, or the spell collides with an existing registry entry.
+            TypeError:
+                If invalid hook types are provided.
+
         """
         self.check_cleaned()
         if not self._conduit_state == ConduitState.normal:
