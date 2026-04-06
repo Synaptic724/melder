@@ -23,26 +23,22 @@ from melder.aether.dev_ops.change_control_manager.embargo_manager.embargo_manage
 
 class ChangeControlOrchestrator(Cleanable):
     """
-    Serialized admission gate for change-control requests.
+    Serialized admission and lifecycle gate for change-control requests.
 
-    Purpose:
-        Centralize admission decisions under a single lock to prevent race
-        conditions between concurrent mutation requests.
+    This object is the narrow coordination point between:
+    - admission checks
+    - staged mutation state
+    - in-flight transaction bookkeeping
+    - implicit embargo open/release
+    - commit/abort callback ordering
+
     Contract:
-        - Admission is serialized under the orchestrator lock.
-        - Accepted requests are registered as in-flight.
-        - Rejected requests return evidence (conflict/embargo).
-        - Optional commit/abort hooks are invoked outside the lock.
-    Args:
-        None.
-    Returns:
-        None.
-    Raises:
-        None.
-    Threading:
-        Uses an internal RLock to serialize admission/commit/abort paths.
-    Lifecycle:
-        cleanup() is idempotent and nulls internal references.
+    - Admission, commit, and abort sequencing are serialized under the
+      orchestrator lock.
+    - Accepted requests become staged and in-flight before the call returns.
+    - Rejected requests return explicit conflict/embargo evidence.
+    - Validator and commit/abort hooks are snapshotted under lock and run
+      outside it.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -57,14 +53,9 @@ class ChangeControlOrchestrator(Cleanable):
         """
         Initialize the orchestrator.
 
-        Purpose:
-            Allocate the admission lock used for serialized decisions.
         Contract:
-            - No mutable state beyond the lock.
-        Returns:
-            None.
-        Threading:
-            Safe to publish after initialization.
+        - Starts with an empty staged-request registry.
+        - Owns one admission lock and three optional lifecycle hooks.
         """
         super().__init__()
         self._lock: RLock = RLock()
@@ -75,16 +66,12 @@ class ChangeControlOrchestrator(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Idempotent cleanup for the orchestrator.
+        Finalize the orchestrator and clear staged request state.
 
-        Purpose:
-            Mark the orchestrator as cleaned and drop the lock reference.
         Contract:
-            - Safe to call multiple times.
-        Returns:
-            None.
-        Threading:
-            Acquires the internal lock while mutating state.
+        - Idempotent cleanup.
+        - Clears staged request state and drops registered hook references
+          before releasing the lock.
         """
         if self._cleaned:
             return
@@ -105,22 +92,10 @@ class ChangeControlOrchestrator(Cleanable):
             fn: Optional[Callable[[ChangeControlStagedMutation], None]],
     ) -> None:
         """
-        Register a commit validator hook.
+        Register the pre-commit validator hook.
 
-        Purpose:
-            Provide a pre-commit validation hook (e.g., structural phase checks).
-        Contract:
-            - Passing None disables validation.
-            - Hook is invoked outside the orchestrator lock.
-        Args:
-            fn:
-                Callable that validates the staged mutation.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If the orchestrator has been cleaned.
-        Threading:
-            Acquires the internal lock while updating the hook reference.
+        Passing `None` disables the validator. When present, the hook runs
+        before the commit hook during `commit_request()`.
         """
         self.check_cleaned()
         with self._lock:
@@ -131,22 +106,10 @@ class ChangeControlOrchestrator(Cleanable):
             fn: Optional[Callable[[ChangeControlStagedMutation], None]],
     ) -> None:
         """
-        Register a commit hook.
+        Register the commit-side effect hook.
 
-        Purpose:
-            Provide a post-validation hook for commit-time side effects.
-        Contract:
-            - Passing None disables the hook.
-            - Hook is invoked outside the orchestrator lock.
-        Args:
-            fn:
-                Callable invoked before commit finalization.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If the orchestrator has been cleaned.
-        Threading:
-            Acquires the internal lock while updating the hook reference.
+        Passing `None` disables the hook. When present, it runs after the
+        commit validator and before final in-flight/embargo cleanup.
         """
         self.check_cleaned()
         with self._lock:
@@ -157,22 +120,11 @@ class ChangeControlOrchestrator(Cleanable):
             fn: Optional[Callable[[ChangeControlStagedMutation], None]],
     ) -> None:
         """
-        Register an abort hook.
+        Register the abort-side effect hook.
 
-        Purpose:
-            Provide a hook for abort-time cleanup side effects.
-        Contract:
-            - Passing None disables the hook.
-            - Hook is invoked outside the orchestrator lock.
-        Args:
-            fn:
-                Callable invoked before abort finalization.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If the orchestrator has been cleaned.
-        Threading:
-            Acquires the internal lock while updating the hook reference.
+        Passing `None` disables the hook. When present, it runs during
+        `abort_request()` and on commit failure before staged state is cleaned
+        up.
         """
         self.check_cleaned()
         with self._lock:
@@ -180,22 +132,9 @@ class ChangeControlOrchestrator(Cleanable):
 
     def get_staged(self, request_id: str) -> Optional[ChangeControlStagedMutation]:
         """
-        Return a staged mutation record for a request id.
+        Return the staged mutation record for one request id.
 
-        Purpose:
-            Provide access to staged metadata for diagnostics and tests.
-        Contract:
-            - Returns None if no staged record exists.
-        Args:
-            request_id:
-                Request identifier to look up.
-        Returns:
-            Optional[ChangeControlStagedMutation]:
-                Staged record if present.
-        Raises:
-            RuntimeError: If the orchestrator has been cleaned.
-        Threading:
-            Acquires the internal lock while reading state.
+        Returns `None` when no staged record exists for that id.
         """
         self.check_cleaned()
         if not request_id:
@@ -205,19 +144,7 @@ class ChangeControlOrchestrator(Cleanable):
 
     def list_staged(self) -> Tuple[ChangeControlStagedMutation, ...]:
         """
-        Return a snapshot of staged mutation records.
-
-        Purpose:
-            Provide a stable snapshot of staged requests for diagnostics.
-        Contract:
-            - Returns a tuple snapshot (may be empty).
-        Returns:
-            Tuple[ChangeControlStagedMutation, ...]:
-                Snapshot of staged mutation records.
-        Raises:
-            RuntimeError: If the orchestrator has been cleaned.
-        Threading:
-            Acquires the internal lock while copying state.
+        Return a snapshot of all staged mutation records.
         """
         self.check_cleaned()
         with self._lock:
@@ -235,31 +162,13 @@ class ChangeControlOrchestrator(Cleanable):
         """
         Update staged mutation metadata for an admitted request.
 
-        Purpose:
-            Allow callers to refresh staged metadata discovered after admission
-            (e.g., binding keys or contract keys discovered during a transaction).
-        Contract:
-            - Returns False when no staged record exists for the request id.
-            - Updates only the supplied fields; None keeps existing values.
-            - Metadata is merged into the staged record when provided.
-        Args:
-            request_id:
-                Request identifier to update.
-            scope_keys:
-                Optional updated scope keys for the staged mutation.
-            binding_keys:
-                Optional updated binding keys for the staged mutation.
-            contract_keys:
-                Optional updated contract keys for the staged mutation.
-            metadata:
-                Optional metadata to merge into the staged record.
+        This is the staged-state refresh path for metadata discovered after
+        admission. Only supplied fields are updated; `None` means "leave the
+        existing value alone."
+
         Returns:
-            bool:
-                True if the staged record was updated, False otherwise.
-        Raises:
-            RuntimeError: If the orchestrator has been cleaned.
-        Threading:
-            Acquires the admission lock while updating staged metadata.
+            bool: `True` when the staged record existed and was updated,
+            otherwise `False`.
         """
         self.check_cleaned()
         if not request_id:
@@ -291,25 +200,11 @@ class ChangeControlOrchestrator(Cleanable):
             scope_keys: Tuple[str, ...],
     ) -> None:
         """
-        Internal
+        Create or replace the staged mutation record for one admitted request.
 
-        Stage a mutation record for the admitted request.
-
-        Purpose:
-            Capture staged metadata for later commit/abort cleanup.
-        Contract:
-            - Overwrites any existing staged record for the request id.
-        Args:
-            request:
-                Admitted transaction request.
-            scope_keys:
-                Normalized scope keys for staging/embargo checks.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If the orchestrator has been cleaned.
-        Threading:
-            Caller must hold the orchestrator lock.
+        Caller contract:
+        - the orchestrator lock must already be held
+        - staging happens only after admission succeeds
         """
         self.check_cleaned()
         self._staged[request.request_id] = ChangeControlStagedMutation.from_request(
@@ -335,28 +230,15 @@ class ChangeControlOrchestrator(Cleanable):
         """
         Serialize admission and return a decision for the supplied request.
 
-        Purpose:
-            Decide whether a request can proceed based on conflicts/embargoes.
-        Contract:
-            - Admission is serialized under the orchestrator lock.
-            - Successful admission registers the request as in-flight.
-            - Implicit embargo hooks are invoked on admission.
-        Args:
-            request:
-                Transaction request to admit.
-            transaction_manager:
-                In-flight registry manager.
-            conflict_manager:
-                Scope-overlap evaluator.
-            embargo_manager:
-                Embargo registry for gating.
+        This is the serialized admission gate:
+        - detect conflicts against in-flight requests
+        - detect active embargoes against the incoming scope
+        - if clear, register the request as in-flight, apply implicit embargoes,
+          and stage its mutation metadata
+
         Returns:
-            ChangeControlAdmissionResult:
-                Admission decision with evidence for rejection.
-        Raises:
-            RuntimeError: If the orchestrator has been cleaned.
-        Threading:
-            Acquires the admission lock for the entire decision path.
+            ChangeControlAdmissionResult: Admission decision plus any
+            conflict/embargo evidence when rejected.
         """
         self.check_cleaned()
         with self._lock:
@@ -392,25 +274,15 @@ class ChangeControlOrchestrator(Cleanable):
             embargo_manager: ChangeControlEmbargoManager,
     ) -> None:
         """
-        Release implicit embargoes and remove request from in-flight registry.
+        Finalize a successfully executed request.
 
-        Purpose:
-            Finalize a request's admission lifecycle after successful execution.
-        Contract:
-            - No effect if request_id is not in-flight.
-        Args:
-            request_id:
-                Request id to finalize.
-            transaction_manager:
-                In-flight registry manager.
-            embargo_manager:
-                Embargo registry for implicit release.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If the orchestrator has been cleaned.
-        Threading:
-            Acquires the admission lock while finalizing.
+        Commit sequencing:
+        - snapshot staged request + hooks
+        - run validator, then commit hook, outside the lock
+        - if either fails, run abort hook best-effort and still clean up staged,
+          embargo, and in-flight state
+        - otherwise release embargoes and remove the request from staged and
+          in-flight registries
         """
         self.check_cleaned()
         request: Optional[ChangeControlTransactionRequest] = None
@@ -467,25 +339,11 @@ class ChangeControlOrchestrator(Cleanable):
             embargo_manager: ChangeControlEmbargoManager,
     ) -> None:
         """
-        Abort a request (same cleanup as commit for now).
+        Abort an admitted request and release its staged admission state.
 
-        Purpose:
-            Ensure aborted requests release implicit embargoes and in-flight state.
-        Contract:
-            - Uses the same cleanup path as commit for scaffolding.
-        Args:
-            request_id:
-                Request id to abort.
-            transaction_manager:
-                In-flight registry manager.
-            embargo_manager:
-                Embargo registry for implicit release.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If the orchestrator has been cleaned.
-        Threading:
-            Acquires the admission lock while finalizing.
+        The cleanup path mirrors commit in the parts that matter for registry
+        hygiene: staged state, in-flight tracking, and implicit embargoes are
+        all released before the method returns.
         """
         self.check_cleaned()
         request_snapshot: Optional[ChangeControlTransactionRequest] = None

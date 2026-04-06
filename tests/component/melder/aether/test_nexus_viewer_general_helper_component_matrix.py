@@ -116,7 +116,7 @@ def test_component_spell_detail_matrix(
         payload_type=payload_type,
     )
 
-    detail = viewer.execute_tool(
+    detail = viewer.execute_profile_method(
         "describe_spell_detail",
         frame_name="ops",
         spell_source_id="ops-spellbook:ops-spell-1",
@@ -153,7 +153,7 @@ def test_component_conduit_access_matrix(
         payload_type="general",
     )
 
-    explanation = viewer.execute_tool(
+    explanation = viewer.execute_profile_method(
         "explain_conduit_access",
         frame_name="ops",
         conduit_id="ops-conduit-1",
@@ -222,7 +222,7 @@ def test_component_frame_access_matrix(
         frame_rules=frame_rules,
     )
 
-    contract = viewer.execute_tool(
+    contract = viewer.execute_profile_method(
         "describe_frame_access_contract",
         frame_name="ops",
     )
@@ -258,7 +258,7 @@ def test_component_viewer_route_matrix(
         payload_type="detailed",
     )
 
-    result = viewer.execute_tool(tool_name, **kwargs)
+    result = viewer.execute_profile_method(tool_name, **kwargs)
 
     if expected_key is None:
         assert len(result) >= 1

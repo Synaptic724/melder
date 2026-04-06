@@ -101,7 +101,7 @@ def test_integration_nexus_can_project_frame_viewer_after_passive_publish() -> N
         assert isinstance(viewer, FrameViewer)
         assert viewer.metadata["frame_count"] == 1
         assert viewer.list_frame_names() == ["ops"]
-        assert len(viewer.list_links()) >= 3
+        assert len(viewer.execute_profile_method("list_targets")) >= 3
     finally:
         conduit.cleanup()
 
@@ -142,6 +142,6 @@ def test_integration_nexus_can_project_frame_viewer_for_rift_after_passive_publi
         assert viewer.metadata["assigned_frame_names"] == ("ops",)
         assert list(viewer.frame_descriptors_by_name.keys()) == ["ops"]
         assert viewer.frame_descriptors_by_name["ops"].frame_name == "ops"
-        assert len(viewer.list_available_targets()) >= 1
+        assert len(viewer.execute_profile_method("list_targets")) >= 1
     finally:
         conduit.cleanup()

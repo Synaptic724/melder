@@ -14,29 +14,18 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
 
 class ChangeControlTransactionManager(Cleanable):
     """
-    Transaction manager for change-control admission.
+    Transaction bookkeeping and scope-key utility surface for change control.
 
-    Purpose:
-        Track in-flight transaction requests and maintain a link-mirror registry
-        used for diagnostics and future admission expansion.
+    This manager owns three related pieces of state:
+    - in-flight request registry
+    - provider-to-borrower link mirror
+    - optional audit callback for admitted requests
+
     Contract:
-        - In-flight registry is a snapshot of admitted requests.
-        - Link mirror is keyed by provider conduit id and lists borrower conduits.
-        - Admission currently uses explicit scope keys and conduit ids; link
-          mirror data is informational unless promoted by policy.
-        - Audit logging is optional and invoked outside locks to avoid deadlocks.
-    Args:
-        None.
-    Returns:
-        None.
-    Raises:
-        None.
-    Ownership:
-        Owns the in-flight registry, link mirror registry, and audit callback reference.
-    Threading:
-        All state mutations are guarded by an internal RLock.
-    Lifecycle:
-        cleanup() is idempotent and nulls internal references.
+    - In-flight registry reflects admitted requests only.
+    - Link mirror is diagnostic/support state unless future policy promotes it
+      into admission logic.
+    - Audit logging, when configured, runs outside the manager lock.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -50,15 +39,9 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Initialize the transaction manager.
 
-        Purpose:
-            Set up empty registries for in-flight requests and link mirrors.
         Contract:
-            - `_in_flight` and `_link_mirror` start empty.
-            - `_audit_log_fn` starts as None (no-op).
-        Returns:
-            None.
-        Threading:
-            Safe to publish after initialization; internal lock guards state.
+        - `_in_flight` and `_link_mirror` start empty.
+        - `_audit_log_fn` starts disabled (`None`).
         """
         super().__init__()
         self._lock: RLock = RLock()
@@ -69,17 +52,12 @@ class ChangeControlTransactionManager(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Idempotent cleanup for internal registries.
+        Finalize the transaction manager.
 
-        Purpose:
-            Release registries and callback references for GC safety.
         Contract:
-            - Safe to call multiple times.
-            - After cleanup, all public methods raise via check_cleaned().
-        Returns:
-            None.
-        Threading:
-            Acquires the internal lock while mutating state.
+        - Idempotent cleanup.
+        - Clears the in-flight registry, link mirror, and audit callback before
+          dropping the lock reference.
         """
         if self._cleaned:
             return
@@ -105,20 +83,8 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Register a callback to log admitted transaction requests.
 
-        Purpose:
-            Capture minimal audit metadata when a request is admitted.
-        Contract:
-            - Passing None disables audit logging.
-            - Audit callback is stored but invoked outside the lock.
-        Args:
-            fn:
-                Callable that receives the admitted request, or None.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If the manager has been cleaned.
-        Threading:
-            Acquires the internal lock while updating the callback.
+        Passing `None` disables audit logging. The callback is stored under the
+        manager lock but invoked later outside the lock.
         """
         self.check_cleaned()
         with self._lock:
@@ -140,33 +106,22 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Build a new immutable transaction request payload.
 
-        Purpose:
-            Create a normalized request object for admission checks.
-        Contract:
-            - Generates a new request_id and timestamp.
-            - Does not register the request as in-flight.
+        This is a pure payload-construction helper. It normalizes tuples,
+        generates ids/timestamps, and optionally derives scope hashes, but it
+        does not register the request as in-flight.
+
         Args:
-            request_type:
-                Transaction type to record (bind/link/transfer_ownership/etc).
-            initiator_conduit_id:
-                Conduit id that initiated the transaction.
-            spellbook_id:
-                Optional spellbook id associated with the mutation.
-            conduit_ids:
-                Optional conduit ids touched by the mutation.
-            scope_keys:
-                Optional normalized scope keys.
-            scope_hashes:
-                Optional normalized scope hashes.
-            binding_keys:
-                Optional binding keys affected by the mutation.
-            contract_keys:
-                Optional contract keys affected by the mutation.
-            metadata:
-                Optional structured metadata for debugging.
+            request_type: Transaction kind to record.
+            initiator_conduit_id: Conduit id that initiated the transaction.
+            spellbook_id: Optional spellbook id associated with the request.
+            conduit_ids: Optional conduit ids touched by the request.
+            scope_keys: Optional normalized scope keys.
+            scope_hashes: Optional normalized scope hashes.
+            binding_keys: Optional binding keys affected by the request.
+            contract_keys: Optional contract keys affected by the request.
+            metadata: Optional structured metadata for diagnostics.
         Returns:
-            ChangeControlTransactionRequest:
-                Immutable request payload.
+            ChangeControlTransactionRequest: Immutable request payload.
         Raises:
             RuntimeError: If the manager has been cleaned.
             TypeError: If initiator_conduit_id is not a string.
@@ -201,26 +156,10 @@ class ChangeControlTransactionManager(Cleanable):
 
     def _normalize_scope_hashes(self, scope_keys: Iterable[str]) -> Tuple[str, ...]:
         """
-        Internal
+        Derive deterministic SHA256 scope hashes from raw scope keys.
 
-        Normalize scope hashes from supplied scope keys.
-
-        Purpose:
-            Provide deterministic scope hashes for conflict checks when callers
-            supply only scope keys.
-        Contract:
-            - Keys are normalized by sorting and de-duplicating.
-            - Each normalized key is hashed with SHA256.
-        Args:
-            scope_keys:
-                Scope keys to normalize and hash.
-        Returns:
-            Tuple[str, ...]:
-                Deterministic scope hash values.
-        Raises:
-            RuntimeError: If the manager has been cleaned.
-        Threading:
-            Thread-safe without locks; no shared state is mutated.
+        Keys are de-duplicated and sorted first so callers get stable hash
+        tuples regardless of input order.
         """
         self.check_cleaned()
         unique_keys = sorted({key for key in scope_keys if key})
@@ -234,21 +173,8 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Build a normalized spellbook scope key.
 
-        Purpose:
-            Provide a stable key for conflict and embargo checks.
-        Contract:
-            - Returns "scope:spellbook:<id>".
-        Args:
-            spellbook_id:
-                Spellbook identifier to normalize.
         Returns:
-            str:
-                Normalized spellbook scope key.
-        Raises:
-            RuntimeError: If the manager has been cleaned.
-            ValueError: If spellbook_id is empty.
-        Threading:
-            Thread-safe without locks; no shared state is mutated.
+            str: Scope key in the form `"scope:spellbook:<id>"`.
         """
         self.check_cleaned()
         if not spellbook_id:
@@ -259,21 +185,8 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Build a normalized conduit scope key.
 
-        Purpose:
-            Provide a stable key for conflict and embargo checks.
-        Contract:
-            - Returns "scope:conduit:<id>".
-        Args:
-            conduit_id:
-                Conduit identifier to normalize.
         Returns:
-            str:
-                Normalized conduit scope key.
-        Raises:
-            RuntimeError: If the manager has been cleaned.
-            ValueError: If conduit_id is empty.
-        Threading:
-            Thread-safe without locks; no shared state is mutated.
+            str: Scope key in the form `"scope:conduit:<id>"`.
         """
         self.check_cleaned()
         if not conduit_id:
@@ -284,21 +197,8 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Build a normalized cluster scope key.
 
-        Purpose:
-            Provide a stable key for conflict and embargo checks.
-        Contract:
-            - Returns "scope:cluster:<id>".
-        Args:
-            cluster_id:
-                Cluster identifier to normalize.
         Returns:
-            str:
-                Normalized cluster scope key.
-        Raises:
-            RuntimeError: If the manager has been cleaned.
-            ValueError: If cluster_id is empty.
-        Threading:
-            Thread-safe without locks; no shared state is mutated.
+            str: Scope key in the form `"scope:cluster:<id>"`.
         """
         self.check_cleaned()
         if not cluster_id:
@@ -309,23 +209,8 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Build a normalized binding scope key.
 
-        Purpose:
-            Provide a stable key for frame/binding conflict checks.
-        Contract:
-            - Returns "binding:<frame_key>:<binding_key>".
-        Args:
-            frame_key:
-                Normalized frame key.
-            binding_key:
-                Normalized binding key.
         Returns:
-            str:
-                Normalized binding scope key.
-        Raises:
-            RuntimeError: If the manager has been cleaned.
-            ValueError: If frame_key or binding_key is empty.
-        Threading:
-            Thread-safe without locks; no shared state is mutated.
+            str: Scope key in the form `"binding:<frame_key>:<binding_key>"`.
         """
         self.check_cleaned()
         if not frame_key or not binding_key:
@@ -341,25 +226,9 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Build a normalized contract scope key.
 
-        Purpose:
-            Provide a stable key for borrower/provider contract checks.
-        Contract:
-            - Returns "contract:<frame_key>:<binding_key>:<peer_conduit_id>".
-        Args:
-            frame_key:
-                Normalized frame key.
-            binding_key:
-                Normalized binding key.
-            peer_conduit_id:
-                Peer conduit identifier involved in the contract.
         Returns:
-            str:
-                Normalized contract scope key.
-        Raises:
-            RuntimeError: If the manager has been cleaned.
-            ValueError: If any identifier is empty.
-        Threading:
-            Thread-safe without locks; no shared state is mutated.
+            str: Scope key in the form
+            `"contract:<frame_key>:<binding_key>:<peer_conduit_id>"`.
         """
         self.check_cleaned()
         if not frame_key or not binding_key or not peer_conduit_id:
@@ -370,20 +239,9 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Track a request as in-flight and emit audit log if configured.
 
-        Purpose:
-            Register the request in the in-flight registry after admission.
-        Contract:
-            - Audit callback is invoked without holding the lock.
-            - The request replaces any existing entry with the same id.
-        Args:
-            request:
-                Request to track.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If the manager has been cleaned.
-        Threading:
-            Acquires the internal lock to update in-flight state.
+        The request replaces any older entry with the same id. If an audit
+        callback is configured, it is invoked after the registry update and
+        outside the lock.
         """
         self.check_cleaned()
         audit_fn: Optional[Callable[[ChangeControlTransactionRequest], None]] = None
@@ -397,19 +255,8 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Remove a request from the in-flight registry.
 
-        Purpose:
-            Clear the in-flight record once a request is committed or aborted.
-        Contract:
-            - No error if the request id is absent.
-        Args:
-            request_id:
-                Identifier of the request to remove.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If the manager has been cleaned.
-        Threading:
-            Acquires the internal lock to update registry state.
+        Missing request ids are ignored so commit/abort cleanup can safely call
+        this method without pre-checking for presence.
         """
         self.check_cleaned()
         with self._lock:
@@ -420,17 +267,9 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Return a snapshot list of in-flight requests.
 
-        Purpose:
-            Provide a stable view of currently admitted requests.
-        Contract:
-            - Returns a new list snapshot.
         Returns:
-            List[ChangeControlTransactionRequest]:
-                Snapshot of in-flight requests.
-        Raises:
-            RuntimeError: If the manager has been cleaned.
-        Threading:
-            Acquires the internal lock while copying.
+            List[ChangeControlTransactionRequest]: New list snapshot of the
+            current in-flight registry.
         """
         self.check_cleaned()
         with self._lock:
@@ -440,20 +279,9 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Return an in-flight request by id, if present.
 
-        Purpose:
-            Allow callers to fetch the request payload for a known id.
-        Contract:
-            - Returns None when the request is not in-flight.
-        Args:
-            request_id:
-                Identifier to look up.
         Returns:
-            Optional[ChangeControlTransactionRequest]:
-                The request payload if present.
-        Raises:
-            RuntimeError: If the manager has been cleaned.
-        Threading:
-            Acquires the internal lock for the lookup.
+            Optional[ChangeControlTransactionRequest]: The tracked request, or
+            `None` when the id is not currently in flight.
         """
         self.check_cleaned()
         with self._lock:
@@ -464,22 +292,9 @@ class ChangeControlTransactionManager(Cleanable):
         Track an active link (borrower -> provider) for diagnostics or future
         admission policy checks.
 
-        Purpose:
-            Update the link mirror registry to reflect a new contract link.
-        Contract:
-            - The provider key maps to a set of borrower conduit ids.
-        Args:
-            borrower_conduit_id:
-                Conduit that borrows from the provider.
-            provider_conduit_id:
-                Conduit providing contracted spells.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If the manager has been cleaned.
-            ValueError: If borrower or provider ids are empty.
-        Threading:
-            Acquires the internal lock while updating the mirror.
+        The link mirror is keyed by provider conduit id and stores borrower ids
+        in a set, so repeated registration of the same borrower/provider pair is
+        naturally deduplicated.
         """
         self.check_cleaned()
         if not borrower_conduit_id or not provider_conduit_id:
@@ -491,22 +306,8 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Remove a tracked link (borrower -> provider).
 
-        Purpose:
-            Update the link mirror registry to reflect a link removal.
-        Contract:
-            - If the provider has no remaining borrowers, its entry is removed.
-        Args:
-            borrower_conduit_id:
-                Borrower conduit id to remove.
-            provider_conduit_id:
-                Provider conduit id to update.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If the manager has been cleaned.
-            ValueError: If borrower or provider ids are empty.
-        Threading:
-            Acquires the internal lock while updating the mirror.
+        If a provider no longer has any tracked borrowers after removal, its
+        mirror entry is removed entirely.
         """
         self.check_cleaned()
         if not borrower_conduit_id or not provider_conduit_id:
@@ -523,20 +324,9 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Return the current borrower set for a provider conduit.
 
-        Purpose:
-            Provide a safe snapshot of borrower ids for a given provider.
-        Contract:
-            - Returns a new set; callers cannot mutate internal state.
-        Args:
-            provider_conduit_id:
-                Provider conduit id to query.
         Returns:
-            Set[str]:
-                Snapshot of borrower conduit ids.
-        Raises:
-            RuntimeError: If the manager has been cleaned.
-        Threading:
-            Acquires the internal lock while copying.
+            Set[str]: New set snapshot of borrower conduit ids currently
+            mirrored under the provider.
         """
         self.check_cleaned()
         if not provider_conduit_id:
@@ -548,17 +338,9 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Diagnostic snapshot for transaction manager state.
 
-        Purpose:
-            Provide a concise view of current in-flight and link mirror state.
-        Contract:
-            - Returns snapshots only; no internal state is exposed for mutation.
         Returns:
-            Dict[str, Any]:
-                Diagnostic metadata for tooling.
-        Raises:
-            RuntimeError: If the manager has been cleaned.
-        Threading:
-            Acquires the internal lock while copying.
+            Dict[str, Any]: Snapshot metadata for current in-flight request
+            count and the provider-to-borrower mirror.
         """
         self.check_cleaned()
         with self._lock:

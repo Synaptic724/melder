@@ -236,12 +236,12 @@ def test_component_compiled_surface_flows_directly_into_frame_viewer_projection(
         default_view_frame_name="ops",
     )
 
-    frame_summary = viewer.execute_tool("describe_frame", frame_name="ops")
+    frame_summary = viewer.describe_frame("ops")
 
     assert frame_summary["frame_name"] == "ops"
     assert frame_summary["conduit_record_count"] == 1
     assert frame_summary["spell_record_count"] == 1
-    assert len(viewer.list_available_targets()) == 3
+    assert len(viewer.execute_profile_method("list_targets")) == 3
 
 
 def test_component_rollback_restores_original_compiled_command_surface() -> None:

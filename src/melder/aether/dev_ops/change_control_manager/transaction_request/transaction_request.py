@@ -7,25 +7,13 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class ChangeTransactionType(str, Enum):
     """
-    Change-control transaction types.
+    Stable transaction kinds for change-control admission and tracking.
 
-    Purpose:
-        Enumerate the supported mutation transaction kinds used by the
-        change-control admission system.
     Contract:
-        - Values must remain stable because they become part of transaction
-          request payloads and logs.
-        - No "scan" or "embargo" transaction types are modeled here.
-    Args:
-        None.
-    Returns:
-        None.
-    Raises:
-        None.
-    Threading:
-        Stateless; safe to share across threads.
-    Lifecycle:
-        No cleanup required.
+    - Values must remain stable because they are persisted in request payloads,
+      staged mutation records, and diagnostic output.
+    - The enum models mutation/change-control operations only; standalone scan
+      or embargo concepts are not transaction kinds here.
     """
     __melder_internal__ = _mrg.sentinel
     BIND = "bind"
@@ -38,46 +26,16 @@ class ChangeTransactionType(str, Enum):
 @dataclass(frozen=True)
 class ChangeControlTransactionRequest:
     """
-    Immutable transaction request payload for admission and tracking.
+    Immutable request payload used for admission and in-flight tracking.
 
-    Purpose:
-        Provide a stable, immutable record of a mutation request so admission,
-        conflict, and embargo checks can be performed deterministically.
+    This is the canonical input record passed through conflict, embargo, and
+    transaction-manager admission paths.
+
     Contract:
-        - Instances are immutable.
-        - `request_id` and `initiator_conduit_id` must be non-empty strings.
-        - Scope keys and hashes must be normalized by the caller.
-    Args:
-        request_id:
-            Unique identifier for the request.
-        request_type:
-            Change-control transaction type.
-        created_at:
-            Unix timestamp (seconds) when the request was created.
-        initiator_conduit_id:
-            Conduit id initiating the request.
-        spellbook_id:
-            Optional spellbook id associated with the request.
-        conduit_ids:
-            Conduit ids participating in the request.
-        scope_keys:
-            Normalized scope keys derived by the caller.
-        scope_hashes:
-            Normalized scope hashes derived by the caller.
-        binding_keys:
-            Binding keys affected by the request.
-        contract_keys:
-            Contract keys affected by the request.
-        metadata:
-            Caller-supplied metadata for diagnostics.
-    Returns:
-        None.
-    Raises:
-        None.
-    Threading:
-        Safe to share across threads because instances are immutable.
-    Lifecycle:
-        Immutable; no cleanup required.
+    - Instances are immutable and safe to share across threads.
+    - `request_id` and `initiator_conduit_id` are expected to be non-empty.
+    - Scope keys and hashes are expected to be normalized by the caller before
+      construction.
     """
     __melder_internal__ = _mrg.sentinel
     request_id: str
@@ -96,30 +54,12 @@ class ChangeControlTransactionRequest:
 @dataclass(frozen=True)
 class ChangeControlAdmissionResult:
     """
-    Admission decision for a change-control transaction request.
+    Immutable admission decision returned by change-control gating.
 
-    Purpose:
-        Capture admission outcomes and conflict/embargo evidence for callers.
     Contract:
-        - `admitted=True` implies the request was accepted for execution.
-        - `conflicts` and `embargoes` contain identifiers explaining rejection.
-    Args:
-        admitted:
-            True if the request was accepted for execution.
-        reasons:
-            Short reason codes explaining a rejection, if any.
-        conflicts:
-            Conflicting request ids, if any.
-        embargoes:
-            Embargoed scope keys, if any.
-    Returns:
-        None.
-    Raises:
-        None.
-    Threading:
-        Safe to share across threads because instances are immutable.
-    Lifecycle:
-        Immutable; no cleanup required.
+    - `admitted=True` means the request was accepted for execution.
+    - `reasons`, `conflicts`, and `embargoes` provide rejection evidence when
+      admission fails.
     """
     __melder_internal__ = _mrg.sentinel
     admitted: bool

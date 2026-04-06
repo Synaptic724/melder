@@ -5,6 +5,16 @@ from melder.aether.dev_ops.spell_system_states.spell_system_state import SpellSy
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
 from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import SpellStateChangeReason
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
+from melder.spellbook.bind.spell_index import SpellIndex
+from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
+from melder.spellbook.spell_crafter.system.system_diagnostic import (
+    SystemDiagnostic,
+    SystemDiagnosticSeverity,
+)
+from melder.spellbook.spell_crafter.topology.spell_local_topology import (
+    SpellLocalTopology,
+    SpellSocketDescriptor,
+)
 from melder.utilities.interfaces.interfaces import ISpellIndex, ISpell
 
 # ----------------------------------------------------------------------
@@ -29,6 +39,60 @@ def mock_spell_index():
 @pytest.fixture
 def mock_spell():
     return MagicMock(spec=ISpell)
+
+
+def _build_owned_spell(spellbook_id: str = "book-1") -> ISpell:
+    """
+    Create a spell double whose `_spellbook` carries a concrete owner id.
+
+    Contract:
+    - `SpellSystemStates._resolve_spellbook_id(...)` can read `_spellbook._id`.
+    - The returned mock still behaves like an `ISpell` boundary object.
+    """
+    spell = MagicMock(spec=ISpell)
+    spell._spellbook = MagicMock()
+    spell._spellbook._id = spellbook_id
+    return spell
+
+
+def _build_topology(
+    spell_id: str,
+    *,
+    collection_frame_key: str = "frame-a",
+    contract_key: tuple[str, str] = ("iface", "primary"),
+) -> SpellLocalTopology:
+    """
+    Build a local topology with one collection socket and one contract socket.
+
+    Contract:
+    - The NORMAL collection socket populates the collection index.
+    - The SPELL_CONTRACT socket populates the contract index.
+    """
+    return SpellLocalTopology(
+        spell_id=spell_id,
+        sockets=(
+            SpellSocketDescriptor(
+                spell_id=spell_id,
+                param_name="collection_dep",
+                position=0,
+                socket_kind=SocketKind.NORMAL,
+                is_collection=True,
+                is_optional=False,
+                target_spell_ids=("dep-1",),
+                dependency_key=(collection_frame_key, "__default__"),
+            ),
+            SpellSocketDescriptor(
+                spell_id=spell_id,
+                param_name="contract_dep",
+                position=1,
+                socket_kind=SocketKind.SPELL_CONTRACT,
+                is_collection=False,
+                is_optional=False,
+                target_spell_ids=(),
+                contract_key=contract_key,
+            ),
+        ),
+    )
 
 # ----------------------------------------------------------------------
 # 1. Initialization
@@ -277,3 +341,687 @@ def test_iter_states(states_manager, mock_spell_index, mock_spell):
     states = states_manager.iter_states()
     assert len(states) == 1
     assert states[0].spell_index_id == "idx-1"
+
+
+# ----------------------------------------------------------------------
+# 7. Per-Conduit Resolution State Wrappers
+# ----------------------------------------------------------------------
+
+def test_conduit_resolution_wrappers_track_state_and_cleanup(
+    states_manager: SpellSystemStates,
+) -> None:
+    """
+    Verify conduit-resolution wrappers expose the real resolution-state contract.
+
+    Contract:
+    - Per-conduit state is created once and reused.
+    - Spell/root validity updates, diagnostics, and dirty-state clearing flow
+      through the wrapper methods.
+    - Dropping the conduit state cleans the owned state object.
+    """
+    risk_manager = MagicMock()
+    states_manager.set_risk_manager(risk_manager)
+
+    assert states_manager.get_conduit_resolution_state("conduit-1") is None
+
+    state = states_manager.get_or_create_conduit_resolution_state("conduit-1")
+    other_state = states_manager.get_or_create_conduit_resolution_state("conduit-2")
+
+    states_manager.set_conduit_spell_validity(
+        "conduit-1",
+        "spell-1",
+        SpellValidity.valid,
+        change_reason=SpellStateChangeReason.dependencies_changed,
+    )
+    states_manager.bulk_set_conduit_spell_validity(
+        "conduit-1",
+        {"spell-2": SpellValidity.gated},
+        change_reason=SpellStateChangeReason.structure_changed,
+    )
+    states_manager.set_conduit_root_validity(
+        "conduit-1",
+        "root-1",
+        SpellValidity.gated,
+        change_reason=SpellStateChangeReason.structure_changed,
+    )
+    states_manager.bulk_set_conduit_root_validity(
+        "conduit-1",
+        {"root-2": SpellValidity.valid},
+        change_reason=SpellStateChangeReason.dependencies_changed,
+    )
+
+    diagnostic = SystemDiagnostic(
+        code="D-1",
+        message="broken root",
+        severity=SystemDiagnosticSeverity.WARNING,
+        root_id="root-1",
+        source="unit-test",
+    )
+    states_manager.record_conduit_diagnostics("conduit-1", [diagnostic])
+
+    snapshot = list(states_manager.iter_conduit_resolution_states())
+    assert state in snapshot
+    assert other_state in snapshot
+    assert state.get_spell_validity("spell-1") is SpellValidity.valid
+    assert state.get_spell_validity("spell-2") is SpellValidity.gated
+    assert state.get_root_validity("root-1") is SpellValidity.gated
+    assert state.get_root_validity("root-2") is SpellValidity.valid
+    diagnostics = state.list_diagnostics()
+    assert len(diagnostics) == 1
+    assert diagnostics[0].code == "D-1"
+    assert diagnostics[0] is not diagnostic
+    assert state.has_warnings() is True
+
+    states_manager.clear_conduit_diagnostics("conduit-1")
+    assert state.list_diagnostics() == []
+
+    states_manager.mark_conduit_dirty(
+        "conduit-1",
+        change_reason=SpellStateChangeReason.dependencies_changed,
+    )
+    assert state.is_dirty() is True
+    states_manager.clear_conduit_dirty("conduit-1", 123.0)
+    assert state.is_dirty() is False
+    assert state.last_validated_at() == 123.0
+
+    calls = risk_manager.on_resolution_validity_change.call_args_list
+    assert call("conduit-1", "spell-1", SpellValidity.valid) in calls
+    assert call("conduit-1", "spell-2", SpellValidity.gated) in calls
+    assert call("conduit-1", "root-1", SpellValidity.gated) in calls
+    assert call("conduit-1", "root-2", SpellValidity.valid) in calls
+
+    states_manager.drop_conduit_resolution_state("conduit-1")
+    assert states_manager.get_conduit_resolution_state("conduit-1") is None
+    assert state.cleaned is True
+    assert list(states_manager.iter_conduit_resolution_states()) == [other_state]
+
+
+def test_conduit_resolution_state_guards_invalid_ids_and_cleaned_manager(
+    states_manager: SpellSystemStates,
+) -> None:
+    """
+    Verify conduit-resolution state helpers fail fast on invalid access.
+
+    Contract:
+    - Empty conduit ids do not create state.
+    - A cleaned manager rejects state creation through its public API.
+    """
+    assert states_manager.get_conduit_resolution_state("") is None
+
+    with pytest.raises(ValueError):
+        states_manager.get_or_create_conduit_resolution_state("")
+
+    states_manager.cleanup()
+
+    with pytest.raises(RuntimeError):
+        states_manager.get_or_create_conduit_resolution_state("conduit-1")
+
+
+# ----------------------------------------------------------------------
+# 8. Topology Indexing and Dirty Propagation
+# ----------------------------------------------------------------------
+
+def test_register_local_topology_builds_collection_and_contract_indexes(
+    states_manager: SpellSystemStates,
+) -> None:
+    """
+    Verify local-topology registration feeds both dependency invalidation paths.
+
+    Contract:
+    - Registering a topology stores it by current spell id.
+    - Collection frame keys and contract keys are indexed under the owning
+      spellbook.
+    - Dirty-mark helpers gate the indexed lineage with the expected reasons.
+    """
+    spell = _build_owned_spell("book-1")
+    index = SpellIndex("spell-topology-1")
+    states_manager.register_lineage(index, spell)
+    states_manager.consume_dirty_lineages()
+
+    topology = _build_topology(index.current)
+    states_manager.register_local_topology(index, topology)
+
+    assert states_manager.get_local_topology(index) is topology
+    assert states_manager.get_local_topology_by_id(index.current) is topology
+
+    impacted = states_manager.mark_collection_dependents_dirty(
+        spellbook_id="book-1",
+        frame_keys=["frame-a"],
+    )
+    assert impacted == {index.id}
+    state = states_manager.get_by_index_id(index.id)
+    assert state is not None
+    assert state.change_reason is SpellStateChangeReason.dependencies_changed
+    assert index.id in states_manager.consume_dirty_lineages()
+
+    state.clear_dirty(last_validated_at=1.0)
+    states_manager.consume_dirty_lineages()
+
+    impacted = states_manager.mark_contract_dependents_dirty(
+        spellbook_id="book-1",
+        contract_keys=[("iface", "primary")],
+    )
+    assert impacted == {index.id}
+    assert state.validity is SpellValidity.gated
+    assert state.change_reason is SpellStateChangeReason.contract_unvalidated
+    assert SpellState.contract_unvalidated in state.flags
+    assert index.id in states_manager.consume_dirty_lineages()
+
+
+def test_register_local_topology_replaces_stale_collection_and_contract_keys(
+    states_manager: SpellSystemStates,
+) -> None:
+    """
+    Verify replacing a topology removes stale index entries.
+
+    Contract:
+    - Re-registering the same lineage replaces collection and contract keys.
+    - Dirty propagation only follows the currently registered keys.
+    """
+    spell = _build_owned_spell("book-1")
+    index = SpellIndex("spell-topology-replace")
+    states_manager.register_lineage(index, spell)
+    states_manager.consume_dirty_lineages()
+
+    topology_a = _build_topology(
+        index.current,
+        collection_frame_key="frame-a",
+        contract_key=("iface", "primary"),
+    )
+    topology_b = _build_topology(
+        index.current,
+        collection_frame_key="frame-b",
+        contract_key=("iface", "secondary"),
+    )
+
+    states_manager.register_local_topology(index, topology_a)
+    states_manager.register_local_topology(index, topology_b)
+
+    assert states_manager.mark_collection_dependents_dirty(
+        spellbook_id="book-1",
+        frame_keys=["frame-a"],
+    ) == set()
+    assert states_manager.mark_contract_dependents_dirty(
+        spellbook_id="book-1",
+        contract_keys=[("iface", "primary")],
+    ) == set()
+
+    impacted_collection = states_manager.mark_collection_dependents_dirty(
+        spellbook_id="book-1",
+        frame_keys=["frame-b"],
+    )
+    impacted_contract = states_manager.mark_contract_dependents_dirty(
+        spellbook_id="book-1",
+        contract_keys=[("iface", "secondary")],
+    )
+
+    assert impacted_collection == {index.id}
+    assert impacted_contract == {index.id}
+
+
+def test_mark_contract_dependents_dirty_marks_all_keys_when_unspecified(
+    states_manager: SpellSystemStates,
+) -> None:
+    """
+    Verify contract invalidation without explicit keys fans out across the book.
+
+    Contract:
+    - Passing `contract_keys=None` marks all contract-indexed lineages in the
+      owning spellbook dirty.
+    """
+    spell = _build_owned_spell("book-1")
+    first_index = SpellIndex("spell-contract-a")
+    second_index = SpellIndex("spell-contract-b")
+
+    states_manager.register_lineage(first_index, spell)
+    states_manager.register_lineage(second_index, spell)
+    states_manager.consume_dirty_lineages()
+
+    first_topology = _build_topology(
+        first_index.current,
+        collection_frame_key="frame-a",
+        contract_key=("iface", "alpha"),
+    )
+    second_topology = _build_topology(
+        second_index.current,
+        collection_frame_key="frame-b",
+        contract_key=("iface", "beta"),
+    )
+
+    states_manager.register_local_topology(first_index, first_topology)
+    states_manager.register_local_topology(second_index, second_topology)
+
+    impacted = states_manager.mark_contract_dependents_dirty(spellbook_id="book-1")
+
+    assert impacted == {first_index.id, second_index.id}
+    dirty = set(states_manager.consume_dirty_lineages())
+    assert dirty == {first_index.id, second_index.id}
+
+
+def test_cleanup_cascades_to_resolution_states_topologies_and_indexes(
+    states_manager: SpellSystemStates,
+) -> None:
+    """
+    Verify cleanup tears down all owned control-plane children and indexes.
+
+    Contract:
+    - Cleanup propagates to stored topology and conduit-resolution children.
+    - Registry/index structures are nulled after teardown.
+    - Cleanup remains safe for later fail-fast access.
+    """
+    spell = _build_owned_spell("book-cleanup")
+    index = SpellIndex("spell-cleanup")
+    states_manager.register_lineage(index, spell)
+    topology = _build_topology(index.current)
+    states_manager.register_local_topology(index, topology)
+
+    states_manager.set_conduit_spell_validity(
+        "conduit-cleanup",
+        "spell-cleanup",
+        SpellValidity.valid,
+    )
+    conduit_state = states_manager.get_conduit_resolution_state("conduit-cleanup")
+    assert conduit_state is not None
+
+    states_manager.cleanup()
+
+    assert topology.cleaned is True
+    assert conduit_state.cleaned is True
+    assert states_manager._local_topologies is None
+    assert states_manager._resolution_by_conduit_id is None
+    assert states_manager._collection_dependents_by_spellbook is None
+    assert states_manager._collection_frames_by_lineage is None
+    assert states_manager._contract_dependents_by_spellbook is None
+    assert states_manager._contract_keys_by_lineage is None
+    assert states_manager._lineage_owner_spellbook_id is None
+    assert states_manager._risk_manager is None
+
+
+def test_register_lineage_owner_change_rebuilds_topology_indexes_under_new_book(
+    states_manager: SpellSystemStates,
+) -> None:
+    """
+    Verify owner changes remove stale topology indexes before re-registration.
+
+    Contract:
+    - Rebinding a lineage to a different Spellbook removes stale old-book
+      collection and contract entries.
+    - Re-registering topology under the new owner restores dirty propagation.
+    """
+    first_spell = _build_owned_spell("book-a")
+    second_spell = _build_owned_spell("book-b")
+    index = SpellIndex("spell-owner-change")
+
+    states_manager.register_lineage(index, first_spell)
+    topology = _build_topology(index.current)
+    states_manager.register_local_topology(index, topology)
+    states_manager.consume_dirty_lineages()
+
+    states_manager.register_lineage(index, second_spell)
+
+    assert states_manager.mark_collection_dependents_dirty(
+        spellbook_id="book-a",
+        frame_keys=["frame-a"],
+    ) == set()
+    assert states_manager.mark_contract_dependents_dirty(
+        spellbook_id="book-a",
+        contract_keys=[("iface", "primary")],
+    ) == set()
+
+    states_manager.register_local_topology(index, topology)
+
+    assert states_manager.mark_collection_dependents_dirty(
+        spellbook_id="book-b",
+        frame_keys=["frame-a"],
+    ) == {index.id}
+    states_manager.consume_dirty_lineages()
+    assert states_manager.mark_contract_dependents_dirty(
+        spellbook_id="book-b",
+        contract_keys=[("iface", "primary")],
+    ) == {index.id}
+
+
+def test_update_dependencies_creates_missing_lineage_state_on_first_use(
+    states_manager: SpellSystemStates,
+) -> None:
+    """
+    Verify dependency wiring can create a lineage state before registration.
+
+    Contract:
+    - update_dependencies creates the missing SpellSystemState on first use.
+    - Reverse dependency edges are still wired for known dependencies.
+    """
+    root_index = SpellIndex("spell-late-root")
+    dependency_index = SpellIndex("spell-late-dependency")
+
+    states_manager.register_lineage(dependency_index, _build_owned_spell("book-1"))
+    states_manager.consume_dirty_lineages()
+
+    states_manager.update_dependencies(root_index, [dependency_index.current])
+
+    root_state = states_manager.get_by_index_id(root_index.id)
+    dependency_state = states_manager.get_by_index_id(dependency_index.id)
+    assert root_state is not None
+    assert dependency_state is not None
+    assert root_state.current_spell_id == root_index.current
+    assert dependency_index.current in root_state.direct_dependencies
+    assert root_index.id in dependency_state.direct_dependents
+    assert root_index.id in states_manager.consume_dirty_lineages()
+
+
+def test_mark_structural_change_creates_missing_lineage_state_on_first_use(
+    states_manager: SpellSystemStates,
+) -> None:
+    """
+    Verify structural invalidation can seed an unseen lineage.
+
+    Contract:
+    - mark_structural_change creates a missing state for the target lineage.
+    - The seeded state is gated with the requested change reason.
+    """
+    index = SpellIndex("spell-structural-seed")
+
+    states_manager.mark_structural_change(index)
+
+    state = states_manager.get_by_index_id(index.id)
+    assert state is not None
+    assert state.current_spell_id == index.current
+    assert state.validity is SpellValidity.gated
+    assert state.change_reason is SpellStateChangeReason.structure_changed
+    assert SpellState.structure_changed in state.flags
+    assert index.id in states_manager.consume_dirty_lineages()
+
+
+def test_set_risk_manager_propagates_to_existing_resolution_states(
+    states_manager: SpellSystemStates,
+) -> None:
+    """
+    Verify set_risk_manager updates states that already exist.
+
+    Contract:
+    - Existing conduit-resolution states receive the new risk manager.
+    - Later validity changes still emit resolution-change callbacks.
+    """
+    states_manager.get_or_create_conduit_resolution_state("conduit-existing")
+    risk_manager = MagicMock()
+
+    states_manager.set_risk_manager(risk_manager)
+    states_manager.set_conduit_spell_validity(
+        "conduit-existing",
+        "spell-risk",
+        SpellValidity.valid,
+    )
+
+    risk_manager.on_resolution_validity_change.assert_called_once_with(
+        "conduit-existing",
+        "spell-risk",
+        SpellValidity.valid,
+    )
+
+
+def test_unregister_lineage_removes_topology_indexes_and_reverse_edges(
+    states_manager: SpellSystemStates,
+) -> None:
+    """
+    Verify unregister_lineage detaches all owned topology and dependency state.
+
+    Contract:
+    - Local topology and spell-id indexes are removed with the lineage.
+    - Collection/contract indexes no longer route dirtying for the removed
+      lineage.
+    - Reverse dependency edges are detached from remaining dependency states.
+    """
+    spell = _build_owned_spell("book-remove")
+    root_index = SpellIndex("spell-remove-root")
+    dependency_index = SpellIndex("spell-remove-dependency")
+
+    states_manager.register_lineage(dependency_index, _build_owned_spell("book-remove"))
+    states_manager.register_lineage(root_index, spell)
+    states_manager.register_local_topology(root_index, _build_topology(root_index.current))
+    states_manager.update_dependencies(root_index, [dependency_index.current])
+    states_manager.consume_dirty_lineages()
+
+    removed_state = states_manager.unregister_lineage(root_index)
+
+    dependency_state = states_manager.get_by_index_id(dependency_index.id)
+    assert removed_state is not None
+    assert removed_state.cleaned is True
+    assert states_manager.get_by_index_id(root_index.id) is None
+    assert states_manager.get_by_spell_id(root_index.current) is None
+    assert states_manager.get_local_topology_by_id(root_index.current) is None
+    assert dependency_state is not None
+    assert root_index.id not in dependency_state.direct_dependents
+    assert states_manager.mark_collection_dependents_dirty(
+        spellbook_id="book-remove",
+        frame_keys=["frame-a"],
+    ) == set()
+    assert states_manager.mark_contract_dependents_dirty(
+        spellbook_id="book-remove",
+        contract_keys=[("iface", "primary")],
+    ) == set()
+
+
+def test_register_local_topology_ignores_irrelevant_socket_shapes(
+    states_manager: SpellSystemStates,
+) -> None:
+    """
+    Verify topology indexing only tracks collection NORMAL and SPELL_CONTRACT sockets.
+
+    Contract:
+    - Non-collection NORMAL sockets do not enter the collection index.
+    - Collection sockets without dependency keys are ignored.
+    - MUTATION_CONTRACT sockets do not enter the SpellContract index.
+    """
+    spell = _build_owned_spell("book-filter")
+    index = SpellIndex("spell-filter")
+    states_manager.register_lineage(index, spell)
+    states_manager.consume_dirty_lineages()
+
+    topology = SpellLocalTopology(
+        spell_id=index.current,
+        sockets=(
+            SpellSocketDescriptor(
+                spell_id=index.current,
+                param_name="plain_dep",
+                position=0,
+                socket_kind=SocketKind.NORMAL,
+                is_collection=False,
+                is_optional=False,
+                target_spell_ids=("dep-a",),
+                dependency_key=("ignored-frame", "__default__"),
+            ),
+            SpellSocketDescriptor(
+                spell_id=index.current,
+                param_name="collection_without_key",
+                position=1,
+                socket_kind=SocketKind.NORMAL,
+                is_collection=True,
+                is_optional=False,
+                target_spell_ids=("dep-b",),
+                dependency_key=None,
+            ),
+            SpellSocketDescriptor(
+                spell_id=index.current,
+                param_name="mutation_contract",
+                position=2,
+                socket_kind=SocketKind.MUTATION_CONTRACT,
+                is_collection=False,
+                is_optional=False,
+                target_spell_ids=(),
+                contract_key=("iface", "mutation"),
+            ),
+            SpellSocketDescriptor(
+                spell_id=index.current,
+                param_name="valid_collection",
+                position=3,
+                socket_kind=SocketKind.NORMAL,
+                is_collection=True,
+                is_optional=False,
+                target_spell_ids=("dep-c",),
+                dependency_key=("frame-valid", "__default__"),
+            ),
+            SpellSocketDescriptor(
+                spell_id=index.current,
+                param_name="valid_contract",
+                position=4,
+                socket_kind=SocketKind.SPELL_CONTRACT,
+                is_collection=False,
+                is_optional=False,
+                target_spell_ids=(),
+                contract_key=("iface", "valid"),
+            ),
+        ),
+    )
+
+    states_manager.register_local_topology(index, topology)
+
+    assert states_manager.mark_collection_dependents_dirty(
+        spellbook_id="book-filter",
+        frame_keys=["ignored-frame"],
+    ) == set()
+    assert states_manager.mark_collection_dependents_dirty(
+        spellbook_id="book-filter",
+        frame_keys=["frame-valid"],
+    ) == {index.id}
+    states_manager.consume_dirty_lineages()
+    assert states_manager.mark_contract_dependents_dirty(
+        spellbook_id="book-filter",
+        contract_keys=[("iface", "mutation")],
+    ) == set()
+    assert states_manager.mark_contract_dependents_dirty(
+        spellbook_id="book-filter",
+        contract_keys=[("iface", "valid")],
+    ) == {index.id}
+
+
+def test_cleanup_tolerates_child_cleanup_failures(
+    states_manager: SpellSystemStates,
+) -> None:
+    """
+    Verify cleanup remains best-effort when child cleanup hooks fail.
+
+    Contract:
+    - Failing topology or conduit-resolution cleanup does not abort manager
+      teardown.
+    - Index structures are still cleared and nulled.
+    """
+    states_manager._local_topologies["spell-fail"] = MagicMock(
+        cleanup=MagicMock(side_effect=RuntimeError("topology cleanup failed"))
+    )
+    states_manager._resolution_by_conduit_id["conduit-fail"] = MagicMock(
+        cleanup=MagicMock(side_effect=RuntimeError("resolution cleanup failed"))
+    )
+
+    states_manager.cleanup()
+
+    assert states_manager._local_topologies is None
+    assert states_manager._resolution_by_conduit_id is None
+    assert states_manager._states_by_index_id is None
+    assert states_manager._dirty_lineages is None
+
+
+def test_lookup_and_topology_helpers_validate_public_inputs(
+    states_manager: SpellSystemStates,
+) -> None:
+    """
+    Verify public lookup and topology helpers enforce their input contracts.
+
+    Contract:
+    - Empty lookup ids return no state.
+    - Topology registration and lookup reject missing required identifiers.
+    """
+    topology = _build_topology("spell-input-check")
+    index = SpellIndex("spell-input-check")
+
+    assert states_manager.get_by_index_id("") is None
+    assert states_manager.get_by_spell_id("") is None
+    assert states_manager.get_local_topology_by_id("spell-missing") is None
+
+    with pytest.raises(ValueError):
+        states_manager.update_dependencies(None, [])
+
+    with pytest.raises(ValueError):
+        states_manager.mark_structural_change(None)
+
+    with pytest.raises(ValueError):
+        states_manager.register_local_topology(None, topology)
+
+    with pytest.raises(ValueError):
+        states_manager.register_local_topology(index, None)
+
+    with pytest.raises(ValueError):
+        states_manager.get_local_topology(None)
+
+    with pytest.raises(ValueError):
+        states_manager.get_local_topology_by_id("")
+
+
+def test_dirty_helpers_noop_for_empty_scope_or_missing_indexes(
+    states_manager: SpellSystemStates,
+) -> None:
+    """
+    Verify dirty helpers stay side-effect free when scope inputs are empty.
+
+    Contract:
+    - Missing spellbook ids, empty frame keys, and unknown books return empty
+      impacted sets.
+    - Contract invalidation behaves the same when scope is absent.
+    """
+    assert states_manager.mark_collection_dependents_dirty(
+        spellbook_id="",
+        frame_keys=["frame-a"],
+    ) == set()
+    assert states_manager.mark_collection_dependents_dirty(
+        spellbook_id="book-missing",
+        frame_keys=[],
+    ) == set()
+    assert states_manager.mark_collection_dependents_dirty(
+        spellbook_id="book-missing",
+        frame_keys=["frame-a"],
+    ) == set()
+
+    assert states_manager.mark_contract_dependents_dirty(
+        spellbook_id="",
+        contract_keys=[("iface", "primary")],
+    ) == set()
+    assert states_manager.mark_contract_dependents_dirty(
+        spellbook_id="book-missing",
+        contract_keys=[("iface", "primary")],
+    ) == set()
+
+
+def test_conduit_resolution_noop_helpers_ignore_missing_state(
+    states_manager: SpellSystemStates,
+) -> None:
+    """
+    Verify missing conduit-resolution entries stay non-throwing for noop helpers.
+
+    Contract:
+    - Clearing diagnostics, clearing dirty, and dropping state are safe when
+      the conduit is unknown.
+    """
+    states_manager.clear_conduit_diagnostics("conduit-missing")
+    states_manager.clear_conduit_dirty("conduit-missing", 11.0)
+    states_manager.drop_conduit_resolution_state("conduit-missing")
+    states_manager.drop_conduit_resolution_state("")
+
+    assert list(states_manager.iter_conduit_resolution_states()) == []
+
+
+def test_unregister_lineage_missing_state_clears_stale_spell_id_mapping(
+    states_manager: SpellSystemStates,
+) -> None:
+    """
+    Verify unregister_lineage clears a stale spell-id index even without state.
+
+    Contract:
+    - A missing lineage returns None.
+    - A stale current spell-id entry is still removed.
+    """
+    index = SpellIndex("spell-stale")
+    states_manager._states_by_spell_id[index.current] = MagicMock()
+
+    removed_state = states_manager.unregister_lineage(index)
+
+    assert removed_state is None
+    assert states_manager.get_by_spell_id(index.current) is None

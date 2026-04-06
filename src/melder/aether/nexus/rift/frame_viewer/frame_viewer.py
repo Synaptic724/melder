@@ -11,7 +11,6 @@ from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
 )
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
-from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
 from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile import (
     FrameViewerProfile,
 )
@@ -41,7 +40,6 @@ class FrameViewer(Cleanable):
     """
 
     __melder_internal__ = _mrg.sentinel
-    _DEFAULT_KIND_ORDER: Tuple[str, ...] = ("frame", "conduit", "spell")
     __slots__ = Cleanable.__slots__ + [
         "_viewer_id",
         "_lock",
@@ -501,126 +499,6 @@ class FrameViewer(Cleanable):
             for current_frame_name in self.list_frame_names()
         }
 
-    def list_links(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> List[FrameLink]:
-        self.check_cleaned()
-        if frame_name is not None:
-            return self._build_links_for_frame(frame_name)
-        ordered_links: List[FrameLink] = []
-        for current_frame_name in self.list_frame_names():
-            ordered_links.extend(self._build_links_for_frame(current_frame_name))
-        return ordered_links
-
-    def list_links_by_kind(
-            self,
-            source_kind: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> List[FrameLink]:
-        self.check_cleaned()
-        if not source_kind:
-            raise ValueError("source_kind cannot be empty.")
-        return [
-            link
-            for link in self.list_links(frame_name=frame_name)
-            if link.source_kind == source_kind
-        ]
-
-    def list_links_grouped_by_frame(self) -> Dict[str, List[FrameLink]]:
-        self.check_cleaned()
-        return {
-            frame_name: self._build_links_for_frame(frame_name)
-            for frame_name in self.list_frame_names()
-        }
-
-    def list_links_grouped_by_kind(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> Dict[str, List[FrameLink]]:
-        self.check_cleaned()
-        grouped_links: Dict[str, List[FrameLink]] = {}
-        for frame_link in self.list_links(frame_name=frame_name):
-            grouped_links.setdefault(frame_link.source_kind, []).append(frame_link)
-        return {
-            source_kind: grouped_links[source_kind]
-            for source_kind in sorted(grouped_links.keys())
-        }
-
-    def list_display_names(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-            source_kind: Optional[str] = None,
-    ) -> List[str]:
-        self.check_cleaned()
-        if source_kind is None:
-            return [
-                frame_link.display_name
-                for frame_link in self.list_links(frame_name=frame_name)
-            ]
-        return [
-            frame_link.display_name
-            for frame_link in self.list_links_by_kind(
-                source_kind,
-                frame_name=frame_name,
-            )
-        ]
-
-    def count_links(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-            source_kind: Optional[str] = None,
-    ) -> int:
-        self.check_cleaned()
-        if source_kind is None:
-            return len(self.list_links(frame_name=frame_name))
-        return len(
-            self.list_links_by_kind(
-                source_kind,
-                frame_name=frame_name,
-            )
-        )
-
-    def list_available_targets(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-            profile_name: Optional[str] = None,
-            source_kind: Optional[str] = None,
-    ) -> List[FrameLink]:
-        self.check_cleaned()
-        selected_frame_name = frame_name or self._get_required_default_frame_name()
-        selected_profile = self._resolve_profile(profile_name, selected_frame_name)
-        available_targets = self.list_links(frame_name=selected_frame_name)
-        if source_kind is not None:
-            if not source_kind:
-                raise ValueError("source_kind cannot be empty.")
-            available_targets = [
-                frame_link
-                for frame_link in available_targets
-                if frame_link.source_kind == source_kind
-            ]
-        ordered_targets: List[FrameLink] = []
-        handled_target_ids = set()
-        for preferred_kind in self._kind_order_for_profile(selected_profile):
-            for frame_link in available_targets:
-                if frame_link.link_id in handled_target_ids:
-                    continue
-                if frame_link.source_kind != preferred_kind:
-                    continue
-                ordered_targets.append(frame_link)
-                handled_target_ids.add(frame_link.link_id)
-        for frame_link in available_targets:
-            if frame_link.link_id in handled_target_ids:
-                continue
-            ordered_targets.append(frame_link)
-        return ordered_targets
-
     def list_view_profile_names(self) -> List[str]:
         self.check_cleaned()
         return self.list_active_profile_names()
@@ -645,56 +523,6 @@ class FrameViewer(Cleanable):
         """
         target_frame_name = frame_name or self._get_required_default_frame_name()
         self.set_selected_profile_for_frame(target_frame_name, profile_name)
-
-    def describe_available_targets(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-            profile_name: Optional[str] = None,
-            source_kind: Optional[str] = None,
-    ) -> List[Dict[str, object]]:
-        self.check_cleaned()
-        selected_frame_name = frame_name or self._get_required_default_frame_name()
-        selected_profile = self._resolve_profile(profile_name, selected_frame_name)
-        target_descriptions: List[Dict[str, object]] = []
-        for frame_link in self.list_available_targets(
-                frame_name=frame_name,
-                profile_name=profile_name,
-                source_kind=source_kind,
-        ):
-            description = {
-                "target_id": frame_link.link_id,
-                "source_kind": frame_link.source_kind,
-                "source_id": frame_link.source_id,
-                "display_name": frame_link.display_name,
-            }
-            if selected_profile.default_detail_level == "detailed":
-                description["metadata"] = frame_link.metadata
-            target_descriptions.append(description)
-        return target_descriptions
-
-    def get_required_link_by_source(
-            self,
-            *,
-            frame_name: str,
-            source_kind: str,
-            source_id: str,
-    ) -> FrameLink:
-        self.check_cleaned()
-        if not source_kind:
-            raise ValueError("source_kind cannot be empty.")
-        if not source_id:
-            raise ValueError("source_id cannot be empty.")
-        for frame_link in self.list_links(frame_name=frame_name):
-            if frame_link.source_kind == source_kind and frame_link.source_id == source_id:
-                return frame_link
-        raise ValueError(
-            "FrameLink '{0}:{1}' was not found in frame '{2}'.".format(
-                source_kind,
-                source_id,
-                frame_name,
-            )
-        )
 
     def clone(self) -> "FrameViewer":
         self.check_cleaned()
@@ -850,16 +678,49 @@ class FrameViewer(Cleanable):
             helper_name
         )
 
-    def execute_tool(
+    def execute_profile_method(
             self,
-            tool_name: str,
+            method_name: str,
             *,
             profile_name: Optional[str] = None,
             **kwargs,
     ) -> Any:
+        """
+        Execute one selected-profile method for the target frame context.
+
+        Purpose:
+            Provide one narrow dispatch seam for profile-owned method surfaces
+            without re-exposing ACL/payload methods directly on the
+            `FrameViewer` host.
+
+        Contract:
+            - Resolves the selected bound profile for the requested frame.
+            - Looks up the exposed profile method name on that profile.
+            - Allows the profile mapping to target either bound helper methods
+              or simple host descriptor methods on `FrameViewer`.
+            - Raises when the requested profile method is not exposed or when
+              the mapped handler cannot be resolved.
+
+        Args:
+            method_name:
+                Exposed profile method name to execute.
+            profile_name:
+                Optional explicit profile name override.
+            **kwargs:
+                Arguments forwarded to the resolved handler.
+
+        Returns:
+            Any: Handler return value.
+
+        Raises:
+            ValueError:
+                Raised when `method_name` is empty, no active profiles exist,
+                the requested profile method is not exposed, or the mapped
+                handler cannot be resolved.
+        """
         self.check_cleaned()
-        if not tool_name:
-            raise ValueError("tool_name cannot be empty.")
+        if not method_name:
+            raise ValueError("method_name cannot be empty.")
         if len(self._active_profiles_by_name) == 0:
             raise ValueError("FrameViewer has no active profiles.")
         selected_frame_name = kwargs.get("frame_name") or self._default_view_frame_name
@@ -867,7 +728,7 @@ class FrameViewer(Cleanable):
             profile_name,
             selected_frame_name,
         )
-        handler_name = selected_profile.get_required_tool_handler_name(tool_name)
+        handler_name = selected_profile.get_required_tool_handler_name(method_name)
         handler = self._resolve_tool_handler(
             selected_profile,
             handler_name,
@@ -875,8 +736,8 @@ class FrameViewer(Cleanable):
         )
         if handler is None or not callable(handler):
             raise ValueError(
-                "FrameViewer tool '{0}' targets missing handler '{1}'.".format(
-                    tool_name,
+                "FrameViewer profile method '{0}' targets missing handler '{1}'.".format(
+                    method_name,
                     handler_name,
                 )
             )
@@ -1011,123 +872,6 @@ class FrameViewer(Cleanable):
                     frame_name
                 )
             ) from exc
-
-    def _build_links_for_frame(self, frame_name: str) -> List[FrameLink]:
-        descriptor = self._get_required_frame_descriptor(frame_name)
-        compiled_access_surface = self._get_required_compiled_access_surface(
-            frame_name
-        )
-        links: List[FrameLink] = []
-        frame_overview = descriptor.frame_overview
-        if "frame" in compiled_access_surface.allowed_kinds:
-            if frame_overview is None:
-                raise ValueError(
-                    "FrameDescriptor must expose frame_overview for frame links."
-                )
-            links.append(
-                FrameLink.from_view_subject(
-                    frame_name=frame_name,
-                    source_kind="frame",
-                    source_id=frame_overview.frame_id,
-                    display_name=frame_overview.frame_name,
-                    metadata={
-                        "payload_fields": tuple(
-                            compiled_access_surface.frame_payload_fields
-                        ),
-                        "frame_id": frame_overview.frame_id,
-                        "nexus_label": frame_overview.nexus_label,
-                        "nexus_version": frame_overview.nexus_version,
-                        "config_origin_spellbook_id": (
-                            frame_overview.config_origin_spellbook_id
-                        ),
-                        "payload_version": frame_overview.payload.payload_version,
-                    },
-                )
-            )
-        conduit_records_by_id = descriptor.conduit_records_by_id
-        conduit_sections_by_id = (
-            compiled_access_surface.conduit_payload_sections_by_id
-        )
-        if "conduit" in compiled_access_surface.allowed_kinds:
-            for conduit_id in sorted(compiled_access_surface.visible_conduit_ids):
-                try:
-                    conduit_record = conduit_records_by_id[conduit_id]
-                except KeyError as exc:
-                    raise ValueError(
-                        "Missing ConduitRecord for compiled conduit id '{0}'.".format(
-                            conduit_id
-                        )
-                    ) from exc
-                links.append(
-                    FrameLink.from_view_subject(
-                        frame_name=frame_name,
-                        source_kind="conduit",
-                        source_id=conduit_id,
-                        display_name=conduit_record.payload.conduit_name or conduit_id,
-                        metadata={
-                            "payload_sections": conduit_sections_by_id.get(
-                                conduit_id,
-                                tuple(),
-                            ),
-                            "nexus_label": conduit_record.nexus_label,
-                            "nexus_version": conduit_record.nexus_version,
-                            "root_conduit_id": conduit_record.root_conduit_id,
-                            "origin_spellbook_id": conduit_record.origin_spellbook_id,
-                            "payload_version": conduit_record.payload.payload_version,
-                        },
-                    )
-                )
-        spell_records_by_key = descriptor.spell_records_by_key
-        spell_sections_by_key = compiled_access_surface.spell_payload_sections_by_key
-        if "spell" in compiled_access_surface.allowed_kinds:
-            for record_key in sorted(compiled_access_surface.visible_spell_keys):
-                try:
-                    spell_record = spell_records_by_key[record_key]
-                except KeyError as exc:
-                    raise ValueError(
-                        "Missing SpellRecord for compiled spell key '{0}'.".format(
-                            record_key
-                        )
-                    ) from exc
-                links.append(
-                    FrameLink.from_view_subject(
-                        frame_name=frame_name,
-                        source_kind="spell",
-                        source_id="{0}:{1}".format(record_key[0], record_key[1]),
-                        display_name=(
-                            spell_record.binding_name
-                            or spell_record.spell_name
-                            or spell_record.spell_id
-                        ),
-                        metadata={
-                            "record_key": record_key,
-                            "spell_id": spell_record.spell_id,
-                            "lineage_id": spell_record.lineage_id,
-                            "owner_conduit_id": spell_record.owner_conduit_id,
-                            "payload_sections": spell_sections_by_key.get(
-                                record_key,
-                                tuple(),
-                            ),
-                            "nexus_label": spell_record.nexus_label,
-                            "nexus_version": spell_record.nexus_version,
-                            "payload_type": spell_record.payload.payload_type,
-                            "payload_version": spell_record.payload.payload_version,
-                            "source_profile_name": (
-                                spell_record.payload.source_profile_name
-                            ),
-                            "source_profile_version": (
-                                spell_record.payload.source_profile_version
-                            ),
-                        },
-                    )
-                )
-        return links
-
-    def _kind_order_for_profile(
-            self,
-            profile: FrameViewerProfile,
-    ) -> Tuple[str, ...]:
-        return self._DEFAULT_KIND_ORDER
 
     def _create_bound_profile_for_frame(
             self,
