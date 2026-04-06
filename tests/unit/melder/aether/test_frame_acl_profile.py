@@ -119,12 +119,10 @@ def test_view_and_codegen_profiles_create_named_default_catalog() -> None:
 
     assert view_profile.name == "safe"
     assert view_profile.version == "0.0.1"
-    assert view_profile.required_frame_payload_profile_name == "frame"
-    assert view_profile.required_frame_payload_profile_version == "0.0.1"
-    assert view_profile.required_conduit_payload_profile_name == "conduit"
-    assert view_profile.required_conduit_payload_profile_version == "0.0.1"
-    assert view_profile.minimum_spell_payload_profile_name == "general"
-    assert view_profile.minimum_spell_payload_profile_version == "0.0.1"
+    assert view_profile.required_nexus_label == "default"
+    assert view_profile.required_nexus_version == "0.0.1"
+    assert view_profile.minimum_spell_payload_type == "general"
+    assert view_profile.minimum_spell_payload_version == "0.0.1"
     assert view_profile.frame_ruleset.list_rule_names() == [
         "frame_visible",
         "frame_show_payload",
@@ -200,7 +198,7 @@ def test_frame_acl_profile_builder_registers_custom_profiles_and_blocks_default_
     builder = FrameACLProfileBuilder()
     support_view = FrameACLViewProfile(
         "support_view",
-        minimum_spell_payload_profile_name="detailed",
+        minimum_spell_payload_type="detailed",
     )
     support_codegen = FrameACLCodegenProfile("support_codegen")
 
@@ -327,3 +325,4 @@ def test_frame_acl_manager_profile_replace_and_remove_cleanup_old_profiles() -> 
     assert manager._remove_frame_acl_profile("support") is False
     with pytest.raises(KeyError, match="support"):
         manager._get_required_frame_acl_profile("support")
+

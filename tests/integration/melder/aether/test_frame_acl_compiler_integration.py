@@ -89,7 +89,7 @@ def _build_typed_json_payload(
             "view_configuration": {
                 "profile_name": view_profile_name,
                 "profile_version": "0.0.1",
-                "minimum_spell_payload_profile_name": "detailed",
+                "minimum_spell_payload_type": "detailed",
                 "frame_override_ruleset": {
                     "name": "frame_override_{0}".format(marker),
                     "rules": [],
@@ -252,3 +252,4 @@ def test_integration_runtime_compiled_surface_projects_directly_into_frame_viewe
         assert "frame" in {link.source_kind for link in viewer.list_links()}
     finally:
         conduit.cleanup()
+

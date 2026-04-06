@@ -76,7 +76,7 @@ def _build_descriptor(frame_name: str) -> FrameDescriptor:
             permissions=Permissions.create,
             existence=Existence.unique,
             payload=SpellDescriptorPayload(
-                profile_name="general",
+                payload_type="general",
                 binding_payload={"kind": "class"},
                 resolution_payload={"requirements": []},
                 class_profile=None,

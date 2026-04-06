@@ -41,7 +41,7 @@ def _build_descriptor(
         *,
         frame_payload_version: str = "0.0.1",
         conduit_payload_version: str = "0.0.1",
-        spell_payload_name: str = "detailed",
+        spell_payload_type: str = "detailed",
         spell_payload_version: str = "0.0.1",
 ) -> FrameDescriptor:
     """
@@ -52,8 +52,8 @@ def _build_descriptor(
             Frame payload contract version.
         conduit_payload_version:
             Conduit payload contract version.
-        spell_payload_name:
-            Spell payload profile family.
+        spell_payload_type:
+            Spell payload detail type.
         spell_payload_version:
             Spell payload contract version.
 
@@ -77,7 +77,7 @@ def _build_descriptor(
                 conduit_cloud_names=("root",),
                 cluster_count=0,
                 cluster_names=tuple(),
-                profile_version=frame_payload_version,
+                payload_version=frame_payload_version,
             ),
         )
     )
@@ -92,7 +92,7 @@ def _build_descriptor(
                 conduit_state=ConduitState.normal,
                 policy=Policies.default,
                 peer_conduit_ids=tuple(),
-                profile_version=conduit_payload_version,
+                payload_version=conduit_payload_version,
             ),
         )
     )
@@ -109,8 +109,8 @@ def _build_descriptor(
             permissions=Permissions.create,
             existence=Existence.unique,
             payload=SpellDescriptorPayload(
-                profile_name=spell_payload_name,
-                profile_version=spell_payload_version,
+                payload_type=spell_payload_type,
+                payload_version=spell_payload_version,
                 binding_payload={"kind": "class"},
                 resolution_payload={"requirements": []},
                 class_profile=None,
@@ -218,12 +218,12 @@ def test_frame_acl_validator_rejects_unsupported_spell_payload_floor() -> None:
         FrameACLViewConfiguration(
             profile_name="custom",
             profile_version="0.0.1",
-            minimum_spell_payload_profile_name="unknown_floor",
+            minimum_spell_payload_type="unknown_floor",
         )
     )
     configuration.finalize()
 
-    with pytest.raises(ValueError, match="Unsupported minimum_spell_payload_profile_name"):
+    with pytest.raises(ValueError, match="Unsupported minimum_spell_payload_type"):
         validator.validate_configuration(configuration)
 
 
@@ -260,7 +260,7 @@ def test_frame_acl_validator_rejects_frame_payload_contract_mismatch() -> None:
 
     with pytest.raises(
             ValueError,
-            match="Descriptor frame payload contract 'frame:9.9.9' does not match required ACL contract 'frame:0.0.1' for frame 'ops'",
+            match="Unsupported frame descriptor payload version '9.9.9'",
     ):
         validator.validate_configuration_against_descriptor(
             configuration,
@@ -284,20 +284,18 @@ def test_frame_acl_validator_rejects_spell_payload_contract_below_floor() -> Non
         FrameACLViewConfiguration(
             profile_name="custom",
             profile_version="0.0.1",
-            required_frame_payload_profile_name="frame",
-            required_frame_payload_profile_version="0.0.1",
-            required_conduit_payload_profile_name="conduit",
-            required_conduit_payload_profile_version="0.0.1",
-            minimum_spell_payload_profile_name="detailed",
-            minimum_spell_payload_profile_version="0.0.1",
+            required_nexus_label="default",
+            required_nexus_version="0.0.1",
+            minimum_spell_payload_type="detailed",
+            minimum_spell_payload_version="0.0.1",
         )
     )
     configuration.finalize()
-    descriptor = _build_descriptor(spell_payload_name="general")
+    descriptor = _build_descriptor(spell_payload_type="general")
 
     with pytest.raises(
             ValueError,
-            match="Descriptor spell payload profile 'general:0.0.1' does not satisfy minimum ACL spell payload contract 'detailed:0.0.1' for frame 'ops'",
+            match="Descriptor spell payload type 'general:0.0.1' does not satisfy minimum ACL spell payload contract 'detailed:0.0.1' for frame 'ops'",
     ):
         validator.validate_configuration_against_descriptor(
             configuration,
@@ -352,7 +350,7 @@ def test_frame_acl_validator_rejects_wrong_operation_family() -> None:
         FrameACLViewConfiguration(
             profile_name="custom",
             profile_version="0.0.1",
-            minimum_spell_payload_profile_name="detailed",
+            minimum_spell_payload_type="detailed",
             frame_override_ruleset=bad_ruleset,
         )
     )
@@ -388,7 +386,7 @@ def test_frame_acl_validator_rejects_member_rule_without_pattern_or_name() -> No
         FrameACLViewConfiguration(
             profile_name="custom",
             profile_version="0.0.1",
-            minimum_spell_payload_profile_name="detailed",
+            minimum_spell_payload_type="detailed",
             member_override_ruleset=bad_member_ruleset,
         )
     )
@@ -464,3 +462,4 @@ def test_frame_acl_validator_flags_unsafe_safe_codegen_widening() -> None:
 
     with pytest.raises(ValueError, match="Safe profile cannot allow 'dynamic_access' in safe codegen capability ruleset"):
         validator.validate_configuration(configuration)
+

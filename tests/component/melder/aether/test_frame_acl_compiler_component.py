@@ -137,7 +137,7 @@ def test_component_compiler_uses_registered_custom_profile_pair() -> None:
     manager._register_view_acl_profile(
         FrameACLViewProfile(
             "frame_only",
-            minimum_spell_payload_profile_name="detailed",
+            minimum_spell_payload_type="detailed",
             frame_ruleset=FrameACLRuleSet(
                 "frame_only_frame",
                 rules=[
@@ -280,3 +280,4 @@ def test_component_rollback_restores_original_compiled_command_surface() -> None
 
     assert "write_attribute" not in rolled_back_surface.allowed_commands
     assert "write_attribute" in inserted_surface.allowed_commands
+

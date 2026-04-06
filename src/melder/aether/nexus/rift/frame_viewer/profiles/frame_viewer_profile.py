@@ -31,6 +31,8 @@ class FrameViewerProfile(Cleanable):
         "_profile_id",
         "_name",
         "_version",
+        "_required_nexus_label",
+        "_required_nexus_version",
         "_required_acl_view_profile_name",
         "_required_acl_view_profile_version",
         "_tool_handler_names_by_name",
@@ -47,6 +49,8 @@ class FrameViewerProfile(Cleanable):
             name: str,
             *,
             version: str = "0.0.1",
+            required_nexus_label: Optional[str] = None,
+            required_nexus_version: Optional[str] = None,
             required_acl_view_profile_name: Optional[str] = None,
             required_acl_view_profile_version: Optional[str] = None,
             enabled_helpers: Optional[Sequence[str]] = None,
@@ -62,6 +66,10 @@ class FrameViewerProfile(Cleanable):
                 Stable profile name.
             version:
                 Profile version string.
+            required_nexus_label:
+                Optional required Nexus dataset label for frame binding.
+            required_nexus_version:
+                Optional required Nexus dataset version for frame binding.
             required_acl_view_profile_name:
                 Optional required ACL view profile name for frame binding.
             required_acl_view_profile_version:
@@ -90,6 +98,13 @@ class FrameViewerProfile(Cleanable):
         if not default_detail_level:
             raise ValueError("default_detail_level cannot be empty.")
         if (
+                required_nexus_version is not None
+                and required_nexus_label is None
+        ):
+            raise ValueError(
+                "required_nexus_version requires required_nexus_label."
+            )
+        if (
                 required_acl_view_profile_version is not None
                 and required_acl_view_profile_name is None
         ):
@@ -103,6 +118,8 @@ class FrameViewerProfile(Cleanable):
         self._profile_id: str = IDBuilder.create_id()
         self._name: str = name
         self._version: str = version
+        self._required_nexus_label: Optional[str] = required_nexus_label
+        self._required_nexus_version: Optional[str] = required_nexus_version
         self._required_acl_view_profile_name: Optional[str] = (
             required_acl_view_profile_name
         )
@@ -162,6 +179,8 @@ class FrameViewerProfile(Cleanable):
         """
         return cls(
             "general",
+            required_nexus_label="default",
+            required_nexus_version="0.0.1",
             tool_handler_names_by_name={
                 "list_frames": "list_frame_names",
                 "describe_views": "describe_available_views",
@@ -184,6 +203,8 @@ class FrameViewerProfile(Cleanable):
         """
         return cls(
             "navigation",
+            required_nexus_label="default",
+            required_nexus_version="0.0.1",
             tool_handler_names_by_name={
                 "list_frames": "list_frame_names",
                 "describe_views": "describe_available_views",
@@ -206,6 +227,8 @@ class FrameViewerProfile(Cleanable):
         """
         return cls(
             "inspection",
+            required_nexus_label="default",
+            required_nexus_version="0.0.1",
             tool_handler_names_by_name={
                 "describe_views": "describe_available_views",
                 "describe_targets": "describe_available_targets",
@@ -237,6 +260,28 @@ class FrameViewerProfile(Cleanable):
         """
         self.check_cleaned()
         return self._required_acl_view_profile_name
+
+    @property
+    def required_nexus_label(self) -> Optional[str]:
+        """
+        Return the optional Nexus dataset label required by this profile.
+
+        Returns:
+            Optional[str]: Required Nexus dataset label when constrained.
+        """
+        self.check_cleaned()
+        return self._required_nexus_label
+
+    @property
+    def required_nexus_version(self) -> Optional[str]:
+        """
+        Return the optional Nexus dataset version required by this profile.
+
+        Returns:
+            Optional[str]: Required Nexus dataset version when constrained.
+        """
+        self.check_cleaned()
+        return self._required_nexus_version
 
     @property
     def required_acl_view_profile_version(self) -> Optional[str]:
@@ -457,6 +502,19 @@ class FrameViewerProfile(Cleanable):
                     frame_acl_configuration.configuration_id,
                 )
             )
+        required_nexus_label = (
+            self._required_nexus_label
+            or frame_acl_configuration.view_configuration.required_nexus_label
+        )
+        required_nexus_version = (
+            self._required_nexus_version
+            or frame_acl_configuration.view_configuration.required_nexus_version
+        )
+        self._assert_descriptor_records_match_nexus_contract(
+            frame_descriptor=frame_descriptor,
+            required_nexus_label=required_nexus_label,
+            required_nexus_version=required_nexus_version,
+        )
         bound_view_configuration = frame_acl_configuration.view_configuration
         if (
                 compiled_access_surface.view_profile_name
@@ -541,6 +599,8 @@ class FrameViewerProfile(Cleanable):
         return FrameViewerProfile(
             self._name,
             version=self._version,
+            required_nexus_label=self._required_nexus_label,
+            required_nexus_version=self._required_nexus_version,
             required_acl_view_profile_name=self._required_acl_view_profile_name,
             required_acl_view_profile_version=self._required_acl_view_profile_version,
             tool_handler_names_by_name=self._tool_handler_names_by_name,
@@ -562,6 +622,8 @@ class FrameViewerProfile(Cleanable):
         self._tool_handler_names_by_name = None
         self._default_grouping = None
         self._default_detail_level = None
+        self._required_nexus_label = None
+        self._required_nexus_version = None
         self._required_acl_view_profile_name = None
         self._required_acl_view_profile_version = None
         self._bound_frame_name = None
@@ -571,3 +633,103 @@ class FrameViewerProfile(Cleanable):
         self._version = None
         self._name = None
         self._profile_id = None
+
+    @staticmethod
+    def _assert_descriptor_records_match_nexus_contract(
+            *,
+            frame_descriptor: FrameDescriptor,
+            required_nexus_label: str,
+            required_nexus_version: str,
+    ) -> None:
+        """
+        Validate that all bound descriptor records match one Nexus contract.
+
+        Args:
+            frame_descriptor:
+                Descriptor whose records should be inspected.
+            required_nexus_label:
+                Required record/event Nexus label.
+            required_nexus_version:
+                Required record/event Nexus version.
+
+        Returns:
+            None.
+        """
+        frame_overview = frame_descriptor.frame_overview
+        if frame_overview is None:
+            raise ValueError(
+                "FrameDescriptor for frame '{0}' has no frame_overview for Nexus contract validation.".format(
+                    frame_descriptor.frame_name
+                )
+            )
+        FrameViewerProfile._assert_record_nexus_contract(
+            record_label="frame record",
+            actual_nexus_label=frame_overview.nexus_label,
+            actual_nexus_version=frame_overview.nexus_version,
+            required_nexus_label=required_nexus_label,
+            required_nexus_version=required_nexus_version,
+            frame_name=frame_descriptor.frame_name,
+        )
+        for conduit_record in frame_descriptor.conduit_records_by_id.values():
+            FrameViewerProfile._assert_record_nexus_contract(
+                record_label="conduit record",
+                actual_nexus_label=conduit_record.nexus_label,
+                actual_nexus_version=conduit_record.nexus_version,
+                required_nexus_label=required_nexus_label,
+                required_nexus_version=required_nexus_version,
+                frame_name=frame_descriptor.frame_name,
+            )
+        for spell_record in frame_descriptor.spell_records_by_key.values():
+            FrameViewerProfile._assert_record_nexus_contract(
+                record_label="spell record",
+                actual_nexus_label=spell_record.nexus_label,
+                actual_nexus_version=spell_record.nexus_version,
+                required_nexus_label=required_nexus_label,
+                required_nexus_version=required_nexus_version,
+                frame_name=frame_descriptor.frame_name,
+            )
+
+    @staticmethod
+    def _assert_record_nexus_contract(
+            *,
+            record_label: str,
+            actual_nexus_label: str,
+            actual_nexus_version: str,
+            required_nexus_label: str,
+            required_nexus_version: str,
+            frame_name: str,
+    ) -> None:
+        """
+        Fail when one bound record does not match the required Nexus contract.
+
+        Args:
+            record_label:
+                Human-readable record label.
+            actual_nexus_label:
+                Actual bound record Nexus label.
+            actual_nexus_version:
+                Actual bound record Nexus version.
+            required_nexus_label:
+                Required Nexus label.
+            required_nexus_version:
+                Required Nexus version.
+            frame_name:
+                Owning frame name.
+
+        Returns:
+            None.
+        """
+        if (
+                actual_nexus_label != required_nexus_label
+                or actual_nexus_version != required_nexus_version
+        ):
+            raise ValueError(
+                "FrameViewerProfile bound {0} Nexus contract '{1}:{2}' does not match required '{3}:{4}' for frame '{5}'.".format(
+                    record_label,
+                    actual_nexus_label,
+                    actual_nexus_version,
+                    required_nexus_label,
+                    required_nexus_version,
+                    frame_name,
+                )
+            )

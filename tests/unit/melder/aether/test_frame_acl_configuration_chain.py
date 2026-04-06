@@ -75,7 +75,7 @@ def _build_typed_json_payload(
             "view_configuration": {
                 "profile_name": "safe",
                 "profile_version": "0.0.1",
-                "minimum_spell_payload_profile_name": "detailed",
+                "minimum_spell_payload_type": "detailed",
                 "frame_override_ruleset": {
                     "name": frame_override_name,
                     "rules": [],
@@ -415,3 +415,4 @@ def test_chain_list_limit_and_cleanup_work() -> None:
     assert chain.cleaned is True
     assert chain._lock is None
     assert chain._configurations_by_id is None
+

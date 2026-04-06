@@ -38,17 +38,14 @@ class FrameACLValidator(Cleanable):
         "_frame_name",
         "_last_validated_configuration_id",
     ]
-    _SUPPORTED_FRAME_PAYLOAD_CONTRACTS: Set[Tuple[str, str]] = {
-        ("frame", "0.0.1"),
+    _SUPPORTED_NEXUS_RECORD_CONTRACTS: Set[Tuple[str, str]] = {
+        ("default", "0.0.1"),
     }
-    _SUPPORTED_CONDUIT_PAYLOAD_CONTRACTS: Set[Tuple[str, str]] = {
-        ("conduit", "0.0.1"),
-    }
-    _SUPPORTED_SPELL_PAYLOAD_PROFILE_ORDER: Dict[str, int] = {
+    _SUPPORTED_SPELL_PAYLOAD_TYPE_ORDER: Dict[str, int] = {
         "general": 0,
         "detailed": 1,
     }
-    _SUPPORTED_SPELL_PAYLOAD_PROFILE_VERSIONS: Set[str] = {
+    _SUPPORTED_SPELL_PAYLOAD_VERSIONS: Set[str] = {
         "0.0.1",
     }
     _VIEW_ALLOWED_OPERATIONS_BY_RULESET: Dict[str, Set[str]] = {
@@ -269,7 +266,7 @@ class FrameACLValidator(Cleanable):
                     self._frame_name,
                 )
             )
-        self._validate_descriptor_payload_contracts(
+        self._validate_descriptor_record_contracts(
             frame_descriptor,
             configuration.view_configuration,
         )
@@ -294,41 +291,31 @@ class FrameACLValidator(Cleanable):
                 "view_configuration must be a FrameACLViewConfiguration."
             )
         if (
-                view_configuration.required_frame_payload_profile_name,
-                view_configuration.required_frame_payload_profile_version,
-        ) not in self._SUPPORTED_FRAME_PAYLOAD_CONTRACTS:
+                view_configuration.required_nexus_label,
+                view_configuration.required_nexus_version,
+        ) not in self._SUPPORTED_NEXUS_RECORD_CONTRACTS:
             raise ValueError(
-                "Unsupported required frame payload contract '{0}:{1}'.".format(
-                    view_configuration.required_frame_payload_profile_name,
-                    view_configuration.required_frame_payload_profile_version,
+                "Unsupported required Nexus record contract '{0}:{1}'.".format(
+                    view_configuration.required_nexus_label,
+                    view_configuration.required_nexus_version,
                 )
             )
         if (
-                view_configuration.required_conduit_payload_profile_name,
-                view_configuration.required_conduit_payload_profile_version,
-        ) not in self._SUPPORTED_CONDUIT_PAYLOAD_CONTRACTS:
-            raise ValueError(
-                "Unsupported required conduit payload contract '{0}:{1}'.".format(
-                    view_configuration.required_conduit_payload_profile_name,
-                    view_configuration.required_conduit_payload_profile_version,
-                )
-            )
-        if (
-                view_configuration.minimum_spell_payload_profile_name
-                not in self._SUPPORTED_SPELL_PAYLOAD_PROFILE_ORDER
+                view_configuration.minimum_spell_payload_type
+                not in self._SUPPORTED_SPELL_PAYLOAD_TYPE_ORDER
         ):
             raise ValueError(
-                "Unsupported minimum_spell_payload_profile_name '{0}'.".format(
-                    view_configuration.minimum_spell_payload_profile_name
+                "Unsupported minimum_spell_payload_type '{0}'.".format(
+                    view_configuration.minimum_spell_payload_type
                 )
             )
         if (
-                view_configuration.minimum_spell_payload_profile_version
-                not in self._SUPPORTED_SPELL_PAYLOAD_PROFILE_VERSIONS
+                view_configuration.minimum_spell_payload_version
+                not in self._SUPPORTED_SPELL_PAYLOAD_VERSIONS
         ):
             raise ValueError(
-                "Unsupported minimum_spell_payload_profile_version '{0}'.".format(
-                    view_configuration.minimum_spell_payload_profile_version
+                "Unsupported minimum_spell_payload_version '{0}'.".format(
+                    view_configuration.minimum_spell_payload_version
                 )
             )
         self._validate_ruleset_family(
@@ -355,13 +342,13 @@ class FrameACLValidator(Cleanable):
         if view_configuration.profile_name == "safe":
             self._validate_safe_view_configuration(view_configuration)
 
-    def _validate_descriptor_payload_contracts(
+    def _validate_descriptor_record_contracts(
             self,
             frame_descriptor: FrameDescriptor,
             view_configuration: FrameACLViewConfiguration,
     ) -> None:
         """
-        Validate descriptor payload contracts against one ACL view config.
+        Validate descriptor record contracts against one ACL view config.
 
         Args:
             frame_descriptor:
@@ -375,44 +362,44 @@ class FrameACLValidator(Cleanable):
         frame_overview = frame_descriptor.frame_overview
         if frame_overview is None:
             raise ValueError(
-                "FrameDescriptor for frame '{0}' has no frame_overview for payload validation.".format(
+                "FrameDescriptor for frame '{0}' has no frame_overview for record-contract validation.".format(
                     frame_descriptor.frame_name
                 )
             )
-        self._assert_exact_descriptor_payload_contract(
-            actual_profile_name=frame_overview.payload.profile_name,
-            actual_profile_version=frame_overview.payload.profile_version,
-            required_profile_name=(
-                view_configuration.required_frame_payload_profile_name
-            ),
-            required_profile_version=(
-                view_configuration.required_frame_payload_profile_version
-            ),
-            label="frame",
+        self._assert_exact_nexus_record_contract(
+            actual_nexus_label=frame_overview.nexus_label,
+            actual_nexus_version=frame_overview.nexus_version,
+            required_nexus_label=view_configuration.required_nexus_label,
+            required_nexus_version=view_configuration.required_nexus_version,
+            label="frame record",
             frame_name=frame_descriptor.frame_name,
         )
         for conduit_record in frame_descriptor.conduit_records_by_id.values():
-            self._assert_exact_descriptor_payload_contract(
-                actual_profile_name=conduit_record.payload.profile_name,
-                actual_profile_version=conduit_record.payload.profile_version,
-                required_profile_name=(
-                    view_configuration.required_conduit_payload_profile_name
-                ),
-                required_profile_version=(
-                    view_configuration.required_conduit_payload_profile_version
-                ),
-                label="conduit",
+            self._assert_exact_nexus_record_contract(
+                actual_nexus_label=conduit_record.nexus_label,
+                actual_nexus_version=conduit_record.nexus_version,
+                required_nexus_label=view_configuration.required_nexus_label,
+                required_nexus_version=view_configuration.required_nexus_version,
+                label="conduit record",
                 frame_name=frame_descriptor.frame_name,
             )
         for spell_record in frame_descriptor.spell_records_by_key.values():
+            self._assert_exact_nexus_record_contract(
+                actual_nexus_label=spell_record.nexus_label,
+                actual_nexus_version=spell_record.nexus_version,
+                required_nexus_label=view_configuration.required_nexus_label,
+                required_nexus_version=view_configuration.required_nexus_version,
+                label="spell record",
+                frame_name=frame_descriptor.frame_name,
+            )
             self._assert_spell_payload_floor(
-                actual_profile_name=spell_record.payload.profile_name,
-                actual_profile_version=spell_record.payload.profile_version,
-                minimum_profile_name=(
-                    view_configuration.minimum_spell_payload_profile_name
+                actual_payload_type=spell_record.payload.payload_type,
+                actual_payload_version=spell_record.payload.payload_version,
+                minimum_payload_type=(
+                    view_configuration.minimum_spell_payload_type
                 ),
-                minimum_profile_version=(
-                    view_configuration.minimum_spell_payload_profile_version
+                minimum_payload_version=(
+                    view_configuration.minimum_spell_payload_version
                 ),
                 frame_name=frame_descriptor.frame_name,
             )
@@ -616,27 +603,27 @@ class FrameACLValidator(Cleanable):
                 )
 
     @staticmethod
-    def _assert_exact_descriptor_payload_contract(
+    def _assert_exact_nexus_record_contract(
             *,
-            actual_profile_name: str,
-            actual_profile_version: str,
-            required_profile_name: str,
-            required_profile_version: str,
+            actual_nexus_label: str,
+            actual_nexus_version: str,
+            required_nexus_label: str,
+            required_nexus_version: str,
             label: str,
             frame_name: str,
     ) -> None:
         """
-        Fail when one descriptor payload contract does not match exactly.
+        Fail when one record-level Nexus contract does not match exactly.
 
         Args:
-            actual_profile_name:
-                Actual descriptor payload family name.
-            actual_profile_version:
-                Actual descriptor payload contract version.
-            required_profile_name:
-                Required ACL payload family name.
-            required_profile_version:
-                Required ACL payload contract version.
+            actual_nexus_label:
+                Actual record/event Nexus label.
+            actual_nexus_version:
+                Actual record/event Nexus version.
+            required_nexus_label:
+                Required ACL Nexus label.
+            required_nexus_version:
+                Required ACL Nexus version.
             label:
                 Human-readable payload family label.
             frame_name:
@@ -646,16 +633,16 @@ class FrameACLValidator(Cleanable):
             None.
         """
         if (
-                actual_profile_name != required_profile_name
-                or actual_profile_version != required_profile_version
+                actual_nexus_label != required_nexus_label
+                or actual_nexus_version != required_nexus_version
         ):
             raise ValueError(
-                "Descriptor {0} payload contract '{1}:{2}' does not match required ACL contract '{3}:{4}' for frame '{5}'.".format(
+                "Descriptor {0} Nexus contract '{1}:{2}' does not match required ACL contract '{3}:{4}' for frame '{5}'.".format(
                     label,
-                    actual_profile_name,
-                    actual_profile_version,
-                    required_profile_name,
-                    required_profile_version,
+                    actual_nexus_label,
+                    actual_nexus_version,
+                    required_nexus_label,
+                    required_nexus_version,
                     frame_name,
                 )
             )
@@ -663,23 +650,23 @@ class FrameACLValidator(Cleanable):
     def _assert_spell_payload_floor(
             self,
             *,
-            actual_profile_name: str,
-            actual_profile_version: str,
-            minimum_profile_name: str,
-            minimum_profile_version: str,
+            actual_payload_type: str,
+            actual_payload_version: str,
+            minimum_payload_type: str,
+            minimum_payload_version: str,
             frame_name: str,
     ) -> None:
         """
         Fail when one descriptor spell payload does not satisfy the ACL floor.
 
         Args:
-            actual_profile_name:
+            actual_payload_type:
                 Actual spell payload family name.
-            actual_profile_version:
+            actual_payload_version:
                 Actual spell payload contract version.
-            minimum_profile_name:
+            minimum_payload_type:
                 Required minimum spell payload family name.
-            minimum_profile_version:
+            minimum_payload_version:
                 Required minimum spell payload contract version.
             frame_name:
                 Owning frame name.
@@ -687,34 +674,34 @@ class FrameACLValidator(Cleanable):
         Returns:
             None.
         """
-        actual_rank = self._SUPPORTED_SPELL_PAYLOAD_PROFILE_ORDER.get(
-            actual_profile_name
+        actual_rank = self._SUPPORTED_SPELL_PAYLOAD_TYPE_ORDER.get(
+            actual_payload_type
         )
-        required_rank = self._SUPPORTED_SPELL_PAYLOAD_PROFILE_ORDER.get(
-            minimum_profile_name
+        required_rank = self._SUPPORTED_SPELL_PAYLOAD_TYPE_ORDER.get(
+            minimum_payload_type
         )
         if actual_rank is None:
             raise ValueError(
-                "Unsupported descriptor spell payload profile '{0}' for frame '{1}'.".format(
-                    actual_profile_name,
+                "Unsupported descriptor spell payload type '{0}' for frame '{1}'.".format(
+                    actual_payload_type,
                     frame_name,
                 )
             )
-        if actual_profile_version != minimum_profile_version:
+        if actual_payload_version != minimum_payload_version:
             raise ValueError(
                 "Descriptor spell payload version '{0}' does not match required ACL spell payload version '{1}' for frame '{2}'.".format(
-                    actual_profile_version,
-                    minimum_profile_version,
+                    actual_payload_version,
+                    minimum_payload_version,
                     frame_name,
                 )
             )
         if required_rank is None or actual_rank < required_rank:
             raise ValueError(
-                "Descriptor spell payload profile '{0}:{1}' does not satisfy minimum ACL spell payload contract '{2}:{3}' for frame '{4}'.".format(
-                    actual_profile_name,
-                    actual_profile_version,
-                    minimum_profile_name,
-                    minimum_profile_version,
+                "Descriptor spell payload type '{0}:{1}' does not satisfy minimum ACL spell payload contract '{2}:{3}' for frame '{4}'.".format(
+                    actual_payload_type,
+                    actual_payload_version,
+                    minimum_payload_type,
+                    minimum_payload_version,
                     frame_name,
                 )
             )

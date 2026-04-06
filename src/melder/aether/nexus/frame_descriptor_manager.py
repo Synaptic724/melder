@@ -60,15 +60,21 @@ class FrameDescriptorManager(Cleanable):
         "_aether",
         "_frame_descriptors_by_name",
     ]
-    _SUPPORTED_FRAME_PAYLOAD_CONTRACTS = {
-        ("frame", "0.0.1"),
+    _SUPPORTED_NEXUS_RECORD_CONTRACTS = {
+        ("default", "0.0.1"),
     }
-    _SUPPORTED_CONDUIT_PAYLOAD_CONTRACTS = {
-        ("conduit", "0.0.1"),
+    _SUPPORTED_FRAME_PAYLOAD_VERSIONS = {
+        "0.0.1",
     }
-    _SUPPORTED_SPELL_PAYLOAD_CONTRACTS = {
-        ("general", "0.0.1"),
-        ("detailed", "0.0.1"),
+    _SUPPORTED_CONDUIT_PAYLOAD_VERSIONS = {
+        "0.0.1",
+    }
+    _SUPPORTED_SPELL_PAYLOAD_TYPES = {
+        "general",
+        "detailed",
+    }
+    _SUPPORTED_SPELL_PAYLOAD_VERSIONS = {
+        "0.0.1",
     }
 
     def __init__(self, aether: IAether) -> None:
@@ -290,6 +296,11 @@ class FrameDescriptorManager(Cleanable):
                 config_origin_spellbook_id=spellbook._id,
                 payload=payload,
             )
+            self._validate_published_record_contract(
+                nexus_label=frame_record.nexus_label,
+                nexus_version=frame_record.nexus_version,
+                label="frame record",
+            )
             descriptor.set_frame_overview(frame_record)
             return True
 
@@ -350,6 +361,11 @@ class FrameDescriptorManager(Cleanable):
                 frame_name=frame_name,
                 origin_spellbook_id=origin_spellbook_id,
                 payload=payload,
+            )
+            self._validate_published_record_contract(
+                nexus_label=conduit_record.nexus_label,
+                nexus_version=conduit_record.nexus_version,
+                label="conduit record",
             )
             descriptor.upsert_conduit_record(conduit_record)
             return True
@@ -446,6 +462,11 @@ class FrameDescriptorManager(Cleanable):
                 permissions=spell.permissions,
                 existence=spell.existence,
                 payload=payload,
+            )
+            self._validate_published_record_contract(
+                nexus_label=spell_record.nexus_label,
+                nexus_version=spell_record.nexus_version,
+                label="spell record",
             )
             descriptor.upsert_spell_record(spell_record)
             return True
@@ -801,14 +822,10 @@ class FrameDescriptorManager(Cleanable):
         Returns:
             None.
         """
-        if (
-                payload.profile_name,
-                payload.profile_version,
-        ) not in cls._SUPPORTED_FRAME_PAYLOAD_CONTRACTS:
+        if payload.payload_version not in cls._SUPPORTED_FRAME_PAYLOAD_VERSIONS:
             raise ValueError(
-                "Unsupported frame descriptor payload contract '{0}:{1}'.".format(
-                    payload.profile_name,
-                    payload.profile_version,
+                "Unsupported frame descriptor payload version '{0}'.".format(
+                    payload.payload_version,
                 )
             )
 
@@ -827,14 +844,10 @@ class FrameDescriptorManager(Cleanable):
         Returns:
             None.
         """
-        if (
-                payload.profile_name,
-                payload.profile_version,
-        ) not in cls._SUPPORTED_CONDUIT_PAYLOAD_CONTRACTS:
+        if payload.payload_version not in cls._SUPPORTED_CONDUIT_PAYLOAD_VERSIONS:
             raise ValueError(
-                "Unsupported conduit descriptor payload contract '{0}:{1}'.".format(
-                    payload.profile_name,
-                    payload.profile_version,
+                "Unsupported conduit descriptor payload version '{0}'.".format(
+                    payload.payload_version,
                 )
             )
 
@@ -853,13 +866,46 @@ class FrameDescriptorManager(Cleanable):
         Returns:
             None.
         """
-        if (
-                payload.profile_name,
-                payload.profile_version,
-        ) not in cls._SUPPORTED_SPELL_PAYLOAD_CONTRACTS:
+        if payload.payload_type not in cls._SUPPORTED_SPELL_PAYLOAD_TYPES:
             raise ValueError(
-                "Unsupported spell descriptor payload contract '{0}:{1}'.".format(
-                    payload.profile_name,
-                    payload.profile_version,
+                "Unsupported spell descriptor payload type '{0}'.".format(
+                    payload.payload_type,
+                )
+            )
+        if payload.payload_version not in cls._SUPPORTED_SPELL_PAYLOAD_VERSIONS:
+            raise ValueError(
+                "Unsupported spell descriptor payload version '{0}'.".format(
+                    payload.payload_version,
+                )
+            )
+
+    @classmethod
+    def _validate_published_record_contract(
+            cls,
+            *,
+            nexus_label: str,
+            nexus_version: str,
+            label: str,
+    ) -> None:
+        """
+        Validate one published record/event contract before descriptor ingest.
+
+        Args:
+            nexus_label:
+                Published Nexus dataset label.
+            nexus_version:
+                Published Nexus dataset version.
+            label:
+                Human-readable record label.
+
+        Returns:
+            None.
+        """
+        if (nexus_label, nexus_version) not in cls._SUPPORTED_NEXUS_RECORD_CONTRACTS:
+            raise ValueError(
+                "Unsupported {0} Nexus contract '{1}:{2}'.".format(
+                    label,
+                    nexus_label,
+                    nexus_version,
                 )
             )

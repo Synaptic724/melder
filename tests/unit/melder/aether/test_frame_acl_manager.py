@@ -201,7 +201,7 @@ def test_frame_acl_manager_register_view_profile_delegates_to_builder() -> None:
     manager = FrameACLManager()
     view_profile = FrameACLViewProfile(
         "custom_view",
-        minimum_spell_payload_profile_name="detailed",
+        minimum_spell_payload_type="detailed",
     )
 
     manager._register_view_acl_profile(view_profile)
@@ -255,7 +255,7 @@ def test_frame_acl_manager_create_profile_uses_requested_catalog_names() -> None
     manager._register_view_acl_profile(
         FrameACLViewProfile(
             "custom_view",
-            minimum_spell_payload_profile_name="detailed",
+            minimum_spell_payload_type="detailed",
         )
     )
     manager._register_codegen_acl_profile(FrameACLCodegenProfile("custom_codegen"))
@@ -299,3 +299,4 @@ def test_frame_acl_manager_cleanup_cleans_registered_profiles_and_builder() -> N
     assert builder.cleaned is True
     assert manager._frame_acl_profiles_by_name is None
     assert manager._frame_acl_profile_builder is None
+

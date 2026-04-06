@@ -71,7 +71,7 @@ class _PayloadProfile(Cleanable):
 
     def to_descriptor_payload(self) -> SpellDescriptorPayload:
         return SpellDescriptorPayload(
-            profile_name=self.profile_name,
+            payload_type=self.profile_name,
             binding_payload={},
             resolution_payload={},
             class_profile=None,

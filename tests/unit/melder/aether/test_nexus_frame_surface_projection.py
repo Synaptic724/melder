@@ -103,7 +103,7 @@ def _populate_descriptor(nexus: Nexus, frame_name: str) -> None:
             permissions=Permissions.create,
             existence=Existence.unique,
             payload=SpellDescriptorPayload(
-                profile_name="detailed",
+                payload_type="detailed",
                 binding_payload={"kind": "class"},
                 resolution_payload={"requirements": []},
                 class_profile={"methods": []},
@@ -246,7 +246,7 @@ def test_nexus_cached_frame_viewer_invalidates_on_acl_change() -> None:
         reason="viewer_cache_invalidation",
     )
     draft.set_json_configuration_string(
-        '{"frame_name":"ops","view_configuration":{"profile_name":"hybrid","profile_version":"0.0.1","minimum_spell_payload_profile_name":"detailed","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"member_override_ruleset":{"name":"member_override","rules":[]}},"codegen_configuration":{"profile_name":"safe","profile_version":"0.0.1","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"capability_override_ruleset":{"name":"capability_override","rules":[]}}}'
+        '{"frame_name":"ops","view_configuration":{"profile_name":"hybrid","profile_version":"0.0.1","minimum_spell_payload_type":"detailed","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"member_override_ruleset":{"name":"member_override","rules":[]}},"codegen_configuration":{"profile_name":"safe","profile_version":"0.0.1","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"capability_override_ruleset":{"name":"capability_override","rules":[]}}}'
     )
     draft.finalize()
 
@@ -319,3 +319,4 @@ def test_nexus_create_frame_viewer_rejects_empty_frame_names() -> None:
 
     with pytest.raises(ValueError, match="frame_names must contain non-empty strings"):
         nexus.create_frame_viewer(["ops", ""])
+

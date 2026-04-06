@@ -451,19 +451,19 @@ def test_descriptor_properties_raise_after_cleanup() -> None:
     with pytest.raises(RuntimeError):
         _ = descriptor.frame_configuration
 
-def _spell_payload(profile_name: str = "detailed") -> SpellDescriptorPayload:
+def _spell_payload(payload_type: str = "detailed") -> SpellDescriptorPayload:
     """
     Build a minimal spell payload for descriptor tests.
 
     Args:
-        profile_name:
-            Source spell profile family name.
+        payload_type:
+            Spell payload detail type.
 
     Returns:
         SpellDescriptorPayload: Descriptor-safe spell payload stub.
     """
     return SpellDescriptorPayload(
-        profile_name=profile_name,
+        payload_type=payload_type,
         binding_payload={},
         resolution_payload={},
         class_profile=None,

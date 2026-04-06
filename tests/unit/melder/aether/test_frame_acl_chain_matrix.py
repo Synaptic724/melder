@@ -84,7 +84,7 @@ def _build_typed_json_payload(
             "view_configuration": {
                 "profile_name": view_profile_name,
                 "profile_version": "0.0.1",
-                "minimum_spell_payload_profile_name": "detailed",
+                "minimum_spell_payload_type": "detailed",
                 "frame_override_ruleset": {
                     "name": frame_override_name,
                     "rules": [],
@@ -538,3 +538,4 @@ def test_builder_commit_round_trip_for_multiple_payloads(
     assert next_configuration.source_configuration_id == previous_configuration.configuration_id
     assert container.frame_acl_configuration is next_configuration
     assert builder.change_active is False
+

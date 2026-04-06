@@ -206,7 +206,7 @@ def test_frame_acl_builder_load_json_rebuilds_typed_draft() -> None:
                 "view_configuration": {
                     "profile_name": "hybrid",
                     "profile_version": "0.0.1",
-                    "minimum_spell_payload_profile_name": "detailed",
+                    "minimum_spell_payload_type": "detailed",
                     "frame_override_ruleset": {"name": "frame_override", "rules": []},
                     "conduit_override_ruleset": {"name": "conduit_override", "rules": []},
                     "spell_override_ruleset": {"name": "spell_override", "rules": []},
@@ -227,3 +227,4 @@ def test_frame_acl_builder_load_json_rebuilds_typed_draft() -> None:
 
     assert builder._draft_configuration.view_configuration.profile_name == "hybrid"
     assert builder._draft_configuration.codegen_configuration.profile_name == "permissive"
+

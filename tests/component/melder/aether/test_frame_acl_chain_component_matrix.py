@@ -85,7 +85,7 @@ def _build_typed_json_payload(
             "view_configuration": {
                 "profile_name": "safe",
                 "profile_version": "0.0.1",
-                "minimum_spell_payload_profile_name": "detailed",
+                "minimum_spell_payload_type": "detailed",
                 "frame_override_ruleset": {
                     "name": "frame_override_{0}".format(marker),
                     "rules": [],
@@ -329,3 +329,4 @@ def test_component_frame_isolation_keeps_chains_separate(
     assert nexus.get_current_frame_acl_configuration(right_frame_name) is right_next
     assert left_current.configuration_id != right_current.configuration_id
     assert left_next.configuration_id != right_next.configuration_id
+

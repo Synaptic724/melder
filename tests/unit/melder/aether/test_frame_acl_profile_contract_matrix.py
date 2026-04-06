@@ -240,19 +240,19 @@ def test_frame_acl_view_profile_requires_valid_inputs() -> None:
     with pytest.raises(ValueError, match="name cannot be empty"):
         FrameACLViewProfile(
             "",
-            minimum_spell_payload_profile_name="detailed",
+            minimum_spell_payload_type="detailed",
         )
 
-    with pytest.raises(ValueError, match="minimum_spell_payload_profile_name cannot be empty"):
+    with pytest.raises(ValueError, match="minimum_spell_payload_type cannot be empty"):
         FrameACLViewProfile(
             "safe",
-            minimum_spell_payload_profile_name="",
+            minimum_spell_payload_type="",
         )
 
     with pytest.raises(ValueError, match="version cannot be empty"):
         FrameACLViewProfile(
             "safe",
-            minimum_spell_payload_profile_name="detailed",
+            minimum_spell_payload_type="detailed",
             version="",
         )
 
@@ -414,7 +414,7 @@ def test_frame_acl_profile_builder_registry_snapshots_are_detached() -> None:
     builder.register_view_profile(
         FrameACLViewProfile(
             "custom_view",
-            minimum_spell_payload_profile_name="detailed",
+            minimum_spell_payload_type="detailed",
         )
     )
     builder.register_codegen_profile(FrameACLCodegenProfile("custom_codegen"))
@@ -433,11 +433,11 @@ def test_frame_acl_profile_builder_replacing_view_profile_cleans_old_profile() -
     builder = FrameACLProfileBuilder()
     first_profile = FrameACLViewProfile(
         "custom_view",
-        minimum_spell_payload_profile_name="detailed",
+        minimum_spell_payload_type="detailed",
     )
     second_profile = FrameACLViewProfile(
         "custom_view",
-        minimum_spell_payload_profile_name="detailed",
+        minimum_spell_payload_type="detailed",
     )
 
     builder.register_view_profile(first_profile)
@@ -507,3 +507,4 @@ def test_frame_acl_profile_builder_cleanup_cascades_to_owned_profiles() -> None:
     assert safe_codegen.cleaned is True
     assert builder._view_profiles_by_name is None
     assert builder._codegen_profiles_by_name is None
+
