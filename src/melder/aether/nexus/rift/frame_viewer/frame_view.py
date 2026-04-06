@@ -14,7 +14,7 @@ Endgame:
 """
 
 import threading
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
@@ -28,6 +28,9 @@ from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile im
 )
 from melder.aether.nexus.rift.frame_viewer.profiles.frame_view_profile import (
     FrameViewProfile,
+)
+from melder.aether.nexus.rift.frame_viewer.profiles.frame_view_profile_builder import (
+    FrameViewProfileBuilder,
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -80,7 +83,10 @@ class FrameView(Cleanable):
         "_frame_name",
         "_profile_name",
         "_profile_version",
+        "_profile_builder",
+        "_active_profiles_by_name",
         "_links_by_id",
+        "_available_target_ids_by_kind",
         "_metadata",
     ]
 
@@ -90,6 +96,8 @@ class FrameView(Cleanable):
             frame_name: str,
             profile_name: Optional[str] = None,
             profile_version: Optional[str] = None,
+            profile_builder: Optional[FrameViewProfileBuilder] = None,
+            active_profiles_by_name: Optional[Dict[str, FrameViewProfile]] = None,
             links_by_id: Optional[Dict[str, FrameLink]] = None,
             metadata: Optional[Dict[str, object]] = None,
     ) -> None:
@@ -105,6 +113,10 @@ class FrameView(Cleanable):
                 Optional view profile name applied to this projection.
             profile_version:
                 Optional view profile version applied to this projection.
+            profile_builder:
+                Optional local frame-view profile builder/registry.
+            active_profiles_by_name:
+                Optional active local profiles hosted on this view.
             links_by_id:
                 Optional map of visible links keyed by link id.
             metadata:
@@ -121,7 +133,25 @@ class FrameView(Cleanable):
         self._frame_name: str = frame_name
         self._profile_name: Optional[str] = profile_name
         self._profile_version: Optional[str] = profile_version
+        if profile_builder is not None and not isinstance(
+                profile_builder,
+                FrameViewProfileBuilder,
+        ):
+            raise TypeError("profile_builder must be a FrameViewProfileBuilder.")
+        self._profile_builder: FrameViewProfileBuilder = (
+            profile_builder if profile_builder is not None else FrameViewProfileBuilder()
+        )
         self._links_by_id: Dict[str, FrameLink] = dict(links_by_id) if links_by_id else {}
+        self._available_target_ids_by_kind: Dict[str, Tuple[str, ...]] = (
+            self._build_available_target_ids_by_kind(self._links_by_id)
+        )
+        if active_profiles_by_name is not None:
+            self._active_profiles_by_name: Dict[str, FrameViewProfile] = dict(
+                active_profiles_by_name
+            )
+        else:
+            default_profile = self._profile_builder.get_required_profile("general").clone()
+            self._active_profiles_by_name = {default_profile.name: default_profile}
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
 
     def cleanup(self) -> None:
@@ -145,8 +175,16 @@ class FrameView(Cleanable):
             self._cleaned = True
             for frame_link in self._links_by_id.values():
                 frame_link.cleanup()
+            for frame_view_profile in self._active_profiles_by_name.values():
+                frame_view_profile.cleanup()
+            self._profile_builder.cleanup()
             self._links_by_id.clear()
             self._links_by_id = None
+            self._available_target_ids_by_kind.clear()
+            self._available_target_ids_by_kind = None
+            self._active_profiles_by_name.clear()
+            self._active_profiles_by_name = None
+            self._profile_builder = None
             self._metadata.clear()
             self._metadata = None
             self._frame_name = None
@@ -326,6 +364,12 @@ class FrameView(Cleanable):
             metadata={
                 "contract_id": effective_contract.contract_id,
                 "allowed_kinds": effective_contract.allowed_kinds,
+                "frame_payload_fields": cls._resolve_frame_payload_fields(
+                    effective_contract,
+                    compiled_access_surface,
+                ),
+                "visible_conduit_ids": tuple(compiled_access_surface.visible_conduit_ids),
+                "visible_spell_keys": tuple(compiled_access_surface.visible_spell_keys),
                 "view_profile_name": (
                     view_profile.name if view_profile is not None else None
                 ),
@@ -343,6 +387,7 @@ class FrameView(Cleanable):
                     else tuple()
                 ),
                 "link_count": len(links_by_id),
+                "available_target_count": len(links_by_id),
             },
         )
 
@@ -378,11 +423,160 @@ class FrameView(Cleanable):
             return dict(self._links_by_id)
 
     @property
+    def available_targets_by_id(self) -> Dict[str, FrameLink]:
+        """
+        Return the currently available frame targets keyed by target id.
+
+        Returns:
+            Dict[str, FrameLink]: Available target surface for this frame.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._links_by_id)
+
+    @property
+    def available_target_ids_by_kind(self) -> Dict[str, Tuple[str, ...]]:
+        """
+        Return available target ids grouped by target kind.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Available target ids by kind.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._available_target_ids_by_kind)
+
+    @property
+    def active_profiles_by_name(self) -> Dict[str, FrameViewProfile]:
+        """
+        Return the currently active local view profiles by name.
+
+        Returns:
+            Dict[str, FrameViewProfile]: Active local view profiles.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._active_profiles_by_name)
+
+    @property
     def metadata(self) -> Dict[str, object]:
         """Return the view metadata map."""
         self.check_cleaned()
         with self._lock:
             return dict(self._metadata)
+
+    def list_available_target_ids(self) -> List[str]:
+        """
+        Return the current available target ids.
+
+        Returns:
+            List[str]: Available target ids.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return list(self._links_by_id.keys())
+
+    def list_available_targets(
+            self,
+            *,
+            source_kind: Optional[str] = None,
+    ) -> List[FrameLink]:
+        """
+        Return the currently available targets for this frame.
+
+        Args:
+            source_kind:
+                Optional target kind filter.
+
+        Returns:
+            List[FrameLink]: Available frame targets.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if source_kind is None:
+                return list(self._links_by_id.values())
+            if not source_kind:
+                raise ValueError("source_kind cannot be empty.")
+            return [
+                frame_link
+                for frame_link in self._links_by_id.values()
+                if frame_link.source_kind == source_kind
+            ]
+
+    def get_required_available_target(self, target_id: str) -> FrameLink:
+        """
+        Return one available target by id or raise.
+
+        Args:
+            target_id:
+                Available target id to resolve.
+
+        Returns:
+            FrameLink: Matching available target.
+        """
+        self.check_cleaned()
+        if not target_id:
+            raise ValueError("target_id cannot be empty.")
+        with self._lock:
+            try:
+                return self._links_by_id[target_id]
+            except KeyError as exc:
+                raise ValueError(
+                    "FrameView target '{0}' was not found.".format(target_id)
+                ) from exc
+
+    def list_active_profile_names(self) -> List[str]:
+        """
+        Return the active local profile names for this view.
+
+        Returns:
+            List[str]: Active local view profile names.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return list(self._active_profiles_by_name.keys())
+
+    def register_active_profile(self, profile: FrameViewProfile) -> None:
+        """
+        Register or replace one active local view profile.
+
+        Args:
+            profile:
+                Local profile to activate on this view.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if not isinstance(profile, FrameViewProfile):
+            raise TypeError("profile must be a FrameViewProfile.")
+        with self._lock:
+            existing_profile = self._active_profiles_by_name.get(profile.name)
+            if existing_profile is not None and existing_profile is not profile:
+                existing_profile.cleanup()
+            self._active_profiles_by_name[profile.name] = profile
+
+    def get_required_active_profile(self, profile_name: str) -> FrameViewProfile:
+        """
+        Return one active local profile by name or raise.
+
+        Args:
+            profile_name:
+                Active profile name to resolve.
+
+        Returns:
+            FrameViewProfile: Matching active local profile.
+        """
+        self.check_cleaned()
+        if not profile_name:
+            raise ValueError("profile_name cannot be empty.")
+        with self._lock:
+            try:
+                return self._active_profiles_by_name[profile_name]
+            except KeyError as exc:
+                raise ValueError(
+                    "FrameView profile '{0}' was not found.".format(profile_name)
+                ) from exc
 
     def clone(self) -> "FrameView":
         """
@@ -404,12 +598,41 @@ class FrameView(Cleanable):
                 frame_name=self._frame_name,
                 profile_name=self._profile_name,
                 profile_version=self._profile_version,
+                profile_builder=FrameViewProfileBuilder(),
+                active_profiles_by_name={
+                    profile_name: frame_view_profile.clone()
+                    for profile_name, frame_view_profile in (
+                        self._active_profiles_by_name.items()
+                    )
+                },
                 links_by_id={
                     link_id: frame_link.clone()
                     for link_id, frame_link in self._links_by_id.items()
                 },
                 metadata=dict(self._metadata),
             )
+
+    @staticmethod
+    def _build_available_target_ids_by_kind(
+            links_by_id: Dict[str, FrameLink],
+    ) -> Dict[str, Tuple[str, ...]]:
+        """
+        Build the available target ids grouped by target kind.
+
+        Args:
+            links_by_id:
+                Available frame targets keyed by target id.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Target ids grouped by kind.
+        """
+        target_ids_by_kind: Dict[str, List[str]] = {}
+        for target_id, frame_link in links_by_id.items():
+            target_ids_by_kind.setdefault(frame_link.source_kind, []).append(target_id)
+        return {
+            source_kind: tuple(target_ids_by_kind[source_kind])
+            for source_kind in sorted(target_ids_by_kind.keys())
+        }
 
     @staticmethod
     def _resolve_frame_payload_fields(

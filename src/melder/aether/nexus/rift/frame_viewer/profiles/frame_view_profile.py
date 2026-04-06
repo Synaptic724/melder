@@ -102,6 +102,21 @@ class FrameViewProfile(Cleanable):
         self.check_cleaned()
         return self._preferred_kind_order
 
+    def clone(self) -> "FrameViewProfile":
+        """
+        Return a detached copy of this frame-view profile.
+
+        Returns:
+            FrameViewProfile: Detached profile copy.
+        """
+        self.check_cleaned()
+        return FrameViewProfile(
+            self._name,
+            version=self._version,
+            default_detail_level=self._default_detail_level,
+            preferred_kind_order=self._preferred_kind_order,
+        )
+
     def cleanup(self) -> None:
         """
         Idempotently clear the frame-view profile.

@@ -1067,6 +1067,42 @@ def test_remove_spell_from_contract_succeeds_when_contract_key_lookup_fails(
     borrower._conduit_ward._invalidate_contract_consumers.assert_called_once_with(None)
 
 
+def test_remove_spell_from_contract_logs_when_restore_rollback_fails(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify remove_spell logs rollback failures when detail restoration itself fails."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-remove-rollback-log", permissions=Permissions.create)
+
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+        permissions="create",
+    )
+
+    with patch.object(
+        borrower._spellbook,
+        "_remove_contracted_spell",
+        side_effect=RuntimeError("remove boom"),
+    ), patch.object(
+        borrower._conduit_ward,
+        "_restore_detail_snapshot",
+        side_effect=RuntimeError("restore boom"),
+    ):
+        with pytest.raises(RuntimeError, match="remove boom"):
+            borrower._conduit_ward._remove_spell_from_contract(
+                spell=spell,
+                spell_id=spell.spell_id,
+                conduit=owner,
+            )
+
+    assert any(
+        level == "error" and "rollback failed after spellbook remove error" in message
+        for level, message in borrower._logger.messages
+    )
+
+
 def test_remove_spell_from_contract_succeeds_when_contract_key_lookup_fails(
     linked_pair: tuple[FakeConduit, FakeConduit],
 ) -> None:
@@ -1512,38 +1548,6 @@ def test_remove_root_from_contracts_logs_when_restore_rollback_fails(
         for level, message in borrower._logger.messages
     )
 
-
-def test_remove_root_from_contracts_logs_contract_sever_failure(
-    linked_pair: tuple[FakeConduit, FakeConduit],
-) -> None:
-    """Verify root removal logs and continues when empty-contract severing fails."""
-    owner, borrower = linked_pair
-    spell = _register_spell(owner, "spell-root-sever-fail", permissions=Permissions.create)
-
-    borrower._conduit_ward._add_spell_to_contract(
-        spell=spell,
-        spell_id=spell.spell_id,
-        conduit=owner,
-        permissions="create",
-        root_spell_id="root-sever-fail",
-    )
-    contract = borrower._conduit_ward._find_contract(owner)
-
-    with patch.object(
-        borrower._conduit_ward,
-        "_remove_contract",
-        side_effect=RuntimeError("sever boom"),
-    ):
-        report = borrower._conduit_ward._remove_root_from_contracts(
-            root_spell_id="root-sever-fail",
-            conduit=owner,
-        )
-
-    assert report["success"] == [contract._id]
-    assert any(
-        level == "error" and "contract sever failed" in message
-        for level, message in borrower._logger.messages
-    )
 
 
 def test_link_spell_dependencies_creates_contract_and_details(
@@ -2539,6 +2543,65 @@ def test_preflight_contract_dependency_collisions_handles_root_without_dependenc
     )
 
 
+def test_preflight_contract_dependency_collisions_handles_child_without_dependencies_attr() -> None:
+    """Verify preflight tolerates dependency spells that omit a dependencies attribute."""
+    owner, borrower = _build_conduit_pair()
+    dep_spell = SimpleNamespace(
+        spell_id="dep-preflight-no-child-attr",
+        spell_index=SpellIndex("dep-preflight-no-child-attr"),
+        permissions=Permissions.create,
+        spellframe="frame",
+        binding_name="binding-dep-preflight-no-child-attr",
+        spell_name="DepPreflightNoChildAttr",
+        __name__="DepPreflightNoChildAttr",
+        _owner_conduit_id=owner._id,
+    )
+    owner._spell_by_id[dep_spell.spell_id] = dep_spell
+    owner._spellbook._spells[dep_spell.spell_index] = dep_spell
+    root_spell = _register_spell(
+        borrower,
+        "root-preflight-child-no-deps",
+        permissions=Permissions.create,
+        dependencies=[dep_spell.spell_id],
+    )
+    borrower.register_spell_owner(dep_spell.spell_id, owner)
+
+    borrower._conduit_ward._preflight_contract_dependency_collisions(
+        root_spell=root_spell,
+        root_spell_id=root_spell.spell_id,
+        requested_permissions=Permissions.create,
+    )
+
+
+def test_preflight_contract_dependency_collisions_walks_child_dependencies() -> None:
+    """Verify preflight walks child dependency ids when a dependency exposes nested dependencies."""
+    owner, borrower = _build_conduit_pair()
+    dep_child = _register_spell(owner, "dep-preflight-child", permissions=Permissions.create)
+    dep_parent = _register_spell(
+        owner,
+        "dep-preflight-parent",
+        permissions=Permissions.create,
+        dependencies=[dep_child.spell_id],
+    )
+    root_spell = _register_spell(
+        borrower,
+        "root-preflight-nested",
+        permissions=Permissions.create,
+        dependencies=[dep_parent.spell_id],
+    )
+    borrower.register_spell_owner(dep_parent.spell_id, owner)
+    borrower.register_spell_owner(dep_child.spell_id, owner)
+    borrower._spellbook._assert_lookup_key_available = MagicMock()
+
+    borrower._conduit_ward._preflight_contract_dependency_collisions(
+        root_spell=root_spell,
+        root_spell_id=root_spell.spell_id,
+        requested_permissions=Permissions.create,
+    )
+
+    assert borrower._spellbook._assert_lookup_key_available.call_count == 3
+
+
 def test_preflight_contract_dependency_collisions_noops_without_spellbook() -> None:
     """Verify preflight returns without error when the conduit has no spellbook."""
     _, borrower = _build_conduit_pair()
@@ -2744,37 +2807,29 @@ def test_remove_root_from_contracts_across_all_contracts() -> None:
     }
 
 
-def test_remove_root_from_contracts_logs_contract_sever_failure(
+def test_remove_root_from_contracts_skips_none_peer_on_empty_contract(
     linked_pair: tuple[FakeConduit, FakeConduit],
 ) -> None:
-    """Verify root removal logs and continues when empty-contract severing fails."""
+    """Verify remove_root skips a None peer when an emptied contract cannot be severed by peer reference."""
     owner, borrower = linked_pair
-    spell = _register_spell(owner, "spell-root-sever-fail", permissions=Permissions.create)
+    spell = _register_spell(owner, "spell-root-none-peer", permissions=Permissions.create)
 
     borrower._conduit_ward._add_spell_to_contract(
         spell=spell,
         spell_id=spell.spell_id,
         conduit=owner,
         permissions="create",
-        root_spell_id="root-sever-fail",
+        root_spell_id="root-none-peer",
     )
     contract = borrower._conduit_ward._find_contract(owner)
+    owner._conduit_ward._conduit = None
 
-    with patch.object(
-        borrower._conduit_ward,
-        "_remove_contract",
-        side_effect=RuntimeError("sever boom"),
-    ):
-        report = borrower._conduit_ward._remove_root_from_contracts(
-            root_spell_id="root-sever-fail",
-            conduit=owner,
-        )
+    report = borrower._conduit_ward._remove_root_from_contracts(
+        root_spell_id="root-none-peer",
+    )
 
     assert report["success"] == [contract._id]
-    assert any(
-        level == "error" and "contract sever failed" in message
-        for level, message in borrower._logger.messages
-    )
+
 
 
 def test_link_spell_dependencies_raises_when_owner_missing(
@@ -3105,6 +3160,16 @@ def test_get_all_spells_in_contracts_includes_multiple_peers() -> None:
     assert set(result.keys()) == {owner._id, owner_two._id}
     assert result[owner._id][0][1] is spell_one
     assert result[owner_two._id][0][1] is spell_two
+
+
+def test_get_all_spells_in_contracts_returns_none_for_empty_linked_contracts() -> None:
+    """Verify linked contracts with no details are skipped and yield None when no spells are available."""
+    owner, borrower = _build_conduit_pair()
+    borrower._conduit_ward._create_new_contract(owner)
+
+    result = borrower._conduit_ward._get_all_spells_in_contracts(validate=False)
+
+    assert result is None
 
 
 def test_get_spell_in_contracts_returns_none_when_no_contracts(

@@ -25,6 +25,9 @@ from melder.aether.nexus.rift.frame_viewer.frame_view import FrameView
 from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile import (
     FrameViewerProfile,
 )
+from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile_builder import (
+    FrameViewerProfileBuilder,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -72,14 +75,18 @@ class FrameViewer(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_viewer_id",
         "_lock",
-        "_profile",
-        "_views_by_frame_name",
+        "_profile_builder",
+        "_active_profiles_by_name",
+        "_available_views_by_frame_name",
         "_metadata",
     ]
 
     def __init__(
             self,
             *,
+            profile_builder: Optional[FrameViewerProfileBuilder] = None,
+            active_profiles_by_name: Optional[Dict[str, FrameViewerProfile]] = None,
+            available_views_by_frame_name: Optional[Dict[str, FrameView]] = None,
             profile: Optional[FrameViewerProfile] = None,
             profile_name: Optional[str] = None,
             profile_version: Optional[str] = None,
@@ -95,10 +102,16 @@ class FrameViewer(Cleanable):
         Initialize one placeholder frame viewer.
 
         Args:
+            profile_builder:
+                Optional local viewer-profile builder/registry.
+            active_profiles_by_name:
+                Optional active local viewer profiles.
+            available_views_by_frame_name:
+                Optional assigned/available frame views.
             profile:
                 Optional selected viewer profile owned by this viewer.
             views_by_frame_name:
-                Optional frame-name -> FrameView map.
+                Backward-compatible alias for `available_views_by_frame_name`.
             profile_name:
                 Backward-compatible viewer profile name when `profile` is not
                 supplied.
@@ -123,6 +136,14 @@ class FrameViewer(Cleanable):
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
         self._viewer_id: str = IDBuilder.create_id()
+        if profile_builder is not None and not isinstance(
+                profile_builder,
+                FrameViewerProfileBuilder,
+        ):
+            raise TypeError("profile_builder must be a FrameViewerProfileBuilder.")
+        self._profile_builder: FrameViewerProfileBuilder = (
+            profile_builder if profile_builder is not None else FrameViewerProfileBuilder()
+        )
         if profile is not None and not isinstance(profile, FrameViewerProfile):
             raise TypeError("profile must be a FrameViewerProfile.")
         if profile is None and (
@@ -139,10 +160,25 @@ class FrameViewer(Cleanable):
                 default_grouping=default_grouping or "frame",
                 default_detail_level=default_detail_level or "summary",
             )
-        self._profile: Optional[FrameViewerProfile] = profile
-        self._views_by_frame_name: Dict[str, FrameView] = (
-            dict(views_by_frame_name) if views_by_frame_name else {}
+        normalized_available_views = (
+            available_views_by_frame_name
+            if available_views_by_frame_name is not None
+            else views_by_frame_name
         )
+        self._available_views_by_frame_name: Dict[str, FrameView] = (
+            dict(normalized_available_views) if normalized_available_views else {}
+        )
+        if active_profiles_by_name is not None:
+            self._active_profiles_by_name: Dict[str, FrameViewerProfile] = dict(
+                active_profiles_by_name
+            )
+        else:
+            default_profile = (
+                profile
+                if profile is not None
+                else self._profile_builder.get_required_profile("general").clone()
+            )
+            self._active_profiles_by_name = {default_profile.name: default_profile}
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
 
     def cleanup(self) -> None:
@@ -164,15 +200,18 @@ class FrameViewer(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            for frame_view in self._views_by_frame_name.values():
+            for frame_view in self._available_views_by_frame_name.values():
                 frame_view.cleanup()
-            self._views_by_frame_name.clear()
-            self._views_by_frame_name = None
+            for frame_viewer_profile in self._active_profiles_by_name.values():
+                frame_viewer_profile.cleanup()
+            self._profile_builder.cleanup()
+            self._available_views_by_frame_name.clear()
+            self._available_views_by_frame_name = None
+            self._active_profiles_by_name.clear()
+            self._active_profiles_by_name = None
+            self._profile_builder = None
             self._metadata.clear()
             self._metadata = None
-            if self._profile is not None:
-                self._profile.cleanup()
-            self._profile = None
             self._viewer_id = None
         self._lock = None
 
@@ -187,47 +226,59 @@ class FrameViewer(Cleanable):
         """Return the currently attached views."""
         self.check_cleaned()
         with self._lock:
-            return dict(self._views_by_frame_name)
+            return dict(self._available_views_by_frame_name)
+
+    @property
+    def available_views_by_frame_name(self) -> Dict[str, FrameView]:
+        """
+        Return the currently assigned/available views by frame name.
+
+        Returns:
+            Dict[str, FrameView]: Assigned available views.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._available_views_by_frame_name)
 
     @property
     def profile_name(self) -> Optional[str]:
-        """Return the optional applied viewer profile name."""
+        """Return the default active viewer profile name."""
         self.check_cleaned()
-        if self._profile is None:
+        if len(self._active_profiles_by_name) == 0:
             return None
-        return self._profile.name
+        return sorted(self._active_profiles_by_name.keys())[0]
 
     @property
     def profile_version(self) -> Optional[str]:
-        """Return the optional applied viewer profile version."""
+        """Return the default active viewer profile version."""
         self.check_cleaned()
-        if self._profile is None:
+        if len(self._active_profiles_by_name) == 0:
             return None
-        return self._profile.version
+        return self._active_profiles_by_name[self.profile_name].version
 
     @property
     def enabled_helpers(self) -> tuple[str, ...]:
-        """Return the enabled helper ids exposed by the selected profile."""
+        """Return the enabled helper ids exposed by the default active profile."""
         self.check_cleaned()
-        if self._profile is None:
+        if len(self._active_profiles_by_name) == 0:
             return tuple()
-        return self._profile.enabled_helpers
+        return self._active_profiles_by_name[self.profile_name].enabled_helpers
 
     @property
     def default_grouping(self) -> Optional[str]:
-        """Return the default grouping mode from the selected profile."""
+        """Return the default grouping mode from the default active profile."""
         self.check_cleaned()
-        if self._profile is None:
+        if len(self._active_profiles_by_name) == 0:
             return None
-        return self._profile.default_grouping
+        return self._active_profiles_by_name[self.profile_name].default_grouping
 
     @property
     def default_detail_level(self) -> Optional[str]:
-        """Return the default detail posture from the selected profile."""
+        """Return the default detail posture from the default active profile."""
         self.check_cleaned()
-        if self._profile is None:
+        if len(self._active_profiles_by_name) == 0:
             return None
-        return self._profile.default_detail_level
+        return self._active_profiles_by_name[self.profile_name].default_detail_level
 
     @property
     def profile(self) -> Optional[FrameViewerProfile]:
@@ -238,7 +289,21 @@ class FrameViewer(Cleanable):
             Optional[FrameViewerProfile]: Hosted selected viewer profile.
         """
         self.check_cleaned()
-        return self._profile
+        if len(self._active_profiles_by_name) == 0:
+            return None
+        return self._active_profiles_by_name[self.profile_name]
+
+    @property
+    def active_profiles_by_name(self) -> Dict[str, FrameViewerProfile]:
+        """
+        Return the currently active local viewer profiles by name.
+
+        Returns:
+            Dict[str, FrameViewerProfile]: Active hosted viewer profiles.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._active_profiles_by_name)
 
     @property
     def metadata(self) -> Dict[str, object]:
@@ -264,7 +329,20 @@ class FrameViewer(Cleanable):
         if not isinstance(frame_view, FrameView):
             raise TypeError("frame_view must be a FrameView.")
         with self._lock:
-            self._views_by_frame_name[frame_view.frame_name] = frame_view
+            self._available_views_by_frame_name[frame_view.frame_name] = frame_view
+
+    def add_available_view(self, frame_view: FrameView) -> None:
+        """
+        Register one assigned/available frame view on this viewer.
+
+        Args:
+            frame_view:
+                View to register.
+
+        Returns:
+            None.
+        """
+        self.add_view(frame_view)
 
     def get_view(self, frame_name: str) -> FrameView:
         """
@@ -282,11 +360,24 @@ class FrameViewer(Cleanable):
         self.check_cleaned()
         with self._lock:
             try:
-                return self._views_by_frame_name[frame_name]
+                return self._available_views_by_frame_name[frame_name]
             except KeyError as exc:
                 raise ValueError(
                     "FrameView '{0}' was not found.".format(frame_name)
                 ) from exc
+
+    def get_available_view(self, frame_name: str) -> FrameView:
+        """
+        Return one assigned/available frame view by frame name.
+
+        Args:
+            frame_name:
+                Frame name to resolve.
+
+        Returns:
+            FrameView: Assigned available view.
+        """
+        return self.get_view(frame_name)
 
     def list_frame_names(self) -> List[str]:
         """
@@ -300,7 +391,7 @@ class FrameViewer(Cleanable):
         self.check_cleaned()
         self._require_helper_enabled("list_frame_names")
         with self._lock:
-            return list(self._views_by_frame_name.keys())
+            return list(self._available_views_by_frame_name.keys())
 
     def list_links(
             self,
@@ -326,8 +417,8 @@ class FrameViewer(Cleanable):
             if frame_name is not None:
                 return list(self.get_view(frame_name).links_by_id.values())
             ordered_links: List[FrameLink] = []
-            for current_frame_name in sorted(self._views_by_frame_name.keys()):
-                frame_view = self._views_by_frame_name[current_frame_name]
+            for current_frame_name in sorted(self._available_views_by_frame_name.keys()):
+                frame_view = self._available_views_by_frame_name[current_frame_name]
                 for link_id in sorted(frame_view.links_by_id.keys()):
                     ordered_links.append(frame_view.links_by_id[link_id])
             return ordered_links
@@ -377,7 +468,7 @@ class FrameViewer(Cleanable):
         with self._lock:
             return {
                 frame_name: list(self.list_links(frame_name=frame_name))
-                for frame_name in sorted(self._views_by_frame_name.keys())
+                for frame_name in sorted(self._available_views_by_frame_name.keys())
             }
 
     def list_links_grouped_by_kind(
@@ -576,10 +667,18 @@ class FrameViewer(Cleanable):
         self.check_cleaned()
         with self._lock:
             return FrameViewer(
-                profile=self._profile.clone() if self._profile is not None else None,
-                views_by_frame_name={
+                profile_builder=FrameViewerProfileBuilder(),
+                active_profiles_by_name={
+                    profile_name: frame_viewer_profile.clone()
+                    for profile_name, frame_viewer_profile in (
+                        self._active_profiles_by_name.items()
+                    )
+                },
+                available_views_by_frame_name={
                     frame_name: frame_view.clone()
-                    for frame_name, frame_view in self._views_by_frame_name.items()
+                    for frame_name, frame_view in (
+                        self._available_views_by_frame_name.items()
+                    )
                 },
                 metadata=dict(self._metadata),
             )
@@ -604,9 +703,40 @@ class FrameViewer(Cleanable):
             tuple[str, ...]: Exposed tool ids.
         """
         self.check_cleaned()
-        if self._profile is None:
+        if len(self._active_profiles_by_name) == 0:
             return tuple()
-        return self._profile.list_tool_names()
+        return self._active_profiles_by_name[self.profile_name].list_tool_names()
+
+    def list_active_profile_names(self) -> List[str]:
+        """
+        Return the currently active viewer profile names.
+
+        Returns:
+            List[str]: Active viewer profile names.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return list(self._active_profiles_by_name.keys())
+
+    def register_active_profile(self, profile: FrameViewerProfile) -> None:
+        """
+        Register or replace one active local viewer profile.
+
+        Args:
+            profile:
+                Hosted profile to activate.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if not isinstance(profile, FrameViewerProfile):
+            raise TypeError("profile must be a FrameViewerProfile.")
+        with self._lock:
+            existing_profile = self._active_profiles_by_name.get(profile.name)
+            if existing_profile is not None and existing_profile is not profile:
+                existing_profile.cleanup()
+            self._active_profiles_by_name[profile.name] = profile
 
     def has_enabled_helper(self, helper_name: str) -> bool:
         """
@@ -624,17 +754,26 @@ class FrameViewer(Cleanable):
         self.check_cleaned()
         if not helper_name:
             raise ValueError("helper_name cannot be empty.")
-        if self._profile is None:
+        if len(self._active_profiles_by_name) == 0:
             return False
-        return self._profile.has_tool(helper_name)
+        return self._active_profiles_by_name[self.profile_name].has_tool(helper_name)
 
-    def execute_tool(self, tool_name: str, **kwargs) -> Any:
+    def execute_tool(
+            self,
+            tool_name: str,
+            *,
+            profile_name: Optional[str] = None,
+            **kwargs,
+    ) -> Any:
         """
         Execute one profile-owned tool over the hosted views.
 
         Args:
             tool_name:
                 Tool id exposed by the selected profile.
+            profile_name:
+                Optional active profile name. When omitted, the default active
+                profile is used.
             **kwargs:
                 Keyword arguments forwarded to the host-side handler.
 
@@ -644,9 +783,11 @@ class FrameViewer(Cleanable):
         self.check_cleaned()
         if not tool_name:
             raise ValueError("tool_name cannot be empty.")
-        if self._profile is None:
-            raise ValueError("FrameViewer has no hosted profile.")
-        handler_name = self._profile.get_required_tool_handler_name(tool_name)
+        if len(self._active_profiles_by_name) == 0:
+            raise ValueError("FrameViewer has no hosted profiles.")
+        selected_profile_name = profile_name or self.profile_name
+        selected_profile = self.get_required_active_profile(selected_profile_name)
+        handler_name = selected_profile.get_required_tool_handler_name(tool_name)
         handler = getattr(self, handler_name, None)
         if handler is None or not callable(handler):
             raise ValueError(
@@ -656,6 +797,28 @@ class FrameViewer(Cleanable):
                 )
             )
         return handler(**kwargs)
+
+    def get_required_active_profile(self, profile_name: str) -> FrameViewerProfile:
+        """
+        Return one active local viewer profile by name or raise.
+
+        Args:
+            profile_name:
+                Active profile name to resolve.
+
+        Returns:
+            FrameViewerProfile: Matching active hosted profile.
+        """
+        self.check_cleaned()
+        if not profile_name:
+            raise ValueError("profile_name cannot be empty.")
+        with self._lock:
+            try:
+                return self._active_profiles_by_name[profile_name]
+            except KeyError as exc:
+                raise ValueError(
+                    "FrameViewer profile '{0}' was not found.".format(profile_name)
+                ) from exc
 
     def _require_helper_enabled(self, helper_name: str) -> None:
         """
@@ -670,15 +833,16 @@ class FrameViewer(Cleanable):
         Returns:
             None.
         """
-        if self._profile is None:
+        if len(self._active_profiles_by_name) == 0:
             return
-        if self._profile.has_tool(helper_name):
+        default_profile = self._active_profiles_by_name[self.profile_name]
+        if default_profile.has_tool(helper_name):
             return
-        if helper_name in self._profile.tool_handler_names_by_name.values():
+        if helper_name in default_profile.tool_handler_names_by_name.values():
             return
         raise ValueError(
             "FrameViewer helper '{0}' is not enabled by profile '{1}'.".format(
                 helper_name,
-                self._profile.name,
+                default_profile.name,
             )
         )

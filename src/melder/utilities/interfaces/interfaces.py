@@ -5999,6 +5999,12 @@ class INexus(ICleanable, Protocol):
         ...
 
     def add_rift(self, rift: IRift) -> None:
+        """
+        Register one already-created Rift instance with the Nexus.
+
+        Returns:
+            None.
+        """
         ...
 
     def get_rift(
@@ -6006,6 +6012,9 @@ class INexus(ICleanable, Protocol):
             rift_id: str,
             access_token: Optional[str] = None,
     ) -> IRift:
+        """
+        Return one registered Rift by id, applying access checks as needed.
+        """
         ...
 
     def get_rift_by_name(
@@ -6013,15 +6022,30 @@ class INexus(ICleanable, Protocol):
             rift_name: str,
             access_token: Optional[str] = None,
     ) -> IRift:
+        """
+        Return one registered Rift by its human-readable name.
+        """
         ...
 
     def has_rift(self, rift_id: str) -> bool:
+        """
+        Return whether a Rift with the given id is currently registered.
+        """
         ...
 
     def remove_rift(self, rift_id: str) -> None:
+        """
+        Remove one Rift registration by id.
+
+        Returns:
+            None.
+        """
         ...
 
     def list_rift_ids(self) -> List[str]:
+        """
+        Return the currently registered Rift identifiers.
+        """
         ...
 
     def get_nexus_frame_for_rift(
@@ -6029,6 +6053,9 @@ class INexus(ICleanable, Protocol):
             rift_id: str,
             frame_name: Optional[str] = None,
     ) -> "IAethericFrame":
+        """
+        Return one accessible Nexus frame for the specified Rift.
+        """
         ...
 
     def create_nexus_frame_for_rift(
@@ -6037,12 +6064,24 @@ class INexus(ICleanable, Protocol):
             frame_name: Optional[str] = None,
             immutable: bool = False,
     ) -> "IAethericFrame":
+        """
+        Create and return one Nexus frame scoped for the specified Rift.
+        """
         ...
 
     def list_accessible_nexus_frame_names(self, rift_id: str) -> Tuple[str, ...]:
+        """
+        Return the Nexus frame names currently accessible to the specified Rift.
+        """
         ...
 
     def check_for_aetheric_frame(self, frame_name: str) -> None:
+        """
+        Validate that one named Aetheric frame exists and is accessible.
+
+        Returns:
+            None.
+        """
         ...
 @runtime_checkable
 class IAether(ICleanable, Protocol):
@@ -6682,8 +6721,12 @@ class IChannelLogger(ICleanable, Protocol):
 
     def _resolve_caller(self, tmpl_logger, *, stacklevel: int, manual_stack: bool, kwargs: dict):
         """
-        Compute caller metadata for LogRecord creation.
-        Returns: (fn, lno, func, sinfo)
+        Compute caller metadata for `LogRecord` creation.
+
+        Returns:
+            tuple[str, int, str, object]:
+                ``(filename, line_number, function_name, stack_info)`` tuple
+                suitable for downstream record construction.
         """
         ...
 
@@ -6695,6 +6738,10 @@ class IChannelLogger(ICleanable, Protocol):
         - tuple          -> passthrough
         - other truthy   -> None (conservative)
         - falsy/None     -> None
+
+        Returns:
+            object: Normalized ``exc_info`` payload accepted by record creation,
+            or ``None`` when no exception context should be attached.
         """
         ...
 
@@ -6712,19 +6759,19 @@ class IChannelLogger(ICleanable, Protocol):
             sinfo,
     ):
         """
-        Build a LogRecord with real caller metadata so formatter can render method/module/line.
+        Build one `LogRecord` with resolved caller metadata.
         """
         ...
 
     def _apply_identity_and_tags(self, record, *, mask: bool, kwargs: dict):
         """
-        Apply identity (id/name) and group/property tags to the LogRecord.
+        Apply identity masking plus group/property tags to a `LogRecord`.
         """
         ...
 
     def _emit_record(self, record):
         """
-        Fan-out to all backing loggers and notify per-channel subscribers.
+        Fan out one prepared record to backing loggers and channel subscribers.
         """
         ...
 
@@ -6744,6 +6791,9 @@ class IChannelLogger(ICleanable, Protocol):
                        - stacklevel: int -> passed to findCaller (default 3)
                        - _mask_display_name/_mask_display_id/_groups_override/
                          _system_groups_override/_properties_override (masking branch)
+
+        Returns:
+            None.
         """
         ...
 
@@ -7375,7 +7425,11 @@ class ISafeLogger(ICleanable, Protocol):
             groups: Optional[Iterable[str]] = None,
             system_groups: Optional[Iterable[str]] = None,
             properties: Optional[Dict[str, Any]] = None,
-    ) -> None: ...
+    ) -> None:
+        """
+        Emit one `DEBUG`-level log entry through the safe-logger facade.
+        """
+        ...
 
     def info(
             self,
@@ -7389,7 +7443,11 @@ class ISafeLogger(ICleanable, Protocol):
             groups: Optional[Iterable[str]] = None,
             system_groups: Optional[Iterable[str]] = None,
             properties: Optional[Dict[str, Any]] = None,
-    ) -> None: ...
+    ) -> None:
+        """
+        Emit one `INFO`-level log entry through the safe-logger facade.
+        """
+        ...
 
     def warning(
             self,
@@ -7403,7 +7461,11 @@ class ISafeLogger(ICleanable, Protocol):
             groups: Optional[Iterable[str]] = None,
             system_groups: Optional[Iterable[str]] = None,
             properties: Optional[Dict[str, Any]] = None,
-    ) -> None: ...
+    ) -> None:
+        """
+        Emit one `WARNING`-level log entry through the safe-logger facade.
+        """
+        ...
 
     def error(
             self,
@@ -7418,7 +7480,11 @@ class ISafeLogger(ICleanable, Protocol):
             groups: Optional[Iterable[str]] = None,
             system_groups: Optional[Iterable[str]] = None,
             properties: Optional[Dict[str, Any]] = None,
-    ) -> None: ...
+    ) -> None:
+        """
+        Emit one `ERROR`-level log entry through the safe-logger facade.
+        """
+        ...
 
     def exception(
             self,
@@ -7432,7 +7498,12 @@ class ISafeLogger(ICleanable, Protocol):
             groups: Optional[Iterable[str]] = None,
             system_groups: Optional[Iterable[str]] = None,
             properties: Optional[Dict[str, Any]] = None,
-    ) -> None: ...
+    ) -> None:
+        """
+        Emit one exception-oriented log entry, typically equivalent to
+        `error(..., exc_info=True)`.
+        """
+        ...
 
     def critical(
             self,
@@ -7446,7 +7517,11 @@ class ISafeLogger(ICleanable, Protocol):
             groups: Optional[Iterable[str]] = None,
             system_groups: Optional[Iterable[str]] = None,
             properties: Optional[Dict[str, Any]] = None,
-    ) -> None: ...
+    ) -> None:
+        """
+        Emit one `CRITICAL`-level log entry through the safe-logger facade.
+        """
+        ...
 
 
 @runtime_checkable
