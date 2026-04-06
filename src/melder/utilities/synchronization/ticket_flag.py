@@ -218,6 +218,8 @@ class TicketFlag(Cleanable):
 
         Return whether at least one active ticket exists.
 
+        This is a thin alias over :meth:`__bool__`.
+
         Returns:
             bool:
                 ``True`` when at least one ticket exists.
@@ -233,6 +235,8 @@ class TicketFlag(Cleanable):
         Public API
 
         Return the number of active tickets.
+
+        This is a thin alias over :meth:`__len__`.
 
         Returns:
             int:

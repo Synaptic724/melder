@@ -67,7 +67,8 @@ class FastSwitch(Cleanable):
             - Clears all tickets.
             - Marks this primitive cleaned.
             - Nulls internal ticket storage.
-            - No cleanup guard or idempotence check is applied.
+            - No cleanup guard or idempotence check is applied; repeated cleanup
+              is therefore unsupported by contract.
 
         Returns:
             None.
@@ -85,6 +86,9 @@ class FastSwitch(Cleanable):
         Returns:
             bool:
                 True when at least one ticket exists.
+
+        Notes:
+            This method intentionally does not perform a cleaned-state guard.
         """
         return len(self._tickets) > 0
 
@@ -97,6 +101,9 @@ class FastSwitch(Cleanable):
         Returns:
             int:
                 Number of active tickets.
+
+        Notes:
+            This method intentionally does not perform a cleaned-state guard.
         """
         return len(self._tickets)
 
@@ -110,6 +117,9 @@ class FastSwitch(Cleanable):
         Returns:
             bool:
                 True when at least one ticket exists.
+
+        Notes:
+            This property inherits the no-guard behavior of `__bool__()`.
         """
         return bool(self)
 
@@ -171,5 +181,9 @@ class FastSwitch(Cleanable):
 
         Returns:
             None.
+
+        Notes:
+            This is a force-clear operation; unlike `set_false()`, it does not
+            remove tickets one at a time.
         """
         self._tickets.clear()

@@ -61,7 +61,13 @@ class CounterSwitch(Cleanable):
         """
         Public API
 
-        Tear down this primitive and release waiters.
+        Tear down this primitive and release any waiting selectors.
+
+        Contract:
+            - Clears all tickets before invalidation.
+            - Sets the event before nulling references so waiting followers are
+              released.
+            - Marks the switch cleaned and drops lock/event/ticket storage.
         """
         self._tickets.clear()
         self._event.set()
@@ -74,7 +80,7 @@ class CounterSwitch(Cleanable):
         """
         Public API
 
-        Return current state value.
+        Return current raw ticket count.
         """
         return len(self._tickets)
 
@@ -82,7 +88,7 @@ class CounterSwitch(Cleanable):
         """
         Public API
 
-        Return True when state is open.
+        Return whether the switch is currently open (`state >= 2`).
         """
         return len(self._tickets) >= 2
 
@@ -91,7 +97,7 @@ class CounterSwitch(Cleanable):
         """
         Public API
 
-        Return raw state value.
+        Return the raw deque-backed state value.
         """
         return len(self._tickets)
 
@@ -107,7 +113,7 @@ class CounterSwitch(Cleanable):
 
         Returns:
             int:
-                Resulting state.
+                Resulting state after the signed ticket mutation.
         """
         if delta == 0:
             return len(self._tickets)
@@ -135,11 +141,12 @@ class CounterSwitch(Cleanable):
 
         Returns:
             int:
-                Current state after admission.
+                Current state after leader election or follower wake-up.
 
         Raises:
             TimeoutError:
-                If waiting at pending state times out.
+                If a follower waits at pending state and the event is not
+                signalled before `timeout_seconds` expires.
         """
         count = len(self._tickets)
         if count >= 2:

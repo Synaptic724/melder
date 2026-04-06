@@ -35,6 +35,12 @@ class SpellbookValidationError(RuntimeError):
             broken_spells: Spells marked as broken after validation.
         Returns:
             None.
+
+        Preserved state:
+            - `broken_spells` stores the original spell objects supplied to the
+              error.
+            - The rendered message preserves the primary failure line and then
+              appends any available Phase 4 and Phase 6 diagnostics.
         """
         self.broken_spells = broken_spells
         if not broken_spells:
