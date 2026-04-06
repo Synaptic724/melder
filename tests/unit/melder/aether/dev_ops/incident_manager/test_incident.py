@@ -1,4 +1,5 @@
 import pytest
+import threading
 from threading import Thread
 from melder.aether.dev_ops.incident_manager.incident import Incident
 from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSeverity
@@ -225,3 +226,53 @@ def test_access_after_cleanup_raises(incident):
 def test_lock_creation(incident):
     from threading import RLock
     assert isinstance(incident._lock, type(RLock()))
+
+
+def test_cleanup_rechecks_cleaned_inside_lock(incident):
+    """
+    Verify the inner cleanup re-check under concurrent teardown.
+
+    Contract:
+    - A second cleanup caller may pass the outer `_cleaned` check.
+    - The inner `_cleaned` check inside the lock returns safely without error.
+    """
+
+    class _CoordinatedLock:
+        def __init__(self) -> None:
+            self._entered_first = threading.Event()
+            self._second_attempted = threading.Event()
+            self._lock = threading.RLock()
+
+        def __enter__(self):
+            if self._entered_first.is_set():
+                self._second_attempted.set()
+            self._lock.acquire()
+            if not self._entered_first.is_set():
+                self._entered_first.set()
+                assert self._second_attempted.wait(timeout=1.0)
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self._lock.release()
+
+    incident._lock = _CoordinatedLock()
+    failures = []
+
+    def _run_cleanup():
+        try:
+            incident.cleanup()
+        except BaseException as exc:
+            failures.append(exc)
+
+    first = Thread(target=_run_cleanup, name="incident-cleanup-first")
+    second = Thread(target=_run_cleanup, name="incident-cleanup-second")
+
+    first.start()
+    assert incident._lock._entered_first.wait(timeout=1.0)
+    second.start()
+    first.join()
+    second.join()
+
+    assert failures == []
+    assert incident._cleaned is True
+    assert incident._lock is None

@@ -799,10 +799,10 @@ def test_rift_can_create_new_frame_viewer_for_one_engaged_frame() -> None:
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
     rift.engage_frame("ops", set_as_default=True)
 
-    viewer = rift.create_new_frame_viewer("ops", viewer_profile_name="inspection")
+    viewer = rift.create_new_frame_viewer("ops", viewer_profile_name="general")
 
     assert viewer.list_frame_names() == ["ops"]
-    assert viewer.selected_profile_names_by_frame_name == {"ops": "inspection"}
+    assert viewer.selected_profile_names_by_frame_name == {"ops": "general"}
     assert viewer.get_selected_profile_for_frame("ops").frame_descriptor is (
         viewer.frame_descriptors_by_name["ops"]
     )

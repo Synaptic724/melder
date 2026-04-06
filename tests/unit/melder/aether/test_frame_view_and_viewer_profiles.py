@@ -28,22 +28,24 @@ def test_frame_viewer_profile_create_general_exposes_expected_defaults() -> None
     assert profile.name == "general"
     assert profile.version == "0.0.1"
     assert profile.default_grouping == "frame"
-    assert profile.default_detail_level == "summary"
+    assert profile.default_detail_level == "detailed"
     assert "list_frames" in profile.enabled_helpers
-    assert "list_targets" in profile.enabled_helpers
-    assert "describe_frames" in profile.enabled_helpers
+    assert "list_conduits" in profile.enabled_helpers
+    assert "list_spells" in profile.enabled_helpers
+    assert profile.tool_handler_names_by_name["list_frames"] == "view_frame.list_frames"
+    assert profile.tool_handler_names_by_name["list_spells"] == "view_spell.list_spells"
+    assert profile.view_frame is not None
+    assert profile.view_conduit is not None
+    assert profile.view_spell is not None
 
 
-def test_frame_viewer_profile_builder_seeds_navigation_and_inspection_profiles() -> None:
+def test_frame_viewer_profile_builder_seeds_general_profile_only() -> None:
     builder = FrameViewerProfileBuilder()
 
-    assert builder.list_profile_names() == ["general", "navigation", "inspection"]
-    assert builder.get_required_profile("navigation").tool_handler_names_by_name[
-        "select_view"
-    ] == "set_default_view"
-    assert builder.get_required_profile("inspection").tool_handler_names_by_name[
+    assert builder.list_profile_names() == ["general"]
+    assert builder.get_required_profile("general").tool_handler_names_by_name[
         "describe_targets"
-    ] == "describe_available_targets"
+    ] == "view_frame.describe_targets"
 
 
 def test_frame_viewer_profile_cleanup_clears_owned_state() -> None:
@@ -55,6 +57,9 @@ def test_frame_viewer_profile_cleanup_clears_owned_state() -> None:
     assert profile._tool_handler_names_by_name is None
     assert profile._default_grouping is None
     assert profile._default_detail_level is None
+    assert profile._view_frame is None
+    assert profile._view_conduit is None
+    assert profile._view_spell is None
     assert profile._version is None
     assert profile._name is None
 
@@ -103,17 +108,16 @@ def test_frame_viewer_profile_rejects_invalid_tool_mapping_inputs() -> None:
         FrameViewerProfile("general", tool_handler_names_by_name={"inventory": ""})
 
 
-def test_frame_viewer_profile_clone_returns_detached_tool_mapping() -> None:
-    profile = FrameViewerProfile(
-        "inspection",
-        tool_handler_names_by_name={"inventory": "list_links"},
-    )
+def test_frame_viewer_profile_clone_returns_detached_general_profile() -> None:
+    profile = FrameViewerProfile.create_general()
 
     cloned = profile.clone()
 
     assert cloned is not profile
-    assert cloned.tool_handler_names_by_name == {"inventory": "list_links"}
+    assert cloned.name == "general"
+    assert cloned.tool_handler_names_by_name == profile.tool_handler_names_by_name
     assert cloned.tool_handler_names_by_name is not profile.tool_handler_names_by_name
+    assert cloned.view_frame is not profile.view_frame
 
 
 def test_frame_viewer_profile_builder_seeds_and_registers_profiles() -> None:
@@ -127,7 +131,7 @@ def test_frame_viewer_profile_builder_seeds_and_registers_profiles() -> None:
 
     builder.register_profile(custom_profile)
 
-    assert builder.list_profile_names() == ["general", "navigation", "inspection"]
+    assert builder.list_profile_names() == ["general", "inspection"]
     assert builder.get_required_profile("inspection") is custom_profile
 
 

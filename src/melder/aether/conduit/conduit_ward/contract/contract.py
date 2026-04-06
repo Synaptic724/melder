@@ -18,6 +18,11 @@ class Contract(Cleanable, IContract):
     which lineages are shared and with what permissions. Each side can grant
     or revoke independently; the contract object simply tracks both views.
 
+    In practice this object is the shared storage for:
+        - per-ward spell/detail maps
+        - the relationship between the two participating wards
+        - lineage-aware source tagging used by dependency-linked rollback
+
     Attributes:
         _ward_a / _ward_b: The two participating wards.
         _details_a / _details_b: Per-ward maps of spell_id -> Detail.
@@ -81,14 +86,18 @@ class Contract(Cleanable, IContract):
     #region Context Manager
     def __enter__(self):
         """
-        Enters the context manager for Aether.
+        Acquire the contract lock and return this contract.
+
+        Contract:
+            This is a simple lock guard only; it does not open any higher-level
+            transaction scope.
         """
         self._lock.acquire()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         """
-        Exits the context manager for Aether.
+        Release the contract lock acquired by `__enter__`.
         """
         self._lock.release()
 

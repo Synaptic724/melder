@@ -126,6 +126,27 @@ def test_prop_ccm_thread_safety(manager):
         mock_lock.__exit__.assert_called()
 
 # ----------------------------------------------------------------------
+# 3b. Property Tests: RiskManager
+# ----------------------------------------------------------------------
+
+def test_prop_risk_manager_success(manager):
+    """Verify property returns the initialized risk manager."""
+    assert manager.risk_manager is manager._risk_manager
+
+def test_prop_risk_manager_raises_if_cleaned(manager):
+    """Verify accessing risk_manager after cleanup raises RuntimeError."""
+    manager.cleanup()
+    with pytest.raises(RuntimeError):
+        _ = manager.risk_manager
+
+def test_prop_risk_manager_thread_safety(manager):
+    """Verify risk_manager property access is thread-safe (acquires lock)."""
+    with patch.object(manager, "_lock") as mock_lock:
+        _ = manager.risk_manager
+        mock_lock.__enter__.assert_called()
+        mock_lock.__exit__.assert_called()
+
+# ----------------------------------------------------------------------
 # 4. Property Tests: CreationGateController
 # ----------------------------------------------------------------------
 
@@ -219,6 +240,11 @@ def test_revalidate_propagates_exceptions(manager, mock_dependencies):
     mock_dependencies["mock_ccm"].revalidate_dirty_roots.side_effect = ValueError("Boom")
     with pytest.raises(ValueError, match="Boom"):
         manager.revalidate_dirty_roots("conduit-1")
+
+def test_revalidate_rejects_empty_conduit_id(manager):
+    """Verify empty conduit ids are rejected before delegation."""
+    with pytest.raises(ValueError, match="conduit_id cannot be empty"):
+        manager.revalidate_dirty_roots("")
 
 # ----------------------------------------------------------------------
 # 7. Method Tests: Creation Gate Facade
@@ -572,3 +598,53 @@ def test_cleanable_interface_compliance(manager):
 def test_revalidate_dirty_roots_does_not_return_value(manager):
     """Verify it returns None."""
     assert manager.revalidate_dirty_roots("conduit-1") is None
+
+
+def test_cleanup_rechecks_cleaned_inside_lock(manager):
+    """
+    Verify the inner cleanup re-check under concurrent teardown.
+
+    Contract:
+    - A second cleanup caller may pass the outer `_cleaned` check.
+    - The inner `_cleaned` check inside the lock returns safely without error.
+    """
+
+    class _CoordinatedLock:
+        def __init__(self) -> None:
+            self._entered_first = threading.Event()
+            self._second_attempted = threading.Event()
+            self._lock = threading.RLock()
+
+        def __enter__(self):
+            if self._entered_first.is_set():
+                self._second_attempted.set()
+            self._lock.acquire()
+            if not self._entered_first.is_set():
+                self._entered_first.set()
+                assert self._second_attempted.wait(timeout=1.0)
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self._lock.release()
+
+    manager._lock = _CoordinatedLock()
+    failures = []
+
+    def _run_cleanup():
+        try:
+            manager.cleanup()
+        except BaseException as exc:
+            failures.append(exc)
+
+    first = threading.Thread(target=_run_cleanup, name="devops-cleanup-first")
+    second = threading.Thread(target=_run_cleanup, name="devops-cleanup-second")
+
+    first.start()
+    assert manager._lock._entered_first.wait(timeout=1.0)
+    second.start()
+    first.join()
+    second.join()
+
+    assert failures == []
+    assert manager._cleaned is True
+    assert manager._lock is None

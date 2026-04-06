@@ -18,14 +18,18 @@ class Detail(Cleanable, IDetail):
     A `Detail` records which lineage is being shared, which version was
     present when the contract was created, and what permission applies.
     It is lineage-aware (uses `SpellIndex`) and direction-aware (via
-    `contract_type`).
+    `contract_type`). It also carries optional `sources`, which lets the ward
+    distinguish details that were added for one specific root-driven dependency
+    expansion from details that were granted independently.
 
     Attributes:
         spell_index (SpellIndex): Lineage identity for the contracted spell.
         spell_id (str): Version ID captured at contract creation time.
         permissions (Permissions): Granted permission (read/create/block).
         contract_type (ContractTypes): Whether this entry was initiated
-            or received from the owning ward’s perspective.
+            or received from the owning ward's perspective.
+        reason (DetailReason): Why this detail exists in the contract.
+        sources (Set[str]): Root spell ids that currently justify this detail.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = (
@@ -55,10 +59,18 @@ class Detail(Cleanable, IDetail):
             spell_index: Lineage identifier for the contracted spell.
             spell_id: Version ID (SHA) captured at contract creation time.
             permissions: Permission granted to this lineage.
-            contract_type: Direction of the grant from the owning ward’s view.
+            contract_type: Direction of the grant from the owning ward's view.
+            reason: Why this detail exists.
+            sources:
+                Optional root spell ids that currently justify this detail.
 
         Raises:
             TypeError: If any argument is not the expected type.
+
+        Contract:
+            `spell_id` records the version visible at creation time, while
+            `spell_index` remains the durable lineage anchor used for later
+            current-head resolution.
         """
         super().__init__()
         self._lock = RLock()
@@ -149,7 +161,13 @@ class Detail(Cleanable, IDetail):
         return version_id in versions
 
     def add_source(self, root_spell_id: str) -> None:
-        """Track that a root spell_id requested this Detail."""
+        """
+        Record that one root spell id currently justifies this detail.
+
+        Contract:
+            Source tagging is additive. Multiple roots may point at the same
+            detail when they transitively require the same contracted lineage.
+        """
         self.check_cleaned()
         if root_spell_id is None:
             return
@@ -160,7 +178,12 @@ class Detail(Cleanable, IDetail):
 
     def remove_source(self, root_spell_id: str) -> bool:
         """
-        Remove a root spell_id source. Returns True if sources is now empty.
+        Remove one root spell id source from this detail.
+
+        Returns:
+            bool:
+                True when the source set becomes empty and the caller should
+                delete the detail entirely.
         """
         self.check_cleaned()
         if root_spell_id is None or self.sources is None:

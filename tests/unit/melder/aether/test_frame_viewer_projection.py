@@ -195,8 +195,6 @@ def test_frame_viewer_lists_available_targets_for_default_frame() -> None:
 
 def test_frame_viewer_describe_available_targets_adds_metadata_for_detailed_profile() -> None:
     viewer = _build_viewer(("ops",))
-    viewer.register_active_profile(FrameViewerProfile.create_inspection())
-    viewer.set_default_profile("inspection")
 
     descriptions = viewer.describe_available_targets()
 
@@ -206,25 +204,23 @@ def test_frame_viewer_describe_available_targets_adds_metadata_for_detailed_prof
 
 def test_frame_viewer_can_list_active_viewer_profiles_and_set_default() -> None:
     viewer = _build_viewer(("ops",))
-    viewer.register_active_profile(FrameViewerProfile.create_navigation())
 
-    assert viewer.list_view_profile_names() == ["general", "navigation"]
+    assert viewer.list_view_profile_names() == ["general"]
 
-    viewer.set_default_view_profile("navigation")
+    viewer.set_default_view_profile("general")
 
-    assert viewer.profile_name == "navigation"
+    assert viewer.profile_name == "general"
 
 
 def test_frame_viewer_execute_tool_routes_through_profile_mapping() -> None:
     viewer = _build_viewer(("ops",))
-    viewer.register_active_profile(FrameViewerProfile.create_inspection())
 
     descriptions = viewer.execute_tool(
         "describe_targets",
-        profile_name="inspection",
     )
 
     assert descriptions[0]["source_kind"] == "frame"
+    assert "metadata" in descriptions[0]
 
 
 def test_frame_viewer_get_required_link_by_source_returns_matching_link() -> None:
@@ -327,21 +323,24 @@ def test_frame_viewer_selected_profile_is_bound_to_frame_context() -> None:
 
 def test_frame_viewer_can_set_selected_profile_for_frame() -> None:
     viewer = _build_viewer(("ops",))
-    viewer.register_active_profile(FrameViewerProfile.create_inspection())
 
-    viewer.set_selected_profile_for_frame("ops", "inspection")
+    viewer.set_selected_profile_for_frame("ops", "general")
 
-    assert viewer.selected_profile_names_by_frame_name == {"ops": "inspection"}
-    assert viewer.get_selected_profile_for_frame("ops").name == "inspection"
+    assert viewer.selected_profile_names_by_frame_name == {"ops": "general"}
+    assert viewer.get_selected_profile_for_frame("ops").name == "general"
 
 
 def test_frame_viewer_selected_profile_for_frame_shapes_execution() -> None:
     viewer = _build_viewer(("ops",))
-    viewer.register_active_profile(FrameViewerProfile.create_inspection())
-    viewer.set_selected_profile_for_frame("ops", "inspection")
+    viewer.set_selected_profile_for_frame("ops", "general")
 
-    descriptions = viewer.describe_available_targets(frame_name="ops")
+    descriptions = viewer.execute_tool(
+        "describe_spells",
+        frame_name="ops",
+    )
 
+    assert len(descriptions) == 1
+    assert descriptions[0]["source_kind"] == "spell"
     assert "metadata" in descriptions[0]
 
 

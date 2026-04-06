@@ -775,7 +775,11 @@ class FrameViewer(Cleanable):
             selected_frame_name,
         )
         handler_name = selected_profile.get_required_tool_handler_name(tool_name)
-        handler = getattr(self, handler_name, None)
+        handler = self._resolve_tool_handler(
+            selected_profile,
+            handler_name,
+            viewer=self,
+        )
         if handler is None or not callable(handler):
             raise ValueError(
                 "FrameViewer tool '{0}' targets missing handler '{1}'.".format(
@@ -811,6 +815,54 @@ class FrameViewer(Cleanable):
                 default_profile.name,
             )
         )
+
+    @staticmethod
+    def _resolve_tool_handler(
+            selected_profile: FrameViewerProfile,
+            handler_name: str,
+            viewer: Optional["FrameViewer"] = None,
+    ) -> Optional[Any]:
+        """
+        Resolve one tool handler against the bound profile first, then viewer.
+
+        Args:
+            selected_profile:
+                Bound selected profile for the current frame.
+            handler_name:
+                Tool handler name or dotted helper path.
+            viewer:
+                Optional viewer host fallback.
+
+        Returns:
+            Optional[Any]: Resolved callable when found.
+        """
+        resolved = FrameViewer._resolve_callable_path(selected_profile, handler_name)
+        if resolved is not None:
+            return resolved
+        if viewer is None:
+            return None
+        return FrameViewer._resolve_callable_path(viewer, handler_name)
+
+    @staticmethod
+    def _resolve_callable_path(root_object: Any, handler_name: str) -> Optional[Any]:
+        """
+        Resolve one callable path from a root object.
+
+        Args:
+            root_object:
+                Root object to traverse.
+            handler_name:
+                Handler name or dotted helper path.
+
+        Returns:
+            Optional[Any]: Resolved callable when found.
+        """
+        current_object = root_object
+        for current_part in handler_name.split("."):
+            current_object = getattr(current_object, current_part, None)
+            if current_object is None:
+                return None
+        return current_object
 
     def _resolve_profile(
             self,

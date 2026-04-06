@@ -3,13 +3,24 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class Policies(Enum):
     """
-    Access policies (evaluated only when system_state is dynamic):
+    Runtime policy mode for conduit-to-conduit contracting.
 
-    - default: normal per-spell rules/whitelist metadata.
-    - whitelist_all: expose all local spells regardless of per-spell whitelist flags.
-    - block_all: expose only spells explicitly marked with `meta["whitelist"] = True`.
-    - inbound_only: accept inbound links/borrows but do not initiate outbound links.
-    - outbound_only: initiate outbound links but reject inbound link requests.
+    These policies only matter in dynamic mode, where conduits are allowed to
+    form and sever contracts at runtime. They describe how permissive the ward
+    should be about outbound grants, inbound borrowing, and whole-spellbook
+    visibility.
+
+    Modes:
+        - `default`:
+          normal per-spell permission and whitelist rules.
+        - `whitelist_all`:
+          expose all local spells without requiring per-spell whitelist flags.
+        - `block_all`:
+          expose nothing except explicitly whitelisted spell entries.
+        - `inbound_only`:
+          accept inbound links/borrows but do not initiate outbound links.
+        - `outbound_only`:
+          initiate outbound links but reject inbound link requests.
     """
     __melder_internal__ = _mrg.sentinel
     default = auto()
