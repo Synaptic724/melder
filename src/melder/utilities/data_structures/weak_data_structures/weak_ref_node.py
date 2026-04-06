@@ -134,6 +134,12 @@ class WeakRefNode(Cleanable, Generic[_T]):
         Deterministically tears down this node, clearing all references and resources.
 
         This method is idempotent.
+
+        Contract:
+            - Clears the weak reference and callback storage.
+            - Marks the node dead and cleaned.
+            - Does not fire callbacks implicitly; explicit removal paths remain
+              responsible for `fire_callbacks()` when that behavior is needed.
         """
         if self._cleaned:
             return
@@ -187,19 +193,21 @@ class WeakRefNode(Cleanable, Generic[_T]):
 
     def is_alive(self) -> bool:
         """
-        Returns True if the underlying object is still alive.
+        Returns whether the underlying object is still alive.
 
         Returns:
-            bool: True if the referent exists.
+            bool: True if the referent exists and the node has not been marked
+            dead.
         """
         return not self.dead
 
     def try_get(self) -> Optional[_T]:
         """
-        Returns the underlying object if it is still alive, otherwise returns None.
+        Returns the underlying object if it is still alive.
 
         Returns:
-            Optional[_T]: The live object, or None.
+            Optional[_T]: The live object, or None when the node has already
+            gone dead.
         """
         if self._ref is None or self.dead:
             return None
@@ -264,7 +272,8 @@ class WeakRefNode(Cleanable, Generic[_T]):
             new (_T): The new object to weakly reference.
 
         Returns:
-            Optional[_T]: The previous live object, or None if it was dead.
+            Optional[_T]: The previous live object, or None if it was already
+            dead.
         """
         old = self.try_get()
         self.set(new)
@@ -318,7 +327,7 @@ class WeakRefNode(Cleanable, Generic[_T]):
 
     def deref(self, *, strict: bool = True) -> Optional[_T]:
         """
-        Convenience helper to retrieve the target, acting as a wrapper around `try_get()`/`get()`.
+        Convenience helper to retrieve the target via `try_get()` / `get()`.
 
         Args:
             strict (bool):
@@ -340,7 +349,7 @@ class WeakRefNode(Cleanable, Generic[_T]):
     # ------------------------------------------------------------------
     def add_callback(self, cb: _OnCollect) -> None:
         """
-        Registers an additional callback to be invoked when the referent is collected (GC path) or when `fire_callbacks()` is called.
+        Register an additional callback for GC-path or explicit callback firing.
 
         Args:
             cb (_OnCollect): The callback function.
@@ -355,9 +364,10 @@ class WeakRefNode(Cleanable, Generic[_T]):
 
     def fire_callbacks(self) -> None:
         """
-        Manually invokes all registered callbacks (`on_collect` and extra callbacks) once, then clears them.
+        Manually invoke all registered callbacks once, then clear them.
 
-        This allows a container to force firing callbacks in a controlled context instead of waiting for GC.
+        This allows a container to force firing callbacks in a controlled
+        context instead of waiting for GC.
         """
         if not self._callbacks and self._on_collect is None:
             return
@@ -388,10 +398,11 @@ class WeakRefNode(Cleanable, Generic[_T]):
     # ------------------------------------------------------------------
     def __repr__(self) -> str:
         """
-        Returns the official string representation of the WeakRefNode.
+        Return a debug-oriented representation of this node.
 
         Returns:
-            str: The representation showing ID, liveness state, and phantom status.
+            str: Representation showing node id, liveness state, and phantom
+            status.
         """
         state = "dead" if self.dead else "alive"
         phantom = ", phantom_fired=True" if self._phantom_fired else ""
@@ -433,6 +444,6 @@ class WeakRefNode(Cleanable, Generic[_T]):
           also uses the node ID.
 
         Returns:
-            int: The hash value for this node.
+            int: Stable hash value for this node's identifier.
         """
         return hash(self._id)

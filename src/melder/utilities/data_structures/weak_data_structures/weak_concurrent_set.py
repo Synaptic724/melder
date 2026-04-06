@@ -531,13 +531,13 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
 
     def to_list(self) -> list[_T]:
         """
-        Convert this WeakConcurrentSet into a :class:`ConcurrentList`.
+        Materialize all live values into a standard Python list.
 
-        This materializes all live values and stores them in a fresh
-        `ConcurrentList`.
+        This does not preserve weak-reference behavior; it returns strong
+        references to the currently live values only.
 
         Returns:
-            ConcurrentList[_T]:
+            list[_T]:
                 A new list containing all live values.
 
         Raises:
@@ -626,40 +626,54 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
     # Set operations (union, intersection, etc.)
     # -------------------------------------------------------------------------
     def _materialize_other(self, other: Iterable[Any]) -> set[_T]:
+        """
+        Convert another iterable or weak set into a concrete set of values.
+
+        Returns:
+            set[_T]: Materialized comparison/update operand.
+        """
         return set(other if not isinstance(other, WeakConcurrentSet) else other.to_set())
 
     def isdisjoint(self, other: Iterable[Any]) -> bool:
+        """Return whether this set and `other` share no live values."""
         return self.to_set().isdisjoint(self._materialize_other(other))
 
     def issubset(self, other: Iterable[Any]) -> bool:
+        """Return whether all live values in this set also appear in `other`."""
         return self.to_set().issubset(self._materialize_other(other))
 
     def issuperset(self, other: Iterable[Any]) -> bool:
+        """Return whether all values in `other` appear among this set's live values."""
         return self.to_set().issuperset(self._materialize_other(other))
 
     def union(self, *others: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        """Return a new weak set containing the union of this set and `others`."""
         result = self.to_set()
         for o in others:
             result |= self._materialize_other(o)
         return WeakConcurrentSet(result, auto_prune=self._auto_prune)
 
     def intersection(self, *others: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        """Return a new weak set containing the live intersection with `others`."""
         result = self.to_set()
         for o in others:
             result &= self._materialize_other(o)
         return WeakConcurrentSet(result, auto_prune=self._auto_prune)
 
     def difference(self, *others: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        """Return a new weak set containing live values not present in `others`."""
         result = self.to_set()
         for o in others:
             result -= self._materialize_other(o)
         return WeakConcurrentSet(result, auto_prune=self._auto_prune)
 
     def symmetric_difference(self, other: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        """Return a new weak set containing values present in exactly one operand."""
         result = self.to_set() ^ self._materialize_other(other)
         return WeakConcurrentSet(result, auto_prune=self._auto_prune)
 
     def update(self, *others: Iterable[Any]) -> None:
+        """Mutate this set to include the union of its current live values and `others`."""
         self._ensure_mutable()
         with self._lock:
             base = self._values_from_nodes(self._set)
@@ -670,6 +684,7 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
                 self._set.add(self._make_node(v))
 
     def intersection_update(self, *others: Iterable[Any]) -> None:
+        """Mutate this set to keep only live values shared with `others`."""
         self._ensure_mutable()
         with self._lock:
             base = self._values_from_nodes(self._set)
@@ -680,6 +695,7 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
                 self._set.add(self._make_node(v))
 
     def difference_update(self, *others: Iterable[Any]) -> None:
+        """Mutate this set to remove live values found in `others`."""
         self._ensure_mutable()
         with self._lock:
             base = self._values_from_nodes(self._set)
@@ -690,6 +706,7 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
                 self._set.add(self._make_node(v))
 
     def symmetric_difference_update(self, other: Iterable[Any]) -> None:
+        """Mutate this set to the symmetric difference of its live values and `other`."""
         self._ensure_mutable()
         with self._lock:
             base = self._values_from_nodes(self._set)
@@ -700,30 +717,38 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
 
     # PEP 584-style operators
     def __or__(self, other: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        """Return `self.union(other)`."""
         return self.union(other)
 
     def __and__(self, other: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        """Return `self.intersection(other)`."""
         return self.intersection(other)
 
     def __sub__(self, other: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        """Return `self.difference(other)`."""
         return self.difference(other)
 
     def __xor__(self, other: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        """Return `self.symmetric_difference(other)`."""
         return self.symmetric_difference(other)
 
     def __ior__(self, other: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        """Apply `update(other)` in place and return this set."""
         self.update(other)
         return self
 
     def __iand__(self, other: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        """Apply `intersection_update(other)` in place and return this set."""
         self.intersection_update(other)
         return self
 
     def __isub__(self, other: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        """Apply `difference_update(other)` in place and return this set."""
         self.difference_update(other)
         return self
 
     def __ixor__(self, other: Iterable[Any]) -> "WeakConcurrentSet[_T]":
+        """Apply `symmetric_difference_update(other)` in place and return this set."""
         self.symmetric_difference_update(other)
         return self
 
@@ -758,7 +783,7 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         """
         Equality comparison against another WeakConcurrentSet or plain set-like.
 
-        Live values are compared; dead entries will cause DeadReferenceError unless already pruned.
+        Live values are compared; dead entries will raise unless already pruned.
         """
         if isinstance(other, WeakConcurrentSet):
             return self.to_set() == other.to_set()
@@ -767,6 +792,7 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
         return False
 
     def __ne__(self, other: object) -> bool:
+        """Return the negated result of :meth:`__eq__`."""
         return not self.__eq__(other)
 
     # -------------------------------------------------------------------------

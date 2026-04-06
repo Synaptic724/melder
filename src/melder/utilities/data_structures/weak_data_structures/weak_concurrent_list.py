@@ -568,7 +568,11 @@ class WeakConcurrentList(Generic[_T], Cleanable):
     # -------------------------------------------------------------------------
     def __getstate__(self) -> dict:
         """
-        Support pickling/deepcopy by excluding the lock and weak nodes.
+        Build a serialization-friendly snapshot of the list state.
+
+        Returns:
+            dict: Snapshot payload containing live values and configuration
+            flags, but excluding the live lock and node objects.
         """
         return {
             "_id": self._id,
@@ -580,7 +584,7 @@ class WeakConcurrentList(Generic[_T], Cleanable):
 
     def __setstate__(self, state: dict) -> None:
         """
-        Restore from pickled/deepcopied state.
+        Restore this list from a pickled or deep-copied state payload.
         """
         self._id = state.get("_id", str(ulid.ULID()))
         self._freeze = state.get("_freeze", False)
@@ -625,6 +629,9 @@ class WeakConcurrentList(Generic[_T], Cleanable):
     def count(self, item: Any) -> int:
         """
         Count occurrences of ``item`` among live entries.
+
+        Returns:
+            int: Number of live entries equal to `item`.
         """
         self.check_cleaned()
         with self._lock:
@@ -643,7 +650,10 @@ class WeakConcurrentList(Generic[_T], Cleanable):
 
     def index(self, item: Any, start: int = 0, stop: Optional[int] = None) -> int:
         """
-        Return first index of ``item`` among live entries.
+        Return the first index of ``item`` among live entries.
+
+        Returns:
+            int: Index of the first matching live value.
         """
         self.check_cleaned()
         with self._lock:
@@ -663,7 +673,7 @@ class WeakConcurrentList(Generic[_T], Cleanable):
 
     def copy(self) -> "WeakConcurrentList[_T]":
         """
-        Shallow copy containing live values.
+        Return a shallow copy containing only current live values.
         """
         return WeakConcurrentList(self.to_list(), auto_prune=self._auto_prune)
 
@@ -826,19 +836,22 @@ class WeakConcurrentList(Generic[_T], Cleanable):
     # -------------------------------------------------------------------------
     def map(self, func: Callable[[_T], _T]) -> "WeakConcurrentList[_T]":
         """
-        Apply ``func`` to each live element and return a new WeakConcurrentList of results.
+        Apply ``func`` to each live element and return a new weak list of results.
         """
         return WeakConcurrentList((func(v) for v in self.to_list()), auto_prune=self._auto_prune)
 
     def filter(self, func: Callable[[_T], bool]) -> "WeakConcurrentList[_T]":
         """
-        Keep elements where ``func(value)`` is True.
+        Keep only live elements where ``func(value)`` returns True.
         """
         return WeakConcurrentList((v for v in self.to_list() if func(v)), auto_prune=self._auto_prune)
 
     def reduce(self, func: Callable[[Any, _T], Any], initial: Any) -> Any:
         """
         Reduce the live elements using ``func`` starting from ``initial``.
+
+        Returns:
+            Any: Reduced accumulator value.
         """
         return _reduce(func, self.to_list(), initial)
 
@@ -848,7 +861,7 @@ class WeakConcurrentList(Generic[_T], Cleanable):
 
     def __enter__(self):
         """
-        Enters the synchronization context, acquiring the internal lock.
+        Enter the synchronization context and acquire the internal lock.
 
         Returns:
             WeakConcurrentList[_T]: The list instance.
@@ -862,7 +875,7 @@ class WeakConcurrentList(Generic[_T], Cleanable):
 
     def __exit__(self, exc_type, exc_value, traceback):
         """
-        Exits the synchronization context, releasing the internal lock.
+        Exit the synchronization context and release the internal lock.
         """
         try:
             self._lock.release()

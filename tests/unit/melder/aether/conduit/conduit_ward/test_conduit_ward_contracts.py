@@ -927,6 +927,53 @@ def test_remove_all_spells_from_contract_preserves_details_when_spellbook_clear_
     assert spell.spell_index in borrower._spellbook._contracted_spells[owner._id]
 
 
+def test_remove_spell_from_contract_swallows_invalidate_contract_consumers_error(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify invalidate-consumer failures are swallowed after successful spell removal."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-invalidate-remove", permissions=Permissions.create)
+
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+        permissions="create",
+    )
+    borrower._conduit_ward._invalidate_contract_consumers = MagicMock(side_effect=RuntimeError("invalidate boom"))
+
+    result = borrower._conduit_ward._remove_spell_from_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+    )
+
+    assert result is True
+    assert borrower._conduit_ward._find_contract(owner) is None
+
+
+def test_remove_all_spells_from_contract_swallows_invalidate_contract_consumers_error(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify invalidate-consumer failures are swallowed after successful bulk contract clearing."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-invalidate-clear", permissions=Permissions.create)
+
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+        permissions="create",
+    )
+    borrower._conduit_ward._invalidate_contract_consumers = MagicMock(side_effect=RuntimeError("invalidate boom"))
+
+    result = borrower._conduit_ward._remove_all_spells_from_contract(conduit=owner)
+
+    contract = borrower._conduit_ward._find_contract(owner)
+    assert result is True
+    assert contract._get_detail_map(owner._conduit_ward) == {}
+
+
 def test_get_spells_in_contract_by_conduit_reports_inbound_and_outbound(
     linked_pair: tuple[FakeConduit, FakeConduit],
 ) -> None:
@@ -1912,6 +1959,66 @@ def test_validate_contracts_and_define_falls_back_to_find_by_id(
     contract = borrower._conduit_ward._find_contract(owner)
 
     assert results[contract._id] is True
+
+
+def test_validate_contracts_and_define_returns_false_when_fallback_lookup_by_id_fails(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify validation returns False when both contracted lookup strategies fail."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-fallback-miss", permissions=Permissions.create)
+
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+        permissions="create",
+    )
+    borrower._spellbook._find_contracted_spell = MagicMock(side_effect=RuntimeError("index boom"))
+    borrower._spellbook._find_contracted_spell_by_id = MagicMock(side_effect=RuntimeError("id boom"))
+
+    results = borrower._conduit_ward._validate_contracts_and_define()
+    contract = borrower._conduit_ward._find_contract(owner)
+
+    assert results[contract._id] is False
+
+
+def test_preflight_contract_dependency_collisions_rejects_missing_root_spell() -> None:
+    """Verify preflight rejects a missing root spell immediately."""
+    owner, borrower = _build_conduit_pair()
+
+    with pytest.raises(ValueError, match="root_spell must not be None"):
+        borrower._conduit_ward._preflight_contract_dependency_collisions(
+            root_spell=None,
+            root_spell_id="root-missing",
+            requested_permissions=Permissions.create,
+        )
+
+
+def test_preflight_contract_dependency_collisions_rejects_missing_root_spell_id() -> None:
+    """Verify preflight rejects a missing root spell id immediately."""
+    _, borrower = _build_conduit_pair()
+    root_spell = _register_spell(borrower, "root-preflight", permissions=Permissions.create)
+
+    with pytest.raises(ValueError, match="root_spell_id must not be None"):
+        borrower._conduit_ward._preflight_contract_dependency_collisions(
+            root_spell=root_spell,
+            root_spell_id=None,
+            requested_permissions=Permissions.create,
+        )
+
+
+def test_preflight_contract_dependency_collisions_noops_without_spellbook() -> None:
+    """Verify preflight returns without error when the conduit has no spellbook."""
+    _, borrower = _build_conduit_pair()
+    root_spell = _register_spell(borrower, "root-no-spellbook", permissions=Permissions.create)
+    borrower._spellbook = None
+
+    borrower._conduit_ward._preflight_contract_dependency_collisions(
+        root_spell=root_spell,
+        root_spell_id=root_spell.spell_id,
+        requested_permissions=Permissions.create,
+    )
 
 
 def test_get_spells_in_contract_by_conduit_name_returns_match(
