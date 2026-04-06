@@ -17,7 +17,7 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class IndexCoverageStrategy(SpellSystemValidationStrategy):
     """
-    Guard that the Phase 5 index and root blueprints describe the same system.
+    Guard that the Phase 5 index and rooted blueprints describe the same node set.
 
     `SpellSystemIndex` is the frame-level catalog of nodes the system believes
     exist, while the root-blueprint set is the rooted structural view the later

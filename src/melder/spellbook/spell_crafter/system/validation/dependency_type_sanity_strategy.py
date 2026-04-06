@@ -18,13 +18,19 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class DependencyTypeSanityStrategy(SpellSystemValidationStrategy):
     """
-    Internal
+    Guard against unexpected callable-style dependency types in the system graph.
 
-    Purpose:
-        Flag dependency graphs that rely on method/lambda spell types.
+    This strategy checks whether rooted system dependencies are leaning on
+    method/lambda spell types where the broader system graph is expected to be
+    dominated by class or existing-creation nodes. It is intentionally a
+    warning-level signal rather than a hard failure, because those callable
+    nodes can still be valid, but they often indicate a system graph shape that
+    deserves extra scrutiny.
+
     Contract:
-        - Emits ``dependency_type_unexpected`` for method/lambda dependencies.
-        - Uses WARNING severity to avoid gating resolution.
+        - Emits `dependency_type_unexpected` for method/lambda dependencies.
+        - Uses WARNING severity so it informs system review without by itself
+          gating resolution.
     """
     __slots__ = []
 

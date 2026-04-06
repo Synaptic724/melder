@@ -16,7 +16,17 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class GraphConsistencyStrategy(SpellSystemValidationStrategy):
     """
-    Ensures blueprint DAG edges align with SpellSystemIndex dependencies.
+    Guard that rooted blueprint DAGs and the frame-level index describe the
+    same dependency edges.
+
+    Phase 5 produces two related structural views:
+
+    - rooted DAG blueprints used by later planning
+    - `SpellSystemIndex` nodes used by system validation/change control
+
+    This strategy checks them in both directions so we catch drift where a
+    blueprint references an edge the index does not know about, or the index
+    records an edge that never appears in any rooted blueprint.
     """
     __slots__ = []
 

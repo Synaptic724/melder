@@ -17,13 +17,17 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class LineageAlignmentStrategy(SpellSystemValidationStrategy):
     """
-    Internal
+    Guard that root-blueprint lineage metadata agrees with the system index.
 
-    Purpose:
-        Validate lineage metadata alignment for root blueprints.
+    Root blueprints are version-id rooted, but they can still carry lineage
+    metadata for DevOps and change-control consumers. This strategy checks that
+    the optional root-lineage ids embedded in the blueprints stay aligned with
+    the lineage ids tracked on the corresponding `SpellSystemIndex` nodes.
+
     Contract:
-        - Emits ``root_lineage_mismatch`` when a root lineage id disagrees with the index.
-        - Skips checks when a blueprint lacks lineage metadata.
+        - Emits `root_lineage_mismatch` when a root lineage id disagrees with
+          the index.
+        - Skips checks when a blueprint intentionally lacks lineage metadata.
     """
     __slots__ = []
 

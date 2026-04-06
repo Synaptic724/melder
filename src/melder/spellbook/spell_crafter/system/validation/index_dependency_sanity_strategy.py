@@ -17,13 +17,17 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class IndexDependencySanityStrategy(SpellSystemValidationStrategy):
     """
-    Internal
+    Guard that every dependency edge recorded in `SpellSystemIndex` points to a
+    real node.
 
-    Purpose:
-        Ensure SpellSystemIndex dependencies reference existing nodes.
+    This is the index-local counterpart to the broader graph consistency check.
+    Before later strategies reason about reachability, lineage, or root
+    viability, the index itself must at least be internally self-consistent.
+
     Contract:
-        - Emits ``missing_index_dependency`` when a node depends on a missing id.
-        - Leaves the diagnostics list unchanged when all dependencies are present.
+        - Emits `missing_index_dependency` when a node depends on a missing id.
+        - Leaves diagnostics unchanged when all indexed dependencies are
+          resolvable.
     """
     __slots__ = []
 

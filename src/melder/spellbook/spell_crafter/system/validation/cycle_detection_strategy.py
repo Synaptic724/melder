@@ -16,23 +16,18 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class CycleDetectionStrategy(SpellSystemValidationStrategy):
     """
-    Detect cycles in the system dependency graph described by SpellSystemIndex.
+    Guard that the frame-level dependency graph remains acyclic.
 
-    Purpose:
-        Identify whether any dependency cycle exists and emit a single
-        "cycle_detected" diagnostic when one is found.
+    This is the broadest structural sanity check in the Phase 6 strategy set.
+    It works at the `SpellSystemIndex` level rather than the per-root blueprint
+    level and asks a simple question: can the system dependency graph still be
+    topologically ordered at all? If not, later rooted validation and planning
+    surfaces cannot be trusted, because execution order itself is undefined.
 
     Contract:
         - Does not mutate the index or its nodes.
-        - Appends at most one diagnostic for any cycle presence.
-        - Honors cancel_event by delegating to cancel_event.throw_if_set()
-          during traversal.
-
-    Threading:
-        Stateless; safe for concurrent use when inputs are not shared.
-
-    Lifecycle:
-        No owned resources; no cleanup required.
+        - Emits at most one coarse `cycle_detected` error for the frame.
+        - Honors cancellation during traversal.
     """
     __slots__ = []
 
