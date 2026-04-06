@@ -2,110 +2,111 @@ from typing import Any, Optional, Union, Tuple
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.__melder_registration_guard__ import (
+    __melder_registration_guard__ as _mrg,
+)
+
 
 class MutationContract(Cleanable):
     """
-    Declarative **mutation socket** used for AI-native experimentation in
-    **Dynamic mode**, scoped to the **MutationResearch** / mutation hub flows.
+    Declarative mutation socket for mutation-research and AI-native experiments.
 
-    NOTE: Mutation contracts are currently on hold; Phase 4 validation emits
-    `MUTATION_CONTRACT_DISABLED` for any use of this descriptor.
+    `MutationContract` describes a dependency edge that belongs to the mutation
+    system rather than ordinary DI wiring. It uses the same basic
+    spell/frame/binding vocabulary as `SpellMap` and `SpellContract`, but its
+    intent is different: it marks a host spell as participating in a mutation
+    workflow where the effective provider may change or remain intentionally
+    open.
 
-    A MutationContract marks a parameter or field as being controlled by the
-    mutation system rather than normal DI wiring. Conceptually:
+    Current runtime status:
 
-        - It is always attached to an existing Spell (the "host" spell).
-        - It behaves like a SpellMap/SpellContract in terms of how the target
-          provider is described (spell / frame / binding).
-        - It carries an explicit `late_binding` flag to signal whether the
-          mutation is:
+    - the descriptor still exists as part of the public contract surface
+    - active usage is currently blocked by Phase 4 validation with
+      `MUTATION_CONTRACT_DISABLED`
+    - the docs therefore need to explain intended semantics without pretending
+      the feature is fully enabled in normal runtime flows
 
-            * **early-bound** (late_binding=False):
-                - The contract already points at a concrete replacement
-                  implementation (and optional spell_override).
-                - As soon as this MutationContract is attached, the host
-                  spell’s DAG / DI shape is considered *mutated*.
-                - Revalidation runs immediately and SpellSystemState flags
-                  the host as a mutation candidate.
+    Conceptual model:
 
-            * **late-bound** (late_binding=True):
-                - The socket is a declared mutation hole with a known
-                  contract shape (frame/binding), but no concrete target yet.
-                - The host spell is still structurally valid, but gated by
-                  mutation state until a value is supplied via spell_override
-                  or a promoted mutation binding.
-                - Revalidation sees the mutation socket and drives state
-                  transitions in SpellSystemStates (e.g. mutation_candidate /
-                  contract_unvalidated, etc.).
+    - the descriptor is attached to an existing host spell
+    - it identifies a mutation socket using spell/frame/binding data
+    - it carries `late_binding` to distinguish between:
+      - early-bound mutation intent, where a concrete replacement is expected
+      - late-bound mutation intent, where the socket remains open and later
+        overlays or mutation-promotion paths are expected to satisfy it
 
-    Key points:
+    This descriptor is not ordinary application DI. It belongs to
+    MutationResearch-oriented experimentation and mutation governance.
 
-    - **AI-native only**:
-        MutationContract is intended for AI-driven mutation pipelines (MutationResearch)
-        and graph experiments, not normal application code.
-
-    - **Dynamic mode only**:
-        Automatic mode should treat the presence of MutationContract as
-        illegal or a hard configuration error.
-
-    - **Host-local mutation**:
-        A MutationContract is allowed to change the host spell’s effective DAG
-        shape and DI shape (new params, different provider topology, etc.),
-        but it must not implicitly mutate or replace sub-spells beneath it;
-        those must be mutated explicitly via their own MutationContracts.
-
-    - **Spell override alignment**:
-        The `spell_override` payload follows the same semantics as in SpellMap:
-        it describes positional/keyword overrides for the mutated call. In late
-        binding scenarios, the agent can provide or update these payloads over
-        time to steer experiments without changing the host’s __init__ signature.
+    Contract:
+        - Pure intent object; it does not perform mutation resolution itself.
+        - Describes mutation-side provider identity plus optional override
+          payload.
+        - Cleanable and invalid after cleanup.
+        - Documents an intended mutation surface even though the runtime
+          currently gates active use behind `MUTATION_CONTRACT_DISABLED`.
     """
+
     __melder_internal__ = _mrg.sentinel
-    __slots__ = Cleanable.__slots__ + ["spell", "spellframe", "binding_name", "spell_override", "late_binding"]
+    __slots__ = Cleanable.__slots__ + [
+        "spell",
+        "spellframe",
+        "binding_name",
+        "spell_override",
+        "late_binding",
+    ]
 
     def __init__(
-            self,
-            spell: Any | None = None,
-            *,
-            spellframe: Optional[Any] = None,
-            binding_name: Optional[str] = None,
-            spell_override: Optional[Union[dict, list, tuple]] = None,
-            late_binding: bool = False,
+        self,
+        spell: Any | None = None,
+        *,
+        spellframe: Optional[Any] = None,
+        binding_name: Optional[str] = None,
+        spell_override: Optional[Union[dict, list, tuple]] = None,
+        late_binding: bool = False,
     ) -> None:
         """
-        Create a new MutationContract descriptor.
+        Create one mutation-contract descriptor.
 
         Args:
             spell:
-                Concrete spell target or None for frame-only mutation contracts.
+                Concrete mutation target if already known, or `None` for a
+                frame-only mutation socket.
 
             spellframe:
-                Optional logical interface / Protocol / frame key.
+                Optional logical interface, Protocol, or frame key used to
+                describe the mutation-side provider identity.
 
             binding_name:
-                Optional binding name to disambiguate under the same frame.
-                When provided, this name is normalized via
-                ``SpellInputUtils.normalize_binding_name`` so comparisons are
-                case-insensitive. When None, the binding name remains None so
-                default-binding semantics remain intact.
+                Optional named binding used to disambiguate multiple providers
+                under the same frame. Normalized via `SpellInputUtils` for
+                case-insensitive matching. When `None`, default-binding semantics
+                remain intact.
 
             spell_override:
-                Optional override payload to apply when this mutation contract
-                is resolved to a concrete provider. Semantics mirror SpellMap.
+                Optional override payload to apply if the mutation socket is
+                eventually resolved to a concrete provider.
 
-                When None, no override payload is attached.
+                Semantics mirror the other descriptor types:
+
+                - `dict`: keyword arguments
+                - `list` / `tuple`: positional arguments
+
+                The descriptor stores this payload without interpreting it.
 
             late_binding:
-                When False:
-                    - The mutation must be resolved during Phase 5–7
-                      revalidation. An unresolved mutation is a structural
-                      error / gating condition.
+                Whether the mutation socket is allowed to remain open without an
+                immediate concrete provider.
 
-                When True:
-                    - The contract may remain open (no concrete provider yet).
-                    - Resolution is allowed to rely on mutation overlays /
-                      spell_override at runtime to satisfy this socket.
+                - `False`: expresses the stricter, early-bound posture where
+                  mutation validation expects a concrete replacement path
+                - `True`: expresses the looser, late-bound posture where the
+                  socket identity is declared now and the concrete provider may
+                  arrive through later mutation overlays or promotion flows
+
+        Raises:
+            ValueError: If both `spell` and `spellframe` are omitted, because
+                the mutation socket would have no identity.
         """
         if spell is None and spellframe is None:
             raise ValueError(
@@ -126,12 +127,13 @@ class MutationContract(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Explicitly release references and mark this contract as cleaned.
+        Release descriptor references and invalidate the mutation socket object.
 
-        Notes:
-            - Idempotent: safe to call multiple times.
-            - After cleanup, any attempt to use this contract should call
-              `check_cleaned()` first (e.g., via properties) and will raise.
+        Contract:
+            - Idempotent and safe to call multiple times.
+            - Clears mutable override payloads before dropping references.
+            - After cleanup the descriptor should be treated as unusable and
+              callers should rely on `check_cleaned()` before reading it.
         """
         if self._cleaned:
             return
@@ -147,33 +149,32 @@ class MutationContract(Cleanable):
         self.spell = None
         self.spellframe = None
         self.binding_name = None
-    # ------------------------------------------------------------------
-    # Raw data for higher-level systems
-    # ------------------------------------------------------------------
+
     @property
     def lookup_triplet(self) -> tuple[Any, Optional[Any], Optional[str]]:
         """
-        Raw lookup data:
+        Return the raw mutation-socket identity tuple.
 
-            (spell, spellframe, binding_name)
+        This is the shape higher mutation-aware layers consume before they
+        derive a canonical key or interpret the current mutation socket.
 
-        Used by mutation-aware resolution when deciding how to locate or
-        declare the underlying mutation socket.
-        Notes:
-            - If a binding name was provided at construction time, it is
-              normalized for case-insensitive matching.
+        Returns:
+            tuple[Any, Optional[Any], Optional[str]]: `(spell, spellframe,
+            binding_name)` exactly as stored on the descriptor.
         """
         return (self.spell, self.spellframe, self.binding_name)
 
-    # ------------------------------------------------------------------
-    # Canonical key for Spellbook / mutation maps
-    # ------------------------------------------------------------------
     @property
     def canonical_key(self) -> Tuple[str, str]:
         """
-        Canonical `(frame_key, binding_key)` for use in maps.
+        Return the normalized mutation-socket identity pair.
 
-        Same normalization rules as SpellMap / SpellContract.
+        This uses the same normalization rules as `SpellMap` and
+        `SpellContract`, yielding the stable `(frame_key, binding_key)` pair
+        used by higher mutation-aware maps and comparisons.
+
+        Returns:
+            Tuple[str, str]: Normalized `(frame_key, binding_key)` pair.
         """
         frame_key, bind_key = SpellInputUtils.normalize_spell_key(
             spell=self.spell,
@@ -185,11 +186,22 @@ class MutationContract(Cleanable):
     @property
     def spell_key(self) -> Tuple[str, str]:
         """
-        Alias to `canonical_key` for compatibility with SpellMap-style usage.
+        Compatibility alias for `canonical_key`.
+
+        Returns:
+            Tuple[str, str]: The same normalized key pair returned by
+            `canonical_key`.
         """
         return self.canonical_key
 
     def __repr__(self) -> str:
+        """
+        Return a debug-oriented representation of the mutation descriptor.
+
+        Returns:
+            str: Representation showing stored spell/frame/binding/late-binding
+            and override fields without attempting any mutation resolution.
+        """
         return (
             f"<MutationContract spell={self.spell!r} "
             f"spellframe={self.spellframe!r} "

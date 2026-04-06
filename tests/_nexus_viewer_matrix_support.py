@@ -1,0 +1,288 @@
+from typing import Dict, Optional, Sequence, Tuple
+
+from melder.aether.conduit.conduit_state.conduit_state import ConduitState
+from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
+    CompiledFrameACLAccessSurface,
+)
+from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.aether.nexus.frame_descriptor.conduit_descriptor_payload import (
+    ConduitDescriptorPayload,
+)
+from melder.aether.nexus.frame_descriptor.conduit_record import ConduitRecord
+from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
+from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
+    FrameDescriptorPayload,
+)
+from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
+from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
+    SpellDescriptorPayload,
+)
+from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
+from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.spellbook.configuration.system_state import SystemState
+from melder.spellbook.existence.existence import Existence
+
+
+def build_spell_record_key(frame_name: str, spell_index: int) -> Tuple[str, str]:
+    """
+    Build the canonical spell record key for one matrix spell.
+
+    Args:
+        frame_name:
+            Stable frame name used by the matrix fixture.
+        spell_index:
+            One-based spell ordinal inside the frame fixture.
+
+    Returns:
+        Tuple[str, str]: `(origin_spellbook_id, spell_id)` record key.
+    """
+    return (
+        "{0}-spellbook".format(frame_name),
+        "{0}-spell-{1}".format(frame_name, spell_index),
+    )
+
+
+def build_descriptor(
+        frame_name: str,
+        *,
+        spell_payload_types: Sequence[str] = ("general",),
+        conduit_count: int = 1,
+        conduit_peer_ids_by_index: Optional[Dict[int, Tuple[str, ...]]] = None,
+        visible_root_conduit_names: Optional[Tuple[str, ...]] = None,
+) -> FrameDescriptor:
+    """
+    Build one descriptor fixture with configurable conduits and spells.
+
+    Args:
+        frame_name:
+            Stable frame name for the descriptor fixture.
+        spell_payload_types:
+            Published spell payload types to attach in order.
+        conduit_count:
+            Number of conduits to create.
+        conduit_peer_ids_by_index:
+            Optional conduit-index -> peer-id tuple map.
+        visible_root_conduit_names:
+            Optional visible conduit names for the frame payload summary.
+
+    Returns:
+        FrameDescriptor: Populated descriptor fixture.
+    """
+    descriptor = FrameDescriptor(frame_name)
+    root_conduit_ids = tuple(
+        "{0}-conduit-{1}".format(frame_name, current_index)
+        for current_index in range(1, conduit_count + 1)
+    )
+    named_root_conduits = tuple(
+        (
+            root_conduit_id,
+            (
+                visible_root_conduit_names[current_index - 1]
+                if visible_root_conduit_names is not None
+                else "root_{0}".format(current_index)
+            ),
+        )
+        for current_index, root_conduit_id in enumerate(root_conduit_ids, start=1)
+    )
+    descriptor.set_frame_overview(
+        FrameRecord(
+            nexus_label="default",
+            nexus_version="0.0.1",
+            frame_name=frame_name,
+            frame_id="{0}-frame".format(frame_name),
+            config_origin_spellbook_id="{0}-spellbook".format(frame_name),
+            payload=FrameDescriptorPayload(
+                system_state=SystemState.dynamic,
+                ai_native_enabled=True,
+                rift_enabled=True,
+                root_conduit_count=len(root_conduit_ids),
+                root_conduit_ids=root_conduit_ids,
+                named_root_conduits=named_root_conduits,
+                conduit_cloud_entry_count=len(named_root_conduits),
+                conduit_cloud_names=tuple(
+                    conduit_name
+                    for _, conduit_name in named_root_conduits
+                ),
+                cluster_count=0,
+                cluster_names=tuple(),
+            ),
+        )
+    )
+    for conduit_index in range(1, conduit_count + 1):
+        conduit_id = "{0}-conduit-{1}".format(frame_name, conduit_index)
+        peer_ids = (
+            conduit_peer_ids_by_index.get(conduit_index, tuple())
+            if conduit_peer_ids_by_index is not None
+            else tuple()
+        )
+        descriptor.upsert_conduit_record(
+            ConduitRecord(
+                nexus_label="default",
+                nexus_version="0.0.1",
+                conduit_id=conduit_id,
+                root_conduit_id=conduit_id,
+                frame_name=frame_name,
+                origin_spellbook_id="{0}-spellbook".format(frame_name),
+                payload=ConduitDescriptorPayload(
+                    conduit_name="root_{0}".format(conduit_index),
+                    conduit_state=ConduitState.normal,
+                    policy=Policies.default,
+                    peer_conduit_ids=peer_ids,
+                ),
+            )
+        )
+    for spell_index, payload_type in enumerate(spell_payload_types, start=1):
+        record_key = build_spell_record_key(frame_name, spell_index)
+        descriptor.upsert_spell_record(
+            SpellRecord(
+                nexus_label="default",
+                nexus_version="0.0.1",
+                origin_spellbook_id=record_key[0],
+                frame_name=frame_name,
+                owner_conduit_id=root_conduit_ids[(spell_index - 1) % conduit_count],
+                spell_id=record_key[1],
+                lineage_id="{0}-lineage-{1}".format(frame_name, spell_index),
+                spell_name="{0}Spell{1}".format(frame_name.title(), spell_index),
+                spellframe=None,
+                binding_name="{0}_spell_{1}".format(frame_name, spell_index),
+                permissions=Permissions.create,
+                existence=Existence.unique,
+                payload=SpellDescriptorPayload(
+                    payload_type=payload_type,
+                    binding_payload={"kind": "class", "spell_index": spell_index},
+                    resolution_payload={"requirements": [spell_index]},
+                    class_profile=(
+                        {"methods": ["run", "cleanup"]}
+                        if payload_type == "detailed"
+                        else None
+                    ),
+                    callable_profile=(
+                        {"signature": "() -> None"}
+                        if payload_type == "detailed"
+                        else None
+                    ),
+                    metadata={"frame": frame_name, "spell_index": spell_index},
+                    instance_members=(
+                        {"state": {"type": "str"}}
+                        if payload_type == "detailed"
+                        else {}
+                    ),
+                    dynamic_access=(
+                        {"has_getattr": False, "has_setattr": True}
+                        if payload_type == "detailed"
+                        else {}
+                    ),
+                ),
+            )
+        )
+    return descriptor
+
+
+def build_surface(
+        frame_name: str,
+        configuration: FrameACLConfiguration,
+        *,
+        frame_payload_fields: Tuple[str, ...] = ("system_state", "rift_enabled"),
+        visible_conduit_ids: Optional[Tuple[str, ...]] = None,
+        visible_spell_keys: Optional[Tuple[Tuple[str, str], ...]] = None,
+        conduit_sections_by_id: Optional[Dict[str, Tuple[str, ...]]] = None,
+        spell_sections_by_key: Optional[Dict[Tuple[str, str], Tuple[str, ...]]] = None,
+) -> CompiledFrameACLAccessSurface:
+    """
+    Build one compiled ACL surface fixture.
+
+    Args:
+        frame_name:
+            Stable frame name.
+        configuration:
+            ACL configuration that owns the surface.
+        frame_payload_fields:
+            Visible frame payload fields.
+        visible_conduit_ids:
+            Optional visible conduit ids.
+        visible_spell_keys:
+            Optional visible spell record keys.
+        conduit_sections_by_id:
+            Optional conduit-section visibility map.
+        spell_sections_by_key:
+            Optional spell-section visibility map.
+
+        Returns:
+            CompiledFrameACLAccessSurface: Compiled surface fixture.
+    """
+    return CompiledFrameACLAccessSurface(
+        frame_name=frame_name,
+        configuration_id=configuration.configuration_id,
+        view_profile_name=configuration.view_configuration.profile_name,
+        view_profile_version=configuration.view_configuration.profile_version,
+        codegen_profile_name=configuration.codegen_configuration.profile_name,
+        codegen_profile_version=configuration.codegen_configuration.profile_version,
+        allowed_kinds=("frame", "conduit", "spell"),
+        allowed_commands=("query",),
+        frame_payload_fields=frame_payload_fields,
+        visible_conduit_ids=visible_conduit_ids or tuple(),
+        visible_spell_keys=visible_spell_keys or tuple(),
+        conduit_payload_sections_by_id=conduit_sections_by_id or {},
+        spell_payload_sections_by_key=spell_sections_by_key or {},
+        metadata={"visible_spell_count": len(visible_spell_keys or tuple())},
+    )
+
+
+def build_viewer(
+        frame_name: str,
+        *,
+        spell_payload_types: Sequence[str] = ("general",),
+        conduit_count: int = 1,
+        visible_conduit_ids: Optional[Tuple[str, ...]] = None,
+        visible_spell_keys: Optional[Tuple[Tuple[str, str], ...]] = None,
+        conduit_sections_by_id: Optional[Dict[str, Tuple[str, ...]]] = None,
+        spell_sections_by_key: Optional[Dict[Tuple[str, str], Tuple[str, ...]]] = None,
+        frame_payload_fields: Tuple[str, ...] = ("system_state", "rift_enabled"),
+) -> FrameViewer:
+    """
+    Build one matrix-style `FrameViewer` fixture.
+
+    Args:
+        frame_name:
+            Stable frame name.
+        spell_payload_types:
+            Published spell payload types to include.
+        conduit_count:
+            Number of conduits to include.
+        visible_conduit_ids:
+            Optional visible conduit ids.
+        visible_spell_keys:
+            Optional visible spell record keys.
+        conduit_sections_by_id:
+            Optional conduit-section visibility map.
+        spell_sections_by_key:
+            Optional spell-section visibility map.
+        frame_payload_fields:
+            Visible frame payload fields.
+
+    Returns:
+        FrameViewer: Matrix-style viewer fixture.
+    """
+    descriptor = build_descriptor(
+        frame_name,
+        spell_payload_types=spell_payload_types,
+        conduit_count=conduit_count,
+    )
+    configuration = FrameACLConfiguration.create_default(frame_name)
+    compiled_surface = build_surface(
+        frame_name,
+        configuration,
+        frame_payload_fields=frame_payload_fields,
+        visible_conduit_ids=visible_conduit_ids,
+        visible_spell_keys=visible_spell_keys,
+        conduit_sections_by_id=conduit_sections_by_id,
+        spell_sections_by_key=spell_sections_by_key,
+    )
+    return FrameViewer(
+        frame_descriptors_by_name={frame_name: descriptor},
+        frame_acl_configurations_by_frame_name={frame_name: configuration},
+        compiled_access_surfaces_by_frame_name={frame_name: compiled_surface},
+        default_view_frame_name=frame_name,
+    )

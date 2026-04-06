@@ -2,147 +2,132 @@ from typing import Any, Optional, Union, Tuple
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.__melder_registration_guard__ import (
+    __melder_registration_guard__ as _mrg,
+)
+
 
 class SpellMap(Cleanable):
     """
-    Declarative DI placeholder used inside user code to tell Melder:
+    Declarative DI descriptor for normal spellbook-local resolution.
 
-        “At this location, inject *that* spell (or whatever is bound under this
-        frame/name), possibly with these overrides.”
+    `SpellMap` is the explicit descriptor form of ordinary Melder DI intent. It
+    tells SpellCrafter and Meld which spell or frame/binding identity should be
+    injected at a given parameter or attribute location, optionally along with
+    an override payload that should be carried into runtime construction.
 
-    SpellMap is **never** resolved eagerly. It is a *pure intent object*:
-    - You put it in your `__init__` defaults or instance attributes.
-    - SpellCrafter / the runtime planning path inspect it when a `meld(...)` happens.
-    - The runtime replaces it with a real creation (or callable) using the
-      normal Spellbook + SpellIndex + Existence pipeline.
+    Unlike `SpellContract`, this descriptor does not declare a cross-conduit
+    hole that will be satisfied later. It stays inside the current resolution
+    world. SpellCrafter and the runtime planning path inspect it, derive the
+    canonical lookup identity, and then resolve a local spell through the usual
+    Spellbook, SpellIndex, and Existence machinery.
 
-    ─────────────────────────────────────────────
-    ✅ Do NOT subclass SpellMap.
-    ✅ Instantiate it in constructors or as attributes.
-    ✅ Treat it as a declarative DI signature, not a real object.
-    ─────────────────────────────────────────────
+    Supported shapes:
 
-    Typical patterns
-    ----------------
+    - `SpellMap(MyService)`
+      Direct type-based DI where the spell itself supplies the lookup identity.
+    - `SpellMap(ILogic)`
+      Frame-based DI where a Protocol / interface acts as the lookup frame.
+    - `SpellMap(MyService, spellframe=ILogic, binding_name="primary")`
+      Fully explicit spell + frame + binding declaration.
+    - `SpellMap(spell=None, spellframe=ILogic, binding_name="primary")`
+      Frame-only descriptor where the DI key is derived entirely from frame and
+      binding.
 
-        # 1) Concrete-type DI (class as the primary key)
-        class MyService:
-            def __init__(self, repo = SpellMap(MyRepo)):
-                self.repo = repo
+    Typical usage:
 
-        # 2) Protocol / frame DI (frame as the primary key)
-        class UsesLogic:
-            def __init__(self, logic = SpellMap(ILogic, binding_name="primary")):
-                self.logic = logic
+    ```python
+    class MyService:
+        def __init__(self, repo=SpellMap(MyRepo)):
+            self.repo = repo
 
-        # 3) Override payloads
-        class Configured:
-            def __init__(self):
-                self.db = SpellMap(Postgres, spell_override={"dsn": "localhost"})
+    class UsesLogic:
+        def __init__(self, logic=SpellMap(ILogic, binding_name="primary")):
+            self.logic = logic
 
-        # 4) Frame-only SpellMap (no concrete spell; let the frame+binding decide)
-        class UsesConfig:
-            def __init__(self, cfg = SpellMap(
+    class UsesConfig:
+        def __init__(
+            self,
+            cfg=SpellMap(
                 spell=None,
                 spellframe=IAppConfig,
                 binding_name="primary",
-            )):
-                self.cfg = cfg
+            ),
+        ):
+            self.cfg = cfg
+    ```
 
-    Supported Shapes
-    ----------------
-    SpellMap supports four main shapes, all funneled through the same key logic:
-
-        SpellMap(MyService)
-            → "concrete-type" DI, spell used as the key when no spellframe is given.
-
-        SpellMap(ILogic)
-            → "frame-type" DI, where the Protocol or interface acts as the frame.
-
-        SpellMap(MyService, spellframe=ILogic, binding_name="primary")
-            → fully explicit: concrete spell + frame + binding_name.
-
-        SpellMap(spell=None, spellframe=ILogic, binding_name="primary")
-            → frame-only: the DI key is derived *only* from `spellframe` and
-              `binding_name`. This is the SpellMap equivalent of type-hint DI by
-              Protocol / frame with an explicit binding name.
+    Contract:
+        - Pure intent object; it does not resolve providers by itself.
+        - Used for normal in-graph DI, not late conduit linking.
+        - Carries spell/frame/binding identity plus optional override payload.
+        - Cleanable and invalid after cleanup.
+        - Should not be subclassed or treated like a runtime-resolved object.
     """
+
     __melder_internal__ = _mrg.sentinel
-    __slots__ = Cleanable.__slots__ + ["spell", "spellframe", "binding_name", "spell_override"]
+    __slots__ = Cleanable.__slots__ + [
+        "spell",
+        "spellframe",
+        "binding_name",
+        "spell_override",
+    ]
 
     def __init__(
-            self,
-            spell: Any | None = None,
-            *,
-            spellframe: Optional[Any] = None,
-            binding_name: Optional[str] = None,
-            spell_override: Optional[Union[dict, list, tuple]] = None,
+        self,
+        spell: Any | None = None,
+        *,
+        spellframe: Optional[Any] = None,
+        binding_name: Optional[str] = None,
+        spell_override: Optional[Union[dict, list, tuple]] = None,
     ) -> None:
         """
-        Create a new SpellMap declarative descriptor.
+        Create one `SpellMap` declarative descriptor.
 
         Args:
             spell:
-                The primary lookup target *or* None for frame-only SpellMaps.
+                Primary lookup target, or `None` for frame-only SpellMaps.
 
-                When not None, this is typically:
-                    - the concrete implementation class,
-                    - a Protocol used as a frame,
-                    - a callable (method/lambda spell),
-                    - or any other object your resolver supports.
+                When not `None`, this is typically:
 
-                Resolution rules (at SpellCrafter / Meld level):
+                - the concrete implementation class
+                - a Protocol used as a frame-like identity
+                - a callable spell target
+                - or another resolver-supported object
 
-                    - If `spellframe` is provided:
-                        `spellframe` is the grouping key and `spell` is treated
-                        as the concrete spell implementation (when needed).
+                Resolution semantics:
 
-                    - If `spellframe` is None:
-                        `spell` itself is used as the DI key (type or frame).
-
-                    - If `spell` is None but `spellframe` is provided:
-                        This is a **frame-only** SpellMap. The key is derived
-                        entirely from `spellframe` + `binding_name`. This matches
-                        the "DI by frame type" behavior, but expressed explicitly
-                        as a SpellMap instead of a type hint.
+                - if `spellframe` is provided, the frame becomes the primary
+                  grouping identity and `spell` acts as the concrete spell side
+                  of the declaration
+                - if `spellframe` is omitted, `spell` itself supplies the DI key
+                - if `spell` is `None`, `spellframe` must be present and becomes
+                  the sole DI identity
 
             spellframe:
-                Optional logical interface / Protocol / string frame key used
-                to group spells. If provided, this is the primary key used to
-                locate the spell in the Spellbook.
-
-                When `spell` is None, `spellframe` **must** be provided; the
-                frame becomes the sole DI identity for this SpellMap.
+                Optional logical interface, Protocol, or frame key used to
+                group spells in Spellbook lookup space.
 
             binding_name:
-                Optional named binding used to disambiguate multiple spells
-                under the same frame. None means “use the default binding”.
-
-                When provided, this name is normalized via
-                ``SpellInputUtils.normalize_binding_name`` so comparisons are
-                case-insensitive. When None, the binding name remains None so
-                Spellbook default-binding semantics remain intact.
+                Optional named binding used to disambiguate multiple providers
+                under the same frame. Normalized via `SpellInputUtils` for
+                case-insensitive matching. When `None`, default-binding semantics
+                remain intact.
 
             spell_override:
-                Optional positional/keyword override payload passed through
-                into the `meld(...)` pipeline when constructing the target
-                creation.
+                Optional positional/keyword override payload propagated into the
+                meld pipeline when the target creation is finally constructed.
 
-                - dict       → treated as keyword arguments
-                - list/tuple → treated as positional arguments
+                Semantics:
 
-                This payload is **not** interpreted here. It is propagated
-                unchanged so that the runtime planning path can attach it to
-                Spell metadata (e.g. under `"spell_override"`) or feed it
-                directly into the constructor / callable.
+                - `dict`: keyword arguments
+                - `list` / `tuple`: positional arguments
 
-                When None, no override payload is attached.
+                The descriptor stores this payload without interpreting it.
 
         Raises:
-            ValueError:
-                If both `spell` and `spellframe` are None. At least one of them
-                must be provided so we can derive a DI key.
+            ValueError: If both `spell` and `spellframe` are omitted, because
+                the descriptor would have no DI identity.
         """
         if spell is None and spellframe is None:
             raise ValueError(
@@ -162,12 +147,13 @@ class SpellMap(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Explicitly release references and mark this contract as cleaned.
+        Release descriptor references and invalidate the object.
 
-        Notes:
-            - Idempotent: safe to call multiple times.
-            - After cleanup, any attempt to use this contract should call
-              `check_cleaned()` first (e.g., via properties) and will raise.
+        Contract:
+            - Idempotent and safe to call multiple times.
+            - Clears mutable override payloads before dropping references.
+            - After cleanup the descriptor should be treated as unusable and
+              callers should rely on `check_cleaned()` before reading it.
         """
         if self._cleaned:
             return
@@ -183,65 +169,46 @@ class SpellMap(Cleanable):
         self.spell = None
         self.spellframe = None
         self.binding_name = None
-    # ------------------------------------------------------------------
-    # Raw data for higher-level systems
-    # ------------------------------------------------------------------
+
     @property
     def lookup_triplet(self) -> tuple[Any, Optional[Any], Optional[str]]:
         """
-        Raw lookup data:
+        Return the raw descriptor identity tuple.
 
-            (spell, spellframe, binding_name)
+        This is the shape SpellCrafter and the runtime planning path consume
+        before they derive the normalized key or resolve the underlying spell.
 
-        This is what SpellCrafter / the runtime planning path should consume when
-        deciding how to locate the underlying Spell in the Spellbook.
-
-        Typical usage:
-
-            frame_key, bind_key = SpellInputUtils.normalize_spell_key(
-                spell=sm.spell,
-                spellframe=sm.spellframe,
-                binding_name=sm.binding_name,
-            )
+        Returns:
+            tuple[Any, Optional[Any], Optional[str]]: `(spell, spellframe,
+            binding_name)` exactly as stored on the descriptor.
 
         Notes:
-            - For frame-only SpellMaps (`spell is None`), only `spellframe`
-              and `binding_name` participate in the key derivation.
-            - For fully explicit SpellMaps, both `spell` and `spellframe`
-              can be used by higher layers (e.g., to enforce contracts).
-            - If a binding name was provided at construction time, it is
-              normalized for case-insensitive matching.
+            - For frame-only SpellMaps (`spell is None`), only `spellframe` and
+              `binding_name` contribute to the runtime identity.
+            - For fully explicit SpellMaps, higher layers may use both `spell`
+              and `spellframe` when enforcing resolution rules.
+            - Binding names are already normalized when provided.
         """
         return (self.spell, self.spellframe, self.binding_name)
 
-    # ------------------------------------------------------------------
-    # Canonical key (String-based) for Spellbook maps
-    # ------------------------------------------------------------------
     @property
     def canonical_key(self) -> Tuple[str, str]:
         """
-        Canonical `(frame_key, binding_key)` for use in Spellbook-style maps.
+        Return the normalized `(frame_key, binding_key)` pair.
 
-        This is **exactly** the same shape as used by:
-            - SpellInputUtils.make_spell_key_from_parts
-            - SpellInputUtils.normalize_spell_key
+        This is the canonical Spellbook-style key derived through
+        `SpellInputUtils.normalize_spell_key(...)`. It is the stable string pair
+        higher layers use when indexing or matching SpellMap intent.
 
-        It applies all the standard normalization:
-            - frame: lowercased frame key (from spellframe or spell name)
-            - binding: lowercased name or "__default__"
+        Shape rules:
 
-        Behavior by shape
-        -----------------
-        - When `spellframe` is provided:
-            The frame key is derived from `spellframe` (regardless of whether
-            `spell` is None or not).
+        - when `spellframe` is present, the frame key is derived from
+          `spellframe`
+        - when `spellframe` is absent, the frame key is derived from `spell`
+        - binding defaults normalize to `"__default__"` inside the helper path
 
-        - When `spellframe` is None and `spell` is not:
-            The frame key is derived from the spell's normalized name.
-
-        - When *both* are None:
-            This case is prevented in `__init__` and would otherwise raise
-            inside ``SpellInputUtils.normalize_spell_key`` as well.
+        Returns:
+            Tuple[str, str]: Normalized `(frame_key, binding_key)` pair.
         """
         frame_key, bind_key = SpellInputUtils.normalize_spell_key(
             spell=self.spell,
@@ -250,15 +217,25 @@ class SpellMap(Cleanable):
         )
         return frame_key, bind_key
 
-    # Backwards-compat alias if you want the old name:
     @property
     def spell_key(self) -> Tuple[str, str]:
         """
-        Alias to `canonical_key` for compatibility with older SpellMap usage.
+        Compatibility alias for `canonical_key`.
+
+        Returns:
+            Tuple[str, str]: The same normalized key pair returned by
+            `canonical_key`.
         """
         return self.canonical_key
 
     def __repr__(self) -> str:
+        """
+        Return a debug-oriented representation of the SpellMap descriptor.
+
+        Returns:
+            str: Representation showing stored spell/frame/binding/override
+            fields without performing any resolution.
+        """
         return (
             f"<SpellMap spell={self.spell!r} "
             f"spellframe={self.spellframe!r} "
