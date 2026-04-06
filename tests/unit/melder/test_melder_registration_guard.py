@@ -10,7 +10,8 @@ These tests pin the public contract described in melder/__melder_registration_gu
 - Untagged candidates are allowed.
 """
 
-from __future__ import annotations
+from concurrent.futures import ThreadPoolExecutor
+import threading
 
 import pytest
 
@@ -32,6 +33,30 @@ def test_sentinel_is_stable_identity() -> None:
     s1 = guard.sentinel
     s2 = guard.sentinel
     assert s1 is s2
+
+
+def test_guard_concurrent_construction_returns_one_instance() -> None:
+    from melder.__melder_registration_guard__ import MelderRegistrationGuard
+
+    worker_count = 16
+    original_instance = MelderRegistrationGuard._instance
+    start_barrier = threading.Barrier(worker_count)
+
+    def build_instance_id() -> int:
+        start_barrier.wait()
+        return id(MelderRegistrationGuard())
+
+    try:
+        MelderRegistrationGuard._instance = None
+
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            futures = [executor.submit(build_instance_id) for _ in range(worker_count)]
+            instance_ids = [future.result() for future in futures]
+
+        assert len(set(instance_ids)) == 1
+        assert MelderRegistrationGuard._instance is not None
+    finally:
+        MelderRegistrationGuard._instance = original_instance
 
 
 def test_is_internal_false_for_untagged_class_and_instance() -> None:

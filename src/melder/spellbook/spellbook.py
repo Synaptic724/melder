@@ -44,46 +44,62 @@ class Spellbook(Cleanable, ISpellbook):
     """
     Public API
 
-    ?? The **Spellbook** is the central authority for all spell definitions, bindings, and conduit conjurations.
+    The `Spellbook` is the primary local authority for spell binding, spell
+    lookup, configuration ownership, and conduit conjuration inside one
+    aetheric frame. It is the object users interact with when they register
+    spells, freeze configuration, begin binding transactions, and conjure the
+    conduit that will execute against those registrations.
 
-    It acts as a high-level composition container and registry. All spells added to a Spellbook must be
-    uniquely identifiable and comply with the Aetheric access rules and configuration state.
+    Contract:
+    - Owns the local spell registries, lookup maps, contracted-spell mirrors,
+      version caches, validation system, and frame-local configuration state
+      for one spellbook instance.
+    - Coordinates with the shared `Aether` for frame creation, frame-level
+      configuration sharing, and system-state services.
+    - Admits binding and contract changes through explicit transaction windows
+      rather than allowing uncontrolled registry mutation.
+    - Supports exactly one conjured conduit per spellbook instance.
+    - Becomes unusable after cleanup completes.
 
-     -------------------------------------------------------------------------------
-     ??  WARNING: DO NOT USE `aetheric_frame` UNLESS YOU UNDERSTAND THE IMPLICATIONS!
-     ??  IMPORTANT: AETHER FRAMES
+    Warning about `aetheric_frame`:
+    - `aetheric_frame` is not a cosmetic namespace. Using it joins this
+      Spellbook to shared frame-level configuration and visibility state inside
+      Aether.
+    - Reusing a frame means sharing spell visibility, configuration posture,
+      and change-control surfaces with other participants in that frame.
+    - Use the default frame only when shared scope is intentional.
 
-     The `aetheric_frame` parameter allows multiple Spellbooks to share the same
-     configuration and spell visibility. This feature supports system-wide coordination,
-     contract binding, and cross-agent sharing of spells.
-
-     ?? **Do not use `aetheric_frame` unless you have read the documentation** and
-     understand the implications of shared scope, mutation locking, and distributed
-     spell ownership.
-
-     By default, using (aetheric_frame="default") uses the shared default frame.
-     Passing a new frame name creates an isolated frame for that name.
-     -------------------------------------------------------------------------------
-
-    **Responsibilities:**
-    * Holds and registers all known spells (via `bind()`).
-    * Ensures configuration is frozen and synchronized via the Aether.
-    * Provides conduit conjuring (`conjure()`) based on validated spells.
-    * Supports optional shared configuration state through the `aetheric_frame` system.
+    Responsibilities:
+    - Hold and register local spells through `bind()` and `scan()`.
+    - Maintain local and contracted spell lookup surfaces.
+    - Freeze and bind configuration into Aether at the correct lifecycle point.
+    - Conjure and own the runtime `Conduit` for this spellbook.
+    - Coordinate change-control, staged binding metadata, and contracted link state.
 
     Args:
         aetheric_frame (str, optional):
-            A shared frame name used to join multiple Spellbooks under the same Aetheric
-            configuration and spell contract scope. Defaults to "default".
-            If the named frame does not exist, Spellbook will create it.
+            Shared frame name used to bind this Spellbook to one Aether frame.
+            Defaults to `"default"`. If the frame does not exist yet, Spellbook
+            creates it.
         configuration (Optional[Configuration]):
-            An optional pre-configured `Configuration` instance to use, typically provided
-            when creating a Spellbook for an existing Aether frame.
+            Optional pre-configured configuration instance to reuse for this
+            frame.
+
+    Threading / Concurrency:
+        - Creates an internal `RLock` and uses it to guard registry mutation,
+          cleanup staging, and transaction-sensitive local state.
+        - Relies on Aether and downstream managers for cross-object coordination.
+
+    Lifecycle / Cleanup:
+        - Local registries, contracted registries, validators, configuration,
+          and logging are owned by this object.
+        - Cleanup is staged so component teardown happens under the lock first
+          and high-level references are dropped afterward.
 
     Notes:
-        * You may only conjure one conduit per spellbook instance.
-        * Configuration is locked automatically upon conjuring.
-        * If configuration is already shared via an Aether frame, it will be reused.
+        - Configuration is locked automatically once the spellbook crosses into
+          the conjured runtime path.
+        - Shared Aether frame configuration is reused when it already exists.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -206,6 +222,24 @@ class Spellbook(Cleanable, ISpellbook):
     #region Disposal
 
     def cleanup(self) -> None:
+        """
+        Public API
+
+        Release the Spellbook's owned runtime state and permanently retire it.
+
+        Contract:
+            - Idempotent: repeated calls are safe after `_cleaned` flips.
+            - Performs component cleanup under the Spellbook lock first, then
+              clears high-level references outside the lock.
+            - Best-effort child cleanup: downstream cleanup failures are logged
+              and teardown continues where possible.
+            - After cleanup completes, local registries, configuration,
+              validators, conduit references, and logger references are no
+              longer usable.
+
+        Returns:
+            None.
+        """
         if self._logger is not None:
             pass
 
@@ -415,14 +449,25 @@ class Spellbook(Cleanable, ISpellbook):
     #region Context Manager
     def __enter__(self):
         """
-        Enters the context manager for Aether.
+        Enter the Spellbook lock context and return `self`.
+
+        Purpose:
+            Allow internal multi-step operations to hold the Spellbook lock
+            across a controlled block without exposing `_lock` directly.
+
+        Returns:
+            Spellbook:
+                This Spellbook instance while the lock is held.
         """
         self._lock.acquire()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         """
-        Exits the context manager for Aether.
+        Exit the Spellbook lock context.
+
+        Returns:
+            None.
         """
         self._lock.release()
 
@@ -902,10 +947,11 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Public API
 
-        Returns the unique ID of this Spellbook instance.
+        Return the unique identifier of this Spellbook instance.
 
         Returns:
-            str: The Spellbook's unique identifier.
+            str:
+                This Spellbook's unique identifier.
         """
         return self._id
 
@@ -914,11 +960,18 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Public API
 
-        Returns a read-only view of the local spells registered in this spellbook.
-        This provides safe introspection without allowing mutation.
+        Return a read-only view of the local spells registered in this
+        Spellbook.
+
+        Contract:
+            - Exposes a `MappingProxyType` wrapper over the local spell map.
+            - Supports safe introspection without allowing direct registry
+              mutation.
 
         Returns:
-            Mapping[str, ISpell]: An immutable map of spell ID to spell object.
+            Mapping[SpellIndex, ISpell]:
+                Immutable map of local `SpellIndex` lineage keys to spell
+                objects.
         """
         return MappingProxyType(self._spells)
 
@@ -927,12 +980,16 @@ class Spellbook(Cleanable, ISpellbook):
         """
         Public API
 
-        Returns a per-conduit read-only view of all **borrowed** spells.
-        Each conduit ID maps to its own immutable SpellIndex?Spell map.
+        Return a per-conduit read-only view of all borrowed spells.
+
+        Contract:
+            - Outer keys are peer conduit identifiers.
+            - Each value is an immutable spell map for that peer conduit.
 
         Returns:
             Mapping[str, Mapping[SpellIndex, ISpell]]:
-                Immutable map of peer Conduit ID to immutable map of borrowed spells.
+                Immutable map of peer conduit id to immutable borrowed-spell
+                map.
         """
         return MappingProxyType({
             conduit_id: MappingProxyType(dict(spells))
@@ -2380,12 +2437,25 @@ class Spellbook(Cleanable, ISpellbook):
             **kwargs,
     ) -> str:
         """
-        Binds a spell into the Spellbook for future instantiation and dependency injection.
+        Bind a spell into the Spellbook for future instantiation and dependency
+        injection.
 
-        The `bind()` method registers a class, function, or object into Melder’s system,
-        associating it with a lifecycle (`Existence`), a permission policy, and optional metadata.
-        Once bound, the spell becomes available for resolution and casting within its conduit
-        or across systems (depending on permissions).
+        Purpose:
+            Register one class, function, lambda, or existing object into the
+            Spellbook's local registry so later conduit work can resolve it by
+            spell identity, `(spellframe, binding_name)` lookup key, and
+            lifecycle policy.
+
+        Contract:
+            - Requires an active binding transaction.
+            - Profiles the spell, computes its structural `spell_id`, and
+              inserts the resulting `Spell` into local lookup and version caches.
+            - Enforces local lookup-key uniqueness before registration.
+            - Applies lifecycle hooks only after validating that the supplied
+              hooks are callable.
+            - When the Spellbook already has a conjured conduit, stamps conduit
+              ownership/runtime metadata onto the new spell and publishes it
+              into the relevant runtime mirrors.
 
         Binding requires an active binding transaction. Use
         ``begin_transaction("bind")`` (or ``begin_binding_transaction()``)
@@ -2396,80 +2466,57 @@ class Spellbook(Cleanable, ISpellbook):
         staged request metadata with the normalized binding keys for the spells
         registered in that transaction.
 
-        ----------------------------------------------
-        ?? Binding Overview:
-            - Profiles the spell via reflection.
-            - Computes a unique SHA256 `spell_id`.
-            - Stores the spell into the internal spell registry.
-            - Assigns its lookup key via `(spellframe, binding_name)`.
-            - Applies lifecycle and permission policies.
-            - Optionally attaches lifecycle hooks.
+        Permissions:
+            - `"read"` allows other conduits to consume the spell but not create
+              new instances from it.
+            - `"create"` allows other conduits to consume and instantiate the
+              spell.
+            - `"block"` restricts access to the owning conduit.
 
-        ----------------------------------------------
-        ??? Permissions (access control to other conduits):
-            - `"read"`:
-                Allows other conduits to *use* the spell but not create new instances.
-                Useful for shared utilities or resources.
+        Lookup semantics:
+            - `spellframe` provides the primary namespace or grouping key.
+            - `binding_name` provides the secondary disambiguation key inside
+              that frame.
+            - The normalized lookup tuple is derived through
+              `SpellInputUtils.make_spell_key_from_parts(...)`.
 
-            - `"create"` (default):
-                Allows other conduits to both use *and* create instances from this spell.
+        Optional lifecycle hooks (`**kwargs`):
+            - `pre_hooks`
+            - `activation_hooks`
+            - `post_hooks`
 
-            - `"block"`:
-                Completely blocks access to the spell from other conduits.
-                Only the owning conduit can use or instantiate it.
-
-        ?? Existence (spell lifecycle):
-            Determines how the spell instance is managed (singleton, transient, etc.).
-            Use `Existence.unique`, `Existence.many`, etc., for fine-grained control.
-
-        ?? Spellframe (optional):
-            Logical namespace or grouping label.
-            Often corresponds to a shared interface, protocol, or feature group.
-
-        ?? Binding Name (optional):
-            Secondary key used to distinguish different versions or roles of the same type.
-            Useful when multiple spells are bound under the same interface.
-
-        ----------------------------------------------
-        ?? Lifecycle Hooks (optional `**kwargs`):
-
-            - `pre_hooks`: List[Callable]
-                Executed *before* the spell is constructed or cast.
-                Can be used for validation, preparation, or logging.
-
-            - `activation_hooks`: List[Callable]
-                Executed *during* spell construction. Useful for modifying dependencies
-                or adapting runtime context.
-
-            - `post_hooks`: List[Callable]
-                Executed *after* the spell has been cast. Often used for initialization,
-                analytics, or final injection steps.
-
-            ?? All hooks must be callables.
-
-        ----------------------------------------------
         Args:
-            spell (Any): The class, function, or object to bind into the spellbook.
-            existence (Existence): The lifecycle scope for this spell.
-            permissions (str): Permission level exposed to other conduits ("read", "create", "block").
-            spellframe (Optional[Any]): Logical interface or category for grouping.
-            binding_name (Optional[str]): Name key to distinguish this spell among others in its frame.
-            profile (str): Spell profile family to attach after bind completion.
+            spell (Any):
+                The class, function, lambda, or existing object to register.
+            existence (Existence):
+                Lifecycle scope for the spell.
+            permissions (str):
+                Permission level exposed to other conduits (`"read"`,
+                `"create"`, or `"block"`).
+            spellframe (Optional[Any]):
+                Logical interface, frame, or grouping key for the spell.
+            binding_name (Optional[str]):
+                Secondary key used to distinguish this spell among others in
+                the same frame.
+            profile (str):
+                Spell profile family to attach after bind completion.
             **kwargs:
-                - pre_hooks (Optional[List[Callable]]): Hooks executed before casting.
-                - activation_hooks (Optional[List[Callable]]): Hooks executed during casting/construction.
-                - post_hooks (Optional[List[Callable]]): Hooks executed after casting/construction.
+                Optional lifecycle hooks:
+                - pre_hooks
+                - activation_hooks
+                - post_hooks
 
         Returns:
-            str: The unique SHA256 `spell_id` associated with the bound spell.
+            str:
+                The unique SHA256 `spell_id` associated with the bound spell.
 
         Raises:
-            RuntimeError: If the Conduit is cleaned.
-            RuntimeError: If no binding transaction is active for this Spellbook.
-            RuntimeError: If the Conduit is not a 'normal' conduit (only normal conduits can bind spells).
-            RuntimeError: If the spell is already bound in the registry.
-            RuntimeError: If the normalized binding key is already in use locally.
-            TypeError: If invalid hook types are provided.
+            RuntimeError:
+                If the Spellbook is cleaned, no binding transaction is active,
+                the normalized binding key is already in use, or the spell
+                collides with an existing registry entry.
+            TypeError:
+                If invalid hook types are provided.
         """
         self.check_cleaned()
         self._ensure_binding_transaction_active(action="bind")

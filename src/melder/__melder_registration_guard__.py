@@ -4,9 +4,10 @@ Singleton guard for blocking registration of Melder internals.
 This lives at the top level so it can be imported everywhere without
 pulling additional dependencies or risking cycles.
 """
-from __future__ import annotations
-import inspect
-from typing import Any, Tuple
+import threading
+from typing import Any
+from typing import Optional
+
 from melder.utilities.custom_exceptions.internal_registration_error import InternalRegistrationError
 
 
@@ -43,15 +44,26 @@ class MelderRegistrationGuard:
 
     __slots__ = ("_sentinel",)
     _SENTINEL = object()
-    _instance: "MelderRegistrationGuard | None" = None
+    _CONSTRUCTION_LOCK = threading.Lock()
+    _instance: Optional["MelderRegistrationGuard"] = None
 
     def __new__(cls) -> "MelderRegistrationGuard":
         """
         Return the singleton instance, creating it on first access.
+
+        Threading / Concurrency:
+            Singleton construction is guarded by a class-level lock so first access
+            remains safe under free-threading runtimes where multiple threads may
+            attempt construction concurrently.
         """
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
+        instance = cls._instance
+        if instance is None:
+            with cls._CONSTRUCTION_LOCK:
+                instance = cls._instance
+                if instance is None:
+                    instance = super().__new__(cls)
+                    cls._instance = instance
+        return instance
 
     def __init__(self) -> None:
         """
