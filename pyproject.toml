@@ -63,3 +63,36 @@ exclude = [
     "tests*", "docs*", "examples*", "Plans*", "benchmarks*", "benchmark_data*",
     ".github*", ".venv*", "__pycache__", "*.egg-info", "TestIdeas"
 ]
+
+
+[tool.coverage.run]
+source = ["src/melder"]
+omit = [
+    "benchmarks/*",
+    "Plans/*",
+    "codex/*",
+    "codex_agent_2/*",
+    "codex_agent_3/*",
+]
+
+[tool.coverage.report]
+omit = [
+    "benchmarks/*",
+    "Plans/*",
+    "codex/*",
+    "codex_agent_2/*",
+    "codex_agent_3/*",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = [
+    "benchmarks",
+    "Plans",
+    "codex",
+    "codex_agent_2",
+    "codex_agent_3",
+    ".venv",
+    ".venv_new",
+    "__pycache__",
+]

@@ -32,12 +32,27 @@ class Spell(Cleanable, ISpell):
     """
     Internal
 
-    ðŸª„ Represents a registered spell within the Melder system.
+    Represents one registered spell inside the Melder runtime.
 
-    A `Spell` encapsulates an instantiable or callable unit of logic (class, function,
-    lambda, or existing object) that can be bound, shared, and conjured via conduits
-    within a Spellbook context. It includes type metadata, existence constraints,
-    dependency information, and permission rules for downstream access.
+    A `Spell` is the canonical bind-time runtime record for one class,
+    function, lambda, or existing object registration. It keeps the spell's
+    structural identity, lifecycle policy, access policy, reflective profile,
+    build-time artifacts, spell-local runtime helpers, and ownership metadata
+    together so the rest of Melder can reason about one stable object instead
+    of a loose bundle of values.
+
+    Contract:
+    - Wraps exactly one registered spell target plus its `SpellIndex`
+      lineage/version record.
+    - Owns spell-local mutable runtime state such as hooks, dependency/build
+      artifacts, the spell-owned `CreationContextFactory`, the spell-owned
+      `CreationContext`, execution-plan metrics, and mutation overlays.
+    - Does not validate bind-time inputs by itself; upstream bind/examiner
+      stages are expected to hand it already-validated configuration.
+    - Uses an internal `RLock` to guard multi-field configuration and cleanup
+      transitions.
+    - Becomes unusable after `cleanup()` completes; later live-object methods
+      are expected to fail through `check_cleaned()`.
 
     Core Responsibilities:
     - Holds an immutable reference to the object (function/class/instance) it represents.
@@ -53,12 +68,15 @@ class Spell(Cleanable, ISpell):
     - Caches Phase 11 execution-plan metrics (node count, max depth, etc.) for
       runtime path selection.
 
-    ðŸ” Permissions (Permissions Enum):
-        - `read`: Allows other conduits to use the spell as-is, but not modify or recreate it.
-        - `create`: Allows other conduits to instantiate or construct new versions.
-        - `block`: Prevents external access. Internal (owner conduit) access is still allowed.
+    Permissions (`Permissions` enum):
+        - `read`: Allows other conduits to use the spell as-is, but not modify
+          or recreate it.
+        - `create`: Allows other conduits to instantiate or construct new
+          versions.
+        - `block`: Prevents external access. Internal owner-conduit access is
+          still allowed.
 
-    ðŸŽ¯ Key Concepts:
+    Key Concepts:
         - Each spell has a unique SHA256 `spell_id`, generated from its structural fingerprint.
         - `spellframe` distinguishes the context it was declared in (e.g., Protocol, class,
           or string frame).
@@ -80,7 +98,7 @@ class Spell(Cleanable, ISpell):
         binding_name (Optional[str]):
             The logical name this spell is bound to (e.g., "database", "engine").
             Normalized as part of the internal key via SpellInputUtils.
-            Maybe None for unnamed/default bindings.
+            May be None for unnamed/default bindings.
 
         spell_name (str):
             The actual internal name of the object or callable (for display/debugging).
@@ -118,10 +136,26 @@ class Spell(Cleanable, ISpell):
 
         spellbook (Optional[ISpellbook]):
             Back-reference to the owning Spellbook. Primarily used for internal coordination
-            (conduit ownership, graph wiring, diagnostics). Maybe None in some contexts.
+            (conduit ownership, graph wiring, diagnostics). May be None in some contexts.
 
         *args / **kwargs:
             Arbitrary tags and metadata for internal use or future extensions.
+
+    Threading / Concurrency:
+        - Internal multi-field mutation is guarded by `_lock`.
+        - Spell-owned runtime context publication uses `_creation_context_switch`
+          so only one builder wins publication at a time.
+        - Higher-level conduit/spellbook orchestration still owns system-level
+          concurrency decisions; this class only protects its own local state.
+
+    Lifecycle / Cleanup:
+        - `Spell` owns its `SpellCrafter`, spell-owned `CreationContextFactory`,
+          spell-owned `CreationContext`, hook lists, dependency/build artifacts,
+          and cached execution-plan metrics.
+        - Conduit ownership can be restamped later, which invalidates the
+          spell-owned `CreationContext` and rebuilds the spell-owned factory.
+        - `cleanup()` is deterministic, best-effort for owned child cleanup, and
+          clears references to prevent reuse-after-clean.
 
     Notes:
         - This class is never used directly by users. It is created during `bind()` and
@@ -129,6 +163,7 @@ class Spell(Cleanable, ISpell):
         - Internal mutation after cleaning is disallowed.
         - Dependency graphs, resolution frames, and resolution profiles are produced
           by the Resolution / Meld layer; `Spell` itself does not execute resolution.
+
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -507,22 +542,31 @@ class Spell(Cleanable, ISpell):
     #region Disposal
     def cleanup(self) -> None:
         """
-        Cleans up the spell, preventing any further modifications.
+        Release spell-owned runtime state and permanently retire this Spell.
 
-        This:
-        - Disposes the static dependency graph if one was attached and exposes a `dispose()` method.
-        - Clears references to owner creations and `user_created_object`.
-        - Clears any compiler/phase artifacts via the attached :class:`SpellCrafter`.
-        - Drops the Spellbook reference.
-        - Marks the spell as cleaned so that further configuration is disallowed.
+        Purpose:
+            Deterministically tear down the spell-local runtime surface so later
+            code cannot keep using stale build artifacts, runtime contexts, or
+            owner references after the spell leaves service.
 
-        Runtime resolution and instance lifecycle are owned by the Resolution / Meld layer,
-        not by this class.
+        Contract:
+            - Idempotent: repeated calls become no-ops after `_cleaned` flips.
+            - Thread-safe: acquires `_lock`, re-checks `_cleaned`, and then
+              performs teardown under the guarded section.
+            - Best-effort child cleanup: owned child cleanup failures are
+              swallowed so teardown still reaches the final cleared state.
+            - Clears hooks, metadata, dependency/build artifacts, execution-plan
+              metrics, spell-owned factory/context state, conduit ownership
+              state, spellbook references, and reflective profile state.
+            - Sets `_cleaned` before the guarded section exits, then drops the
+              `_lock` reference itself after teardown completes.
 
-        Notes:
-            - Idempotent: subsequent calls are safe and no-op after the first run.
-            - Thread-safe: guarded by an internal RLock to avoid concurrent cleanup races.
-            - Defensive: cleanup of child artifacts swallows exceptions to ensure teardown completes.
+        Runtime resolution and instance lifecycle remain owned by the Resolution
+        / Meld layer, not by this class.
+
+        Returns:
+            None.
+
         """
         if self._cleaned:
             return
@@ -633,26 +677,51 @@ class Spell(Cleanable, ISpell):
     #region Context Manager
     def __enter__(self) -> "Spell":
         """
-        Enters the context manager for Aether-related operations.
+        Acquire the spell's internal lock and return `self`.
 
-        This is mainly useful for internal configuration phases where multiple attributes
-        (hooks, metadata, etc.) are being attached under the same lock.
+        Purpose:
+            Allow internal configuration code to group multiple field updates
+            under the same lock without exposing `_lock` directly.
+
+        Contract:
+            - Intended for internal use only.
+            - Does not perform a cleaned-state guard on its own; callers must
+              ensure they are operating on a live spell.
+            - Must be paired with `__exit__` to avoid leaking the lock.
+
+        Returns:
+            Spell:
+                This spell instance while the internal lock is held.
+
         """
         self._lock.acquire()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         """
-        Exits the context manager for Aether-related operations.
+        Release the spell's internal lock after a context-manager block.
+
+        Returns:
+            None.
+
         """
         self._lock.release()
     #endregion Context Manager
 
     def __repr__(self) -> str:
         """
-        Return a concise, human-readable representation of the spell including name,
-        binding, frame, and SHA256-derived spell ID. Used primarily for diagnostics
-        and logging.
+        Return a concise diagnostic representation for logging and debugging.
+
+        Contract:
+            - Includes spell name, binding key, frame label, and the SHA256
+              spell identifier.
+            - Falls back to `type(self.spell).__name__` when no explicit
+              `spellframe` exists.
+
+        Returns:
+            str:
+                Stable human-readable representation of this spell's identity.
+
         """
         if self.spellframe:
             frame = getattr(self.spellframe, "__name__", str(self.spellframe))
@@ -666,11 +735,19 @@ class Spell(Cleanable, ISpell):
     #region Internal helpers
     def _ensure_crafter(self) -> "SpellCrafter":
         """
-        Lazily create and attach the :class:`SpellCrafter` that owns this
-        spell's compilation / resolution phases.
+        Lazily create and attach the spell-owned `SpellCrafter`.
 
-        We use a local import to avoid circular import issues between the
-        `spell` and `spell_crafter` modules.
+        Contract:
+            - Returns the same attached crafter until cleanup clears it.
+            - Performs a local import to avoid circular import coupling between
+              `spell.py` and `spell_crafter.py`.
+            - Seeds the crafter with the current spell resolution profile when
+              the attached reflective profile exposes one.
+
+        Returns:
+            SpellCrafter:
+                The spell-owned crafter responsible for compiler and resolution phases.
+
         """
         if self._crafter is None:
             from melder.spellbook.spell_crafter.spell_crafter import SpellCrafter
@@ -690,57 +767,92 @@ class Spell(Cleanable, ISpell):
         """
         Internal
 
-        Returns the canonical `(frame_key, binding_key)` used by the Spellbook
-        for dictionary-based lookups. This is always normalized via SpellInputUtils.
+        Return the canonical `(frame_key, binding_key)` lookup tuple.
 
-        This is intentionally read-only; key semantics are controlled by binding time.
+        Contract:
+            - Always reflects the bind-time normalized key produced by
+              `SpellInputUtils.make_spell_key_from_parts(...)`.
+            - Read-only at the Spell layer; callers must not mutate key
+              semantics after bind time.
+
+        Returns:
+            tuple[str, str]:
+                Canonical Spellbook dictionary key for this spell.
+
         """
         return self._key
 
     @property
     def is_existing_creation(self) -> bool:
         """
-        Returns True if this spell represents an existing, pre-created object
-        (EXISTING_CREATION* SpellTypes), rather than a factory.
+        Whether this spell represents an existing, pre-created object.
+
+        Returns:
+            bool:
+                True only for `EXISTING_CREATION*` spell types.
         """
         return self._is_existing_creation
 
     @property
     def is_class_spell(self) -> bool:
         """
-        Returns True if this spell represents a class-based factory (SPELL* SpellTypes).
+        Whether this spell represents a class-backed factory registration.
+
+        Returns:
+            bool:
+                True only for `SPELL*` spell types.
         """
         return self._is_class_spell
 
     @property
     def is_method_spell(self) -> bool:
         """
-        Returns True if this spell represents a non-lambda method/function spell.
+        Whether this spell represents a non-lambda method or function registration.
+
+        Returns:
+            bool:
+                True only for non-lambda `METHOD*` spell types.
         """
         return self._is_method_spell
 
     @property
     def is_lambda_spell(self) -> bool:
         """
-        Returns True if this spell represents a lambda-based method spell.
+        Whether this spell represents one of the lambda-backed method spell variants.
+
+        Returns:
+            bool:
+                True only for lambda `METHOD*` spell types.
         """
         return self._is_lambda_spell
 
     @property
     def has_existing_object(self) -> bool:
         """
-        Returns True if this spell currently holds a user-provided existing object.
+        Whether this spell currently holds a concrete user-provided object.
 
-        This is only meaningful for EXISTING_CREATION* SpellTypes; for other types
-        it will always be False.
+        Contract:
+            - Meaningful only for `EXISTING_CREATION*` spell types.
+            - Returns False for factory-style spell types even if they later
+              create runtime instances through conduits.
+
+        Returns:
+            bool:
+                True when `user_created_object` is currently attached.
+
         """
         return self.user_created_object is not None
 
     @property
     def owner_conduit_info(self) -> tuple[Optional[str], Optional[str]]:
         """
-        Returns `(owner_conduit_id, owner_conduit_name)` if this spell has
-        been attached to a specific Conduit, otherwise `(None, None)`.
+        Return the current conduit ownership tuple for this spell.
+
+        Returns:
+            tuple[Optional[str], Optional[str]]:
+                `(owner_conduit_id, owner_conduit_name)` when ownership has been
+                stamped, otherwise `(None, None)`.
+
         """
         return self._owner_conduit_id, self._owner_conduit_name
 
@@ -804,7 +916,13 @@ class Spell(Cleanable, ISpell):
     @property
     def validated(self) -> bool:
         """
-        True if the validation phase has run and marked this spell as validated.
+        Whether Phase 4 validation currently considers this spell valid.
+
+        Returns:
+            bool:
+                False until a crafter exists and its validation result marks the
+                spell valid.
+
         """
         if self._crafter is None:
             return False
@@ -813,7 +931,12 @@ class Spell(Cleanable, ISpell):
     @property
     def is_broken(self) -> bool:
         """
-        True if the validation phase classified this spell as broken / unsafe.
+        Whether validation currently classifies this spell as broken or unsafe.
+
+        Returns:
+            bool:
+                False until a crafter exists and flags the spell as broken.
+
         """
         if self._crafter is None:
             return False
@@ -1140,8 +1263,23 @@ class Spell(Cleanable, ISpell):
         """
         Phase 10 - Patch map compilation (facade).
 
-        Delegates to the SpellCrafter to compile override/mutation patch maps
+        Delegates to the SpellCrafter to compile override and mutation patch maps
         for root spells. Non-root spells are treated as a no-op.
+
+        Contract:
+            - Requires Phase 9 artifacts to be available.
+            - Does not return a value; artifacts are stored on the crafter.
+            - Does not execute later phases.
+
+        Args:
+            conduit_id:
+                Conduit identifier used to scope resolution artifacts.
+            cancel_event:
+                Optional cancellation signal shared across the scheduler.
+
+        Returns:
+            None.
+
         """
         self.check_cleaned()
         crafter = self._ensure_crafter()
@@ -1364,19 +1502,22 @@ class Spell(Cleanable, ISpell):
     @property
     def system_state(self) -> Optional["SpellSystemState"]:
         """
-        Return the SpellSystemState instance associated with this Spell's lineage.
+        Return the SpellSystemState instance associated with this spell's lineage.
 
-        This is a *view* into the change-control / validation state tracked
-        by SpellSystemStates. It is intentionally read-mostly at the Spell layer:
+        This is a read-mostly view into the change-control and validation state
+        tracked by SpellSystemStates.
 
-        - Mutation and contract operations can ask for the current state.
-        - Higher-level dev-ops / validation pipelines can use this hook to
-          inspect or assert state when orchestrating Phase 1â€“7 revalidation.
+        Contract:
+            - Mutation and contract operations can ask for the current lineage state.
+            - Higher-level dev-ops and validation pipelines can inspect this value
+              while orchestrating Phase 1-7 revalidation.
+            - Returns `None` when SpellSystemStates is unavailable or the lineage is
+              not currently tracked.
 
         Returns:
-            SpellSystemState | None:
-                The state object if SpellSystemStates is available and this
-                spell has a registered lineage; otherwise None.
+            Optional[SpellSystemState]:
+                The state object for this spell's lineage, if available.
+
         """
         self.check_cleaned()
         if self._spell_system_states is None:
@@ -1392,22 +1533,24 @@ class Spell(Cleanable, ISpell):
     @property
     def mutation_override(self) -> dict:
         """
-        Current mutation override payload for this Spell's DAG.
+        Current mutation override payload for this spell's DAG.
 
-        This is a *structural overlay* that the mutation pipeline can apply
-        to the spell's DI shape in Dynamic / AI-native mode. It is conceptually
-        separate from normal SpellMap overrides:
+        This is a structural overlay that the mutation pipeline can apply to the
+        spell's DI shape in Dynamic or AI-native mode. It is conceptually separate
+        from normal SpellMap overrides:
 
-        - SpellMap.spell_override â†’ per-call / per-site DI override.
-        - Spell.mutation_override â†’ per-spell *graph* overlay used by the
-          MutationContract / mutation hub.
+        - `SpellMap.spell_override` -> per-call or per-site DI override.
+        - `Spell.mutation_override` -> per-spell graph overlay used by the mutation hub.
 
         Semantics:
-            - An empty dict (`{}`) is treated as â€œno active overlayâ€ by
-              default. The higher-level mutation system may refine this
-              distinction later (e.g., between "no overlay" and "explicit
-              empty override") but at the Spell level we simply expose the
-              raw payload.
+            - An empty dict (`{}`) is treated as "no active overlay" by default.
+            - Higher-level mutation systems may refine that distinction later, but the
+              Spell layer exposes the raw payload exactly as stored.
+
+        Returns:
+            dict:
+                The concrete overlay payload currently attached to this spell.
+
         """
         # Expose the concrete container; callers can decide if '{}' means
         # "no overlay" or an explicit empty overlay.
@@ -1416,31 +1559,41 @@ class Spell(Cleanable, ISpell):
     @property
     def has_mutation_override(self) -> bool:
         """
-        Whether this Spell currently has a non-empty mutation overlay.
+        Whether this spell currently has a non-empty mutation overlay.
 
-        This is a convenience for Dynamic / AI-native flows that want a quick
+        This is a convenience for Dynamic or AI-native flows that want a quick
         check before doing more expensive revalidation or graph rebuilds.
+
+        Returns:
+            bool:
+                True when the current overlay payload is non-empty.
+
         """
         return bool(self._mutation_override)
 
     def apply_mutation_override(self, override: Optional[dict]) -> None:
         """
-        Apply or update the DAG-level mutation override for this Spell.
-        Instead, it:
+        Apply or update the DAG-level mutation override for this spell.
 
-        - Updates the local overlay payload; and
-        - Clears the spell-owned CreationContext so meld rebuilds runtime shape; and
-        - Marks the Spell's lineage as structurally changed via
-          SpellSystemStates (if available), using a mutation_contract_*
-          change reason.
+        Contract:
+            - Stores the raw overlay payload on the spell.
+            - Clears the spell-owned `CreationContext` so runtime shape is rebuilt
+              on the next meld path.
+            - Marks spell lineage state through SpellSystemStates when that service
+              is available.
+            - Treats `None` the same as an empty overlay payload.
 
-        The actual rebuild / revalidation of the system graph is expected to
-        be driven by the Phase 5â€“7 pipelines and the mutation hub.
+        The actual rebuild or revalidation of the system graph is expected to be
+        owned by the Phase 5-7 pipelines and the mutation hub.
 
         Args:
             override:
-                New overlay payload. `None` or `{}` clears the overlay and
-                leaves this Spell in a "no active mutation overlay" state.
+                New overlay payload. `None` or `{}` clears the overlay and leaves
+                this spell in a no-active-overlay state.
+
+        Returns:
+            None.
+
         """
         self.check_cleaned()
 
@@ -1462,15 +1615,21 @@ class Spell(Cleanable, ISpell):
 
     def clear_mutation_override(self) -> None:
         """
-        Clear any active mutation overlay for this Spell.
+        Clear any active mutation overlay for this spell.
 
-        This resets the local overlay payload back to the default empty dict,
-        clears the spell-owned CreationContext,
-        and, if SpellSystemStates is available, marks the lineage as having
-        rolled back a mutation.
+        Contract:
+            - Resets the local overlay payload back to the default empty dict.
+            - Clears the spell-owned `CreationContext` so future meld work rebuilds
+              runtime shape without the previous overlay.
+            - Marks the lineage as mutation-cleared when SpellSystemStates is
+              available.
 
-        The actual effect on the compiled/system DAG is owned by the higher-
-        level mutation / validation pipelines.
+        The actual effect on the compiled or system DAG remains owned by the
+        higher-level mutation and validation pipelines.
+
+        Returns:
+            None.
+
         """
         self.check_cleaned()
 
