@@ -1169,10 +1169,18 @@ class TransferOfOwnership:
 
     def _move_creations(self, spell_obj: Any) -> None:
         """
-        Move creations for the spell from source to target and record rollback actions.
+        Rehome existing creation state onto the target conduit.
+
+        This branch preserves runtime object continuity across ownership
+        transfer. Instead of destroying existing creations and forcing the new
+        owner to rebuild them later, it extracts the lineage's creation payload
+        from the source and restores that payload into the target conduit's
+        `Creations` store. A rollback handler is then registered so the payload
+        can be put back if a later transfer step fails.
 
         Args:
-            spell_obj: Spell whose creations are being moved.
+            spell_obj: Spell whose existing creations should follow the new
+                owner.
         """
         try:
             creations = self.source_conduit._creations
@@ -1187,10 +1195,17 @@ class TransferOfOwnership:
 
     def _teardown_creations(self, spell_obj: Any) -> None:
         """
-        Remove creations from the source without moving them; records rollback for restore.
+        Remove source-side creation state instead of preserving it on the
+        target.
+
+        This is the destructive transfer posture. It is used when the caller
+        wants ownership to move but does not want live creation objects to be
+        carried across with it. The extracted payload is still kept for rollback
+        so a failed transfer can restore the pre-transfer runtime state.
 
         Args:
-            spell_obj: Spell whose creations will be removed.
+            spell_obj: Spell whose current creations should be torn down rather
+                than migrated.
         """
         try:
             creations = self.source_conduit._creations
@@ -1203,32 +1218,23 @@ class TransferOfOwnership:
 
     def _unshare_everywhere(self, borrowers: List[Dict[str, Any]], spell_obj: Any) -> None:
         """
-        Internal
+        Remove downstream borrower visibility instead of migrating it.
 
-        Remove all contracts/cluster shares involving the spell across borrowers.
+        This is the conservative borrower strategy used when `force_unshare`
+        is enabled. After the root lineage changes owners, peers that used to
+        borrow it from the source should stop resolving it entirely until they
+        explicitly relink or are re-exposed by some later operation.
 
-        Purpose:
-            Force-unshare removes contract details so borrowers no longer resolve the
-            spell from the previous owner after a transfer.
-        Contract:
-            - For each contract holding the spell_id, removes the detail via the peer
-              ward so the owning ward's contract entry is cleared, with a fallback
-              when a ward stub lacks peer access.
-            - Registers rollback actions that restore the contract with the spell's
-              permissions on failure.
-            - Best-effort: per-contract failures are suppressed to continue unsharing.
+        The helper therefore walks every borrower contract that currently
+        exposes the spell, removes the detail, and records rollback handlers
+        that can rebuild the prior contract surface if the transfer fails.
+        Cluster borrowers are treated as already covered by the underlying
+        contract removals.
 
         Args:
-            borrowers: List of borrower descriptors.
-            spell_obj: Spell being unshared.
-        Returns:
-            None.
-        Raises:
-            None; errors are suppressed.
-        Threading:
-            Relies on ward/contract internal locks for safety.
-        Lifecycle:
-            Does not alter ownership; only adjusts contract visibility.
+            borrowers: Borrower descriptors collected during preflight.
+            spell_obj: Spell whose downstream borrowed visibility is being
+                removed.
         """
         for b in borrowers:
             if b["type"] == "contract":
@@ -1311,11 +1317,19 @@ class TransferOfOwnership:
 
     def _repoint_borrowers(self, borrowers: List[Dict[str, Any]], spell_obj: Any) -> None:
         """
-        Rebuild borrower links to point to the target conduit instead of the source.
+        Rebuild borrower relationships so they now resolve from the target
+        conduit.
+
+        This is the continuity-preserving alternative to `_unshare_everywhere`.
+        Instead of cutting borrowers loose, it recreates contract visibility on
+        the target owner and then removes the old source-side contract detail.
+        If repointing a given borrower fails, the method deliberately leaves
+        that borrower unshared rather than faking success.
 
         Args:
-            borrowers: List of borrower descriptors.
-            spell_obj: Spell being re-pointed.
+            borrowers: Borrower descriptors collected during preflight.
+            spell_obj: Spell whose borrowers should be migrated to the new
+                owner.
         """
         # Rebuild contracts to point to target
         for b in borrowers:
@@ -1370,10 +1384,16 @@ class TransferOfOwnership:
 
     def _transfer_owned_dependencies(self, deps: List[str]) -> None:
         """
-        Transfer owned dependencies to the target conduit (shallow only).
+        Transfer source-owned dependency lineages alongside the root lineage.
+
+        This is the ownership-preserving dependency strategy. Each dependency is
+        transferred with a nested `TransferOfOwnership`, but the recursion is
+        deliberately shallow for this pass: nested transfers do not continue
+        pulling their own dependencies unless a higher-level caller explicitly
+        requests that behavior.
 
         Args:
-            deps: List of dependency spell_ids to consider.
+            deps: Dependency spell ids discovered during preflight.
         """
         for dep_id in deps:
             try:
@@ -1401,10 +1421,16 @@ class TransferOfOwnership:
 
     def _dirty_dependencies(self, deps: List[str]) -> None:
         """
-        Mark dependencies dirty without moving them.
+        Leave dependencies in place but force their lineages back through
+        validation.
+
+        This is the lightweight dependency strategy used when the transfer
+        should not migrate dependency ownership. Rather than moving those
+        lineages, it marks them dirty so downstream runtime state is not
+        trusted blindly after the root transfer changes ownership/topology.
 
         Args:
-            deps: List of dependency spell_ids to mark dirty.
+            deps: Dependency spell ids whose lineages should be marked dirty.
         """
         for dep_id in deps:
             try:
@@ -1420,12 +1446,20 @@ class TransferOfOwnership:
     # ------------------------------------------------------------------
     def _record_change_intent(self, summary: Dict[str, Any]) -> None:
         """
-        Register a change-control entry describing the pending transfer.
+        Publish a pending-change record before the transfer mutates ownership.
+
+        This is the change-control breadcrumb for the operation. It tells the
+        surrounding governance layer that a lineage is about to undergo an
+        ownership rewrite and records enough metadata for later diagnostics or
+        manual inspection if the transfer fails mid-flight.
+
+        The write is intentionally idempotent for a given `op_id`, and it is
+        best-effort so observability failures do not block the runtime from
+        attempting the actual ownership move.
 
         Args:
-            summary: Preflight summary payload.
-        Notes:
-            Best-effort; failures are ignored so as not to block transfer.
+            summary: Preflight payload that describes the lineage, endpoints,
+                borrowers, dependencies, creations, and transfer options.
         """
         try:
             existing = self._change_control_manager.get_pending_change(summary["spell_index"].id)
@@ -1451,10 +1485,16 @@ class TransferOfOwnership:
 
     def _clear_change_intent(self, spell_index: SpellIndex) -> None:
         """
-        Clear any change-control entry after successful transfer.
+        Remove the pending-change record after a successful transfer.
+
+        Once ownership has been moved and the operation reaches its success
+        path, the transfer should no longer appear as an in-flight control-plane
+        rewrite. Clearing the pending-change entry is the bookkeeping step that
+        closes that loop.
 
         Args:
-            spell_index: Lineage whose pending change should be cleared.
+            spell_index: Lineage whose pending transfer record should be
+                cleared.
         """
         try:
             self._change_control_manager.clear_pending_change(spell_index.id)
@@ -1463,10 +1503,18 @@ class TransferOfOwnership:
 
     def _record_incident(self, summary: Dict[str, Any], exc: Exception) -> None:
         """
-        Emit an incident describing a failed or partial transfer.
+        Emit incident records for transfer failure or missing revalidation
+        support.
+
+        Incident emission is deliberately secondary to runtime recovery. The
+        transfer first tries to restore a coherent lineage state; this helper
+        then records what failed so operators or future automation can inspect
+        the partial move with the same preflight metadata that informed the
+        transfer itself.
 
         Args:
-            summary: Preflight/transfer summary payload.
+            summary: Preflight/transfer summary payload describing the affected
+                lineage and participants.
             exc: Exception that triggered the failure path.
         """
         try:
