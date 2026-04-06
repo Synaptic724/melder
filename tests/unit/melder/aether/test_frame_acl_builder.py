@@ -203,6 +203,22 @@ def test_frame_acl_builder_cleanup_clears_fields() -> None:
     assert builder._draft_configuration is None
 
 
+def test_frame_acl_builder_cleanup_is_idempotent() -> None:
+    """
+    Verify cleanup can be called more than once safely.
+
+    Returns:
+        None.
+    """
+    container = FrameACLContainer("ops")
+    builder = container.frame_acl_builder
+
+    builder.cleanup()
+    builder.cleanup()
+
+    assert builder.cleaned is True
+
+
 def test_frame_acl_builder_cleanup_rechecks_cleaned_inside_lock() -> None:
     """
     Verify cleanup returns early when another thread marks the builder cleaned.
