@@ -678,7 +678,7 @@ class FrameViewer(Cleanable):
             helper_name
         )
 
-    def execute_profile_method(
+    def execute_method(
             self,
             method_name: str,
             *,

@@ -292,7 +292,7 @@ def test_nexus_create_frame_viewer_for_rift_populates_available_views_from_assig
     assert list(viewer.frame_descriptors_by_name.keys()) == ["ops"]
     assert viewer.frame_descriptors_by_name["ops"].frame_name == "ops"
     assert viewer.default_view_frame_name == "ops"
-    assert len(viewer.execute_profile_method("list_targets")) >= 1
+    assert len(viewer.execute_method("list_targets")) >= 1
 
 
 def test_nexus_create_frame_viewer_rejects_string_sequence_input() -> None:

@@ -92,7 +92,7 @@ def test_frame_payload_field_matrix(
     )
 
     if field_name in visible_fields:
-        assert viewer.execute_profile_method(
+        assert viewer.execute_method(
             "get_frame_payload_field",
             frame_name="ops",
             field_name=field_name,
@@ -102,7 +102,7 @@ def test_frame_payload_field_matrix(
                 ValueError,
                 match="is not visible",
         ):
-            viewer.execute_profile_method(
+            viewer.execute_method(
                 "get_frame_payload_field",
                 frame_name="ops",
                 field_name=field_name,
@@ -162,7 +162,7 @@ def test_find_target_by_display_name_matrix(
         },
     )
 
-    targets = viewer.execute_profile_method(
+    targets = viewer.execute_method(
         "find_target_by_display_name",
         frame_name="ops",
         display_name=display_name,
@@ -221,7 +221,7 @@ def test_explain_conduit_access_matrix(
         },
     )
 
-    explanation = viewer.execute_profile_method(
+    explanation = viewer.execute_method(
         "explain_conduit_access",
         frame_name="ops",
         conduit_id="ops-conduit-1",
@@ -278,7 +278,7 @@ def test_get_conduit_payload_field_matrix(
         frame_payload_fields=("system_state",),
     )
 
-    assert viewer.execute_profile_method(
+    assert viewer.execute_method(
         "get_conduit_payload_field",
         frame_name="ops",
         conduit_id="ops-conduit-1",
@@ -342,7 +342,7 @@ def test_describe_conduit_topology_matrix(
         },
     )
 
-    topology = viewer.execute_profile_method(
+    topology = viewer.execute_method(
         "describe_conduit_topology",
         frame_name="ops",
         conduit_id=conduit_id,
@@ -402,7 +402,7 @@ def test_get_spell_payload_section_matrix(
         frame_payload_fields=("system_state",),
     )
 
-    value = viewer.execute_profile_method(
+    value = viewer.execute_method(
         "get_spell_payload_section",
         frame_name="ops",
         spell_source_id="ops-spellbook:ops-spell-1",
@@ -457,7 +457,7 @@ def test_describe_spell_detail_matrix(
         frame_payload_fields=("system_state",),
     )
 
-    detail = viewer.execute_profile_method(
+    detail = viewer.execute_method(
         "describe_spell_detail",
         frame_name="ops",
         spell_source_id="ops-spellbook:ops-spell-1",
@@ -501,7 +501,7 @@ def test_find_spell_by_binding_name_matrix(
         frame_payload_fields=("system_state",),
     )
 
-    spells = viewer.execute_profile_method(
+    spells = viewer.execute_method(
         "find_spell_by_binding_name",
         frame_name="ops",
         binding_name=binding_name,
@@ -551,7 +551,7 @@ def test_list_spells_by_payload_type_matrix(
         frame_payload_fields=("system_state",),
     )
 
-    spells = viewer.execute_profile_method(
+    spells = viewer.execute_method(
         "list_spells_by_payload_type",
         frame_name="ops",
         payload_type=filter_type,

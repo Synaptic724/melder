@@ -285,7 +285,7 @@ class RiftSpace(Cleanable, IRiftSpace):
             List[object]: Available targets from the attached viewer.
         """
         self.check_cleaned()
-        return self.get_required_frame_viewer().execute_profile_method(
+        return self.get_required_frame_viewer().execute_method(
             "list_targets",
             frame_name=frame_name,
             profile_name=profile_name,
@@ -317,7 +317,7 @@ class RiftSpace(Cleanable, IRiftSpace):
             List[Dict[str, object]]: Available target descriptions.
         """
         self.check_cleaned()
-        return self.get_required_frame_viewer().execute_profile_method(
+        return self.get_required_frame_viewer().execute_method(
             "describe_targets",
             frame_name=frame_name,
             profile_name=profile_name,
@@ -398,7 +398,7 @@ class RiftSpace(Cleanable, IRiftSpace):
             raise ValueError("RiftSpace has no default selected frame.")
         target_ids = [
             frame_link.link_id
-            for frame_link in viewer.execute_profile_method(
+            for frame_link in viewer.execute_method(
                 "list_targets",
                 frame_name=selected_frame_name
             )
@@ -467,7 +467,7 @@ class RiftSpace(Cleanable, IRiftSpace):
             raise ValueError("RiftSpace has no default selected frame.")
         target_descriptions_by_id = {
             description["target_id"]: description
-            for description in viewer.execute_profile_method(
+            for description in viewer.execute_method(
                 "describe_targets",
                 frame_name=selected_frame_name,
             )

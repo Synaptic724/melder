@@ -1,4 +1,5 @@
 import json
+import threading
 
 import pytest
 
@@ -76,6 +77,20 @@ def test_frame_acl_builder_apply_profile_requires_active_change() -> None:
 
     with pytest.raises(RuntimeError, match="has no active change"):
         builder.apply_frame_acl_profile(frame_acl_profile)
+
+
+def test_frame_acl_builder_apply_profile_rejects_wrong_profile_type() -> None:
+    """
+    Verify reusable profile application rejects non-profile inputs.
+
+    Returns:
+        None.
+    """
+    container = FrameACLContainer("ops")
+    builder = container.frame_acl_builder
+
+    with pytest.raises(TypeError, match="must be a FrameACLProfile"):
+        builder.apply_frame_acl_profile(None)
 
 
 def test_frame_acl_builder_commit_requires_active_change() -> None:
@@ -186,6 +201,57 @@ def test_frame_acl_builder_cleanup_clears_fields() -> None:
     assert builder._container is None
     assert builder._change_active is None
     assert builder._draft_configuration is None
+
+
+def test_frame_acl_builder_cleanup_rechecks_cleaned_inside_lock() -> None:
+    """
+    Verify cleanup returns early when another thread marks the builder cleaned.
+
+    Returns:
+        None.
+    """
+
+    class _CoordinatedLock:
+        def __init__(self) -> None:
+            self._entered_first = threading.Event()
+            self._second_attempted = threading.Event()
+            self._lock = threading.RLock()
+
+        def __enter__(self):
+            if self._entered_first.is_set():
+                self._second_attempted.set()
+            self._lock.acquire()
+            if not self._entered_first.is_set():
+                self._entered_first.set()
+                assert self._second_attempted.wait(timeout=1.0)
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self._lock.release()
+
+    container = FrameACLContainer("ops")
+    builder = container.frame_acl_builder
+    builder.begin_change()
+    coordinated_lock = _CoordinatedLock()
+    builder._lock = coordinated_lock
+
+    thread_results = []
+
+    def _run_cleanup() -> None:
+        builder.cleanup()
+        thread_results.append(True)
+
+    first = threading.Thread(target=_run_cleanup)
+    second = threading.Thread(target=_run_cleanup)
+    first.start()
+    coordinated_lock._entered_first.wait(timeout=1.0)
+    second.start()
+    first.join(timeout=1.0)
+    second.join(timeout=1.0)
+
+    assert thread_results == [True, True]
+    assert builder.cleaned is True
+    assert builder._lock is None
 
 
 def test_frame_acl_builder_load_json_rebuilds_typed_draft() -> None:

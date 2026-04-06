@@ -202,7 +202,7 @@ def test_frame_viewer_describes_available_frames() -> None:
 def test_frame_viewer_profile_lists_targets_for_one_frame() -> None:
     viewer = _build_viewer(("ops",))
 
-    links = viewer.execute_profile_method("list_targets", frame_name="ops")
+    links = viewer.execute_method("list_targets", frame_name="ops")
 
     assert [link.source_kind for link in links] == ["frame", "conduit", "spell"]
 
@@ -222,7 +222,7 @@ def test_frame_viewer_describe_frames_summarizes_all_hosted_frames() -> None:
 def test_frame_viewer_profile_lists_targets_for_default_frame() -> None:
     viewer = _build_viewer(("ops",))
 
-    targets = viewer.execute_profile_method("list_targets")
+    targets = viewer.execute_method("list_targets")
 
     assert [target.source_kind for target in targets] == ["frame", "conduit", "spell"]
 
@@ -230,7 +230,7 @@ def test_frame_viewer_profile_lists_targets_for_default_frame() -> None:
 def test_frame_viewer_profile_describe_targets_adds_metadata_for_detailed_profile() -> None:
     viewer = _build_viewer(("ops",))
 
-    descriptions = viewer.execute_profile_method("describe_targets")
+    descriptions = viewer.execute_method("describe_targets")
 
     assert descriptions[0]["source_kind"] == "frame"
     assert "metadata" in descriptions[0]
@@ -246,10 +246,10 @@ def test_frame_viewer_can_list_active_viewer_profiles_and_set_default() -> None:
     assert viewer.profile_name == "general"
 
 
-def test_frame_viewer_execute_profile_method_routes_through_profile_mapping() -> None:
+def test_frame_viewer_execute_method_routes_through_profile_mapping() -> None:
     viewer = _build_viewer(("ops",))
 
-    descriptions = viewer.execute_profile_method(
+    descriptions = viewer.execute_method(
         "describe_targets",
     )
 
@@ -271,8 +271,8 @@ def test_frame_viewer_bound_view_frame_can_get_required_target_by_source() -> No
 def test_frame_viewer_profile_list_targets_can_filter_by_kind() -> None:
     viewer = _build_viewer(("ops", "finance"))
 
-    ops_targets = viewer.execute_profile_method("list_targets", frame_name="ops")
-    ops_spells = viewer.execute_profile_method(
+    ops_targets = viewer.execute_method("list_targets", frame_name="ops")
+    ops_spells = viewer.execute_method(
         "list_targets",
         frame_name="ops",
         source_kind="spell",
@@ -286,7 +286,7 @@ def test_frame_viewer_profile_list_targets_can_filter_by_kind() -> None:
 def test_frame_viewer_describe_frame_summarizes_descriptor_driven_surface() -> None:
     viewer = _build_viewer(("ops",))
 
-    summary = viewer.execute_profile_method(
+    summary = viewer.execute_method(
         "describe_frame",
         frame_name="ops",
     )
@@ -304,15 +304,15 @@ def test_frame_viewer_describe_frame_summarizes_descriptor_driven_surface() -> N
 def test_frame_viewer_host_count_methods_report_descriptor_counts() -> None:
     viewer = _build_viewer(("ops", "finance"))
 
-    assert viewer.execute_profile_method("count_frames") == 2
-    assert viewer.execute_profile_method("count_root_conduits") == 2
-    assert viewer.execute_profile_method("count_spell_records") == 2
+    assert viewer.execute_method("count_frames") == 2
+    assert viewer.execute_method("count_root_conduits") == 2
+    assert viewer.execute_method("count_spell_records") == 2
 
 
 def test_frame_viewer_describe_frame_inventory_reports_visible_ids() -> None:
     viewer = _build_viewer(("ops",))
 
-    inventory = viewer.execute_profile_method(
+    inventory = viewer.execute_method(
         "describe_frame_inventory",
         frame_name="ops",
     )
@@ -330,7 +330,7 @@ def test_frame_viewer_describe_frame_inventory_reports_visible_ids() -> None:
 def test_frame_viewer_describe_frame_access_contract_reports_acl_surface() -> None:
     viewer = _build_viewer(("ops",))
 
-    contract = viewer.execute_profile_method(
+    contract = viewer.execute_method(
         "describe_frame_access_contract",
         frame_name="ops",
     )
@@ -344,7 +344,7 @@ def test_frame_viewer_describe_frame_access_contract_reports_acl_surface() -> No
 def test_frame_viewer_find_target_by_display_name_returns_exact_matches() -> None:
     viewer = _build_viewer(("ops",))
 
-    targets = viewer.execute_profile_method(
+    targets = viewer.execute_method(
         "find_target_by_display_name",
         frame_name="ops",
         display_name="ops_spell",
@@ -357,7 +357,7 @@ def test_frame_viewer_find_target_by_display_name_returns_exact_matches() -> Non
 def test_frame_viewer_explain_target_access_reports_visible_spell_sections() -> None:
     viewer = _build_viewer(("ops",))
 
-    explanation = viewer.execute_profile_method(
+    explanation = viewer.execute_method(
         "explain_target_access",
         frame_name="ops",
         source_kind="spell",
@@ -381,7 +381,7 @@ def test_frame_viewer_explain_target_access_reports_visible_spell_sections() -> 
 def test_frame_viewer_describe_frame_payload_filters_to_visible_fields() -> None:
     viewer = _build_viewer(("ops",))
 
-    payload_description = viewer.execute_profile_method(
+    payload_description = viewer.execute_method(
         "describe_frame_payload",
         frame_name="ops",
     )
@@ -397,7 +397,7 @@ def test_frame_viewer_describe_frame_payload_filters_to_visible_fields() -> None
 def test_frame_viewer_describe_conduit_returns_acl_filtered_payload() -> None:
     viewer = _build_viewer(("ops",))
 
-    conduit_description = viewer.execute_profile_method(
+    conduit_description = viewer.execute_method(
         "describe_conduit",
         frame_name="ops",
         conduit_id="ops-conduit",
@@ -417,7 +417,7 @@ def test_frame_viewer_describe_conduit_returns_acl_filtered_payload() -> None:
 def test_frame_viewer_describe_conduit_topology_reports_visible_spell_links() -> None:
     viewer = _build_viewer(("ops",))
 
-    topology = viewer.execute_profile_method(
+    topology = viewer.execute_method(
         "describe_conduit_topology",
         frame_name="ops",
         conduit_id="ops-conduit",
@@ -434,7 +434,7 @@ def test_frame_viewer_describe_conduit_topology_reports_visible_spell_links() ->
 def test_frame_viewer_find_conduit_by_name_returns_exact_matches() -> None:
     viewer = _build_viewer(("ops",))
 
-    conduits = viewer.execute_profile_method(
+    conduits = viewer.execute_method(
         "find_conduit_by_name",
         frame_name="ops",
         conduit_name="root",
@@ -447,7 +447,7 @@ def test_frame_viewer_find_conduit_by_name_returns_exact_matches() -> None:
 def test_frame_viewer_explain_conduit_access_reports_acl_flags() -> None:
     viewer = _build_viewer(("ops",))
 
-    explanation = viewer.execute_profile_method(
+    explanation = viewer.execute_method(
         "explain_conduit_access",
         frame_name="ops",
         conduit_id="ops-conduit",
@@ -469,7 +469,7 @@ def test_frame_viewer_explain_conduit_access_reports_acl_flags() -> None:
 def test_frame_viewer_get_conduit_payload_field_returns_visible_value() -> None:
     viewer = _build_viewer(("ops",))
 
-    conduit_state = viewer.execute_profile_method(
+    conduit_state = viewer.execute_method(
         "get_conduit_payload_field",
         frame_name="ops",
         conduit_id="ops-conduit",
@@ -482,7 +482,7 @@ def test_frame_viewer_get_conduit_payload_field_returns_visible_value() -> None:
 def test_frame_viewer_describe_spell_returns_acl_filtered_payload() -> None:
     viewer = _build_viewer(("ops",))
 
-    spell_description = viewer.execute_profile_method(
+    spell_description = viewer.execute_method(
         "describe_spell",
         frame_name="ops",
         spell_source_id="ops-spellbook:ops-spell",
@@ -524,7 +524,7 @@ def test_frame_viewer_describe_spell_omits_missing_detailed_sections_for_general
         default_view_frame_name="ops",
     )
 
-    spell_description = viewer.execute_profile_method(
+    spell_description = viewer.execute_method(
         "describe_spell",
         frame_name="ops",
         spell_source_id="ops-spellbook:ops-spell",
@@ -546,7 +546,7 @@ def test_frame_viewer_describe_spell_omits_missing_detailed_sections_for_general
 def test_frame_viewer_describe_spell_detail_reports_payload_not_detailed() -> None:
     viewer = _build_viewer(("ops",))
 
-    detail = viewer.execute_profile_method(
+    detail = viewer.execute_method(
         "describe_spell_detail",
         frame_name="ops",
         spell_source_id="ops-spellbook:ops-spell",
@@ -569,7 +569,7 @@ def test_frame_viewer_describe_spell_detail_reports_payload_not_detailed() -> No
 def test_frame_viewer_find_spell_by_binding_name_returns_exact_match() -> None:
     viewer = _build_viewer(("ops",))
 
-    spells = viewer.execute_profile_method(
+    spells = viewer.execute_method(
         "find_spell_by_binding_name",
         frame_name="ops",
         binding_name="ops_spell",
@@ -582,7 +582,7 @@ def test_frame_viewer_find_spell_by_binding_name_returns_exact_match() -> None:
 def test_frame_viewer_list_spells_by_payload_type_filters_visible_spells() -> None:
     viewer = _build_viewer(("ops",))
 
-    spells = viewer.execute_profile_method(
+    spells = viewer.execute_method(
         "list_spells_by_payload_type",
         frame_name="ops",
         payload_type="general",
@@ -595,7 +595,7 @@ def test_frame_viewer_list_spells_by_payload_type_filters_visible_spells() -> No
 def test_frame_viewer_explain_spell_access_reports_detail_reason() -> None:
     viewer = _build_viewer(("ops",))
 
-    explanation = viewer.execute_profile_method(
+    explanation = viewer.execute_method(
         "explain_spell_access",
         frame_name="ops",
         spell_source_id="ops-spellbook:ops-spell",
@@ -625,7 +625,7 @@ def test_frame_viewer_explain_spell_access_reports_detail_reason() -> None:
 def test_frame_viewer_get_spell_payload_section_returns_visible_section() -> None:
     viewer = _build_viewer(("ops",))
 
-    binding_payload = viewer.execute_profile_method(
+    binding_payload = viewer.execute_method(
         "get_spell_payload_section",
         frame_name="ops",
         spell_source_id="ops-spellbook:ops-spell",
@@ -651,7 +651,7 @@ def test_frame_viewer_describe_spell_detail_reports_acl_restricted_for_detailed_
         default_view_frame_name="ops",
     )
 
-    detail = viewer.execute_profile_method(
+    detail = viewer.execute_method(
         "describe_spell_detail",
         frame_name="ops",
         spell_source_id="ops-spellbook:ops-spell",
@@ -689,7 +689,7 @@ def test_frame_viewer_describe_spell_detail_returns_rich_sections_for_detailed_p
         default_view_frame_name="ops",
     )
 
-    detail = viewer.execute_profile_method(
+    detail = viewer.execute_method(
         "describe_spell_detail",
         frame_name="ops",
         spell_source_id="ops-spellbook:ops-spell",
@@ -760,10 +760,10 @@ def test_frame_viewer_rejects_empty_tool_and_kind_inputs() -> None:
     viewer = _build_viewer(("ops",))
 
     with pytest.raises(ValueError, match="method_name cannot be empty"):
-        viewer.execute_profile_method("")
+        viewer.execute_method("")
 
     with pytest.raises(ValueError, match="source_kind cannot be empty"):
-        viewer.execute_profile_method("list_targets", source_kind="")
+        viewer.execute_method("list_targets", source_kind="")
 
 
 def test_frame_viewer_selected_profile_is_bound_to_frame_context() -> None:
@@ -797,7 +797,7 @@ def test_frame_viewer_selected_profile_for_frame_shapes_execution() -> None:
     viewer = _build_viewer(("ops",))
     viewer.set_selected_profile_for_frame("ops", "general")
 
-    descriptions = viewer.execute_profile_method(
+    descriptions = viewer.execute_method(
         "describe_spells",
         frame_name="ops",
     )

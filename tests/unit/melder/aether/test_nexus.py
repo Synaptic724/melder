@@ -640,7 +640,7 @@ def test_rift_space_can_select_and_describe_targets_from_attached_viewer() -> No
     viewer = _build_descriptor_backed_viewer("ops")
     space.attach_frame_viewer(viewer)
 
-    frame_link = viewer.execute_profile_method("list_targets")[0]
+    frame_link = viewer.execute_method("list_targets")[0]
 
     space.select_target(frame_link.link_id)
 
