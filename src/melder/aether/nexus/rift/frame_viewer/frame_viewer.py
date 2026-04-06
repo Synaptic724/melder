@@ -78,6 +78,7 @@ class FrameViewer(Cleanable):
         "_profile_builder",
         "_active_profiles_by_name",
         "_available_views_by_frame_name",
+        "_default_view_frame_name",
         "_metadata",
     ]
 
@@ -87,6 +88,7 @@ class FrameViewer(Cleanable):
             profile_builder: Optional[FrameViewerProfileBuilder] = None,
             active_profiles_by_name: Optional[Dict[str, FrameViewerProfile]] = None,
             available_views_by_frame_name: Optional[Dict[str, FrameView]] = None,
+            default_view_frame_name: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
     ) -> None:
         """
@@ -101,6 +103,8 @@ class FrameViewer(Cleanable):
                 Optional active local viewer profiles.
             available_views_by_frame_name:
                 Optional assigned/available frame views.
+            default_view_frame_name:
+                Optional default assigned view frame name.
             metadata:
                 Optional viewer-local metadata.
 
@@ -120,6 +124,22 @@ class FrameViewer(Cleanable):
         )
         self._available_views_by_frame_name: Dict[str, FrameView] = (
             dict(available_views_by_frame_name) if available_views_by_frame_name else {}
+        )
+        if default_view_frame_name is not None:
+            if not default_view_frame_name:
+                raise ValueError("default_view_frame_name cannot be empty.")
+            if default_view_frame_name not in self._available_views_by_frame_name:
+                raise ValueError(
+                    "default_view_frame_name must be present in available_views_by_frame_name."
+                )
+        self._default_view_frame_name: Optional[str] = (
+            default_view_frame_name
+            if default_view_frame_name is not None
+            else (
+                next(iter(self._available_views_by_frame_name.keys()))
+                if len(self._available_views_by_frame_name) > 0
+                else None
+            )
         )
         if active_profiles_by_name is not None:
             self._active_profiles_by_name: Dict[str, FrameViewerProfile] = dict(
@@ -156,6 +176,7 @@ class FrameViewer(Cleanable):
             self._profile_builder.cleanup()
             self._available_views_by_frame_name.clear()
             self._available_views_by_frame_name = None
+            self._default_view_frame_name = None
             self._active_profiles_by_name.clear()
             self._active_profiles_by_name = None
             self._profile_builder = None
@@ -181,6 +202,17 @@ class FrameViewer(Cleanable):
         self.check_cleaned()
         with self._lock:
             return dict(self._available_views_by_frame_name)
+
+    @property
+    def default_view_frame_name(self) -> Optional[str]:
+        """
+        Return the default assigned view frame name when one exists.
+
+        Returns:
+            Optional[str]: Default assigned view frame name.
+        """
+        self.check_cleaned()
+        return self._default_view_frame_name
 
     @property
     def profile_name(self) -> Optional[str]:
@@ -270,6 +302,8 @@ class FrameViewer(Cleanable):
             raise TypeError("frame_view must be a FrameView.")
         with self._lock:
             self._available_views_by_frame_name[frame_view.frame_name] = frame_view
+            if self._default_view_frame_name is None:
+                self._default_view_frame_name = frame_view.frame_name
 
     def get_available_view(self, frame_name: str) -> FrameView:
         """
@@ -290,6 +324,39 @@ class FrameViewer(Cleanable):
                 raise ValueError(
                     "FrameView '{0}' was not found.".format(frame_name)
                 ) from exc
+
+    def get_default_view(self) -> FrameView:
+        """
+        Return the default assigned view.
+
+        Returns:
+            FrameView: Default assigned view.
+        """
+        self.check_cleaned()
+        if self._default_view_frame_name is None:
+            raise ValueError("FrameViewer has no default assigned view.")
+        return self.get_available_view(self._default_view_frame_name)
+
+    def set_default_view(self, frame_name: str) -> None:
+        """
+        Set the default assigned view by frame name.
+
+        Args:
+            frame_name:
+                Assigned frame name to make default.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if not frame_name:
+            raise ValueError("frame_name cannot be empty.")
+        with self._lock:
+            if frame_name not in self._available_views_by_frame_name:
+                raise ValueError(
+                    "FrameViewer view '{0}' was not found.".format(frame_name)
+                )
+            self._default_view_frame_name = frame_name
 
     def list_frame_names(self) -> List[str]:
         """
@@ -592,6 +659,7 @@ class FrameViewer(Cleanable):
                         self._available_views_by_frame_name.items()
                     )
                 },
+                default_view_frame_name=self._default_view_frame_name,
                 metadata=dict(self._metadata),
             )
 

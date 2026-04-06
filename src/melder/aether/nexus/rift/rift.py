@@ -4,6 +4,7 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aether import Aether
 from melder.aether.nexus.rift.frame_link.frame_link_contract import FrameLinkContract
+from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
@@ -369,6 +370,73 @@ class Rift(Cleanable, IRift):
         """
         self.check_cleaned()
         return self._frame_link_contract
+
+    def list_assigned_frame_names(self) -> Tuple[str, ...]:
+        """
+        Internal
+
+        Return the frame names assigned to this Rift.
+
+        Returns:
+            Tuple[str, ...]: Assigned frame names.
+        """
+        self.check_cleaned()
+        return self._frame_link_contract.assigned_frame_names
+
+    def create_frame_viewer(
+            self,
+            *,
+            view_profile_name: str = "general",
+            viewer_profile_name: str = "general",
+    ) -> FrameViewer:
+        """
+        Internal
+
+        Build one frame viewer from this Rift's assigned-frame contract.
+
+        Args:
+            view_profile_name:
+                View profile name applied to each assigned view.
+            viewer_profile_name:
+                Viewer profile name applied to the hosted viewer.
+
+        Returns:
+            FrameViewer: Hosted frame viewer for this Rift.
+        """
+        self.check_cleaned()
+        return self._nexus.create_frame_viewer_for_rift(
+            self._id,
+            view_profile_name=view_profile_name,
+            viewer_profile_name=viewer_profile_name,
+        )
+
+    def create_cached_frame_viewer(
+            self,
+            *,
+            view_profile_name: str = "general",
+            viewer_profile_name: str = "general",
+    ) -> FrameViewer:
+        """
+        Internal
+
+        Build or reuse one cached frame viewer from this Rift's assigned-frame
+        contract.
+
+        Args:
+            view_profile_name:
+                View profile name applied to each assigned view.
+            viewer_profile_name:
+                Viewer profile name applied to the hosted viewer.
+
+        Returns:
+            FrameViewer: Detached cached frame viewer for this Rift.
+        """
+        self.check_cleaned()
+        return self._nexus.create_cached_frame_viewer_for_rift(
+            self._id,
+            view_profile_name=view_profile_name,
+            viewer_profile_name=viewer_profile_name,
+        )
 
     @property
     def active_space_id(self) -> Optional[str]:

@@ -7,6 +7,10 @@ from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.nexus.rift.rift import Rift
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.configuration.rift_configuration import RiftConfiguration
+from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
+from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
+    FrameDescriptorPayload,
+)
 from melder.aether.nexus.nexus import Nexus
 from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
 from melder.spellbook.configuration.configuration import Configuration
@@ -86,6 +90,39 @@ def _bind_target_frame_configuration(
     frame_configuration.with_rift_enabled(rift_enabled)
     frame_configuration.with_ai_native(ai_native_enabled)
     aether._bind_configuration(frame_configuration, frame_name)
+
+
+def _seed_frame_descriptor(frame_name: str) -> None:
+    """
+    Seed one minimal frame descriptor overview for frame-viewer tests.
+
+    Args:
+        frame_name:
+            Frame name to seed.
+
+    Returns:
+        None.
+    """
+    descriptor = Nexus()._get_or_create_frame_descriptor(frame_name)
+    descriptor.set_frame_overview(
+        FrameRecord(
+            frame_name=frame_name,
+            frame_id="{0}-frame".format(frame_name),
+            config_origin_spellbook_id="{0}-spellbook".format(frame_name),
+            payload=FrameDescriptorPayload(
+                system_state=SystemState.automatic,
+                ai_native_enabled=False,
+                rift_enabled=True,
+                root_conduit_count=0,
+                root_conduit_ids=tuple(),
+                named_root_conduits=tuple(),
+                conduit_cloud_entry_count=0,
+                conduit_cloud_names=tuple(),
+                cluster_count=0,
+                cluster_names=tuple(),
+            ),
+        )
+    )
 
 
 def test_nexus_is_singleton() -> None:
@@ -488,6 +525,66 @@ def test_rift_can_use_spaces_without_separate_state_object() -> None:
     assert rift.get_space(space.space_id) is space
     assert rift.get_space_by_name("main") is space
     assert rift.active_space_id == space.space_id
+
+
+def test_rift_exposes_frame_link_contract_from_assigned_frames() -> None:
+    """
+    Verify a created Rift exposes the assigned-frame availability contract.
+
+    Returns:
+        None.
+    """
+    _bind_target_frame_configuration(
+        "ops",
+        rift_enabled=True,
+        ai_native_enabled=False,
+        system_state=SystemState.automatic,
+    )
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_direct_rift_access(True)
+    configuration.with_target_frame_override(True)
+    configuration.with_allowed_target_frame_names(("default", "ops"))
+    nexus.enable(configuration)
+
+    rift_configuration = nexus.create_rift_configuration().with_target_frame_name("ops")
+    rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
+
+    assert rift.list_assigned_frame_names() == ("ops",)
+    assert rift.frame_link_contract.default_frame_name == "ops"
+
+
+def test_rift_can_build_frame_viewer_from_assigned_frame_contract() -> None:
+    """
+    Verify a Rift can build a viewer directly from its assigned-frame contract.
+
+    Returns:
+        None.
+    """
+    _bind_target_frame_configuration(
+        "ops",
+        rift_enabled=True,
+        ai_native_enabled=False,
+        system_state=SystemState.automatic,
+    )
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_direct_rift_access(True)
+    configuration.with_target_frame_override(True)
+    configuration.with_allowed_target_frame_names(("default", "ops"))
+    nexus.enable(configuration)
+    _seed_frame_descriptor("ops")
+
+    rift_configuration = nexus.create_rift_configuration().with_target_frame_name("ops")
+    rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
+
+    viewer = rift.create_frame_viewer()
+
+    assert viewer.metadata["rift_id"] == rift.id
+    assert viewer.default_view_frame_name == "ops"
+    assert viewer.get_default_view().frame_name == "ops"
 
 
 def test_direct_rift_access_can_be_token_gated() -> None:

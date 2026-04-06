@@ -114,6 +114,88 @@ def test_frame_viewer_available_views_snapshot_is_detached() -> None:
     assert viewer.list_frame_names() == ["ops"]
 
 
+def test_frame_viewer_seeds_default_view_from_first_available_view() -> None:
+    """
+    Verify the viewer seeds the default assigned view from available views.
+
+    Returns:
+        None.
+    """
+    viewer = FrameViewer(
+        available_views_by_frame_name={
+            "ops": _build_view(
+                frame_name="ops",
+                links=[
+                    _build_link(
+                        frame_name="ops",
+                        source_kind="frame",
+                        source_id="frame-1",
+                        display_name="ops",
+                    )
+                ],
+            )
+        }
+    )
+
+    assert viewer.default_view_frame_name == "ops"
+    assert viewer.get_default_view().frame_name == "ops"
+
+
+def test_frame_viewer_can_set_default_view_to_another_assigned_view() -> None:
+    """
+    Verify the viewer can switch the default assigned view.
+
+    Returns:
+        None.
+    """
+    viewer = FrameViewer(
+        available_views_by_frame_name={
+            "ops": _build_view(
+                frame_name="ops",
+                links=[_build_link(
+                    frame_name="ops",
+                    source_kind="frame",
+                    source_id="frame-1",
+                    display_name="ops",
+                )],
+            ),
+            "finance": _build_view(
+                frame_name="finance",
+                links=[_build_link(
+                    frame_name="finance",
+                    source_kind="frame",
+                    source_id="frame-2",
+                    display_name="finance",
+                )],
+            ),
+        }
+    )
+
+    viewer.set_default_view("finance")
+
+    assert viewer.default_view_frame_name == "finance"
+    assert viewer.get_default_view().frame_name == "finance"
+
+
+def test_frame_viewer_default_view_helpers_reject_missing_and_invalid_inputs() -> None:
+    """
+    Verify default-view helpers fail fast on empty or missing view inputs.
+
+    Returns:
+        None.
+    """
+    viewer = FrameViewer()
+
+    with pytest.raises(ValueError, match="FrameViewer has no default assigned view"):
+        viewer.get_default_view()
+
+    with pytest.raises(ValueError, match="frame_name cannot be empty"):
+        viewer.set_default_view("")
+
+    with pytest.raises(ValueError, match="was not found"):
+        viewer.set_default_view("ops")
+
+
 def test_frame_viewer_metadata_snapshot_is_detached() -> None:
     """
     Verify viewer metadata snapshots are detached from future mutation.

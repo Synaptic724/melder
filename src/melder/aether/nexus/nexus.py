@@ -1596,6 +1596,7 @@ class Nexus(Cleanable, INexus):
                 )
             },
             available_views_by_frame_name=frame_viewer.available_views_by_frame_name,
+            default_view_frame_name=rift.frame_link_contract.default_frame_name,
             metadata=current_metadata,
         )
 
@@ -1716,6 +1717,7 @@ class Nexus(Cleanable, INexus):
                 )
             },
             available_views_by_frame_name=frame_viewer.available_views_by_frame_name,
+            default_view_frame_name=rift.frame_link_contract.default_frame_name,
             metadata=current_metadata,
         )
 

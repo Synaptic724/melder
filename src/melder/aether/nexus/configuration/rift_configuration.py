@@ -228,6 +228,12 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
 
         Validate that every required per-Rift property is present.
 
+        Contract:
+            - Ensures every declared per-Rift property has a value before
+              programming/build.
+            - Performs presence checks only; enum normalization already happens
+              during `set_property(...)`.
+
         Returns:
             bool: True when the configuration is valid.
 
@@ -245,6 +251,10 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
         Internal
 
         Validate and freeze the configuration.
+
+        Contract:
+            - Calls `validate()` before setting the frozen state.
+            - Idempotent when already frozen.
 
         Returns:
             None.
@@ -264,6 +274,10 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
         Fluent
 
         Validate and freeze the configuration, then return `self`.
+
+        Contract:
+            - Returns this same configuration instance after freezing it.
+            - Does not allocate or clone a detached configuration object.
 
         Returns:
             IRiftConfiguration: This configuration instance.
@@ -289,7 +303,11 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
 
     def build(self) -> "IRiftConfiguration":
         """
-        Fluent alias for finalize().
+        Fluent alias for `finalize()`.
+
+        Contract:
+            - Preserves the builder-style API used by Rift creation flows.
+            - Returns this same configuration instance after finalize/freeze.
 
         Returns:
             IRiftConfiguration: This configuration instance.
@@ -301,6 +319,11 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
         Fluent
 
         Load the standard per-Rift defaults and return `self`.
+
+        Contract:
+            - Delegates to `load_default_dictionary()`.
+            - Applies the default per-Rift property set in-place.
+            - Leaves the configuration mutable until `freeze()` or `finalize()`.
 
         Returns:
             IRiftConfiguration: This configuration instance.

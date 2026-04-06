@@ -353,6 +353,10 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
 
         Validate and freeze the configuration, then return `self`.
 
+        Contract:
+            - Returns this same configuration instance after freezing it.
+            - Does not allocate or clone a detached configuration object.
+
         Returns:
             INexusConfiguration: This configuration instance.
         """
@@ -361,7 +365,11 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
 
     def build(self) -> "INexusConfiguration":
         """
-        Fluent alias for finalize().
+        Fluent alias for `finalize()`.
+
+        Contract:
+            - Preserves the builder-style API used elsewhere in the runtime.
+            - Returns this same configuration instance after finalize/freeze.
 
         Returns:
             INexusConfiguration: This configuration instance.
@@ -372,7 +380,12 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
         """
         Fluent
 
-        Load the standard AR system defaults and return `self`.
+        Load the standard Nexus defaults and return `self`.
+
+        Contract:
+            - Delegates to `load_default_dictionary()`.
+            - Applies the default process-wide governance/property set in-place.
+            - Leaves the configuration mutable until `freeze()` or `finalize()`.
 
         Returns:
             INexusConfiguration: This configuration instance.

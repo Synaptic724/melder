@@ -15,11 +15,13 @@ class NexusFrameMode(Enum):
 
     Members:
         single:
-            One shared Nexus-assigned frame is used for all workspaces.
+            One shared Nexus-assigned frame is reused for all workspaces.
         indexed:
-            Nexus may manage multiple internal frames from an indexed set.
+            Nexus may manage multiple internal frames from an indexed pool and
+            assign workspaces into that shared set.
         one_per_workspace:
-            Each workspace receives its own Nexus-assigned internal frame.
+            Each workspace receives its own dedicated Nexus-assigned internal
+            frame.
     """
 
     __melder_internal__ = _mrg.sentinel
