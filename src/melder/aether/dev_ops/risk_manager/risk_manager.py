@@ -47,24 +47,35 @@ class RiskManager(Cleanable):
     """
     DevOps risk tracking for meld validation gating.
 
-    Purpose:
-        Track per-conduit risk based on spell validity. If any risky spell
-        exists for a conduit, the owning Spellbook is flagged as requiring
-        validation. Risk is defined as any validity that would trigger
-        revalidation in Meld (unknown/gated/invalid/disabled/cleaned).
+    `RiskManager` is the conduit-local risk aggregator that feeds back into the
+    spellbook-level "validation required" signal used by Meld-facing runtime
+    flows. It does not validate spells itself. Instead, it watches validity
+    state changes and folds them into one operational question per conduit:
 
-    Contract:
-        - Structural and resolution risk are tracked independently.
-        - Any non-valid validity marks the conduit as requiring validation.
-        - Risk is recalculated incrementally per lineage change.
+    "Does this conduit currently own or see any lineage whose state means meld
+    should not be trusted without another validation pass?"
+
+    Risk model:
+    - structural risk is tracked by lineage id
+    - resolution risk is tracked by conduit-local lineage or spell id key
+    - any non-`SpellValidity.valid` state is treated as risky
+    - if either risk set is non-empty, the owning spellbook is marked as
+      requiring validation
+
+    Operational role:
+    - register conduits and the spells they currently expose
+    - react to structural and per-conduit resolution validity changes
+    - keep conduit-local risk buckets current
+    - push one distilled validation-required flag back onto each spellbook
 
     Threading:
-        - Internal state is guarded by an RLock.
-        - Callers may invoke methods concurrently across conduits.
+    - Internal state is guarded by an `RLock`.
+    - Callers may invoke methods concurrently across conduits; updates are
+      folded into conduit-local buckets under the manager lock.
 
     Lifecycle:
-        - Owned by DevOpsManager and cleaned during DevOpsManager.cleanup().
-        - After cleanup, public methods raise via check_cleaned().
+    - Owned by `DevOpsManager` and cleaned from that ownership boundary.
+    - After cleanup, public methods fail through `check_cleaned()`.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -87,8 +98,10 @@ class RiskManager(Cleanable):
 
         Contract:
         - Starts with empty conduit-state and lineage-to-conduit indexes.
-        - Treats `spell_system_states` as the source of truth for validity
-          lookups and lineage resolution.
+        - Treats `spell_system_states` as the source of truth for structural and
+          resolution validity lookups.
+        - Does not snapshot spell state; all risk evaluation stays live against
+          the supplied `SpellSystemStates` registry.
         """
         super().__init__()
         if spell_system_states is None:
@@ -104,8 +117,8 @@ class RiskManager(Cleanable):
 
         Contract:
         - Idempotent and lock-guarded.
-        - Clears conduit and lineage indexes.
-        - Drops the SpellSystemStates reference.
+        - Clears conduit and lineage indexes before dropping the
+          `SpellSystemStates` reference.
         - Leaves future callers to fail through `check_cleaned()`.
         """
         if self._cleaned:
@@ -126,9 +139,11 @@ class RiskManager(Cleanable):
         Register a conduit with its Spellbook and initialize risk state.
 
         Contract:
-            - Replaces any existing conduit risk state.
-            - Registers all spells currently visible in the Spellbook.
-            - Refreshes the spellbook validation-required flag at the end.
+        - Replaces any existing conduit risk state.
+        - Seeds the conduit bucket from every spell currently visible through
+          the spellbook, including contracted visibility.
+        - Refreshes the spellbook validation-required flag after seeding so the
+          spellbook immediately reflects current conduit risk.
 
         Args:
             conduit_id: Conduit identifier to track.
@@ -155,9 +170,10 @@ class RiskManager(Cleanable):
         Remove conduit tracking and clear lineage mappings.
 
         Contract:
-            - Removes the conduit risk bucket.
-            - Removes conduit membership from all lineage indexes.
-            - Does not modify SpellSystemStates.
+        - Removes the conduit risk bucket.
+        - Removes the conduit from every lineage-to-conduit reverse index it
+          currently participates in.
+        - Does not modify SpellSystemStates.
 
         Args:
             conduit_id: Conduit identifier to remove.
@@ -186,9 +202,12 @@ class RiskManager(Cleanable):
         Register a spell into a conduit's risk tracking.
 
         Contract:
-            - Adds the spell lineage to the conduit risk state.
-            - Updates structural and resolution risk for the spell.
-            - Refreshes the spellbook validation-required flag.
+        - Adds the spell lineage to the conduit risk state.
+        - Recomputes both structural and resolution risk for the spell based on
+          live `SpellSystemStates` data.
+        - Clears any stale resolution key for the spell's current version id
+          before recomputing conduit-local risk.
+        - Refreshes the spellbook validation-required flag after the update.
 
         Args:
             conduit_id: Conduit identifier to update.
@@ -228,9 +247,10 @@ class RiskManager(Cleanable):
         Remove a spell from a conduit's risk tracking.
 
         Contract:
-            - Removes the spell lineage from the conduit risk state.
-            - Clears risk markers for this lineage.
-            - Refreshes the spellbook validation-required flag.
+        - Removes the spell lineage from the conduit risk state.
+        - Clears both structural and resolution risk markers tied to that
+          lineage.
+        - Refreshes the spellbook validation-required flag.
 
         Args:
             conduit_id: Conduit identifier to update.
@@ -266,8 +286,11 @@ class RiskManager(Cleanable):
         Update risk when structural validity changes for a lineage.
 
         Contract:
-            - Updates all conduits currently referencing the lineage.
-            - Refreshes validation-required flags per conduit.
+        - Updates all conduits currently referencing the lineage.
+        - Applies the same validity transition to every conduit bucket that has
+          registered that lineage.
+        - Refreshes the spellbook validation-required flag after each conduit
+          update.
 
         Args:
             lineage_id: Lineage identifier whose structural validity changed.
@@ -294,8 +317,11 @@ class RiskManager(Cleanable):
         Update risk when per-conduit resolution validity changes.
 
         Contract:
-            - Tracks risk for a spell id within the conduit.
-            - Refreshes the conduit spellbook validation-required flag.
+        - Treats resolution risk as conduit-local even when the same lineage is
+          visible elsewhere.
+        - Prefers lineage id tracking when the current spell id can be folded
+          back onto a known lineage; otherwise falls back to a spell-version key.
+        - Refreshes the conduit spellbook validation-required flag.
 
         Args:
             conduit_id: Conduit identifier whose resolution validity changed.

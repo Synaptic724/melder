@@ -201,6 +201,23 @@ def test_frame_acl_compiler_init_rejects_missing_profile_builder() -> None:
         FrameACLCompiler(None)
 
 
+def test_frame_acl_compiler_cleanup_is_idempotent() -> None:
+    """
+    Verify compiler cleanup clears owned references and can be repeated.
+
+    Returns:
+        None.
+    """
+    compiler = _build_compiler()
+
+    compiler.cleanup()
+    compiler.cleanup()
+
+    assert compiler.cleaned is True
+    assert compiler._profile_builder is None
+    assert compiler._id is None
+
+
 def test_frame_acl_compiler_rejects_invalid_descriptor_input() -> None:
     """
     Verify compiler rejects invalid descriptor inputs.
