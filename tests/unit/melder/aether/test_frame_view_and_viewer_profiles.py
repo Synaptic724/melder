@@ -64,6 +64,22 @@ def test_frame_view_profile_cleanup_clears_owned_state() -> None:
     assert profile._name is None
 
 
+def test_frame_view_profile_clone_detaches_owned_metadata() -> None:
+    """
+    Verify frame-view profile clones detach the owned posture metadata.
+
+    Returns:
+        None.
+    """
+    profile = FrameViewProfile.create_general()
+
+    cloned = profile.clone()
+
+    assert cloned is not profile
+    assert cloned.name == "general"
+    assert cloned.preferred_kind_order == ("frame", "conduit", "spell")
+
+
 def test_frame_view_profile_builder_seeds_and_registers_profiles() -> None:
     """
     Verify the frame-view profile builder seeds `general` and registers custom profiles.

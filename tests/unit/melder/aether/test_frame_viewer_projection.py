@@ -93,6 +93,31 @@ def test_frame_viewer_views_snapshot_is_detached() -> None:
     assert viewer.list_frame_names() == ["ops"]
 
 
+def test_frame_viewer_available_views_snapshot_is_detached() -> None:
+    """
+    Verify available-view snapshots are detached from future mutation.
+
+    Returns:
+        None.
+    """
+    viewer = FrameViewer()
+    view = _build_view(
+        frame_name="ops",
+        links=[_build_link(
+            frame_name="ops",
+            source_kind="frame",
+            source_id="frame-1",
+            display_name="ops",
+        )],
+    )
+    viewer.add_available_view(view)
+
+    snapshot = viewer.available_views_by_frame_name
+    snapshot.clear()
+
+    assert viewer.list_frame_names() == ["ops"]
+
+
 def test_frame_viewer_metadata_snapshot_is_detached() -> None:
     """
     Verify viewer metadata snapshots are detached from future mutation.
@@ -127,6 +152,29 @@ def test_frame_viewer_lists_enabled_helpers_from_selected_profile() -> None:
     assert viewer.list_available_tools() == ("list_frame_names", "list_links")
     assert viewer.has_enabled_helper("list_links") is True
     assert viewer.has_enabled_helper("describe_frames") is False
+
+
+def test_frame_viewer_seeds_default_active_profile_and_can_register_more() -> None:
+    """
+    Verify the viewer seeds a default active profile and can register another one.
+
+    Returns:
+        None.
+    """
+    from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile import (
+        FrameViewerProfile,
+    )
+
+    viewer = FrameViewer()
+    custom_profile = FrameViewerProfile(
+        "inspection",
+        tool_handler_names_by_name={"inventory": "list_links"},
+    )
+
+    viewer.register_active_profile(custom_profile)
+
+    assert viewer.list_active_profile_names() == ["general", "inspection"]
+    assert viewer.get_required_active_profile("inspection") is custom_profile
 
 
 def test_frame_viewer_helper_queries_reject_empty_helper_names() -> None:
@@ -311,7 +359,7 @@ def test_frame_viewer_execute_tool_rejects_missing_profile_and_handler() -> None
     )
 
     with pytest.raises(ValueError, match="FrameViewer has no hosted profile"):
-        FrameViewer().execute_tool("inventory")
+        FrameViewer(active_profiles_by_name={}).execute_tool("inventory")
 
     viewer = FrameViewer(
         profile=FrameViewerProfile(
@@ -322,6 +370,46 @@ def test_frame_viewer_execute_tool_rejects_missing_profile_and_handler() -> None
 
     with pytest.raises(ValueError, match="targets missing handler"):
         viewer.execute_tool("inventory")
+
+
+def test_frame_viewer_execute_tool_can_target_non_default_active_profile() -> None:
+    """
+    Verify tool execution can target a non-default active profile explicitly.
+
+    Returns:
+        None.
+    """
+    from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile import (
+        FrameViewerProfile,
+    )
+
+    viewer = FrameViewer(
+        active_profiles_by_name={
+            "general": FrameViewerProfile.create_general(),
+            "inspection": FrameViewerProfile(
+                "inspection",
+                tool_handler_names_by_name={"inventory": "list_links"},
+            ),
+        },
+        available_views_by_frame_name={
+            "ops": _build_view(
+                frame_name="ops",
+                links=[
+                    _build_link(
+                        frame_name="ops",
+                        source_kind="frame",
+                        source_id="frame-1",
+                        display_name="ops",
+                    )
+                ],
+            )
+        },
+    )
+
+    assert [link.source_id for link in viewer.execute_tool(
+        "inventory",
+        profile_name="inspection",
+    )] == ["frame-1"]
 
 
 def test_frame_viewer_list_links_can_scope_to_single_frame() -> None:

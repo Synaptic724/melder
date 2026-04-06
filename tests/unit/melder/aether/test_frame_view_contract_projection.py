@@ -205,6 +205,13 @@ def test_frame_view_from_compiled_access_surface_builds_frame_conduit_and_spell_
         "spell",
     )
     assert frame_view.metadata["link_count"] == 3
+    assert frame_view.metadata["available_target_count"] == 3
+    assert set(frame_view.available_target_ids_by_kind.keys()) == {
+        "conduit",
+        "frame",
+        "spell",
+    }
+    assert frame_view.list_active_profile_names() == ["general"]
     links = list(frame_view.links_by_id.values())
     source_kinds = sorted(link.source_kind for link in links)
 
@@ -227,6 +234,26 @@ def test_frame_view_from_compiled_access_surface_builds_frame_conduit_and_spell_
         "resolution_payload",
         "metadata",
     )
+
+
+def test_frame_view_available_targets_surface_is_queryable_by_kind_and_id() -> None:
+    """
+    Verify the frame view exposes available targets by kind and by target id.
+
+    Returns:
+        None.
+    """
+    frame_view = FrameView.from_compiled_access_surface(
+        frame_descriptor=_build_frame_descriptor(),
+        compiled_access_surface=_build_compiled_surface(),
+    )
+
+    spell_targets = frame_view.list_available_targets(source_kind="spell")
+    fetched = frame_view.get_required_available_target(spell_targets[0].link_id)
+
+    assert len(spell_targets) == 1
+    assert spell_targets[0].source_kind == "spell"
+    assert fetched is spell_targets[0]
 
 
 def test_frame_view_from_compiled_access_surface_respects_narrowed_contract_profile() -> None:

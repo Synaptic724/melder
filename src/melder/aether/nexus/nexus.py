@@ -1554,9 +1554,11 @@ class Nexus(Cleanable, INexus):
                 )
             return FrameViewer(
                 profile=viewer_profile.clone(),
-                views_by_frame_name=projected_views,
+                available_views_by_frame_name=projected_views,
                 metadata={
                     "frame_count": len(projected_views),
+                    "available_view_count": len(projected_views),
+                    "assigned_frame_names": tuple(frame_names),
                     "contract_profile_name": contract_profile_name,
                     "view_profile_name": view_profile_name,
                     "viewer_profile_name": viewer_profile.name,
@@ -1570,6 +1572,58 @@ class Nexus(Cleanable, INexus):
             )
         finally:
             viewer_profile_builder.cleanup()
+
+    def create_frame_viewer_for_rift(
+            self,
+            rift_id: str,
+            *,
+            contract_profile_name: Optional[str] = None,
+            view_profile_name: str = "general",
+            viewer_profile_name: str = "general",
+    ) -> FrameViewer:
+        """
+        Build one projected `FrameViewer` from a Rift's assigned target frames.
+
+        Args:
+            rift_id:
+                Existing Rift id whose assigned target frames should populate
+                the viewer.
+            contract_profile_name:
+                Optional downstream contract profile name applied to each view.
+            view_profile_name:
+                View profile name applied to each projected frame view.
+            viewer_profile_name:
+                Viewer profile name applied to the hosted viewer.
+
+        Returns:
+            FrameViewer: Projected viewer populated from the Rift assignment
+            chain.
+        """
+        self.check_cleaned()
+        if not rift_id:
+            raise ValueError("rift_id cannot be empty.")
+        rift = self._get_required_rift(rift_id)
+        frame_viewer = self.create_frame_viewer(
+            rift.target_frame_names,
+            contract_profile_name=contract_profile_name,
+            view_profile_name=view_profile_name,
+            viewer_profile_name=viewer_profile_name,
+        )
+        current_metadata = frame_viewer.metadata
+        current_metadata["rift_id"] = rift.id
+        current_metadata["assigned_frame_names"] = rift.target_frame_names
+        current_metadata["default_target_frame_name"] = rift.default_target_frame_name
+        return FrameViewer(
+            profile_builder=FrameViewerProfileBuilder(),
+            active_profiles_by_name={
+                profile_name: frame_viewer_profile.clone()
+                for profile_name, frame_viewer_profile in (
+                    frame_viewer.active_profiles_by_name.items()
+                )
+            },
+            available_views_by_frame_name=frame_viewer.available_views_by_frame_name,
+            metadata=current_metadata,
+        )
 
     def create_cached_frame_viewer(
             self,
@@ -1645,6 +1699,59 @@ class Nexus(Cleanable, INexus):
                 projected_frame_viewer
             )
         return projected_frame_viewer.clone()
+
+    def create_cached_frame_viewer_for_rift(
+            self,
+            rift_id: str,
+            *,
+            contract_profile_name: Optional[str] = None,
+            view_profile_name: str = "general",
+            viewer_profile_name: str = "general",
+    ) -> FrameViewer:
+        """
+        Build or reuse one cached projected viewer for a Rift's assigned
+        target frames.
+
+        Args:
+            rift_id:
+                Existing Rift id whose assigned target frames should populate
+                the viewer.
+            contract_profile_name:
+                Optional downstream contract profile name applied to each view.
+            view_profile_name:
+                View profile name applied to each projected frame view.
+            viewer_profile_name:
+                Viewer profile name applied to the hosted viewer.
+
+        Returns:
+            FrameViewer: Detached projected viewer for the Rift assignment
+            chain.
+        """
+        self.check_cleaned()
+        if not rift_id:
+            raise ValueError("rift_id cannot be empty.")
+        rift = self._get_required_rift(rift_id)
+        frame_viewer = self.create_cached_frame_viewer(
+            rift.target_frame_names,
+            contract_profile_name=contract_profile_name,
+            view_profile_name=view_profile_name,
+            viewer_profile_name=viewer_profile_name,
+        )
+        current_metadata = frame_viewer.metadata
+        current_metadata["rift_id"] = rift.id
+        current_metadata["assigned_frame_names"] = rift.target_frame_names
+        current_metadata["default_target_frame_name"] = rift.default_target_frame_name
+        return FrameViewer(
+            profile_builder=FrameViewerProfileBuilder(),
+            active_profiles_by_name={
+                profile_name: frame_viewer_profile.clone()
+                for profile_name, frame_viewer_profile in (
+                    frame_viewer.active_profiles_by_name.items()
+                )
+            },
+            available_views_by_frame_name=frame_viewer.available_views_by_frame_name,
+            metadata=current_metadata,
+        )
 
     @staticmethod
     def _make_projected_frame_view_cache_key(

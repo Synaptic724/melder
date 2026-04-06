@@ -2,6 +2,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.spellbook.configuration.configuration import Configuration
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
@@ -76,6 +77,56 @@ def _populate_descriptor(nexus: Nexus, frame_name: str) -> None:
             ),
         )
     )
+
+
+def _bind_target_frame_configuration(
+        frame_name: str,
+        *,
+        rift_enabled: bool,
+        ai_native_enabled: bool = False,
+        system_state: SystemState = SystemState.automatic,
+) -> None:
+    """
+    Bind one Melder frame configuration for Rift target-frame eligibility.
+
+    Args:
+        frame_name:
+            Target frame name to configure.
+        rift_enabled:
+            Whether Rift access is enabled on the frame.
+        ai_native_enabled:
+            Whether AI-native mode is enabled on the frame.
+        system_state:
+            Target frame system state.
+
+    Returns:
+        None.
+    """
+    aether = Aether()
+    aether._ensure_frame(frame_name)
+    frame_configuration = Configuration()
+    if system_state == SystemState.dynamic:
+        frame_configuration.dynamic_defaults()
+    else:
+        frame_configuration.automatic_defaults()
+    frame_configuration.with_rift_enabled(rift_enabled)
+    frame_configuration.with_ai_native(ai_native_enabled)
+    aether._bind_configuration(frame_configuration, frame_name)
+
+
+def _create_enabled_nexus() -> Nexus:
+    """
+    Create one enabled Nexus for Rift/viewer projection tests.
+
+    Returns:
+        Nexus: Enabled Nexus with Rift creation enabled.
+    """
+    nexus = Nexus(aether=Aether())
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_direct_rift_access(True)
+    nexus.enable(configuration)
+    return nexus
     descriptor.upsert_conduit_record(
         ConduitRecord(
             conduit_id="{0}-conduit".format(frame_name),
@@ -359,6 +410,28 @@ def test_nexus_create_cached_frame_viewer_rejects_invalid_frame_name_inputs() ->
 
     with pytest.raises(ValueError, match="frame_names must contain non-empty strings"):
         nexus.create_cached_frame_viewer(["ops", ""])
+
+
+def test_nexus_create_frame_viewer_for_rift_populates_available_views_from_assigned_frames() -> None:
+    """
+    Verify Rift-assigned target frames populate the viewer's available views.
+
+    Returns:
+        None.
+    """
+    _bind_target_frame_configuration("ops", rift_enabled=True)
+    nexus = _create_enabled_nexus()
+    _populate_descriptor(nexus, "ops")
+    rift_configuration = nexus.create_rift_configuration().with_target_frame_name("ops")
+    rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
+
+    viewer = nexus.create_frame_viewer_for_rift(rift.id)
+
+    assert viewer.metadata["rift_id"] == rift.id
+    assert viewer.metadata["assigned_frame_names"] == ("ops",)
+    assert viewer.metadata["default_target_frame_name"] == "ops"
+    assert list(viewer.available_views_by_frame_name.keys()) == ["ops"]
+    assert viewer.get_available_view("ops").frame_name == "ops"
 
 
 def test_nexus_create_frame_viewer_rejects_string_sequence_input() -> None:
