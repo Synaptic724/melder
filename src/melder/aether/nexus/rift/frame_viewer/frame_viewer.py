@@ -74,6 +74,9 @@ class FrameViewer(Cleanable):
         "_lock",
         "_profile_name",
         "_profile_version",
+        "_enabled_helpers",
+        "_default_grouping",
+        "_default_detail_level",
         "_views_by_frame_name",
         "_metadata",
     ]
@@ -83,6 +86,9 @@ class FrameViewer(Cleanable):
             *,
             profile_name: Optional[str] = None,
             profile_version: Optional[str] = None,
+            enabled_helpers: Optional[List[str]] = None,
+            default_grouping: Optional[str] = None,
+            default_detail_level: Optional[str] = None,
             views_by_frame_name: Optional[Dict[str, FrameView]] = None,
             metadata: Optional[Dict[str, object]] = None,
     ) -> None:
@@ -98,6 +104,12 @@ class FrameViewer(Cleanable):
                 Optional viewer profile name applied to this projection.
             profile_version:
                 Optional viewer profile version applied to this projection.
+            enabled_helpers:
+                Optional enabled helper ids exposed by the selected profile.
+            default_grouping:
+                Optional default grouping mode from the selected profile.
+            default_detail_level:
+                Optional default detail posture from the selected profile.
             metadata:
                 Optional viewer-local metadata.
 
@@ -109,6 +121,9 @@ class FrameViewer(Cleanable):
         self._viewer_id: str = IDBuilder.create_id()
         self._profile_name: Optional[str] = profile_name
         self._profile_version: Optional[str] = profile_version
+        self._enabled_helpers = tuple(enabled_helpers or tuple())
+        self._default_grouping: Optional[str] = default_grouping
+        self._default_detail_level: Optional[str] = default_detail_level
         self._views_by_frame_name: Dict[str, FrameView] = (
             dict(views_by_frame_name) if views_by_frame_name else {}
         )
@@ -141,6 +156,9 @@ class FrameViewer(Cleanable):
             self._metadata = None
             self._profile_name = None
             self._profile_version = None
+            self._enabled_helpers = None
+            self._default_grouping = None
+            self._default_detail_level = None
             self._viewer_id = None
         self._lock = None
 
@@ -168,6 +186,24 @@ class FrameViewer(Cleanable):
         """Return the optional applied viewer profile version."""
         self.check_cleaned()
         return self._profile_version
+
+    @property
+    def enabled_helpers(self) -> tuple[str, ...]:
+        """Return the enabled helper ids exposed by the selected profile."""
+        self.check_cleaned()
+        return self._enabled_helpers
+
+    @property
+    def default_grouping(self) -> Optional[str]:
+        """Return the default grouping mode from the selected profile."""
+        self.check_cleaned()
+        return self._default_grouping
+
+    @property
+    def default_detail_level(self) -> Optional[str]:
+        """Return the default detail posture from the selected profile."""
+        self.check_cleaned()
+        return self._default_detail_level
 
     @property
     def metadata(self) -> Dict[str, object]:
@@ -227,6 +263,7 @@ class FrameViewer(Cleanable):
             List[str]: Snapshot of frame names.
         """
         self.check_cleaned()
+        self._require_helper_enabled("list_frame_names")
         with self._lock:
             return list(self._views_by_frame_name.keys())
 
@@ -249,6 +286,7 @@ class FrameViewer(Cleanable):
             List[FrameLink]: Visible links in deterministic frame/link order.
         """
         self.check_cleaned()
+        self._require_helper_enabled("list_links")
         with self._lock:
             if frame_name is not None:
                 return list(self.get_view(frame_name).links_by_id.values())
@@ -281,6 +319,7 @@ class FrameViewer(Cleanable):
             List[FrameLink]: Visible links with the requested source kind.
         """
         self.check_cleaned()
+        self._require_helper_enabled("list_links_by_kind")
         if not source_kind:
             raise ValueError("source_kind cannot be empty.")
         return [
@@ -299,6 +338,7 @@ class FrameViewer(Cleanable):
             Dict[str, List[FrameLink]]: Deterministic frame-name keyed link map.
         """
         self.check_cleaned()
+        self._require_helper_enabled("list_links_grouped_by_frame")
         with self._lock:
             return {
                 frame_name: list(self.list_links(frame_name=frame_name))
@@ -324,6 +364,7 @@ class FrameViewer(Cleanable):
             Dict[str, List[FrameLink]]: Deterministic source-kind keyed link map.
         """
         self.check_cleaned()
+        self._require_helper_enabled("list_links_grouped_by_kind")
         grouped_links: Dict[str, List[FrameLink]] = {}
         for frame_link in self.list_links(frame_name=frame_name):
             grouped_links.setdefault(frame_link.source_kind, []).append(frame_link)
@@ -353,6 +394,7 @@ class FrameViewer(Cleanable):
             List[str]: Deterministic visible display names.
         """
         self.check_cleaned()
+        self._require_helper_enabled("list_display_names")
         if source_kind is None:
             return [frame_link.display_name for frame_link in self.list_links(
                 frame_name=frame_name
@@ -386,6 +428,7 @@ class FrameViewer(Cleanable):
             int: Visible link count.
         """
         self.check_cleaned()
+        self._require_helper_enabled("count_links")
         if source_kind is None:
             return len(self.list_links(frame_name=frame_name))
         return len(
@@ -409,6 +452,7 @@ class FrameViewer(Cleanable):
             Dict[str, object]: Summary of the projected frame view.
         """
         self.check_cleaned()
+        self._require_helper_enabled("describe_frame")
         frame_view = self.get_view(frame_name)
         grouped_links = self.list_links_grouped_by_kind(frame_name=frame_name)
         return {
@@ -432,6 +476,7 @@ class FrameViewer(Cleanable):
             Dict[str, Dict[str, object]]: Frame-name keyed summary map.
         """
         self.check_cleaned()
+        self._require_helper_enabled("describe_frames")
         return {
             frame_name: self.describe_frame(frame_name)
             for frame_name in sorted(self.list_frame_names())
@@ -461,6 +506,7 @@ class FrameViewer(Cleanable):
             FrameLink: Matching visible link.
         """
         self.check_cleaned()
+        self._require_helper_enabled("get_required_link_by_source")
         if not source_kind:
             raise ValueError("source_kind cannot be empty.")
         if not source_id:
@@ -501,5 +547,61 @@ class FrameViewer(Cleanable):
                 },
                 profile_name=self._profile_name,
                 profile_version=self._profile_version,
+                enabled_helpers=list(self._enabled_helpers),
+                default_grouping=self._default_grouping,
+                default_detail_level=self._default_detail_level,
                 metadata=dict(self._metadata),
+            )
+
+    def list_enabled_helpers(self) -> tuple[str, ...]:
+        """
+        Internal
+
+        Return the helper ids exposed by the selected profile.
+
+        Returns:
+            tuple[str, ...]: Enabled helper ids.
+        """
+        self.check_cleaned()
+        return self._enabled_helpers
+
+    def has_enabled_helper(self, helper_name: str) -> bool:
+        """
+        Internal
+
+        Return whether one helper id is exposed by the selected profile.
+
+        Args:
+            helper_name:
+                Helper id to inspect.
+
+        Returns:
+            bool: True when the helper is enabled.
+        """
+        self.check_cleaned()
+        if not helper_name:
+            raise ValueError("helper_name cannot be empty.")
+        return helper_name in self._enabled_helpers
+
+    def _require_helper_enabled(self, helper_name: str) -> None:
+        """
+        Internal
+
+        Fail fast when the selected profile does not expose one helper.
+
+        Args:
+            helper_name:
+                Helper id that must be enabled.
+
+        Returns:
+            None.
+        """
+        if len(self._enabled_helpers) == 0:
+            return
+        if helper_name not in self._enabled_helpers:
+            raise ValueError(
+                "FrameViewer helper '{0}' is not enabled by profile '{1}'.".format(
+                    helper_name,
+                    self._profile_name or "unknown",
+                )
             )

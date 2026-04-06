@@ -261,7 +261,9 @@ def test_nexus_create_frame_viewer_projects_multiple_frames() -> None:
     viewer = nexus.create_frame_viewer(["ops", "finance"])
 
     assert isinstance(viewer, FrameViewer)
+    assert viewer.profile_name == "general"
     assert viewer.metadata["frame_count"] == 2
+    assert viewer.metadata["viewer_profile_name"] == "general"
     assert viewer.list_frame_names() == ["ops", "finance"]
 
 

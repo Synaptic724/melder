@@ -70,6 +70,7 @@ class FrameViewerProfile(Cleanable):
         self._version: str = version
         self._enabled_helpers: Tuple[str, ...] = tuple(
             enabled_helpers or (
+                "list_frame_names",
                 "list_links",
                 "list_links_by_kind",
                 "list_links_grouped_by_frame",

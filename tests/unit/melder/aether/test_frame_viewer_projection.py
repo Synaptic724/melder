@@ -108,6 +108,39 @@ def test_frame_viewer_metadata_snapshot_is_detached() -> None:
     assert viewer.metadata == {"source": "viewer"}
 
 
+def test_frame_viewer_lists_enabled_helpers_from_selected_profile() -> None:
+    """
+    Verify the viewer exposes the enabled helper set selected by profile.
+
+    Returns:
+        None.
+    """
+    viewer = FrameViewer(
+        profile_name="general",
+        profile_version="0.0.1",
+        enabled_helpers=["list_frame_names", "list_links"],
+    )
+
+    assert viewer.profile_name == "general"
+    assert viewer.profile_version == "0.0.1"
+    assert viewer.list_enabled_helpers() == ("list_frame_names", "list_links")
+    assert viewer.has_enabled_helper("list_links") is True
+    assert viewer.has_enabled_helper("describe_frames") is False
+
+
+def test_frame_viewer_helper_queries_reject_empty_helper_names() -> None:
+    """
+    Verify enabled-helper queries reject empty helper ids.
+
+    Returns:
+        None.
+    """
+    viewer = FrameViewer()
+
+    with pytest.raises(ValueError, match="helper_name cannot be empty"):
+        viewer.has_enabled_helper("")
+
+
 def test_frame_viewer_add_view_rejects_invalid_type() -> None:
     """
     Verify viewer registration rejects invalid view objects.
@@ -169,6 +202,35 @@ def test_frame_viewer_list_links_returns_deterministic_order_across_frames() -> 
         "ops",
         "ops",
     ]
+
+
+def test_frame_viewer_disabled_helper_raises_when_called() -> None:
+    """
+    Verify disabled helpers fail fast under the selected profile surface.
+
+    Returns:
+        None.
+    """
+    viewer = FrameViewer(
+        profile_name="minimal",
+        enabled_helpers=["list_frame_names"],
+        views_by_frame_name={
+            "ops": _build_view(
+                frame_name="ops",
+                links=[
+                    _build_link(
+                        frame_name="ops",
+                        source_kind="frame",
+                        source_id="frame-1",
+                        display_name="ops",
+                    )
+                ],
+            )
+        },
+    )
+
+    with pytest.raises(ValueError, match="FrameViewer helper 'list_links' is not enabled"):
+        viewer.list_links()
 
 
 def test_frame_viewer_list_links_can_scope_to_single_frame() -> None:
@@ -660,3 +722,4 @@ def test_frame_viewer_clone_returns_detached_views_and_metadata() -> None:
     assert cloned is not viewer
     assert cloned.metadata == {"source": "viewer"}
     assert cloned.get_view("ops") is not viewer.get_view("ops")
+    assert cloned.list_enabled_helpers() == viewer.list_enabled_helpers()

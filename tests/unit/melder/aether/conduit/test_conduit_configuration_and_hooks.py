@@ -614,6 +614,63 @@ def test_register_conduit_hooks_registers_locally_only(
     assert conduit_dynamic_normal._local_conduit_hooks["on_conduit_cleanup_start"][0] is hook
 
 
+def test_merge_conduit_hooks_rejects_unknown_hook_name(
+    conduit_normal: Conduit,
+) -> None:
+    """_merge_conduit_hooks should reject unknown hook names."""
+    with pytest.raises(ValueError, match="Unknown hook name"):
+        conduit_normal._merge_conduit_hooks({}, {"unknown_hook": lambda conduit: None})
+
+
+def test_merge_conduit_hooks_rejects_invalid_hook_container(
+    conduit_normal: Conduit,
+) -> None:
+    """_merge_conduit_hooks should reject non-callable, non-sequence hook values."""
+    with pytest.raises(TypeError, match="callable or a list/tuple"):
+        conduit_normal._merge_conduit_hooks({}, {"on_conduit_cleanup_start": "invalid"})
+
+
+def test_merge_conduit_hooks_rejects_non_callable_entries(
+    conduit_normal: Conduit,
+) -> None:
+    """_merge_conduit_hooks should reject non-callable entries inside sequences."""
+    with pytest.raises(TypeError, match="must be callable"):
+        conduit_normal._merge_conduit_hooks(
+            {},
+            {"on_conduit_cleanup_start": [lambda conduit: None, "invalid"]},
+        )
+
+
+def test_collect_conduit_hook_chain_merges_shared_then_local(
+    conduit_normal: Conduit,
+) -> None:
+    """_collect_conduit_hook_chain should preserve shared-before-local ordering."""
+    shared = lambda conduit: None
+    local = lambda conduit: None
+    conduit_normal._conduit_hooks = {"on_conduit_cleanup_start": [shared]}
+    conduit_normal._local_conduit_hooks = {"on_conduit_cleanup_start": [local]}
+
+    chain = conduit_normal._collect_conduit_hook_chain("on_conduit_cleanup_start")
+
+    assert chain == [shared, local]
+
+
+def test_merge_conduit_hooks_extends_sequence_of_callables_in_order(
+    conduit_normal: Conduit,
+) -> None:
+    """_merge_conduit_hooks should extend sequence hook values in order."""
+    first = lambda conduit: None
+    second = lambda conduit: None
+    hook_map: dict[str, list[object]] = {}
+
+    conduit_normal._merge_conduit_hooks(
+        hook_map,
+        {"on_conduit_cleanup_start": [first, second]},
+    )
+
+    assert hook_map["on_conduit_cleanup_start"] == [first, second]
+
+
 def test_register_conduit_hooks_local_allowed_after_configuration_freeze(
     conduit_dynamic_normal: Conduit,
 ) -> None:

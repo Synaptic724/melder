@@ -150,6 +150,7 @@ def test_frame_viewer_profile_create_general_exposes_expected_defaults() -> None
     assert profile.version == "0.0.1"
     assert profile.default_grouping == "frame"
     assert profile.default_detail_level == "summary"
+    assert "list_frame_names" in profile.enabled_helpers
     assert "list_links" in profile.enabled_helpers
     assert "describe_frames" in profile.enabled_helpers
 

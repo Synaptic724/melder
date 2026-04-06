@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 
 import pytest
 
@@ -422,6 +422,190 @@ def test_upgrade_to_normal_registers_hooks(
     assert conduit_dynamic_lesser._creations is old_creations
     assert conduit_dynamic_lesser._local_conduit_hooks is not None
     assert conduit_dynamic_lesser._local_conduit_hooks["on_conduit_post_link"][0] is hook
+
+
+def test_set_creation_gate_controller_for_lineage_uses_existing_gate_and_updates_lesser_conduits(
+    conduit_dynamic_normal: Conduit,
+) -> None:
+    """
+    Verify lineage rebinding reuses an existing gate and propagates controller/root metadata to lesser conduits.
+
+    Contract:
+        - Existing gate is adopted when the conduit has no local gate.
+        - Lesser conduits receive the shared controller, root id, and meld resolution id.
+        - Lesser conduits are asked to continue rebinding recursively.
+    """
+    controller = MagicMock()
+    existing_gate = MagicMock()
+    lesser = MagicMock()
+    lesser._meld = MagicMock()
+    conduit_dynamic_normal._creation_gate = None
+    conduit_dynamic_normal._creation_gate_controller = controller
+    conduit_dynamic_normal._conduit_ward = MagicMock()
+    conduit_dynamic_normal._conduit_ward._lock = MagicMock()
+    conduit_dynamic_normal._conduit_ward._lock.__enter__.return_value = conduit_dynamic_normal._conduit_ward._lock
+    conduit_dynamic_normal._conduit_ward._lock.__exit__.return_value = False
+    conduit_dynamic_normal._conduit_ward._lesser_conduits = {"child": lesser}
+    controller.get_conduit_gate.return_value = existing_gate
+
+    conduit_dynamic_normal._set_creation_gate_controller_for_lineage()
+
+    assert conduit_dynamic_normal._creation_gate is existing_gate
+    assert lesser._creation_gate_controller is controller
+    assert lesser._root_conduit_id == conduit_dynamic_normal._root_conduit_id
+    assert lesser._meld._resolution_conduit_id == conduit_dynamic_normal._root_conduit_id
+    lesser._set_creation_gate_controller_for_lineage.assert_called_once()
+
+
+def test_set_creation_gate_controller_for_lineage_creates_gate_when_missing(
+    conduit_dynamic_normal: Conduit,
+) -> None:
+    """_set_creation_gate_controller_for_lineage should create a gate when none exists anywhere."""
+    controller = MagicMock()
+    created_gate = MagicMock()
+    conduit_dynamic_normal._creation_gate = None
+    conduit_dynamic_normal._creation_gate_controller = controller
+    conduit_dynamic_normal._conduit_ward = MagicMock()
+    conduit_dynamic_normal._conduit_ward._lock = MagicMock()
+    conduit_dynamic_normal._conduit_ward._lock.__enter__.return_value = conduit_dynamic_normal._conduit_ward._lock
+    conduit_dynamic_normal._conduit_ward._lock.__exit__.return_value = False
+    conduit_dynamic_normal._conduit_ward._lesser_conduits = {}
+    controller.get_conduit_gate.return_value = None
+    conduit_dynamic_normal._create_gate_for_current_root = MagicMock(return_value=created_gate)
+
+    conduit_dynamic_normal._set_creation_gate_controller_for_lineage()
+
+    conduit_dynamic_normal._create_gate_for_current_root.assert_called_once_with(conduit_dynamic_normal._id)
+    assert conduit_dynamic_normal._creation_gate is created_gate
+
+
+def test_upgrade_to_normal_logs_seed_failure_and_continues(
+    conduit_dynamic_lesser: Conduit,
+    aether_stub: MagicMock,
+) -> None:
+    """
+    Verify resolution-state seed failures are logged without aborting upgrade_to_normal.
+
+    Contract:
+        - Exceptions while seeding target resolution state are logged and suppressed.
+        - The overall upgrade still completes.
+    """
+    conduit_dynamic_lesser._logger = MagicMock()
+    conduit_dynamic_lesser._conduit_ward = MagicMock()
+    root_conduit = MagicMock()
+    root_conduit._id = "root-1"
+    conduit_dynamic_lesser._conduit_ward.root_conduit = root_conduit
+    conduit_dynamic_lesser._spellbook.create_new_preset_spellbook = MagicMock()
+    conduit_dynamic_lesser._nexus_publish_enabled = True
+    conduit_dynamic_lesser._nexus = MagicMock()
+    spell_system_states = MagicMock()
+    source_state = MagicMock()
+    spell_system_states.get_conduit_resolution_state.return_value = source_state
+    spell_system_states.get_or_create_conduit_resolution_state.side_effect = RuntimeError("seed boom")
+    conduit_dynamic_lesser._spellbook._spell_system_states = spell_system_states
+
+    conduit_dynamic_lesser.upgrade_to_normal(name="alpha")
+
+    conduit_dynamic_lesser._logger.error.assert_called()
+    assert conduit_dynamic_lesser._conduit_state == ConduitState.normal
+    assert conduit_dynamic_lesser._name == "alpha"
+
+
+def test_upgrade_to_normal_tolerates_root_conduit_lookup_failure(
+    conduit_dynamic_lesser: Conduit,
+    aether_stub: MagicMock,
+) -> None:
+    """upgrade_to_normal should continue when root_conduit lookup raises during seed setup."""
+    conduit_dynamic_lesser._logger = MagicMock()
+    conduit_dynamic_lesser._conduit_ward = MagicMock()
+    type(conduit_dynamic_lesser._conduit_ward).root_conduit = PropertyMock(
+        side_effect=RuntimeError("root lookup boom")
+    )
+    conduit_dynamic_lesser._spellbook.create_new_preset_spellbook = MagicMock()
+    conduit_dynamic_lesser._spellbook._spell_system_states = MagicMock()
+    conduit_dynamic_lesser._nexus_publish_enabled = True
+    conduit_dynamic_lesser._nexus = MagicMock()
+
+    conduit_dynamic_lesser.upgrade_to_normal(name="alpha")
+
+    conduit_dynamic_lesser._logger.error.assert_not_called()
+    assert conduit_dynamic_lesser._conduit_state == ConduitState.normal
+    assert conduit_dynamic_lesser._name == "alpha"
+
+
+def test_upgrade_to_normal_clears_dirty_with_last_validated_at(
+    conduit_dynamic_lesser: Conduit,
+    aether_stub: MagicMock,
+) -> None:
+    """upgrade_to_normal should clear dirty state with the source last_validated_at timestamp when the source is clean."""
+    conduit_dynamic_lesser._logger = MagicMock()
+    conduit_dynamic_lesser._conduit_ward = MagicMock()
+    root_conduit = MagicMock()
+    root_conduit._id = "root-1"
+    conduit_dynamic_lesser._conduit_ward.root_conduit = root_conduit
+    conduit_dynamic_lesser._spellbook.create_new_preset_spellbook = MagicMock()
+    conduit_dynamic_lesser._nexus_publish_enabled = True
+    conduit_dynamic_lesser._nexus = MagicMock()
+    spell_system_states = MagicMock()
+    source_state = MagicMock()
+    target_state = MagicMock()
+    source_state.is_dirty.return_value = False
+    source_state.last_validated_at.return_value = 123.0
+    spell_system_states.get_conduit_resolution_state.return_value = source_state
+    spell_system_states.get_or_create_conduit_resolution_state.return_value = target_state
+    conduit_dynamic_lesser._spellbook._spell_system_states = spell_system_states
+
+    conduit_dynamic_lesser.upgrade_to_normal(name="alpha")
+
+    target_state.clear_dirty.assert_called_once_with(123.0)
+
+
+def test_upgrade_to_normal_logs_and_reraises_outer_failure(
+    conduit_dynamic_lesser: Conduit,
+) -> None:
+    """upgrade_to_normal should log and re-raise failures from the main upgrade workflow."""
+    conduit_dynamic_lesser._logger = MagicMock()
+    conduit_dynamic_lesser._conduit_ward = MagicMock()
+    conduit_dynamic_lesser._conduit_ward._convert_to_normal_conduit.side_effect = RuntimeError("convert boom")
+
+    with pytest.raises(RuntimeError, match="convert boom"):
+        conduit_dynamic_lesser.upgrade_to_normal(name="alpha")
+
+    conduit_dynamic_lesser._logger.error.assert_called_once()
+
+
+def test_create_lesser_conduit_raises_when_root_conduit_missing(
+    conduit_dynamic_lesser: Conduit,
+) -> None:
+    """create_lesser_conduit should fail when the lineage root is unavailable."""
+    conduit_dynamic_lesser._conduit_ward = MagicMock()
+    conduit_dynamic_lesser._conduit_ward.root_conduit = None
+
+    with pytest.raises(RuntimeError, match="Root conduit is not set"):
+        conduit_dynamic_lesser.create_lesser_conduit()
+
+
+def test_create_lesser_conduit_raises_when_lesser_has_no_ward(
+    conduit_dynamic_lesser: Conduit,
+) -> None:
+    """create_lesser_conduit should fail when a lesser conduit has no ward lineage."""
+    conduit_dynamic_lesser._conduit_ward = None
+
+    with pytest.raises(RuntimeError, match="Root conduit is not set"):
+        conduit_dynamic_lesser.create_lesser_conduit()
+
+
+def test_create_lesser_conduit_raises_when_root_conduit_not_normal(
+    conduit_dynamic_lesser: Conduit,
+) -> None:
+    """create_lesser_conduit should fail when the lineage root is not a normal conduit."""
+    root_conduit = MagicMock()
+    root_conduit._conduit_state = ConduitState.lesser
+    conduit_dynamic_lesser._conduit_ward = MagicMock()
+    conduit_dynamic_lesser._conduit_ward.root_conduit = root_conduit
+
+    with pytest.raises(RuntimeError, match="Root conduit must be a normal conduit"):
+        conduit_dynamic_lesser.create_lesser_conduit()
 
 
 def test_get_mutation_research_raises_for_lesser(conduit_lesser: Conduit) -> None:
