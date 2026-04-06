@@ -173,6 +173,33 @@ def test_link_delegates_to_ward_and_fires_hook(
         target.cleanup()
 
 
+def test_link_publishes_peer_record_when_target_participates_in_nexus(
+    conduit_dynamic_normal: Conduit,
+    configuration_automatic: Configuration,
+    spellbook_stub: MagicMock,
+) -> None:
+    """Successful link should publish the peer conduit record when the peer is Nexus-published and normal."""
+    target = Conduit(
+        spellbook=spellbook_stub,
+        configuration=configuration_automatic,
+        conduit_state=ConduitState.normal,
+        aetheric_frame="default",
+        policy=Policies.default,
+        automatic=False,
+    )
+    try:
+        target._nexus_publish_enabled = True
+        target._nexus = MagicMock()
+        conduit_dynamic_normal._conduit_ward = MagicMock()
+        conduit_dynamic_normal._conduit_ward._link.return_value = True
+
+        conduit_dynamic_normal.link(target)
+
+        target._nexus._publish_conduit_record.assert_called_once_with(target)
+    finally:
+        target.cleanup()
+
+
 def test_link_false_does_not_fire_hook(
     conduit_dynamic_normal: Conduit,
     conduit_lesser: Conduit,
@@ -277,6 +304,33 @@ def test_sever_link_delegates_and_fires_hook(
     assert result is True
     conduit_dynamic_normal._conduit_ward._sever_link.assert_called_once_with(conduit_lesser)
     assert events == [(conduit_dynamic_normal, conduit_lesser)]
+
+
+def test_sever_link_publishes_peer_record_when_target_participates_in_nexus(
+    conduit_dynamic_normal: Conduit,
+    configuration_automatic: Configuration,
+    spellbook_stub: MagicMock,
+) -> None:
+    """Successful unlink should publish the peer conduit record when the peer is Nexus-published and normal."""
+    target = Conduit(
+        spellbook=spellbook_stub,
+        configuration=configuration_automatic,
+        conduit_state=ConduitState.normal,
+        aetheric_frame="default",
+        policy=Policies.default,
+        automatic=False,
+    )
+    try:
+        target._nexus_publish_enabled = True
+        target._nexus = MagicMock()
+        conduit_dynamic_normal._conduit_ward = MagicMock()
+        conduit_dynamic_normal._conduit_ward._sever_link.return_value = True
+
+        conduit_dynamic_normal.sever_link(target)
+
+        target._nexus._publish_conduit_record.assert_called_once_with(target)
+    finally:
+        target.cleanup()
 
 
 def test_add_spell_to_contract_raises_when_not_dynamic(
@@ -455,6 +509,48 @@ def test_add_spells_to_contract_fires_hook_on_any_success(
     assert events == [(conduit_dynamic_normal, conduit_lesser)]
 
 
+def test_add_spells_to_contract_normalizes_success_failed_report(
+    conduit_dynamic_normal: Conduit,
+    conduit_lesser: Conduit,
+) -> None:
+    """add_spells_to_contract should normalize success/failed report dicts."""
+    conduit_dynamic_normal._conduit_ward = MagicMock()
+    conduit_dynamic_normal._conduit_ward._add_spells_to_contract.return_value = {
+        "success": ["a", "b"],
+        "failed": {"c": "blocked"},
+    }
+    conduit_dynamic_normal._conduit_hooks = {}
+    _set_active_link_transaction(conduit_dynamic_normal, conduit_lesser._id)
+
+    result = conduit_dynamic_normal.add_spells_to_contract(
+        ["a", "b", "c"],
+        conduit=conduit_lesser,
+    )
+
+    assert result == {"a": True, "b": True, "c": False}
+
+
+def test_add_spells_to_contract_normalizes_truthy_values(
+    conduit_dynamic_normal: Conduit,
+    conduit_lesser: Conduit,
+) -> None:
+    """add_spells_to_contract should coerce arbitrary truthy/falsy values to bools."""
+    conduit_dynamic_normal._conduit_ward = MagicMock()
+    conduit_dynamic_normal._conduit_ward._add_spells_to_contract.return_value = {
+        "a": 1,
+        "b": 0,
+    }
+    conduit_dynamic_normal._conduit_hooks = {}
+    _set_active_link_transaction(conduit_dynamic_normal, conduit_lesser._id)
+
+    result = conduit_dynamic_normal.add_spells_to_contract(
+        ["a", "b"],
+        conduit=conduit_lesser,
+    )
+
+    assert result == {"a": True, "b": False}
+
+
 def test_add_spells_to_contract_skips_hook_when_none_succeed(
     conduit_dynamic_normal: Conduit,
     conduit_lesser: Conduit,
@@ -598,6 +694,78 @@ def test_remove_spells_from_contract_fires_hook_on_any_success(
 
     assert result == {"a": False, "b": True}
     assert events == [(conduit_dynamic_normal, conduit_lesser)]
+
+
+def test_remove_spells_from_contract_normalizes_success_failed_report(
+    conduit_dynamic_normal: Conduit,
+    conduit_lesser: Conduit,
+) -> None:
+    """remove_spells_from_contract should normalize success/failed report dicts."""
+    conduit_dynamic_normal._conduit_ward = MagicMock()
+    conduit_dynamic_normal._conduit_ward._remove_spells_from_contract.return_value = {
+        "success": ["a"],
+        "failed": {"b": "blocked"},
+    }
+    conduit_dynamic_normal._conduit_hooks = {}
+    _set_active_link_transaction(conduit_dynamic_normal, conduit_lesser._id)
+
+    result = conduit_dynamic_normal.remove_spells_from_contract(
+        spell_ids=["a", "b"],
+        conduit=conduit_lesser,
+        root_spell_id="root-1",
+    )
+
+    assert result == {"a": True, "b": False}
+
+
+def test_remove_spells_from_contract_normalizes_truthy_values(
+    conduit_dynamic_normal: Conduit,
+    conduit_lesser: Conduit,
+) -> None:
+    """remove_spells_from_contract should coerce arbitrary truthy/falsy values to bools."""
+    conduit_dynamic_normal._conduit_ward = MagicMock()
+    conduit_dynamic_normal._conduit_ward._remove_spells_from_contract.return_value = {
+        "a": 1,
+        "b": 0,
+    }
+    conduit_dynamic_normal._conduit_hooks = {}
+    _set_active_link_transaction(conduit_dynamic_normal, conduit_lesser._id)
+
+    result = conduit_dynamic_normal.remove_spells_from_contract(
+        spell_ids=["a", "b"],
+        conduit=conduit_lesser,
+        root_spell_id="root-1",
+    )
+
+    assert result == {"a": True, "b": False}
+
+
+def test_resolve_peer_conduit_for_contract_hooks_returns_none_without_peer(
+    conduit_dynamic_normal: Conduit,
+) -> None:
+    """_resolve_peer_conduit_for_contract_hooks should return None when neither conduit nor conduit_id is provided."""
+    result = conduit_dynamic_normal._resolve_peer_conduit_for_contract_hooks(
+        None,
+        None,
+        "default",
+    )
+    assert result is None
+
+
+def test_resolve_peer_conduit_for_contract_hooks_returns_none_when_aether_lookup_fails(
+    conduit_dynamic_normal: Conduit,
+    aether_stub: MagicMock,
+) -> None:
+    """_resolve_peer_conduit_for_contract_hooks should swallow Aether lookup failures."""
+    aether_stub._get_conduit_by_id.side_effect = RuntimeError("lookup boom")
+
+    result = conduit_dynamic_normal._resolve_peer_conduit_for_contract_hooks(
+        None,
+        "peer-1",
+        "default",
+    )
+
+    assert result is None
 
 
 def test_remove_root_from_contracts_delegates_to_ward(
@@ -964,6 +1132,132 @@ def test_validate_received_contracts_delegates(
 
     conduit_dynamic_normal._conduit_ward._validate_received_contracts.assert_called_once_with()
     assert result is True
+
+
+def test_resolve_contract_peer_ids_raises_when_target_missing_and_allow_all_false(
+    conduit_dynamic_normal: Conduit,
+) -> None:
+    """_resolve_contract_peer_ids should fail when no peer target is provided and allow_all_links is False."""
+    with pytest.raises(RuntimeError, match="requires a target conduit or conduit_id"):
+        conduit_dynamic_normal._resolve_contract_peer_ids(
+            conduit=None,
+            conduit_id=None,
+            allow_all_links=False,
+        )
+
+
+def test_resolve_contract_peer_ids_uses_all_current_links_when_allowed(
+    conduit_dynamic_normal: Conduit,
+) -> None:
+    """_resolve_contract_peer_ids should derive peer ids from current links when allowed."""
+    peer_one = MagicMock()
+    peer_one._id = "peer-1"
+    peer_two = MagicMock()
+    peer_two._id = "peer-2"
+    conduit_dynamic_normal._conduit_ward = MagicMock()
+    conduit_dynamic_normal._conduit_ward._get_links.return_value = [peer_one, None, peer_two]
+
+    result = conduit_dynamic_normal._resolve_contract_peer_ids(
+        conduit=None,
+        conduit_id=None,
+        allow_all_links=True,
+    )
+
+    assert set(result) == {"peer-1", "peer-2"}
+
+
+def test_require_link_transaction_for_contract_raises_when_spellbook_missing(
+    conduit_dynamic_normal: Conduit,
+) -> None:
+    """_require_link_transaction_for_contract should fail when the spellbook is unavailable."""
+    conduit_dynamic_normal._logger = MagicMock()
+    conduit_dynamic_normal._spellbook = None
+
+    with pytest.raises(RuntimeError, match="Spellbook is not available"):
+        conduit_dynamic_normal._require_link_transaction_for_contract(
+            conduit=None,
+            conduit_id="peer-1",
+            allow_all_links=False,
+        )
+
+    conduit_dynamic_normal._logger.error.assert_called_once()
+
+
+def test_require_link_transaction_for_contract_raises_when_no_active_request(
+    conduit_dynamic_normal: Conduit,
+) -> None:
+    """_require_link_transaction_for_contract should fail when there is no active request."""
+    conduit_dynamic_normal._logger = MagicMock()
+    conduit_dynamic_normal._spellbook._active_change_request = None
+
+    with pytest.raises(RuntimeError, match="requires an active link transaction"):
+        conduit_dynamic_normal._require_link_transaction_for_contract(
+            conduit=None,
+            conduit_id="peer-1",
+            allow_all_links=False,
+        )
+
+    conduit_dynamic_normal._logger.error.assert_called_once()
+
+
+def test_require_link_transaction_for_contract_raises_when_wrong_request_type(
+    conduit_dynamic_normal: Conduit,
+) -> None:
+    """_require_link_transaction_for_contract should fail when the active request is not LINK."""
+    conduit_dynamic_normal._logger = MagicMock()
+    request = MagicMock()
+    request.request_type = ChangeTransactionType.BIND
+    request.conduit_ids = [conduit_dynamic_normal._id, "peer-1"]
+    conduit_dynamic_normal._spellbook._active_change_request = request
+
+    with pytest.raises(RuntimeError, match="not a link transaction"):
+        conduit_dynamic_normal._require_link_transaction_for_contract(
+            conduit=None,
+            conduit_id="peer-1",
+            allow_all_links=False,
+        )
+
+    conduit_dynamic_normal._logger.error.assert_called_once()
+
+
+def test_require_link_transaction_for_contract_raises_when_required_ids_missing(
+    conduit_dynamic_normal: Conduit,
+) -> None:
+    """_require_link_transaction_for_contract should fail when required conduit ids are missing."""
+    conduit_dynamic_normal._logger = MagicMock()
+    request = MagicMock()
+    request.request_type = ChangeTransactionType.LINK
+    request.conduit_ids = [conduit_dynamic_normal._id]
+    conduit_dynamic_normal._spellbook._active_change_request = request
+
+    with pytest.raises(RuntimeError, match="missing conduit ids"):
+        conduit_dynamic_normal._require_link_transaction_for_contract(
+            conduit=None,
+            conduit_id="peer-1",
+            allow_all_links=False,
+        )
+
+    conduit_dynamic_normal._logger.error.assert_called_once()
+
+
+def test_require_link_transaction_for_contract_raises_when_local_id_missing(
+    conduit_dynamic_normal: Conduit,
+) -> None:
+    """_require_link_transaction_for_contract should fail when the active request omits the local conduit id."""
+    conduit_dynamic_normal._logger = MagicMock()
+    request = MagicMock()
+    request.request_type = ChangeTransactionType.LINK
+    request.conduit_ids = ["peer-1"]
+    conduit_dynamic_normal._spellbook._active_change_request = request
+
+    with pytest.raises(RuntimeError, match="missing conduit ids"):
+        conduit_dynamic_normal._require_link_transaction_for_contract(
+            conduit=None,
+            conduit_id="peer-1",
+            allow_all_links=False,
+        )
+
+    conduit_dynamic_normal._logger.error.assert_called_once()
 
 
 def test_get_links_raises_when_not_dynamic(

@@ -159,6 +159,33 @@ def test_bind_forwards_to_spellbook_for_normal_conduit(
     assert result == "spell-id"
 
 
+def test_scan_raises_for_lesser_conduit(
+    conduit_lesser: Conduit,
+    spellbook_stub: MagicMock,
+) -> None:
+    """scan should reject lesser conduits."""
+    spellbook_stub.scan = MagicMock()
+
+    with pytest.raises(RuntimeError, match="Only normal conduits can scan modules"):
+        conduit_lesser.scan(MagicMock())
+
+    spellbook_stub.scan.assert_not_called()
+
+
+def test_scan_forwards_to_spellbook_for_normal_conduit(
+    conduit_normal: Conduit,
+    spellbook_stub: MagicMock,
+) -> None:
+    """scan should delegate to the Spellbook for normal conduits."""
+    module = MagicMock()
+    spellbook_stub.scan.return_value = ["spell-1", "spell-2"]
+
+    result = conduit_normal.scan(module)
+
+    spellbook_stub.scan.assert_called_once_with(module)
+    assert result == ["spell-1", "spell-2"]
+
+
 def test_inspect_spell_delegates_to_spellbook(
     conduit_lesser: Conduit,
     spellbook_stub: MagicMock,
@@ -808,6 +835,24 @@ def test_dynamic_meld_enabled_path_skips_wait_and_tracks_ticket(
     gate.register_ticket.assert_called_once_with()
     gate.unregister_ticket.assert_called_once_with()
     conduit_dynamic_normal._meld.meld.assert_called_once()
+
+
+def test_enable_meld_opens_creation_gate(conduit_normal: Conduit) -> None:
+    """enable_meld should delegate to the local creation gate."""
+    conduit_normal._creation_gate = MagicMock()
+
+    conduit_normal.enable_meld()
+
+    conduit_normal._creation_gate.open.assert_called_once_with()
+
+
+def test_disable_meld_closes_creation_gate(conduit_normal: Conduit) -> None:
+    """disable_meld should delegate to the local creation gate."""
+    conduit_normal._creation_gate = MagicMock()
+
+    conduit_normal.disable_meld()
+
+    conduit_normal._creation_gate.close.assert_called_once_with()
 
 
 def test_get_conduit_by_id_rejects_non_string_frame(

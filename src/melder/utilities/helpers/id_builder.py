@@ -2,17 +2,19 @@ import ulid
 
 class IDBuilder:
     """
-    Utility to build hierarchical ULID-based lineage IDs.
+    Build dot-joined lineage identifiers from object identifiers and class names.
 
-    Rules:
+    Contract:
         - IDs are always joined with dots ('.').
         - Each segment alternates between an object's ID and its class name.
-        - Never ends with a dot.
+        - `compose()` reads `_id` first and falls back to `id`.
+        - Convenience helpers are thin aliases over `compose()` and preserve its
+          error behavior.
     """
 
     @staticmethod
     def create_id() -> str:
-        """Generates a new ULID string."""
+        """Return a new ULID string for a lineage segment."""
         return str(ulid.ULID())
 
     # ---------------------------------------------------------------------
@@ -22,15 +24,19 @@ class IDBuilder:
     @staticmethod
     def compose(base_obj: object, new_obj: object | None = None) -> str:
         """
-        Composes a lineage ID using the base object's ID and class name,
-        optionally extended with a new object's ID and class name.
+        Compose a lineage ID from one or two objects.
 
         Args:
-            base_obj (object): The parent object (must have `_id` or `id`).
-            new_obj (object | None): Optional child object.
+            base_obj (object): Object that contributes the first identifier/class
+                pair. The helper reads `_id` first and falls back to `id`.
+            new_obj (object | None): Optional second object appended with the
+                same identifier lookup rule.
 
         Returns:
             str: A dot-joined lineage string without trailing dots.
+
+        Raises:
+            AttributeError: If either object does not expose `_id` or `id`.
 
         Example:
             Spellbook._id = '01ABC...'
@@ -58,7 +64,10 @@ class IDBuilder:
     @staticmethod
     def conduit_id(spellbook: object, conduit: object) -> str:
         """
-        Builds a Conduit ID based on its parent Spellbook.
+        Build the lineage ID for a conduit owned by a spellbook.
+
+        This is a thin alias over :meth:`compose` and preserves its identifier
+        lookup and `AttributeError` behavior.
 
         Example:
             '01ABC...Spellbook.01DEF...Conduit'
@@ -68,7 +77,10 @@ class IDBuilder:
     @staticmethod
     def ward_id(conduit: object, ward: object) -> str:
         """
-        Builds a ConduitWard ID based on its parent Conduit.
+        Build the lineage ID for a ward owned by a conduit.
+
+        This is a thin alias over :meth:`compose` and preserves its identifier
+        lookup and `AttributeError` behavior.
 
         Example:
             '01ABC...Conduit.01XYZ...ConduitWard'

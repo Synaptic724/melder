@@ -215,6 +215,18 @@ def test_end_binding_transaction_rejects_non_normal_conduits(
     spellbook_stub.end_binding_transaction.assert_not_called()
 
 
+def test_end_binding_transaction_delegates_for_normal_conduit(
+    conduit_dynamic_normal: Conduit,
+    spellbook_stub: MagicMock,
+) -> None:
+    """end_binding_transaction should delegate to the Spellbook for normal conduits."""
+    spellbook_stub.end_binding_transaction = MagicMock()
+
+    conduit_dynamic_normal.end_binding_transaction()
+
+    spellbook_stub.end_binding_transaction.assert_called_once_with()
+
+
 def test_binding_transaction_ends_on_exception(
     conduit_dynamic_normal: Conduit,
     spellbook_stub: MagicMock,

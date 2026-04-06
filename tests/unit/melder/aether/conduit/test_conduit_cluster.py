@@ -14,6 +14,7 @@ from contextlib import contextmanager
 from typing import Any, Optional, Iterable, Dict, Union, Tuple
 
 import pytest
+from unittest.mock import MagicMock
 
 from melder.aether.conduit.conduit_cluster import ConduitCluster
 from melder.aether.conduit.conduit_ward.contract.detail_reason import DetailReason
@@ -547,6 +548,43 @@ def test_cleanup_clears_state_and_is_idempotent() -> None:
     assert cluster.auto_link_dependencies is None
 
 
+def test_cleanup_returns_early_when_cleaned_flips_inside_lock() -> None:
+    """cleanup should return safely if another path marks the cluster cleaned inside the lock."""
+    cluster = ConduitCluster("cluster")
+    cluster.members.add("member-1")
+    cluster.shared_spells["owner-1"] = {SpellIndex("spell-1")}
+    original_lock = cluster._lock
+
+    class _LockThatMarksCleaned:
+        def __enter__(self_inner):
+            cluster._cleaned = True
+            return self_inner
+
+        def __exit__(self_inner, exc_type, exc_value, traceback):
+            return False
+
+    try:
+        cluster._lock = _LockThatMarksCleaned()
+        cluster.cleanup()
+    finally:
+        cluster._lock = original_lock
+
+    assert cluster.members == {"member-1"}
+
+
+def test_cleanup_tolerates_bucket_clear_errors() -> None:
+    """cleanup should tolerate errors while clearing individual shared-spell buckets."""
+    cluster = ConduitCluster("cluster")
+    broken_bucket = MagicMock()
+    broken_bucket.clear.side_effect = RuntimeError("bucket boom")
+    cluster.shared_spells["owner-1"] = broken_bucket
+
+    cluster.cleanup()
+
+    assert cluster.cleaned is True
+    assert cluster.shared_spells == {}
+
+
 def test_init_defaults_auto_link_dependencies_true() -> None:
     """Verify auto_link_dependencies defaults to True on construction."""
     cluster = ConduitCluster("cluster")
@@ -842,6 +880,20 @@ def test_add_and_share_spell_adds_shared_spell_without_peers() -> None:
     assert cluster.get_shared_spells()[owner._id] == {spell.spell_index}
 
 
+def test_add_and_share_spell_skips_missing_peer_entries() -> None:
+    """Verify add_and_share_spell ignores member ids that are absent from the frame."""
+    cluster = ConduitCluster("cluster", auto_link_dependencies=True)
+    spell = _SpellStub("spell-1", Existence.unique_per_conduit_cluster)
+    owner = _ConduitStub("owner-1", _SpellbookStub([spell]))
+    frame = _FrameStub([owner])
+    cluster.add_member(owner._id)
+    cluster.add_member("missing-peer")
+
+    cluster.add_and_share_spell(owner, frame, spell)
+
+    assert cluster.get_shared_spells()[owner._id] == {spell.spell_index}
+
+
 def test_add_and_share_spell_uses_distinct_cluster_root_ids_per_owner() -> None:
     """Verify cluster root ids differ when two owners share the same spell id."""
     cluster = ConduitCluster("cluster")
@@ -929,6 +981,21 @@ def test_remove_and_strip_spell_skips_readd_when_add_contract_fails() -> None:
     assert len(borrower.contract_calls) == 1
 
 
+def test_remove_and_strip_spell_skips_missing_peer_entries() -> None:
+    """Verify remove_and_strip_spell ignores member ids that are absent from the frame."""
+    cluster = ConduitCluster("cluster")
+    spell = _SpellStub("spell-1", Existence.unique_per_conduit_cluster)
+    owner = _ConduitStub("owner-1", _SpellbookStub([spell]))
+    frame = _FrameStub([owner])
+    cluster.add_member(owner._id)
+    cluster.add_member("missing-peer")
+    cluster.add_shared_spell(owner._id, spell.spell_index)
+
+    cluster.remove_and_strip_spell(owner, frame, spell)
+
+    assert cluster.get_shared_spells() == {}
+
+
 def test_share_to_borrower_no_shared_indices_no_calls() -> None:
     """Verify share_to_borrower does nothing when no shared roots exist."""
     cluster = ConduitCluster("cluster")
@@ -986,3 +1053,16 @@ def test_remove_shared_from_borrower_continues_after_exception() -> None:
         cluster._cluster_root_id(owner._id, spell_one.spell_id),
         cluster._cluster_root_id(owner._id, spell_two.spell_id),
     }
+
+
+def test_remove_shared_from_borrower_skips_missing_peer_entries() -> None:
+    """Verify remove_shared_from_borrower ignores member ids that are absent from the frame."""
+    cluster = ConduitCluster("cluster")
+    spell = _SpellStub("spell-1", Existence.unique_per_conduit_cluster)
+    owner = _ConduitStub("owner-1", _SpellbookStub([spell]))
+    frame = _FrameStub([owner])
+    cluster.add_shared_spell(owner._id, spell.spell_index)
+
+    cluster.remove_shared_from_borrower(owner, frame)
+
+    assert cluster.get_shared_spells()[owner._id] == {spell.spell_index}

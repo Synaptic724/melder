@@ -1,5 +1,7 @@
 from unittest.mock import MagicMock
 
+import pytest
+
 from melder.aether.conduit.conduit import Conduit
 
 
@@ -28,6 +30,15 @@ def test_get_resolution_state_returns_state_for_normal(
 
     assert result is resolution_state
     spell_system_states.get_conduit_resolution_state.assert_called_once_with(conduit_normal._id)
+
+
+def test_get_resolution_state_returns_none_when_spell_system_states_missing(
+    conduit_normal: Conduit,
+) -> None:
+    """get_resolution_state should return None when no resolution state registry exists."""
+    conduit_normal._spellbook._spell_system_states = None
+
+    assert conduit_normal.get_resolution_state() is None
 
 
 def test_get_resolution_state_uses_root_for_lesser(
@@ -157,3 +168,68 @@ def test_validate_resolution_uses_root_for_lesser(
     spellbook._run_resolution_phases_for_conduit.assert_called_once_with(
         conduit_dynamic_normal._id
     )
+
+
+def test_get_resolution_state_raises_when_lesser_has_no_ward(
+    conduit_dynamic_lesser: Conduit,
+) -> None:
+    """get_resolution_state should fail when a lesser conduit has no ward lineage."""
+    conduit_dynamic_lesser._logger = MagicMock()
+    conduit_dynamic_lesser._conduit_ward = None
+
+    with pytest.raises(RuntimeError, match="Root conduit is not set"):
+        conduit_dynamic_lesser.get_resolution_state()
+
+    conduit_dynamic_lesser._logger.error.assert_called_once()
+
+
+def test_get_resolution_state_raises_when_spellbook_missing(
+    conduit_normal: Conduit,
+) -> None:
+    """get_resolution_state should fail when the spellbook is unavailable."""
+    conduit_normal._logger = MagicMock()
+    conduit_normal._spellbook = None
+
+    with pytest.raises(RuntimeError, match="Spellbook is not available"):
+        conduit_normal.get_resolution_state()
+
+    conduit_normal._logger.error.assert_called_once()
+
+
+def test_validate_resolution_raises_when_lesser_has_no_ward(
+    conduit_dynamic_lesser: Conduit,
+) -> None:
+    """validate_resolution should fail when a lesser conduit has no ward lineage."""
+    conduit_dynamic_lesser._logger = MagicMock()
+    conduit_dynamic_lesser._conduit_ward = None
+
+    with pytest.raises(RuntimeError, match="Root conduit is not set"):
+        conduit_dynamic_lesser.validate_resolution(refresh_structural=False)
+
+    conduit_dynamic_lesser._logger.error.assert_called_once()
+
+
+def test_validate_resolution_raises_when_spellbook_missing(
+    conduit_normal: Conduit,
+) -> None:
+    """validate_resolution should fail when the spellbook is unavailable."""
+    conduit_normal._logger = MagicMock()
+    conduit_normal._spellbook = None
+
+    with pytest.raises(RuntimeError, match="Spellbook is not available"):
+        conduit_normal.validate_resolution(refresh_structural=False)
+
+    conduit_normal._logger.error.assert_called_once()
+
+
+def test_validate_resolution_raises_when_spell_system_states_missing(
+    conduit_normal: Conduit,
+) -> None:
+    """validate_resolution should fail when SpellSystemStates is unavailable."""
+    conduit_normal._logger = MagicMock()
+    conduit_normal._spellbook._spell_system_states = None
+
+    with pytest.raises(RuntimeError, match="SpellSystemStates is not available"):
+        conduit_normal.validate_resolution(refresh_structural=False)
+
+    conduit_normal._logger.error.assert_called_once()

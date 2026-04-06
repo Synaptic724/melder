@@ -17,9 +17,6 @@ from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
 )
 from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.aether.nexus.rift.frame_link.frame_link_contract import FrameLinkContract
-from melder.aether.nexus.rift.frame_link.profiles.frame_link_codegen_profile import (
-    FrameLinkCodegenProfile,
-)
 from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile import (
     FrameLinkContractProfile,
 )
@@ -105,10 +102,6 @@ def test_frame_link_contract_can_be_shaped_from_compiled_access_surface() -> Non
             allowed_kinds=("frame",),
             frame_payload_fields=("system_state",),
         ),
-        codegen_profile=FrameLinkCodegenProfile(
-            "frame_only_codegen",
-            allowed_commands=("query",),
-        ),
     )
 
     contract = FrameLinkContract.from_compiled_access_surface(
@@ -118,7 +111,6 @@ def test_frame_link_contract_can_be_shaped_from_compiled_access_surface() -> Non
 
     assert contract.frame_name == "ops"
     assert contract.allowed_kinds == ("frame",)
-    assert contract.allowed_commands == ("query",)
     assert contract.metadata["frame_link_profile_name"] == "frame_only"
     assert contract.metadata["frame_payload_fields"] == ("system_state",)
     assert contract.metadata["conduit_payload_sections_by_id"] == {

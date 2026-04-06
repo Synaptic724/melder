@@ -101,7 +101,14 @@ class Package(Cleanable, Generic[P, R]):
 
     def cleanup(self) -> None:
         """
-        Disposes of the Package by orchestrating a resilient and idempotent cleanup.
+        Clean owned state in two phases and make the package unusable.
+
+        Contract:
+            - Idempotent: repeated calls return immediately.
+            - Marks `_cleaned` while the package lock is held before child
+              cleanup begins.
+            - Performs reference nulling after the lock is released so core
+              teardown does not occur inside the locked section.
         """
         if self._cleaned:
             return
@@ -109,18 +116,21 @@ class Package(Cleanable, Generic[P, R]):
             if self._cleaned:
                 return
             self._cleaned = True
-            # Phase 1 — components (while holding the lock)
+            # Phase 1 - components (while holding the lock)
             self._cleanup_components()
-
-        # Phase 2 — core teardown (after releasing the lock)
+        # Phase 2 - core teardown (after releasing the lock)
         self._cleanup_core()
 
 
 
     def _cleanup_components(self) -> None:
         """
-        Safely cleans up all internal concurrent collections.
-        Runs under the main lock.
+        Best-effort clean owned collections while the package lock is held.
+
+        Contract:
+            - Calls `cleanup()` only on owned collections that expose it.
+            - Swallows cleanup errors deliberately so core teardown still runs.
+            - Does not clear references; `_cleanup_core()` performs nulling.
         """
         if self._args is not None and hasattr(self._args, "cleanup"):
             try:
@@ -137,8 +147,15 @@ class Package(Cleanable, Generic[P, R]):
 
     def _cleanup_core(self) -> None:
         """
-        Performs the final teardown of remaining references and the lock.
-        This must be called outside the main lock's 'with' block.
+        Clear remaining owned references after locked cleanup is complete.
+
+        Contract:
+            - Must run after `_cleanup_components()` and outside the lock
+              context.
+            - Nulls wrapped callable, bound arguments, and cached signature
+              state.
+            - Best-effort cleans a polymorphic lock if it exposes `cleanup()`,
+              then always drops the lock reference.
         """
         # --- Nullify All Component References ---
         self._func = None
@@ -289,7 +306,7 @@ class Package(Cleanable, Generic[P, R]):
 
     @property
     def __doc__(self):
-        """Returns the docstring of the wrapped function."""
+        """Return the wrapped callable's docstring."""
         return getattr(self._func, '__doc__')
 
     @property
@@ -305,7 +322,14 @@ class Package(Cleanable, Generic[P, R]):
 
     def __or__(self: "Package[P, A]", other: "Package[[A], B]") -> "Package[P, B]":
         """
-        Pipe operator: output of this Package becomes input to the next.
+        Compose two packages into a left-to-right pipeline.
+
+        Contract:
+            - `self` receives the external call arguments.
+            - The result of `self` becomes the sole positional input to
+              `other`.
+            - The composed package calls `other._func(...)` directly, so
+              `other`'s stored bound arguments are intentionally bypassed.
         """
         if not isinstance(other, Package):
             raise TypeError("| expects another Package")
@@ -325,42 +349,40 @@ class Package(Cleanable, Generic[P, R]):
             ]
     ) -> Union["Package[P, R]", List["Package[P, R]"]]:
         """
-        Converts the input into a single Pack instance or a ConcurrentList of Pack instances.
-        Handles None, single callables, single Pack instances, and iterables of mixed types.
+        Normalize one callable/package or an iterable of them into package objects.
 
         Args:
-            item: The input to "packify". Can be None, a single callable, a single Pack instance,
-                  or an iterable containing callables and/or Pack instances.
+            item: The input to normalize. Can be one callable, one `Package`,
+                or an iterable containing a mix of both.
 
         Returns:
-            A single Package instance if the input was a single callable or Pack.
-            A ConcurrentList of Package instances if the input was an iterable.
+            Union["Package[P, R]", List["Package[P, R]"]]: Existing package for
+            single-package input, new package for single-callable input, or a
+            list of package objects for iterable input.
 
         Raises:
-            TypeError: If the input is None or contains invalid callable types (e.g., async/generator).
+            TypeError: If `item` is `None` or contains invalid callable input.
         """
         if item is None:
             raise TypeError("Cannot Packify None input.")
 
-        # If it's already a single Pack instance, return it directly
+        # If it is already one package instance, return it directly.
         if isinstance(item, Package):
             return item
 
-        # If it's an iterable (list, tuple, etc.), use Pack.many to process it
-        # Note: `Pack.many` already handles if elements within the iterable are already Packs
+        # If it is an iterable, normalize each element into package form.
         if isinstance(item, Iterable) and not isinstance(item, str):
             return Pack._pack_many(item)
 
-        # If it's a single callable (and not already a Package), wrap it in a new Pack
+        # If it is one callable, wrap it in a new package instance.
         if callable(item):
-            # The Pack constructor itself will validate the callable (sync/async/generator checks)
+            # The package constructor performs the callable validation itself.
             return Pack(item)
 
-        # If none of the above, it's an invalid type
+        # If none of the above matched, the input type is invalid.
         raise TypeError(
             f"Cannot Packify input of type {type(item).__name__}. Expected callable, Package, or iterable thereof.")
-
-    # ───────────────────────── helper for deterministic dual lock ────────────
+    # Deterministic dual-lock ordering helper.
     @staticmethod
     def _acquire_two(a: "Package", b: "Package"):
         """
@@ -399,31 +421,32 @@ class Package(Cleanable, Generic[P, R]):
         before invoking the underlying function to avoid cross-thread
         contention when nested calls occur.
         """
-        # ── gather args/kwargs atomically ────────────────────────────────
+        # Snapshot bound args/kwargs under the lock, then invoke lock-free.
         with self._lock:
             all_args = tuple(self._args) + extra_args
             all_kwargs = {**dict(self._kwargs), **extra_kwargs}
-
-        # ── invoke outside the lock for dead-lock freedom ───────────────
+        # Invoke outside the lock to avoid deadlocks during nested calls.
         return self._func(*all_args, **all_kwargs)
 
     def execute_sync(self, *extra_args: P.args, **extra_kwargs: P.kwargs) -> R:
         """
         Calls the wrapped function synchronously if it is sync.
 
-        This method is a convenience for invoking sync Pack instances.
+        This method is a convenience for invoking synchronous package objects.
         It gathers the arguments under the lock, then releases the lock
         before invoking the underlying function to avoid cross-thread
         contention when nested calls occur.
 
         Returns:
             The return value of the wrapped function.
+
+        Raises:
+            TypeError: If the wrapped callable is asynchronous.
         """
-        # ── invoke outside the lock for dead-lock freedom ───────────────
+        # Invoke outside the lock to avoid deadlocks during nested calls.
         if self._is_async:
             raise TypeError("Cannot execute asynchronously wrapped function as sync.")
-
-        # ── gather args/kwargs atomically ────────────────────────────────
+        # Snapshot bound args/kwargs under the lock, then invoke lock-free.
         with self._lock:
             all_args = tuple(self._args) + extra_args
             all_kwargs = {**dict(self._kwargs), **extra_kwargs}
@@ -434,19 +457,21 @@ class Package(Cleanable, Generic[P, R]):
         """
         Calls the wrapped function as a coroutine if it is async.
 
-        This method is a convenience for invoking async Pack instances.
+        This method is a convenience for invoking asynchronous package objects.
         It gathers the arguments under the lock, then releases the lock
         before invoking the underlying function to avoid cross-thread
         contention when nested calls occur.
 
         Returns:
             The coroutine object returned by the wrapped function.
+
+        Raises:
+            TypeError: If the wrapped callable is synchronous.
         """
-        # ── invoke outside the lock for dead-lock freedom ───────────────
+        # Invoke outside the lock to avoid deadlocks during nested calls.
         if not self._is_async:
             raise TypeError("Cannot execute synchronously wrapped function as async.")
-
-        # ── gather args/kwargs atomically ────────────────────────────────
+        # Snapshot bound args/kwargs under the lock, then invoke lock-free.
         with self._lock:
             all_args = tuple(self._args) + extra_args
             all_kwargs = {**dict(self._kwargs), **extra_kwargs}
@@ -457,17 +482,15 @@ class Package(Cleanable, Generic[P, R]):
     @staticmethod
     def verify(item_to_check: Any) -> bool:
         """
-        A robust, centralized validator for Pack instances and iterables of Packs.
+        Validate a package or iterable of packages.
 
-        This utility method provides a single, reliable way to ensure that a given
-        object is either a valid Pack or an iterable containing only valid Packs.
-        It's designed to be used at the boundaries of your API to enforce the
-        "unit of work" contract before processing.
+        This helper provides one boundary check for APIs that accept either one
+        `Package` or a collection of `Package` objects.
 
         Args:
             item_to_check (Any):
-                The item to validate. Can be a single Pack instance or an
-                iterable (e.g., list, tuple) containing Pack objects.
+                The item to validate. Can be one `Package` instance or an
+                iterable containing package objects.
 
         Returns:
             bool:
@@ -476,21 +499,20 @@ class Package(Cleanable, Generic[P, R]):
         Raises:
             TypeError:
                 If the `item_to_check` (or any element within it) is not an
-                instance of Pack.
+                instance of `Package`.
         """
-        # First, check if the item is an iterable (but not a string, which is a common edge case).
-        # This allows the method to recursively validate collections of tasks.
+        # Strings are excluded so textual input is not treated as a task list.
         if isinstance(item_to_check, Collection) and not isinstance(item_to_check, str):
             for task in item_to_check:
-                # Recursively call verify on each item in the collection.
+                # Recursively validate each collection member.
                 Pack.verify(task)
             return True
 
-        # If the item is not an iterable, it must be a single Pack instance.
+        # Non-collection input must be one concrete package instance.
         if isinstance(item_to_check, Package):
             return True
 
-        # If it's neither, it's an invalid type. This provides a clear error message.
+        # Anything else violates the package-or-iterable contract.
         raise TypeError(
             f"Expected a Pack instance or an iterable of Packs, but got "
             f"{type(item_to_check).__name__}."
@@ -550,16 +572,16 @@ class Package(Cleanable, Generic[P, R]):
             tasks: Union[Callable[P, R], "Package[P, R]", Iterable[Union[Callable[P, R], "Package[P, R]"]]]
     ) -> List["Package[P, R]"]:
         """
-        Normalize a single callable, Package, or an iterable of them into a ConcurrentList of Package instances.
+        Normalize one callable/package or an iterable of them into package objects.
 
-        This is used to ensure all tasks are safe, wrapped, and concurrency-ready before use in
-        thread-based systems like Group or Conductor.
+        This helper ensures downstream callers receive concrete `Package`
+        instances without double-wrapping existing package input.
 
         Args:
             tasks: A single task or a collection of tasks.
 
         Returns:
-            A ConcurrentList of validated, thread-safe Package instances.
+            List["Package[P, R]"]: Validated package objects.
 
         Raises:
             TypeError: If any task is invalid, None, or an async/coroutine/generator.
@@ -567,7 +589,7 @@ class Package(Cleanable, Generic[P, R]):
         if tasks is None:
             raise TypeError("Tasks input cannot be None.")
 
-        # Handle single callable or Package
+        # Single task input still normalizes to a one-element package list.
         if isinstance(tasks, (Callable, Package)):
             return [Package(Package._normalize_task(tasks))]
 
@@ -588,21 +610,17 @@ class Package(Cleanable, Generic[P, R]):
                 raise TypeError(f"Invalid task at index {i}: {e}") from e
 
         return result
-
-    # inside class Package …
-
-    # ───────────────────────────── single item ───────────────────────────── #
+    # Internal packing helpers.
+    # Single-item pack helper.
     @staticmethod
     def _pack(task: Union[Callable[P, R], "Package[P, R]"]) -> "Package[P, R]":
         """
-        Internal mirror of `Pack()`. Ensures any callable or Package becomes a Package safely.
-        Preserves identity and avoids double wrapping.
+        Return an existing package or wrap one callable in a new package.
         """
         if isinstance(task, Package):
             return task
         return Pack(task)
-
-    # ──────────────────────────── many items ─────────────────────────────── #
+    # Many-item pack helper.
     @staticmethod
     def _pack_many(
             tasks: Union[
@@ -612,13 +630,13 @@ class Package(Cleanable, Generic[P, R]):
             ]
     ) -> List["Package[P, R]"]:
         """
-        Internal mirror of `Pack()` for batch input. Always returns valid Packages.
+        Normalize batch input into a list of package objects.
 
         Args:
             tasks: A single task or iterable of tasks.
 
         Returns:
-            ConcurrentList of Package objects.
+            List["Package[P, R]"]: Package objects for each accepted task.
 
         Raises:
             TypeError: On invalid input.
@@ -721,14 +739,14 @@ class Package(Cleanable, Generic[P, R]):
         """
         with self._lock:
             func = self._func.__wrapped__
-            # Combine stored args with new args, and stored kwargs with new kwargs
+            # Merge new bindings on top of the package's stored arguments.
             combined_args = tuple(self._args) + args
             combined_kwargs = {**dict(self._kwargs), **kwargs}
             return Package(func, *combined_args, **combined_kwargs)
 
     def freeze(self) -> None:
         """
-        Prevent any future mutation (via `bind()`).
+        Prevent future argument mutation on this package instance.
         """
         with self._lock:
             self._frozen = True
@@ -741,7 +759,7 @@ class Package(Cleanable, Generic[P, R]):
 
     @property
     def kwargs(self) -> Dict:
-        """Return a thread-safe copy of the stored keyword arguments."""
+        """Return the live stored keyword-argument mapping."""
         with self._lock:
             return self._kwargs
 
@@ -751,7 +769,8 @@ class Package(Cleanable, Generic[P, R]):
         Return a pseudo-signature object representing bound args.
 
         Returns:
-            SimpleNamespace with `arguments` ConcurrentDict containing arg0, arg1... and kwarg names.
+            SimpleNamespace: Namespace whose `arguments` mapping contains
+            positional placeholders (`arg0`, `arg1`, ...) plus keyword entries.
         """
         with self._lock:
             if self._signature_cache is None:
@@ -766,7 +785,7 @@ class Package(Cleanable, Generic[P, R]):
 
     def __add__(self, other: "Package") -> "Package":
         """
-        Add operator: sum results of both packages.
+        Return a package that adds the results of two package invocations.
 
         Example:
             (Pack(f) + Pack(g))(...) == f(...) + g(...)
@@ -780,7 +799,11 @@ class Package(Cleanable, Generic[P, R]):
 
     def __getattr__(self, item: str):
         """
-        Delegate attribute access to the wrapped function.
+        Fallback missing-attribute access to the wrapped callable object.
+
+        This is not a full per-attribute proxy. The current implementation
+        returns the wrapped callable reference itself when the package does not
+        define `item`.
         """
         try:
             return self._func
@@ -789,7 +812,7 @@ class Package(Cleanable, Generic[P, R]):
 
     def __dir__(self):
         """
-        Merge function attributes with class attributes for autocompletion.
+        Merge package and wrapped-callable attributes for introspection.
         """
         return sorted(
             set(super().__dir__())
@@ -798,6 +821,7 @@ class Package(Cleanable, Generic[P, R]):
         )
 
     def __repr__(self) -> str:
+        """Return a debug-oriented representation of the wrapped callable and bindings."""
         with self._lock:
             func = self._func
             args = self._args
@@ -819,3 +843,4 @@ class Package(Cleanable, Generic[P, R]):
 
 # Short alias
 Pack = Package
+
