@@ -89,6 +89,8 @@ class CreationGateController(Cleanable):
 
         Contract:
             - Calls ``cleanup()`` on all unique registered gates.
+            - Deduplicates gates that appear in both conduit flat/root indexes
+              before cleanup so shared gate instances are only cleaned once.
             - Clears and nulls all registries/indexes.
             - Marks the controller cleaned.
             - Leaves the object unusable for all guarded API calls.
@@ -471,6 +473,8 @@ class CreationGateController(Cleanable):
         Returns:
             Dict[str, CreationGate]:
                 Detached snapshot map for the lineage. Empty if root missing.
+                The returned dict is detached, but the gate objects inside it
+                are the live registered instances.
 
         Raises:
             RuntimeError:
@@ -925,6 +929,10 @@ class CreationGateController(Cleanable):
         Raises:
             RuntimeError:
                 If called after ``cleanup()``.
+
+        Notes:
+            This is an aggregate sum across the current conduit and spell-lineage
+            registries, not a lock-held global snapshot of all gate activity.
         """
         self.check_cleaned()
         return (

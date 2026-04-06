@@ -1553,11 +1553,7 @@ class Nexus(Cleanable, INexus):
                     view_profile_name=view_profile_name,
                 )
             return FrameViewer(
-                profile_name=viewer_profile.name,
-                profile_version=viewer_profile.version,
-                enabled_helpers=list(viewer_profile.enabled_helpers),
-                default_grouping=viewer_profile.default_grouping,
-                default_detail_level=viewer_profile.default_detail_level,
+                profile=viewer_profile.clone(),
                 views_by_frame_name=projected_views,
                 metadata={
                     "frame_count": len(projected_views),
@@ -1568,6 +1564,8 @@ class Nexus(Cleanable, INexus):
                     "default_grouping": viewer_profile.default_grouping,
                     "default_detail_level": viewer_profile.default_detail_level,
                     "enabled_helpers": viewer_profile.enabled_helpers,
+                    "tool_names": viewer_profile.list_tool_names(),
+                    "tool_handler_names_by_name": viewer_profile.tool_handler_names_by_name,
                 },
             )
         finally:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import threading
 
 import pytest
+from unittest.mock import MagicMock, patch
 
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.conduit_ward import ConduitWard
@@ -651,6 +652,55 @@ def test_add_spell_to_contract_merges_sources_without_duplicate_spellbook_update
     assert len(borrower._spellbook._contracted_spells[owner._id]) == 1
 
 
+def test_add_spell_to_contract_rolls_back_detail_when_spellbook_add_fails(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify spellbook add failures do not leave a partial contract detail behind."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-add-fail", permissions=Permissions.create)
+    borrower._spellbook._add_contracted_spell = MagicMock(side_effect=RuntimeError("add boom"))
+
+    with pytest.raises(RuntimeError, match="add boom"):
+        borrower._conduit_ward._add_spell_to_contract(
+            spell=spell,
+            spell_id=spell.spell_id,
+            conduit=owner,
+            permissions="create",
+        )
+
+    contract = borrower._conduit_ward._find_contract(owner)
+    assert contract is not None
+    assert contract._get_detail_map(owner._conduit_ward) == {}
+    assert owner._id in borrower._spellbook._contracted_spells
+    assert borrower._spellbook._contracted_spells[owner._id] == {}
+
+
+def test_add_spell_to_contract_rolls_back_root_when_dependency_linking_fails(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify dependency-link failures remove the just-added root contract detail instead of leaving partial state."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-dep-fail", permissions=Permissions.create)
+
+    with pytest.raises(RuntimeError, match="dep boom"):
+        with patch.object(
+            borrower._conduit_ward,
+            "_link_spell_dependencies",
+            side_effect=RuntimeError("dep boom"),
+        ):
+            borrower._conduit_ward._add_spell_to_contract(
+                spell=spell,
+                spell_id=spell.spell_id,
+                conduit=owner,
+                permissions="create",
+                link_dependencies=True,
+            )
+
+    contract = borrower._conduit_ward._find_contract(owner)
+    assert contract is None
+    assert owner._id not in borrower._spellbook._contracted_spells
+
+
 def test_add_spell_to_contract_rejects_different_permissions(
     linked_pair: tuple[FakeConduit, FakeConduit],
 ) -> None:
@@ -788,6 +838,33 @@ def test_remove_spell_from_contract_only_removes_source(
     assert borrower._spellbook._remove_contracted_calls == []
 
 
+def test_remove_spell_from_contract_restores_detail_when_spellbook_remove_fails(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify spellbook remove failures restore the deleted detail instead of leaving divergence."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-remove-fail", permissions=Permissions.create)
+
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+        permissions="create",
+    )
+    borrower._spellbook._remove_contracted_spell = MagicMock(side_effect=RuntimeError("remove boom"))
+
+    with pytest.raises(RuntimeError, match="remove boom"):
+        borrower._conduit_ward._remove_spell_from_contract(
+            spell=spell,
+            spell_id=spell.spell_id,
+            conduit=owner,
+        )
+
+    contract = borrower._conduit_ward._find_contract(owner)
+    assert spell.spell_id in contract._get_detail_map(owner._conduit_ward)
+    assert spell.spell_index in borrower._spellbook._contracted_spells[owner._id]
+
+
 def test_remove_spell_from_contract_raises_when_missing_spell(
     linked_pair: tuple[FakeConduit, FakeConduit],
 ) -> None:
@@ -825,6 +902,29 @@ def test_remove_all_spells_from_contract_clears_details_and_contracted_spells(
     assert contract._get_detail_map(borrower._conduit_ward) == {}
     assert borrower._spellbook._contracted_spells[owner._id] == {}
     assert owner._spellbook._contracted_spells[borrower._id] == {}
+
+
+def test_remove_all_spells_from_contract_preserves_details_when_spellbook_clear_fails(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify spellbook clear failures do not clear contract details first."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-clear-fail", permissions=Permissions.create)
+
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+        permissions="create",
+    )
+    borrower._spellbook._clear_contracted_spells_for_conduit = MagicMock(side_effect=RuntimeError("clear boom"))
+
+    with pytest.raises(RuntimeError, match="clear boom"):
+        borrower._conduit_ward._remove_all_spells_from_contract(conduit=owner)
+
+    contract = borrower._conduit_ward._find_contract(owner)
+    assert spell.spell_id in contract._get_detail_map(owner._conduit_ward)
+    assert spell.spell_index in borrower._spellbook._contracted_spells[owner._id]
 
 
 def test_get_spells_in_contract_by_conduit_reports_inbound_and_outbound(
@@ -1159,6 +1259,35 @@ def test_remove_root_from_contracts_preserves_detail_with_multiple_sources(
     assert report["success"] == []
     assert detail.sources == {"root-b"}
     assert borrower._spellbook._remove_contracted_calls == []
+
+
+def test_remove_root_from_contracts_restores_detail_when_spellbook_remove_fails(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify root removal failures restore the deleted detail instead of leaving partial mutation."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-root-fail", permissions=Permissions.create)
+
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+        permissions="create",
+        root_spell_id="root-fail",
+    )
+    contract = borrower._conduit_ward._find_contract(owner)
+    borrower._spellbook._remove_contracted_spell = MagicMock(side_effect=RuntimeError("remove boom"))
+
+    report = borrower._conduit_ward._remove_root_from_contracts(
+        root_spell_id="root-fail",
+        conduit=owner,
+    )
+
+    detail = contract._get_detail_map(owner._conduit_ward)[spell.spell_id]
+    assert report["success"] == []
+    assert contract._id in report["failed"]
+    assert detail.sources == {"root-fail"}
+    assert spell.spell_index in borrower._spellbook._contracted_spells[owner._id]
 
 
 def test_link_spell_dependencies_creates_contract_and_details(
@@ -1630,6 +1759,51 @@ def test_get_all_spells_in_contracts_returns_none_when_validate_false(
     assert result is None
 
 
+def test_get_all_spells_in_contracts_raises_when_contracted_lookup_fails_with_validate_true(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify contracted lookup errors are wrapped when validate=True and contract validation passes."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-lookup-boom", permissions=Permissions.create)
+
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+        permissions="create",
+    )
+    borrower._spellbook._find_contracted_spell = MagicMock(side_effect=RuntimeError("lookup boom"))
+    contract = borrower._conduit_ward._find_contract(owner)
+
+    with patch.object(
+        borrower._conduit_ward,
+        "_validate_contracts_and_define",
+        return_value={contract._id: True},
+    ):
+        with pytest.raises(RuntimeError, match="Failed to inspect contract"):
+            borrower._conduit_ward._get_all_spells_in_contracts(validate=True)
+
+
+def test_get_all_spells_in_contracts_skips_lookup_failure_when_validate_false(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify contracted lookup errors are skipped when validate=False."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-lookup-skip", permissions=Permissions.create)
+
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+        permissions="create",
+    )
+    borrower._spellbook._find_contracted_spell = MagicMock(side_effect=RuntimeError("lookup boom"))
+
+    result = borrower._conduit_ward._get_all_spells_in_contracts(validate=False)
+
+    assert result is None
+
+
 def test_get_spell_in_contracts_returns_none_when_missing(
     linked_pair: tuple[FakeConduit, FakeConduit],
 ) -> None:
@@ -1637,6 +1811,58 @@ def test_get_spell_in_contracts_returns_none_when_missing(
     _, borrower = linked_pair
 
     assert borrower._conduit_ward._get_spell_in_contracts("missing-spell") is None
+
+
+def test_get_spell_in_contracts_returns_none_on_contracted_lookup_error(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify contracted lookup errors return None instead of propagating."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-lookup-error", permissions=Permissions.create)
+
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+        permissions="create",
+    )
+    borrower._spellbook._find_contracted_spell = MagicMock(side_effect=RuntimeError("lookup boom"))
+
+    assert borrower._conduit_ward._get_spell_in_contracts(spell.spell_id) is None
+
+
+def test_get_spells_in_contract_by_conduit_skips_outbound_resolution_exception(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify outbound spell resolution exceptions are skipped instead of propagating."""
+    owner, borrower = linked_pair
+    inbound_spell = _register_spell(owner, "spell-outbound-skip", permissions=Permissions.create)
+    outbound_spell = _register_spell(borrower, "spell-outbound-local", permissions=Permissions.create)
+
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=inbound_spell,
+        spell_id=inbound_spell.spell_id,
+        conduit=owner,
+        permissions="create",
+    )
+
+    contract = borrower._conduit_ward._find_contract(owner)
+    with contract._lock:
+        detail = borrower._conduit_ward._create_detail(
+            outbound_spell,
+            Permissions.create,
+            ContractTypes.initiated,
+            reason=DetailReason.manual,
+        )
+        contract._add(borrower._conduit_ward, detail)
+
+    borrower.get_spell_by_id = MagicMock(side_effect=RuntimeError("lookup boom"))
+
+    result = borrower._conduit_ward._get_spells_in_contract_by_conduit(owner._id)
+
+    inbound = {sid: found for sid, found in result["inbound"]}
+    assert inbound[inbound_spell.spell_id] is inbound_spell
+    assert result["outbound"] == []
 
 
 def test_describe_contract_raises_when_missing(
@@ -1664,6 +1890,28 @@ def test_validate_received_contracts_returns_true_when_valid(
     )
 
     assert borrower._conduit_ward._validate_received_contracts() is True
+
+
+def test_validate_contracts_and_define_falls_back_to_find_by_id(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify validation falls back to contracted lookup by spell_id when lookup by SpellIndex fails."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-fallback", permissions=Permissions.create)
+
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+        permissions="create",
+    )
+    borrower._spellbook._find_contracted_spell = MagicMock(side_effect=RuntimeError("index boom"))
+    borrower._spellbook._find_contracted_spell_by_id = MagicMock(return_value=spell)
+
+    results = borrower._conduit_ward._validate_contracts_and_define()
+    contract = borrower._conduit_ward._find_contract(owner)
+
+    assert results[contract._id] is True
 
 
 def test_get_spells_in_contract_by_conduit_name_returns_match(

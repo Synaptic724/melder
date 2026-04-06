@@ -412,6 +412,99 @@ def test_check_spell_eligible_permission_mismatch(ward):
         ward._check_spell_if_eligible(spell, ward._conduit, Permissions.create)
 
 # ----------------------------------------------------------------------
+# 6.5 Change Control Facade
+# ----------------------------------------------------------------------
+
+def test_begin_transaction_delegates_to_conduit(ward) -> None:
+    """
+    Verify begin_transaction forwards the full request to the owning conduit.
+
+    Contract:
+    - The ward is only a facade here.
+    - All keyword scope arguments are passed through unchanged.
+    """
+    conduit_ids = ["conduit-2"]
+    scope_keys = ["scope-a"]
+    binding_keys = [("frame", "binding")]
+    contract_keys = [("ward-a", "ward-b", "contract")]
+    metadata = {"reason": "link"}
+
+    ward.begin_transaction(
+        "link",
+        conduit_ids=conduit_ids,
+        scope_keys=scope_keys,
+        binding_keys=binding_keys,
+        contract_keys=contract_keys,
+        metadata=metadata,
+    )
+
+    ward._conduit.begin_transaction.assert_called_once_with(
+        "link",
+        conduit_ids=conduit_ids,
+        conduits=None,
+        scope_keys=scope_keys,
+        scope_hashes=None,
+        binding_keys=binding_keys,
+        contract_keys=contract_keys,
+        metadata=metadata,
+    )
+
+def test_end_transaction_delegates_to_conduit(ward) -> None:
+    """
+    Verify end_transaction forwards the optional type assertion to the conduit.
+    """
+    ward.end_transaction(transaction_type="link")
+
+    ward._conduit.end_transaction.assert_called_once_with(transaction_type="link")
+
+def test_transaction_context_manager_yields_self_and_closes(ward) -> None:
+    """
+    Verify transaction() begins, yields the ward, and always ends on success.
+    """
+    with patch.object(ward, "begin_transaction") as mock_begin, patch.object(
+        ward,
+        "end_transaction",
+    ) as mock_end:
+        with ward.transaction("link", conduit_ids=["conduit-2"]) as active_ward:
+            assert active_ward is ward
+
+    mock_begin.assert_called_once_with(
+        "link",
+        conduit_ids=["conduit-2"],
+        conduits=None,
+        scope_keys=None,
+        scope_hashes=None,
+        binding_keys=None,
+        contract_keys=None,
+        metadata=None,
+    )
+    mock_end.assert_called_once_with(transaction_type="link")
+
+def test_transaction_context_manager_closes_on_exception(ward) -> None:
+    """
+    Verify transaction() still ends the active transaction when the body fails.
+    """
+    with patch.object(ward, "begin_transaction") as mock_begin, patch.object(
+        ward,
+        "end_transaction",
+    ) as mock_end:
+        with pytest.raises(RuntimeError, match="boom"):
+            with ward.transaction("link"):
+                raise RuntimeError("boom")
+
+    mock_begin.assert_called_once_with(
+        "link",
+        conduit_ids=None,
+        conduits=None,
+        scope_keys=None,
+        scope_hashes=None,
+        binding_keys=None,
+        contract_keys=None,
+        metadata=None,
+    )
+    mock_end.assert_called_once_with(transaction_type="link")
+
+# ----------------------------------------------------------------------
 # 7. Add/Remove Spell from Contract
 # ----------------------------------------------------------------------
 
@@ -656,6 +749,41 @@ def test_sever_all_linked_conduits_calls_remove_contract_for_each_peer(ward):
     called_ids = {call.args[0]._id for call in mock_remove.call_args_list}
     assert called_ids == {"conduit-a", "conduit-b"}
 
+def test_sever_all_linked_conduits_noops_when_cleaned_before_lock(ward) -> None:
+    """
+    Verify _sever_all_linked_conduits returns immediately when the ward is already cleaned.
+    """
+    ward._cleaned = True
+
+    with patch.object(ward, "_remove_contract") as mock_remove:
+        ward._sever_all_linked_conduits()
+
+    mock_remove.assert_not_called()
+
+def test_sever_all_linked_conduits_noops_when_cleaned_inside_lock(ward) -> None:
+    """
+    Verify _sever_all_linked_conduits re-checks cleaned state after entering the lock.
+    """
+    class LockThatMarksCleaned:
+        """Context manager that flips the ward to cleaned once the lock is entered."""
+
+        def __init__(self, target_ward) -> None:
+            self._target_ward = target_ward
+
+        def __enter__(self):
+            self._target_ward._cleaned = True
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback) -> None:
+            return None
+
+    ward._lock = LockThatMarksCleaned(ward)
+
+    with patch.object(ward, "_remove_contract") as mock_remove:
+        ward._sever_all_linked_conduits()
+
+    mock_remove.assert_not_called()
+
 # ----------------------------------------------------------------------
 # 10. Lineage Transitions
 # ----------------------------------------------------------------------
@@ -779,6 +907,22 @@ def test_check_spell_id_and_spell_success(ward):
 
     assert resolved_id == "sha-1"
     assert resolved_spell is spell
+
+def test_check_spell_id_and_spell_uses_inspect_spell_for_non_ispell_objects(ward) -> None:
+    """
+    Verify _check_spell_id_and_spell delegates to inspect_spell for raw non-ISpell objects.
+    """
+    raw_spell = object()
+    ward._conduit.inspect_spell = MagicMock(return_value="sha-raw")
+
+    resolved_id, resolved_spell = ward._check_spell_id_and_spell(
+        spell=raw_spell,
+        spell_id="sha-raw",
+    )
+
+    assert resolved_id == "sha-raw"
+    assert resolved_spell is raw_spell
+    ward._conduit.inspect_spell.assert_called_once_with(raw_spell, "default")
 
 def test_check_conduit_id_and_conduit_requires_input(ward):
     """
@@ -978,6 +1122,55 @@ def test_remove_contract_clears_indices_when_received(ward):
     assert "conduit-2" not in ward._received_index
     assert "conduit-1" not in target_ward._initiated_index
 
+def test_remove_contract_raises_when_spellbook_sever_fails(ward) -> None:
+    """
+    Verify _remove_contract surfaces spellbook sever failures without mutating the contract registries.
+    """
+    target_conduit, target_ward = _make_conduit_with_ward("conduit-2")
+
+    ward._conduit._spellbook = MagicMock()
+    target_conduit._spellbook = MagicMock()
+
+    ward._create_new_contract(target_conduit)
+    contract_id = next(iter(ward._contracts))
+    ward._conduit._spellbook._sever_link_contract.side_effect = RuntimeError("sever boom")
+
+    with pytest.raises(RuntimeError, match="sever boom"):
+        ward._remove_contract(target_conduit)
+
+    assert contract_id in ward._contracts
+    assert contract_id in target_ward._contracts
+    ward._logger.error.assert_called()
+
+def test_remove_contract_raises_when_registry_delete_fails(ward) -> None:
+    """
+    Verify _remove_contract surfaces registry deletion failures after severing spellbook links.
+    """
+    target_conduit, target_ward = _make_conduit_with_ward("conduit-2")
+
+    ward._conduit._spellbook = MagicMock()
+    target_conduit._spellbook = MagicMock()
+
+    ward._create_new_contract(target_conduit)
+    contract_id = next(iter(ward._contracts))
+    contract = ward._contracts[contract_id]
+
+    class ExplodingDict(dict):
+        """Dictionary that raises when a contract delete is attempted."""
+
+        def __delitem__(self, key) -> None:
+            raise RuntimeError("delete boom")
+
+    ward._contracts = ExplodingDict({contract_id: contract})
+
+    with pytest.raises(RuntimeError, match="delete boom"):
+        ward._remove_contract(target_conduit)
+
+    assert contract_id in target_ward._contracts
+    ward._conduit._spellbook._sever_link_contract.assert_called_once_with(target_conduit._id)
+    target_conduit._spellbook._sever_link_contract.assert_called_once_with(ward._id)
+    ward._logger.error.assert_called()
+
 # ----------------------------------------------------------------------
 # 14. Validation Helpers (Additional Paths)
 # ----------------------------------------------------------------------
@@ -1010,6 +1203,16 @@ def test_check_spell_id_and_spell_with_spell_and_id_success(ward):
 
     assert spell_id == "sha-1"
     assert resolved_spell is spell
+
+def test_check_spell_id_and_spell_with_explicit_spell_rejects_missing_inspected_id(ward) -> None:
+    """
+    Verify _check_spell_id_and_spell rejects explicit spell objects whose inspected spell_id is missing.
+    """
+    spell = MagicMock(spec=ISpell)
+    spell.spell_id = None
+
+    with pytest.raises(RuntimeError, match="Could not determine spell_id from spell"):
+        ward._check_spell_id_and_spell(spell=spell, spell_id="sha-1")
 
 def test_check_spell_id_and_spell_with_spell_and_id_mismatch(ward):
     """
@@ -2071,3 +2274,57 @@ def test_invalidate_contract_consumers_invalidates_all_and_swallows_errors(ward)
         for call_args in creations.extract_spell_creations.call_args_list
     }
     assert called_spell_ids == {"spell-a", "spell-b"}
+
+def test_invalidate_contract_consumers_noops_when_conduit_missing(ward) -> None:
+    """
+    Verify _invalidate_contract_consumers returns immediately when the ward has no conduit.
+    """
+    ward._conduit = None
+
+    ward._invalidate_contract_consumers()
+
+    assert ward._conduit is None
+
+def test_invalidate_contract_consumers_noops_when_spellbook_or_creations_missing(ward) -> None:
+    """
+    Verify _invalidate_contract_consumers returns when required owned collaborators are missing.
+    """
+    conduit = MagicMock()
+    conduit._spellbook = None
+    conduit._creations = MagicMock()
+    ward._conduit = conduit
+
+    ward._invalidate_contract_consumers()
+
+    conduit._creations.extract_spell_creations.assert_not_called()
+
+    conduit._spellbook = MagicMock()
+    conduit._creations = None
+    ward._invalidate_contract_consumers()
+
+def test_invalidate_contract_consumers_swallows_state_and_attribute_errors(ward) -> None:
+    """
+    Verify _invalidate_contract_consumers swallows mark-dirty errors and AttributeError from creations.
+    """
+    spellbook = MagicMock()
+    spellbook._id = "book-1"
+    spellbook._spell_system_states = MagicMock()
+    spellbook._spell_system_states.mark_contract_dependents_dirty.side_effect = RuntimeError("state boom")
+
+    conduit = MagicMock()
+    conduit._spellbook = spellbook
+    conduit._creations = MagicMock()
+    ward._conduit = conduit
+
+    ward._invalidate_contract_consumers()
+
+    spellbook._spell_system_states.mark_contract_dependents_dirty.assert_called_once()
+
+    state = MagicMock()
+    state.current_spell_id = "spell-a"
+    spellbook._spell_system_states = MagicMock()
+    spellbook._spell_system_states.mark_contract_dependents_dirty.return_value = {"lineage-a"}
+    spellbook._spell_system_states.get_by_index_id.return_value = state
+    conduit._creations = object()
+
+    ward._invalidate_contract_consumers()

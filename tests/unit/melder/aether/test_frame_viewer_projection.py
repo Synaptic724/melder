@@ -124,6 +124,7 @@ def test_frame_viewer_lists_enabled_helpers_from_selected_profile() -> None:
     assert viewer.profile_name == "general"
     assert viewer.profile_version == "0.0.1"
     assert viewer.list_enabled_helpers() == ("list_frame_names", "list_links")
+    assert viewer.list_available_tools() == ("list_frame_names", "list_links")
     assert viewer.has_enabled_helper("list_links") is True
     assert viewer.has_enabled_helper("describe_frames") is False
 
@@ -139,6 +140,9 @@ def test_frame_viewer_helper_queries_reject_empty_helper_names() -> None:
 
     with pytest.raises(ValueError, match="helper_name cannot be empty"):
         viewer.has_enabled_helper("")
+
+    with pytest.raises(ValueError, match="tool_name cannot be empty"):
+        viewer.execute_tool("")
 
 
 def test_frame_viewer_add_view_rejects_invalid_type() -> None:
@@ -231,6 +235,93 @@ def test_frame_viewer_disabled_helper_raises_when_called() -> None:
 
     with pytest.raises(ValueError, match="FrameViewer helper 'list_links' is not enabled"):
         viewer.list_links()
+
+
+def test_frame_viewer_execute_tool_routes_through_profile_owned_tool_mapping() -> None:
+    """
+    Verify the viewer hosts profile-owned tools and routes execution through them.
+
+    Returns:
+        None.
+    """
+    viewer = FrameViewer(
+        profile_name="inspection",
+        enabled_helpers=["list_links"],
+        views_by_frame_name={
+            "ops": _build_view(
+                frame_name="ops",
+                links=[
+                    _build_link(
+                        frame_name="ops",
+                        source_kind="frame",
+                        source_id="frame-1",
+                        display_name="ops",
+                    )
+                ],
+            )
+        },
+    )
+
+    assert [link.source_id for link in viewer.execute_tool("list_links")] == ["frame-1"]
+
+
+def test_frame_viewer_execute_tool_uses_explicit_profile_handler_alias() -> None:
+    """
+    Verify explicit profile-owned tool aliases resolve to host-side handlers.
+
+    Returns:
+        None.
+    """
+    from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile import (
+        FrameViewerProfile,
+    )
+
+    viewer = FrameViewer(
+        profile=FrameViewerProfile(
+            "inspection",
+            tool_handler_names_by_name={"inventory": "list_links"},
+        ),
+        views_by_frame_name={
+            "ops": _build_view(
+                frame_name="ops",
+                links=[
+                    _build_link(
+                        frame_name="ops",
+                        source_kind="frame",
+                        source_id="frame-1",
+                        display_name="ops",
+                    )
+                ],
+            )
+        },
+    )
+
+    assert [link.source_id for link in viewer.execute_tool("inventory")] == ["frame-1"]
+
+
+def test_frame_viewer_execute_tool_rejects_missing_profile_and_handler() -> None:
+    """
+    Verify tool execution fails fast when no hosted profile or no handler exists.
+
+    Returns:
+        None.
+    """
+    from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile import (
+        FrameViewerProfile,
+    )
+
+    with pytest.raises(ValueError, match="FrameViewer has no hosted profile"):
+        FrameViewer().execute_tool("inventory")
+
+    viewer = FrameViewer(
+        profile=FrameViewerProfile(
+            "broken",
+            tool_handler_names_by_name={"inventory": "missing_handler"},
+        )
+    )
+
+    with pytest.raises(ValueError, match="targets missing handler"):
+        viewer.execute_tool("inventory")
 
 
 def test_frame_viewer_list_links_can_scope_to_single_frame() -> None:

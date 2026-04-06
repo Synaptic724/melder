@@ -247,7 +247,7 @@ class SyncWeakRef(Cleanable, ISync, Generic[T]):
 
     def disable_auto_cleanup(self) -> None:
         """
-        Disable auto-cleanup behavior.
+        Disable wrapper auto-cleanup when the referent is collected.
         """
         self.check_cleaned()
         with self._lock:
@@ -258,7 +258,12 @@ class SyncWeakRef(Cleanable, ISync, Generic[T]):
     # Core API
     # ------------------------------------------------------------------
     def is_alive(self) -> bool:
-        """Return True if target still exists."""
+        """
+        Return whether the current weak-reference target is still alive.
+
+        Returns:
+            bool: True when the referent can still be resolved.
+        """
         self.check_cleaned()
         with self._lock:
             self.check_cleaned()
@@ -267,7 +272,12 @@ class SyncWeakRef(Cleanable, ISync, Generic[T]):
             return self._weak() is not None
 
     def try_get(self) -> Optional[T]:
-        """Return the object if alive, otherwise None."""
+        """
+        Return the referenced object when it is still alive.
+
+        Returns:
+            Optional[T]: Live referent when available; otherwise None.
+        """
         self.check_cleaned()
         with self._lock:
             self.check_cleaned()
@@ -306,6 +316,9 @@ class SyncWeakRef(Cleanable, ISync, Generic[T]):
 
         This replaces the underlying weakref with a new one pointing
         at the given object.
+
+        Args:
+            obj: New referent to track weakly.
         """
         self.check_cleaned()
         with self._lock:
@@ -322,6 +335,10 @@ class SyncWeakRef(Cleanable, ISync, Generic[T]):
         - If it is exactly `expected` (by identity), replaces the weak
           reference with a new one pointing at `new`.
         - Returns True on success, False otherwise.
+
+        Returns:
+            bool: True when the expected live referent matched and the swap was
+            applied; otherwise False.
         """
         self.check_cleaned()
         with self._lock:
@@ -359,6 +376,9 @@ class SyncWeakRef(Cleanable, ISync, Generic[T]):
         Raises:
             ReferenceError: if object is dead.
             RuntimeError:   if this SyncWeakRef has been cleaned.
+
+        Returns:
+            R: Result returned by `fn(obj)` for the live referent.
         """
         obj = self.get()
         return fn(obj)
@@ -377,6 +397,9 @@ class SyncWeakRef(Cleanable, ISync, Generic[T]):
         --------
         >>> with ref.locked() as obj:
         ...     obj.do_something()
+
+        Yields:
+            T: Live referent while the wrapper lock is held.
         """
         self.check_cleaned()
         with self._lock:
@@ -388,6 +411,7 @@ class SyncWeakRef(Cleanable, ISync, Generic[T]):
     # Dunder & repr
     # ------------------------------------------------------------------
     def __repr__(self) -> str:
+        """Return a debug-oriented representation of wrapper liveness state."""
         if self._cleaned:
             return "SyncWeakRef(cleaned)"
 
@@ -402,6 +426,9 @@ class SyncWeakRef(Cleanable, ISync, Generic[T]):
 
         - If `other` is ISync-compatible, compare `self.try_get()` to `other.try_get()`.
         - Otherwise, compare `self.try_get()` directly to `other`.
+
+        Returns:
+            bool: Equality result derived from the currently resolved referent.
         """
         if ISync._is_sync(other):
             return self.try_get() == other.try_get()  # type: ignore[attr-defined]
@@ -415,6 +442,10 @@ class SyncWeakRef(Cleanable, ISync, Generic[T]):
             - Returns id(self) to keep the wrapper usable in sets/dicts.
         If the referent is alive but unhashable:
             - Falls back to id(obj).
+
+        Returns:
+            int: Hash of the live referent when possible, otherwise an id-based
+            fallback.
         """
         obj = self.try_get()
         if obj is None:

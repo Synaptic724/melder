@@ -129,7 +129,13 @@ class PhaseScheduler(Cleanable):
 
     def _get_worker_count(self, configuration: IConfiguration) -> int:
         """
-        Internal helper to get the worker count.
+        Read scheduler worker count from configuration.
+
+        Returns:
+            int: Configured workers-per-spellbook value.
+
+        Raises:
+            ValueError: If the configuration property cannot be read.
         """
         # Worker count
         try:
@@ -143,7 +149,13 @@ class PhaseScheduler(Cleanable):
 
     def _get_timeout_ms(self, configuration: IConfiguration) -> int:
         """
-        Internal helper to get the barrier timeout in milliseconds.
+        Read the per-phase barrier timeout from configuration.
+
+        Returns:
+            int: Barrier timeout in milliseconds.
+
+        Raises:
+            ValueError: If the configuration property cannot be read.
         """
         try:
             return configuration.get_property(
@@ -230,27 +242,31 @@ class PhaseScheduler(Cleanable):
         Phase factories should NOT construct their own events; instead they
         should call :meth:`create_unit_of_work` so this event is wired in
         automatically.
+
+        Returns:
+            CancellationEvent: Shared cooperative-cancellation view used by all
+            units created by this scheduler.
         """
         return self._cancel_event
 
     @property
     def is_cancelled(self) -> bool:
         """
-        Return True if cancellation has been signalled.
+        Return whether scheduler-wide cancellation has been signalled.
         """
         return self._cancel_signal.is_set
 
     @property
     def workers(self) -> int:
         """
-        Number of worker threads assigned to this scheduler.
+        Return configured worker-thread count for this scheduler instance.
         """
         return self._workers
 
     @property
     def barrier_timeout_ms(self) -> int:
         """
-        Per-phase barrier timeout in milliseconds.
+        Return configured per-phase barrier timeout in milliseconds.
         """
         return self._barrier_timeout_ms
 
@@ -350,7 +366,11 @@ class PhaseScheduler(Cleanable):
 
     def _start_workers_if_needed(self) -> None:
         """
-        Ensure the worker pool is started exactly once.
+        Start the worker pool once and only once.
+
+        Contract:
+            - Returns immediately when workers are already running.
+            - Creates exactly ``self._workers`` daemon threads on first start.
         """
         if self._workers_started:
             return
@@ -592,6 +612,8 @@ class PhaseScheduler(Cleanable):
         """
         Explicitly signal cancellation for all phases and workers.
 
-        This is idempotent and can be called from any thread.
+        This is idempotent and can be called from any thread. It does not join
+        workers or clean the scheduler; it only trips the shared cancellation
+        signal.
         """
         self._cancel_signal.cancel()

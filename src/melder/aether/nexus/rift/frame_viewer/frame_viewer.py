@@ -17,7 +17,7 @@ Endgame:
 """
 
 import threading
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
@@ -72,11 +72,7 @@ class FrameViewer(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_viewer_id",
         "_lock",
-        "_profile_name",
-        "_profile_version",
-        "_enabled_helpers",
-        "_default_grouping",
-        "_default_detail_level",
+        "_profile",
         "_views_by_frame_name",
         "_metadata",
     ]
@@ -84,6 +80,7 @@ class FrameViewer(Cleanable):
     def __init__(
             self,
             *,
+            profile: Optional[FrameViewerProfile] = None,
             profile_name: Optional[str] = None,
             profile_version: Optional[str] = None,
             enabled_helpers: Optional[List[str]] = None,
@@ -98,18 +95,25 @@ class FrameViewer(Cleanable):
         Initialize one placeholder frame viewer.
 
         Args:
+            profile:
+                Optional selected viewer profile owned by this viewer.
             views_by_frame_name:
                 Optional frame-name -> FrameView map.
             profile_name:
-                Optional viewer profile name applied to this projection.
+                Backward-compatible viewer profile name when `profile` is not
+                supplied.
             profile_version:
-                Optional viewer profile version applied to this projection.
+                Backward-compatible viewer profile version when `profile` is not
+                supplied.
             enabled_helpers:
-                Optional enabled helper ids exposed by the selected profile.
+                Backward-compatible enabled helper ids when `profile` is not
+                supplied.
             default_grouping:
-                Optional default grouping mode from the selected profile.
+                Backward-compatible default grouping mode when `profile` is not
+                supplied.
             default_detail_level:
-                Optional default detail posture from the selected profile.
+                Backward-compatible default detail posture when `profile` is not
+                supplied.
             metadata:
                 Optional viewer-local metadata.
 
@@ -119,11 +123,23 @@ class FrameViewer(Cleanable):
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
         self._viewer_id: str = IDBuilder.create_id()
-        self._profile_name: Optional[str] = profile_name
-        self._profile_version: Optional[str] = profile_version
-        self._enabled_helpers = tuple(enabled_helpers or tuple())
-        self._default_grouping: Optional[str] = default_grouping
-        self._default_detail_level: Optional[str] = default_detail_level
+        if profile is not None and not isinstance(profile, FrameViewerProfile):
+            raise TypeError("profile must be a FrameViewerProfile.")
+        if profile is None and (
+                profile_name is not None
+                or profile_version is not None
+                or enabled_helpers is not None
+                or default_grouping is not None
+                or default_detail_level is not None
+        ):
+            profile = FrameViewerProfile(
+                profile_name or "general",
+                version=profile_version or "0.0.1",
+                enabled_helpers=enabled_helpers,
+                default_grouping=default_grouping or "frame",
+                default_detail_level=default_detail_level or "summary",
+            )
+        self._profile: Optional[FrameViewerProfile] = profile
         self._views_by_frame_name: Dict[str, FrameView] = (
             dict(views_by_frame_name) if views_by_frame_name else {}
         )
@@ -154,11 +170,9 @@ class FrameViewer(Cleanable):
             self._views_by_frame_name = None
             self._metadata.clear()
             self._metadata = None
-            self._profile_name = None
-            self._profile_version = None
-            self._enabled_helpers = None
-            self._default_grouping = None
-            self._default_detail_level = None
+            if self._profile is not None:
+                self._profile.cleanup()
+            self._profile = None
             self._viewer_id = None
         self._lock = None
 
@@ -179,31 +193,52 @@ class FrameViewer(Cleanable):
     def profile_name(self) -> Optional[str]:
         """Return the optional applied viewer profile name."""
         self.check_cleaned()
-        return self._profile_name
+        if self._profile is None:
+            return None
+        return self._profile.name
 
     @property
     def profile_version(self) -> Optional[str]:
         """Return the optional applied viewer profile version."""
         self.check_cleaned()
-        return self._profile_version
+        if self._profile is None:
+            return None
+        return self._profile.version
 
     @property
     def enabled_helpers(self) -> tuple[str, ...]:
         """Return the enabled helper ids exposed by the selected profile."""
         self.check_cleaned()
-        return self._enabled_helpers
+        if self._profile is None:
+            return tuple()
+        return self._profile.enabled_helpers
 
     @property
     def default_grouping(self) -> Optional[str]:
         """Return the default grouping mode from the selected profile."""
         self.check_cleaned()
-        return self._default_grouping
+        if self._profile is None:
+            return None
+        return self._profile.default_grouping
 
     @property
     def default_detail_level(self) -> Optional[str]:
         """Return the default detail posture from the selected profile."""
         self.check_cleaned()
-        return self._default_detail_level
+        if self._profile is None:
+            return None
+        return self._profile.default_detail_level
+
+    @property
+    def profile(self) -> Optional[FrameViewerProfile]:
+        """
+        Return the hosted viewer profile clone when present.
+
+        Returns:
+            Optional[FrameViewerProfile]: Hosted selected viewer profile.
+        """
+        self.check_cleaned()
+        return self._profile
 
     @property
     def metadata(self) -> Dict[str, object]:
@@ -541,15 +576,11 @@ class FrameViewer(Cleanable):
         self.check_cleaned()
         with self._lock:
             return FrameViewer(
+                profile=self._profile.clone() if self._profile is not None else None,
                 views_by_frame_name={
                     frame_name: frame_view.clone()
                     for frame_name, frame_view in self._views_by_frame_name.items()
                 },
-                profile_name=self._profile_name,
-                profile_version=self._profile_version,
-                enabled_helpers=list(self._enabled_helpers),
-                default_grouping=self._default_grouping,
-                default_detail_level=self._default_detail_level,
                 metadata=dict(self._metadata),
             )
 
@@ -563,7 +594,19 @@ class FrameViewer(Cleanable):
             tuple[str, ...]: Enabled helper ids.
         """
         self.check_cleaned()
-        return self._enabled_helpers
+        return self.enabled_helpers
+
+    def list_available_tools(self) -> tuple[str, ...]:
+        """
+        Return the tool ids exposed by the selected profile.
+
+        Returns:
+            tuple[str, ...]: Exposed tool ids.
+        """
+        self.check_cleaned()
+        if self._profile is None:
+            return tuple()
+        return self._profile.list_tool_names()
 
     def has_enabled_helper(self, helper_name: str) -> bool:
         """
@@ -581,7 +624,38 @@ class FrameViewer(Cleanable):
         self.check_cleaned()
         if not helper_name:
             raise ValueError("helper_name cannot be empty.")
-        return helper_name in self._enabled_helpers
+        if self._profile is None:
+            return False
+        return self._profile.has_tool(helper_name)
+
+    def execute_tool(self, tool_name: str, **kwargs) -> Any:
+        """
+        Execute one profile-owned tool over the hosted views.
+
+        Args:
+            tool_name:
+                Tool id exposed by the selected profile.
+            **kwargs:
+                Keyword arguments forwarded to the host-side handler.
+
+        Returns:
+            Any: Tool result.
+        """
+        self.check_cleaned()
+        if not tool_name:
+            raise ValueError("tool_name cannot be empty.")
+        if self._profile is None:
+            raise ValueError("FrameViewer has no hosted profile.")
+        handler_name = self._profile.get_required_tool_handler_name(tool_name)
+        handler = getattr(self, handler_name, None)
+        if handler is None or not callable(handler):
+            raise ValueError(
+                "FrameViewer tool '{0}' targets missing handler '{1}'.".format(
+                    tool_name,
+                    handler_name,
+                )
+            )
+        return handler(**kwargs)
 
     def _require_helper_enabled(self, helper_name: str) -> None:
         """
@@ -596,12 +670,15 @@ class FrameViewer(Cleanable):
         Returns:
             None.
         """
-        if len(self._enabled_helpers) == 0:
+        if self._profile is None:
             return
-        if helper_name not in self._enabled_helpers:
-            raise ValueError(
-                "FrameViewer helper '{0}' is not enabled by profile '{1}'.".format(
-                    helper_name,
-                    self._profile_name or "unknown",
-                )
+        if self._profile.has_tool(helper_name):
+            return
+        if helper_name in self._profile.tool_handler_names_by_name.values():
+            return
+        raise ValueError(
+            "FrameViewer helper '{0}' is not enabled by profile '{1}'.".format(
+                helper_name,
+                self._profile.name,
             )
+        )

@@ -1356,7 +1356,56 @@ class ConduitWard(Cleanable, IConduitWard):
             sources={root_spell_id} if root_spell_id is not None else None,
         )
 
+    def _snapshot_detail(self, detail: Detail) -> Dict[str, Any]:
+        """
+        Internal
 
+        Capture enough Detail state to rebuild it during rollback.
+
+        Args:
+            detail (Detail): Detail instance being removed or mutated.
+
+        Returns:
+            Dict[str, Any]: Snapshot of the detail contract state.
+        """
+        sources = detail.sources
+        return {
+            "spell_index": detail.spell_index,
+            "spell_id": detail.spell_id,
+            "permissions": detail.permissions,
+            "contract_type": detail.contract_type,
+            "reason": detail.reason,
+            "sources": set(sources) if sources is not None else None,
+        }
+
+    def _restore_detail_snapshot(
+            self,
+            contract: Contract,
+            ward: IConduitWard,
+            snapshot: Dict[str, Any],
+    ) -> None:
+        """
+        Internal
+
+        Restore a previously removed Detail back into a contract.
+
+        Args:
+            contract (Contract): Contract receiving the restored detail.
+            ward (IConduitWard): Ward whose detail map owns the detail.
+            snapshot (Dict[str, Any]): Snapshot produced by `_snapshot_detail`.
+
+        Returns:
+            None.
+        """
+        restored_detail = Detail(
+            spell_index=snapshot["spell_index"],
+            spell_id=snapshot["spell_id"],
+            permissions=snapshot["permissions"],
+            contract_type=snapshot["contract_type"],
+            reason=snapshot["reason"],
+            sources=set(snapshot["sources"]) if snapshot["sources"] is not None else None,
+        )
+        contract._add(ward, restored_detail)
 
     def _check_spell_if_eligible(self, spell: ISpell, conduit: IConduit, permissions: Permissions) -> None:
         """
@@ -1552,6 +1601,24 @@ class ConduitWard(Cleanable, IConduitWard):
                 peer_conduit = contract._get_peer(conduit._conduit_ward)._conduit
                 peer_conduit._spellbook._add_contracted_spell(spell, conduit_id)
             except Exception as e:
+                try:
+                    with contract._lock:
+                        contract._remove_source(
+                            conduit._conduit_ward,
+                            spell_id,
+                            source_root_id,
+                        )
+                except Exception as rollback_error:
+                    self._logger.error(
+                        f"add_spell_to_contract: rollback failed after spellbook add error: {rollback_error}",
+                        method_name="_add_spell_to_contract",
+                        exc_info=True,
+                        owner_id=self._id,
+                        owner_display=self._display_name,
+                        mask=True,
+                        groups=self._log_groups,
+                        system_groups=self._log_sysgroups,
+                    )
                 self._logger.error(
                     f"add_spell_to_contract: spellbook add failed: {e}",
                     method_name="_add_spell_to_contract",
@@ -1595,6 +1662,19 @@ class ConduitWard(Cleanable, IConduitWard):
                     aetheric_frame=aetheric_frame,
                 )
             except Exception as e:
+                try:
+                    self._remove_root_from_contracts(root_spell_id=source_root_id)
+                except Exception as rollback_error:
+                    self._logger.error(
+                        f"add_spell_to_contract: rollback failed after dependency link error: {rollback_error}",
+                        method_name="_add_spell_to_contract",
+                        exc_info=True,
+                        owner_id=self._id,
+                        owner_display=self._display_name,
+                        mask=True,
+                        groups=self._log_groups,
+                        system_groups=self._log_sysgroups,
+                    )
                 self._logger.error(
                     f"add_spell_to_contract: dependency linking failed for root {spell_id}: {e}",
                     method_name="_add_spell_to_contract",
@@ -1792,14 +1872,31 @@ class ConduitWard(Cleanable, IConduitWard):
                         detail_map = contract._get_detail_map(ward)
                         for spell_id, detail in list(detail_map.items()):
                             if detail.sources and root_spell_id in detail.sources:
+                                detail_snapshot = self._snapshot_detail(detail)
                                 should_delete = detail.remove_source(root_spell_id)
                                 if should_delete:
-                                    detail_map.pop(spell_id, None)
-                                    detail.cleanup()
                                     # Remove contracted spell from peer spellbook
                                     try:
                                         contract._get_peer(ward)._conduit._spellbook._remove_contracted_spell(spell_id, ward._id)
                                     except Exception as e:
+                                        detail_map.pop(spell_id, None)
+                                        try:
+                                            self._restore_detail_snapshot(
+                                                contract,
+                                                ward,
+                                                detail_snapshot,
+                                            )
+                                        except Exception as rollback_error:
+                                            self._logger.error(
+                                                f"_remove_root_from_contracts: rollback failed for {spell_id}: {rollback_error}",
+                                                method_name="_remove_root_from_contracts",
+                                                exc_info=True,
+                                                owner_id=self._id,
+                                                owner_display=self._display_name,
+                                                mask=True,
+                                                groups=self._log_groups,
+                                                system_groups=self._log_sysgroups,
+                                            )
                                         self._logger.error(
                                             f"_remove_root_from_contracts: spellbook remove failed for {spell_id}: {e}",
                                             method_name="_remove_root_from_contracts",
@@ -1811,6 +1908,8 @@ class ConduitWard(Cleanable, IConduitWard):
                                             system_groups=self._log_sysgroups,
                                         )
                                         raise
+                                    detail_map.pop(spell_id, None)
+                                    detail.cleanup()
                                     removed_any = True
                 if self._is_contract_empty(contract):
                     contracts_to_sever.append(peer_conduit)
@@ -2148,8 +2247,13 @@ class ConduitWard(Cleanable, IConduitWard):
             except Exception:
                 contract_key = None
             deleted_detail = False
+            detail_snapshot: Optional[Dict[str, Any]] = None
             with contract._lock:
                 if contract._check_if_exists(conduit._conduit_ward, spell_id):
+                    detail_map = contract._get_detail_map(conduit._conduit_ward)
+                    current_detail = detail_map.get(spell_id)
+                    if current_detail is not None:
+                        detail_snapshot = self._snapshot_detail(current_detail)
                     deleted_detail = contract._remove_source(conduit._conduit_ward, spell_id, root_spell_id)
                 else:
                     self._logger.error(
@@ -2164,6 +2268,27 @@ class ConduitWard(Cleanable, IConduitWard):
                 try:
                     contract._get_peer(conduit._conduit_ward)._conduit._spellbook._remove_contracted_spell(spell_id, conduit_id)
                 except Exception as e:
+                    if detail_snapshot is not None:
+                        try:
+                            with contract._lock:
+                                detail_map = contract._get_detail_map(conduit._conduit_ward)
+                                detail_map.pop(spell_id, None)
+                                self._restore_detail_snapshot(
+                                    contract,
+                                    conduit._conduit_ward,
+                                    detail_snapshot,
+                                )
+                        except Exception as rollback_error:
+                            self._logger.error(
+                                f"remove_spell_from_contract: rollback failed after spellbook remove error: {rollback_error}",
+                                method_name="_remove_spell_from_contract",
+                                exc_info=True,
+                                owner_id=self._id,
+                                owner_display=self._display_name,
+                                mask=True,
+                                groups=self._log_groups,
+                                system_groups=self._log_sysgroups,
+                            )
                     self._logger.error(
                         f"remove_spell_from_contract: spellbook remove failed: {e}",
                         method_name="_remove_spell_from_contract", exc_info=True,
@@ -2279,7 +2404,6 @@ class ConduitWard(Cleanable, IConduitWard):
         contract = self._find_contract_by_id(conduit_id)
         if contract is not None:
             with contract._lock:
-                contract._clear_contract()
                 ward_a = contract._ward_a
                 ward_b = contract._ward_b
                 try:
@@ -2293,6 +2417,7 @@ class ConduitWard(Cleanable, IConduitWard):
                         mask=True, groups=self._log_groups, system_groups=self._log_sysgroups,
                     )
                     raise
+                contract._clear_contract()
             try:
                 self._invalidate_contract_consumers()
             except Exception:

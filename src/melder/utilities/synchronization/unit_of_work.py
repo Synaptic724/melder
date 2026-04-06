@@ -175,6 +175,10 @@ class UnitOfWork(Cleanable, Future):
             This lock is **only** for UnitOfWork's own fields
             (func/args/kwargs/metadata/cancel_event), not the internal
             lock used by :class:`Future`.
+
+        Returns:
+            UnitOfWork: This unit after the internal coordination lock has been
+            acquired.
         """
         self._lock.acquire()
         return self
@@ -183,7 +187,8 @@ class UnitOfWork(Cleanable, Future):
         """
         Exit the critical section entered via :meth:`__enter__`.
 
-        The internal lock is always released.
+        The internal lock is always released and exceptions from the with-body
+        are not suppressed.
         """
         self._lock.release()
 
@@ -200,6 +205,10 @@ class UnitOfWork(Cleanable, Future):
         Worker code or the underlying callable may use this to perform
         additional cooperative cancellation checks beyond the up-front check
         done in :meth:`run_synchronously`.
+
+        Returns:
+            Optional[CancellationEvent]: Shared cancellation view for this unit,
+            or None when no cooperative cancellation source was attached.
         """
         self.check_cleaned()
         with self._lock:
@@ -212,6 +221,9 @@ class UnitOfWork(Cleanable, Future):
 
         This is useful for logging, debugging, or exposing information to AI
         agents (e.g. tagging a unit with spell IDs and stage names).
+
+        Returns:
+            Optional[str]: Human-readable label associated with this unit.
         """
         self.check_cleaned()
         with self._lock:
@@ -225,6 +237,9 @@ class UnitOfWork(Cleanable, Future):
         This can be used to attach spell identifiers, ResolutionContext
         instances, stage markers, or any other information a supervising
         pipeline wants to keep track of.
+
+        Returns:
+            Any: Arbitrary caller-supplied metadata stored on this unit.
         """
         self.check_cleaned()
         with self._lock:
@@ -300,5 +315,9 @@ class UnitOfWork(Cleanable, Future):
         provided so that UnitOfWork instances can be passed to APIs that
         expect a plain callable (e.g. ad-hoc thread targets or custom
         worker loops).
+
+        Returns:
+            Any: Result of the wrapped callable, exactly as returned by
+            :meth:`run_synchronously`.
         """
         return self.run_synchronously()

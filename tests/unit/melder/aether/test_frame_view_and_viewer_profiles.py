@@ -167,11 +167,86 @@ def test_frame_viewer_profile_cleanup_clears_owned_state() -> None:
     profile.cleanup()
 
     assert profile.cleaned is True
-    assert profile._enabled_helpers is None
+    assert profile._tool_handler_names_by_name is None
     assert profile._default_grouping is None
     assert profile._default_detail_level is None
     assert profile._version is None
     assert profile._name is None
+
+
+def test_frame_viewer_profile_can_expose_explicit_tool_handler_mapping() -> None:
+    """
+    Verify a frame-viewer profile can own an explicit tool -> handler mapping.
+
+    Returns:
+        None.
+    """
+    profile = FrameViewerProfile(
+        "inspection",
+        tool_handler_names_by_name={
+            "inventory": "list_links",
+            "summary": "describe_frames",
+        },
+        default_grouping="kind",
+        default_detail_level="detailed",
+    )
+
+    assert profile.list_tool_names() == ("inventory", "summary")
+    assert profile.has_tool("inventory") is True
+    assert profile.enabled_helpers == ("inventory", "summary")
+    assert profile.get_required_tool_handler_name("summary") == "describe_frames"
+
+
+def test_frame_viewer_profile_rejects_invalid_tool_mapping_inputs() -> None:
+    """
+    Verify invalid explicit tool mappings fail fast.
+
+    Returns:
+        None.
+    """
+    with pytest.raises(
+            ValueError,
+            match="enabled_helpers and tool_handler_names_by_name cannot both be provided",
+    ):
+        FrameViewerProfile(
+            "general",
+            enabled_helpers=("list_links",),
+            tool_handler_names_by_name={"inventory": "list_links"},
+        )
+
+    with pytest.raises(ValueError, match="tool_handler_names_by_name cannot be empty"):
+        FrameViewerProfile("general", tool_handler_names_by_name={})
+
+    with pytest.raises(
+            ValueError,
+            match="tool_handler_names_by_name cannot contain empty tool names",
+    ):
+        FrameViewerProfile("general", tool_handler_names_by_name={"": "list_links"})
+
+    with pytest.raises(
+            ValueError,
+            match="tool_handler_names_by_name cannot contain empty handler names",
+    ):
+        FrameViewerProfile("general", tool_handler_names_by_name={"inventory": ""})
+
+
+def test_frame_viewer_profile_clone_returns_detached_tool_mapping() -> None:
+    """
+    Verify frame-viewer profile clones detach the owned tool map.
+
+    Returns:
+        None.
+    """
+    profile = FrameViewerProfile(
+        "inspection",
+        tool_handler_names_by_name={"inventory": "list_links"},
+    )
+
+    cloned = profile.clone()
+
+    assert cloned is not profile
+    assert cloned.tool_handler_names_by_name == {"inventory": "list_links"}
+    assert cloned.tool_handler_names_by_name is not profile.tool_handler_names_by_name
 
 
 def test_frame_viewer_profile_builder_seeds_and_registers_profiles() -> None:

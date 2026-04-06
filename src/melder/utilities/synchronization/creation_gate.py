@@ -276,6 +276,10 @@ class CreationGate(Cleanable):
         Raises:
             RuntimeError:
                 If called after ``cleanup()``.
+
+        Notes:
+            This is the boolean view used by drain loops; callers that need an
+            exact count should use :meth:`active_ticket_count`.
         """
         self.check_cleaned()
         return bool(self._tickets)
@@ -296,6 +300,9 @@ class CreationGate(Cleanable):
         Raises:
             RuntimeError:
                 If called after ``cleanup()``.
+
+        Notes:
+            This is the exact-count counterpart to :meth:`has_active_tickets`.
         """
         self.check_cleaned()
         return len(self._tickets)
@@ -318,6 +325,10 @@ class CreationGate(Cleanable):
         Raises:
             RuntimeError:
                 If called after ``cleanup()``.
+
+        Notes:
+            This reports terminal closure only. Temporary blocked state from
+            :meth:`close` is tracked separately through ``enabled``.
         """
         self.check_cleaned()
         return self._closed
@@ -360,6 +371,10 @@ class CreationGate(Cleanable):
 
         Returns:
             None.
+
+        Notes:
+            Existing waiters are released so they can observe terminal closure;
+            the method then waits only on ticket drain, not on waiter exit.
         """
         self.check_cleaned()
 

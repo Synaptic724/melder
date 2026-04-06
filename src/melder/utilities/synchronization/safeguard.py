@@ -29,7 +29,13 @@ class SafeGuard(Cleanable):
 
     def cleanup(self):
         """
-        Cleanup internal references.
+        Release internal bookkeeping and invalidate this guard instance.
+
+        Contract:
+            - Idempotent.
+            - Clears the ordered lock list and acquired-lock list.
+            - Does not release external locks by itself; `__exit__()` is still
+              responsible for releasing locks acquired during context use.
         """
         if self._cleaned:
             return
@@ -48,6 +54,18 @@ class SafeGuard(Cleanable):
         self._cleanup_lock = None
 
     def __enter__(self):
+        """
+        Acquire the ordered lock set and enter the guarded critical section.
+
+        Returns:
+            SafeGuard: This guard after all requested locks have been acquired.
+
+        Raises:
+            TimeoutError: If timed acquisition is enabled and any lock cannot be
+                acquired in time.
+            Exception: Re-raises any unexpected acquisition failure after
+                releasing locks already acquired in this attempt.
+        """
         if self._one_time_use:
             self.check_cleaned()
         try:
@@ -72,6 +90,14 @@ class SafeGuard(Cleanable):
             raise
 
     def __exit__(self, exc_type, exc, tb):
+        """
+        Release acquired locks in strict reverse order.
+
+        Contract:
+            - Always releases locks in reverse acquisition order.
+            - Does not suppress exceptions from the with-body.
+            - Auto-cleans the guard after one-time-use contexts.
+        """
         # Release in strict reverse order
         for lk in reversed(self._acquired):
             lk.release()
