@@ -32,7 +32,7 @@ def test_frame_viewer_profile_create_general_exposes_expected_defaults() -> None
     assert "list_frames" in profile.enabled_helpers
     assert "list_conduits" in profile.enabled_helpers
     assert "list_spells" in profile.enabled_helpers
-    assert profile.tool_handler_names_by_name["list_frames"] == "view_frame.list_frames"
+    assert profile.tool_handler_names_by_name["list_frames"] == "list_frame_names"
     assert profile.tool_handler_names_by_name["list_spells"] == "view_spell.list_spells"
     assert profile.view_frame is not None
     assert profile.view_conduit is not None

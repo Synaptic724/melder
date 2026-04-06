@@ -96,51 +96,6 @@ class GeneralViewFrame(Cleanable):
             self._default_detail_level = None
         self._lock = None
 
-    def list_frames(self, *, frame_name: Optional[str] = None) -> List[str]:
-        """
-        Return the bound frame name as a one-item list.
-
-        Args:
-            frame_name:
-                Optional frame-name assertion. When supplied, it must match the
-                bound frame.
-
-        Returns:
-            List[str]: Single bound frame name.
-        """
-        self.check_cleaned()
-        self._assert_optional_frame_name(frame_name)
-        return [self._get_required_frame_name()]
-
-    def describe_views(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> List[Dict[str, object]]:
-        """
-        Return one ACL-aware view description for the bound frame.
-
-        Args:
-            frame_name:
-                Optional frame-name assertion. When supplied, it must match the
-                bound frame.
-
-        Returns:
-            List[Dict[str, object]]: One-item view description list.
-        """
-        self.check_cleaned()
-        self._assert_optional_frame_name(frame_name)
-        return [
-            {
-                "frame_name": self._get_required_frame_name(),
-                "is_default": True,
-                "available_target_count": len(self._build_links()),
-                "available_kinds": tuple(
-                    sorted(self._get_required_compiled_access_surface().allowed_kinds)
-                ),
-            }
-        ]
-
     def list_targets(
             self,
             *,
@@ -565,29 +520,6 @@ class GeneralViewFrame(Cleanable):
                 )
             )
         return payload_description["payload"][field_name]
-
-    def describe_frames(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> Dict[str, Dict[str, object]]:
-        """
-        Return the bound frame summary keyed by frame name.
-
-        Args:
-            frame_name:
-                Optional frame-name assertion. When supplied, it must match the
-                bound frame.
-
-        Returns:
-            Dict[str, Dict[str, object]]: One-item frame summary map.
-        """
-        self.check_cleaned()
-        self._assert_optional_frame_name(frame_name)
-        frame_name = self._get_required_frame_name()
-        return {
-            frame_name: self.describe_frame(),
-        }
 
     def get_required_target_by_source(
             self,

@@ -200,8 +200,7 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
             Dict[str, str]: Standard `general` tool routing map.
         """
         return {
-            "list_frames": "view_frame.list_frames",
-            "describe_views": "view_frame.describe_views",
+            "list_frames": "list_frame_names",
             "describe_frame": "view_frame.describe_frame",
             "describe_frame_payload": "view_frame.describe_frame_payload",
             "describe_frame_inventory": "view_frame.describe_frame_inventory",
@@ -209,7 +208,6 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
             "get_frame_payload_field": "view_frame.get_frame_payload_field",
             "find_target_by_display_name": "view_frame.find_target_by_display_name",
             "explain_target_access": "view_frame.explain_target_access",
-            "describe_frames": "view_frame.describe_frames",
             "list_targets": "view_frame.list_targets",
             "describe_targets": "view_frame.describe_targets",
             "list_conduits": "view_conduit.list_conduits",

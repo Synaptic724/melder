@@ -12,16 +12,27 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class DevOpsManager(Cleanable, IDevOpsManager):
     """
-    Aetheric Frame DevOps hub.
+    Frame-level ownership root for DevOps and admission-control subsystems.
 
-    Owns:
-      - IncidentManager        (descriptive: what went wrong, where)
-      - ChangeControlManager   (process-level view of pending changes / releases)
-      - SpellSystemStates      (graph + dirty/impact state)
-      - CreationGateController (conduit creation-gate governance)
+    `DevOpsManager` is the operational facade over the frame's health and
+    control-plane services. It owns and exposes the managers that describe
+    incidents, track dirty/pending change state, assess risk, and govern
+    conduit creation-gate admission.
 
-    This is the place higher-level tools / AI consult when they want to
-    understand or manipulate the health and changes of a frame.
+    Owned subsystems:
+    - `IncidentManager`: descriptive incident recording
+    - `ChangeControlManager`: pending-change and dirty-root coordination
+    - `RiskManager`: risk posture tied back into spell-system state
+    - `CreationGateController`: conduit and lineage admission governance
+    - `SpellSystemStates`: frame-local state registry surfaced through this hub
+
+    Contract:
+    - One `DevOpsManager` owns one coherent set of frame-local operational
+      managers.
+    - The manager is the intended boundary for higher-level tools or AI agents
+      that need to inspect or manipulate frame health.
+    - Cleanup is responsible for tearing down the owned manager graph in a
+      deterministic order.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -35,8 +46,6 @@ class DevOpsManager(Cleanable, IDevOpsManager):
 
     def __init__(self, spell_system_states: ISpellSystemStates) -> None:
         """
-        Public API
-
         Initialize the frame-level DevOps manager and owned subsystems.
 
         Purpose:
@@ -76,8 +85,6 @@ class DevOpsManager(Cleanable, IDevOpsManager):
 
     def cleanup(self) -> None:
         """
-        Public API
-
         Idempotently cleanup all owned managers and clear references.
 
         Purpose:
@@ -120,9 +127,14 @@ class DevOpsManager(Cleanable, IDevOpsManager):
     @property
     def incident_manager(self) -> IncidentManager:
         """
-        Public API
+        Return the owned `IncidentManager`.
 
-        Return the owned IncidentManager.
+        This property exposes the frame's incident-recording surface through the
+        DevOps ownership boundary instead of requiring callers to reach into
+        lower-level frame internals directly.
+
+        Returns:
+            IncidentManager: The incident manager owned by this DevOps root.
         """
         self.check_cleaned()
         with self._lock:
@@ -131,9 +143,14 @@ class DevOpsManager(Cleanable, IDevOpsManager):
     @property
     def change_control_manager(self) -> ChangeControlManager:
         """
-        Public API
+        Return the owned `ChangeControlManager`.
 
-        Return the owned ChangeControlManager.
+        This is the frame-local process/control surface for pending changes,
+        dirty roots, and revalidation coordination.
+
+        Returns:
+            ChangeControlManager: The change-control manager owned by this
+            DevOps root.
         """
         self.check_cleaned()
         with self._lock:
@@ -142,9 +159,13 @@ class DevOpsManager(Cleanable, IDevOpsManager):
     @property
     def risk_manager(self) -> RiskManager:
         """
-        Public API
+        Return the owned `RiskManager`.
 
-        Return the owned RiskManager.
+        This exposes the frame-local risk surface that feeds back into
+        spell-system validity and gating behavior.
+
+        Returns:
+            RiskManager: The risk manager owned by this DevOps root.
         """
         self.check_cleaned()
         with self._lock:
@@ -153,9 +174,13 @@ class DevOpsManager(Cleanable, IDevOpsManager):
     @property
     def creation_gate_controller(self) -> CreationGateController:
         """
-        Public API
-
         Read-only exposure of the per-frame CreationGateController.
+
+        This is the admission-governance surface for conduit and lineage gates.
+
+        Returns:
+            CreationGateController: The gate controller owned by this DevOps
+            root.
         """
         self.check_cleaned()
         with self._lock:
@@ -167,9 +192,11 @@ class DevOpsManager(Cleanable, IDevOpsManager):
             cancel_event: Optional[CancellationEvent] = None,
     ) -> None:
         """
-        Public API
+        Trigger dirty-root revalidation for one conduit scope.
 
-        Trigger revalidation for dirty roots within a conduit scope.
+        This is the DevOps-owned facade for the frame's change-control
+        revalidation path. It keeps callers at the manager boundary while still
+        letting them force revalidation for a specific conduit.
 
         Args:
             conduit_id:
@@ -198,8 +225,6 @@ class DevOpsManager(Cleanable, IDevOpsManager):
 
     def enable_conduit_gate(self, conduit_id: str) -> None:
         """
-        Public API
-
         Open one conduit-scoped CreationGate.
 
         Purpose:
@@ -231,8 +256,6 @@ class DevOpsManager(Cleanable, IDevOpsManager):
 
     def disable_conduit_gate(self, conduit_id: str) -> None:
         """
-        Public API
-
         Close one conduit-scoped CreationGate.
 
         Purpose:
@@ -269,8 +292,6 @@ class DevOpsManager(Cleanable, IDevOpsManager):
             interval: float = 0.1,
     ) -> None:
         """
-        Public API
-
         Terminally close and drain one conduit-scoped CreationGate.
 
         Purpose:
@@ -306,8 +327,6 @@ class DevOpsManager(Cleanable, IDevOpsManager):
 
     def enable_conduit_lineage(self, root_conduit_id: str) -> None:
         """
-        Public API
-
         Open all conduit gates registered under one root lineage.
 
         Purpose:
@@ -338,8 +357,6 @@ class DevOpsManager(Cleanable, IDevOpsManager):
 
     def disable_conduit_lineage(self, root_conduit_id: str) -> None:
         """
-        Public API
-
         Close all conduit gates registered under one root lineage.
 
         Purpose:
@@ -375,8 +392,6 @@ class DevOpsManager(Cleanable, IDevOpsManager):
             interval: float = 0.1,
     ) -> None:
         """
-        Public API
-
         Terminally close and drain all conduit gates under one lineage root.
 
         Purpose:
@@ -413,10 +428,14 @@ class DevOpsManager(Cleanable, IDevOpsManager):
     @property
     def spell_system_states(self) -> ISpellSystemStates:
         """
-        Public API
+        Expose the underlying `SpellSystemStates` for direct state inspection.
 
-        Expose the underlying SpellSystemStates for callers that want
-        direct graph/dirty-state access through the DevOpsManager.
+        This keeps the frame's spell-system state reachable through the same
+        ownership hub as the other operational managers.
+
+        Returns:
+            ISpellSystemStates: The frame-local spell-system state registry
+            owned by this DevOps root.
         """
         self.check_cleaned()
         with self._lock:

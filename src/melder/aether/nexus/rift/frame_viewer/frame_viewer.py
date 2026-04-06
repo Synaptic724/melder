@@ -361,17 +361,10 @@ class FrameViewer(Cleanable):
         self.check_cleaned()
         described_frames: List[Dict[str, object]] = []
         for frame_name in self.list_frame_names():
-            compiled_access_surface = self._get_required_compiled_access_surface(
-                frame_name
-            )
             described_frames.append(
                 {
                     "frame_name": frame_name,
                     "is_default": frame_name == self._default_view_frame_name,
-                    "available_target_count": len(self._build_links_for_frame(frame_name)),
-                    "available_kinds": tuple(
-                        sorted(compiled_access_surface.allowed_kinds)
-                    ),
                 }
             )
         return described_frames
@@ -460,38 +453,6 @@ class FrameViewer(Cleanable):
                 frame_name=frame_name,
             )
         )
-
-    def describe_frame(self, frame_name: str) -> Dict[str, object]:
-        self.check_cleaned()
-        compiled_access_surface = self._get_required_compiled_access_surface(frame_name)
-        grouped_links = self.list_links_grouped_by_kind(frame_name=frame_name)
-        descriptor = self._get_required_frame_descriptor(frame_name)
-        frame_nexus_contract = None
-        if descriptor.frame_overview is not None:
-            frame_nexus_contract = "{0}:{1}".format(
-                descriptor.frame_overview.nexus_label,
-                descriptor.frame_overview.nexus_version,
-            )
-        return {
-            "frame_name": frame_name,
-            "link_count": len(self._build_links_for_frame(frame_name)),
-            "available_kinds": tuple(sorted(grouped_links.keys())),
-            "link_counts_by_kind": {
-                source_kind: len(grouped_links[source_kind])
-                for source_kind in grouped_links.keys()
-            },
-            "metadata": {
-                **compiled_access_surface.metadata,
-                "frame_nexus_contract": frame_nexus_contract,
-            },
-        }
-
-    def describe_frames(self) -> Dict[str, Dict[str, object]]:
-        self.check_cleaned()
-        return {
-            frame_name: self.describe_frame(frame_name)
-            for frame_name in self.list_frame_names()
-        }
 
     def list_available_targets(
             self,

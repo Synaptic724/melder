@@ -236,7 +236,7 @@ def test_component_compiled_surface_flows_directly_into_frame_viewer_projection(
         default_view_frame_name="ops",
     )
 
-    assert viewer.describe_frame("ops")["available_kinds"] == (
+    assert viewer.execute_tool("describe_frame", frame_name="ops")["available_kinds"] == (
         "conduit",
         "frame",
         "spell",

@@ -193,9 +193,10 @@ def test_frame_viewer_describes_available_frames() -> None:
 
     descriptions = viewer.describe_available_views()
 
-    assert descriptions[0]["frame_name"] == "finance"
-    assert descriptions[1]["frame_name"] == "ops"
-    assert descriptions[1]["is_default"] is True
+    assert descriptions == [
+        {"frame_name": "finance", "is_default": False},
+        {"frame_name": "ops", "is_default": True},
+    ]
 
 
 def test_frame_viewer_lists_links_for_one_frame() -> None:
@@ -282,7 +283,10 @@ def test_frame_viewer_display_names_and_counts_can_filter() -> None:
 def test_frame_viewer_describe_frame_summarizes_descriptor_driven_surface() -> None:
     viewer = _build_viewer(("ops",))
 
-    summary = viewer.describe_frame("ops")
+    summary = viewer.execute_tool(
+        "describe_frame",
+        frame_name="ops",
+    )
 
     assert summary["frame_name"] == "ops"
     assert summary["link_count"] == 3
