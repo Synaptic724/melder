@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.aether.nexus.acl.frame_acl_compiler import FrameACLCompiler
 from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.profiles.frame_acl_profile import FrameACLProfile
@@ -18,6 +19,14 @@ from melder.aether.nexus.configuration.nexus_frame_mode import (
     NexusFrameMode,
 )
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
+from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile import (
+    FrameLinkContractProfile,
+)
+from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile_builder import (
+    FrameLinkContractProfileBuilder,
+)
+from melder.aether.nexus.rift.frame_viewer.frame_view import FrameView
+from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.rift_space.rift_event_configuration import RiftEventConfiguration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
@@ -1348,6 +1357,112 @@ class Nexus(Cleanable, INexus):
             frame_name,
             configuration_id,
             reason=reason,
+        )
+
+    def create_frame_view(
+            self,
+            frame_name: str,
+            *,
+            contract_profile_name: Optional[str] = None,
+    ) -> FrameView:
+        """
+        Build one projected `FrameView` from Nexus descriptor and ACL truth.
+
+        Purpose:
+            Provide a thin Nexus facade that projects the current descriptor
+            state plus current ACL configuration into one consumer-facing
+            `FrameView`.
+
+        Contract:
+            - Requires an existing frame descriptor.
+            - Compiles the current frame ACL configuration on demand.
+            - Optionally narrows the projection through one downstream
+              frame-link contract profile.
+            - Returns a detached derived view and does not cache it.
+
+        Args:
+            frame_name:
+                Frame name to project.
+            contract_profile_name:
+                Optional downstream contract profile name.
+
+        Returns:
+            FrameView:
+                Derived projected frame view.
+        """
+        self.check_cleaned()
+        descriptor = self._get_required_frame_descriptor(frame_name)
+        configuration = self.get_current_frame_acl_configuration(frame_name)
+        compiler = FrameACLCompiler(self._frame_acl_manager.frame_acl_profile_builder)
+        contract_profile_builder: Optional[FrameLinkContractProfileBuilder] = None
+        contract_profile: Optional[FrameLinkContractProfile] = None
+        compiled_access_surface = compiler.compile_frame_access_surface(
+            descriptor,
+            configuration,
+        )
+        if contract_profile_name is not None:
+            contract_profile_builder = FrameLinkContractProfileBuilder()
+            contract_profile = contract_profile_builder.get_required_profile(
+                contract_profile_name
+            )
+        try:
+            return FrameView.from_compiled_access_surface(
+                frame_descriptor=descriptor,
+                compiled_access_surface=compiled_access_surface,
+                contract_profile=contract_profile,
+            )
+        finally:
+            if contract_profile_builder is not None:
+                contract_profile_builder.cleanup()
+            compiler.cleanup()
+
+    def create_frame_viewer(
+            self,
+            frame_names: Sequence[str],
+            *,
+            contract_profile_name: Optional[str] = None,
+    ) -> FrameViewer:
+        """
+        Build one projected `FrameViewer` from one or more frame names.
+
+        Purpose:
+            Provide a thin Nexus facade that assembles projected frame views
+            into one consumer-facing `FrameViewer`.
+
+        Contract:
+            - Every frame name is projected independently through
+              `create_frame_view(...)`.
+            - The returned viewer is detached and not cached by Nexus.
+
+        Args:
+            frame_names:
+                Frame names to project into the viewer.
+            contract_profile_name:
+                Optional downstream contract profile name applied to every
+                projected frame.
+
+        Returns:
+            FrameViewer:
+                Derived projected frame viewer.
+        """
+        self.check_cleaned()
+        if isinstance(frame_names, str) or not isinstance(frame_names, Sequence):
+            raise TypeError("frame_names must be a sequence.")
+        for frame_name in frame_names:
+            if not isinstance(frame_name, str) or not frame_name:
+                raise ValueError("frame_names must contain non-empty strings.")
+        projected_views: Dict[str, FrameView] = {}
+        for frame_name in frame_names:
+            projected_views[frame_name] = self.create_frame_view(
+                frame_name,
+                contract_profile_name=contract_profile_name,
+            )
+        return FrameViewer(
+            views_by_frame_name=projected_views,
+            metadata={
+                "frame_count": len(projected_views),
+                "contract_profile_name": contract_profile_name,
+            },
         )
 
     def get_nexus_frame_for_rift(

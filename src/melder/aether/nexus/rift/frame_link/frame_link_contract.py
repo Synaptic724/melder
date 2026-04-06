@@ -231,3 +231,24 @@ class FrameLinkContract(Cleanable):
         self._metadata.clear()
         self._metadata = None
         self._contract_id = None
+
+    def clone(self) -> "FrameLinkContract":
+        """
+        Internal
+
+        Return a detached copy of this frame-link contract.
+
+        Purpose:
+            Allow downstream `FrameLink` objects to own independent contract
+            instances instead of sharing one mutable cleanup target.
+
+        Returns:
+            FrameLinkContract: Detached contract copy.
+        """
+        self.check_cleaned()
+        return FrameLinkContract(
+            frame_name=self._frame_name,
+            allowed_kinds=self._allowed_kinds,
+            allowed_commands=self._allowed_commands,
+            metadata=dict(self._metadata),
+        )

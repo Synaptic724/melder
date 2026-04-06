@@ -92,7 +92,10 @@ def test_integration_spellbook_conjure_populates_passive_nexus_records() -> None
         assert descriptor.frame_configuration.rift_enabled is True
         assert descriptor.frame_overview is not None
         assert descriptor.frame_overview.frame_name == "ops"
-        assert descriptor.conduit_records_by_id[conduit.id].conduit_name == "root"
+        assert (
+            descriptor.conduit_records_by_id[conduit.id].payload.conduit_name
+            == "root"
+        )
         assert ("{0}".format(spellbook.id), spell_id) in descriptor.spell_records_by_key
     finally:
         conduit.cleanup()

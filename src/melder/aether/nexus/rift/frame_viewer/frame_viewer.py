@@ -16,9 +16,11 @@ Endgame:
     acquisition still happens through `Rift` / conduit binding paths.
 """
 
+import threading
 from typing import Dict, List, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
 from melder.aether.nexus.rift.frame_viewer.frame_view import FrameView
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -66,6 +68,7 @@ class FrameViewer(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_viewer_id",
+        "_lock",
         "_views_by_frame_name",
         "_metadata",
     ]
@@ -91,11 +94,40 @@ class FrameViewer(Cleanable):
             None.
         """
         super().__init__()
+        self._lock: threading.RLock = threading.RLock()
         self._viewer_id: str = IDBuilder.create_id()
         self._views_by_frame_name: Dict[str, FrameView] = (
             dict(views_by_frame_name) if views_by_frame_name else {}
         )
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
+
+    def cleanup(self) -> None:
+        """
+        Internal
+
+        Idempotently clear viewer-owned state.
+
+        Threading:
+            Uses the instance lock because cleanup cascades through grouped
+            view and metadata state in a nogil runtime.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            for frame_view in self._views_by_frame_name.values():
+                frame_view.cleanup()
+            self._views_by_frame_name.clear()
+            self._views_by_frame_name = None
+            self._metadata.clear()
+            self._metadata = None
+            self._viewer_id = None
+        self._lock = None
 
     @property
     def viewer_id(self) -> str:
@@ -107,13 +139,15 @@ class FrameViewer(Cleanable):
     def views_by_frame_name(self) -> Dict[str, FrameView]:
         """Return the currently attached views."""
         self.check_cleaned()
-        return self._views_by_frame_name
+        with self._lock:
+            return dict(self._views_by_frame_name)
 
     @property
     def metadata(self) -> Dict[str, object]:
         """Return the viewer metadata map."""
         self.check_cleaned()
-        return self._metadata
+        with self._lock:
+            return dict(self._metadata)
 
     def add_view(self, frame_view: FrameView) -> None:
         """
@@ -129,7 +163,10 @@ class FrameViewer(Cleanable):
             None.
         """
         self.check_cleaned()
-        self._views_by_frame_name[frame_view.frame_name] = frame_view
+        if not isinstance(frame_view, FrameView):
+            raise TypeError("frame_view must be a FrameView.")
+        with self._lock:
+            self._views_by_frame_name[frame_view.frame_name] = frame_view
 
     def get_view(self, frame_name: str) -> FrameView:
         """
@@ -145,10 +182,13 @@ class FrameViewer(Cleanable):
             FrameView: Registered view.
         """
         self.check_cleaned()
-        try:
-            return self._views_by_frame_name[frame_name]
-        except KeyError as exc:
-            raise ValueError("FrameView '{0}' was not found.".format(frame_name)) from exc
+        with self._lock:
+            try:
+                return self._views_by_frame_name[frame_name]
+            except KeyError as exc:
+                raise ValueError(
+                    "FrameView '{0}' was not found.".format(frame_name)
+                ) from exc
 
     def list_frame_names(self) -> List[str]:
         """
@@ -160,22 +200,254 @@ class FrameViewer(Cleanable):
             List[str]: Snapshot of frame names.
         """
         self.check_cleaned()
-        return list(self._views_by_frame_name.keys())
+        with self._lock:
+            return list(self._views_by_frame_name.keys())
 
-    def cleanup(self) -> None:
+    def list_links(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[FrameLink]:
         """
         Internal
 
-        Idempotently clear viewer-owned state.
+        Return visible links from one view or from every attached view.
+
+        Args:
+            frame_name:
+                Optional single-frame scope. When omitted, links from every
+                attached view are returned.
 
         Returns:
-            None.
+            List[FrameLink]: Visible links in deterministic frame/link order.
         """
-        if self._cleaned:
-            return
-        self._cleaned = True
-        self._views_by_frame_name.clear()
-        self._views_by_frame_name = None
-        self._metadata.clear()
-        self._metadata = None
-        self._viewer_id = None
+        self.check_cleaned()
+        with self._lock:
+            if frame_name is not None:
+                return list(self.get_view(frame_name).links_by_id.values())
+            ordered_links: List[FrameLink] = []
+            for current_frame_name in sorted(self._views_by_frame_name.keys()):
+                frame_view = self._views_by_frame_name[current_frame_name]
+                for link_id in sorted(frame_view.links_by_id.keys()):
+                    ordered_links.append(frame_view.links_by_id[link_id])
+            return ordered_links
+
+    def list_links_by_kind(
+            self,
+            source_kind: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[FrameLink]:
+        """
+        Internal
+
+        Return visible links filtered by source kind.
+
+        Args:
+            source_kind:
+                Source kind to keep.
+            frame_name:
+                Optional single-frame scope. When omitted, every attached view
+                is considered.
+
+        Returns:
+            List[FrameLink]: Visible links with the requested source kind.
+        """
+        self.check_cleaned()
+        if not source_kind:
+            raise ValueError("source_kind cannot be empty.")
+        return [
+            link
+            for link in self.list_links(frame_name=frame_name)
+            if link.source_kind == source_kind
+        ]
+
+    def list_links_grouped_by_frame(self) -> Dict[str, List[FrameLink]]:
+        """
+        Internal
+
+        Return visible links grouped by frame name.
+
+        Returns:
+            Dict[str, List[FrameLink]]: Deterministic frame-name keyed link map.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return {
+                frame_name: list(self.list_links(frame_name=frame_name))
+                for frame_name in sorted(self._views_by_frame_name.keys())
+            }
+
+    def list_links_grouped_by_kind(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, List[FrameLink]]:
+        """
+        Internal
+
+        Return visible links grouped by source kind.
+
+        Args:
+            frame_name:
+                Optional single-frame scope. When omitted, every attached view
+                is considered.
+
+        Returns:
+            Dict[str, List[FrameLink]]: Deterministic source-kind keyed link map.
+        """
+        self.check_cleaned()
+        grouped_links: Dict[str, List[FrameLink]] = {}
+        for frame_link in self.list_links(frame_name=frame_name):
+            grouped_links.setdefault(frame_link.source_kind, []).append(frame_link)
+        return {
+            source_kind: grouped_links[source_kind]
+            for source_kind in sorted(grouped_links.keys())
+        }
+
+    def list_display_names(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+            source_kind: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Internal
+
+        Return visible display names from the current projected links.
+
+        Args:
+            frame_name:
+                Optional single-frame scope.
+            source_kind:
+                Optional source-kind filter.
+
+        Returns:
+            List[str]: Deterministic visible display names.
+        """
+        self.check_cleaned()
+        if source_kind is None:
+            return [frame_link.display_name for frame_link in self.list_links(
+                frame_name=frame_name
+            )]
+        return [
+            frame_link.display_name
+            for frame_link in self.list_links_by_kind(
+                source_kind,
+                frame_name=frame_name,
+            )
+        ]
+
+    def count_links(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+            source_kind: Optional[str] = None,
+    ) -> int:
+        """
+        Internal
+
+        Return the number of visible links under the requested scope.
+
+        Args:
+            frame_name:
+                Optional single-frame scope.
+            source_kind:
+                Optional source-kind filter.
+
+        Returns:
+            int: Visible link count.
+        """
+        self.check_cleaned()
+        if source_kind is None:
+            return len(self.list_links(frame_name=frame_name))
+        return len(
+            self.list_links_by_kind(
+                source_kind,
+                frame_name=frame_name,
+            )
+        )
+
+    def describe_frame(self, frame_name: str) -> Dict[str, object]:
+        """
+        Internal
+
+        Return one deterministic summary of the projected view for a frame.
+
+        Args:
+            frame_name:
+                Frame name to summarize.
+
+        Returns:
+            Dict[str, object]: Summary of the projected frame view.
+        """
+        self.check_cleaned()
+        frame_view = self.get_view(frame_name)
+        grouped_links = self.list_links_grouped_by_kind(frame_name=frame_name)
+        return {
+            "frame_name": frame_name,
+            "link_count": len(frame_view.links_by_id),
+            "available_kinds": tuple(sorted(grouped_links.keys())),
+            "link_counts_by_kind": {
+                source_kind: len(grouped_links[source_kind])
+                for source_kind in grouped_links.keys()
+            },
+            "metadata": frame_view.metadata,
+        }
+
+    def describe_frames(self) -> Dict[str, Dict[str, object]]:
+        """
+        Internal
+
+        Return deterministic summaries for every attached frame view.
+
+        Returns:
+            Dict[str, Dict[str, object]]: Frame-name keyed summary map.
+        """
+        self.check_cleaned()
+        return {
+            frame_name: self.describe_frame(frame_name)
+            for frame_name in sorted(self.list_frame_names())
+        }
+
+    def get_required_link_by_source(
+            self,
+            *,
+            frame_name: str,
+            source_kind: str,
+            source_id: str,
+    ) -> FrameLink:
+        """
+        Internal
+
+        Return one visible link by frame, kind, and source id or raise.
+
+        Args:
+            frame_name:
+                Owning frame name.
+            source_kind:
+                Source kind to resolve.
+            source_id:
+                Stable source identifier to resolve.
+
+        Returns:
+            FrameLink: Matching visible link.
+        """
+        self.check_cleaned()
+        if not source_kind:
+            raise ValueError("source_kind cannot be empty.")
+        if not source_id:
+            raise ValueError("source_id cannot be empty.")
+        for frame_link in self.list_links(frame_name=frame_name):
+            if (
+                    frame_link.source_kind == source_kind
+                    and frame_link.source_id == source_id
+            ):
+                return frame_link
+        raise ValueError(
+            "FrameLink '{0}:{1}' was not found in frame '{2}'.".format(
+                source_kind,
+                source_id,
+                frame_name,
+            )
+        )

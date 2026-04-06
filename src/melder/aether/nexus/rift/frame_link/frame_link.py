@@ -16,6 +16,7 @@ Endgame:
     contract boundary needed by `FrameView`.
 """
 
+import threading
 from typing import Dict, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -70,6 +71,7 @@ class FrameLink(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_link_id",
+        "_lock",
         "_frame_name",
         "_source_kind",
         "_source_id",
@@ -111,13 +113,106 @@ class FrameLink(Cleanable):
             None.
         """
         super().__init__()
+        if not frame_name:
+            raise ValueError("frame_name cannot be empty.")
+        if not source_kind:
+            raise ValueError("source_kind cannot be empty.")
+        if not source_id:
+            raise ValueError("source_id cannot be empty.")
+        if contract is not None and not isinstance(contract, FrameLinkContract):
+            raise TypeError("contract must be a FrameLinkContract when provided.")
         self._link_id: str = IDBuilder.create_id()
+        self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
         self._source_kind: str = source_kind
         self._source_id: str = source_id
         self._display_name: str = display_name or source_id
         self._contract: Optional[FrameLinkContract] = contract
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
+
+    def cleanup(self) -> None:
+        """
+        Internal
+
+        Idempotently clear link-owned state.
+
+        Threading:
+            Uses the instance lock because cleanup clears grouped state in one
+            pass in a nogil runtime.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            if self._contract is not None:
+                try:
+                    self._contract.cleanup()
+                except Exception:
+                    pass
+            self._frame_name = None
+            self._source_kind = None
+            self._source_id = None
+            self._display_name = None
+            self._contract = None
+            self._metadata.clear()
+            self._metadata = None
+            self._link_id = None
+        self._lock = None
+
+    @classmethod
+    def from_contract_subject(
+            cls,
+            *,
+            frame_name: str,
+            source_kind: str,
+            source_id: str,
+            contract: FrameLinkContract,
+            display_name: Optional[str] = None,
+            metadata: Optional[Dict[str, object]] = None,
+    ) -> "FrameLink":
+        """
+        Internal
+
+        Build one `FrameLink` from an already-derived frame-link contract and
+        one view-safe subject identity.
+
+        Purpose:
+            Give `FrameView` a narrow construction path that does not expose
+            raw runtime objects and that guarantees each link owns a detached
+            contract instance.
+
+        Args:
+            frame_name:
+                Source frame name.
+            source_kind:
+                Kind label such as `frame`, `conduit`, or `spell`.
+            source_id:
+                Stable source identifier for the link target.
+            contract:
+                Effective frame-link contract to attach to the link.
+            display_name:
+                Optional viewer-facing display name.
+            metadata:
+                Optional derived view metadata.
+
+        Returns:
+            FrameLink: New view-safe frame link.
+        """
+        if not isinstance(contract, FrameLinkContract):
+            raise TypeError("contract must be a FrameLinkContract.")
+        return cls(
+            frame_name=frame_name,
+            source_kind=source_kind,
+            source_id=source_id,
+            display_name=display_name,
+            contract=contract.clone(),
+            metadata=metadata,
+        )
 
     @property
     def link_id(self) -> str:
@@ -159,30 +254,4 @@ class FrameLink(Cleanable):
     def metadata(self) -> Dict[str, object]:
         """Return the link metadata map."""
         self.check_cleaned()
-        return self._metadata
-
-    def cleanup(self) -> None:
-        """
-        Internal
-
-        Idempotently clear link-owned state.
-
-        Returns:
-            None.
-        """
-        if self._cleaned:
-            return
-        if self._contract is not None:
-            try:
-                self._contract.cleanup()
-            except Exception:
-                pass
-        self._cleaned = True
-        self._frame_name = None
-        self._source_kind = None
-        self._source_id = None
-        self._display_name = None
-        self._contract = None
-        self._metadata.clear()
-        self._metadata = None
-        self._link_id = None
+        return dict(self._metadata)
