@@ -75,6 +75,30 @@ class ConduitWard(Cleanable, IConduitWard):
     """
     __melder_internal__ = _mrg.sentinel
     def __init__(self, conduit: IConduit, dynamic: bool, conduit_type: ConduitState, policy: Policies):
+        """
+        Initialize the ward for one conduit.
+
+        Contract:
+            - Binds the ward permanently to one owning conduit id/display.
+            - Seeds contract indices, lineage pointers, and policy state for
+              that conduit.
+            - Resolves the initial policy through `_set_initial_policy(...)`
+              so the ward starts from one validated policy value.
+            - Does not create any peer contracts or lineage links by itself;
+              those are established later through explicit ward operations.
+
+        Args:
+            conduit:
+                Owning conduit whose links, lineage, and policy this ward
+                manages.
+            dynamic:
+                Whether dynamic link/contract behavior is enabled for this
+                conduit.
+            conduit_type:
+                Current conduit lifecycle state (`normal` or `lesser`).
+            policy:
+                Initial ward policy to apply.
+        """
         super().__init__()
         self._lock: threading.RLock  = threading.RLock()
 
@@ -242,14 +266,22 @@ class ConduitWard(Cleanable, IConduitWard):
     #region Context Manager
     def __enter__(self):
         """
-        Enters the context manager for Aether.
+        Acquire the ward lock and return this ward.
+
+        Contract:
+            This is a thin lock-guard convenience only; it does not create any
+            transaction or change-control scope on its own.
         """
         self._lock.acquire()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         """
-        Exits the context manager for Aether.
+        Release the ward lock acquired by `__enter__`.
+
+        Contract:
+            Any exception from the wrapped block is allowed to propagate; this
+            method only handles lock release.
         """
         self._lock.release()
 
@@ -486,7 +518,7 @@ class ConduitWard(Cleanable, IConduitWard):
         """
         Internal
 
-        Sets the default policy for this Conduit during initialization.
+        Set and freeze the ward's initial policy during construction.
 
         Args:
             policy (Policies): The desired initial policy.
@@ -497,6 +529,11 @@ class ConduitWard(Cleanable, IConduitWard):
         Raises:
             TypeError: If `policy` is not an instance of the `Policies` enum.
             RuntimeError: If the policy has already been set.
+
+        Contract:
+            This helper is construction-only. After the initial policy is
+            accepted, `_policy_set` prevents a second initialization pass from
+            silently replacing the ward's starting policy.
         """
         self.check_cleaned()
 
@@ -1837,9 +1874,16 @@ class ConduitWard(Cleanable, IConduitWard):
         """
         Internal
 
-        Removes a root spell_id source (and any dependency Details attributed to it)
-        from one contract or all contracts. Orphaned Details trigger contracted spell
-        removal and empty contracts are severed.
+        Remove one root-source tag and its dependency-contracted fallout.
+
+        Detail entries can be tagged with `sources` so the ward can tell which
+        contracted spells were pulled in transitively for one specific root
+        lineage. This helper removes one `root_spell_id` source from matching
+        details, drops now-orphaned contracted spells from peer spellbooks, and
+        severs any contract that becomes empty afterward.
+
+        This is the rollback/cleanup counterpart to dependency-linked contract
+        expansion.
         """
         self.check_cleaned()
         if not isinstance(root_spell_id, str):
@@ -1969,6 +2013,15 @@ class ConduitWard(Cleanable, IConduitWard):
         visited: set[str] = set()
 
         def walk(dep_id: str) -> None:
+            """
+            Depth-first dependency contracting walk for one root lineage.
+
+            Contract:
+                - Skips already-visited dependency versions.
+                - Contracts only non-local dependency owners.
+                - Recurses through transitive dependency spell ids discovered
+                  on each newly contracted dependency spell.
+            """
             if dep_id in visited:
                 return
             visited.add(dep_id)
@@ -2073,6 +2126,15 @@ class ConduitWard(Cleanable, IConduitWard):
         batch_keys: dict[tuple[str, str], ISpell] = {}
 
         def record_spell(spell: ISpell, spell_id: str) -> None:
+            """
+            Record one spell's binding key into the preflight collision set.
+
+            Contract:
+                - Raises when two different spells in the same preflight batch
+                  would claim the same contracted binding key.
+                - Reuses the spellbook's own lookup-key assertion for
+                  contracted-key collision checks against current runtime state.
+            """
             contract_key = spellbook._make_spell_key(
                 spell.spellframe,
                 spell.spell_name,
@@ -2107,6 +2169,16 @@ class ConduitWard(Cleanable, IConduitWard):
             return
 
         def walk(dep_id: str) -> None:
+            """
+            Depth-first read-only preflight walk over transitive dependencies.
+
+            Contract:
+                - Skips already-visited dependency versions.
+                - Resolves each dependency owner/spell and checks contracting
+                  eligibility without mutating contracts.
+                - Records every reachable dependency into the batch collision
+                  set before recursing further.
+            """
             if dep_id in visited:
                 return
             visited.add(dep_id)
@@ -2153,7 +2225,12 @@ class ConduitWard(Cleanable, IConduitWard):
         """
         Internal
 
-        Attempts to add multiple spells to an existing contract in a bulk operation.
+        Bulk wrapper over `_add_spell_to_contract(...)`.
+
+        This helper does not introduce new contract semantics. It simply
+        applies the single-spell lineage-aware add path repeatedly and returns
+        a per-spell success/failure report so callers can surface partial
+        outcomes without losing the first failure.
 
         Args:
             spell_ids (list[str], optional): List of spell IDs to contract.
@@ -2163,7 +2240,8 @@ class ConduitWard(Cleanable, IConduitWard):
             aetheric_frame (str): The Aetheric Frame to resolve entities in.
 
         Returns:
-            dict: A dictionary containing a list of "success" spell IDs and a dictionary of "failed" spell IDs mapped to error messages.
+            dict: A dictionary containing a list of successful spell IDs and a
+            mapping of failed spell IDs to error messages.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -2335,7 +2413,12 @@ class ConduitWard(Cleanable, IConduitWard):
         """
         Internal
 
-        Attempts to remove multiple spells from an existing contract in a bulk operation.
+        Bulk wrapper over `_remove_spell_from_contract(...)`.
+
+        This helper applies the single-spell removal path repeatedly and
+        returns a per-spell success/failure report. It preserves the same
+        lineage/source-aware removal semantics and cleanup behavior as the
+        single-item API.
 
         Args:
             spell_ids (list[str], optional): List of spell IDs to remove.
@@ -2344,7 +2427,8 @@ class ConduitWard(Cleanable, IConduitWard):
             aetheric_frame (str): The Aetheric Frame to resolve entities in.
 
         Returns:
-            dict: A dictionary containing a list of "success" spell IDs and a dictionary of "failed" spell IDs mapped to error messages.
+            dict: A dictionary containing a list of successful spell IDs and a
+            mapping of failed spell IDs to error messages.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -2444,7 +2528,7 @@ class ConduitWard(Cleanable, IConduitWard):
         """
         Internal
 
-        Retrieves all spells that **this conduit can use** via active contracts.
+        Gather every spell this conduit can currently consume via contracts.
 
         For each peer conduit, this returns a list of:
             (current_spell_version_id, ISpell)
@@ -2454,6 +2538,12 @@ class ConduitWard(Cleanable, IConduitWard):
             * Resolution uses Spellbook._find_contracted_spell(spell_index),
               so if the lineage has mutated, we get the **current** spell object.
             * The version ID returned in the tuple is spell.spell_id (head).
+
+        Contract:
+            - Optionally validates all contracts first and fails fast if any are
+              inconsistent.
+            - Returns the current visible version for each contracted lineage,
+              not the historical version captured at contract-creation time.
         """
         self.check_cleaned()
 
@@ -2538,8 +2628,7 @@ class ConduitWard(Cleanable, IConduitWard):
         """
         Internal
 
-        Attempts to retrieve a specific spell that is being granted *to* this
-        conduit by any peer via active contracts.
+        Resolve one contracted spell version through the contract graph.
 
         This now behaves in a lineage-aware way:
 
@@ -2553,6 +2642,11 @@ class ConduitWard(Cleanable, IConduitWard):
 
         Returns:
             Optional[tuple[str, ISpell]]: (peer_conduit_id, ISpell) if found, else None.
+
+        Contract:
+            The returned spell object is the current head for the matched
+            lineage, not necessarily the historical version string the caller
+            searched with.
         """
         self.check_cleaned()
 
@@ -2809,7 +2903,8 @@ class ConduitWard(Cleanable, IConduitWard):
         """
         Internal
 
-        Validates all active contracts attached to this conduit for symmetry and integrity.
+        Validate all active contracts attached to this conduit for symmetry and
+        contracted-spell integrity.
 
         This ensures both sides list the same spells and that every referenced
         spell is present in the **peer's contracted spellbook view**. Contract
@@ -2821,6 +2916,11 @@ class ConduitWard(Cleanable, IConduitWard):
 
         Returns:
             dict[str, bool]: Dictionary mapping contract id to validation results (True/False).
+
+        Contract:
+            This is a best-effort integrity pass over the active contract set.
+            It does not mutate contracts; it only reports whether each contract
+            still resolves coherently through the contracted spellbook view.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -2865,9 +2965,10 @@ class ConduitWard(Cleanable, IConduitWard):
         """
         Internal
 
-        Performs a high-level validation check across all contracts involving this conduit.
+        Return whether every active contract currently validates cleanly.
 
-        This aggregates the results of `_validate_contracts_and_define` to provide a simple pass/fail status.
+        This is the boolean convenience wrapper over
+        `_validate_contracts_and_define()`.
 
         Args:
             None
