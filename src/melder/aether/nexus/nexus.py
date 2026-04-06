@@ -93,6 +93,7 @@ class Nexus(Cleanable, INexus):
         "_rift_profiles_by_name",
         "_frame_acl_manager",
         "_frame_descriptor_manager",
+        "_projected_frame_views_by_cache_key",
         "_target_frame_ref_counts",
     ]
 
@@ -184,6 +185,10 @@ class Nexus(Cleanable, INexus):
         self._frame_acl_manager: Optional[FrameACLManager] = None
         self._frame_descriptor_manager: Optional[FrameDescriptorManager] = None
         self._frame_acl_manager: FrameACLManager = FrameACLManager()
+        self._projected_frame_views_by_cache_key: Dict[
+            Tuple[str, str, str],
+            FrameView,
+        ] = {}
         self._target_frame_ref_counts: Dict[str, int] = {}
 
         self._frame_descriptor_manager: FrameDescriptorManager = FrameDescriptorManager(aether)
@@ -231,6 +236,8 @@ class Nexus(Cleanable, INexus):
                 self._frame_acl_manager.cleanup()
             if self._frame_descriptor_manager is not None:
                 self._frame_descriptor_manager.cleanup()
+            for projected_frame_view in self._projected_frame_views_by_cache_key.values():
+                projected_frame_view.cleanup()
             self._configuration = None
             self._configured = None
             self._enabled = None
@@ -241,6 +248,7 @@ class Nexus(Cleanable, INexus):
             self._next_indexed_nexus_frame_number = None
             self._rift_profiles_by_name.clear()
             self._target_frame_ref_counts.clear()
+            self._projected_frame_views_by_cache_key.clear()
             self._rifts_by_id = None
             self._rift_ids_by_name = None
             self._next_default_rift_number = None
@@ -248,6 +256,7 @@ class Nexus(Cleanable, INexus):
             self._rift_profiles_by_name = None
             self._frame_acl_manager = None
             self._frame_descriptor_manager = None
+            self._projected_frame_views_by_cache_key = None
             self._target_frame_ref_counts = None
             self._id = None
         if self._logger is not None:
@@ -863,6 +872,7 @@ class Nexus(Cleanable, INexus):
         published = self._frame_descriptor_manager._publish_frame_record(spellbook)
         if self._frame_descriptor_manager._has_frame_descriptor(spellbook._aetheric_frame):
             self._ensure_frame_acl_container(spellbook._aetheric_frame)
+            self._invalidate_projected_frame_views(spellbook._aetheric_frame)
         return published
 
     def _publish_conduit_record(self, conduit: Any) -> bool:
@@ -883,6 +893,7 @@ class Nexus(Cleanable, INexus):
         published = self._frame_descriptor_manager._publish_conduit_record(conduit)
         if self._frame_descriptor_manager._has_frame_descriptor(conduit._aetheric_frame):
             self._ensure_frame_acl_container(conduit._aetheric_frame)
+            self._invalidate_projected_frame_views(conduit._aetheric_frame)
         return published
 
     def _remove_conduit_record(
@@ -911,6 +922,7 @@ class Nexus(Cleanable, INexus):
         )
         if self._frame_descriptor_manager._has_frame_descriptor(frame_name):
             self._ensure_frame_acl_container(frame_name)
+            self._invalidate_projected_frame_views(frame_name)
         return removed
 
     def _publish_spell_record(
@@ -943,6 +955,7 @@ class Nexus(Cleanable, INexus):
         )
         if self._frame_descriptor_manager._has_frame_descriptor(spellbook._aetheric_frame):
             self._ensure_frame_acl_container(spellbook._aetheric_frame)
+            self._invalidate_projected_frame_views(spellbook._aetheric_frame)
         return published
 
     def _remove_spell_record(
@@ -975,6 +988,7 @@ class Nexus(Cleanable, INexus):
         )
         if self._frame_descriptor_manager._has_frame_descriptor(frame_name):
             self._ensure_frame_acl_container(frame_name)
+            self._invalidate_projected_frame_views(frame_name)
         return removed
 
     def list_rift_ids(self) -> list[str]:
@@ -1261,11 +1275,13 @@ class Nexus(Cleanable, INexus):
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)
-        return self._frame_acl_manager._insert_head_frame_acl_configuration(
+        inserted_configuration = self._frame_acl_manager._insert_head_frame_acl_configuration(
             frame_name,
             configuration,
             select_as_current=select_as_current,
         )
+        self._invalidate_projected_frame_views(frame_name)
+        return inserted_configuration
 
     def select_current_frame_acl_configuration(
             self,
@@ -1291,10 +1307,12 @@ class Nexus(Cleanable, INexus):
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)
-        return self._frame_acl_manager._select_current_frame_acl_configuration(
+        selected_configuration = self._frame_acl_manager._select_current_frame_acl_configuration(
             frame_name,
             configuration_id,
         )
+        self._invalidate_projected_frame_views(frame_name)
+        return selected_configuration
 
     def rollback_frame_acl_configuration(
             self,
@@ -1320,10 +1338,12 @@ class Nexus(Cleanable, INexus):
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)
-        return self._frame_acl_manager._rollback_frame_acl_configuration(
+        rolled_back_configuration = self._frame_acl_manager._rollback_frame_acl_configuration(
             frame_name,
             configuration_id,
         )
+        self._invalidate_projected_frame_views(frame_name)
+        return rolled_back_configuration
 
     def create_new_from_acl_configuration(
             self,
@@ -1393,24 +1413,45 @@ class Nexus(Cleanable, INexus):
         self.check_cleaned()
         descriptor = self._get_required_frame_descriptor(frame_name)
         configuration = self.get_current_frame_acl_configuration(frame_name)
+        cache_key = self._make_projected_frame_view_cache_key(
+            frame_name,
+            configuration.configuration_id,
+            contract_profile_name,
+        )
+        with self._lock:
+            cached_frame_view = self._projected_frame_views_by_cache_key.get(
+                cache_key
+            )
+        if cached_frame_view is not None:
+            return cached_frame_view.clone()
         compiler = FrameACLCompiler(self._frame_acl_manager.frame_acl_profile_builder)
         contract_profile_builder: Optional[FrameLinkContractProfileBuilder] = None
         contract_profile: Optional[FrameLinkContractProfile] = None
-        compiled_access_surface = compiler.compile_frame_access_surface(
-            descriptor,
-            configuration,
-        )
-        if contract_profile_name is not None:
-            contract_profile_builder = FrameLinkContractProfileBuilder()
-            contract_profile = contract_profile_builder.get_required_profile(
-                contract_profile_name
-            )
         try:
-            return FrameView.from_compiled_access_surface(
+            compiled_access_surface = compiler.compile_frame_access_surface(
+                descriptor,
+                configuration,
+            )
+            if contract_profile_name is not None:
+                contract_profile_builder = FrameLinkContractProfileBuilder()
+                contract_profile = contract_profile_builder.get_required_profile(
+                    contract_profile_name
+                )
+            projected_frame_view = FrameView.from_compiled_access_surface(
                 frame_descriptor=descriptor,
                 compiled_access_surface=compiled_access_surface,
                 contract_profile=contract_profile,
             )
+            with self._lock:
+                existing_frame_view = self._projected_frame_views_by_cache_key.get(
+                    cache_key
+                )
+                if existing_frame_view is not None:
+                    existing_frame_view.cleanup()
+                self._projected_frame_views_by_cache_key[cache_key] = (
+                    projected_frame_view
+                )
+            return projected_frame_view.clone()
         finally:
             if contract_profile_builder is not None:
                 contract_profile_builder.cleanup()
@@ -1464,6 +1505,61 @@ class Nexus(Cleanable, INexus):
                 "contract_profile_name": contract_profile_name,
             },
         )
+
+    @staticmethod
+    def _make_projected_frame_view_cache_key(
+            frame_name: str,
+            configuration_id: str,
+            contract_profile_name: Optional[str],
+    ) -> Tuple[str, str, str]:
+        """
+        Build the stable cache key for one projected frame view.
+
+        Args:
+            frame_name:
+                Projected frame name.
+            configuration_id:
+                Current ACL configuration id.
+            contract_profile_name:
+                Optional downstream contract profile name.
+
+        Returns:
+            Tuple[str, str, str]: Stable projected-view cache key.
+        """
+        return (
+            frame_name,
+            configuration_id,
+            contract_profile_name or "",
+        )
+
+    def _invalidate_projected_frame_views(
+            self,
+            frame_name: Optional[str] = None,
+    ) -> None:
+        """
+        Invalidate cached projected frame views.
+
+        Args:
+            frame_name:
+                Optional single-frame scope. When omitted, every cached frame
+                view is invalidated.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            cache_keys_to_remove: List[Tuple[str, str, str]] = []
+            for cache_key in self._projected_frame_views_by_cache_key.keys():
+                if frame_name is None or cache_key[0] == frame_name:
+                    cache_keys_to_remove.append(cache_key)
+            for cache_key in cache_keys_to_remove:
+                projected_frame_view = self._projected_frame_views_by_cache_key.pop(
+                    cache_key,
+                    None,
+                )
+                if projected_frame_view is not None:
+                    projected_frame_view.cleanup()
 
     def get_nexus_frame_for_rift(
             self,
@@ -1651,6 +1747,7 @@ class Nexus(Cleanable, INexus):
             acl_container_removed = self._frame_acl_manager._remove_frame_acl_container(
                 frame_name
             )
+            self._invalidate_projected_frame_views(frame_name)
             if nexus_frame_record is None:
                 if acl_container_removed:
                     self._logger.info(

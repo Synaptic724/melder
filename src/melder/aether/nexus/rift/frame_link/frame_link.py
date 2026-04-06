@@ -255,3 +255,27 @@ class FrameLink(Cleanable):
         """Return the link metadata map."""
         self.check_cleaned()
         return dict(self._metadata)
+
+    def clone(self) -> "FrameLink":
+        """
+        Internal
+
+        Return a detached copy of the link.
+
+        Purpose:
+            Support safe cached projection returns where the cache keeps one
+            canonical link object but callers receive their own cleanup-safe
+            copy.
+
+        Returns:
+            FrameLink: Detached link copy.
+        """
+        self.check_cleaned()
+        return FrameLink(
+            frame_name=self._frame_name,
+            source_kind=self._source_kind,
+            source_id=self._source_id,
+            display_name=self._display_name,
+            contract=(self._contract.clone() if self._contract is not None else None),
+            metadata=dict(self._metadata),
+        )

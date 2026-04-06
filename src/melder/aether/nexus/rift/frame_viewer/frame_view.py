@@ -331,6 +331,31 @@ class FrameView(Cleanable):
         with self._lock:
             return dict(self._metadata)
 
+    def clone(self) -> "FrameView":
+        """
+        Internal
+
+        Return a detached copy of the frame view and its owned links.
+
+        Purpose:
+            Support safe cached projection returns where Nexus stores one
+            canonical projected view but callers receive their own cleanup-safe
+            copy.
+
+        Returns:
+            FrameView: Detached frame-view copy.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return FrameView(
+                frame_name=self._frame_name,
+                links_by_id={
+                    link_id: frame_link.clone()
+                    for link_id, frame_link in self._links_by_id.items()
+                },
+                metadata=dict(self._metadata),
+            )
+
     @staticmethod
     def _resolve_frame_payload_fields(
             effective_contract: FrameLinkContract,
