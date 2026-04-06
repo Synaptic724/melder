@@ -153,10 +153,10 @@ def test_nexus_create_frame_view_accepts_named_contract_profile() -> None:
         contract_profile_name="safe",
     )
 
-    assert frame_view.metadata["allowed_commands"] == (
-        "bind_existing",
-        "query",
-        "resolve_existing",
+    assert frame_view.metadata["allowed_kinds"] == (
+        "conduit",
+        "frame",
+        "spell",
     )
 
 

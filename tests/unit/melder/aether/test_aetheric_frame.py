@@ -86,6 +86,12 @@ def test_init_missing_aether_raises() -> None:
     with pytest.raises(TypeError, match="aether cannot be None"):
         AethericFrame(None, "my_frame")
 
+
+def test_init_non_iaether_raises() -> None:
+    """AethericFrame should reject owners that do not satisfy IAether."""
+    with pytest.raises(TypeError, match="must satisfy IAether"):
+        AethericFrame(object(), "my_frame")
+
 def test_init_empty_name_raises():
     """Test that empty name raises ValueError."""
     with pytest.raises(ValueError, match="cannot be empty"):
@@ -183,6 +189,30 @@ def test_cleanup_idempotent(frame):
     frame.cleanup()
     assert frame._cleaned is True
 
+
+def test_cleanup_returns_early_when_cleaned_flips_inside_lock(frame):
+    """cleanup should return safely if another path marks the frame cleaned inside the lock."""
+    frame._frame_configuration = MagicMock()
+    frame._configuration = object()
+    original_lock = frame._lock
+
+    class _LockThatMarksCleaned:
+        def __enter__(self_inner):
+            frame._cleaned = True
+            return self_inner
+
+        def __exit__(self_inner, exc_type, exc_value, traceback):
+            return False
+
+    try:
+        frame._lock = _LockThatMarksCleaned()
+        frame.cleanup()
+    finally:
+        frame._lock = original_lock
+
+    assert frame._frame_configuration is not None
+    assert frame._configuration is not None
+
 def test_cleanup_nulls_properties(frame):
     """
     Verify `cleanup` sets internal references to None.
@@ -202,6 +232,17 @@ def test_cleanup_nulls_properties(frame):
     assert frame._id is None
     assert frame._lock is None
 
+
+def test_cleanup_cleans_frame_configuration(frame):
+    """cleanup should call cleanup on the bound frame configuration before dropping it."""
+    configuration = MagicMock()
+    frame._frame_configuration = configuration
+
+    frame.cleanup()
+
+    configuration.cleanup.assert_called_once()
+    assert frame._frame_configuration is None
+
 def test_cleanup_tolerant_of_errors(frame):
     """Test cleanup continues if a sub-component raises error."""
     bad_conduit = MagicMock()
@@ -212,6 +253,18 @@ def test_cleanup_tolerant_of_errors(frame):
     frame.cleanup()
     assert frame._cleaned is True
     assert frame._conduits is None
+
+
+def test_cleanup_tolerant_of_cluster_cleanup_errors(frame):
+    """cleanup should tolerate cluster cleanup failures and still complete."""
+    bad_cluster = MagicMock()
+    bad_cluster.cleanup.side_effect = RuntimeError("cluster boom")
+    frame._conduit_clusters["cl1"] = bad_cluster
+
+    frame.cleanup()
+
+    assert frame._cleaned is True
+    assert frame._conduit_clusters is None
 
 # ----------------------------------------------------------------------
 # 4. Property Accessor Tests
@@ -232,6 +285,8 @@ def test_property_accessors_fail_after_cleanup(frame):
         _ = frame.dev_ops_manager
     with pytest.raises(RuntimeError):
         _ = frame.mutation_research
+    with pytest.raises(RuntimeError):
+        _ = frame.frame_configuration
 
 # ----------------------------------------------------------------------
 # 5. Version Registry Tests

@@ -300,7 +300,6 @@ class FrameView(Cleanable):
             metadata={
                 "contract_id": effective_contract.contract_id,
                 "allowed_kinds": effective_contract.allowed_kinds,
-                "allowed_commands": effective_contract.allowed_commands,
                 "link_count": len(links_by_id),
             },
         )

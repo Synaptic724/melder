@@ -12,7 +12,7 @@ class AethericFrameConfiguration(Cleanable):
     """
     Internal
 
-    Narrow frame-level runtime posture for AR/Nexus-facing behavior.
+    Narrow frame-level runtime posture for AR and Nexus-facing behavior.
 
     Purpose:
         Hold only the immutable frame posture fields that matter to AR-facing
@@ -25,6 +25,8 @@ class AethericFrameConfiguration(Cleanable):
         - Is immutable by convention after construction; callers bind one
           instance into an `AethericFrame` and later same-frame attempts do not
           overwrite that posture.
+        - Equality of posture is defined by the three runtime posture fields,
+          not by object identity, object id, or origin spellbook id.
         - Cleanup is idempotent and clears all owned references.
 
     Lifecycle:
@@ -191,6 +193,12 @@ class AethericFrameConfiguration(Cleanable):
         """
         Compare this posture against another frame-level posture object.
 
+        Contract:
+            - Compares only the runtime posture fields:
+              `system_state`, `ai_native_enabled`, and `rift_enabled`.
+            - Ignores provenance metadata such as `origin_spellbook_id`.
+            - Returns False when `other` is None.
+
         Args:
             other:
                 Other frame posture object to compare.
@@ -211,6 +219,11 @@ class AethericFrameConfiguration(Cleanable):
         """
         Return a detached posture description for logging and diagnostics.
 
+        Contract:
+            - Returns plain scalar values only.
+            - Intended for diagnostics, logging, and conflict reporting rather
+              than as a mutable runtime object.
+
         Returns:
             Dict[str, Any]: Plain posture dictionary.
         """
@@ -225,6 +238,11 @@ class AethericFrameConfiguration(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently clear owned posture state.
+
+        Contract:
+            - Safe to call multiple times.
+            - Clears all owned posture fields and provenance references.
+            - Leaves the object permanently cleaned.
 
         Returns:
             None.

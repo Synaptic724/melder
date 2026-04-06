@@ -171,7 +171,6 @@ def test_frame_link_from_contract_subject_clones_contract_and_metadata() -> None
     contract = FrameLinkContract(
         frame_name="ops",
         allowed_kinds=("frame",),
-        allowed_commands=("query",),
         metadata={"source": "compiled"},
     )
     metadata = {"payload_fields": ("system_state",)}
@@ -187,7 +186,6 @@ def test_frame_link_from_contract_subject_clones_contract_and_metadata() -> None
     metadata["mutated"] = True
 
     assert link.contract is not contract
-    assert link.contract.allowed_commands == ("query",)
     assert link.metadata == {"payload_fields": ("system_state",)}
 
 
@@ -204,10 +202,10 @@ def test_frame_view_from_compiled_access_surface_builds_frame_conduit_and_spell_
     )
 
     assert frame_view.frame_name == "ops"
-    assert frame_view.metadata["allowed_commands"] == (
-        "bind_existing",
-        "query",
-        "resolve_existing",
+    assert frame_view.metadata["allowed_kinds"] == (
+        "conduit",
+        "frame",
+        "spell",
     )
     assert frame_view.metadata["link_count"] == 3
     links = list(frame_view.links_by_id.values())
@@ -250,11 +248,11 @@ def test_frame_view_from_compiled_access_surface_respects_narrowed_contract_prof
                 "frame_only",
                 allowed_kinds=("frame",),
                 frame_payload_fields=("system_state",),
-            ),
-            codegen_profile=FrameLinkCodegenProfile(
-                "frame_only",
-                allowed_commands=("query",),
-            ),
+        ),
+        codegen_profile=FrameLinkCodegenProfile(
+            "frame_only",
+            allowed_commands=("query",),
+        ),
         ),
     )
 
@@ -263,7 +261,6 @@ def test_frame_view_from_compiled_access_surface_respects_narrowed_contract_prof
     assert len(links) == 1
     assert links[0].source_kind == "frame"
     assert links[0].metadata["payload_fields"] == ("system_state",)
-    assert frame_view.metadata["allowed_commands"] == ("query",)
 
 
 def test_frame_view_from_compiled_access_surface_rejects_mismatched_frame_name() -> None:

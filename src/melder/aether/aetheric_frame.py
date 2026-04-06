@@ -16,22 +16,27 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class AethericFrame(Cleanable, IAethericFrame):
     """
-    Manages an isolated "universe" or "frame" within the Aether.
+    Manage one isolated runtime frame within `Aether`.
 
-    An AethericFrame holds all top-level conduits, spell registries, dev-ops
-    control-plane state, and configuration for a specific, isolated domain.
+    `AethericFrame` is the per-frame ownership boundary beneath the global
+    `Aether` singleton. It owns the frame-local conduit registry, spell/index
+    registries, cluster state, frame-level posture/config references, and the
+    DevOps and mutation services tied to that frame.
 
-    High-level responsibilities:
+    Contract:
       - Owns root conduits and their spell registries.
       - Owns a stable root-conduit name index for per-frame lookup.
-      - Owns the version registry for all SpellIndex lineages in this frame.
-      - Owns the MutationResearch hub for this frame.
-      - Owns SpellSystemStates (graph / dirtiness brain).
-      - Owns DevOpsManager (incidents + change-control over this frame).
-      - Owns one narrow frame-level AR posture object distinct from the
-        richer shared Spellbook configuration object.
+      - Owns the version registry for all `SpellIndex` lineages in this frame.
+      - Owns the `MutationResearch` hub for this frame.
+      - Owns `SpellSystemStates` and `DevOpsManager` for this frame.
+      - Owns one narrow frame-level AR posture object distinct from the richer
+        shared Spellbook configuration object.
+      - Detaches itself from `Aether` only after frame-owned cleanup completes.
 
-    This object is thread-safe.
+    Threading / Concurrency:
+      - Uses one frame-local `RLock` to guard cleanup and frame-owned registry
+        mutation.
+      - Relies on child objects to guard their own internal state.
     """
     __melder_internal__ = _mrg.sentinel
     def __init__(self, aether: IAether, name: str) -> None:
@@ -100,20 +105,17 @@ class AethericFrame(Cleanable, IAethericFrame):
     # ------------------------------------------------------------------
     def cleanup(self) -> None:
         """
-        Clean up the AethericFrame and all of its owned resources.
+        Clean up the frame and all of its owned runtime state.
 
-        Idempotent and lock-guarded:
+        Contract:
+        - Idempotent and lock-guarded.
+        - Cleans frame-owned conduits, registries, mutation services, and
+          DevOps services before dropping top-level references.
+        - Detaches the cleaned frame from its owner `Aether` after teardown is
+          complete.
 
-        - Calls cleanup() on all root conduits.
-        - Cleans and nulls all concurrent registries.
-        - Cleans and nulls:
-            * MutationResearch
-            * SpellSystemStates
-            * DevOpsManager
-        - Drops configuration and identifiers.
-
-        After cleanup():
-        - All public methods should raise via check_cleaned().
+        Returns:
+            None.
         """
         if self._cleaned:
             return
@@ -144,7 +146,16 @@ class AethericFrame(Cleanable, IAethericFrame):
 
     def _cleanup_data_structures(self) -> None:
         """
-        Clean up all owned data structures.
+        Clean up all frame-owned registries and child services.
+
+        Contract:
+        - Cleans child conduits before clearing conduit registries.
+        - Clears spell, version, and cluster registries owned by the frame.
+        - Cleans conduit cloud, mutation research, spell-system-state, and
+          DevOps services when present.
+
+        Returns:
+            None.
         """
         # Conduits
         if self._conduits is not None:
@@ -207,10 +218,11 @@ class AethericFrame(Cleanable, IAethericFrame):
     # ------------------------------------------------------------------
     def __enter__(self) -> "AethericFrame":
         """
-        Enter the AethericFrame context.
+        Enter the frame lock context and return `self`.
 
-        This simply acquires the frame-level lock. It does not change
-        ownership semantics; it's a convenience for short critical sections.
+        Returns:
+            AethericFrame:
+                This frame instance while the frame-level lock is held.
         """
         self.check_cleaned()
         self._lock.acquire()
@@ -218,7 +230,10 @@ class AethericFrame(Cleanable, IAethericFrame):
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         """
-        Exit the AethericFrame context and release the frame-level lock.
+        Exit the frame lock context and release the frame-level lock.
+
+        Returns:
+            None.
         """
         # No check_cleaned() here to guarantee lock release on teardown paths.
         self._lock.release()
@@ -289,14 +304,16 @@ class AethericFrame(Cleanable, IAethericFrame):
     # ------------------------------------------------------------------
     def refresh_version_registry(self) -> None:
         """
-        Rebuild the version registry from the current SpellIndex registry.
+        Rebuild the version registry from the current `SpellIndex` registry.
 
-        After this runs:
-          - _version_registry[conduit_id] will contain all SHA256 versions
-            for every SpellIndex owned by that conduit.
+        Contract:
+          - Recomputes the per-conduit cached version-id sets from scratch.
+          - Intended after binding, mutation, or promotion changes that may
+            alter the set of version ids advertised by one or more spell
+            lineages.
 
-        This is meant to be called after significant changes to bindings,
-        e.g. bulk rebinding or promotion waves.
+        Returns:
+            None.
         """
         self.check_cleaned()
         with self._lock:
@@ -319,13 +336,16 @@ class AethericFrame(Cleanable, IAethericFrame):
 
     def has_version(self, version_id: str) -> bool:
         """
-        Check if the given SHA256 version_id exists in this frame.
+        Check whether the given SHA256 `version_id` exists in this frame.
 
-        Uses the prebuilt _version_registry.
+        Contract:
+          - Uses the cached `_version_registry`.
+          - Returns False for empty ids or when the cache is unavailable.
 
         Returns:
-            True if any conduit in this frame owns a SpellIndex whose
-            versions set contains `version_id`, otherwise False.
+            bool:
+                True when any conduit in this frame owns a `SpellIndex` whose
+                version set contains `version_id`.
         """
         self.check_cleaned()
         if not version_id:
@@ -342,10 +362,15 @@ class AethericFrame(Cleanable, IAethericFrame):
 
     def get_all_versions(self) -> set[str]:
         """
-        Return a flat set of all SHA256 version ids in this frame.
+        Return a flat set of all cached SHA256 version ids in this frame.
 
-        Uses the prebuilt _version_registry and merges all per-conduit
-        version sets into a single set.
+        Contract:
+          - Uses the cached `_version_registry`.
+          - Returns an empty set when the cache is unavailable.
+
+        Returns:
+            set[str]:
+                All cached version ids across every conduit in the frame.
         """
         self.check_cleaned()
         result: set[str] = set()
@@ -360,17 +385,19 @@ class AethericFrame(Cleanable, IAethericFrame):
 
     def find_and_return_spell_index(self, version_id: str) -> SpellIndex | None:
         """
-        Find and return the SpellIndex that contains the given SHA256 version id.
+        Find and return the `SpellIndex` that contains the given version id.
 
-        This scans the SpellIndex registry (_spell_registry) and checks
-        SpellIndex.get_all_versions() for membership.
+        Contract:
+          - Scans the frame-owned `_spell_registry`.
+          - Returns `None` for empty ids or when no matching lineage is found.
 
         Args:
             version_id: SHA256 version id to search for.
 
         Returns:
-            The SpellIndex instance that owns `version_id`, or None if no
-            SpellIndex within this frame advertises that version.
+            SpellIndex | None:
+                The lineage that owns `version_id`, or `None` when no lineage
+                in this frame advertises that version.
         """
         self.check_cleaned()
         if not version_id:

@@ -367,11 +367,6 @@ def test_frame_link_contract_without_profile_retains_compiled_values() -> None:
 
     assert contract.frame_name == "ops"
     assert contract.allowed_kinds == ("conduit", "frame", "spell")
-    assert contract.allowed_commands == (
-        "bind_existing",
-        "query",
-        "resolve_existing",
-    )
     assert contract.metadata["source"] == "compiled"
 
 
@@ -402,7 +397,6 @@ def test_frame_link_contract_with_profile_narrows_projection() -> None:
     )
 
     assert contract.allowed_kinds == ("frame",)
-    assert contract.allowed_commands == ("query",)
     assert contract.metadata["frame_payload_fields"] == ("system_state",)
     assert contract.metadata["conduit_payload_sections_by_id"] == {
         "conduit-1": tuple(),
@@ -432,9 +426,6 @@ def test_frame_link_contract_profile_with_empty_filters_does_not_narrow_projecti
     )
 
     assert contract.allowed_kinds == tuple(sorted(compiled_surface.allowed_kinds))
-    assert contract.allowed_commands == tuple(
-        sorted(compiled_surface.allowed_commands)
-    )
     assert contract.metadata["frame_payload_fields"] == (
         "system_state",
         "rift_enabled",
@@ -458,7 +449,6 @@ def test_frame_link_contract_cleanup_clears_owned_state() -> None:
     assert contract.cleaned is True
     assert contract._frame_name is None
     assert contract._allowed_kinds is None
-    assert contract._allowed_commands is None
     assert contract._metadata is None
 
 
@@ -475,8 +465,6 @@ def test_frame_link_contract_helper_methods_expose_effective_contract_shape() ->
 
     assert contract.allows_kind("frame") is True
     assert contract.allows_kind("mutation") is False
-    assert contract.allows_command("query") is True
-    assert contract.allows_command("write_attribute") is False
     assert contract.get_frame_payload_fields() == (
         "system_state",
         "rift_enabled",
@@ -509,9 +497,6 @@ def test_frame_link_contract_helper_methods_reject_invalid_inputs() -> None:
     with pytest.raises(ValueError, match="source_kind cannot be empty"):
         contract.allows_kind("")
 
-    with pytest.raises(ValueError, match="command_name cannot be empty"):
-        contract.allows_command("")
-
     with pytest.raises(ValueError, match="conduit_id cannot be empty"):
         contract.get_conduit_payload_sections("")
 
@@ -532,8 +517,6 @@ def test_frame_link_contract_helper_methods_expose_effective_contract_shape() ->
 
     assert contract.allows_kind("frame") is True
     assert contract.allows_kind("mutation") is False
-    assert contract.allows_command("query") is True
-    assert contract.allows_command("write_attribute") is False
     assert contract.get_frame_payload_fields() == (
         "system_state",
         "rift_enabled",
@@ -553,7 +536,6 @@ def test_frame_link_contract_helper_methods_expose_effective_contract_shape() ->
     assert contract.describe() == {
         "frame_name": "ops",
         "allowed_kinds": ("conduit", "frame", "spell"),
-        "allowed_commands": ("bind_existing", "query", "resolve_existing"),
         "frame_payload_fields": (
             "system_state",
             "rift_enabled",
@@ -577,9 +559,6 @@ def test_frame_link_contract_helper_methods_reject_invalid_inputs() -> None:
 
     with pytest.raises(ValueError, match="source_kind cannot be empty"):
         contract.allows_kind("")
-
-    with pytest.raises(ValueError, match="command_name cannot be empty"):
-        contract.allows_command("")
 
     with pytest.raises(ValueError, match="conduit_id cannot be empty"):
         contract.get_conduit_payload_sections("")
