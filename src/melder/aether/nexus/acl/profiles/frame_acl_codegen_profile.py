@@ -94,6 +94,10 @@ class FrameACLCodegenProfile(Cleanable):
         """
         Idempotently clear the codegen profile and owned rulesets.
 
+        Contract:
+            - Cleans all owned rulesets before dropping references.
+            - Leaves the profile unusable after cleanup.
+
         Returns:
             None.
         """
@@ -121,6 +125,9 @@ class FrameACLCodegenProfile(Cleanable):
         """
         Create the default reusable codegen profile.
 
+        Contract:
+            Delegates to the standard `safe` codegen profile factory.
+
         Returns:
             FrameACLCodegenProfile: Default reusable codegen profile.
         """
@@ -134,6 +141,9 @@ class FrameACLCodegenProfile(Cleanable):
     def create_safe(cls) -> "FrameACLCodegenProfile":
         """
         Create the reusable `safe` codegen profile.
+
+        Contract:
+            Returns the restrictive default codegen posture.
 
         Returns:
             FrameACLCodegenProfile: Reusable `safe` codegen profile.
@@ -149,6 +159,10 @@ class FrameACLCodegenProfile(Cleanable):
         """
         Create the reusable `hybrid` codegen profile.
 
+        Contract:
+            Returns the intermediate codegen posture between safe and
+            permissive.
+
         Returns:
             FrameACLCodegenProfile: Reusable `hybrid` codegen profile.
         """
@@ -163,6 +177,9 @@ class FrameACLCodegenProfile(Cleanable):
         """
         Create the reusable `permissive` codegen profile.
 
+        Contract:
+            Returns the most open standard codegen posture.
+
         Returns:
             FrameACLCodegenProfile: Reusable `permissive` codegen profile.
         """
@@ -174,42 +191,42 @@ class FrameACLCodegenProfile(Cleanable):
 
     @property
     def id(self) -> str:
-        """Return the stable profile identifier."""
+        """Return the stable identifier for this reusable codegen profile."""
         self.check_cleaned()
         return self._id
 
     @property
     def version(self) -> str:
-        """Return the reusable profile version string."""
+        """Return the version string carried by this reusable codegen profile."""
         self.check_cleaned()
         return self._version
 
     @property
     def name(self) -> str:
-        """Return the stable profile name."""
+        """Return the stable name of this reusable codegen profile."""
         self.check_cleaned()
         return self._name
 
     @property
     def frame_ruleset(self) -> FrameACLRuleSet:
-        """Return the frame-scoped ruleset."""
+        """Return the owned frame-scoped ruleset for this codegen profile."""
         self.check_cleaned()
         return self._frame_ruleset
 
     @property
     def conduit_ruleset(self) -> FrameACLRuleSet:
-        """Return the conduit-scoped ruleset."""
+        """Return the owned conduit-scoped ruleset for this codegen profile."""
         self.check_cleaned()
         return self._conduit_ruleset
 
     @property
     def spell_ruleset(self) -> FrameACLRuleSet:
-        """Return the spell-scoped ruleset."""
+        """Return the owned spell-scoped ruleset for this codegen profile."""
         self.check_cleaned()
         return self._spell_ruleset
 
     @property
     def capability_ruleset(self) -> FrameACLRuleSet:
-        """Return the capability-scoped ruleset."""
+        """Return the owned capability-scoped ruleset for this codegen profile."""
         self.check_cleaned()
         return self._capability_ruleset

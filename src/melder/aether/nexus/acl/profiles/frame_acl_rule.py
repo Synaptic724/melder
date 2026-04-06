@@ -81,6 +81,10 @@ class FrameACLRule(Cleanable):
         """
         Idempotently clear the rule.
 
+        Contract:
+            - Clears the owned detached condition map.
+            - Drops the rule's identity and payload references.
+
         Returns:
             None.
         """
@@ -154,6 +158,10 @@ class FrameACLRule(Cleanable):
         """
         Return the rule as a detached JSON-compatible dictionary.
 
+        Contract:
+            Returns a detached JSON-ready payload built from the rule's
+            current state.
+
         Returns:
             Dict[str, Any]: JSON-compatible rule dictionary.
         """
@@ -177,6 +185,10 @@ class FrameACLRule(Cleanable):
             payload:
                 JSON-compatible rule dictionary.
 
+        Contract:
+            Validates only the outer payload type here and delegates the field-
+            level invariants to the normal constructor.
+
         Returns:
             FrameACLRule: Reconstructed rule object.
         """
@@ -193,9 +205,12 @@ class FrameACLRule(Cleanable):
         """
         Return a detached copy of the rule.
 
+        Contract:
+            Clones through the JSON-compatible round-trip path so the returned
+            rule has detached condition state.
+
         Returns:
             FrameACLRule: Detached rule copy.
         """
         self.check_cleaned()
         return FrameACLRule.from_json_dict(self.to_json_dict())
-

@@ -94,6 +94,91 @@ class TestCreation:
         mock_value.cleanup.assert_not_called()
         mock_value.close.assert_not_called()
 
+    def test_disposal_metadata_properties_reflect_live_and_cleaned_state(self, sample_value):
+        """
+        Verify disposal metadata properties expose live values and clear after cleanup.
+
+        Contract:
+        - `has_disposal_methods` and `disposal_method_names` report constructor metadata while active.
+        - Both properties return None after cleanup.
+        """
+        creation = Creation(
+            sample_value,
+            has_disposal_methods=True,
+            disposal_methods=["close", "dispose"],
+        )
+
+        assert creation.has_disposal_methods is True
+        assert creation.disposal_method_names == ["close", "dispose"]
+
+        creation.cleanup()
+
+        assert creation.has_disposal_methods is None
+        assert creation.disposal_method_names is None
+
+    def test_cleanup_returns_when_another_cleanup_completes_before_second_check(self, sample_value):
+        """
+        Verify cleanup returns cleanly when the object is already cleaned inside the lock.
+
+        Contract:
+        - The second `_cleaned` guard returns without raising.
+        - State written by the concurrent cleanup remains intact.
+        """
+
+        class ConcurrentCleanupLock:
+            """
+            Context manager that simulates another cleanup finishing before the second check.
+            """
+
+            def __init__(self, creation: Creation) -> None:
+                """
+                Store the creation whose state will be flipped during entry.
+
+                Args:
+                    creation: Creation instance under test.
+                """
+                self._creation = creation
+
+            def __enter__(self) -> "ConcurrentCleanupLock":
+                """
+                Simulate a completed cleanup before the guarded re-check executes.
+
+                Returns:
+                    This context manager instance.
+                """
+                self._creation._cleaned = True
+                self._creation._value = None
+                self._creation._has_disposal_methods = None
+                self._creation._disposal_methods = None
+                self._creation._lock = None
+                return self
+
+            def __exit__(self, exc_type: object, exc_value: object, traceback: object) -> bool:
+                """
+                Exit without suppressing exceptions.
+
+                Args:
+                    exc_type: Exception type if any.
+                    exc_value: Exception instance if any.
+                    traceback: Traceback object if any.
+                Returns:
+                    False so exceptions are not swallowed.
+                """
+                return False
+
+        creation = Creation(
+            sample_value,
+            has_disposal_methods=True,
+            disposal_methods=["close"],
+        )
+        creation._lock = ConcurrentCleanupLock(creation)
+
+        creation.cleanup()
+
+        assert creation.value is None
+        assert creation.has_disposal_methods is None
+        assert creation.disposal_method_names is None
+
     # ------------------------------------------------------------------
     # Rank B: Concurrency/Locking Tests
     # ------------------------------------------------------------------

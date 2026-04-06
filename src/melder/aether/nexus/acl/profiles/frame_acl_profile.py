@@ -101,6 +101,11 @@ class FrameACLProfile(Cleanable):
         """
         Idempotently clear the composed profile.
 
+        Contract:
+            - Cleans the owned override rulesets only.
+            - Drops references to the shared reusable profiles without
+              cleaning those shared library objects.
+
         Returns:
             None.
         """
@@ -123,43 +128,42 @@ class FrameACLProfile(Cleanable):
 
     @property
     def id(self) -> str:
-        """Return the stable composed profile identifier."""
+        """Return the stable identifier for this composed ACL profile."""
         self.check_cleaned()
         return self._id
 
     @property
     def version(self) -> str:
-        """Return the composed profile version string."""
+        """Return the version string carried by this composed ACL profile."""
         self.check_cleaned()
         return self._version
 
     @property
     def name(self) -> str:
-        """Return the stable composed profile name."""
+        """Return the stable name of this composed ACL profile."""
         self.check_cleaned()
         return self._name
 
     @property
     def view_profile(self) -> FrameACLViewProfile:
-        """Return the shared reusable view profile."""
+        """Return the shared reusable view profile referenced by this composition."""
         self.check_cleaned()
         return self._view_profile
 
     @property
     def codegen_profile(self) -> FrameACLCodegenProfile:
-        """Return the shared reusable codegen profile."""
+        """Return the shared reusable codegen profile referenced by this composition."""
         self.check_cleaned()
         return self._codegen_profile
 
     @property
     def view_override_ruleset(self) -> FrameACLRuleSet:
-        """Return the owned view override ruleset."""
+        """Return the owned view override ruleset for this composed profile."""
         self.check_cleaned()
         return self._view_override_ruleset
 
     @property
     def codegen_override_ruleset(self) -> FrameACLRuleSet:
-        """Return the owned codegen override ruleset."""
+        """Return the owned codegen override ruleset for this composed profile."""
         self.check_cleaned()
         return self._codegen_override_ruleset
-
