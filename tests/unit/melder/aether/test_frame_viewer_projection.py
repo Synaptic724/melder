@@ -92,6 +92,37 @@ def _build_descriptor(frame_name: str) -> FrameDescriptor:
     return descriptor
 
 
+def _build_detailed_descriptor(frame_name: str) -> FrameDescriptor:
+    descriptor = _build_descriptor(frame_name)
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            nexus_label="default",
+            nexus_version="0.0.1",
+            origin_spellbook_id="{0}-spellbook".format(frame_name),
+            frame_name=frame_name,
+            owner_conduit_id="{0}-conduit".format(frame_name),
+            spell_id="{0}-spell".format(frame_name),
+            lineage_id="{0}-lineage".format(frame_name),
+            spell_name="{0}Spell".format(frame_name.title()),
+            spellframe=None,
+            binding_name="{0}_spell".format(frame_name),
+            permissions=Permissions.create,
+            existence=Existence.unique,
+            payload=SpellDescriptorPayload(
+                payload_type="detailed",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile={"methods": ["run"]},
+                callable_profile={"signature": "() -> None"},
+                metadata={"frame": frame_name},
+                instance_members={"state": {"type": "str"}},
+                dynamic_access={"has_getattr": False},
+            ),
+        )
+    )
+    return descriptor
+
+
 def _build_surface(
         frame_name: str,
         configuration: FrameACLConfiguration,
@@ -258,6 +289,38 @@ def test_frame_viewer_describe_frame_summarizes_descriptor_driven_surface() -> N
     assert summary["available_kinds"] == ("conduit", "frame", "spell")
 
 
+def test_frame_viewer_describe_frame_inventory_reports_visible_ids() -> None:
+    viewer = _build_viewer(("ops",))
+
+    inventory = viewer.execute_tool(
+        "describe_frame_inventory",
+        frame_name="ops",
+    )
+
+    assert inventory == {
+        "frame_name": "ops",
+        "target_count": 3,
+        "conduit_count": 1,
+        "spell_count": 1,
+        "conduit_ids": ("ops-conduit",),
+        "spell_source_ids": ("ops-spellbook:ops-spell",),
+    }
+
+
+def test_frame_viewer_describe_frame_access_contract_reports_acl_surface() -> None:
+    viewer = _build_viewer(("ops",))
+
+    contract = viewer.execute_tool(
+        "describe_frame_access_contract",
+        frame_name="ops",
+    )
+
+    assert contract["frame_name"] == "ops"
+    assert contract["view_profile_name"] == "safe"
+    assert contract["codegen_profile_name"] == "safe"
+    assert contract["frame_payload_fields"] == ("system_state", "rift_enabled")
+
+
 def test_frame_viewer_describe_frame_payload_filters_to_visible_fields() -> None:
     viewer = _build_viewer(("ops",))
 
@@ -291,6 +354,23 @@ def test_frame_viewer_describe_conduit_returns_acl_filtered_payload() -> None:
     assert conduit_description["payload"] == {
         "conduit_name": "root",
         "conduit_state": "normal",
+    }
+
+
+def test_frame_viewer_describe_conduit_topology_reports_visible_spell_links() -> None:
+    viewer = _build_viewer(("ops",))
+
+    topology = viewer.execute_tool(
+        "describe_conduit_topology",
+        frame_name="ops",
+        conduit_id="ops-conduit",
+    )
+
+    assert topology == {
+        "conduit_id": "ops-conduit",
+        "peer_conduit_ids": tuple(),
+        "spell_count": 1,
+        "spell_source_ids": ("ops-spellbook:ops-spell",),
     }
 
 
@@ -355,6 +435,110 @@ def test_frame_viewer_describe_spell_omits_missing_detailed_sections_for_general
     assert spell_description["payload"] == {
         "binding_payload": {"kind": "class"},
         "metadata": {"frame": "ops"},
+    }
+
+
+def test_frame_viewer_describe_spell_detail_reports_payload_not_detailed() -> None:
+    viewer = _build_viewer(("ops",))
+
+    detail = viewer.execute_tool(
+        "describe_spell_detail",
+        frame_name="ops",
+        spell_source_id="ops-spellbook:ops-spell",
+    )
+
+    assert detail == {
+        "spell_source_id": "ops-spellbook:ops-spell",
+        "payload_type": "general",
+        "detail_available": False,
+        "reason": "payload_not_detailed",
+        "visible_sections": (
+            "binding_payload",
+            "resolution_payload",
+            "metadata",
+        ),
+        "payload": {},
+    }
+
+
+def test_frame_viewer_describe_spell_detail_reports_acl_restricted_for_detailed_payload() -> None:
+    configuration = FrameACLConfiguration.create_default("ops")
+    surface = _build_surface(
+        "ops",
+        configuration,
+        spell_sections_by_key={
+            ("ops-spellbook", "ops-spell"): ("binding_payload", "metadata"),
+        },
+    )
+    viewer = FrameViewer(
+        frame_descriptors_by_name={"ops": _build_detailed_descriptor("ops")},
+        frame_acl_configurations_by_frame_name={"ops": configuration},
+        compiled_access_surfaces_by_frame_name={"ops": surface},
+        default_view_frame_name="ops",
+    )
+
+    detail = viewer.execute_tool(
+        "describe_spell_detail",
+        frame_name="ops",
+        spell_source_id="ops-spellbook:ops-spell",
+    )
+
+    assert detail == {
+        "spell_source_id": "ops-spellbook:ops-spell",
+        "payload_type": "detailed",
+        "detail_available": False,
+        "reason": "acl_restricted",
+        "visible_sections": ("binding_payload", "metadata"),
+        "payload": {},
+    }
+
+
+def test_frame_viewer_describe_spell_detail_returns_rich_sections_for_detailed_payload() -> None:
+    configuration = FrameACLConfiguration.create_default("ops")
+    surface = _build_surface(
+        "ops",
+        configuration,
+        spell_sections_by_key={
+            ("ops-spellbook", "ops-spell"): (
+                "binding_payload",
+                "class_profile",
+                "callable_profile",
+                "instance_members",
+                "dynamic_access",
+            ),
+        },
+    )
+    viewer = FrameViewer(
+        frame_descriptors_by_name={"ops": _build_detailed_descriptor("ops")},
+        frame_acl_configurations_by_frame_name={"ops": configuration},
+        compiled_access_surfaces_by_frame_name={"ops": surface},
+        default_view_frame_name="ops",
+    )
+
+    detail = viewer.execute_tool(
+        "describe_spell_detail",
+        frame_name="ops",
+        spell_source_id="ops-spellbook:ops-spell",
+    )
+
+    assert detail == {
+        "spell_source_id": "ops-spellbook:ops-spell",
+        "payload_type": "detailed",
+        "detail_available": True,
+        "reason": "available",
+        "visible_sections": (
+            "binding_payload",
+            "class_profile",
+            "callable_profile",
+            "instance_members",
+            "dynamic_access",
+        ),
+        "payload": {
+            "class_profile": {"methods": ["run"]},
+            "callable_profile": {"signature": "() -> None"},
+            "instance_members": {"state": {"type": "str"}},
+            "dynamic_access": {"has_getattr": False},
+        },
     }
 
 

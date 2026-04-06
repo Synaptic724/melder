@@ -156,6 +156,88 @@ class GeneralViewConduit(Cleanable):
             ),
         }
 
+    def list_conduit_spells(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[FrameLink]:
+        """
+        Return the ACL-visible spells owned by one conduit.
+
+        Purpose:
+            Give the viewer operator a direct conduit-to-spell traversal path
+            instead of forcing a full spell scan and manual filtering.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            List[FrameLink]: ACL-visible spells owned by the conduit.
+        """
+        self.check_cleaned()
+        self.get_required_conduit(conduit_id, frame_name=frame_name)
+        spell_links = self._get_required_frame_view().list_targets(
+            frame_name=frame_name,
+            source_kind="spell",
+        )
+        descriptor = self._get_required_frame_view()._get_required_frame_descriptor()
+        filtered_links: List[FrameLink] = []
+        for spell_link in spell_links:
+            record_key = spell_link.metadata["record_key"]
+            spell_record = descriptor.spell_records_by_key[record_key]
+            if spell_record.owner_conduit_id == conduit_id:
+                filtered_links.append(spell_link)
+        return filtered_links
+
+    def describe_conduit_topology(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the visible topology around one conduit.
+
+        Purpose:
+            Show the conduit's peer links plus the visible spells currently
+            owned by that conduit in one compact description.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            Dict[str, object]: Visible conduit topology summary.
+        """
+        self.check_cleaned()
+        conduit_description = self.describe_conduit(
+            conduit_id,
+            frame_name=frame_name,
+        )
+        spell_links = self.list_conduit_spells(
+            conduit_id,
+            frame_name=frame_name,
+        )
+        return {
+            "conduit_id": conduit_id,
+            "peer_conduit_ids": tuple(
+                conduit_description["payload"].get("peer_conduit_ids", tuple())
+            ),
+            "spell_count": len(spell_links),
+            "spell_source_ids": tuple(
+                spell_link.source_id
+                for spell_link in spell_links
+            ),
+        }
+
     def get_required_conduit(
             self,
             conduit_id: str,

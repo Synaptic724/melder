@@ -553,20 +553,30 @@ class TransferOfOwnership:
 
     def _register_rollback(self, fn: Optional[Callable[[], None]]) -> None:
         """
-        Record a rollback action to run in reverse order on failure.
+        Register one failure-recovery action for the current transfer.
+
+        Rollback handlers are accumulated as the transfer crosses irreversible
+        boundaries. They are later executed in reverse order so the recovery
+        path unwinds ownership, contract, and state transitions from newest to
+        oldest, matching the order in which the transfer mutated the runtime.
 
         Args:
-            fn: Callable to execute during rollback; ignored if None.
+            fn: Callable to execute during rollback. `None` is ignored so call
+                sites can register handlers conditionally without branching.
         """
         if fn is not None:
             self._rollback_actions.append(fn)
 
     def _rollback(self) -> None:
         """
-        Execute rollback actions in reverse order.
+        Execute the accumulated rollback stack after transfer failure.
 
-        Best-effort: suppresses individual rollback failures and attempts to
-        restore cluster shares from the preflight snapshot.
+        Recovery is intentionally best-effort. Each handler is allowed to fail
+        independently so one broken undo step does not prevent later handlers
+        from repairing other parts of the runtime. After the explicit rollback
+        stack is drained, the method also attempts to rebuild cluster-sharing
+        state from the preflight snapshot because cluster exposure lives partly
+        outside the spellbook/registry flip itself.
         """
         while self._rollback_actions:
             fn = self._rollback_actions.pop()
@@ -584,18 +594,25 @@ class TransferOfOwnership:
 
     def _rollback_spellbook_move(self, spell_obj: Any, src_book: Any, tgt_book: Any) -> None:
         """
-        Restore spell ownership in spellbooks to the source.
+        Restore the spellbook-side ownership flip back to the source conduit.
 
-        Behaviour:
-            - Moves spell maps back to the source Spellbook.
-            - Restores SpellSystemStates registration for the source lineage.
-            - Clears the target lineage registration when present.
-            - Restores RiskManager registrations to the source conduit.
+        This rollback step repairs the local spell registries after a failed
+        transfer that already crossed the critical ownership-flip boundary. It
+        moves the spell record back into the source spellbook, removes the
+        partially moved target-side entries, restores lineage ownership pointers
+        on the spell and `SpellIndex`, and re-registers the spell with the
+        source-side risk/validation surfaces.
+
+        The intent is not only to put the spell back in the right dictionary.
+        It is to restore one coherent owner view so later validation,
+        risk-management, and resolution logic all agree on which conduit owns
+        the lineage after the failed move.
 
         Args:
-            spell_obj: Spell being moved.
-            src_book: Source spellbook.
-            tgt_book: Target spellbook.
+            spell_obj: Live spell object whose ownership flip is being undone.
+            src_book: Original owner spellbook that should regain the lineage.
+            tgt_book: Partially updated target spellbook that must release the
+                lineage.
         """
         spell_id = spell_obj.spell_index.current
         with SafeGuard(tgt_book._lock, src_book._lock):
@@ -669,26 +686,23 @@ class TransferOfOwnership:
 
     def _unshare_target_conduit_contract(self, spell_obj: Any) -> None:
         """
-        Internal
+        Remove the target-side borrowed contract entry before the ownership flip.
 
-        Remove the target conduit contract entry for this spell before the ownership flip.
+        This is the pre-flip safety step for the case where the target conduit
+        already sees the spell through a contract with the source. If that
+        borrowed entry is left in place during the flip, later contract cleanup
+        can accidentally remove the newly owned spell-id mapping from the
+        target's spellbook after ownership has already changed.
 
-        Purpose:
-            Ensure that contract cleanup for the target conduit does not remove the
-            owned spell_id entry after the transfer completes.
-        Contract:
-            - If a contract exists between the target and source conduits, remove the
-              spell_id from the target's contract map.
-            - Registers a rollback action to restore the contract entry if needed.
-            - Best-effort: errors are suppressed to avoid blocking transfer.
+        The helper therefore removes the borrowed contract view first and
+        registers a rollback action that can restore it if the transfer aborts.
+        Recovery is best-effort because failure to pre-clean this surface
+        should not by itself prevent the larger ownership move from attempting
+        rollback.
+
         Args:
-            spell_obj: Spell being transferred.
-        Returns:
-            None.
-        Raises:
-            None; errors are suppressed.
-        Threading:
-            Caller should hold conduit locks to serialize against concurrent link changes.
+            spell_obj: Spell whose borrowed target-side contract entry may need
+                to be removed temporarily.
         """
         try:
             target_ward = self.target_conduit._conduit_ward
@@ -721,11 +735,16 @@ class TransferOfOwnership:
 
     def _rollback_move_creation(self, spell_obj: Any, obj: Any) -> None:
         """
-        Restore a moved creation back to the source conduit.
+        Move one already-transferred creation back to the source conduit.
+
+        This handler is used when a single creation instance has already been
+        rehomed on the target before the overall transfer fails. It restores
+        the previous ownership of that runtime object so the failed transfer
+        does not strand live creation state on the wrong conduit.
 
         Args:
-            spell_obj: Spell whose creation was moved.
-            obj: The creation instance to restore.
+            spell_obj: Spell whose creation ownership is being restored.
+            obj: Creation instance that must be reattached to the source.
         """
         try:
             self.target_conduit._creations.remove(spell_obj)
@@ -735,11 +754,18 @@ class TransferOfOwnership:
 
     def _rollback_creations_move(self, spell_id: str, extracted: List[Dict[str, Any]]) -> None:
         """
-        Undo a bulk creations move from source -> target back to source.
+        Restore a bulk-extracted creation payload back to the source conduit.
+
+        Some transfer paths move creation state in batches rather than one
+        object at a time. This rollback step first tries to drain any partial
+        target-side creations for the lineage, then restores the original
+        extracted payload to the source so ownership and disposal state line up
+        with the pre-transfer world again.
 
         Args:
-            spell_id: Spell identifier for the creations.
-            extracted: Creations previously extracted from the source.
+            spell_id: Spell identifier whose creation payload is being restored.
+            extracted: Bulk creation snapshot previously extracted from the
+                source conduit.
         """
         try:
             # Remove from target
@@ -754,10 +780,16 @@ class TransferOfOwnership:
 
     def _snapshot_current_state(self, spell_obj: Any) -> Dict[str, Any]:
         """
-        Snapshot minimal state needed for rollback/idempotence.
+        Capture the minimal transfer-recovery snapshot for this lineage.
+
+        The snapshot intentionally stays small. It records only the pieces of
+        state needed to detect partial progress and rebuild cluster exposure
+        safely if rollback is required: target registry presence, target
+        spellbook presence, and cluster-share state.
 
         Returns:
-            Dict containing registry presence, spellbook presence, and cluster shares.
+            Dict[str, Any]: Minimal rollback/idempotence snapshot for the
+            current transfer target.
         """
         snapshot = {
             "in_target_registry": self._spell_in_registry(self.target_conduit, spell_obj.spell_index),
@@ -768,13 +800,18 @@ class TransferOfOwnership:
 
     def _spell_in_registry(self, conduit: Any, spell_index: SpellIndex) -> bool:
         """
-        Return True if the spell_index is present in the Aether registry for the conduit.
+        Check whether Aether already records this lineage under the conduit.
+
+        This is used for rollback/idempotence bookkeeping rather than ordinary
+        resolution. The transfer logic needs to know whether a target-side
+        registry insert actually happened so it can distinguish "nothing was
+        changed" from "partial progress must be undone."
 
         Args:
-            conduit: Conduit whose registry is checked.
-            spell_index: Lineage to look for.
+            conduit: Conduit whose frame-level Aether registry is being checked.
+            spell_index: Lineage key to look for in that registry.
         Returns:
-            bool: True if present, False otherwise.
+            bool: `True` when the lineage is already registered for the conduit.
         """
         try:
             frame = self._aether._aetheric_frames[self._frame_name] if self._frame_name != "default" else self._aether._default_frame
@@ -785,13 +822,18 @@ class TransferOfOwnership:
 
     def _spell_in_spellbook(self, conduit: Any, spell_obj: Any) -> bool:
         """
-        Return True if the spell exists in the conduit spellbook.
+        Check whether the conduit spellbook already owns the spell object.
+
+        Together with `_spell_in_registry`, this lets the transfer distinguish
+        spellbook-side progress from registry-side progress when deciding how
+        much rollback work is still required.
 
         Args:
-            conduit: Conduit whose spellbook is checked.
-            spell_obj: Spell to look for.
+            conduit: Conduit whose spellbook ownership map is being checked.
+            spell_obj: Spell object whose local ownership presence is being
+                tested.
         Returns:
-            bool: True if present, False otherwise.
+            bool: `True` when the spellbook currently contains the lineage.
         """
         try:
             with conduit._spellbook._lock:
@@ -801,13 +843,19 @@ class TransferOfOwnership:
 
     def _restore_contract_entry(self, ward: Any, spell_obj: Any, peer: Any, existed_before: bool) -> None:
         """
-        Restore contract spell entry to prior state.
+        Restore one contract entry to the state captured before pre-cleanup.
+
+        This is the inverse of `_unshare_target_conduit_contract`. If the
+        transfer fails after removing a borrowed entry, rollback uses this
+        helper to either recreate the original contract detail or remove the
+        temporary entry again so the ward returns to its pre-transfer contract
+        shape.
 
         Args:
-            ward: Contract ward being restored.
-            spell_obj: Spell involved.
-            peer: Peer conduit.
-            existed_before: Whether the entry existed originally.
+            ward: Ward whose contract detail map is being restored.
+            spell_obj: Spell whose contract visibility is being repaired.
+            peer: Peer conduit that participates in the contract relationship.
+            existed_before: Whether the entry existed before pre-cleanup began.
         """
         try:
             permissions = spell_obj.permissions
@@ -839,33 +887,24 @@ class TransferOfOwnership:
         spell_obj: Any,
     ) -> None:
         """
-        Internal
+        Restore a removed contract entry, with a test-double fallback path.
 
-        Best-effort rollback helper that restores a contract entry using a primary ward
-        and falls back to a secondary ward when the primary does not expose the expected
-        contract APIs (e.g., test doubles).
+        In real runtime use the primary ward should always handle the restore.
+        The fallback path exists so rollback can still exercise simplified test
+        doubles that do not expose the full ward API shape. This keeps the
+        production recovery path authoritative while avoiding brittle test-only
+        branching at call sites.
 
-        Purpose:
-            Re-add a contract detail during rollback while keeping the real contract
-            restoration path intact and allowing simplified ward stubs in unit tests.
-        Contract:
-            - Attempts `_add_spell_to_contract` on `primary_ward` using `primary_peer`.
-            - Falls back to `fallback_ward` only when the primary call raises AttributeError.
-            - Suppresses all errors; rollback is best-effort.
+        Recovery remains best-effort. If neither ward can restore the detail,
+        rollback continues so other ownership/state repair handlers still run.
+
         Args:
-            primary_ward: Ward expected to handle the contract call in real usage.
-            fallback_ward: Ward used when the primary lacks the method.
-            primary_peer: Peer conduit for the primary contract call.
-            fallback_peer: Peer conduit for the fallback contract call.
-            spell_obj: Spell object to restore.
-        Returns:
-            None.
-        Raises:
-            None; errors are suppressed.
-        Threading:
-            No explicit locking; defers to ward/contract synchronization.
-        Lifecycle:
-            Used only for rollback; does not change ownership.
+            primary_ward: Real ward expected to own contract restoration.
+            fallback_ward: Secondary ward used only when the primary does not
+                expose the needed restore method.
+            primary_peer: Peer conduit for the real restoration path.
+            fallback_peer: Peer conduit paired with the fallback ward.
+            spell_obj: Spell whose contract visibility is being restored.
         """
         try:
             primary_ward._add_spell_to_contract(
@@ -899,10 +938,15 @@ class TransferOfOwnership:
 
     def _snapshot_cluster_shares(self, spell_obj: Any) -> List[Dict[str, Any]]:
         """
-        Snapshot cluster shared spell entries for rollback.
+        Capture cluster-share membership that depends on source ownership.
+
+        Cluster sharing is orthogonal to the direct spellbook/registry flip, so
+        rollback needs a small side snapshot to know whether the source-owned
+        lineage was exposed through any conduit clusters before transfer began.
 
         Returns:
-            List of cluster share descriptors for the spell.
+            List[Dict[str, Any]]: Cluster-share descriptors sufficient to
+            restore source-owned sharing if rollback is required.
         """
         shares: List[Dict[str, Any]] = []
         try:
@@ -920,11 +964,17 @@ class TransferOfOwnership:
 
     def _restore_cluster_shares(self, snapshot: List[Dict[str, Any]], spell_obj: Any) -> None:
         """
-        Restore cluster shared spell entries based on snapshot.
+        Rebuild cluster-share exposure from the preflight snapshot.
+
+        This is the cluster-side companion to spellbook/registry rollback.
+        When transfer failure happens after cluster unsharing, the snapshot lets
+        rollback re-add only the shares that truly existed before the move
+        instead of re-sharing blindly.
 
         Args:
-            snapshot: List of cluster share descriptors.
-            spell_obj: Spell to restore shares for.
+            snapshot: Cluster-share descriptors captured before transfer.
+            spell_obj: Spell whose source-owned cluster exposure is being
+                restored.
         """
         try:
             frame = self._aether._aetheric_frames[self._frame_name] if self._frame_name != "default" else self._aether._default_frame
@@ -943,11 +993,24 @@ class TransferOfOwnership:
 
     def _lift_disable(self, spell_index: SpellIndex, gated: bool) -> None:
         """
-        Remove the hard-disable after transfer completes or fails.
+        Exit the hard-disabled in-flight state after transfer success or
+        failure.
+
+        The method does not "return to normal" blindly. It converts the lineage
+        from the temporary transfer-in-progress state into either:
+
+        - `gated`, when the runtime should force later validation before the
+          lineage is trusted again, or
+        - `unknown`, when the caller wants the disable removed without
+          immediately asserting the stronger gated posture
+
+        In both cases the explicit `transfer_in_progress` flag is removed so the
+        lineage no longer looks mid-flight to downstream readers.
 
         Args:
-            spell_index: Lineage to update.
-            gated: If True, leave it gated (requires validation). If False, mark unknown.
+            spell_index: Lineage leaving the hard-disabled transfer state.
+            gated: Whether the lineage should remain blocked behind validation
+                (`True`) or return to the weaker unknown state (`False`).
         """
         spell_states = self.source_conduit._spellbook._spell_system_states
         try:
@@ -973,18 +1036,30 @@ class TransferOfOwnership:
 
     def _flip_registry_and_spellbooks(self, spell_obj: Any) -> None:
         """
-        Move ownership in Aether and spellbooks, recording rollbacks.
+        Perform the critical ownership flip across Aether and both spellbooks.
 
-        Behaviour:
-            - Unregister lineage from the source SpellSystemStates.
-            - Register lineage with the target SpellSystemStates.
-            - Update spell ownership pointers and spellbook maps.
-            - Refresh RiskManager spell registrations for source and target conduits.
+        This is the transfer's main irreversible boundary. Before this step the
+        source conduit is still the canonical owner everywhere. After this step,
+        registry state, spellbook state, spell ownership pointers, and
+        spell-system/risk registrations all need to agree that the target owns
+        the lineage.
+
+        The helper therefore stages rollback handlers around both layers of the
+        move:
+
+        - frame-level Aether registry membership for the `SpellIndex`
+        - spellbook-local ownership maps and lineage/risk registrations
+
+        If any sub-step fails, the caller treats the whole ownership flip as
+        failed and runs the accumulated rollback stack to rebuild one coherent
+        owner view.
 
         Args:
-            spell_obj: Spell being transferred.
+            spell_obj: Spell whose canonical owner is moving from source to
+                target.
         Raises:
-            RuntimeError: if registry or spellbook operations fail.
+            RuntimeError: If either the frame-level registry move or the
+                spellbook/risk-state move cannot be completed coherently.
         """
         # Aether registry: move SpellIndex ownership (idempotent)
         try:

@@ -302,6 +302,92 @@ class GeneralViewFrame(Cleanable):
             ),
         }
 
+    def describe_frame_inventory(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return a compact inventory of the bound frame surface.
+
+        Purpose:
+            Give the main viewer operator a fast answer to "what is in this
+            frame right now?" without forcing a full target dump first.
+
+        Contract:
+            - Counts only ACL-visible conduits and spells.
+            - Preserves the currently visible target ids and source ids.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            Dict[str, object]: Compact frame inventory summary.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        links = self._build_links()
+        conduit_ids = [
+            frame_link.source_id
+            for frame_link in links
+            if frame_link.source_kind == "conduit"
+        ]
+        spell_ids = [
+            frame_link.source_id
+            for frame_link in links
+            if frame_link.source_kind == "spell"
+        ]
+        return {
+            "frame_name": self._get_required_frame_name(),
+            "target_count": len(links),
+            "conduit_count": len(conduit_ids),
+            "spell_count": len(spell_ids),
+            "conduit_ids": tuple(conduit_ids),
+            "spell_source_ids": tuple(spell_ids),
+        }
+
+    def describe_frame_access_contract(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the bound ACL access contract for the frame surface.
+
+        Purpose:
+            Surface the effective view/codegen posture and visible frame payload
+            fields so the viewer operator can understand why certain data is or
+            is not available.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            Dict[str, object]: Effective ACL access contract summary.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        compiled_access_surface = self._get_required_compiled_access_surface()
+        return {
+            "frame_name": self._get_required_frame_name(),
+            "configuration_id": compiled_access_surface.configuration_id,
+            "view_profile_name": compiled_access_surface.view_profile_name,
+            "view_profile_version": compiled_access_surface.view_profile_version,
+            "codegen_profile_name": (
+                compiled_access_surface.codegen_profile_name
+            ),
+            "codegen_profile_version": (
+                compiled_access_surface.codegen_profile_version
+            ),
+            "allowed_kinds": compiled_access_surface.allowed_kinds,
+            "allowed_commands": compiled_access_surface.allowed_commands,
+            "frame_payload_fields": compiled_access_surface.frame_payload_fields,
+        }
+
     def get_frame_payload_field(
             self,
             field_name: str,

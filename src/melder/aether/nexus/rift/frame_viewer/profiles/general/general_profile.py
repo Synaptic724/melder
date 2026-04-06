@@ -204,6 +204,8 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
             "describe_views": "view_frame.describe_views",
             "describe_frame": "view_frame.describe_frame",
             "describe_frame_payload": "view_frame.describe_frame_payload",
+            "describe_frame_inventory": "view_frame.describe_frame_inventory",
+            "describe_frame_access_contract": "view_frame.describe_frame_access_contract",
             "get_frame_payload_field": "view_frame.get_frame_payload_field",
             "describe_frames": "view_frame.describe_frames",
             "list_targets": "view_frame.list_targets",
@@ -212,10 +214,14 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
             "describe_conduits": "view_conduit.describe_conduits",
             "get_conduit": "view_conduit.get_required_conduit",
             "describe_conduit": "view_conduit.describe_conduit",
+            "list_conduit_spells": "view_conduit.list_conduit_spells",
+            "describe_conduit_topology": "view_conduit.describe_conduit_topology",
             "list_spells": "view_spell.list_spells",
             "describe_spells": "view_spell.describe_spells",
             "get_spell": "view_spell.get_required_spell",
             "describe_spell": "view_spell.describe_spell",
+            "describe_spell_payload": "view_spell.describe_spell_payload",
+            "describe_spell_detail": "view_spell.describe_spell_detail",
         }
 
 

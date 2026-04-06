@@ -163,6 +163,119 @@ class GeneralViewSpell(Cleanable):
             ),
         }
 
+    def describe_spell_payload(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return only the ACL-filtered spell payload body.
+
+        Purpose:
+            Give the main viewer operator a stable, payload-focused spell read
+            surface without the wider record wrapper.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            Dict[str, object]: Spell payload summary.
+        """
+        self.check_cleaned()
+        spell_description = self.describe_spell(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+        return {
+            "payload_type": spell_description["payload_type"],
+            "payload_version": spell_description["payload_version"],
+            "visible_sections": spell_description["visible_sections"],
+            "payload": spell_description["payload"],
+        }
+
+    def describe_spell_detail(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the richer detail posture for one spell when available.
+
+        Purpose:
+            Separate the "try to go deep" path from the normal spell summary so
+            the operator can ask for richer detail explicitly and still get a
+            truthful answer when the detail is unavailable because of the
+            payload type or ACL restrictions.
+
+        Contract:
+            - When `payload_type` is not `detailed`, returns
+              `detail_available=False` with reason `payload_not_detailed`.
+            - When the payload is `detailed` but no rich sections are ACL-
+              visible, returns `detail_available=False` with reason
+              `acl_restricted`.
+            - When rich sections are visible, returns only the rich payload
+              sections currently present in the payload body.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            Dict[str, object]: Rich detail status and payload.
+        """
+        self.check_cleaned()
+        spell_description = self.describe_spell(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+        payload_type = spell_description["payload_type"]
+        if payload_type != "detailed":
+            return {
+                "spell_source_id": spell_source_id,
+                "payload_type": payload_type,
+                "detail_available": False,
+                "reason": "payload_not_detailed",
+                "visible_sections": spell_description["visible_sections"],
+                "payload": {},
+            }
+        rich_section_names = (
+            "class_profile",
+            "callable_profile",
+            "instance_members",
+            "dynamic_access",
+        )
+        rich_payload = {
+            current_section: spell_description["payload"][current_section]
+            for current_section in rich_section_names
+            if current_section in spell_description["payload"]
+        }
+        if len(rich_payload) == 0:
+            return {
+                "spell_source_id": spell_source_id,
+                "payload_type": payload_type,
+                "detail_available": False,
+                "reason": "acl_restricted",
+                "visible_sections": spell_description["visible_sections"],
+                "payload": {},
+            }
+        return {
+            "spell_source_id": spell_source_id,
+            "payload_type": payload_type,
+            "detail_available": True,
+            "reason": "available",
+            "visible_sections": spell_description["visible_sections"],
+            "payload": rich_payload,
+        }
+
     def get_required_spell(
             self,
             spell_source_id: str,
