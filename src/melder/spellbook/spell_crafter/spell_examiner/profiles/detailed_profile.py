@@ -103,6 +103,7 @@ class SpellDetailedProfile(SpellGeneralProfile):
         self._show_dunders = show_dunders
         self._max_repr = max_repr
         self.profile_name = "detailed"
+        self.profile_version = "0.0.1"
         self._detail_complete = False
         self.class_profile = class_profile
         self.callable_profile = callable_profile
@@ -133,6 +134,12 @@ class SpellDetailedProfile(SpellGeneralProfile):
                 Maximum representation length used by binding and deep
                 inspection.
 
+        Contract:
+            - Reuses `SpellGeneralProfile.create_from_target(...)` for the
+              base phase-1/phase-2 lifecycle.
+            - Re-wraps the resulting base profile into the richer detailed
+              profile type before optional phase-2 completion.
+
         Returns:
             SpellDetailedProfile:
                 New profile object. If `target` is a `Spell`, the returned
@@ -161,6 +168,12 @@ class SpellDetailedProfile(SpellGeneralProfile):
             spell:
                 Fully formed spell whose runtime metadata should drive the
                 resolution and detailed inspection payloads.
+
+        Contract:
+            - Requires an object satisfying the spell protocol.
+            - Delegates the inherited resolution-profile completion first.
+            - Fills the richer class/callable/instance/dynamic-access payloads
+              only once.
 
         Returns:
             None.
@@ -210,12 +223,18 @@ class SpellDetailedProfile(SpellGeneralProfile):
         """
         Build one descriptor-safe payload from this detailed profile.
 
+        Contract:
+            Builds the descriptor payload from the current binding, resolution,
+            class, callable, metadata, instance-member, and dynamic-access
+            surfaces.
+
         Returns:
             SpellDescriptorPayload: Sanitized descriptor payload.
         """
         self.check_cleaned()
         return SpellDescriptorPayload.from_spell_profile(
             self.profile_name,
+            self.profile_version,
             self.binding_profile,
             resolution_payload=self.resolution_profile,
             class_profile=self.class_profile,
@@ -228,6 +247,10 @@ class SpellDetailedProfile(SpellGeneralProfile):
     def cleanup(self) -> None:
         """
         Idempotently clean the nested detailed-profile artifacts.
+
+        Contract:
+            Cascades cleanup into nested class/callable profiles before
+            delegating to the inherited general-profile cleanup.
 
         Returns:
             None.
@@ -259,6 +282,10 @@ class SpellDetailedProfile(SpellGeneralProfile):
         Args:
             spell:
                 Spell wrapping a class object.
+
+        Contract:
+            Uses `ClassInspector` for the class surface and then builds
+            per-method `MethodProfile` payloads where possible.
 
         Returns:
             ClassProfile: Structured class profile for the spell.
@@ -348,6 +375,10 @@ class SpellDetailedProfile(SpellGeneralProfile):
             spell:
                 Spell wrapping a callable object.
 
+        Contract:
+            Uses `MethodInspector` to derive a detached callable profile for
+            the current spell object.
+
         Returns:
             MethodProfile: Structured callable profile for the spell.
         """
@@ -399,6 +430,9 @@ class SpellDetailedProfile(SpellGeneralProfile):
             obj:
                 Object to evaluate.
 
+        Contract:
+            Returns True only for non-class, non-routine instance-like objects.
+
         Returns:
             bool: True when the object is a non-class, non-routine instance.
         """
@@ -417,6 +451,10 @@ class SpellDetailedProfile(SpellGeneralProfile):
         Args:
             obj:
                 Instance to inspect.
+
+        Contract:
+            Builds a detached best-effort inventory from `vars(obj)` and any
+            declared `__slots__`.
 
         Returns:
             Dict[str, Dict[str, Any]]: Structured instance-member map.
@@ -459,6 +497,10 @@ class SpellDetailedProfile(SpellGeneralProfile):
                 Attribute name.
             value:
                 Best-effort attribute value.
+
+        Contract:
+            Builds a detached tool-shaped record from the current attribute
+            snapshot without keeping the live value object.
 
         Returns:
             Dict[str, Any]: Tool-shaped member record.
@@ -503,6 +545,10 @@ class SpellDetailedProfile(SpellGeneralProfile):
             obj:
                 Object to inspect.
 
+        Contract:
+            Reports the presence of `__getattr__`, `__getattribute__`, and
+            `__setattr__` anywhere in the class MRO.
+
         Returns:
             Dict[str, bool]: Flags for `__getattr__`, `__getattribute__`, and
             `__setattr__`.
@@ -523,6 +569,10 @@ class SpellDetailedProfile(SpellGeneralProfile):
                 Class to inspect.
             attr:
                 Attribute name to check.
+
+        Contract:
+            Checks only class `__dict__` entries across the MRO and does not
+            invoke dynamic attribute access.
 
         Returns:
             bool: True when the attribute appears in any `__dict__` in the MRO.

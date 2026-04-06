@@ -14,7 +14,7 @@ class SpellRequirements(Cleanable):
 
     This object answers the question:
 
-        *“Given this Spell, what does its call target **want** from DI?”*
+        * "Given this spell, what does its call target want from DI?"
 
     It is intentionally limited to:
 
@@ -52,6 +52,26 @@ class SpellRequirements(Cleanable):
             binding_name: Optional[str],
             parameters: Optional[List["SpellParameterRequirement"]] = None,
     ) -> None:
+        """
+        Initialize one phase-1 requirements artifact for a spell.
+
+        Args:
+            spell_id:
+                Owning spell identifier.
+            spell_type:
+                Spell type derived from the raw binding shape.
+            existence:
+                Spell existence policy.
+            spellframe:
+                Spellframe associated with the spell, if any.
+            binding_name:
+                Optional logical binding name.
+            parameters:
+                Optional ordered parameter requirements.
+
+        Returns:
+            None.
+        """
         Cleanable.__init__(self)
 
         if not spell_id:
@@ -107,16 +127,25 @@ class SpellRequirements(Cleanable):
 
     @property
     def spell_id(self) -> str:
+        """
+        Return the owning spell identifier for this requirements artifact.
+        """
         self.check_cleaned()
         return self._spell_id
 
     @property
     def spell_type(self) -> SpellType:
+        """
+        Return the spell type derived from the phase-1 binding analysis.
+        """
         self.check_cleaned()
         return self._spell_type
 
     @property
     def existence(self) -> Existence:
+        """
+        Return the spell existence policy captured for this requirements artifact.
+        """
         self.check_cleaned()
         return self._existence
 
@@ -206,7 +235,7 @@ class SpellRequirements(Cleanable):
 
     def iter_required_holes(self) -> Iterable['SpellParameterRequirement']:
         """
-        Iterate over **required holes** – parameters that Melder will never
+        Iterate over **required holes** - parameters that Melder will never
         auto-wire and that also have **no default value**.
 
         Definition (Phase 1 view):
@@ -223,7 +252,7 @@ class SpellRequirements(Cleanable):
         -----
         * Optional vs non-optional is *not* considered here. If you encode
           Optional/Union shapes without giving a default, they will still be
-          reported as holes – Melder will not guess a union branch for you.
+          reported as holes - Melder will not guess a union branch for you.
         * This method is purely structural; it does not perform any
           spellbook lookups or consider existence policies.
         """

@@ -84,6 +84,7 @@ class SpellDescriptorPayload(Cleanable):
 
     Contract:
         - `profile_name` preserves the originating spell profile family.
+        - `profile_version` preserves the originating spell profile contract version.
         - `binding_payload` is sanitized and contains no `original_object`.
         - Rich spell-facing detail fields are preserved when available.
         - Cleanup is idempotent and clears all owned payload references.
@@ -92,6 +93,7 @@ class SpellDescriptorPayload(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "profile_name",
+        "profile_version",
         "binding_payload",
         "resolution_payload",
         "class_profile",
@@ -112,6 +114,7 @@ class SpellDescriptorPayload(Cleanable):
             metadata: Optional[Dict[str, Any]] = None,
             instance_members: Optional[Dict[str, Any]] = None,
             dynamic_access: Optional[Dict[str, bool]] = None,
+            profile_version: str = "0.0.1",
     ) -> None:
         """
         Initialize one descriptor-safe spell payload.
@@ -119,6 +122,8 @@ class SpellDescriptorPayload(Cleanable):
         Args:
             profile_name:
                 Source spell profile family name.
+            profile_version:
+                Source spell profile contract version.
             binding_payload:
                 Sanitized bind-time payload.
             resolution_payload:
@@ -138,7 +143,12 @@ class SpellDescriptorPayload(Cleanable):
             None.
         """
         super().__init__()
+        if not profile_name:
+            raise ValueError("profile_name cannot be empty.")
+        if not profile_version:
+            raise ValueError("profile_version cannot be empty.")
         self.profile_name = profile_name
+        self.profile_version = profile_version
         self.binding_payload = dict(binding_payload)
         self.resolution_payload = resolution_payload
         self.class_profile = class_profile
@@ -151,6 +161,7 @@ class SpellDescriptorPayload(Cleanable):
     def from_spell_profile(
             cls,
             profile_name: str,
+            profile_version: str,
             binding_profile: SpellBindingProfile,
             *,
             resolution_payload: Any,
@@ -166,6 +177,8 @@ class SpellDescriptorPayload(Cleanable):
         Args:
             profile_name:
                 Source spell profile family name.
+            profile_version:
+                Source spell profile contract version.
             binding_profile:
                 Live binding profile to sanitize.
             resolution_payload:
@@ -186,6 +199,7 @@ class SpellDescriptorPayload(Cleanable):
         """
         return cls(
             profile_name=profile_name,
+            profile_version=profile_version,
             binding_payload=_sanitize_binding_profile(binding_profile),
             resolution_payload=resolution_payload,
             class_profile=class_profile,
@@ -214,6 +228,7 @@ class SpellDescriptorPayload(Cleanable):
         if isinstance(self.dynamic_access, dict):
             self.dynamic_access.clear()
         self.profile_name = None
+        self.profile_version = None
         self.binding_payload = None
         self.resolution_payload = None
         self.class_profile = None

@@ -18,7 +18,7 @@ def create_hybrid_view_profile() -> FrameACLViewProfile:
     """
     return FrameACLViewProfile(
         "hybrid",
-        minimum_spell_payload_profile_name="detailed",
+        minimum_spell_payload_profile_name="general",
         frame_ruleset=FrameACLViewProfile.build_ruleset(
             "hybrid_frame",
             [

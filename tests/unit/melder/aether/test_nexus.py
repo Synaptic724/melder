@@ -7,13 +7,16 @@ from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.nexus.rift.rift import Rift
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.configuration.rift_configuration import RiftConfiguration
+from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
+    CompiledFrameACLAccessSurface,
+)
+from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
     FrameDescriptorPayload,
 )
 from melder.aether.nexus.nexus import Nexus
 from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
-from melder.aether.nexus.rift.frame_viewer.frame_view import FrameView
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
 from melder.spellbook.configuration.configuration import Configuration
@@ -125,6 +128,44 @@ def _seed_frame_descriptor(frame_name: str) -> None:
                 cluster_names=tuple(),
             ),
         )
+    )
+
+
+def _build_descriptor_backed_viewer(frame_name: str) -> FrameViewer:
+    """
+    Build one minimal descriptor-backed viewer for RiftSpace host tests.
+
+    Args:
+        frame_name:
+            Hosted frame name.
+
+    Returns:
+        FrameViewer: Descriptor-backed viewer with one visible frame target.
+    """
+    _seed_frame_descriptor(frame_name)
+    descriptor: FrameDescriptor = Nexus()._get_required_frame_descriptor(frame_name)
+    compiled_access_surface = CompiledFrameACLAccessSurface(
+        frame_name=frame_name,
+        configuration_id="{0}-cfg".format(frame_name),
+        view_profile_name="safe",
+        view_profile_version="0.0.1",
+        codegen_profile_name="safe",
+        codegen_profile_version="0.0.1",
+        allowed_kinds=("frame",),
+        allowed_commands=("query",),
+        frame_payload_fields=("system_state", "rift_enabled"),
+        visible_conduit_ids=tuple(),
+        visible_spell_keys=tuple(),
+        conduit_payload_sections_by_id={},
+        spell_payload_sections_by_key={},
+        metadata={"visible_spell_count": 0},
+    )
+    return FrameViewer(
+        frame_descriptors_by_name={frame_name: descriptor},
+        compiled_access_surfaces_by_frame_name={
+            frame_name: compiled_access_surface,
+        },
+        default_view_frame_name=frame_name,
     )
 
 
@@ -558,18 +599,13 @@ def test_rift_space_can_delegate_frame_surface_calls_to_attached_viewer() -> Non
         None.
     """
     space = RiftSpace(owner_rift_id="rift-1", space_name="main")
-    viewer = FrameViewer()
-    view = FrameView(
-        frame_name="ops",
-        links_by_id={},
-    )
-    viewer.add_available_view(view)
+    viewer = _build_descriptor_backed_viewer("ops")
     space.attach_frame_viewer(viewer)
 
     assert space.get_required_frame_viewer() is viewer
     assert space.list_frame_names() == ["ops"]
-    assert space.list_available_targets() == []
-    assert space.describe_available_targets() == []
+    assert len(space.list_available_targets()) == 1
+    assert space.describe_available_targets()[0]["source_kind"] == "frame"
 
 
 def test_rift_space_frame_surface_delegation_fails_fast_without_attached_viewer() -> None:
@@ -596,19 +632,10 @@ def test_rift_space_can_select_and_describe_targets_from_attached_viewer() -> No
         None.
     """
     space = RiftSpace(owner_rift_id="rift-1", space_name="main")
-    viewer = FrameViewer()
-    frame_link = FrameLink(
-        frame_name="ops",
-        source_kind="frame",
-        source_id="frame-1",
-        display_name="ops",
-    )
-    view = FrameView(
-        frame_name="ops",
-        links_by_id={frame_link.link_id: frame_link},
-    )
-    viewer.add_available_view(view)
+    viewer = _build_descriptor_backed_viewer("ops")
     space.attach_frame_viewer(viewer)
+
+    frame_link = viewer.list_available_targets()[0]
 
     space.select_target(frame_link.link_id)
 
@@ -618,7 +645,7 @@ def test_rift_space_can_select_and_describe_targets_from_attached_viewer() -> No
             "frame_name": "ops",
             "target_id": frame_link.link_id,
             "source_kind": "frame",
-            "source_id": "frame-1",
+            "source_id": "ops-frame",
             "display_name": "ops",
         }
     ]
@@ -632,8 +659,7 @@ def test_rift_space_selection_helpers_reject_invalid_target_inputs() -> None:
         None.
     """
     space = RiftSpace(owner_rift_id="rift-1", space_name="main")
-    viewer = FrameViewer()
-    viewer.add_available_view(FrameView(frame_name="ops", links_by_id={}))
+    viewer = _build_descriptor_backed_viewer("ops")
     space.attach_frame_viewer(viewer)
 
     with pytest.raises(ValueError, match="target_id cannot be empty"):
@@ -700,7 +726,7 @@ def test_rift_can_build_frame_viewer_from_assigned_frame_contract() -> None:
 
     assert viewer.metadata["rift_id"] == rift.id
     assert viewer.default_view_frame_name == "ops"
-    assert viewer.get_default_view().frame_name == "ops"
+    assert viewer.frame_descriptors_by_name["ops"].frame_name == "ops"
 
 
 def test_rift_can_attach_frame_viewer_to_active_space_and_read_it_back() -> None:

@@ -16,6 +16,7 @@ class ConduitDescriptorPayload(Cleanable):
 
     Contract:
         - `profile_name` preserves the descriptor payload family name.
+        - `profile_version` preserves the descriptor payload contract version.
         - Payload fields are descriptor-safe and value-oriented.
         - Cleanup is idempotent and clears all owned payload references.
     """
@@ -23,6 +24,7 @@ class ConduitDescriptorPayload(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "profile_name",
+        "profile_version",
         "conduit_name",
         "conduit_state",
         "policy",
@@ -36,6 +38,7 @@ class ConduitDescriptorPayload(Cleanable):
             conduit_state: ConduitState,
             policy: Optional[Policies],
             peer_conduit_ids: Tuple[str, ...],
+            profile_version: str = "0.0.1",
     ) -> None:
         """
         Initialize one descriptor-safe conduit payload.
@@ -49,12 +52,17 @@ class ConduitDescriptorPayload(Cleanable):
                 Current conduit policy when available.
             peer_conduit_ids:
                 Sorted tuple of directly linked peer conduit ids.
+            profile_version:
+                Descriptor payload contract version.
 
         Returns:
             None.
         """
         super().__init__()
+        if not profile_version:
+            raise ValueError("profile_version cannot be empty.")
         self.profile_name: str = "conduit"
+        self.profile_version: str = profile_version
         self.conduit_name = conduit_name
         self.conduit_state = conduit_state
         self.policy = policy
@@ -71,6 +79,7 @@ class ConduitDescriptorPayload(Cleanable):
             return
         self._cleaned = True
         self.profile_name = None
+        self.profile_version = None
         self.conduit_name = None
         self.conduit_state = None
         self.policy = None

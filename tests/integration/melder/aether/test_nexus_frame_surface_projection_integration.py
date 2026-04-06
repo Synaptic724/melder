@@ -4,7 +4,6 @@ from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.nexus.nexus import Nexus
-from melder.aether.nexus.rift.frame_viewer.frame_view import FrameView
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.spellbook.configuration.configuration import Configuration
@@ -99,7 +98,6 @@ def test_integration_nexus_can_project_frame_view_after_passive_publish() -> Non
         nexus = Nexus()
         frame_view = nexus.create_frame_view("ops")
 
-        assert isinstance(frame_view, FrameView)
         assert frame_view.frame_name == "ops"
         assert frame_view.metadata["link_count"] >= 3
         assert "frame" in {
@@ -171,8 +169,8 @@ def test_integration_nexus_can_project_frame_viewer_for_rift_after_passive_publi
         assert isinstance(viewer, FrameViewer)
         assert viewer.metadata["rift_id"] == rift.id
         assert viewer.metadata["assigned_frame_names"] == ("ops",)
-        assert list(viewer.available_views_by_frame_name.keys()) == ["ops"]
-        assert viewer.get_available_view("ops").frame_name == "ops"
-        assert len(viewer.get_available_view("ops").available_targets_by_id) >= 1
+        assert list(viewer.frame_descriptors_by_name.keys()) == ["ops"]
+        assert viewer.frame_descriptors_by_name["ops"].frame_name == "ops"
+        assert len(viewer.list_available_targets()) >= 1
     finally:
         conduit.cleanup()

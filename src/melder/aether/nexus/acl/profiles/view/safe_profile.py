@@ -18,7 +18,7 @@ def create_safe_view_profile() -> FrameACLViewProfile:
     """
     return FrameACLViewProfile(
         "safe",
-        minimum_spell_payload_profile_name="detailed",
+        minimum_spell_payload_profile_name="general",
         frame_ruleset=FrameACLViewProfile.build_ruleset(
             "safe_frame",
             [

@@ -17,6 +17,111 @@ from melder.aether.nexus.acl.frame_acl_validator import FrameACLValidator
 from melder.aether.nexus.acl.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
+from melder.aether.conduit.conduit_state.conduit_state import ConduitState
+from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.aether.nexus.frame_descriptor.conduit_descriptor_payload import (
+    ConduitDescriptorPayload,
+)
+from melder.aether.nexus.frame_descriptor.conduit_record import ConduitRecord
+from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
+from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
+    FrameDescriptorPayload,
+)
+from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
+from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
+    SpellDescriptorPayload,
+)
+from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
+from melder.spellbook.configuration.system_state import SystemState
+from melder.spellbook.existence.existence import Existence
+
+
+def _build_descriptor(
+        *,
+        frame_payload_version: str = "0.0.1",
+        conduit_payload_version: str = "0.0.1",
+        spell_payload_name: str = "detailed",
+        spell_payload_version: str = "0.0.1",
+) -> FrameDescriptor:
+    """
+    Build one descriptor populated with frame, conduit, and spell payloads.
+
+    Args:
+        frame_payload_version:
+            Frame payload contract version.
+        conduit_payload_version:
+            Conduit payload contract version.
+        spell_payload_name:
+            Spell payload profile family.
+        spell_payload_version:
+            Spell payload contract version.
+
+    Returns:
+        FrameDescriptor: Populated descriptor.
+    """
+    descriptor = FrameDescriptor("ops")
+    descriptor.set_frame_overview(
+        FrameRecord(
+            frame_name="ops",
+            frame_id="ops-frame",
+            config_origin_spellbook_id="ops-spellbook",
+            payload=FrameDescriptorPayload(
+                system_state=SystemState.dynamic,
+                ai_native_enabled=True,
+                rift_enabled=True,
+                root_conduit_count=1,
+                root_conduit_ids=("ops-conduit",),
+                named_root_conduits=(("ops-conduit", "root"),),
+                conduit_cloud_entry_count=1,
+                conduit_cloud_names=("root",),
+                cluster_count=0,
+                cluster_names=tuple(),
+                profile_version=frame_payload_version,
+            ),
+        )
+    )
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+                profile_version=conduit_payload_version,
+            ),
+        )
+    )
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="ops-spellbook",
+            frame_name="ops",
+            owner_conduit_id="ops-conduit",
+            spell_id="ops-spell",
+            lineage_id="ops-lineage",
+            spell_name="OpsSpell",
+            spellframe=None,
+            binding_name="ops_spell",
+            permissions=Permissions.create,
+            existence=Existence.unique,
+            payload=SpellDescriptorPayload(
+                profile_name=spell_payload_name,
+                profile_version=spell_payload_version,
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+    return descriptor
 
 
 def test_frame_acl_validator_accepts_matching_configuration() -> None:
@@ -120,6 +225,105 @@ def test_frame_acl_validator_rejects_unsupported_spell_payload_floor() -> None:
 
     with pytest.raises(ValueError, match="Unsupported minimum_spell_payload_profile_name"):
         validator.validate_configuration(configuration)
+
+
+def test_frame_acl_validator_accepts_matching_descriptor_payload_contracts() -> None:
+    """
+    Verify descriptor-aware validation accepts matching payload contracts.
+
+    Returns:
+        None.
+    """
+    validator = FrameACLValidator("ops")
+    configuration = FrameACLConfiguration.create_default("ops")
+    descriptor = _build_descriptor()
+
+    assert (
+        validator.validate_configuration_against_descriptor(
+            configuration,
+            descriptor,
+        )
+        is True
+    )
+
+
+def test_frame_acl_validator_rejects_frame_payload_contract_mismatch() -> None:
+    """
+    Verify descriptor-aware validation rejects frame payload mismatches.
+
+    Returns:
+        None.
+    """
+    validator = FrameACLValidator("ops")
+    configuration = FrameACLConfiguration.create_default("ops")
+    descriptor = _build_descriptor(frame_payload_version="9.9.9")
+
+    with pytest.raises(
+            ValueError,
+            match="Descriptor frame payload contract 'frame:9.9.9' does not match required ACL contract 'frame:0.0.1' for frame 'ops'",
+    ):
+        validator.validate_configuration_against_descriptor(
+            configuration,
+            descriptor,
+        )
+
+
+def test_frame_acl_validator_rejects_spell_payload_contract_below_floor() -> None:
+    """
+    Verify descriptor-aware validation rejects spell payloads below the ACL floor.
+
+    Returns:
+        None.
+    """
+    validator = FrameACLValidator("ops")
+    configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        FrameACLConfiguration.create_default("ops"),
+        reason="detailed_floor",
+    )
+    configuration.set_view_configuration(
+        FrameACLViewConfiguration(
+            profile_name="custom",
+            profile_version="0.0.1",
+            required_frame_payload_profile_name="frame",
+            required_frame_payload_profile_version="0.0.1",
+            required_conduit_payload_profile_name="conduit",
+            required_conduit_payload_profile_version="0.0.1",
+            minimum_spell_payload_profile_name="detailed",
+            minimum_spell_payload_profile_version="0.0.1",
+        )
+    )
+    configuration.finalize()
+    descriptor = _build_descriptor(spell_payload_name="general")
+
+    with pytest.raises(
+            ValueError,
+            match="Descriptor spell payload profile 'general:0.0.1' does not satisfy minimum ACL spell payload contract 'detailed:0.0.1' for frame 'ops'",
+    ):
+        validator.validate_configuration_against_descriptor(
+            configuration,
+            descriptor,
+        )
+
+
+def test_frame_acl_validator_rejects_spell_payload_version_mismatch() -> None:
+    """
+    Verify descriptor-aware validation rejects spell payload version mismatch.
+
+    Returns:
+        None.
+    """
+    validator = FrameACLValidator("ops")
+    configuration = FrameACLConfiguration.create_default("ops")
+    descriptor = _build_descriptor(spell_payload_version="9.9.9")
+
+    with pytest.raises(
+            ValueError,
+            match="Descriptor spell payload version '9.9.9' does not match required ACL spell payload version '0.0.1' for frame 'ops'",
+    ):
+        validator.validate_configuration_against_descriptor(
+            configuration,
+            descriptor,
+        )
 
 
 def test_frame_acl_validator_rejects_wrong_operation_family() -> None:

@@ -17,7 +17,7 @@ def create_permissive_view_profile() -> FrameACLViewProfile:
     """
     return FrameACLViewProfile(
         "permissive",
-        minimum_spell_payload_profile_name="detailed",
+        minimum_spell_payload_profile_name="general",
         frame_ruleset=FrameACLViewProfile.build_ruleset(
             "permissive_frame",
             [

@@ -15,6 +15,7 @@ class FrameACLViewProfile(Cleanable):
 
     Contract:
         - Owns frame, conduit, spell, and member rulesets.
+        - Carries the required frame and conduit payload contracts.
         - Carries the minimum spell payload floor required for richer member
           rules.
         - Uses an instance lock because cleanup and ruleset ownership mutation
@@ -25,13 +26,18 @@ class FrameACLViewProfile(Cleanable):
     """
 
     __melder_internal__ = _mrg.sentinel
-    _DEFAULT_SPELL_PAYLOAD_PROFILE_NAME = "detailed"
+    _DEFAULT_SPELL_PAYLOAD_PROFILE_NAME = "general"
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",
         "_version",
         "_name",
+        "_required_frame_payload_profile_name",
+        "_required_frame_payload_profile_version",
+        "_required_conduit_payload_profile_name",
+        "_required_conduit_payload_profile_version",
         "_minimum_spell_payload_profile_name",
+        "_minimum_spell_payload_profile_version",
         "_frame_ruleset",
         "_conduit_ruleset",
         "_spell_ruleset",
@@ -43,6 +49,11 @@ class FrameACLViewProfile(Cleanable):
             name: str,
             *,
             minimum_spell_payload_profile_name: str,
+            required_frame_payload_profile_name: str = "frame",
+            required_frame_payload_profile_version: str = "0.0.1",
+            required_conduit_payload_profile_name: str = "conduit",
+            required_conduit_payload_profile_version: str = "0.0.1",
+            minimum_spell_payload_profile_version: str = "0.0.1",
             frame_ruleset: Optional[FrameACLRuleSet] = None,
             conduit_ruleset: Optional[FrameACLRuleSet] = None,
             spell_ruleset: Optional[FrameACLRuleSet] = None,
@@ -55,8 +66,18 @@ class FrameACLViewProfile(Cleanable):
         Args:
             name:
                 Stable profile name.
+            required_frame_payload_profile_name:
+                Required frame descriptor payload family name.
+            required_frame_payload_profile_version:
+                Required frame descriptor payload contract version.
+            required_conduit_payload_profile_name:
+                Required conduit descriptor payload family name.
+            required_conduit_payload_profile_version:
+                Required conduit descriptor payload contract version.
             minimum_spell_payload_profile_name:
                 Minimum spell payload floor required by this profile.
+            minimum_spell_payload_profile_version:
+                Minimum spell payload contract version required by this profile.
             frame_ruleset:
                 Optional frame-scoped ruleset override.
             conduit_ruleset:
@@ -74,9 +95,21 @@ class FrameACLViewProfile(Cleanable):
         super().__init__()
         if not name:
             raise ValueError("name cannot be empty.")
+        if not required_frame_payload_profile_name:
+            raise ValueError("required_frame_payload_profile_name cannot be empty.")
+        if not required_frame_payload_profile_version:
+            raise ValueError("required_frame_payload_profile_version cannot be empty.")
+        if not required_conduit_payload_profile_name:
+            raise ValueError("required_conduit_payload_profile_name cannot be empty.")
+        if not required_conduit_payload_profile_version:
+            raise ValueError("required_conduit_payload_profile_version cannot be empty.")
         if not minimum_spell_payload_profile_name:
             raise ValueError(
                 "minimum_spell_payload_profile_name cannot be empty."
+            )
+        if not minimum_spell_payload_profile_version:
+            raise ValueError(
+                "minimum_spell_payload_profile_version cannot be empty."
             )
         if not version:
             raise ValueError("version cannot be empty.")
@@ -84,8 +117,23 @@ class FrameACLViewProfile(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._version: str = version
         self._name: str = name
+        self._required_frame_payload_profile_name: str = (
+            required_frame_payload_profile_name
+        )
+        self._required_frame_payload_profile_version: str = (
+            required_frame_payload_profile_version
+        )
+        self._required_conduit_payload_profile_name: str = (
+            required_conduit_payload_profile_name
+        )
+        self._required_conduit_payload_profile_version: str = (
+            required_conduit_payload_profile_version
+        )
         self._minimum_spell_payload_profile_name: str = (
             minimum_spell_payload_profile_name
+        )
+        self._minimum_spell_payload_profile_version: str = (
+            minimum_spell_payload_profile_version
         )
         self._frame_ruleset = self._coerce_ruleset(
             frame_ruleset,
@@ -129,7 +177,12 @@ class FrameACLViewProfile(Cleanable):
             self._conduit_ruleset = None
             self._spell_ruleset = None
             self._member_ruleset = None
+            self._required_frame_payload_profile_name = None
+            self._required_frame_payload_profile_version = None
+            self._required_conduit_payload_profile_name = None
+            self._required_conduit_payload_profile_version = None
             self._minimum_spell_payload_profile_name = None
+            self._minimum_spell_payload_profile_version = None
             self._version = None
             self._name = None
             self._id = None
@@ -222,10 +275,40 @@ class FrameACLViewProfile(Cleanable):
         return self._name
 
     @property
+    def required_frame_payload_profile_name(self) -> str:
+        """Return the required frame payload family name for this profile."""
+        self.check_cleaned()
+        return self._required_frame_payload_profile_name
+
+    @property
+    def required_frame_payload_profile_version(self) -> str:
+        """Return the required frame payload contract version for this profile."""
+        self.check_cleaned()
+        return self._required_frame_payload_profile_version
+
+    @property
+    def required_conduit_payload_profile_name(self) -> str:
+        """Return the required conduit payload family name for this profile."""
+        self.check_cleaned()
+        return self._required_conduit_payload_profile_name
+
+    @property
+    def required_conduit_payload_profile_version(self) -> str:
+        """Return the required conduit payload contract version for this profile."""
+        self.check_cleaned()
+        return self._required_conduit_payload_profile_version
+
+    @property
     def minimum_spell_payload_profile_name(self) -> str:
         """Return the minimum spell payload floor required by this view profile."""
         self.check_cleaned()
         return self._minimum_spell_payload_profile_name
+
+    @property
+    def minimum_spell_payload_profile_version(self) -> str:
+        """Return the minimum spell payload contract version for this profile."""
+        self.check_cleaned()
+        return self._minimum_spell_payload_profile_version
 
     @property
     def frame_ruleset(self) -> FrameACLRuleSet:

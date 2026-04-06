@@ -119,7 +119,12 @@ def test_view_and_codegen_profiles_create_named_default_catalog() -> None:
 
     assert view_profile.name == "safe"
     assert view_profile.version == "0.0.1"
-    assert view_profile.minimum_spell_payload_profile_name == "detailed"
+    assert view_profile.required_frame_payload_profile_name == "frame"
+    assert view_profile.required_frame_payload_profile_version == "0.0.1"
+    assert view_profile.required_conduit_payload_profile_name == "conduit"
+    assert view_profile.required_conduit_payload_profile_version == "0.0.1"
+    assert view_profile.minimum_spell_payload_profile_name == "general"
+    assert view_profile.minimum_spell_payload_profile_version == "0.0.1"
     assert view_profile.frame_ruleset.list_rule_names() == [
         "frame_visible",
         "frame_show_payload",

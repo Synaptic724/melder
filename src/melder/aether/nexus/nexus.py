@@ -4,6 +4,9 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.nexus.acl.frame_acl_compiler import FrameACLCompiler
+from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
+    CompiledFrameACLAccessSurface,
+)
 from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.profiles.frame_acl_profile import FrameACLProfile
@@ -1508,6 +1511,11 @@ class Nexus(Cleanable, INexus):
         self.check_cleaned()
         descriptor = self._get_required_frame_descriptor(frame_name)
         configuration = self.get_current_frame_acl_configuration(frame_name)
+        self._frame_acl_manager._validate_frame_acl_configuration_against_descriptor(
+            frame_name,
+            configuration,
+            descriptor,
+        )
         cache_key = self._make_projected_frame_view_cache_key(
             frame_name,
             configuration.configuration_id,
@@ -1566,8 +1574,8 @@ class Nexus(Cleanable, INexus):
             into one consumer-facing `FrameViewer`.
 
         Contract:
-            - Every frame name is projected independently through
-              `create_frame_view(...)`.
+            - Every frame name is projected independently from descriptor truth
+              plus compiled ACL output.
             - The returned viewer is detached and not cached by Nexus.
 
         Args:
@@ -1592,22 +1600,40 @@ class Nexus(Cleanable, INexus):
         viewer_profile = viewer_profile_builder.get_required_profile(
             viewer_profile_name
         )
-        projected_views: Dict[str, FrameView] = {}
+        frame_descriptors_by_name: Dict[str, FrameDescriptor] = {}
+        compiled_access_surfaces_by_frame_name: Dict[
+            str,
+            CompiledFrameACLAccessSurface,
+        ] = {}
+        compiler = FrameACLCompiler(self._frame_acl_manager.frame_acl_profile_builder)
         try:
             for frame_name in frame_names:
-                projected_views[frame_name] = self.create_frame_view(
+                descriptor = self._get_required_frame_descriptor(frame_name)
+                configuration = self.get_current_frame_acl_configuration(frame_name)
+                self._frame_acl_manager._validate_frame_acl_configuration_against_descriptor(
                     frame_name,
-                    view_profile_name=view_profile_name,
+                    configuration,
+                    descriptor,
                 )
+                compiled_access_surfaces_by_frame_name[frame_name] = (
+                    compiler.compile_frame_access_surface(
+                        descriptor,
+                        configuration,
+                    )
+                )
+                frame_descriptors_by_name[frame_name] = descriptor
             return FrameViewer(
                 profile_builder=FrameViewerProfileBuilder(),
                 active_profiles_by_name={
                     viewer_profile.name: viewer_profile.clone(),
                 },
-                available_views_by_frame_name=projected_views,
+                frame_descriptors_by_name=frame_descriptors_by_name,
+                compiled_access_surfaces_by_frame_name=(
+                    compiled_access_surfaces_by_frame_name
+                ),
                 metadata={
-                    "frame_count": len(projected_views),
-                    "available_view_count": len(projected_views),
+                    "frame_count": len(frame_descriptors_by_name),
+                    "available_view_count": len(frame_descriptors_by_name),
                     "assigned_frame_names": tuple(frame_names),
                     "view_profile_name": view_profile_name,
                     "viewer_profile_name": viewer_profile.name,
@@ -1620,6 +1646,7 @@ class Nexus(Cleanable, INexus):
                 },
             )
         finally:
+            compiler.cleanup()
             viewer_profile_builder.cleanup()
 
     def create_frame_viewer_for_rift(
@@ -1675,7 +1702,11 @@ class Nexus(Cleanable, INexus):
                     frame_viewer.active_profiles_by_name.items()
                 )
             },
-            available_views_by_frame_name=frame_viewer.available_views_by_frame_name,
+            default_profile_name=frame_viewer.profile_name,
+            frame_descriptors_by_name=frame_viewer.frame_descriptors_by_name,
+            compiled_access_surfaces_by_frame_name=(
+                frame_viewer.compiled_access_surfaces_by_frame_name
+            ),
             default_view_frame_name=rift.frame_link_contract.default_frame_name,
             metadata=current_metadata,
         )
@@ -1804,7 +1835,11 @@ class Nexus(Cleanable, INexus):
                     frame_viewer.active_profiles_by_name.items()
                 )
             },
-            available_views_by_frame_name=frame_viewer.available_views_by_frame_name,
+            default_profile_name=frame_viewer.profile_name,
+            frame_descriptors_by_name=frame_viewer.frame_descriptors_by_name,
+            compiled_access_surfaces_by_frame_name=(
+                frame_viewer.compiled_access_surfaces_by_frame_name
+            ),
             default_view_frame_name=rift.frame_link_contract.default_frame_name,
             metadata=current_metadata,
         )

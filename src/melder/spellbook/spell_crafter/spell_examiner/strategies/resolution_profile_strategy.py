@@ -18,10 +18,30 @@ class ResolutionProfileStrategy:
     __slots__ = ()
 
     def __init__(self) -> None:
+        """
+        Initialize one resolution-profile strategy.
+
+        Returns:
+            None.
+        """
         pass
 
     def build_profile(self, spell: ISpell) -> SpellResolutionProfile:
-        # Phase 1 – requirements
+        """
+        Build the resolution profile for one fully formed spell.
+
+        Contract:
+            - Uses `SpellRequirementsFinder` to populate the phase-1
+              requirements artifact immediately.
+            - Leaves the later symbolic-graph, resolution-frame, and
+              validation artifacts as `None` until those phases are wired into
+              the broader spell lifecycle.
+
+        Returns:
+            SpellResolutionProfile: Resolution profile seeded with the current
+            phase-1 requirements artifact.
+        """
+        # Phase 1 - requirements
         finder = SpellRequirementsFinder(spell)
         requirements = finder.build_requirements(cancel_event=None)
 

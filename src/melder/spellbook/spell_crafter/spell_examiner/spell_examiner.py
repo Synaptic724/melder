@@ -54,6 +54,10 @@ class SpellExaminer(Cleanable):
         """
         Idempotently clear the profile-builder registry.
 
+        Contract:
+            Clears the examiner-owned builder registry and leaves the examiner
+            unusable after cleanup.
+
         Returns:
             None.
         """
@@ -89,6 +93,10 @@ class SpellExaminer(Cleanable):
             builder:
                 Callable accepting `(target, show_dunders, max_repr)`.
 
+        Contract:
+            Replaces any existing builder registered under the same profile
+            name.
+
         Returns:
             None.
 
@@ -113,6 +121,10 @@ class SpellExaminer(Cleanable):
             profile_name:
                 Profile-builder name to inspect.
 
+        Contract:
+            Performs an existence check only; it does not synthesize or
+            validate the builder.
+
         Returns:
             bool: True when the builder is registered.
         """
@@ -122,6 +134,9 @@ class SpellExaminer(Cleanable):
     def list_profile_builder_names(self) -> List[str]:
         """
         Return the current registered profile-builder names in insertion order.
+
+        Contract:
+            Returns a snapshot list of the current builder-registry keys.
 
         Returns:
             List[str]: Current builder names.
@@ -149,6 +164,11 @@ class SpellExaminer(Cleanable):
             max_repr:
                 Maximum representation length for builders that honor it.
 
+        Contract:
+            - Resolves the requested builder from the current registry.
+            - Delegates all profile construction to that builder.
+            - Returns whatever profile object the resolved builder produces.
+
         Returns:
             Any: Profile object returned by the resolved builder.
 
@@ -169,6 +189,10 @@ class SpellExaminer(Cleanable):
     def _register_default_profile_builders(self) -> None:
         """
         Register the default profile builders used by the runtime.
+
+        Contract:
+            Seeds the built-in `general` and `detailed` builders into the
+            mutable registry used by `create_profile()`.
 
         Returns:
             None.

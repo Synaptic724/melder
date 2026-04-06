@@ -45,6 +45,7 @@ class SpellGeneralProfile(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "profile_name",
+        "profile_version",
         "binding_profile",
         "resolution_profile",
     ]
@@ -69,6 +70,7 @@ class SpellGeneralProfile(Cleanable):
         """
         super().__init__()
         self.profile_name = "general"
+        self.profile_version = "0.0.1"
         self.binding_profile = binding_profile
         self.resolution_profile = resolution_profile
 
@@ -89,6 +91,12 @@ class SpellGeneralProfile(Cleanable):
                 Whether dunder members should be included in binding reflection.
             max_repr:
                 Maximum representation length passed to the binding strategy.
+
+        Contract:
+            - Always builds the binding profile first from the raw candidate
+              surface.
+            - When `target` is already a `Spell`, completes the same profile
+              object with resolution data before returning it.
 
         Returns:
             GeneralProfileT:
@@ -114,6 +122,10 @@ class SpellGeneralProfile(Cleanable):
                 Fully formed spell whose runtime metadata should drive the
                 resolution-profile build.
 
+        Contract:
+            - Idempotent once the resolution profile already exists.
+            - Populates only the resolution half of the combined profile.
+
         Returns:
             None.
 
@@ -127,12 +139,18 @@ class SpellGeneralProfile(Cleanable):
         """
         Build one descriptor-safe payload from this general profile.
 
+        Contract:
+            Builds the descriptor payload from the current binding and optional
+            resolution artifacts while leaving the richer runtime-only surfaces
+            empty.
+
         Returns:
             SpellDescriptorPayload: Sanitized descriptor payload.
         """
         self.check_cleaned()
         return SpellDescriptorPayload.from_spell_profile(
             self.profile_name,
+            self.profile_version,
             self.binding_profile,
             resolution_payload=self.resolution_profile,
             class_profile=None,
@@ -146,6 +164,10 @@ class SpellGeneralProfile(Cleanable):
         """
         Idempotently clean the nested general-profile artifacts.
 
+        Contract:
+            Cascades cleanup into the nested binding and resolution profiles
+            before dropping references.
+
         Returns:
             None.
         """
@@ -158,6 +180,7 @@ class SpellGeneralProfile(Cleanable):
                 except Exception:
                     pass
         self.profile_name = None
+        self.profile_version = None
         self.binding_profile = None
         self.resolution_profile = None
         self._cleaned = True

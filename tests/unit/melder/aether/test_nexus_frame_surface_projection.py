@@ -255,6 +255,81 @@ def test_nexus_create_frame_view_raises_for_unknown_view_profile() -> None:
         nexus.create_frame_view("ops", view_profile_name="missing_profile")
 
 
+def test_nexus_create_frame_view_rejects_descriptor_payload_contract_mismatch() -> None:
+    """
+    Verify Nexus view projection fails fast on descriptor payload mismatch.
+
+    Returns:
+        None.
+    """
+    nexus = Nexus(aether=Aether())
+    descriptor = nexus._get_or_create_frame_descriptor("ops")
+    descriptor.set_frame_overview(
+        FrameRecord(
+            frame_name="ops",
+            frame_id="ops-frame",
+            config_origin_spellbook_id="ops-spellbook",
+            payload=FrameDescriptorPayload(
+                system_state=SystemState.dynamic,
+                ai_native_enabled=True,
+                rift_enabled=True,
+                root_conduit_count=1,
+                root_conduit_ids=("ops-conduit",),
+                named_root_conduits=(("ops-conduit", "root"),),
+                conduit_cloud_entry_count=1,
+                conduit_cloud_names=("root",),
+                cluster_count=0,
+                cluster_names=tuple(),
+            ),
+        )
+    )
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="ops-spellbook",
+            frame_name="ops",
+            owner_conduit_id="ops-conduit",
+            spell_id="ops-spell",
+            lineage_id="ops-lineage",
+            spell_name="OpsSpell",
+            spellframe=None,
+            binding_name="ops_spell",
+            permissions=Permissions.create,
+            existence=Existence.unique,
+            payload=SpellDescriptorPayload(
+                profile_name="general",
+                profile_version="9.9.9",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+
+    with pytest.raises(
+            ValueError,
+            match="Descriptor spell payload version '9.9.9' does not match required ACL spell payload version '0.0.1' for frame 'ops'",
+    ):
+        nexus.create_frame_view("ops")
+
+
 def test_nexus_insert_head_acl_configuration_invalidates_projected_view_cache() -> None:
     """
     Verify ACL head insertion invalidates cached projected frame views.
@@ -298,12 +373,12 @@ def test_nexus_create_frame_viewer_projects_multiple_frames() -> None:
     assert viewer.profile_name == "general"
     assert viewer.metadata["frame_count"] == 2
     assert viewer.metadata["viewer_profile_name"] == "general"
-    assert viewer.list_frame_names() == ["ops", "finance"]
+    assert viewer.list_frame_names() == ["finance", "ops"]
 
 
-def test_nexus_create_frame_viewer_populates_frame_view_cache_for_each_frame() -> None:
+def test_nexus_create_frame_viewer_hosts_descriptor_and_compiled_surface_maps() -> None:
     """
-    Verify viewer projection reuses the frame-view projection cache per frame.
+    Verify viewer projection hosts descriptor and compiled-surface maps directly.
 
     Returns:
         None.
@@ -315,7 +390,12 @@ def test_nexus_create_frame_viewer_populates_frame_view_cache_for_each_frame() -
     viewer = nexus.create_frame_viewer(["ops", "finance"])
 
     assert isinstance(viewer, FrameViewer)
-    assert len(nexus._projected_frame_views_by_cache_key) == 2
+    assert list(sorted(viewer.frame_descriptors_by_name.keys())) == ["finance", "ops"]
+    assert list(sorted(viewer.compiled_access_surfaces_by_frame_name.keys())) == [
+        "finance",
+        "ops",
+    ]
+    assert nexus._projected_frame_views_by_cache_key == {}
 
 
 def test_nexus_create_cached_frame_viewer_reuses_cache_but_returns_detached_clone() -> None:
@@ -397,8 +477,10 @@ def test_nexus_create_frame_viewer_for_rift_populates_available_views_from_assig
     assert viewer.metadata["rift_id"] == rift.id
     assert viewer.metadata["assigned_frame_names"] == ("ops",)
     assert viewer.metadata["default_target_frame_name"] == "ops"
-    assert list(viewer.available_views_by_frame_name.keys()) == ["ops"]
-    assert viewer.get_available_view("ops").frame_name == "ops"
+    assert list(viewer.frame_descriptors_by_name.keys()) == ["ops"]
+    assert viewer.frame_descriptors_by_name["ops"].frame_name == "ops"
+    assert viewer.default_view_frame_name == "ops"
+    assert len(viewer.list_available_targets()) >= 1
 
 
 def test_nexus_create_frame_viewer_rejects_string_sequence_input() -> None:

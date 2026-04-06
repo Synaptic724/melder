@@ -10,7 +10,6 @@ from typing import Dict, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.helpers.id_builder import IDBuilder
 
 
 class FrameLink(Cleanable):
@@ -80,7 +79,11 @@ class FrameLink(Cleanable):
             raise ValueError("source_kind cannot be empty.")
         if not source_id:
             raise ValueError("source_id cannot be empty.")
-        self._link_id: str = IDBuilder.create_id()
+        self._link_id: str = "{0}:{1}:{2}".format(
+            frame_name,
+            source_kind,
+            source_id,
+        )
         self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
         self._source_kind: str = source_kind

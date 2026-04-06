@@ -173,7 +173,10 @@ class MethodProfile(Cleanable):
         Idempotently clear owned data and references.
 
         Contract:
-            - Clears lists/dicts and nulls all fields after cleanup.
+            - Clears owned parameter/closure lists before nulling references.
+            - Drops detached signature, provenance, docstring, and tag data
+              without touching any live callable object.
+            - Leaves the profile unusable after cleanup.
         """
         if self._cleaned:
             return

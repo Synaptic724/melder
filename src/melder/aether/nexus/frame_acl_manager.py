@@ -20,6 +20,7 @@ from melder.aether.nexus.acl.profiles.frame_acl_profile_builder import (
 from melder.aether.nexus.acl.profiles.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
+from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 
 
 class FrameACLManager(Cleanable):
@@ -468,6 +469,33 @@ class FrameACLManager(Cleanable):
         return container.frame_acl_configuration_chain.insert_head_configuration(
             configuration,
             select_as_current=select_as_current,
+        )
+
+    def _validate_frame_acl_configuration_against_descriptor(
+            self,
+            frame_name: str,
+            configuration: FrameACLConfiguration,
+            frame_descriptor: FrameDescriptor,
+    ) -> bool:
+        """
+        Validate one frame ACL configuration against descriptor payload truth.
+
+        Args:
+            frame_name:
+                Stable frame name that owns the ACL container.
+            configuration:
+                Candidate ACL configuration node.
+            frame_descriptor:
+                Descriptor truth for the same frame.
+
+        Returns:
+            bool: True when validation succeeds.
+        """
+        self.check_cleaned()
+        container = self._ensure_frame_acl_container(frame_name)
+        return container.frame_acl_validator.validate_configuration_against_descriptor(
+            configuration,
+            frame_descriptor,
         )
 
     def _select_current_frame_acl_configuration(

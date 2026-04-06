@@ -1,9 +1,10 @@
-from typing import Dict, Optional, Set
+from typing import Dict, Optional, Set, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.acl.frame_acl_codegen_configuration import (
     FrameACLCodegenConfiguration,
 )
+from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.utilities.general_base.cleanable import Cleanable
 
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
@@ -37,9 +38,18 @@ class FrameACLValidator(Cleanable):
         "_frame_name",
         "_last_validated_configuration_id",
     ]
-    _SUPPORTED_SPELL_PAYLOAD_PROFILE_NAMES: Set[str] = {
-        "general",
-        "detailed",
+    _SUPPORTED_FRAME_PAYLOAD_CONTRACTS: Set[Tuple[str, str]] = {
+        ("frame", "0.0.1"),
+    }
+    _SUPPORTED_CONDUIT_PAYLOAD_CONTRACTS: Set[Tuple[str, str]] = {
+        ("conduit", "0.0.1"),
+    }
+    _SUPPORTED_SPELL_PAYLOAD_PROFILE_ORDER: Dict[str, int] = {
+        "general": 0,
+        "detailed": 1,
+    }
+    _SUPPORTED_SPELL_PAYLOAD_PROFILE_VERSIONS: Set[str] = {
+        "0.0.1",
     }
     _VIEW_ALLOWED_OPERATIONS_BY_RULESET: Dict[str, Set[str]] = {
         "frame": {"visible", "show_payload"},
@@ -231,6 +241,40 @@ class FrameACLValidator(Cleanable):
         self._last_validated_configuration_id = configuration.configuration_id
         return True
 
+    def validate_configuration_against_descriptor(
+            self,
+            configuration: FrameACLConfiguration,
+            frame_descriptor: FrameDescriptor,
+    ) -> bool:
+        """
+        Validate one frame ACL configuration against descriptor payload truth.
+
+        Args:
+            configuration:
+                Candidate frame ACL configuration node.
+            frame_descriptor:
+                Descriptor truth for the same frame.
+
+        Returns:
+            bool: True when the configuration is structurally valid and the
+                descriptor payload contracts satisfy the ACL requirements.
+        """
+        self.validate_configuration(configuration)
+        if not isinstance(frame_descriptor, FrameDescriptor):
+            raise TypeError("frame_descriptor must be a FrameDescriptor.")
+        if frame_descriptor.frame_name != self._frame_name:
+            raise ValueError(
+                "FrameDescriptor targets frame '{0}', expected '{1}'.".format(
+                    frame_descriptor.frame_name,
+                    self._frame_name,
+                )
+            )
+        self._validate_descriptor_payload_contracts(
+            frame_descriptor,
+            configuration.view_configuration,
+        )
+        return True
+
     def _validate_view_configuration(
             self,
             view_configuration: FrameACLViewConfiguration,
@@ -250,12 +294,41 @@ class FrameACLValidator(Cleanable):
                 "view_configuration must be a FrameACLViewConfiguration."
             )
         if (
+                view_configuration.required_frame_payload_profile_name,
+                view_configuration.required_frame_payload_profile_version,
+        ) not in self._SUPPORTED_FRAME_PAYLOAD_CONTRACTS:
+            raise ValueError(
+                "Unsupported required frame payload contract '{0}:{1}'.".format(
+                    view_configuration.required_frame_payload_profile_name,
+                    view_configuration.required_frame_payload_profile_version,
+                )
+            )
+        if (
+                view_configuration.required_conduit_payload_profile_name,
+                view_configuration.required_conduit_payload_profile_version,
+        ) not in self._SUPPORTED_CONDUIT_PAYLOAD_CONTRACTS:
+            raise ValueError(
+                "Unsupported required conduit payload contract '{0}:{1}'.".format(
+                    view_configuration.required_conduit_payload_profile_name,
+                    view_configuration.required_conduit_payload_profile_version,
+                )
+            )
+        if (
                 view_configuration.minimum_spell_payload_profile_name
-                not in self._SUPPORTED_SPELL_PAYLOAD_PROFILE_NAMES
+                not in self._SUPPORTED_SPELL_PAYLOAD_PROFILE_ORDER
         ):
             raise ValueError(
                 "Unsupported minimum_spell_payload_profile_name '{0}'.".format(
                     view_configuration.minimum_spell_payload_profile_name
+                )
+            )
+        if (
+                view_configuration.minimum_spell_payload_profile_version
+                not in self._SUPPORTED_SPELL_PAYLOAD_PROFILE_VERSIONS
+        ):
+            raise ValueError(
+                "Unsupported minimum_spell_payload_profile_version '{0}'.".format(
+                    view_configuration.minimum_spell_payload_profile_version
                 )
             )
         self._validate_ruleset_family(
@@ -281,6 +354,68 @@ class FrameACLValidator(Cleanable):
         )
         if view_configuration.profile_name == "safe":
             self._validate_safe_view_configuration(view_configuration)
+
+    def _validate_descriptor_payload_contracts(
+            self,
+            frame_descriptor: FrameDescriptor,
+            view_configuration: FrameACLViewConfiguration,
+    ) -> None:
+        """
+        Validate descriptor payload contracts against one ACL view config.
+
+        Args:
+            frame_descriptor:
+                Descriptor truth for the target frame.
+            view_configuration:
+                Typed ACL view configuration with required payload contracts.
+
+        Returns:
+            None.
+        """
+        frame_overview = frame_descriptor.frame_overview
+        if frame_overview is None:
+            raise ValueError(
+                "FrameDescriptor for frame '{0}' has no frame_overview for payload validation.".format(
+                    frame_descriptor.frame_name
+                )
+            )
+        self._assert_exact_descriptor_payload_contract(
+            actual_profile_name=frame_overview.payload.profile_name,
+            actual_profile_version=frame_overview.payload.profile_version,
+            required_profile_name=(
+                view_configuration.required_frame_payload_profile_name
+            ),
+            required_profile_version=(
+                view_configuration.required_frame_payload_profile_version
+            ),
+            label="frame",
+            frame_name=frame_descriptor.frame_name,
+        )
+        for conduit_record in frame_descriptor.conduit_records_by_id.values():
+            self._assert_exact_descriptor_payload_contract(
+                actual_profile_name=conduit_record.payload.profile_name,
+                actual_profile_version=conduit_record.payload.profile_version,
+                required_profile_name=(
+                    view_configuration.required_conduit_payload_profile_name
+                ),
+                required_profile_version=(
+                    view_configuration.required_conduit_payload_profile_version
+                ),
+                label="conduit",
+                frame_name=frame_descriptor.frame_name,
+            )
+        for spell_record in frame_descriptor.spell_records_by_key.values():
+            self._assert_spell_payload_floor(
+                actual_profile_name=spell_record.payload.profile_name,
+                actual_profile_version=spell_record.payload.profile_version,
+                minimum_profile_name=(
+                    view_configuration.minimum_spell_payload_profile_name
+                ),
+                minimum_profile_version=(
+                    view_configuration.minimum_spell_payload_profile_version
+                ),
+                frame_name=frame_descriptor.frame_name,
+            )
 
     def _validate_codegen_configuration(
             self,
@@ -479,3 +614,107 @@ class FrameACLValidator(Cleanable):
                 raise ValueError(
                     "Safe profile cannot allow dunder member access in safe view member ruleset."
                 )
+
+    @staticmethod
+    def _assert_exact_descriptor_payload_contract(
+            *,
+            actual_profile_name: str,
+            actual_profile_version: str,
+            required_profile_name: str,
+            required_profile_version: str,
+            label: str,
+            frame_name: str,
+    ) -> None:
+        """
+        Fail when one descriptor payload contract does not match exactly.
+
+        Args:
+            actual_profile_name:
+                Actual descriptor payload family name.
+            actual_profile_version:
+                Actual descriptor payload contract version.
+            required_profile_name:
+                Required ACL payload family name.
+            required_profile_version:
+                Required ACL payload contract version.
+            label:
+                Human-readable payload family label.
+            frame_name:
+                Owning frame name.
+
+        Returns:
+            None.
+        """
+        if (
+                actual_profile_name != required_profile_name
+                or actual_profile_version != required_profile_version
+        ):
+            raise ValueError(
+                "Descriptor {0} payload contract '{1}:{2}' does not match required ACL contract '{3}:{4}' for frame '{5}'.".format(
+                    label,
+                    actual_profile_name,
+                    actual_profile_version,
+                    required_profile_name,
+                    required_profile_version,
+                    frame_name,
+                )
+            )
+
+    def _assert_spell_payload_floor(
+            self,
+            *,
+            actual_profile_name: str,
+            actual_profile_version: str,
+            minimum_profile_name: str,
+            minimum_profile_version: str,
+            frame_name: str,
+    ) -> None:
+        """
+        Fail when one descriptor spell payload does not satisfy the ACL floor.
+
+        Args:
+            actual_profile_name:
+                Actual spell payload family name.
+            actual_profile_version:
+                Actual spell payload contract version.
+            minimum_profile_name:
+                Required minimum spell payload family name.
+            minimum_profile_version:
+                Required minimum spell payload contract version.
+            frame_name:
+                Owning frame name.
+
+        Returns:
+            None.
+        """
+        actual_rank = self._SUPPORTED_SPELL_PAYLOAD_PROFILE_ORDER.get(
+            actual_profile_name
+        )
+        required_rank = self._SUPPORTED_SPELL_PAYLOAD_PROFILE_ORDER.get(
+            minimum_profile_name
+        )
+        if actual_rank is None:
+            raise ValueError(
+                "Unsupported descriptor spell payload profile '{0}' for frame '{1}'.".format(
+                    actual_profile_name,
+                    frame_name,
+                )
+            )
+        if actual_profile_version != minimum_profile_version:
+            raise ValueError(
+                "Descriptor spell payload version '{0}' does not match required ACL spell payload version '{1}' for frame '{2}'.".format(
+                    actual_profile_version,
+                    minimum_profile_version,
+                    frame_name,
+                )
+            )
+        if required_rank is None or actual_rank < required_rank:
+            raise ValueError(
+                "Descriptor spell payload profile '{0}:{1}' does not satisfy minimum ACL spell payload contract '{2}:{3}' for frame '{4}'.".format(
+                    actual_profile_name,
+                    actual_profile_version,
+                    minimum_profile_name,
+                    minimum_profile_version,
+                    frame_name,
+                )
+            )

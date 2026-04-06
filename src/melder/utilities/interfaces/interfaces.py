@@ -2177,6 +2177,7 @@ class ISpellGeneralProfile(ICleanable, Protocol):
     """
 
     profile_name: str
+    profile_version: str
     binding_profile: Any
     resolution_profile: Any
 
@@ -2229,6 +2230,7 @@ class IDescriptorPayload(ICleanable, Protocol):
     """
 
     profile_name: str
+    profile_version: str
 
 
 @runtime_checkable

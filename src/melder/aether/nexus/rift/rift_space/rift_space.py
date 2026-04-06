@@ -394,8 +394,19 @@ class RiftSpace(Cleanable, IRiftSpace):
         selected_frame_name = frame_name or viewer.default_view_frame_name
         if selected_frame_name is None:
             raise ValueError("RiftSpace has no default selected frame.")
-        frame_view = viewer.get_available_view(selected_frame_name)
-        frame_view.get_required_available_target(target_id)
+        target_ids = [
+            frame_link.link_id
+            for frame_link in viewer.list_available_targets(
+                frame_name=selected_frame_name
+            )
+        ]
+        if target_id not in target_ids:
+            raise ValueError(
+                "Target '{0}' was not found in frame '{1}'.".format(
+                    target_id,
+                    selected_frame_name,
+                )
+            )
         selected_target_ids = self._selected_target_ids_by_frame_name.setdefault(
             selected_frame_name,
             [],
@@ -451,17 +462,30 @@ class RiftSpace(Cleanable, IRiftSpace):
         selected_frame_name = frame_name or viewer.default_view_frame_name
         if selected_frame_name is None:
             raise ValueError("RiftSpace has no default selected frame.")
-        frame_view = viewer.get_available_view(selected_frame_name)
+        target_descriptions_by_id = {
+            description["target_id"]: description
+            for description in viewer.describe_available_targets(
+                frame_name=selected_frame_name,
+            )
+        }
         selected_descriptions: List[Dict[str, object]] = []
         for target_id in self._selected_target_ids_by_frame_name.get(selected_frame_name, []):
-            frame_link = frame_view.get_required_available_target(target_id)
+            try:
+                description = target_descriptions_by_id[target_id]
+            except KeyError as exc:
+                raise ValueError(
+                    "Target '{0}' was not found in frame '{1}'.".format(
+                        target_id,
+                        selected_frame_name,
+                    )
+                ) from exc
             selected_descriptions.append(
                 {
                     "frame_name": selected_frame_name,
-                    "target_id": frame_link.link_id,
-                    "source_kind": frame_link.source_kind,
-                    "source_id": frame_link.source_id,
-                    "display_name": frame_link.display_name,
+                    "target_id": description["target_id"],
+                    "source_kind": description["source_kind"],
+                    "source_id": description["source_id"],
+                    "display_name": description["display_name"],
                 }
             )
         return selected_descriptions

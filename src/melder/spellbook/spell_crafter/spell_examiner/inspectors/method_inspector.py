@@ -48,11 +48,15 @@ class MethodInspector:
 
     def _resolve_target(self) -> Callable:
         """
-        Returns the preferred callable for inspection.
+        Return the preferred callable for inspection.
 
-        We prefer the original (unwrapped) callable so the reported name/signature
-        reflect the user-defined function (e.g., 'nowrapped' with '(x, y=2)').
-        Wrapper details are still exposed via 'decorated' and 'wrapped_repr'.
+        Purpose:
+            Prefer the original callable surface when decorator wrapping would
+            otherwise hide the user-authored name or signature.
+
+        Contract:
+            Falls back to the originally supplied callable when unwrapping does
+            not produce a better target.
         """
         f = self.fn
         try:
@@ -62,16 +66,13 @@ class MethodInspector:
             return f
     def inspect(self) -> Dict[str, Any]:
         """
-        Performs the inspection of the callable.
+        Perform the full callable inspection.
 
-        Orchestrates small helpers:
-          - resolve original vs wrapper
-          - header/meta
-          - source info
-          - signature/parameters
-          - callable traits
-          - closure preview
-          - decoration flags
+        Contract:
+          - Resolves wrapper-vs-original view first.
+          - Populates header, provenance, signature, trait, closure, and
+            decoration fields in a stable order.
+          - Returns a dictionary that is safe to serialize.
         """
         f = self.fn
         f_eff = self._resolve_target()  # prefer original for primary view
@@ -87,6 +88,10 @@ class MethodInspector:
     def _fill_header(self, f_eff: Callable) -> None:
         """
         Populate high-level metadata fields for the callable.
+
+        Contract:
+            Populates identity/module/docstring fields only; it does not
+            inspect source or signature here.
         """
         module = inspect.getmodule(f_eff)
         qualname = getattr(f_eff, "__qualname__", None)
@@ -111,6 +116,10 @@ class MethodInspector:
     def _fill_source(self, f_eff: Callable) -> None:
         """
         Best-effort population of file path, preview, and source offset.
+
+        Contract:
+            Missing provenance is represented as `None` fields rather than an
+            exception.
         """
         try:
             self.data["file"] = inspect.getfile(f_eff)
@@ -133,6 +142,11 @@ class MethodInspector:
     def _fill_signature(self, f_eff: Callable) -> None:
         """
         Extract the signature and normalized parameter list.
+
+        Contract:
+            - Sets `uninspectable=True` when signature extraction fails.
+            - Otherwise populates a normalized parameter payload suitable for
+              downstream profile serialization.
         """
         try:
             sig = inspect.signature(f_eff)
@@ -153,6 +167,10 @@ class MethodInspector:
     def _fill_traits(self, f_eff: Callable) -> None:
         """
         Populate callable trait flags (is function/method, async/gen, etc.).
+
+        Contract:
+            Uses reflection and class-dict heuristics only; never invokes the
+            callable.
         """
         module = inspect.getmodule(f_eff)
         qualname = getattr(f_eff, "__qualname__", None)
@@ -196,6 +214,10 @@ class MethodInspector:
     def _fill_closure(self, f_eff: Callable) -> None:
         """
         Capture a safe preview of closure cell contents (if any).
+
+        Contract:
+            Best-effort only. Closure preview failures are surfaced as
+            placeholder data instead of raising.
         """
         try:
             self.data["closure"] = None
@@ -210,8 +232,12 @@ class MethodInspector:
     def _fill_decoration(self, f_eff: Callable, f_wrapped: Callable) -> None:
         """
         Record decoration status:
-          - 'decorated' is True when f_eff differs from the provided callable.
-          - 'wrapped_repr' points at the wrapper so the chain is visible.
+
+        Contract:
+          - `decorated` is True when the resolved inspection target differs
+            from the originally supplied callable.
+          - `wrapped_repr` points at the wrapper so the chain remains visible
+            in the output.
         """
         try:
             self.data["decorated"] = (f_eff is not f_wrapped)

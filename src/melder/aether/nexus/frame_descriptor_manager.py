@@ -60,6 +60,16 @@ class FrameDescriptorManager(Cleanable):
         "_aether",
         "_frame_descriptors_by_name",
     ]
+    _SUPPORTED_FRAME_PAYLOAD_CONTRACTS = {
+        ("frame", "0.0.1"),
+    }
+    _SUPPORTED_CONDUIT_PAYLOAD_CONTRACTS = {
+        ("conduit", "0.0.1"),
+    }
+    _SUPPORTED_SPELL_PAYLOAD_CONTRACTS = {
+        ("general", "0.0.1"),
+        ("detailed", "0.0.1"),
+    }
 
     def __init__(self, aether: IAether) -> None:
         """
@@ -273,6 +283,7 @@ class FrameDescriptorManager(Cleanable):
                 cluster_count=cluster_count,
                 cluster_names=cluster_names,
             )
+            self._validate_published_frame_payload(payload)
             frame_record = FrameRecord(
                 frame_name=frame_name,
                 frame_id=frame._id,
@@ -332,6 +343,7 @@ class FrameDescriptorManager(Cleanable):
                 policy=conduit._conduit_ward._policy,
                 peer_conduit_ids=peer_conduit_ids,
             )
+            self._validate_published_conduit_payload(payload)
             conduit_record = ConduitRecord(
                 conduit_id=conduit._id,
                 root_conduit_id=conduit._root_conduit_id,
@@ -420,6 +432,7 @@ class FrameDescriptorManager(Cleanable):
                 raise RuntimeError(
                     "Spell publication requires a non-empty descriptor payload."
                 )
+            self._validate_published_spell_payload(payload)
 
             spell_record = SpellRecord(
                 origin_spellbook_id=spellbook._id,
@@ -772,3 +785,81 @@ class FrameDescriptorManager(Cleanable):
         descriptor.set_frame_handle(realized_frame)
         descriptor.set_nexus_frame_record(nexus_frame_record)
         return nexus_frame_record
+
+    @classmethod
+    def _validate_published_frame_payload(
+            cls,
+            payload: FrameDescriptorPayload,
+    ) -> None:
+        """
+        Validate one published frame payload contract before descriptor ingest.
+
+        Args:
+            payload:
+                Published frame descriptor payload.
+
+        Returns:
+            None.
+        """
+        if (
+                payload.profile_name,
+                payload.profile_version,
+        ) not in cls._SUPPORTED_FRAME_PAYLOAD_CONTRACTS:
+            raise ValueError(
+                "Unsupported frame descriptor payload contract '{0}:{1}'.".format(
+                    payload.profile_name,
+                    payload.profile_version,
+                )
+            )
+
+    @classmethod
+    def _validate_published_conduit_payload(
+            cls,
+            payload: ConduitDescriptorPayload,
+    ) -> None:
+        """
+        Validate one published conduit payload contract before descriptor ingest.
+
+        Args:
+            payload:
+                Published conduit descriptor payload.
+
+        Returns:
+            None.
+        """
+        if (
+                payload.profile_name,
+                payload.profile_version,
+        ) not in cls._SUPPORTED_CONDUIT_PAYLOAD_CONTRACTS:
+            raise ValueError(
+                "Unsupported conduit descriptor payload contract '{0}:{1}'.".format(
+                    payload.profile_name,
+                    payload.profile_version,
+                )
+            )
+
+    @classmethod
+    def _validate_published_spell_payload(
+            cls,
+            payload: SpellDescriptorPayload,
+    ) -> None:
+        """
+        Validate one published spell payload contract before descriptor ingest.
+
+        Args:
+            payload:
+                Published spell descriptor payload.
+
+        Returns:
+            None.
+        """
+        if (
+                payload.profile_name,
+                payload.profile_version,
+        ) not in cls._SUPPORTED_SPELL_PAYLOAD_CONTRACTS:
+            raise ValueError(
+                "Unsupported spell descriptor payload contract '{0}:{1}'.".format(
+                    payload.profile_name,
+                    payload.profile_version,
+                )
+            )

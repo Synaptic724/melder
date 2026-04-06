@@ -147,7 +147,7 @@ class ClassInspector:
         mro = inspect.getmro(self.cls) # Cache MRO
         cls_dict = self.cls.__dict__ # Cache class dict
 
-        # Python 3.11+ has classify_members; older versions don’t.
+        # Python 3.11+ has classify_members; older versions do not.
         if callable(getattr(inspect, "classify_members", None)):
             classified = inspect.classify_members(self.cls)
         else:
@@ -378,6 +378,10 @@ class ClassInspector:
         Args:
             obj: Object to inspect for source metadata.
 
+        Contract:
+            Missing provenance is represented as `None` fields rather than an
+            exception.
+
         Returns:
             Dict[str, Any]: Keys: file_path, start_line, end_line, source_text, preview.
         """
@@ -424,6 +428,10 @@ class ClassInspector:
         Args:
             obj: Candidate member object from classify_members.
 
+        Contract:
+            Strips `staticmethod` and `classmethod` wrappers when needed so
+            `inspect.signature()` sees the underlying function.
+
         Returns:
             Any: Callable object passed to inspect.signature.
         """
@@ -439,6 +447,10 @@ class ClassInspector:
 
         Args:
             obj: Candidate member object.
+
+        Contract:
+            Resolves `staticmethod`, `classmethod`, and `property` wrappers to
+            the underlying function when possible.
 
         Returns:
             Any: Underlying function when available, otherwise obj.
@@ -458,6 +470,10 @@ class ClassInspector:
         Args:
             obj: Candidate member object.
 
+        Contract:
+            Treats wrapped static/class methods as callable even before wrapper
+            resolution.
+
         Returns:
             bool: True if the member is callable or a method descriptor.
         """
@@ -471,6 +487,10 @@ class ClassInspector:
 
         Args:
             obj: Candidate member object.
+
+        Contract:
+            Excludes `property` because properties are handled by their own
+            branch in member normalization.
 
         Returns:
             bool: True if the object has descriptor methods and is not a property.
@@ -486,6 +506,10 @@ class ClassInspector:
         Args:
             name: Member name.
             obj: Member object.
+
+        Contract:
+            Returns a stable normalized kind label so downstream profiles do
+            not need to reason about raw inspect/classify labels directly.
 
         Returns:
             str: Normalized member kind label.
@@ -511,6 +535,10 @@ class ClassInspector:
         Args:
             cls: Class to inspect.
 
+        Contract:
+            Reports only the presence of dynamic access hooks in the MRO; it
+            does not invoke them.
+
         Returns:
             Dict[str, bool]: Flags for __getattr__, __getattribute__, __setattr__.
         """
@@ -527,6 +555,10 @@ class ClassInspector:
         Args:
             cls: Class to inspect.
             attr: Attribute name to check.
+
+        Contract:
+            Checks only class `__dict__` entries across the MRO and does not
+            trigger dynamic attribute access.
 
         Returns:
             bool: True if attr appears in any __dict__ in the MRO.

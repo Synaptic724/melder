@@ -18,10 +18,36 @@ class BindingProfileStrategy:
     __slots__ = ("show_dunders", "max_repr")
 
     def __init__(self, *, show_dunders: bool = False, max_repr: int = 120) -> None:
+        """
+        Initialize one binding-profile strategy.
+
+        Args:
+            show_dunders:
+                Whether dunder members should be included when class binding
+                profiles are built.
+            max_repr:
+                Maximum representation length passed to inspector helpers.
+
+        Returns:
+            None.
+        """
         self.show_dunders = show_dunders
         self.max_repr = max_repr
 
     def build_profile(self, candidate: Any) -> SpellBindingProfile:
+        """
+        Dispatch one raw candidate into the appropriate binding-profile shape.
+
+        Contract:
+            - Class candidates are routed to the class profile builder.
+            - Non-class callables are routed to the callable profile builder.
+            - Non-callable non-class objects are treated as instance bindings.
+            - The final fallback path is reserved for anything that slips past
+              the earlier shape checks.
+
+        Returns:
+            SpellBindingProfile: Binding profile chosen for the candidate.
+        """
         if inspect.isclass(candidate):
             return self._build_class_profile(candidate)
 
@@ -34,6 +60,9 @@ class BindingProfileStrategy:
         return self._build_other_profile(candidate)
 
     def _build_class_profile(self, cls: type) -> ClassBindingProfile:
+        """
+        Build the shallow binding-time profile for one class candidate.
+        """
         module = inspect.getmodule(cls)
 
         try:
@@ -89,6 +118,9 @@ class BindingProfileStrategy:
         )
 
     def _build_callable_profile(self, fn: Any) -> CallableBindingProfile:
+        """
+        Build the shallow binding-time profile for one callable candidate.
+        """
         effective = InspectorUtility.unwrap_callable(fn)
         module = inspect.getmodule(effective)
 
@@ -143,6 +175,9 @@ class BindingProfileStrategy:
         )
 
     def _build_instance_profile(self, obj: Any) -> InstanceBindingProfile:
+        """
+        Build the binding-time profile for one existing instance candidate.
+        """
         type_name = type(obj).__name__
         module = getattr(type(obj), "__module__", "<unknown>")
 
@@ -155,6 +190,9 @@ class BindingProfileStrategy:
         )
 
     def _build_other_profile(self, obj: Any) -> OtherBindingProfile:
+        """
+        Build the fallback binding profile for unsupported candidate shapes.
+        """
         type_name = type(obj).__name__
         module = getattr(type(obj), "__module__", "<unknown>")
 
@@ -168,6 +206,9 @@ class BindingProfileStrategy:
 
     @staticmethod
     def _is_probably_decorated_class(cls: Any) -> bool:
+        """
+        Heuristically detect whether a class object looks decorator-wrapped.
+        """
         if not inspect.isclass(cls):
             return True
 

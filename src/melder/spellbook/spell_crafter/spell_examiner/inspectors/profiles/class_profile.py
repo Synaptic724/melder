@@ -126,7 +126,10 @@ class ClassProfile(Cleanable):
 
         Contract:
             - Calls cleanup() on nested MethodProfile instances when possible.
-            - Clears and nulls all fields after cleanup.
+            - Clears owned collection fields before nulling references.
+            - Drops detached provenance/source/member metadata rather than
+              touching any live runtime object.
+            - Leaves the profile unusable after cleanup.
         """
         if self._cleaned:
             return

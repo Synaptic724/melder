@@ -20,12 +20,32 @@ class SpellSymbolicNode(Cleanable):
     __slots__ = Cleanable.__slots__ + ["node_id", "kind", "metadata"]
 
     def __init__(self, node_id: str, kind: str, metadata: Optional[dict[str, Any]] = None) -> None:
+        """
+        Initialize one symbolic dependency node.
+
+        Args:
+            node_id:
+                Stable node identifier inside the symbolic graph.
+            kind:
+                Node kind label.
+            metadata:
+                Optional detached metadata payload.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self.node_id = node_id
         self.kind = kind
         self.metadata = metadata or {}
 
     def cleanup(self) -> None:
+        """
+        Idempotently clear the symbolic node metadata payload.
+
+        Returns:
+            None.
+        """
         if self._cleaned:
             return
         self._cleaned = True
@@ -45,12 +65,32 @@ class SpellSymbolicEdge(Cleanable):
     __slots__ = Cleanable.__slots__ + ["from_node", "to_node", "via_parameter"]
 
     def __init__(self, from_node: str, to_node: str, via_parameter: Optional[str] = None) -> None:
+        """
+        Initialize one symbolic dependency edge.
+
+        Args:
+            from_node:
+                Source node identifier.
+            to_node:
+                Target node identifier.
+            via_parameter:
+                Optional parameter name describing the dependency path.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self.from_node = from_node
         self.to_node = to_node
         self.via_parameter = via_parameter
 
     def cleanup(self) -> None:
+        """
+        Idempotently clear the symbolic edge payload.
+
+        Returns:
+            None.
+        """
         if self._cleaned:
             return
         self._cleaned = True
@@ -75,12 +115,32 @@ class SpellSymbolicGraph(Cleanable):
             nodes: Optional[List[SpellSymbolicNode]] = None,
             edges: Optional[List[SpellSymbolicEdge]] = None,
     ) -> None:
+        """
+        Initialize one symbolic dependency graph for a spell.
+
+        Args:
+            spell_id:
+                Owning spell identifier.
+            nodes:
+                Optional initial symbolic nodes.
+            edges:
+                Optional initial symbolic edges.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self.spell_id = spell_id
         self.nodes: List[SpellSymbolicNode] = list(nodes) if nodes is not None else []
         self.edges: List[SpellSymbolicEdge] = list(edges) if edges is not None else []
 
     def cleanup(self) -> None:
+        """
+        Idempotently clear the symbolic graph and owned node/edge state.
+
+        Returns:
+            None.
+        """
         if self._cleaned:
             return
         self._cleaned = True
@@ -114,12 +174,30 @@ class SpellResolutionFrame(Cleanable):
     __slots__ = Cleanable.__slots__ + ["spell_id", "ordered_node_ids"]
 
     def __init__(self, spell_id: str, ordered_node_ids: Optional[List[str]] = None) -> None:
+        """
+        Initialize one concrete spell resolution frame.
+
+        Args:
+            spell_id:
+                Owning spell identifier.
+            ordered_node_ids:
+                Optional topologically ordered node ids.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self.spell_id = spell_id
         self.ordered_node_ids: List[str] = list(ordered_node_ids) if ordered_node_ids is not None else []
         # Implementation-specific payload goes here in a later ticket.
 
     def cleanup(self) -> None:
+        """
+        Idempotently clear the resolution frame payload.
+
+        Returns:
+            None.
+        """
         if self._cleaned:
             return
         self._cleaned = True
@@ -137,12 +215,32 @@ class SpellValidationIssue(Cleanable):
     __slots__ = Cleanable.__slots__ + ["code", "message", "details"]
 
     def __init__(self, code: str, message: str, details: Optional[dict[str, Any]] = None) -> None:
+        """
+        Initialize one validation issue payload.
+
+        Args:
+            code:
+                Stable issue code.
+            message:
+                Human-readable validation message.
+            details:
+                Optional detached issue details payload.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self.code = code
         self.message = message
         self.details = details or {}
 
     def cleanup(self) -> None:
+        """
+        Idempotently clear the validation issue payload.
+
+        Returns:
+            None.
+        """
         if self._cleaned:
             return
         self._cleaned = True
@@ -167,12 +265,32 @@ class SpellValidationResult(Cleanable):
             errors: Optional[List[SpellValidationIssue]] = None,
             warnings: Optional[List[SpellValidationIssue]] = None,
     ) -> None:
+        """
+        Initialize one validation-result payload.
+
+        Args:
+            is_valid:
+                Whether the spell currently validates.
+            errors:
+                Optional validation-error list.
+            warnings:
+                Optional validation-warning list.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self.is_valid = is_valid
         self.errors: List[SpellValidationIssue] = list(errors) if errors is not None else []
         self.warnings: List[SpellValidationIssue] = list(warnings) if warnings is not None else []
 
     def cleanup(self) -> None:
+        """
+        Idempotently clear the validation result and owned issue payloads.
+
+        Returns:
+            None.
+        """
         if self._cleaned:
             return
         self._cleaned = True
@@ -204,10 +322,10 @@ class SpellResolutionProfile(Cleanable):
     Composition
     -----------
 
-    * `requirements`     – Phase 1 artifact (SpellRequirements).
-    * `symbolic_graph`   – Phase 2 artifact (SpellSymbolicGraph).
-    * `resolution_frame` – Phase 3 artifact (SpellResolutionFrame).
-    * `validation`       – Phase 4 artifact (SpellValidationResult).
+    * `requirements`     - Phase 1 artifact (SpellRequirements).
+    * `symbolic_graph`   - Phase 2 artifact (SpellSymbolicGraph).
+    * `resolution_frame` - Phase 3 artifact (SpellResolutionFrame).
+    * `validation`       - Phase 4 artifact (SpellValidationResult).
 
     In the initial integration, you will likely populate only `requirements`,
     and leave the others as None until their phases are implemented.
@@ -235,6 +353,30 @@ class SpellResolutionProfile(Cleanable):
             resolution_frame: Optional[SpellResolutionFrame] = None,
             validation: Optional[SpellValidationResult] = None,
     ) -> None:
+        """
+        Initialize one canonical spell resolution profile.
+
+        Args:
+            spell_id:
+                Owning spell identifier.
+            existence:
+                Spell existence policy.
+            spellframe:
+                Spellframe associated with the spell.
+            binding_name:
+                Optional binding name.
+            requirements:
+                Phase 1 requirements artifact.
+            symbolic_graph:
+                Optional phase 2 symbolic graph artifact.
+            resolution_frame:
+                Optional phase 3 concrete resolution frame artifact.
+            validation:
+                Optional phase 4 validation artifact.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self.spell_id = spell_id
         self.existence = existence
@@ -246,6 +388,12 @@ class SpellResolutionProfile(Cleanable):
         self.validation = validation
 
     def cleanup(self) -> None:
+        """
+        Idempotently clear the resolution profile and owned phase artifacts.
+
+        Returns:
+            None.
+        """
         if self._cleaned:
             return
         self._cleaned = True
