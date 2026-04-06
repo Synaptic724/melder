@@ -2,6 +2,15 @@ import pytest
 
 from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
 from melder.aether.nexus.acl.frame_acl_container import FrameACLContainer
+from melder.aether.nexus.acl.profiles.frame_acl_codegen_profile import (
+    FrameACLCodegenProfile,
+)
+from melder.aether.nexus.acl.profiles.frame_acl_profile import (
+    FrameACLProfile,
+)
+from melder.aether.nexus.acl.profiles.frame_acl_view_profile import (
+    FrameACLViewProfile,
+)
 from melder.aether.nexus.frame_acl_manager import FrameACLManager
 
 
@@ -168,3 +177,125 @@ def test_frame_acl_manager_cleanup_cleans_all_owned_containers() -> None:
     assert finance_container.cleaned is True
     assert manager._lock is None
     assert manager._frame_acl_containers_by_name is None
+
+
+def test_frame_acl_manager_profile_builder_property_returns_builder_singleton() -> None:
+    """
+    Verify the manager exposes one stable profile builder object.
+
+    Returns:
+        None.
+    """
+    manager = FrameACLManager()
+
+    assert manager.frame_acl_profile_builder is manager._frame_acl_profile_builder
+
+
+def test_frame_acl_manager_register_view_profile_delegates_to_builder() -> None:
+    """
+    Verify custom view profiles are registered through the shared builder.
+
+    Returns:
+        None.
+    """
+    manager = FrameACLManager()
+    view_profile = FrameACLViewProfile(
+        "custom_view",
+        minimum_spell_payload_profile_name="detailed",
+    )
+
+    manager._register_view_acl_profile(view_profile)
+
+    assert manager._list_view_acl_profile_names() == [
+        "safe",
+        "hybrid",
+        "permissive",
+        "custom_view",
+    ]
+    assert (
+        manager.frame_acl_profile_builder.get_required_view_profile("custom_view")
+        is view_profile
+    )
+
+
+def test_frame_acl_manager_register_codegen_profile_delegates_to_builder() -> None:
+    """
+    Verify custom codegen profiles are registered through the shared builder.
+
+    Returns:
+        None.
+    """
+    manager = FrameACLManager()
+    codegen_profile = FrameACLCodegenProfile("custom_codegen")
+
+    manager._register_codegen_acl_profile(codegen_profile)
+
+    assert manager._list_codegen_acl_profile_names() == [
+        "safe",
+        "hybrid",
+        "permissive",
+        "custom_codegen",
+    ]
+    assert (
+        manager.frame_acl_profile_builder.get_required_codegen_profile(
+            "custom_codegen"
+        )
+        is codegen_profile
+    )
+
+
+def test_frame_acl_manager_create_profile_uses_requested_catalog_names() -> None:
+    """
+    Verify composed profiles use the requested reusable catalog entries.
+
+    Returns:
+        None.
+    """
+    manager = FrameACLManager()
+    manager._register_view_acl_profile(
+        FrameACLViewProfile(
+            "custom_view",
+            minimum_spell_payload_profile_name="detailed",
+        )
+    )
+    manager._register_codegen_acl_profile(FrameACLCodegenProfile("custom_codegen"))
+
+    profile = manager._create_frame_acl_profile(
+        "custom",
+        view_profile_name="custom_view",
+        codegen_profile_name="custom_codegen",
+    )
+
+    assert profile.view_profile.name == "custom_view"
+    assert profile.codegen_profile.name == "custom_codegen"
+    assert manager._get_required_frame_acl_profile("custom") is profile
+
+
+def test_frame_acl_manager_register_frame_acl_profile_rejects_invalid_type() -> None:
+    """
+    Verify composed profile registration rejects invalid objects.
+
+    Returns:
+        None.
+    """
+    with pytest.raises(TypeError, match="frame_acl_profile must be a FrameACLProfile"):
+        FrameACLManager()._register_frame_acl_profile(None)
+
+
+def test_frame_acl_manager_cleanup_cleans_registered_profiles_and_builder() -> None:
+    """
+    Verify cleanup cascades into registered composed profiles and the builder.
+
+    Returns:
+        None.
+    """
+    manager = FrameACLManager()
+    profile = manager._create_frame_acl_profile("support")
+    builder = manager.frame_acl_profile_builder
+
+    manager.cleanup()
+
+    assert profile.cleaned is True
+    assert builder.cleaned is True
+    assert manager._frame_acl_profiles_by_name is None
+    assert manager._frame_acl_profile_builder is None

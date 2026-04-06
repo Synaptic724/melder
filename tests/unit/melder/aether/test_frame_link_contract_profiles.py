@@ -257,6 +257,34 @@ def test_frame_link_contract_profile_builder_replacing_profile_cleans_old_profil
     assert builder.get_required_profile("custom") is second_profile
 
 
+def test_frame_link_contract_profile_builder_register_rejects_invalid_type() -> None:
+    """
+    Verify downstream profile registration rejects invalid objects.
+
+    Returns:
+        None.
+    """
+    with pytest.raises(TypeError, match="profile must be a FrameLinkContractProfile"):
+        FrameLinkContractProfileBuilder().register_profile(None)
+
+
+def test_frame_link_contract_profile_builder_cleanup_cascades_to_owned_profiles() -> None:
+    """
+    Verify downstream profile-builder cleanup cascades into owned profiles.
+
+    Returns:
+        None.
+    """
+    builder = FrameLinkContractProfileBuilder()
+    safe_profile = builder.get_required_profile("safe")
+
+    builder.cleanup()
+
+    assert builder.cleaned is True
+    assert safe_profile.cleaned is True
+    assert builder._profiles_by_name is None
+
+
 def test_safe_frame_link_contract_profile_has_expected_contract_shape() -> None:
     """
     Verify the safe downstream contract profile carries the expected filters.
