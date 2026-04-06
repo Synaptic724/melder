@@ -11,20 +11,43 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
 @dataclass(frozen=True)
 class ChangeControlStagedMutation:
     """
-    Immutable snapshot of one admitted change-control request.
+    Immutable record describing a staged change-control mutation.
 
-    `ChangeControlStagedMutation` is the record the orchestrator keeps after a
-    request is admitted. It captures the normalized scope, binding, contract,
-    and metadata fields that later commit/abort hooks need in order to make
-    deterministic decisions without reaching back into mutable request objects.
-
+    Purpose:
+        Capture staged metadata for an admitted change-control request so
+        commit/abort hooks can reason about scope ownership deterministically.
     Contract:
-    - Instances are immutable and safe to share across threads.
-    - `staged_at` is captured once and preserved across later updates.
-    - Update flows create a new record instead of mutating the old one.
-    - `scope_keys`, `binding_keys`, and `contract_keys` represent the
-      orchestrator's normalized view of the admitted request at that moment in
-      time, not a live pointer back to mutable request state.
+        - Instances are immutable.
+        - `request_id` and `initiator_conduit_id` must be non-empty strings.
+    Args:
+        request_id:
+            Unique identifier of the admitted request.
+        request_type:
+            Change-control transaction type being staged.
+        staged_at:
+            Unix timestamp (seconds) when staging occurred.
+        initiator_conduit_id:
+            Conduit id that initiated the transaction.
+        spellbook_id:
+            Optional spellbook id associated with the mutation.
+        conduit_ids:
+            Conduit ids involved in the request.
+        scope_keys:
+            Normalized scope keys derived for staging/embargo checks.
+        binding_keys:
+            Binding keys affected by the request.
+        contract_keys:
+            Contract keys affected by the request.
+        metadata:
+            Optional metadata captured from the request.
+    Returns:
+        None.
+    Raises:
+        None.
+    Threading:
+        Safe to share across threads because instances are immutable.
+    Lifecycle:
+        Immutable; no cleanup required.
     """
     __melder_internal__ = _mrg.sentinel
     request_id: str
@@ -53,28 +76,38 @@ class ChangeControlStagedMutation:
             metadata: Optional[Dict[str, Any]] = None,
     ) -> "ChangeControlStagedMutation":
         """
-        Build one staged record from admitted request metadata.
+        Build a staged mutation record from request metadata.
 
-        Caller contract:
-        - `scope_keys` should already be normalized for staging/embargo use.
-        - tuple inputs are taken as the canonical staged values for this
-          snapshot; they are not normalized again here.
-
+        Purpose:
+            Normalize staged metadata in a single constructor.
+        Contract:
+            - `scope_keys` must already be normalized.
         Args:
-            request_id: Unique identifier of the admitted request.
-            request_type: Transaction type being staged.
-            initiator_conduit_id: Conduit id that initiated the request.
-            spellbook_id: Optional spellbook id associated with the request.
-            conduit_ids: Conduit ids involved in the request.
-            scope_keys: Normalized scope keys used for staging and embargo
-                bookkeeping.
-            binding_keys: Binding keys affected by the admitted request.
-            contract_keys: Contract keys affected by the admitted request.
-            metadata: Optional metadata copied into the staged snapshot.
-
+            request_id:
+                Unique request identifier.
+            request_type:
+                Transaction type being staged.
+            initiator_conduit_id:
+                Conduit id that initiated the transaction.
+            spellbook_id:
+                Optional spellbook id associated with the request.
+            conduit_ids:
+                Conduit ids involved in the request.
+            scope_keys:
+                Normalized scope keys for staging.
+            binding_keys:
+                Binding keys affected by the request.
+            contract_keys:
+                Contract keys affected by the request.
+            metadata:
+                Optional metadata captured from the request.
         Returns:
-            ChangeControlStagedMutation: Immutable staged mutation record for
-            the admitted request.
+            ChangeControlStagedMutation:
+                Immutable staged mutation record.
+        Raises:
+            None.
+        Threading:
+            Thread-safe without locks; no shared state is mutated.
         """
         return cls(
             request_id=request_id,
@@ -98,28 +131,31 @@ class ChangeControlStagedMutation:
             metadata: Optional[Dict[str, Any]] = None,
     ) -> "ChangeControlStagedMutation":
         """
-        Return a new staged record with selected fields updated.
+        Return a new staged mutation with updated metadata.
 
-        This preserves the original request identity and staging time while
-        letting the orchestrator refresh scope, binding, contract, or metadata
-        fields discovered after admission.
-
+        Purpose:
+            Produce a new immutable staged record that preserves identity and
+            staging time while allowing metadata fields to be updated.
         Contract:
-        - `request_id`, `request_type`, and `staged_at` are preserved.
-        - `None` keeps the existing field value.
-        - incoming metadata merges into the existing metadata map.
-
+            - `request_id`, `request_type`, and `staged_at` are preserved.
+            - None values keep the existing field data.
+            - metadata merges into the existing metadata when provided.
         Args:
-            scope_keys: Optional replacement scope keys for the staged record.
-            binding_keys: Optional replacement binding keys for the staged
-                record.
-            contract_keys: Optional replacement contract keys for the staged
-                record.
-            metadata: Optional metadata merged onto the existing metadata map.
-
+            scope_keys:
+                Optional replacement scope keys for the staged record.
+            binding_keys:
+                Optional replacement binding keys for the staged record.
+            contract_keys:
+                Optional replacement contract keys for the staged record.
+            metadata:
+                Optional metadata to merge into the staged record.
         Returns:
-            ChangeControlStagedMutation: New immutable snapshot preserving the
-            original request identity and stage time.
+            ChangeControlStagedMutation:
+                A new immutable staged mutation record.
+        Raises:
+            None.
+        Threading:
+            Thread-safe without locks; no shared state is mutated.
         """
         merged_metadata = dict(self.metadata)
         if metadata is not None:
