@@ -3,22 +3,19 @@ from abc import ABC, abstractmethod
 
 class Cleanable(ABC):
     """
-    Cleanable
-    -----------
-    Abstract base class for all Cleanable objects in the system.
+    Abstract base class for objects that own explicit cleanup lifecycle.
 
-    Objects that manage runtime, memory, open resources, or registration
-    within commandops must implement this interface.
-
-    Supports context-manager usage:
-        with MyObject(...) as obj:
-            ...
-        # cleanup() is called automatically on exit.
+    `Cleanable` is the common contract used across the runtime for objects that
+    own resources, registration state, or other teardown-sensitive runtime
+    surfaces. Subclasses are responsible for implementing deterministic cleanup
+    behavior and for exposing the cleaned-state guard consistently.
 
     Contract:
-    ---------
-    - `cleanup()` must be safe to call multiple times.
-    - All cleanup must set `_cleaned = True` when cleanup completes.
+    - `cleanup()` must be idempotent.
+    - Subclasses must set `_cleaned = True` when cleanup completes.
+    - `check_cleaned()` is the canonical guard for rejecting use-after-clean.
+    - `using_cleanup()` provides a separate helper context that guarantees one
+      cleanup call on exit.
     """
 
     __slots__ = ['_cleaned']
@@ -28,17 +25,33 @@ class Cleanable(ABC):
 
     @property
     def cleaned(self) -> bool:
-        """Returns True if the object has already been cleaned."""
+        """
+        Return whether the object has already been cleaned.
+
+        Returns:
+            bool:
+                True when `_cleaned` has been set.
+        """
         return self._cleaned
 
     @property
     def is_cleaned(self) -> bool:
-        """Alias for `cleaned`."""
+        """
+        Alias for `cleaned`.
+
+        Returns:
+            bool:
+                Current cleaned-state flag.
+        """
         return self._cleaned
 
     def check_cleaned(self):
         """
-        Check if the object has been cleaned.
+        Raise when the object has already been cleaned.
+
+        Contract:
+        - Subclasses use this as the standard use-after-clean guard.
+        - No-op while the object is still live.
 
         Raises:
             RuntimeError: If the object has already been cleaned.
@@ -49,10 +62,9 @@ class Cleanable(ABC):
     @abstractmethod
     def cleanup(self):
         """
-        Dispose must be implemented by subclasses.
+        Release owned resources and mark the object cleaned.
 
-        Must:
-        -----
+        Subclass contract:
         - Release all resources.
         - Deregister or finalize any allocations.
         - Be idempotent (safe to call multiple times).
@@ -61,10 +73,9 @@ class Cleanable(ABC):
 
     async def async_cleanup(self):
         """
-        Dispose must be implemented by subclasses.
+        Async cleanup hook for subclasses that support asynchronous teardown.
 
-        Must:
-        -----
+        Subclass contract:
         - Release all resources.
         - Deregister or finalize any allocations.
         - Be idempotent (safe to call multiple times).
@@ -73,17 +84,13 @@ class Cleanable(ABC):
 
     class _CleanupContext:
         """
-        A standalone context manager that guarantees a call to cleanup()
-        after the block exits, regardless of exceptions.
+        Standalone context manager that guarantees one cleanup call on exit.
 
-        It does NOT lock the object or interact with the object's own
-        __enter__/__exit__. It is a completely separate deterministic
-        teardown mechanism.
-
-        This version ensures:
-            - cleanup() is always called exactly once.
-            - the reference to the owner is explicitly nulled.
-            - no strong references remain after exit.
+        Contract:
+            - Does not rely on the owner's own `__enter__` / `__exit__`.
+            - Calls `owner.cleanup()` at most once.
+            - Drops the strong owner reference after exit.
+            - Never suppresses exceptions raised by the caller's block.
         """
         __slots__ = ("_owner", "_cleaned", "_lock")
 
@@ -93,10 +100,24 @@ class Cleanable(ABC):
             self._lock: threading.RLock = threading.RLock()
 
         def __enter__(self):
+            """
+            Enter the cleanup helper context and return the owner.
+
+            Returns:
+                Any:
+                    The owner object protected by this helper.
+            """
             self._lock.acquire()
             return self._owner
 
         def __exit__(self, exc_type, exc, tb):
+            """
+            Exit the cleanup helper context and trigger owner cleanup once.
+
+            Returns:
+                bool:
+                    Always False so caller exceptions are never suppressed.
+            """
             # Guarantee cleanup only once.
             try:
                 owner = self._owner
@@ -118,17 +139,15 @@ class Cleanable(ABC):
 
     def using_cleanup(self):
         """
-        Return a context manager that performs cleanup() automatically
-        when leaving the block.
+        Return a helper context manager that guarantees `cleanup()` on exit.
 
-        Examples
-        --------
-        # Use the object normally inside the block,
-        # then guarantee cleanup afterward.
-        with obj.using_cleanup():
-            obj.do_something()
+        Contract:
+        - Independent of any context-manager behavior implemented by the owner.
+        - Intended for callers that want deterministic cleanup without relying
+          on the object's own `__enter__` / `__exit__`.
 
-        # Does not interfere with the object's normal lock-based
-        # __enter__/__exit__ context manager.
+        Returns:
+            Cleanable._CleanupContext:
+                Helper context manager bound to this object.
         """
         return Cleanable._CleanupContext(self)
