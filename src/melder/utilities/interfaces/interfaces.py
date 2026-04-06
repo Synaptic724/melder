@@ -6872,7 +6872,7 @@ class IChannelLogger(ICleanable, Protocol):
 
     def critical(self, msg: str, *args, **kwargs) -> None:
         """
-        Log a message with CRITICAL level.s
+        Log a message with `CRITICAL` level.
         """
         ...
 
@@ -6968,6 +6968,9 @@ class IChannelLogger(ICleanable, Protocol):
         Args:
             groups: Iterable of group tokens to add (ignored if None).
             properties: Mapping of properties to set/overwrite (ignored if None).
+
+        Returns:
+            None.
         """
         ...
 
@@ -6983,6 +6986,9 @@ class IChannelLogger(ICleanable, Protocol):
         Args:
             groups: Iterable of group tokens to remove (ignored if None).
             properties: Iterable of property keys to delete (ignored if None).
+
+        Returns:
+            None.
         """
         ...
 
@@ -6992,6 +6998,9 @@ class IChannelLogger(ICleanable, Protocol):
 
         Usage:
             ch.refresh_properties(open=self._open, queued=queue.size)
+
+        Returns:
+            None.
         """
         ...
 
@@ -8026,6 +8035,10 @@ class ISpellSystemStates(ICleanable, Protocol):
     ) -> Optional["SpellLocalTopology"]:
         """
         Retrieve the local constructor topology for the given spell, if any.
+
+        Returns:
+            Optional[SpellLocalTopology]:
+                Local topology for the lineage when registered; otherwise None.
         """
         ...
 
@@ -8035,6 +8048,11 @@ class ISpellSystemStates(ICleanable, Protocol):
     ) -> Optional["SpellLocalTopology"]:
         """
         Retrieve the local constructor topology using a version-id key.
+
+        Returns:
+            Optional[SpellLocalTopology]:
+                Local topology for the current version id when indexed;
+                otherwise None.
         """
         ...
 
@@ -8094,24 +8112,40 @@ class ISpellSystemStates(ICleanable, Protocol):
     def get_conduit_resolution_state(self, conduit_id: str) -> Optional['IConduitResolutionState']:
         """
         Retrieve the per-conduit resolution state for a conduit id.
+
+        Returns:
+            Optional[IConduitResolutionState]:
+                Stored conduit-scoped resolution state, or None when the
+                conduit has no registered state.
         """
         ...
 
     def get_or_create_conduit_resolution_state(self, conduit_id: str) -> 'IConduitResolutionState':
         """
         Retrieve or create the per-conduit resolution state for a conduit id.
+
+        Returns:
+            IConduitResolutionState:
+                Existing or newly created conduit-scoped resolution state.
         """
         ...
 
     def drop_conduit_resolution_state(self, conduit_id: str) -> None:
         """
-        Remove and cleanup the per-conduit resolution state for a conduit id.
+        Remove and clean up the per-conduit resolution state for a conduit id.
+
+        Returns:
+            None.
         """
         ...
 
     def iter_conduit_resolution_states(self) -> Iterator['IConduitResolutionState']:
         """
         Iterate over registered per-conduit resolution states.
+
+        Returns:
+            Iterator[IConduitResolutionState]:
+                Iterator over the currently registered conduit-scoped states.
         """
         ...
 

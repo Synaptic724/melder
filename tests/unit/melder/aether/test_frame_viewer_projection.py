@@ -6,6 +6,9 @@ from melder.aether.nexus.rift.frame_link.frame_link_contract import (
 )
 from melder.aether.nexus.rift.frame_viewer.frame_view import FrameView
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile import (
+    FrameViewerProfile,
+)
 
 
 def _build_link(
@@ -85,9 +88,9 @@ def test_frame_viewer_views_snapshot_is_detached() -> None:
             display_name="ops",
         )],
     )
-    viewer.add_view(view)
+    viewer.add_available_view(view)
 
-    snapshot = viewer.views_by_frame_name
+    snapshot = viewer.available_views_by_frame_name
     snapshot.clear()
 
     assert viewer.list_frame_names() == ["ops"]
@@ -141,9 +144,13 @@ def test_frame_viewer_lists_enabled_helpers_from_selected_profile() -> None:
         None.
     """
     viewer = FrameViewer(
-        profile_name="general",
-        profile_version="0.0.1",
-        enabled_helpers=["list_frame_names", "list_links"],
+        active_profiles_by_name={
+            "general": FrameViewerProfile(
+                "general",
+                version="0.0.1",
+                enabled_helpers=["list_frame_names", "list_links"],
+            )
+        },
     )
 
     assert viewer.profile_name == "general"
@@ -201,7 +208,7 @@ def test_frame_viewer_add_view_rejects_invalid_type() -> None:
         None.
     """
     with pytest.raises(TypeError, match="frame_view must be a FrameView"):
-        FrameViewer().add_view(None)
+        FrameViewer().add_available_view(None)
 
 
 def test_frame_viewer_list_links_returns_deterministic_order_across_frames() -> None:
@@ -240,7 +247,7 @@ def test_frame_viewer_list_links_returns_deterministic_order_across_frames() -> 
         ),
     ]
     viewer = FrameViewer(
-        views_by_frame_name={
+        available_views_by_frame_name={
             "ops": _build_view(frame_name="ops", links=ops_links),
             "finance": _build_view(frame_name="finance", links=finance_links),
         }
@@ -264,9 +271,13 @@ def test_frame_viewer_disabled_helper_raises_when_called() -> None:
         None.
     """
     viewer = FrameViewer(
-        profile_name="minimal",
-        enabled_helpers=["list_frame_names"],
-        views_by_frame_name={
+        active_profiles_by_name={
+            "minimal": FrameViewerProfile(
+                "minimal",
+                enabled_helpers=["list_frame_names"],
+            )
+        },
+        available_views_by_frame_name={
             "ops": _build_view(
                 frame_name="ops",
                 links=[
@@ -293,9 +304,13 @@ def test_frame_viewer_execute_tool_routes_through_profile_owned_tool_mapping() -
         None.
     """
     viewer = FrameViewer(
-        profile_name="inspection",
-        enabled_helpers=["list_links"],
-        views_by_frame_name={
+        active_profiles_by_name={
+            "inspection": FrameViewerProfile(
+                "inspection",
+                enabled_helpers=["list_links"],
+            )
+        },
+        available_views_by_frame_name={
             "ops": _build_view(
                 frame_name="ops",
                 links=[
@@ -325,11 +340,13 @@ def test_frame_viewer_execute_tool_uses_explicit_profile_handler_alias() -> None
     )
 
     viewer = FrameViewer(
-        profile=FrameViewerProfile(
-            "inspection",
-            tool_handler_names_by_name={"inventory": "list_links"},
-        ),
-        views_by_frame_name={
+        active_profiles_by_name={
+            "inspection": FrameViewerProfile(
+                "inspection",
+                tool_handler_names_by_name={"inventory": "list_links"},
+            )
+        },
+        available_views_by_frame_name={
             "ops": _build_view(
                 frame_name="ops",
                 links=[
@@ -358,14 +375,16 @@ def test_frame_viewer_execute_tool_rejects_missing_profile_and_handler() -> None
         FrameViewerProfile,
     )
 
-    with pytest.raises(ValueError, match="FrameViewer has no hosted profile"):
+    with pytest.raises(ValueError, match="FrameViewer has no active profiles"):
         FrameViewer(active_profiles_by_name={}).execute_tool("inventory")
 
     viewer = FrameViewer(
-        profile=FrameViewerProfile(
-            "broken",
-            tool_handler_names_by_name={"inventory": "missing_handler"},
-        )
+        active_profiles_by_name={
+            "broken": FrameViewerProfile(
+                "broken",
+                tool_handler_names_by_name={"inventory": "missing_handler"},
+            )
+        },
     )
 
     with pytest.raises(ValueError, match="targets missing handler"):
@@ -436,7 +455,7 @@ def test_frame_viewer_list_links_can_scope_to_single_frame() -> None:
             ),
         ],
     )
-    viewer = FrameViewer(views_by_frame_name={"ops": ops_view})
+    viewer = FrameViewer(available_views_by_frame_name={"ops": ops_view})
 
     listed_links = viewer.list_links(frame_name="ops")
 
@@ -452,7 +471,7 @@ def test_frame_viewer_list_links_grouped_by_frame_is_deterministic() -> None:
         None.
     """
     viewer = FrameViewer(
-        views_by_frame_name={
+        available_views_by_frame_name={
             "ops": _build_view(
                 frame_name="ops",
                 links=[
@@ -498,7 +517,7 @@ def test_frame_viewer_list_links_by_kind_filters_across_views() -> None:
         None.
     """
     viewer = FrameViewer(
-        views_by_frame_name={
+        available_views_by_frame_name={
             "ops": _build_view(
                 frame_name="ops",
                 links=[
@@ -544,7 +563,7 @@ def test_frame_viewer_list_links_grouped_by_kind_is_deterministic() -> None:
         None.
     """
     viewer = FrameViewer(
-        views_by_frame_name={
+        available_views_by_frame_name={
             "ops": _build_view(
                 frame_name="ops",
                 links=[
@@ -609,7 +628,7 @@ def test_frame_viewer_get_required_link_by_source_returns_matching_link() -> Non
         display_name="spell_one",
     )
     viewer = FrameViewer(
-        views_by_frame_name={"ops": _build_view(frame_name="ops", links=[link])}
+        available_views_by_frame_name={"ops": _build_view(frame_name="ops", links=[link])}
     )
 
     fetched = viewer.get_required_link_by_source(
@@ -653,7 +672,7 @@ def test_frame_viewer_get_required_link_by_source_raises_when_missing() -> None:
         None.
     """
     viewer = FrameViewer(
-        views_by_frame_name={
+        available_views_by_frame_name={
             "ops": _build_view(
                 frame_name="ops",
                 links=[
@@ -684,7 +703,7 @@ def test_frame_viewer_list_display_names_can_filter_by_frame_and_kind() -> None:
         None.
     """
     viewer = FrameViewer(
-        views_by_frame_name={
+        available_views_by_frame_name={
             "ops": _build_view(
                 frame_name="ops",
                 links=[
@@ -732,7 +751,7 @@ def test_frame_viewer_count_links_can_filter_by_frame_and_kind() -> None:
         None.
     """
     viewer = FrameViewer(
-        views_by_frame_name={
+        available_views_by_frame_name={
             "ops": _build_view(
                 frame_name="ops",
                 links=[
@@ -795,7 +814,7 @@ def test_frame_viewer_describe_frame_summarizes_one_projected_view() -> None:
         ],
     )
     viewer = FrameViewer(
-        views_by_frame_name={"ops": view},
+        available_views_by_frame_name={"ops": view},
         metadata={"source": "viewer"},
     )
 
@@ -815,7 +834,7 @@ def test_frame_viewer_describe_frames_summarizes_every_attached_view() -> None:
         None.
     """
     viewer = FrameViewer(
-        views_by_frame_name={
+        available_views_by_frame_name={
             "ops": _build_view(
                 frame_name="ops",
                 links=[
@@ -862,7 +881,7 @@ def test_frame_viewer_cleanup_cascades_into_owned_views_and_links() -> None:
         display_name="ops",
     )
     view = _build_view(frame_name="ops", links=[link])
-    viewer = FrameViewer(views_by_frame_name={"ops": view})
+    viewer = FrameViewer(available_views_by_frame_name={"ops": view})
 
     viewer.cleanup()
 
@@ -880,7 +899,7 @@ def test_frame_viewer_clone_returns_detached_views_and_metadata() -> None:
         None.
     """
     viewer = FrameViewer(
-        views_by_frame_name={
+        available_views_by_frame_name={
             "ops": _build_view(
                 frame_name="ops",
                 links=[
@@ -900,5 +919,5 @@ def test_frame_viewer_clone_returns_detached_views_and_metadata() -> None:
 
     assert cloned is not viewer
     assert cloned.metadata == {"source": "viewer"}
-    assert cloned.get_view("ops") is not viewer.get_view("ops")
+    assert cloned.get_available_view("ops") is not viewer.get_available_view("ops")
     assert cloned.list_enabled_helpers() == viewer.list_enabled_helpers()

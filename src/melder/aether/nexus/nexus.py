@@ -1553,7 +1553,10 @@ class Nexus(Cleanable, INexus):
                     view_profile_name=view_profile_name,
                 )
             return FrameViewer(
-                profile=viewer_profile.clone(),
+                profile_builder=FrameViewerProfileBuilder(),
+                active_profiles_by_name={
+                    viewer_profile.name: viewer_profile.clone(),
+                },
                 available_views_by_frame_name=projected_views,
                 metadata={
                     "frame_count": len(projected_views),

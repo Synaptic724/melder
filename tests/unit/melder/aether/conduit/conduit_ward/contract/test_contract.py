@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from threading import RLock
 from types import SimpleNamespace
 
@@ -186,6 +186,49 @@ def test_contract_cleanup_idempotent(contract):
     contract.cleanup() # Second call should not raise or change state further
     assert contract._cleaned
 
+def test_contract_cleanup_noops_when_marked_cleaned_inside_lock(contract):
+    """
+    Purpose:
+        Verify cleanup re-checks cleaned state after entering the lock.
+    Contract:
+        If cleaned flips to True inside the lock, cleanup returns before mutating fields.
+    Args:
+        contract: Contract fixture under test.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cleanup continues after the second cleaned check.
+    """
+    class LockThatMarksCleaned:
+        """Context manager that flips the contract to cleaned once the lock is entered."""
+
+        def __init__(self, target_contract):
+            self._target_contract = target_contract
+
+        def __enter__(self):
+            self._target_contract._cleaned = True
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            return None
+
+    contract._lock = LockThatMarksCleaned(contract)
+
+    original_ward_a = contract._ward_a
+    original_ward_b = contract._ward_b
+    original_details_a = contract._details_a
+    original_details_b = contract._details_b
+
+    with patch.object(contract, "_clean_up") as mock_clean_up:
+        contract.cleanup()
+
+    mock_clean_up.assert_not_called()
+    assert contract._cleaned is True
+    assert contract._ward_a is original_ward_a
+    assert contract._ward_b is original_ward_b
+    assert contract._details_a is original_details_a
+    assert contract._details_b is original_details_b
+
 # ----------------------------------------------------------------------
 # _clean_up Tests
 # ----------------------------------------------------------------------
@@ -302,8 +345,8 @@ def test_get_opposite_conduit_found(contract, mock_conduit_ward_a, mock_conduit_
     Raises:
         AssertionError: If conduit lookup returns the wrong peer.
     """
-    assert contract._get_opposite_conduit(contract, "ward_a_id") == mock_conduit_ward_b._conduit
-    assert contract._get_opposite_conduit(contract, "ward_b_id") == mock_conduit_ward_a._conduit
+    assert contract._get_opposite_conduit(contract, "conduit_a_id") == mock_conduit_ward_b._conduit
+    assert contract._get_opposite_conduit(contract, "conduit_b_id") == mock_conduit_ward_a._conduit
 
 def test_get_opposite_conduit_not_found(contract):
     """

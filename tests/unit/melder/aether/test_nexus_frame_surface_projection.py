@@ -77,6 +77,20 @@ def _populate_descriptor(nexus: Nexus, frame_name: str) -> None:
             ),
         )
     )
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="{0}-conduit".format(frame_name),
+            root_conduit_id="{0}-conduit".format(frame_name),
+            frame_name=frame_name,
+            origin_spellbook_id="{0}-spellbook".format(frame_name),
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
 
 
 def _bind_target_frame_configuration(
@@ -129,20 +143,6 @@ def _create_enabled_nexus() -> Nexus:
     configuration.with_allowed_target_frame_names(("default", "ops"))
     nexus.enable(configuration)
     return nexus
-    descriptor.upsert_conduit_record(
-        ConduitRecord(
-            conduit_id="{0}-conduit".format(frame_name),
-            root_conduit_id="{0}-conduit".format(frame_name),
-            frame_name=frame_name,
-            origin_spellbook_id="{0}-spellbook".format(frame_name),
-            payload=ConduitDescriptorPayload(
-                conduit_name="root",
-                conduit_state=ConduitState.normal,
-                policy=Policies.default,
-                peer_conduit_ids=tuple(),
-            ),
-        )
-    )
     descriptor.upsert_spell_record(
         SpellRecord(
             origin_spellbook_id="{0}-spellbook".format(frame_name),
@@ -183,9 +183,10 @@ def test_nexus_create_frame_view_projects_current_descriptor_and_acl() -> None:
 
     assert isinstance(frame_view, FrameView)
     assert frame_view.frame_name == "ops"
-    assert frame_view.metadata["link_count"] == 1
-    assert frame_view.metadata["available_target_count"] == 1
+    assert frame_view.metadata["link_count"] == 2
+    assert frame_view.metadata["available_target_count"] == 2
     assert sorted(link.source_kind for link in frame_view.links_by_id.values()) == [
+        "conduit",
         "frame",
     ]
 
@@ -205,7 +206,7 @@ def test_nexus_create_frame_view_accepts_named_contract_profile() -> None:
         contract_profile_name="safe",
     )
 
-    assert frame_view.metadata["allowed_kinds"] == ("frame",)
+    assert frame_view.metadata["allowed_kinds"] == ("conduit", "frame")
 
 
 def test_nexus_create_frame_view_caches_projection_but_returns_detached_clone() -> None:

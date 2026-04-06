@@ -127,9 +127,9 @@ class Contract(Cleanable, IContract):
         Returns:
             Optional[IConduit]: The peer conduit if found, else None.
         """
-        if contract._ward_a._id == known_id:
+        if contract._ward_a._conduit._id == known_id:
             return contract._ward_b._conduit
-        elif contract._ward_b._id == known_id:
+        elif contract._ward_b._conduit._id == known_id:
             return contract._ward_a._conduit
         return None
 
