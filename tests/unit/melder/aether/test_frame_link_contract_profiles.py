@@ -493,6 +493,63 @@ def test_frame_link_contract_helper_methods_expose_effective_contract_shape() ->
         "metadata",
         "class_profile",
     )
+
+
+def test_frame_link_contract_helper_methods_reject_invalid_inputs() -> None:
+    """
+    Verify contract helper APIs reject invalid subject keys.
+
+    Returns:
+        None.
+    """
+    contract = FrameLinkContract.from_compiled_access_surface(
+        _build_compiled_surface()
+    )
+
+    with pytest.raises(ValueError, match="source_kind cannot be empty"):
+        contract.allows_kind("")
+
+    with pytest.raises(ValueError, match="command_name cannot be empty"):
+        contract.allows_command("")
+
+    with pytest.raises(ValueError, match="conduit_id cannot be empty"):
+        contract.get_conduit_payload_sections("")
+
+    with pytest.raises(ValueError, match="record_key must be a non-empty 2-item tuple"):
+        contract.get_spell_payload_sections(("spellbook-1",))
+
+
+def test_frame_link_contract_helper_methods_expose_effective_contract_shape() -> None:
+    """
+    Verify contract helper APIs expose the effective consumer-facing shape.
+
+    Returns:
+        None.
+    """
+    contract = FrameLinkContract.from_compiled_access_surface(
+        _build_compiled_surface()
+    )
+
+    assert contract.allows_kind("frame") is True
+    assert contract.allows_kind("mutation") is False
+    assert contract.allows_command("query") is True
+    assert contract.allows_command("write_attribute") is False
+    assert contract.get_frame_payload_fields() == (
+        "system_state",
+        "rift_enabled",
+        "root_conduit_count",
+    )
+    assert contract.get_conduit_payload_sections("conduit-1") == (
+        "conduit_name",
+        "conduit_state",
+        "policy",
+    )
+    assert contract.get_spell_payload_sections(("spellbook-1", "spell-1")) == (
+        "binding_payload",
+        "resolution_payload",
+        "metadata",
+        "class_profile",
+    )
     assert contract.describe() == {
         "frame_name": "ops",
         "allowed_kinds": ("conduit", "frame", "spell"),

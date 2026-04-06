@@ -11,19 +11,26 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class ConduitCluster(Cleanable):
     """
-    Cluster-local registry for membership and spell sharing semantics.
+    Cluster-local registry for conduit membership and shared-root policy.
 
-    Responsibilities:
-        - Track membership (conduit ids) for the cluster.
-        - Track which root SpellIndex lineages each owner contributes to the cluster.
-        - Orchestrate automatic contracting of shared roots (and optionally their
-          dependencies) between owners and borrowers on join/leave events.
+    Contract:
+        - Tracks cluster membership by conduit id.
+        - Tracks which root `SpellIndex` lineages each owner contributes to the
+          cluster for automatic sharing.
+        - Orchestrates automatic contracting and removal of shared roots between
+          owners and borrowers during join, leave, and refresh flows.
+        - Uses one internal lock to protect membership and shared-root state.
+        - Becomes unusable after `cleanup()` completes.
 
     Attributes:
-        members: Set of conduit_ids currently in the cluster.
-        shared_spells: Dict mapping owner_conduit_id -> set[SpellIndex] roots to auto-share.
-        auto_link_dependencies: When True, dependency closure is auto-contracted along
-            with each root; when False, only roots are linked (advanced/debug use).
+        members:
+            Set of conduit ids currently in the cluster.
+        shared_spells:
+            Mapping from owner conduit id to the shareable root `SpellIndex`
+            values contributed by that owner.
+        auto_link_dependencies:
+            When True, dependency closure is auto-contracted with each shared
+            root. When False, only the root spell is linked.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = (
@@ -52,7 +59,13 @@ class ConduitCluster(Cleanable):
 
     def cleanup(self):
         """
-        Idempotently clear registry state and release references.
+        Idempotently clear cluster membership state and release references.
+
+        Contract:
+            - Safe to call multiple times.
+            - Clears member and shared-root registries before dropping owned
+              references.
+            - Leaves the instance permanently cleaned.
         """
         if self._cleaned:
             return
@@ -149,6 +162,13 @@ class ConduitCluster(Cleanable):
         """
         Add a member and auto-share all roots between the new member and existing peers.
 
+        Contract:
+            - Adds the joining conduit id to cluster membership first.
+            - Refreshes shareable roots for all current members, including the
+              new member.
+            - Shares roots in both directions between the joiner and each
+              existing peer.
+
         Args:
             conduit: The conduit joining the cluster.
             frame: The owning AethericFrame (provides conduit lookup).
@@ -181,6 +201,12 @@ class ConduitCluster(Cleanable):
     def handle_leave(self, conduit, frame, aetheric_frame_name: str = "default") -> None:
         """
         Remove a member and tear down shared roots between it and remaining peers.
+
+        Contract:
+            - Removes the leaving conduit id from cluster membership first.
+            - Removes roots owned by the leaver from all remaining peers.
+            - Removes roots owned by remaining peers from the leaving conduit.
+            - Drops the leaver's shared-root registry entry after teardown.
 
         Args:
             conduit: The conduit leaving the cluster.
@@ -250,7 +276,14 @@ class ConduitCluster(Cleanable):
     def add_and_share_spell(self, owner, borrower_frame, spell, aetheric_frame_name: str = "default",
                             link_dependencies: bool | None = None) -> None:
         """
-        Explicitly add a spell to the shared set and propagate it to peers.
+        Explicitly add a shared root and propagate it to current peers.
+
+        Contract:
+            - Records the root in `shared_spells` before propagation.
+            - Uses cluster dependency policy unless an explicit override is
+              supplied.
+            - Attempts propagation peer by peer and skips peers that fail
+              without aborting the whole share pass.
 
         Args:
             owner: Conduit that owns the spell.
@@ -293,7 +326,13 @@ class ConduitCluster(Cleanable):
 
     def remove_and_strip_spell(self, owner, borrower_frame, spell, aetheric_frame_name: str = "default") -> None:
         """
-        Explicitly remove a shared spell from the cluster and strip it from peers.
+        Explicitly remove a shared root from the cluster and strip it from peers.
+
+        Contract:
+            - Removes the root from `shared_spells` before peer cleanup.
+            - Attempts to remove cluster-root contracts from each peer.
+            - Re-adds the plain root contract only when the cluster-root removal
+              succeeded and the follow-up manual root re-add also succeeds.
 
         Args:
             owner: Conduit that owns the spell.
@@ -345,7 +384,13 @@ class ConduitCluster(Cleanable):
 
     def share_to_borrower(self, owner, borrower) -> None:
         """
-        Contract all shared roots from owner into borrower (with deps if enabled).
+        Contract all shared roots from one owner into one borrower.
+
+        Contract:
+            - Reads the owner's shared roots under the cluster lock.
+            - Resolves each root back to a live spell object before contracting.
+            - Uses the current dependency-sharing policy to decide whether
+              dependency closure is included.
 
         Args:
             owner: Conduit that owns the roots.
@@ -382,7 +427,13 @@ class ConduitCluster(Cleanable):
 
     def remove_shared_from_borrower(self, owner, borrower, aetheric_frame: str = "default") -> None:
         """
-        Remove all shared roots from owner on the borrower side.
+        Remove all shared roots from one owner on the borrower side.
+
+        Contract:
+            - Reads the owner's shared roots under the cluster lock.
+            - Resolves each root back to a live spell object before removal.
+            - Removes cluster-scoped root contracts only; unrelated manual
+              contracts are left to other flows.
 
         Args:
             owner: Conduit that owns the roots.
@@ -487,7 +538,9 @@ class ConduitCluster(Cleanable):
         Return a diagnostic snapshot of the cluster.
 
         Returns:
-            dict: containing name, auto_link_dependencies, members, shared roots summary.
+            dict:
+                Snapshot containing cluster name, dependency-link policy,
+                member ids, and shared-root lineage ids grouped by owner.
         """
         with self._lock:
             shared_summary = {

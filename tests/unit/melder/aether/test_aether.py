@@ -233,6 +233,22 @@ def test_bottom_up_default_frame_cleanup_clears_reference() -> None:
     assert "default" not in a._aetheric_frames
     assert a._default_frame is None
 
+
+def test_ensure_frame_rejects_non_string_name() -> None:
+    """_ensure_frame should reject non-string frame names."""
+    a = Aether()
+
+    with pytest.raises(TypeError, match="must be a string"):
+        a._ensure_frame(123)
+
+
+def test_ensure_frame_returns_existing_custom_frame() -> None:
+    """_ensure_frame should return the existing frame without replacing it."""
+    a = Aether()
+    existing = a._ensure_frame("custom")
+
+    assert a._ensure_frame("custom") is existing
+
 def test_cleanup_unregistered_frame_is_safe() -> None:
     """A direct unregistered frame cleanup does not mutate Aether registry."""
     a = Aether()
@@ -469,6 +485,14 @@ def test_get_conduit_by_id_missing_raises(aether_with_mocks):
     with pytest.raises(ValueError, match="not found"):
         a._get_conduit_by_id("missing")
 
+
+def test_get_conduit_by_id_missing_custom_frame_raises(aether_with_mocks):
+    """_get_conduit_by_id should fail clearly for missing custom frames."""
+    a = aether_with_mocks
+
+    with pytest.raises(ValueError, match="does not exist"):
+        a._get_conduit_by_id("missing", "missing_frame")
+
 def test_get_conduit_by_name(aether_with_mocks):
     """_get_conduit_by_name resolves through the frame name registry."""
     a = aether_with_mocks
@@ -489,6 +513,14 @@ def test_get_conduit_by_name_missing_raises(aether_with_mocks):
     with pytest.raises(ValueError, match="not found"):
         a._get_conduit_by_name("nobody")
 
+
+def test_get_conduit_by_name_missing_custom_frame_raises(aether_with_mocks):
+    """_get_conduit_by_name should fail clearly for missing custom frames."""
+    a = aether_with_mocks
+
+    with pytest.raises(ValueError, match="does not exist"):
+        a._get_conduit_by_name("nobody", "missing_frame")
+
 def test_register_conduit_cloud_delegates(aether_with_mocks):
     """_register_conduit_cloud calls frame's cloud."""
     a = aether_with_mocks
@@ -501,6 +533,14 @@ def test_register_conduit_cloud_delegates(aether_with_mocks):
     
     cloud_mock._register_conduit.assert_called_with(conduit)
 
+
+def test_register_conduit_cloud_missing_frame_raises(aether_with_mocks):
+    """_register_conduit_cloud should fail clearly for missing custom frames."""
+    a = aether_with_mocks
+
+    with pytest.raises(ValueError, match="does not exist"):
+        a._register_conduit_cloud(MagicMock(), "missing_frame")
+
 def test_unregister_conduit_cloud_delegates(aether_with_mocks):
     """_unregister_conduit_cloud calls frame's cloud."""
     a = aether_with_mocks
@@ -511,12 +551,28 @@ def test_unregister_conduit_cloud_delegates(aether_with_mocks):
     a._unregister_conduit_cloud(conduit)
     cloud._unregister_conduit.assert_called_with(conduit)
 
+
+def test_unregister_conduit_cloud_missing_frame_raises(aether_with_mocks):
+    """_unregister_conduit_cloud should fail clearly for missing custom frames."""
+    a = aether_with_mocks
+
+    with pytest.raises(ValueError, match="does not exist"):
+        a._unregister_conduit_cloud(MagicMock(), "missing_frame")
+
 def test_get_conduit_cloud(aether_with_mocks):
     """_get_conduit_cloud returns the cloud object."""
     a = aether_with_mocks
     cloud = MagicMock()
     a._default_frame._conduit_cloud = cloud
     assert a._get_conduit_cloud() is cloud
+
+
+def test_get_conduit_cloud_missing_frame_raises(aether_with_mocks):
+    """_get_conduit_cloud should fail clearly for missing custom frames."""
+    a = aether_with_mocks
+
+    with pytest.raises(ValueError, match="does not exist"):
+        a._get_conduit_cloud("missing_frame")
 
 # ----------------------------------------------------------------------
 # 4. Delegation Tests (Configuration & Spells)
@@ -536,6 +592,14 @@ def test_bind_configuration(aether_with_mocks):
     a._bind_configuration(config)
     assert frame_mock._configuration is config
 
+
+def test_bind_configuration_missing_custom_frame_raises(aether_with_mocks):
+    """_bind_configuration should fail clearly for missing custom frames."""
+    a = aether_with_mocks
+
+    with pytest.raises(ValueError, match="does not exist"):
+        a._bind_configuration(MagicMock(), "missing_frame")
+
 def test_get_configuration(aether_with_mocks):
     """
     Verify `_get_configuration` retrieves configuration from the frame.
@@ -546,6 +610,29 @@ def test_get_configuration(aether_with_mocks):
     frame_mock._configuration = expected
     
     assert a._get_configuration() is expected
+
+
+def test_get_aetheric_frame_configuration_missing_frame_raises(aether_with_mocks):
+    """_get_aetheric_frame_configuration should fail clearly for missing custom frames."""
+    a = aether_with_mocks
+
+    with pytest.raises(ValueError, match="does not exist"):
+        a._get_aetheric_frame_configuration("missing_frame")
+
+
+def test_get_aetheric_frame_configuration_returns_default_frame_posture() -> None:
+    """_get_aetheric_frame_configuration should return the bound default-frame posture."""
+    a = Aether()
+    frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-1",
+        system_state=SystemState.dynamic,
+        ai_native_enabled=True,
+        rift_enabled=False,
+    )
+
+    a._bind_aetheric_frame_configuration(frame_configuration)
+
+    assert a._get_aetheric_frame_configuration() is frame_configuration
 
 
 def test_bind_aetheric_frame_configuration_rejects_invalid_type() -> None:
@@ -700,6 +787,20 @@ def test_remove_spells_missing_conduit_ignored(aether_with_mocks):
     a = aether_with_mocks
     a._remove_spells_from_aether("missing", set())
     # Should not raise
+
+
+def test_remove_spells_from_aether_swallows_remove_errors_and_refreshes(aether_with_mocks):
+    """_remove_spells_from_aether should tolerate remove failures and still refresh versions."""
+    a = aether_with_mocks
+    spell_index = MagicMock(spec=SpellIndex)
+    registry_entry = MagicMock()
+    registry_entry.remove.side_effect = RuntimeError("remove failed")
+    a._default_frame._spell_registry = {"c1": registry_entry}
+
+    a._remove_spells_from_aether("c1", {spell_index})
+
+    registry_entry.remove.assert_called_once_with(spell_index)
+    a._default_frame.refresh_version_registry.assert_called_once()
 
 def test_register_single_spell_index(aether_with_mocks):
     """_register_single_spell_index adds spell and refreshes registry."""
@@ -884,6 +985,15 @@ def test_remove_cluster_logs_cleanup_failure(aether_with_mocks):
     assert "cluster1" not in a._default_frame._conduit_clusters
     a._logger.error.assert_called()
 
+
+def test_remove_cluster_missing_cluster_raises(aether_with_mocks):
+    """_remove_cluster should raise when the cluster name is unknown."""
+    a = aether_with_mocks
+    a._default_frame._conduit_clusters = {}
+
+    with pytest.raises(ValueError, match="does not exist"):
+        a._remove_cluster("missing")
+
 def test_get_cluster(aether_with_mocks):
     """_get_cluster returns cluster object."""
     a = aether_with_mocks
@@ -1053,6 +1163,30 @@ def test_refresh_cluster_shares_for_conduit(aether_with_mocks):
     a._refresh_cluster_shares_for_conduit(conduit)
     cluster.refresh_member_shares.assert_called_with(conduit, a._default_frame, "default")
 
+
+def test_on_conduit_joined_cluster_delegates_to_cluster_handle_join(aether_with_mocks):
+    """_on_conduit_joined_cluster should delegate to cluster.handle_join with the frame."""
+    a = aether_with_mocks
+    cluster = MagicMock()
+    a._default_frame._conduit_clusters = {"cluster1": cluster}
+    conduit = MagicMock()
+
+    a._on_conduit_joined_cluster(conduit, "cluster1")
+
+    cluster.handle_join.assert_called_once_with(conduit, a._default_frame, "default")
+
+
+def test_on_conduit_left_cluster_delegates_to_cluster_handle_leave(aether_with_mocks):
+    """_on_conduit_left_cluster should delegate to cluster.handle_leave with the frame."""
+    a = aether_with_mocks
+    cluster = MagicMock()
+    a._default_frame._conduit_clusters = {"cluster1": cluster}
+    conduit = MagicMock()
+
+    a._on_conduit_left_cluster(conduit, "cluster1")
+
+    cluster.handle_leave.assert_called_once_with(conduit, a._default_frame, "default")
+
 # ----------------------------------------------------------------------
 # 7. Logger Tests
 # ----------------------------------------------------------------------
@@ -1106,6 +1240,25 @@ def test_safe_logger_usage():
         # Note: a.logger property returns the raw logger, a._logger is the SafeLogger wrapper.
         assert a._logger is mock_safe
 
+
+def test_init_falls_back_to_null_logger_when_safe_logger_resolution_fails(mock_frame_cls) -> None:
+    """Aether should install a fallback SafeLogger and log the initialization failure."""
+    initial_safe = MagicMock()
+    initial_safe._logger = None
+    fallback_safe = MagicMock()
+    fallback_safe._logger = None
+
+    Aether._reset_singleton_for_tests()
+
+    with patch(
+        "melder.aether.aether.InitHelpers.resolve_safe_logger",
+        side_effect=[initial_safe, RuntimeError("safe logger boom"), fallback_safe],
+    ), patch("melder.aether.aether.Nexus", return_value=MagicMock()):
+        a = Aether(logger=MagicMock())
+
+    assert a._logger is fallback_safe
+    fallback_safe.error.assert_called_once()
+
 def test_cleanup_failure_logging(mock_frame_cls):
     """If a frame fails to clean, error is logged."""
     mock_logger = MagicMock()
@@ -1125,6 +1278,20 @@ def test_cleanup_failure_logging(mock_frame_cls):
         a.cleanup()
         
         assert mock_safe.error.called
+
+
+def test_cleanup_reraises_and_logs_when_nexus_cleanup_fails(aether_with_mocks):
+    """cleanup should log and re-raise subsystem cleanup failures."""
+    a = aether_with_mocks
+    a._logger = MagicMock()
+    failing_nexus = MagicMock()
+    failing_nexus.cleanup.side_effect = RuntimeError("nexus cleanup boom")
+    a._nexus = failing_nexus
+
+    with pytest.raises(RuntimeError, match="nexus cleanup boom"):
+        a.cleanup()
+
+    a._logger.error.assert_called_once()
 
 # ----------------------------------------------------------------------
 # 8. Additional Coverage (DevOps, Hooks, etc.)

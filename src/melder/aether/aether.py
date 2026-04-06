@@ -18,16 +18,28 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class Aether(Cleanable, IAether):
     """
-    The global singleton that holds and manages all AethericFrames.
+    The global singleton root that owns all `AethericFrame` instances.
 
-    Aether is the top-level "universe" of the melder system. It is
-    responsible for creating and managing isolated frames, holding the
-    "default" frame, and acting as the central point of access for
-    all conduit-related systems.
+    `Aether` is the top-level runtime host for Melder. It owns the named frame
+    registry, the always-present default frame, and the frame-level services
+    that other runtime objects resolve through when they need configuration,
+    conduit, cluster, spell, or DevOps state.
 
-    It provides internal-only methods (prefixed with '_') for other
-    parts of the melder system to interact with the global state in a
-    thread-safe manner.
+    Contract:
+    - Enforces singleton construction through `__new__`.
+    - Owns the lifecycle of registered `AethericFrame` instances.
+    - Owns the default frame and ensures it exists while the singleton is live.
+    - Hosts singleton-level subsystems such as Nexus and the utility system.
+    - Becomes reinitializable only after `cleanup()` fully resets singleton state.
+
+    Threading / Concurrency:
+    - Uses the class-level `_lock` to serialize singleton construction and reset.
+    - Uses the instance `_lock` to guard cleanup and frame-registry mutation.
+
+    Lifecycle / Cleanup:
+    - Cleans registered frames before dropping singleton-level references.
+    - Resets `_instance` and `_initialized` so tests or later runtime flows can
+      create a fresh singleton after teardown.
     """
     __melder_internal__ = _mrg.sentinel
     _instance = None
@@ -104,18 +116,15 @@ class Aether(Cleanable, IAether):
 
     def cleanup(self):
         """
-        Cleanup the entire Aether, recursively cleaning all frames and hosted
-        subsystems.
-
-        Purpose:
-            Tear down the global runtime root and all owned frame or subsystem
-            state so the singleton can be safely reinitialized.
+        Cleanup the entire Aether singleton and all owned frame/subsystem state.
 
         Contract:
             - Idempotent.
-            - Cleans frames before resetting singleton state.
-            - Cleans the hosted Nexus singleton if it exists.
-            - Drops any pending or installed Nexus configuration reference.
+            - Cleans owned frames before dropping singleton-level references.
+            - Cleans the hosted Nexus singleton and utility system when they exist.
+            - Resets singleton bootstrap state so `Aether()` can be safely
+              reinitialized later.
+            - Logger cleanup is performed after frame and subsystem teardown.
 
         Returns:
             None.
@@ -277,12 +286,23 @@ class Aether(Cleanable, IAether):
 
     #region Context Manager
     def __enter__(self):
-        """Enters the context manager for Aether."""
+        """
+        Enter the Aether lock context and return `self`.
+
+        Returns:
+            Aether:
+                This singleton instance while the lock is held.
+        """
         self._lock.acquire()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        """Exits the context manager for Aether."""
+        """
+        Exit the Aether lock context.
+
+        Returns:
+            None.
+        """
         self._lock.release()
 
     #endregion Context Manager
@@ -537,11 +557,16 @@ class Aether(Cleanable, IAether):
 
     def _register_conduit_cloud(self, conduit: IConduit, aetheric_frame_name: str = "default"):
         """
-        Registers a conduit with the ConduitCloud of a specific frame.
+        Register a conduit with the `ConduitCloud` for one frame.
 
         Args:
-            conduit: The conduit to register.
-            aetheric_frame_name: The name of the frame.
+            conduit:
+                Conduit instance to register.
+            aetheric_frame_name:
+                Name of the target frame.
+
+        Returns:
+            None.
 
         Raises:
             ValueError: If the specified frame does not exist.
@@ -562,11 +587,16 @@ class Aether(Cleanable, IAether):
 
     def _unregister_conduit_cloud(self, conduit: IConduit, aetheric_frame_name: str = "default"):
         """
-        Unregisters a conduit from the ConduitCloud of a specific frame.
+        Unregister a conduit from the `ConduitCloud` for one frame.
 
         Args:
-            conduit: The conduit to unregister.
-            aetheric_frame_name: The name of the frame.
+            conduit:
+                Conduit instance to unregister.
+            aetheric_frame_name:
+                Name of the target frame.
+
+        Returns:
+            None.
 
         Raises:
             ValueError: If the specified frame does not exist.
@@ -586,13 +616,15 @@ class Aether(Cleanable, IAether):
         conduit_cloud._unregister_conduit(conduit)
     def _get_conduit_cloud(self, aetheric_frame_name: str = "default") -> IConduitCloud:
         """
-        Retrieves the ConduitCloud instance from a specific frame.
+        Return the `ConduitCloud` owned by one frame.
 
         Args:
-            aetheric_frame_name: The name of the frame.
+            aetheric_frame_name:
+                Name of the target frame.
 
         Returns:
-            ConduitCloud: The ConduitCloud for that frame.
+            IConduitCloud:
+                The conduit-cloud instance for that frame.
 
         Raises:
             ValueError: If the specified frame does not exist.
@@ -612,14 +644,17 @@ class Aether(Cleanable, IAether):
 
     def _get_conduit_by_name(self, name: str, aetheric_frame_name: str = "default") -> IConduit:
         """
-        Finds a root conduit within a frame by its name.
+        Find a root conduit within one frame by its registered name.
 
         Args:
-            name (str): The name of the conduit.
-            aetheric_frame_name (str): The name of the frame to search in.
+            name (str):
+                Name of the conduit.
+            aetheric_frame_name (str):
+                Name of the frame to search.
 
         Returns:
-            IConduit: The found conduit.
+            IConduit:
+                The matching conduit.
 
         Raises:
             ValueError: If the frame does not exist or the conduit is not found.
@@ -646,14 +681,17 @@ class Aether(Cleanable, IAether):
 
     def _get_conduit_by_id(self, signature: str, aetheric_frame_name: str = "default") -> IConduit:
         """
-        Finds a root conduit within a frame by its id.
+        Find a root conduit within one frame by its id.
 
         Args:
-            signature (str): The id of the conduit.
-            aetheric_frame_name (str): The name of the frame to search in.
+            signature (str):
+                Id of the conduit.
+            aetheric_frame_name (str):
+                Name of the frame to search.
 
         Returns:
-            IConduit: The found conduit.
+            IConduit:
+                The matching conduit.
 
         Raises:
             ValueError: If the frame does not exist or the conduit is not found.
@@ -677,11 +715,16 @@ class Aether(Cleanable, IAether):
 
     def _add_conduit(self, conduit: IConduit, aetheric_frame_name: str = "default"):
         """
-        Adds a new root conduit to a frame. (Internal use)
+        Add a new root conduit to one frame.
 
         Args:
-            conduit (IConduit): The conduit to add.
-            aetheric_frame_name (str): The name of the frame.
+            conduit (IConduit):
+                Conduit to register.
+            aetheric_frame_name (str):
+                Name of the target frame.
+
+        Returns:
+            None.
 
         Raises:
             ValueError: If the frame does not exist, the conduit id already
@@ -723,11 +766,16 @@ class Aether(Cleanable, IAether):
 
     def _remove_conduit(self, conduit: IConduit, aetheric_frame_name: str = "default"):
         """
-        Removes a root conduit from a frame. (Internal use)
+        Remove a root conduit from one frame.
 
         Args:
-            conduit (IConduit): The conduit to remove.
-            aetheric_frame_name (str): The name of the frame.
+            conduit (IConduit):
+                Conduit to remove.
+            aetheric_frame_name (str):
+                Name of the target frame.
+
+        Returns:
+            None.
 
         Raises:
             ValueError: If the frame does not exist or the conduit is not found.
@@ -1270,10 +1318,20 @@ class Aether(Cleanable, IAether):
 
     def _get_all_spell_versions(self, aetheric_frame_name: str = "default") -> set[str]:
         """
-        Returns a flat set of all SHA256 versions for a given frame,
-        using the frame's _version_registry.
+        Return a flat set of all spell version ids known for one frame.
 
-        Call `_refresh_version_registry` first if you need the latest state.
+        Contract:
+            - Reads from the frame-owned cached version registry.
+            - Assumes callers refresh that registry first when they need
+              mutation or research updates reflected immediately.
+
+        Args:
+            aetheric_frame_name (str):
+                Name of the target frame.
+
+        Returns:
+            set[str]:
+                All cached spell version ids for the frame.
         """
         self.check_cleaned()
         if aetheric_frame_name != "default":
@@ -1419,7 +1477,23 @@ class Aether(Cleanable, IAether):
             cancel_event: Any = None,
     ) -> None:
         """
-        Trigger revalidation of dirty roots for a conduit via ChangeControlManager.
+        Trigger revalidation of dirty roots for one conduit through DevOps.
+
+        Contract:
+            - Requires a non-empty conduit id.
+            - Resolves the frame-specific DevOps manager first.
+            - Delegates the actual revalidation to that manager.
+
+        Args:
+            conduit_id (str):
+                Target conduit id.
+            aetheric_frame_name (str):
+                Name of the target frame.
+            cancel_event:
+                Optional cancellation signal passed through to DevOps.
+
+        Returns:
+            None.
         """
         self.check_cleaned()
         if not conduit_id:

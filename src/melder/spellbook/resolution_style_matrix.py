@@ -12,6 +12,12 @@ def _expand_spell_type_matrix(
     """
     Expand binding-family policy into a SpellType-keyed projection.
 
+    Contract:
+    - Copies each spell-type row from the owning family policy rather than
+      returning references to the source mappings.
+    - Requires every spell type to reference a known family entry that exposes
+      `supported` and `unsupported` tuples.
+
     Args:
         spell_type_to_family:
             Mapping from SpellType name to binding family name.
@@ -21,6 +27,11 @@ def _expand_spell_type_matrix(
     Returns:
         Dict[str, Dict[str, Tuple[str, ...]]]:
             SpellType-keyed matrix where each row is inherited from its family.
+
+    Raises:
+        KeyError:
+            If a spell type points at an unknown family or a family policy row
+            is missing required keys.
     """
     matrix: Dict[str, Dict[str, Tuple[str, ...]]] = {}
     for spell_type_name, family_name in spell_type_to_family.items():
@@ -249,6 +260,12 @@ class ResolutionStyleMatrix:
     def validate(cls) -> Tuple[str, ...]:
         """
         Validate matrix integrity against enum definitions and matrix contracts.
+
+        Contract:
+        - Checks enum count drift for `SpellType` and `Existence`.
+        - Verifies family mappings, derived matrix rows, and contract-item ids.
+        - Returns every validation problem found in one pass instead of failing
+          fast on the first mismatch.
 
         Returns:
             Tuple[str, ...]:
