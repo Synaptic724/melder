@@ -7549,7 +7549,7 @@ class IContract(ICleanable, Protocol):
         """
         Internal
 
-        Cleanup and clear all spell details from both sides.
+        Clean up and clear all spell details from both sides.
         """
         ...
 
@@ -7557,7 +7557,7 @@ class IContract(ICleanable, Protocol):
         """
         Internal
 
-        Return the opposite conduit in this contract.
+        Return the opposite ward participant in this contract.
         """
         ...
 
@@ -7565,10 +7565,11 @@ class IContract(ICleanable, Protocol):
         """
         Internal
 
-        Helper to find the opposite conduit in a contract based on a known conduit ID.
-        :param contract:
-        :param known_id:
-        :return:
+        Resolve the opposite conduit in a contract from one known conduit id.
+
+        Returns:
+            Optional[IConduit]: Opposite conduit when the known id participates
+            in the contract; otherwise None.
         """
         ...
 
@@ -7576,7 +7577,7 @@ class IContract(ICleanable, Protocol):
         """
         Internal
 
-        Helper to return the permission map associated with a given ward.
+        Return the permission-detail map associated with one ward.
         """
         ...
 
@@ -7584,7 +7585,7 @@ class IContract(ICleanable, Protocol):
         """
         Internal
 
-        Add a spell-level permission detail to the contract on behalf of the given ward.
+        Add one spell-level permission detail to the contract for the given ward.
         """
         ...
 
@@ -7592,7 +7593,7 @@ class IContract(ICleanable, Protocol):
         """
         Internal
 
-        Remove a spell-level permission detail from the given ward's view.
+        Remove one spell-level permission detail from the given ward's view.
         """
         ...
 
@@ -7609,7 +7610,8 @@ class IContract(ICleanable, Protocol):
         """
         Internal
 
-        Check if the given ward has permission for the specified spell.
+        Check whether the given ward currently grants the specified permission
+        for one spell id.
         """
         ...
 
@@ -7617,7 +7619,7 @@ class IContract(ICleanable, Protocol):
         """
         Internal
 
-        Check if a spell exists in the given ward's permission map.
+        Check whether a spell exists in the given ward's permission map.
         """
         ...
 
@@ -7625,7 +7627,7 @@ class IContract(ICleanable, Protocol):
         """
         Internal
 
-        Check if a spell exists in the given ward's permission map.
+        Find which ward currently carries the specified spell id, if any.
         """
         ...
 
@@ -7655,7 +7657,7 @@ class IConduitResolutionState(ICleanable, Protocol):
 
     def get_spell_validity(self, spell_id: str) -> Optional['SpellValidity']:
         """
-        Return the stored resolution validity for a spell id.
+        Return the stored resolution validity for one spell id.
         """
         ...
 
@@ -7667,7 +7669,10 @@ class IConduitResolutionState(ICleanable, Protocol):
             change_reason: Optional['SpellStateChangeReason'] = None,
     ) -> None:
         """
-        Set resolution validity for a single spell id.
+        Set resolution validity for one spell id.
+
+        Returns:
+            None.
         """
         ...
 
@@ -7679,12 +7684,15 @@ class IConduitResolutionState(ICleanable, Protocol):
     ) -> None:
         """
         Bulk update resolution validity for spell ids.
+
+        Returns:
+            None.
         """
         ...
 
     def get_root_validity(self, root_id: str) -> Optional['SpellValidity']:
         """
-        Return the stored resolution validity for a root id.
+        Return the stored resolution validity for one root id.
         """
         ...
 
@@ -7696,7 +7704,10 @@ class IConduitResolutionState(ICleanable, Protocol):
             change_reason: Optional['SpellStateChangeReason'] = None,
     ) -> None:
         """
-        Set resolution validity for a single root id.
+        Set resolution validity for one root id.
+
+        Returns:
+            None.
         """
         ...
 
@@ -7708,18 +7719,27 @@ class IConduitResolutionState(ICleanable, Protocol):
     ) -> None:
         """
         Bulk update resolution validity for root ids.
+
+        Returns:
+            None.
         """
         ...
 
     def record_diagnostics(self, diagnostics: Sequence['SystemDiagnostic']) -> None:
         """
         Record per-conduit system diagnostics, replacing on signature change.
+
+        Returns:
+            None.
         """
         ...
 
     def clear_diagnostics(self) -> None:
         """
         Clear stored diagnostics.
+
+        Returns:
+            None.
         """
         ...
 
@@ -7731,25 +7751,31 @@ class IConduitResolutionState(ICleanable, Protocol):
 
     def has_errors(self) -> bool:
         """
-        Return True if any diagnostic has ERROR severity.
+        Return whether any stored diagnostic has ERROR severity.
         """
         ...
 
     def has_warnings(self) -> bool:
         """
-        Return True if any diagnostic has WARNING severity.
+        Return whether any stored diagnostic has WARNING severity.
         """
         ...
 
     def mark_dirty(self, change_reason: Optional['SpellStateChangeReason'] = None) -> None:
         """
         Mark this resolution state as dirty.
+
+        Returns:
+            None.
         """
         ...
 
     def clear_dirty(self, validated_at: float) -> None:
         """
         Mark this resolution state as clean after validation.
+
+        Returns:
+            None.
         """
         ...
 
@@ -7761,7 +7787,7 @@ class IConduitResolutionState(ICleanable, Protocol):
 
     def cleanup(self) -> None:
         """
-        Cleanup the resolution state and release references.
+        Clean up the resolution state and release references.
         """
         ...
 
@@ -8057,9 +8083,8 @@ class ISpellSystemStates(ICleanable, Protocol):
         Snapshot of all SpellSystemState instances currently registered.
 
         Returns:
-            A list of SpellSystemState objects. The list is detached from the
-            underlying Dict so callers cannot accidentally keep a
-            live iterator into internal state.
+            List[SpellSystemState]:
+                Detached snapshot of all registered state objects.
         """
         ...
 

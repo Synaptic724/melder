@@ -869,7 +869,7 @@ def test_frame_viewer_cleanup_cascades_into_owned_views_and_links() -> None:
     assert viewer.cleaned is True
     assert view.cleaned is True
     assert link.cleaned is True
-    assert viewer._views_by_frame_name is None
+    assert viewer._available_views_by_frame_name is None
 
 
 def test_frame_viewer_clone_returns_detached_views_and_metadata() -> None:

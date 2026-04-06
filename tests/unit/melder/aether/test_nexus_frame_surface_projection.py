@@ -125,6 +125,8 @@ def _create_enabled_nexus() -> Nexus:
     configuration = nexus.create_system_configuration()
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
+    configuration.with_target_frame_override(True)
+    configuration.with_allowed_target_frame_names(("default", "ops"))
     nexus.enable(configuration)
     return nexus
     descriptor.upsert_conduit_record(
@@ -181,11 +183,10 @@ def test_nexus_create_frame_view_projects_current_descriptor_and_acl() -> None:
 
     assert isinstance(frame_view, FrameView)
     assert frame_view.frame_name == "ops"
-    assert frame_view.metadata["link_count"] == 3
+    assert frame_view.metadata["link_count"] == 1
+    assert frame_view.metadata["available_target_count"] == 1
     assert sorted(link.source_kind for link in frame_view.links_by_id.values()) == [
-        "conduit",
         "frame",
-        "spell",
     ]
 
 
@@ -204,11 +205,7 @@ def test_nexus_create_frame_view_accepts_named_contract_profile() -> None:
         contract_profile_name="safe",
     )
 
-    assert frame_view.metadata["allowed_kinds"] == (
-        "conduit",
-        "frame",
-        "spell",
-    )
+    assert frame_view.metadata["allowed_kinds"] == ("frame",)
 
 
 def test_nexus_create_frame_view_caches_projection_but_returns_detached_clone() -> None:
