@@ -649,18 +649,23 @@ class ISpell(ICleanable, Protocol):
     @property
     def has_existing_object(self) -> bool:
         """
-        Returns True if this spell currently holds a user-provided existing object.
+        Return whether this spell currently holds a user-provided existing object.
 
-        This is only meaningful for EXISTING_CREATION* SpellTypes; for other types
-        it will always be False.
+        This is only meaningful for EXISTING_CREATION* spell types. Other spell
+        kinds should report ``False`` here even when they later resolve to live
+        creations through normal factory behavior.
         """
         ...
 
     @property
     def owner_conduit_info(self) -> Tuple[Optional[str], Optional[str]]:
         """
-        Returns `(owner_conduit_id, owner_conduit_name)` if this spell has
-        been attached to a specific Conduit, otherwise `(None, None)`.
+        Return ``(owner_conduit_id, owner_conduit_name)`` for this spell.
+
+        Returns:
+            tuple[Optional[str], Optional[str]]:
+                Conduit ownership tuple when conduit wiring has been attached;
+                otherwise ``(None, None)``.
         """
         ...
 
@@ -733,61 +738,65 @@ class ISpell(ICleanable, Protocol):
     @property
     def requirements(self) -> Optional['SpellRequirements']:
         """
-        Phase 1 artifact for this spell, if it has been computed.
+        Return the Phase 1 requirements artifact for this spell, if present.
 
-        This is populated by :meth:`run_phase_requirements` via :class:`SpellCrafter`.
+        This is populated by :meth:`run_phase_requirements` via
+        :class:`SpellCrafter`.
         """
         ...
 
     @property
     def symbolic_graph(self) -> Optional["SpellSymbolicGraph"]:
         """
-        Phase 2 symbolic graph for this spell, if it has been computed.
+        Return the Phase 2 symbolic graph for this spell, if present.
 
-        This is populated by :meth:`run_phase_symbolic_graph` via :class:`SpellCrafter`.
+        This is populated by :meth:`run_phase_symbolic_graph` via
+        :class:`SpellCrafter`.
         """
         ...
 
     @property
     def resolution_frame(self) -> Any:
         """
-        Phase 3 local resolution frame / DAG for this spell, if it has been computed.
+        Return the Phase 3 local resolution frame / DAG for this spell, if present.
 
-        This is populated by :meth:`run_phase_local_frame` via :class:`SpellCrafter`.
-        Concrete type is intentionally opaque here; callers should treat it as
-        an internal resolution artifact.
+        This is populated by :meth:`run_phase_local_frame` via
+        :class:`SpellCrafter`. Concrete type is intentionally opaque here;
+        callers should treat it as an internal resolution artifact.
         """
         ...
 
     @property
     def validation_result_phase4(self) -> Any:
         """
-        Phase 4 validation result for this spell, if it has been computed.
+        Return the Phase 4 validation result for this spell, if present.
 
-        This is populated by :meth:`run_phase_validation` via :class:`SpellCrafter`.
+        This is populated by :meth:`run_phase_validation` via
+        :class:`SpellCrafter`.
         """
         ...
 
     @property
     def validation_result_phase6(self) -> Any:
         """
-        Phase 6 validation result for this spell, if it has been computed.
+        Return the Phase 6 validation result for this spell, if present.
 
-        This is populated by :meth:`run_phase_validation` via :class:`SpellCrafter`.
+        This is populated by :meth:`run_phase_validation` via
+        :class:`SpellCrafter`.
         """
         ...
 
     @property
     def validated(self) -> bool:
         """
-        True if the validation phase has run and marked this spell as validated.
+        Return whether this spell currently reports a validated state.
         """
         ...
 
     @property
     def is_broken(self) -> bool:
         """
-        True if the validation phase classified this spell as broken / unsafe.
+        Return whether this spell currently reports a broken / unsafe state.
         """
         ...
 
@@ -1555,7 +1564,7 @@ class ISpellbook(ICleanable, Protocol):
         This does *not* introduce a new registration path; it simply
         forwards everything into the existing binding pipeline so all
         reflection, `SpellIndex` construction, `SpellType` classification,
-        and validation flows remain exactly the same. :contentReference[oaicite:1]{index=1}
+        and validation flows remain exactly the same.
 
         Example:
             binder = spellbook.create_binder()
@@ -2442,36 +2451,84 @@ class IFrameACLProfileBuilder(ICleanable, Protocol):
     codegen_profiles_by_name: Dict[str, IFrameACLCodegenProfile]
 
     def register_view_profile(self, view_profile: IFrameACLViewProfile) -> None:
+        """
+        Register or replace one reusable view-side ACL profile.
+
+        Returns:
+            None.
+        """
         ...
 
     def register_codegen_profile(
             self,
             codegen_profile: IFrameACLCodegenProfile,
     ) -> None:
+        """
+        Register or replace one reusable codegen-side ACL profile.
+
+        Returns:
+            None.
+        """
         ...
 
     def get_required_view_profile(
             self,
             profile_name: str,
     ) -> IFrameACLViewProfile:
+        """
+        Return one existing view-side profile or raise.
+
+        Returns:
+            IFrameACLViewProfile: Registered view profile.
+        """
         ...
 
     def get_required_codegen_profile(
             self,
             profile_name: str,
     ) -> IFrameACLCodegenProfile:
+        """
+        Return one existing codegen-side profile or raise.
+
+        Returns:
+            IFrameACLCodegenProfile: Registered codegen profile.
+        """
         ...
 
     def list_view_profile_names(self) -> List[str]:
+        """
+        Return the registered view-profile names.
+
+        Returns:
+            List[str]: Current view-profile names.
+        """
         ...
 
     def list_codegen_profile_names(self) -> List[str]:
+        """
+        Return the registered codegen-profile names.
+
+        Returns:
+            List[str]: Current codegen-profile names.
+        """
         ...
 
     def remove_view_profile(self, profile_name: str) -> bool:
+        """
+        Remove one view-side profile by name.
+
+        Returns:
+            bool: True when the profile existed and was removed.
+        """
         ...
 
     def remove_codegen_profile(self, profile_name: str) -> bool:
+        """
+        Remove one codegen-side profile by name.
+
+        Returns:
+            bool: True when the profile existed and was removed.
+        """
         ...
 
     def create_profile(
@@ -2483,6 +2540,12 @@ class IFrameACLProfileBuilder(ICleanable, Protocol):
             view_override_ruleset: Optional[IFrameACLRuleSet] = None,
             codegen_override_ruleset: Optional[IFrameACLRuleSet] = None,
     ) -> IFrameACLProfile:
+        """
+        Compose one frame ACL profile from registered view/codegen profiles.
+
+        Returns:
+            IFrameACLProfile: Newly composed frame ACL profile.
+        """
         ...
 
 
@@ -2711,6 +2774,9 @@ class IUnitOfWork(ICleanable, Protocol):
             This lock is **only** for UnitOfWork's own fields
             (func/args/kwargs/metadata/cancel_event), not the internal
             lock used by :class:`Future`.
+
+        Returns:
+            Self: This unit after the coordination lock has been acquired.
         """
         ...
 
@@ -2718,7 +2784,8 @@ class IUnitOfWork(ICleanable, Protocol):
         """
         Exit the critical section entered via :meth:`__enter__`.
 
-        The internal lock is always released.
+        The internal lock is always released and exceptions from the with-body
+        are not suppressed.
         """
         ...
 
@@ -2731,6 +2798,11 @@ class IUnitOfWork(ICleanable, Protocol):
         Worker code or the underlying callable may use this to perform
         additional cooperative cancellation checks beyond the up-front check
         done in :meth:`run_synchronously`.
+
+        Returns:
+            Optional[CancellationEvent]:
+                Shared cancellation view for this unit, or None when no
+                cooperative cancellation source is attached.
         """
         ...
 
@@ -2741,6 +2813,9 @@ class IUnitOfWork(ICleanable, Protocol):
 
         This is useful for logging, debugging, or exposing information to AI
         agents (e.g. tagging a unit with spell IDs and stage names).
+
+        Returns:
+            Optional[str]: Human-readable label associated with this unit.
         """
         ...
 
@@ -2752,6 +2827,9 @@ class IUnitOfWork(ICleanable, Protocol):
         This can be used to attach spell identifiers, ResolutionContext
         instances, stage markers, or any other information a supervising
         pipeline wants to keep track of.
+
+        Returns:
+            Any: Arbitrary caller-supplied metadata stored on this unit.
         """
         ...
 
@@ -2798,6 +2876,10 @@ class IUnitOfWork(ICleanable, Protocol):
         provided so that UnitOfWork instances can be passed to APIs that
         expect a plain callable (e.g. ad-hoc thread targets or custom
         worker loops).
+
+        Returns:
+            Any: Result of the wrapped callable, exactly as returned by
+            :meth:`run_synchronously`.
         """
         ...
 
@@ -2923,7 +3005,7 @@ class IConduitWard(ICleanable, Protocol):
         """
         Public API
 
-        Cleanups the conduit ward, preventing any further modifications or operations.
+        Clean up the conduit ward and invalidate it for further use.
         """
         ...
 
@@ -2931,7 +3013,7 @@ class IConduitWard(ICleanable, Protocol):
         """
         Internal
 
-        Recursively cleans up and removes all linked lesser conduits (children).
+        Recursively clean and detach all linked lesser conduits (children).
         """
         ...
 
@@ -2939,7 +3021,7 @@ class IConduitWard(ICleanable, Protocol):
         """
         Internal
 
-        cleans and disposes of all active external contracts and links.
+        Clean and dispose all active external contracts and links.
         """
         ...
 
@@ -2947,7 +3029,7 @@ class IConduitWard(ICleanable, Protocol):
         """
         Public API
 
-        Cleans up all lesser conduits (children) linked to this conduit.
+        Clean up all lesser conduits (children) linked to this conduit.
 
         This is typically used when the parent conduit is undergoing a state change,
         like an upgrade to a normal state, or as part of a controlled shutdown.
@@ -2962,13 +3044,21 @@ class IConduitWard(ICleanable, Protocol):
     # ------------------------------------------------------------------
     def __enter__(self) -> 'IConduitWard':
         """
-        Enters the context manager for Aether.
+        Enter the conduit-ward coordination context.
+
+        Returns:
+            IConduitWard: This ward instance while its internal coordination
+            state is held for the caller.
         """
         ...
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         """
-        Exits the context manager for Aether.
+        Exit the conduit-ward coordination context.
+
+        The concrete implementation is expected to release any ward-scoped lock
+        acquired in :meth:`__enter__` and not suppress exceptions from the
+        with-body.
         """
         ...
 

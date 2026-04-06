@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import threading
+from types import SimpleNamespace
 
 import pytest
 from unittest.mock import MagicMock, patch
@@ -1435,6 +1436,29 @@ def test_link_spell_dependencies_skips_local_versions(
     assert borrower._spellbook._add_contracted_calls == []
 
 
+def test_link_spell_dependencies_skips_owner_self_when_dependency_not_local(
+    conduit_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify dependency walking skips non-local dependencies whose reported owner is the borrower itself."""
+    _, borrower = conduit_pair
+    root_spell = _register_spell(
+        borrower,
+        "root-self-owner",
+        permissions=Permissions.create,
+        dependencies=["dep-self-owner"],
+    )
+    borrower.register_spell_owner("dep-self-owner", borrower)
+
+    borrower._conduit_ward._link_spell_dependencies(
+        root_spell=root_spell,
+        root_spell_id=root_spell.spell_id,
+        requested_permissions=Permissions.create,
+    )
+
+    assert borrower._conduit_ward._contracts == {}
+    assert borrower._spellbook._add_contracted_calls == []
+
+
 def test_link_spell_dependencies_adds_transitive_dependencies(
     conduit_pair: tuple[FakeConduit, FakeConduit],
 ) -> None:
@@ -1462,6 +1486,67 @@ def test_link_spell_dependencies_adds_transitive_dependencies(
         (owner._id, dep_one.spell_id),
         (owner._id, dep_two.spell_id),
     }
+
+
+def test_link_spell_dependencies_downgrades_permissions_when_requested_read(
+    conduit_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify read requests downgrade create-capable dependencies to read contracts."""
+    owner, borrower = conduit_pair
+    dep_spell = _register_spell(owner, "dep-read-request", permissions=Permissions.create)
+    root_spell = _register_spell(
+        borrower,
+        "root-read-request",
+        permissions=Permissions.create,
+        dependencies=[dep_spell.spell_id],
+    )
+    borrower.register_spell_owner(dep_spell.spell_id, owner)
+
+    borrower._conduit_ward._link_spell_dependencies(
+        root_spell=root_spell,
+        root_spell_id=root_spell.spell_id,
+        requested_permissions=Permissions.read,
+    )
+
+    contract = borrower._conduit_ward._find_contract(owner)
+    detail = contract._get_detail_map(owner._conduit_ward)[dep_spell.spell_id]
+
+    assert detail.permissions == Permissions.read
+
+
+def test_link_spell_dependencies_handles_dependency_without_dependencies_attr(
+    conduit_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify dependency walking tolerates dependency spells that omit a dependencies attribute."""
+    owner, borrower = conduit_pair
+    dep_spell = SimpleNamespace(
+        spell_id="dep-no-child-attr",
+        spell_index=SpellIndex("dep-no-child-attr"),
+        permissions=Permissions.create,
+        spellframe="frame",
+        binding_name="binding-dep-no-child-attr",
+        spell_name="DepNoChildAttr",
+        __name__="DepNoChildAttr",
+        _owner_conduit_id=owner._id,
+    )
+    owner._spell_by_id[dep_spell.spell_id] = dep_spell
+    owner._spellbook._spells[dep_spell.spell_index] = dep_spell
+    root_spell = _register_spell(
+        borrower,
+        "root-no-child-attr",
+        permissions=Permissions.create,
+        dependencies=[dep_spell.spell_id],
+    )
+    borrower.register_spell_owner(dep_spell.spell_id, owner)
+
+    borrower._conduit_ward._link_spell_dependencies(
+        root_spell=root_spell,
+        root_spell_id=root_spell.spell_id,
+        requested_permissions=Permissions.create,
+    )
+
+    contract = borrower._conduit_ward._find_contract(owner)
+    assert dep_spell.spell_id in contract._get_detail_map(owner._conduit_ward)
 
 
 def test_add_spell_to_contract_preflight_rejects_dependency_collision() -> None:
@@ -1911,6 +1996,23 @@ def test_get_spell_in_contracts_returns_none_on_contracted_lookup_error(
     assert borrower._conduit_ward._get_spell_in_contracts(spell.spell_id) is None
 
 
+def test_get_spell_in_contracts_returns_none_when_contracts_exist_but_no_detail_matches(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify spell lookup returns None when contracts exist but no detail lineage matches the requested spell id."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-present-other", permissions=Permissions.create)
+
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+        permissions="create",
+    )
+
+    assert borrower._conduit_ward._get_spell_in_contracts("spell-missing") is None
+
+
 def test_get_spells_in_contract_by_conduit_skips_outbound_resolution_exception(
     linked_pair: tuple[FakeConduit, FakeConduit],
 ) -> None:
@@ -2039,6 +2141,26 @@ def test_preflight_contract_dependency_collisions_rejects_missing_root_spell_id(
             root_spell_id=None,
             requested_permissions=Permissions.create,
         )
+
+
+def test_preflight_contract_dependency_collisions_handles_root_without_dependencies_attr() -> None:
+    """Verify preflight treats a missing dependencies attribute as no dependencies."""
+    _, borrower = _build_conduit_pair()
+    root_spell = SimpleNamespace(
+        spell_id="root-preflight-no-deps",
+        spell_index=SpellIndex("root-preflight-no-deps"),
+        permissions=Permissions.create,
+        spellframe="frame",
+        binding_name="binding-root-preflight-no-deps",
+        spell_name="RootPreflightNoDeps",
+        __name__="RootPreflightNoDeps",
+    )
+
+    borrower._conduit_ward._preflight_contract_dependency_collisions(
+        root_spell=root_spell,
+        root_spell_id=root_spell.spell_id,
+        requested_permissions=Permissions.create,
+    )
 
 
 def test_preflight_contract_dependency_collisions_noops_without_spellbook() -> None:
