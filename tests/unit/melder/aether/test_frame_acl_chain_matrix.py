@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
@@ -39,6 +41,90 @@ def _make_locked_configuration(
     )
     configuration.finalize()
     return configuration
+
+
+def _build_typed_json_payload(
+        frame_name: str,
+        *,
+        view_marker: str = "",
+        codegen_marker: str = "",
+        view_profile_name: str = "safe",
+        codegen_profile_name: str = "safe",
+) -> str:
+    """
+    Build one minimal typed ACL JSON payload for chain-matrix tests.
+
+    Args:
+        frame_name:
+            Frame name stored in the JSON payload.
+        view_marker:
+            Optional suffix used to vary the view payload content.
+        codegen_marker:
+            Optional suffix used to vary the codegen payload content.
+        view_profile_name:
+            Reusable view profile name for the payload.
+        codegen_profile_name:
+            Reusable codegen profile name for the payload.
+
+    Returns:
+        str:
+            JSON payload string that matches the live typed ACL contract.
+    """
+    frame_override_name = "frame_override"
+    capability_override_name = "capability_override"
+    if view_marker:
+        frame_override_name = "frame_override_{0}".format(view_marker)
+    if codegen_marker:
+        capability_override_name = "capability_override_{0}".format(
+            codegen_marker
+        )
+    return json.dumps(
+        {
+            "frame_name": frame_name,
+            "view_configuration": {
+                "profile_name": view_profile_name,
+                "profile_version": "0.0.1",
+                "minimum_spell_payload_profile_name": "detailed",
+                "frame_override_ruleset": {
+                    "name": frame_override_name,
+                    "rules": [],
+                },
+                "conduit_override_ruleset": {
+                    "name": "conduit_override",
+                    "rules": [],
+                },
+                "spell_override_ruleset": {
+                    "name": "spell_override",
+                    "rules": [],
+                },
+                "member_override_ruleset": {
+                    "name": "member_override",
+                    "rules": [],
+                },
+            },
+            "codegen_configuration": {
+                "profile_name": codegen_profile_name,
+                "profile_version": "0.0.1",
+                "frame_override_ruleset": {
+                    "name": "frame_override",
+                    "rules": [],
+                },
+                "conduit_override_ruleset": {
+                    "name": "conduit_override",
+                    "rules": [],
+                },
+                "spell_override_ruleset": {
+                    "name": "spell_override",
+                    "rules": [],
+                },
+                "capability_override_ruleset": {
+                    "name": capability_override_name,
+                    "rules": [],
+                },
+            },
+        },
+        sort_keys=True,
+    )
 
 
 @pytest.mark.parametrize(
@@ -114,7 +200,10 @@ def test_chain_has_configuration_reports_known_and_unknown_ids(
     second = _make_locked_configuration(
         "ops",
         reason="second",
-        json_payload='{"frame_name":"ops","view_acl":{"v":1},"codegen_acl":{}}',
+        json_payload=_build_typed_json_payload(
+            "ops",
+            view_marker="v1",
+        ),
     )
     chain.insert_head_configuration(second, select_as_current=True)
 
@@ -189,7 +278,7 @@ def test_chain_insert_rejects_wrong_frame_names(other_frame_name: str) -> None:
     configuration = _make_locked_configuration(
         other_frame_name,
         reason="wrong-frame",
-        json_payload='{"frame_name":"placeholder","view_acl":{},"codegen_acl":{}}',
+        json_payload=_build_typed_json_payload(other_frame_name),
     )
 
     with pytest.raises(ValueError, match="expected 'ops'"):
@@ -199,10 +288,14 @@ def test_chain_insert_rejects_wrong_frame_names(other_frame_name: str) -> None:
 @pytest.mark.parametrize(
     "json_payload",
     [
-        '{"frame_name":"ops","view_acl":{},"codegen_acl":{}}',
-        '{"frame_name":"ops","view_acl":{"visible":true},"codegen_acl":{}}',
-        '{"frame_name":"ops","view_acl":{},"codegen_acl":{"allowed":true}}',
-        '{"frame_name":"ops","view_acl":{"spell":"one"},"codegen_acl":{"spell":"two"}}',
+        _build_typed_json_payload("ops"),
+        _build_typed_json_payload("ops", view_marker="visible"),
+        _build_typed_json_payload("ops", codegen_marker="allowed"),
+        _build_typed_json_payload(
+            "ops",
+            view_marker="spell_one",
+            codegen_marker="spell_two",
+        ),
     ],
 )
 def test_chain_create_new_from_acl_configuration_preserves_source_payload(
@@ -241,10 +334,17 @@ def test_chain_create_new_from_acl_configuration_preserves_source_payload(
 @pytest.mark.parametrize(
     "select_as_current, json_payload",
     [
-        (True, '{"frame_name":"ops","view_acl":{"v":1},"codegen_acl":{}}'),
-        (False, '{"frame_name":"ops","view_acl":{"v":2},"codegen_acl":{}}'),
-        (True, '{"frame_name":"ops","view_acl":{},"codegen_acl":{"v":3}}'),
-        (False, '{"frame_name":"ops","view_acl":{"v":4},"codegen_acl":{"v":4}}'),
+        (True, _build_typed_json_payload("ops", view_marker="v1")),
+        (False, _build_typed_json_payload("ops", view_marker="v2")),
+        (True, _build_typed_json_payload("ops", codegen_marker="v3")),
+        (
+            False,
+            _build_typed_json_payload(
+                "ops",
+                view_marker="v4",
+                codegen_marker="v4",
+            ),
+        ),
     ],
 )
 def test_chain_insert_head_updates_head_and_current_semantics(
@@ -308,7 +408,10 @@ def test_chain_list_limit_returns_expected_counts(
             _make_locked_configuration(
                 "ops",
                 reason="cfg-{0}".format(marker),
-                json_payload='{{"frame_name":"ops","view_acl":{{"v":"{0}"}},"codegen_acl":{{}}}}'.format(marker),
+                json_payload=_build_typed_json_payload(
+                    "ops",
+                    view_marker=marker,
+                ),
             ),
             select_as_current=True,
         )
@@ -345,7 +448,10 @@ def test_chain_tail_trim_enforces_limit_when_current_tracks_head(
             _make_locked_configuration(
                 "ops",
                 reason="cfg-{0}".format(marker),
-                json_payload='{{"frame_name":"ops","view_acl":{{"v":{0}}},"codegen_acl":{{}}}}'.format(marker),
+                json_payload=_build_typed_json_payload(
+                    "ops",
+                    view_marker=str(marker),
+                ),
             ),
             select_as_current=True,
         )
@@ -377,7 +483,10 @@ def test_container_history_excludes_current_after_installs(install_count: int) -
             _make_locked_configuration(
                 "ops",
                 reason="cfg-{0}".format(marker),
-                json_payload='{{"frame_name":"ops","view_acl":{{"v":{0}}},"codegen_acl":{{}}}}'.format(marker),
+                json_payload=_build_typed_json_payload(
+                    "ops",
+                    view_marker=str(marker),
+                ),
             )
         )
 
@@ -390,10 +499,18 @@ def test_container_history_excludes_current_after_installs(install_count: int) -
 @pytest.mark.parametrize(
     "json_payload",
     [
-        '{"frame_name":"ops","view_acl":{"visible":true},"codegen_acl":{}}',
-        '{"frame_name":"ops","view_acl":{},"codegen_acl":{"allowed":true}}',
-        '{"frame_name":"ops","view_acl":{"one":1},"codegen_acl":{"two":2}}',
-        '{"frame_name":"ops","view_acl":{"spell":"alpha"},"codegen_acl":{"spell":"beta"}}',
+        _build_typed_json_payload("ops", view_marker="visible"),
+        _build_typed_json_payload("ops", codegen_marker="allowed"),
+        _build_typed_json_payload(
+            "ops",
+            view_marker="one",
+            codegen_marker="two",
+        ),
+        _build_typed_json_payload(
+            "ops",
+            view_marker="spell_alpha",
+            codegen_marker="spell_beta",
+        ),
     ],
 )
 def test_builder_commit_round_trip_for_multiple_payloads(

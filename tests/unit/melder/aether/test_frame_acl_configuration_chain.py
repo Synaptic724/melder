@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
@@ -36,6 +38,84 @@ def _make_locked_configuration(
     )
     configuration.finalize()
     return configuration
+
+
+def _build_typed_json_payload(
+        frame_name: str,
+        *,
+        view_marker: str = "",
+        codegen_marker: str = "",
+) -> str:
+    """
+    Build one minimal typed ACL JSON payload for configuration-chain tests.
+
+    Args:
+        frame_name:
+            Frame name stored in the JSON payload.
+        view_marker:
+            Optional suffix used to vary the view payload content.
+        codegen_marker:
+            Optional suffix used to vary the codegen payload content.
+
+    Returns:
+        str:
+            JSON payload string that matches the live typed ACL contract.
+    """
+    frame_override_name = "frame_override"
+    capability_override_name = "capability_override"
+    if view_marker:
+        frame_override_name = "frame_override_{0}".format(view_marker)
+    if codegen_marker:
+        capability_override_name = "capability_override_{0}".format(
+            codegen_marker
+        )
+    return json.dumps(
+        {
+            "frame_name": frame_name,
+            "view_configuration": {
+                "profile_name": "safe",
+                "profile_version": "0.0.1",
+                "minimum_spell_payload_profile_name": "detailed",
+                "frame_override_ruleset": {
+                    "name": frame_override_name,
+                    "rules": [],
+                },
+                "conduit_override_ruleset": {
+                    "name": "conduit_override",
+                    "rules": [],
+                },
+                "spell_override_ruleset": {
+                    "name": "spell_override",
+                    "rules": [],
+                },
+                "member_override_ruleset": {
+                    "name": "member_override",
+                    "rules": [],
+                },
+            },
+            "codegen_configuration": {
+                "profile_name": "safe",
+                "profile_version": "0.0.1",
+                "frame_override_ruleset": {
+                    "name": "frame_override",
+                    "rules": [],
+                },
+                "conduit_override_ruleset": {
+                    "name": "conduit_override",
+                    "rules": [],
+                },
+                "spell_override_ruleset": {
+                    "name": "spell_override",
+                    "rules": [],
+                },
+                "capability_override_ruleset": {
+                    "name": capability_override_name,
+                    "rules": [],
+                },
+            },
+        },
+        sort_keys=True,
+    )
 
 
 def test_chain_starts_with_one_default_head_and_current() -> None:
@@ -83,7 +163,7 @@ def test_chain_insert_head_sets_previous_pointer_and_head() -> None:
     next_configuration = _make_locked_configuration(
         "ops",
         reason="new-head",
-        json_payload='{"frame_name":"ops","view_acl":{"visible":true},"codegen_acl":{}}',
+        json_payload=_build_typed_json_payload("ops", view_marker="visible"),
     )
 
     inserted = chain.insert_head_configuration(
@@ -109,7 +189,7 @@ def test_chain_insert_head_can_leave_current_on_older_config() -> None:
     next_configuration = _make_locked_configuration(
         "ops",
         reason="new-head",
-        json_payload='{"frame_name":"ops","view_acl":{"visible":true},"codegen_acl":{}}',
+        json_payload=_build_typed_json_payload("ops", view_marker="visible"),
     )
 
     chain.insert_head_configuration(next_configuration, select_as_current=False)
@@ -137,7 +217,7 @@ def test_chain_insert_head_rejects_unlocked_wrong_frame_and_duplicates() -> None
     wrong_frame = _make_locked_configuration(
         "finance",
         reason="wrong-frame",
-        json_payload='{"frame_name":"finance","view_acl":{},"codegen_acl":{}}',
+        json_payload=_build_typed_json_payload("finance"),
     )
     with pytest.raises(ValueError, match="targets frame 'finance', expected 'ops'"):
         chain.insert_head_configuration(wrong_frame, select_as_current=True)
@@ -175,12 +255,12 @@ def test_chain_list_configurations_returns_newest_first() -> None:
     first = _make_locked_configuration(
         "ops",
         reason="one",
-        json_payload='{"frame_name":"ops","view_acl":{"v":1},"codegen_acl":{}}',
+        json_payload=_build_typed_json_payload("ops", view_marker="v1"),
     )
     second = _make_locked_configuration(
         "ops",
         reason="two",
-        json_payload='{"frame_name":"ops","view_acl":{"v":2},"codegen_acl":{}}',
+        json_payload=_build_typed_json_payload("ops", view_marker="v2"),
     )
 
     chain.insert_head_configuration(first, select_as_current=True)
@@ -207,7 +287,7 @@ def test_chain_select_and_rollback_move_current_pointer() -> None:
     next_configuration = _make_locked_configuration(
         "ops",
         reason="new-head",
-        json_payload='{"frame_name":"ops","view_acl":{"visible":true},"codegen_acl":{}}',
+        json_payload=_build_typed_json_payload("ops", view_marker="visible"),
     )
     chain.insert_head_configuration(next_configuration, select_as_current=True)
 
@@ -257,17 +337,17 @@ def test_chain_trim_tail_drops_oldest_when_over_limit() -> None:
     second = _make_locked_configuration(
         "ops",
         reason="2",
-        json_payload='{"frame_name":"ops","view_acl":{"v":2},"codegen_acl":{}}',
+        json_payload=_build_typed_json_payload("ops", view_marker="v2"),
     )
     third = _make_locked_configuration(
         "ops",
         reason="3",
-        json_payload='{"frame_name":"ops","view_acl":{"v":3},"codegen_acl":{}}',
+        json_payload=_build_typed_json_payload("ops", view_marker="v3"),
     )
     fourth = _make_locked_configuration(
         "ops",
         reason="4",
-        json_payload='{"frame_name":"ops","view_acl":{"v":4},"codegen_acl":{}}',
+        json_payload=_build_typed_json_payload("ops", view_marker="v4"),
     )
 
     chain.insert_head_configuration(second, select_as_current=True)
@@ -292,12 +372,12 @@ def test_chain_trim_tail_preserves_old_current_selection() -> None:
     second = _make_locked_configuration(
         "ops",
         reason="2",
-        json_payload='{"frame_name":"ops","view_acl":{"v":2},"codegen_acl":{}}',
+        json_payload=_build_typed_json_payload("ops", view_marker="v2"),
     )
     third = _make_locked_configuration(
         "ops",
         reason="3",
-        json_payload='{"frame_name":"ops","view_acl":{"v":3},"codegen_acl":{}}',
+        json_payload=_build_typed_json_payload("ops", view_marker="v3"),
     )
 
     chain.insert_head_configuration(second, select_as_current=True)
@@ -320,7 +400,7 @@ def test_chain_list_limit_and_cleanup_work() -> None:
     second = _make_locked_configuration(
         "ops",
         reason="2",
-        json_payload='{"frame_name":"ops","view_acl":{"v":2},"codegen_acl":{}}',
+        json_payload=_build_typed_json_payload("ops", view_marker="v2"),
     )
     chain.insert_head_configuration(second, select_as_current=True)
 

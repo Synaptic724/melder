@@ -5,7 +5,14 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.nexus.acl.frame_acl_compiler import FrameACLCompiler
 from melder.aether.nexus.nexus import Nexus
+from melder.aether.nexus.rift.frame_link.frame_link_contract import (
+    FrameLinkContract,
+)
+from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile_builder import (
+    FrameLinkContractProfileBuilder,
+)
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
@@ -13,9 +20,9 @@ from tests.mocks.spellbook.core_classes import BasicService
 
 
 @pytest.fixture(autouse=True)
-def reset_singletons_for_frame_acl_chain_integration() -> None:
+def reset_singletons_for_frame_acl_compiler_integration() -> None:
     """
-    Reset singleton state around each integration test.
+    Reset singleton state around each ACL compiler integration test.
 
     Returns:
         None.
@@ -60,12 +67,12 @@ def _make_rift_publishable_configuration(
 def _build_typed_json_payload(
         frame_name: str,
         *,
-        view_profile_name: str = "safe",
-        codegen_profile_name: str = "safe",
-        marker: str = "integration",
+        view_profile_name: str,
+        codegen_profile_name: str,
+        marker: str,
 ) -> str:
     """
-    Build one typed ACL JSON payload for integration chain tests.
+    Build one typed ACL JSON payload for runtime integration tests.
 
     Args:
         frame_name:
@@ -130,10 +137,9 @@ def _build_typed_json_payload(
     )
 
 
-def test_integration_passive_publish_provisions_acl_container_and_default_chain() -> None:
+def test_integration_passive_publish_compiles_default_safe_surface() -> None:
     """
-    Verify passive Nexus publish leaves the frame with a default ACL container
-    and default chain state.
+    Verify passive runtime publication compiles into the default safe surface.
 
     Returns:
         None.
@@ -149,20 +155,23 @@ def test_integration_passive_publish_provisions_acl_container_and_default_chain(
     conduit = spellbook.conjure(name="root")
     try:
         nexus = Nexus()
-        container = nexus._frame_acl_manager._get_required_frame_acl_container("ops")
+        compiler = FrameACLCompiler(nexus._frame_acl_manager.frame_acl_profile_builder)
+        compiled_surface = compiler.compile_frame_access_surface(
+            nexus._get_or_create_frame_descriptor("ops"),
+            nexus.get_current_frame_acl_configuration("ops"),
+        )
 
-        assert container.frame_name == "ops"
-        assert container.frame_acl_configuration_chain.count_configurations() == 1
-        assert nexus.get_current_frame_acl_configuration("ops") is container.frame_acl_configuration
-        assert nexus.get_frame_acl_builder("ops") is container.frame_acl_builder
+        assert compiled_surface.view_profile_name == "safe"
+        assert compiled_surface.codegen_profile_name == "safe"
+        assert "frame" in compiled_surface.allowed_kinds
+        assert "spell" in compiled_surface.allowed_kinds
     finally:
         conduit.cleanup()
 
 
-def test_integration_nexus_facade_can_commit_and_rollback_chain_state_after_conjure() -> None:
+def test_integration_runtime_acl_commit_changes_compiled_command_surface() -> None:
     """
-    Verify real runtime setup still allows the ACL chain to commit and roll
-    back through the Nexus facade.
+    Verify runtime ACL commits flow through the compiler and change commands.
 
     Returns:
         None.
@@ -182,44 +191,41 @@ def test_integration_nexus_facade_can_commit_and_rollback_chain_state_after_conj
         draft = nexus.create_new_from_acl_configuration(
             "ops",
             original.configuration_id,
-            reason="integration-copy",
+            reason="integration-permissive",
         )
         draft.set_json_configuration_string(
             _build_typed_json_payload(
                 "ops",
                 view_profile_name="hybrid",
                 codegen_profile_name="permissive",
-                marker="integration",
+                marker="integration_permissive",
             )
         )
         draft.finalize()
-
-        inserted = nexus.insert_head_frame_acl_configuration(
+        nexus.insert_head_frame_acl_configuration(
             "ops",
             draft,
             select_as_current=True,
         )
-        selected = nexus.select_current_frame_acl_configuration(
-            "ops",
-            original.configuration_id,
-        )
-        rolled_back = nexus.rollback_frame_acl_configuration(
-            "ops",
-            inserted.configuration_id,
+
+        compiler = FrameACLCompiler(nexus._frame_acl_manager.frame_acl_profile_builder)
+        compiled_surface = compiler.compile_frame_access_surface(
+            nexus._get_or_create_frame_descriptor("ops"),
+            nexus.get_current_frame_acl_configuration("ops"),
         )
 
-        assert selected is original
-        assert rolled_back is inserted
-        assert nexus.get_head_frame_acl_configuration("ops") is inserted
-        assert nexus.get_current_frame_acl_configuration("ops") is inserted
+        assert compiled_surface.view_profile_name == "hybrid"
+        assert compiled_surface.codegen_profile_name == "permissive"
+        assert "write_attribute" in compiled_surface.allowed_commands
+        assert "spell" in compiled_surface.allowed_kinds
     finally:
         conduit.cleanup()
 
 
-def test_integration_frame_detach_removes_acl_container_after_chain_activity() -> None:
+def test_integration_runtime_compiled_surface_can_be_shaped_by_safe_frame_link_profile() -> None:
     """
-    Verify frame-detach cleanup removes a populated ACL container after real
-    runtime setup and passive Nexus publication.
+    Verify runtime compiled ACL output can be shaped by the downstream
+    frame-link safe contract profile.
 
     Returns:
         None.
@@ -233,34 +239,27 @@ def test_integration_frame_detach_removes_acl_container_after_chain_activity() -
     )
 
     conduit = spellbook.conjure(name="root")
-    nexus = Nexus()
-    system_configuration = nexus.create_system_configuration()
-    system_configuration.with_rift_creation_enabled(True)
-    system_configuration.with_direct_rift_access(True)
-    nexus.enable(system_configuration)
-    original = nexus.get_current_frame_acl_configuration("ops")
-    draft = nexus.create_new_from_acl_configuration(
-        "ops",
-        original.configuration_id,
-        reason="detach-copy",
-    )
-    draft.set_json_configuration_string(
-        _build_typed_json_payload(
-            "ops",
-            view_profile_name="hybrid",
-            codegen_profile_name="safe",
-            marker="detach",
-        )
-    )
-    draft.finalize()
-    nexus.insert_head_frame_acl_configuration("ops", draft, select_as_current=True)
-    container = nexus._frame_acl_manager._get_required_frame_acl_container("ops")
-    frame = Aether()._ensure_frame("ops")
-
     try:
-        frame.cleanup()
+        nexus = Nexus()
+        compiler = FrameACLCompiler(nexus._frame_acl_manager.frame_acl_profile_builder)
+        compiled_surface = compiler.compile_frame_access_surface(
+            nexus._get_or_create_frame_descriptor("ops"),
+            nexus.get_current_frame_acl_configuration("ops"),
+        )
+        safe_contract_profile = FrameLinkContractProfileBuilder().get_required_profile(
+            "safe"
+        )
 
-        assert container.cleaned is True
-        assert "ops" not in nexus._frame_acl_manager.frame_acl_containers_by_name
+        contract = FrameLinkContract.from_compiled_access_surface(
+            compiled_surface,
+            contract_profile=safe_contract_profile,
+        )
+
+        assert contract.allowed_commands == (
+            "bind_existing",
+            "query",
+            "resolve_existing",
+        )
+        assert contract.metadata["frame_link_profile_name"] == "safe"
     finally:
         conduit.cleanup()

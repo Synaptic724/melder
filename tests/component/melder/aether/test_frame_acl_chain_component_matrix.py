@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from melder.aether.aether import Aether
@@ -46,9 +48,10 @@ def _make_locked_configuration(
     """
     configuration = FrameACLConfiguration.from_json_configuration_string(
         frame_name=frame_name,
-        json_configuration_string=(
-            '{{"frame_name":"{0}","view_acl":{{"marker":"{1}"}},"codegen_acl":{{}}}}'
-        ).format(frame_name, marker),
+        json_configuration_string=_build_typed_json_payload(
+            frame_name,
+            marker=marker,
+        ),
         source_configuration_id=None,
         previous_configuration_id=None,
         reason=reason,
@@ -56,6 +59,73 @@ def _make_locked_configuration(
     )
     configuration.finalize()
     return configuration
+
+
+def _build_typed_json_payload(
+        frame_name: str,
+        *,
+        marker: str,
+) -> str:
+    """
+    Build one typed ACL JSON payload for component chain tests.
+
+    Args:
+        frame_name:
+            Frame name stored in the JSON payload.
+        marker:
+            Small marker used to vary the view payload.
+
+    Returns:
+        str:
+            JSON payload string that matches the live typed ACL contract.
+    """
+    return json.dumps(
+        {
+            "frame_name": frame_name,
+            "view_configuration": {
+                "profile_name": "safe",
+                "profile_version": "0.0.1",
+                "minimum_spell_payload_profile_name": "detailed",
+                "frame_override_ruleset": {
+                    "name": "frame_override_{0}".format(marker),
+                    "rules": [],
+                },
+                "conduit_override_ruleset": {
+                    "name": "conduit_override",
+                    "rules": [],
+                },
+                "spell_override_ruleset": {
+                    "name": "spell_override",
+                    "rules": [],
+                },
+                "member_override_ruleset": {
+                    "name": "member_override",
+                    "rules": [],
+                },
+            },
+            "codegen_configuration": {
+                "profile_name": "safe",
+                "profile_version": "0.0.1",
+                "frame_override_ruleset": {
+                    "name": "frame_override",
+                    "rules": [],
+                },
+                "conduit_override_ruleset": {
+                    "name": "conduit_override",
+                    "rules": [],
+                },
+                "spell_override_ruleset": {
+                    "name": "spell_override",
+                    "rules": [],
+                },
+                "capability_override_ruleset": {
+                    "name": "capability_override",
+                    "rules": [],
+                },
+            },
+        },
+        sort_keys=True,
+    )
 
 
 @pytest.mark.parametrize(

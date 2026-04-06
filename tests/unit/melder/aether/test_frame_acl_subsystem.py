@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from melder.aether.aether import Aether
@@ -20,6 +22,76 @@ def fresh_singletons() -> None:
     Nexus._reset_singleton_for_tests()
     Aether._reset_singleton_for_tests()
     AetherUtilitySystem._reset_singleton_for_tests()
+
+
+def _build_typed_json_payload(
+        frame_name: str,
+        *,
+        view_profile_name: str = "safe",
+        codegen_profile_name: str = "safe",
+) -> str:
+    """
+    Build one minimal typed ACL JSON payload for subsystem tests.
+
+    Args:
+        frame_name:
+            Frame name stored in the JSON payload.
+        view_profile_name:
+            Reusable view profile name for the payload.
+        codegen_profile_name:
+            Reusable codegen profile name for the payload.
+
+    Returns:
+        str:
+            JSON payload string that matches the live typed ACL contract.
+    """
+    return json.dumps(
+        {
+            "frame_name": frame_name,
+            "view_configuration": {
+                "profile_name": view_profile_name,
+                "profile_version": "0.0.1",
+                "minimum_spell_payload_profile_name": "detailed",
+                "frame_override_ruleset": {
+                    "name": "frame_override",
+                    "rules": [],
+                },
+                "conduit_override_ruleset": {
+                    "name": "conduit_override",
+                    "rules": [],
+                },
+                "spell_override_ruleset": {
+                    "name": "spell_override",
+                    "rules": [],
+                },
+                "member_override_ruleset": {
+                    "name": "member_override",
+                    "rules": [],
+                },
+            },
+            "codegen_configuration": {
+                "profile_name": codegen_profile_name,
+                "profile_version": "0.0.1",
+                "frame_override_ruleset": {
+                    "name": "frame_override",
+                    "rules": [],
+                },
+                "conduit_override_ruleset": {
+                    "name": "conduit_override",
+                    "rules": [],
+                },
+                "spell_override_ruleset": {
+                    "name": "spell_override",
+                    "rules": [],
+                },
+                "capability_override_ruleset": {
+                    "name": "capability_override",
+                    "rules": [],
+                },
+            },
+        },
+        sort_keys=True,
+    )
 
 
 def test_descriptor_creation_also_creates_frame_acl_container_with_defaults() -> None:
@@ -101,7 +173,11 @@ def test_frame_acl_builder_commit_updates_current_configuration_and_history() ->
 
     builder.begin_change()
     builder.load_json_configuration_string(
-        '{"frame_name": "ops", "frame_acl": {"visible": true}, "conduit_acls": [], "spellbook_acls": [], "spell_acls": []}'
+        _build_typed_json_payload(
+            "ops",
+            view_profile_name="hybrid",
+            codegen_profile_name="permissive",
+        )
     )
     next_configuration = builder.commit_change()
 

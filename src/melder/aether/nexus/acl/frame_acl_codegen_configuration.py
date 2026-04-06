@@ -1,13 +1,12 @@
 import json
+import threading
 from typing import Any, Dict, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.acl.profiles.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
-from melder.aether.nexus.acl.profiles.frame_acl_ruleset import (
-    FrameACLRuleSet,
-)
+from melder.aether.nexus.acl.profiles.frame_acl_ruleset import FrameACLRuleSet
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -18,18 +17,23 @@ class FrameACLCodegenConfiguration(Cleanable):
         Represent the applied codegen-side ACL configuration for one frame.
 
     Contract:
-        - Carries the reusable codegen profile identity/version it was derived from.
+        - Carries the reusable codegen profile identity/version it was derived
+          from.
         - Owns detached override rulesets for frame, conduit, spell, and
           capability concerns.
         - Remains serializable for persistence.
+        - Uses a lock because cleanup and grouped override replacement mutate
+          multiple owned fields together in a nogil runtime.
 
     Lifecycle:
-        Cleanup is idempotent and cascades into all owned override rulesets.
+        Cleanup is idempotent and cascades into all owned override rulesets
+        before references are cleared.
     """
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
+        "_lock",
         "_profile_name",
         "_profile_version",
         "_frame_override_ruleset",
@@ -48,12 +52,39 @@ class FrameACLCodegenConfiguration(Cleanable):
             spell_override_ruleset: Optional[FrameACLRuleSet] = None,
             capability_override_ruleset: Optional[FrameACLRuleSet] = None,
     ) -> None:
+        """
+        Initialize one applied codegen-side ACL configuration object.
+
+        Args:
+            profile_name:
+                Reusable codegen profile name that seeded this config.
+            profile_version:
+                Reusable codegen profile version that seeded this config.
+            frame_override_ruleset:
+                Optional frame-level override ruleset.
+            conduit_override_ruleset:
+                Optional conduit-level override ruleset.
+            spell_override_ruleset:
+                Optional spell-level override ruleset.
+            capability_override_ruleset:
+                Optional capability-level override ruleset.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If required identity fields are empty.
+            TypeError:
+                If one override ruleset has the wrong type.
+        """
         super().__init__()
         if not profile_name:
             raise ValueError("profile_name cannot be empty.")
         if not profile_version:
             raise ValueError("profile_version cannot be empty.")
         self._id: str = IDBuilder.create_id()
+        self._lock: threading.RLock = threading.RLock()
         self._profile_name: str = profile_name
         self._profile_version: str = profile_version
         self._frame_override_ruleset = self._coerce_ruleset(
@@ -73,6 +104,32 @@ class FrameACLCodegenConfiguration(Cleanable):
             "{0}_capability_override".format(profile_name),
         )
 
+    def cleanup(self) -> None:
+        """
+        Idempotently clear the applied codegen configuration and overrides.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._frame_override_ruleset.cleanup()
+            self._conduit_override_ruleset.cleanup()
+            self._spell_override_ruleset.cleanup()
+            self._capability_override_ruleset.cleanup()
+            self._frame_override_ruleset = None
+            self._conduit_override_ruleset = None
+            self._spell_override_ruleset = None
+            self._capability_override_ruleset = None
+            self._profile_version = None
+            self._profile_name = None
+            self._id = None
+        self._lock = None
+
     @classmethod
     def from_profile(
             cls,
@@ -83,6 +140,24 @@ class FrameACLCodegenConfiguration(Cleanable):
             spell_override_ruleset: Optional[FrameACLRuleSet] = None,
             capability_override_ruleset: Optional[FrameACLRuleSet] = None,
     ) -> "FrameACLCodegenConfiguration":
+        """
+        Build one applied codegen configuration from a reusable codegen profile.
+
+        Args:
+            profile:
+                Reusable source codegen profile.
+            frame_override_ruleset:
+                Optional frame-level override ruleset.
+            conduit_override_ruleset:
+                Optional conduit-level override ruleset.
+            spell_override_ruleset:
+                Optional spell-level override ruleset.
+            capability_override_ruleset:
+                Optional capability-level override ruleset.
+
+        Returns:
+            FrameACLCodegenConfiguration: Applied codegen configuration.
+        """
         if not isinstance(profile, FrameACLCodegenProfile):
             raise TypeError("profile must be a FrameACLCodegenProfile.")
         return cls(
@@ -99,87 +174,162 @@ class FrameACLCodegenConfiguration(Cleanable):
             cls,
             payload: Dict[str, Any],
     ) -> "FrameACLCodegenConfiguration":
+        """
+        Build one applied codegen configuration from a JSON-compatible payload.
+
+        Args:
+            payload:
+                JSON-compatible codegen configuration payload.
+
+        Returns:
+            FrameACLCodegenConfiguration: Reconstructed applied codegen config.
+        """
         if not isinstance(payload, dict):
             raise TypeError("payload must be a dict.")
         return cls(
             profile_name=payload.get("profile_name"),
             profile_version=payload.get("profile_version"),
             frame_override_ruleset=FrameACLRuleSet.from_json_dict(
-                payload.get("frame_override_ruleset", {"name": "frame_override", "rules": []})
+                payload.get(
+                    "frame_override_ruleset",
+                    {"name": "frame_override", "rules": []},
+                )
             ),
             conduit_override_ruleset=FrameACLRuleSet.from_json_dict(
-                payload.get("conduit_override_ruleset", {"name": "conduit_override", "rules": []})
+                payload.get(
+                    "conduit_override_ruleset",
+                    {"name": "conduit_override", "rules": []},
+                )
             ),
             spell_override_ruleset=FrameACLRuleSet.from_json_dict(
-                payload.get("spell_override_ruleset", {"name": "spell_override", "rules": []})
+                payload.get(
+                    "spell_override_ruleset",
+                    {"name": "spell_override", "rules": []},
+                )
             ),
             capability_override_ruleset=FrameACLRuleSet.from_json_dict(
-                payload.get("capability_override_ruleset", {"name": "capability_override", "rules": []})
+                payload.get(
+                    "capability_override_ruleset",
+                    {"name": "capability_override", "rules": []},
+                )
             ),
         )
 
-    def cleanup(self) -> None:
-        if self._cleaned:
-            return
-        self._cleaned = True
-        self._frame_override_ruleset.cleanup()
-        self._conduit_override_ruleset.cleanup()
-        self._spell_override_ruleset.cleanup()
-        self._capability_override_ruleset.cleanup()
-        self._frame_override_ruleset = None
-        self._conduit_override_ruleset = None
-        self._spell_override_ruleset = None
-        self._capability_override_ruleset = None
-        self._profile_version = None
-        self._profile_name = None
-        self._id = None
-
     @property
     def profile_name(self) -> str:
+        """
+        Return the reusable codegen profile name that seeded this config.
+
+        Returns:
+            str: Reusable codegen profile name.
+        """
         self.check_cleaned()
-        return self._profile_name
+        with self._lock:
+            return self._profile_name
 
     @property
     def profile_version(self) -> str:
+        """
+        Return the reusable codegen profile version that seeded this config.
+
+        Returns:
+            str: Reusable codegen profile version.
+        """
         self.check_cleaned()
-        return self._profile_version
+        with self._lock:
+            return self._profile_version
 
     @property
     def frame_override_ruleset(self) -> FrameACLRuleSet:
+        """
+        Return the frame-level override ruleset.
+
+        Returns:
+            FrameACLRuleSet: Frame-level override ruleset.
+        """
         self.check_cleaned()
-        return self._frame_override_ruleset
+        with self._lock:
+            return self._frame_override_ruleset
 
     @property
     def conduit_override_ruleset(self) -> FrameACLRuleSet:
+        """
+        Return the conduit-level override ruleset.
+
+        Returns:
+            FrameACLRuleSet: Conduit-level override ruleset.
+        """
         self.check_cleaned()
-        return self._conduit_override_ruleset
+        with self._lock:
+            return self._conduit_override_ruleset
 
     @property
     def spell_override_ruleset(self) -> FrameACLRuleSet:
+        """
+        Return the spell-level override ruleset.
+
+        Returns:
+            FrameACLRuleSet: Spell-level override ruleset.
+        """
         self.check_cleaned()
-        return self._spell_override_ruleset
+        with self._lock:
+            return self._spell_override_ruleset
 
     @property
     def capability_override_ruleset(self) -> FrameACLRuleSet:
+        """
+        Return the capability-level override ruleset.
+
+        Returns:
+            FrameACLRuleSet: Capability-level override ruleset.
+        """
         self.check_cleaned()
-        return self._capability_override_ruleset
+        with self._lock:
+            return self._capability_override_ruleset
 
     def to_json_dict(self) -> Dict[str, Any]:
+        """
+        Return the applied codegen configuration as a JSON-compatible dict.
+
+        Returns:
+            Dict[str, Any]: JSON-compatible codegen configuration payload.
+        """
         self.check_cleaned()
-        return {
-            "profile_name": self._profile_name,
-            "profile_version": self._profile_version,
-            "frame_override_ruleset": self._frame_override_ruleset.to_json_dict(),
-            "conduit_override_ruleset": self._conduit_override_ruleset.to_json_dict(),
-            "spell_override_ruleset": self._spell_override_ruleset.to_json_dict(),
-            "capability_override_ruleset": self._capability_override_ruleset.to_json_dict(),
-        }
+        with self._lock:
+            return {
+                "profile_name": self._profile_name,
+                "profile_version": self._profile_version,
+                "frame_override_ruleset": (
+                    self._frame_override_ruleset.to_json_dict()
+                ),
+                "conduit_override_ruleset": (
+                    self._conduit_override_ruleset.to_json_dict()
+                ),
+                "spell_override_ruleset": (
+                    self._spell_override_ruleset.to_json_dict()
+                ),
+                "capability_override_ruleset": (
+                    self._capability_override_ruleset.to_json_dict()
+                ),
+            }
 
     def to_json_string(self) -> str:
+        """
+        Return the applied codegen configuration as a normalized JSON string.
+
+        Returns:
+            str: Normalized JSON payload string.
+        """
         self.check_cleaned()
         return json.dumps(self.to_json_dict(), sort_keys=True)
 
     def clone(self) -> "FrameACLCodegenConfiguration":
+        """
+        Return a detached copy of the applied codegen configuration.
+
+        Returns:
+            FrameACLCodegenConfiguration: Detached configuration copy.
+        """
         self.check_cleaned()
         return FrameACLCodegenConfiguration.from_json_dict(self.to_json_dict())
 
@@ -188,6 +338,18 @@ class FrameACLCodegenConfiguration(Cleanable):
             ruleset: Optional[FrameACLRuleSet],
             default_name: str,
     ) -> FrameACLRuleSet:
+        """
+        Normalize one optional override ruleset input.
+
+        Args:
+            ruleset:
+                Optional incoming override ruleset.
+            default_name:
+                Ruleset name used when a default ruleset must be created.
+
+        Returns:
+            FrameACLRuleSet: Existing or newly created ruleset.
+        """
         if ruleset is None:
             return FrameACLRuleSet(default_name)
         if not isinstance(ruleset, FrameACLRuleSet):

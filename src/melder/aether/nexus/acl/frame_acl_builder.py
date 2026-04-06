@@ -12,6 +12,7 @@ from melder.aether.nexus.acl.frame_acl_view_configuration import (
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.interfaces.interfaces import IFrameACLContainer
 
 
 class FrameACLBuilder(Cleanable):
@@ -27,10 +28,8 @@ class FrameACLBuilder(Cleanable):
           from the current configuration.
         - Final installation and validation are delegated to the owning
           container.
-
-    Threading:
-        Uses one instance `threading.RLock` to serialize draft-session state
-        changes.
+        - Uses an instance lock because draft lifecycle transitions and cleanup
+          mutate multiple fields together in a nogil runtime.
 
     Lifecycle:
         Cleanup is idempotent and clears draft state plus the container
@@ -46,7 +45,7 @@ class FrameACLBuilder(Cleanable):
         "_draft_configuration",
     ]
 
-    def __init__(self, container: object) -> None:
+    def __init__(self, container: IFrameACLContainer) -> None:
         """
         Initialize one frame ACL builder for the owning container.
 
@@ -56,13 +55,17 @@ class FrameACLBuilder(Cleanable):
 
         Returns:
             None.
+
+        Raises:
+            TypeError:
+                If `container` is None.
         """
         super().__init__()
         if container is None:
             raise TypeError("container cannot be None.")
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._container = container
+        self._container: IFrameACLContainer = container
         self._change_active: bool = False
         self._draft_configuration: Optional[FrameACLConfiguration] = None
 
@@ -75,13 +78,16 @@ class FrameACLBuilder(Cleanable):
         """
         if self._cleaned:
             return
-        self._cleaned = True
-        if self._draft_configuration is not None:
-            self._draft_configuration.cleanup()
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            if self._draft_configuration is not None:
+                self._draft_configuration.cleanup()
+            self._draft_configuration = None
+            self._container = None
+            self._change_active = None
         self._lock = None
-        self._container = None
-        self._change_active = None
-        self._draft_configuration = None
 
     @property
     def change_active(self) -> bool:
@@ -101,6 +107,10 @@ class FrameACLBuilder(Cleanable):
 
         Returns:
             None.
+
+        Raises:
+            RuntimeError:
+                If another change session is already active.
         """
         self.check_cleaned()
         with self._lock:
@@ -128,6 +138,12 @@ class FrameACLBuilder(Cleanable):
 
         Returns:
             None.
+
+        Raises:
+            TypeError:
+                If `frame_acl_profile` is not a `FrameACLProfile`.
+            RuntimeError:
+                If no draft change session is active.
         """
         self.check_cleaned()
         if not isinstance(frame_acl_profile, FrameACLProfile):
@@ -165,6 +181,10 @@ class FrameACLBuilder(Cleanable):
 
         Returns:
             None.
+
+        Raises:
+            RuntimeError:
+                If no draft change session is active.
         """
         self.check_cleaned()
         with self._lock:
@@ -180,6 +200,10 @@ class FrameACLBuilder(Cleanable):
 
         Returns:
             FrameACLConfiguration: Newly installed configuration.
+
+        Raises:
+            RuntimeError:
+                If no draft change session is active.
         """
         self.check_cleaned()
         with self._lock:

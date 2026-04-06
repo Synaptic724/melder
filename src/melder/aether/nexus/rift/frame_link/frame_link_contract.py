@@ -1,24 +1,20 @@
 """
-Internal FrameLinkContract placeholder.
+Internal FrameLinkContract object.
 
 Purpose:
-    Represent the contract boundary applied to a frame-surface connection
-    without yet integrating it into the live `Nexus` / `Rift` update model.
-
-Responsibilities:
-    - Carry the current allowed kinds/commands/metadata for one frame-surface
-      connection.
-    - Stay lightweight and cleanup-safe while the HLD is still evolving.
-
-Endgame:
-    `FrameLinkContract` should eventually capture the effective policy contract
-    that shapes what a `FrameView` may perceive from Nexus-owned frame
-    representations.
+    Represent the effective contract boundary applied to one frame-surface
+    connection after ACL compilation and downstream projection shaping.
 """
 
 from typing import Dict, Optional, Sequence, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
+    CompiledFrameACLAccessSurface,
+)
+from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile import (
+    FrameLinkContractProfile,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -27,39 +23,20 @@ class FrameLinkContract(Cleanable):
     """
     Internal
 
-    Placeholder contract object for one frame-surface connection.
-
     Purpose:
-        Hold the minimum stable shape for future frame-surface contract data
-        without committing to the final ACL/update semantics yet.
+        Hold the effective consumer-facing contract for one frame-surface
+        connection.
 
     Contract:
-        - Owns only lightweight immutable-ish policy/config snapshots.
+        - Carries derived allowed kinds/commands plus lightweight metadata.
+        - Can be created directly or shaped from a compiled ACL access surface.
+        - Optional downstream contract profiles may further narrow the compiled
+          access output without redefining ACL truth.
         - Cleanup is idempotent and clears owned references.
 
     Lifecycle:
-        Placeholder only. Future ownership is expected to sit close to the
-        `Nexus`-owned frame-surface update path.
-
-    TODO(HLD):
-        This object still needs its final field contract, but the intended
-        direction is now clear enough to record here:
-
-        - This should carry the effective contract boundary for one
-          frame-surface connection.
-        - The contract should describe what a linked consumer is allowed to
-          perceive and which generic commands are available at the view layer.
-        - This object should not execute ACL logic itself. It should represent
-          the contract after Nexus/policy evaluation has already happened.
-        - The contract should stay separate from raw runtime object access.
-          Real object acquisition still belongs to the Rift/conduit bind path.
-        - This contract will likely shape:
-            * visible kinds
-            * command descriptors
-            * view density / projection posture
-            * later access flags or redaction posture
-        - This object should remain lightweight so it can be updated often if
-          lower truth churns quickly.
+        Intended to sit close to the Nexus-owned frame-surface update path as
+        the downstream consumer-facing contract object.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -105,6 +82,106 @@ class FrameLinkContract(Cleanable):
             tuple(allowed_commands) if allowed_commands else tuple()
         )
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
+
+    @classmethod
+    def from_compiled_access_surface(
+            cls,
+            compiled_access_surface: CompiledFrameACLAccessSurface,
+            *,
+            contract_profile: Optional[FrameLinkContractProfile] = None,
+    ) -> "FrameLinkContract":
+        """
+        Build one frame-link contract from compiled ACL access output.
+
+        Args:
+            compiled_access_surface:
+                Derived compiled ACL access surface.
+            contract_profile:
+                Optional downstream contract profile used to narrow the final
+                projection.
+
+        Returns:
+            FrameLinkContract: Effective downstream frame-link contract.
+        """
+        if not isinstance(compiled_access_surface, CompiledFrameACLAccessSurface):
+            raise TypeError(
+                "compiled_access_surface must be a CompiledFrameACLAccessSurface."
+            )
+        if (
+                contract_profile is not None
+                and not isinstance(contract_profile, FrameLinkContractProfile)
+        ):
+            raise TypeError(
+                "contract_profile must be a FrameLinkContractProfile."
+            )
+
+        allowed_kinds = set(compiled_access_surface.allowed_kinds)
+        allowed_commands = set(compiled_access_surface.allowed_commands)
+        metadata = compiled_access_surface.metadata
+
+        if contract_profile is not None:
+            view_profile = contract_profile.view_profile
+            codegen_profile = contract_profile.codegen_profile
+            if len(view_profile.allowed_kinds) > 0:
+                allowed_kinds = allowed_kinds.intersection(
+                    set(view_profile.allowed_kinds)
+                )
+            if len(codegen_profile.allowed_commands) > 0:
+                allowed_commands = allowed_commands.intersection(
+                    set(codegen_profile.allowed_commands)
+                )
+            metadata.update({
+                "frame_link_profile_name": contract_profile.name,
+                "frame_link_profile_version": contract_profile.version,
+                "frame_link_view_profile_name": view_profile.name,
+                "frame_link_view_profile_version": view_profile.version,
+                "frame_link_codegen_profile_name": codegen_profile.name,
+                "frame_link_codegen_profile_version": codegen_profile.version,
+                "frame_payload_fields": tuple(
+                    field_name
+                    for field_name in compiled_access_surface.frame_payload_fields
+                    if "frame" in allowed_kinds
+                    and (
+                        len(view_profile.frame_payload_fields) == 0
+                        or field_name in view_profile.frame_payload_fields
+                    )
+                ),
+                "conduit_payload_sections_by_id": {
+                    conduit_id: tuple(
+                        section_name
+                        for section_name in sections
+                        if "conduit" in allowed_kinds
+                        and (
+                            len(view_profile.conduit_payload_sections) == 0
+                            or section_name in view_profile.conduit_payload_sections
+                        )
+                    )
+                    for conduit_id, sections in (
+                        compiled_access_surface.conduit_payload_sections_by_id.items()
+                    )
+                },
+                "spell_payload_sections_by_key": {
+                    record_key: tuple(
+                        section_name
+                        for section_name in sections
+                        if "spell" in allowed_kinds
+                        and (
+                            len(view_profile.spell_payload_sections) == 0
+                            or section_name in view_profile.spell_payload_sections
+                        )
+                    )
+                    for record_key, sections in (
+                        compiled_access_surface.spell_payload_sections_by_key.items()
+                    )
+                },
+            })
+
+        return cls(
+            frame_name=compiled_access_surface.frame_name,
+            allowed_kinds=tuple(sorted(allowed_kinds)),
+            allowed_commands=tuple(sorted(allowed_commands)),
+            metadata=metadata,
+        )
 
     @property
     def contract_id(self) -> str:
