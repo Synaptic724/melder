@@ -282,6 +282,83 @@ def test_nexus_create_frame_viewer_populates_frame_view_cache_for_each_frame() -
     assert len(nexus._projected_frame_views_by_cache_key) == 2
 
 
+def test_nexus_create_cached_frame_viewer_reuses_cache_but_returns_detached_clone() -> None:
+    """
+    Verify cached viewer projection reuses one canonical cache entry but
+    returns detached clones.
+
+    Returns:
+        None.
+    """
+    nexus = Nexus(aether=Aether())
+    _populate_descriptor(nexus, "ops")
+
+    first_viewer = nexus.create_cached_frame_viewer(["ops"])
+    second_viewer = nexus.create_cached_frame_viewer(["ops"])
+
+    assert first_viewer is not second_viewer
+    assert first_viewer.metadata == second_viewer.metadata
+    assert len(nexus._projected_frame_viewers_by_cache_key) == 1
+
+
+def test_nexus_create_cached_frame_viewer_separates_contract_profile_names() -> None:
+    """
+    Verify downstream contract-profile names produce separate viewer cache entries.
+
+    Returns:
+        None.
+    """
+    nexus = Nexus(aether=Aether())
+    _populate_descriptor(nexus, "ops")
+
+    nexus.create_cached_frame_viewer(["ops"])
+    nexus.create_cached_frame_viewer(["ops"], contract_profile_name="safe")
+
+    assert len(nexus._projected_frame_viewers_by_cache_key) == 2
+
+
+def test_nexus_cached_frame_viewer_invalidates_on_acl_change() -> None:
+    """
+    Verify viewer cache invalidates when the current ACL configuration changes.
+
+    Returns:
+        None.
+    """
+    nexus = Nexus(aether=Aether())
+    _populate_descriptor(nexus, "ops")
+    nexus.create_cached_frame_viewer(["ops"])
+    original = nexus.get_current_frame_acl_configuration("ops")
+    draft = nexus.create_new_from_acl_configuration(
+        "ops",
+        original.configuration_id,
+        reason="viewer_cache_invalidation",
+    )
+    draft.set_json_configuration_string(
+        '{"frame_name":"ops","view_configuration":{"profile_name":"hybrid","profile_version":"0.0.1","minimum_spell_payload_profile_name":"detailed","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"member_override_ruleset":{"name":"member_override","rules":[]}},"codegen_configuration":{"profile_name":"safe","profile_version":"0.0.1","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"capability_override_ruleset":{"name":"capability_override","rules":[]}}}'
+    )
+    draft.finalize()
+
+    nexus.insert_head_frame_acl_configuration("ops", draft, select_as_current=True)
+
+    assert nexus._projected_frame_viewers_by_cache_key == {}
+
+
+def test_nexus_create_cached_frame_viewer_rejects_invalid_frame_name_inputs() -> None:
+    """
+    Verify cached viewer projection rejects invalid frame-name inputs.
+
+    Returns:
+        None.
+    """
+    nexus = Nexus(aether=Aether())
+
+    with pytest.raises(TypeError, match="frame_names must be a sequence"):
+        nexus.create_cached_frame_viewer("ops")
+
+    with pytest.raises(ValueError, match="frame_names must contain non-empty strings"):
+        nexus.create_cached_frame_viewer(["ops", ""])
+
+
 def test_nexus_create_frame_viewer_rejects_string_sequence_input() -> None:
     """
     Verify Nexus viewer projection rejects bare string inputs.

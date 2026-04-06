@@ -94,6 +94,7 @@ class Nexus(Cleanable, INexus):
         "_frame_acl_manager",
         "_frame_descriptor_manager",
         "_projected_frame_views_by_cache_key",
+        "_projected_frame_viewers_by_cache_key",
         "_target_frame_ref_counts",
     ]
 
@@ -189,6 +190,10 @@ class Nexus(Cleanable, INexus):
             Tuple[str, str, str],
             FrameView,
         ] = {}
+        self._projected_frame_viewers_by_cache_key: Dict[
+            Tuple[Tuple[str, ...], Tuple[str, ...], str],
+            FrameViewer,
+        ] = {}
         self._target_frame_ref_counts: Dict[str, int] = {}
 
         self._frame_descriptor_manager: FrameDescriptorManager = FrameDescriptorManager(aether)
@@ -238,6 +243,8 @@ class Nexus(Cleanable, INexus):
                 self._frame_descriptor_manager.cleanup()
             for projected_frame_view in self._projected_frame_views_by_cache_key.values():
                 projected_frame_view.cleanup()
+            for projected_frame_viewer in self._projected_frame_viewers_by_cache_key.values():
+                projected_frame_viewer.cleanup()
             self._configuration = None
             self._configured = None
             self._enabled = None
@@ -249,6 +256,7 @@ class Nexus(Cleanable, INexus):
             self._rift_profiles_by_name.clear()
             self._target_frame_ref_counts.clear()
             self._projected_frame_views_by_cache_key.clear()
+            self._projected_frame_viewers_by_cache_key.clear()
             self._rifts_by_id = None
             self._rift_ids_by_name = None
             self._next_default_rift_number = None
@@ -257,6 +265,7 @@ class Nexus(Cleanable, INexus):
             self._frame_acl_manager = None
             self._frame_descriptor_manager = None
             self._projected_frame_views_by_cache_key = None
+            self._projected_frame_viewers_by_cache_key = None
             self._target_frame_ref_counts = None
             self._id = None
         if self._logger is not None:
@@ -873,6 +882,7 @@ class Nexus(Cleanable, INexus):
         if self._frame_descriptor_manager._has_frame_descriptor(spellbook._aetheric_frame):
             self._ensure_frame_acl_container(spellbook._aetheric_frame)
             self._invalidate_projected_frame_views(spellbook._aetheric_frame)
+            self._invalidate_projected_frame_viewers(spellbook._aetheric_frame)
         return published
 
     def _publish_conduit_record(self, conduit: Any) -> bool:
@@ -894,6 +904,7 @@ class Nexus(Cleanable, INexus):
         if self._frame_descriptor_manager._has_frame_descriptor(conduit._aetheric_frame):
             self._ensure_frame_acl_container(conduit._aetheric_frame)
             self._invalidate_projected_frame_views(conduit._aetheric_frame)
+            self._invalidate_projected_frame_viewers(conduit._aetheric_frame)
         return published
 
     def _remove_conduit_record(
@@ -923,6 +934,7 @@ class Nexus(Cleanable, INexus):
         if self._frame_descriptor_manager._has_frame_descriptor(frame_name):
             self._ensure_frame_acl_container(frame_name)
             self._invalidate_projected_frame_views(frame_name)
+            self._invalidate_projected_frame_viewers(frame_name)
         return removed
 
     def _publish_spell_record(
@@ -956,6 +968,7 @@ class Nexus(Cleanable, INexus):
         if self._frame_descriptor_manager._has_frame_descriptor(spellbook._aetheric_frame):
             self._ensure_frame_acl_container(spellbook._aetheric_frame)
             self._invalidate_projected_frame_views(spellbook._aetheric_frame)
+            self._invalidate_projected_frame_viewers(spellbook._aetheric_frame)
         return published
 
     def _remove_spell_record(
@@ -989,6 +1002,7 @@ class Nexus(Cleanable, INexus):
         if self._frame_descriptor_manager._has_frame_descriptor(frame_name):
             self._ensure_frame_acl_container(frame_name)
             self._invalidate_projected_frame_views(frame_name)
+            self._invalidate_projected_frame_viewers(frame_name)
         return removed
 
     def list_rift_ids(self) -> list[str]:
@@ -1281,6 +1295,7 @@ class Nexus(Cleanable, INexus):
             select_as_current=select_as_current,
         )
         self._invalidate_projected_frame_views(frame_name)
+        self._invalidate_projected_frame_viewers(frame_name)
         return inserted_configuration
 
     def select_current_frame_acl_configuration(
@@ -1312,6 +1327,7 @@ class Nexus(Cleanable, INexus):
             configuration_id,
         )
         self._invalidate_projected_frame_views(frame_name)
+        self._invalidate_projected_frame_viewers(frame_name)
         return selected_configuration
 
     def rollback_frame_acl_configuration(
@@ -1343,6 +1359,7 @@ class Nexus(Cleanable, INexus):
             configuration_id,
         )
         self._invalidate_projected_frame_views(frame_name)
+        self._invalidate_projected_frame_viewers(frame_name)
         return rolled_back_configuration
 
     def create_new_from_acl_configuration(
@@ -1506,6 +1523,71 @@ class Nexus(Cleanable, INexus):
             },
         )
 
+    def create_cached_frame_viewer(
+            self,
+            frame_names: Sequence[str],
+            *,
+            contract_profile_name: Optional[str] = None,
+    ) -> FrameViewer:
+        """
+        Build or reuse one cached projected `FrameViewer`.
+
+        Purpose:
+            Avoid rebuilding the same projected multi-frame viewer when the
+            underlying frame-view cache inputs have not changed.
+
+        Args:
+            frame_names:
+                Frame names to project into the viewer.
+            contract_profile_name:
+                Optional downstream contract profile name.
+
+        Returns:
+            FrameViewer: Detached projected frame viewer.
+        """
+        self.check_cleaned()
+        if isinstance(frame_names, str) or not isinstance(frame_names, Sequence):
+            raise TypeError("frame_names must be a sequence.")
+        normalized_frame_names: List[str] = []
+        frame_configuration_ids: List[str] = []
+        for frame_name in frame_names:
+            if not isinstance(frame_name, str) or not frame_name:
+                raise ValueError("frame_names must contain non-empty strings.")
+            normalized_frame_names.append(frame_name)
+            frame_configuration_ids.append(
+                self.get_current_frame_acl_configuration(frame_name).configuration_id
+            )
+        cache_key = self._make_projected_frame_viewer_cache_key(
+            tuple(sorted(normalized_frame_names)),
+            tuple(
+                configuration_id
+                for _, configuration_id in sorted(
+                    zip(normalized_frame_names, frame_configuration_ids)
+                )
+            ),
+            contract_profile_name,
+        )
+        with self._lock:
+            cached_frame_viewer = self._projected_frame_viewers_by_cache_key.get(
+                cache_key
+            )
+        if cached_frame_viewer is not None:
+            return cached_frame_viewer.clone()
+        projected_frame_viewer = self.create_frame_viewer(
+            normalized_frame_names,
+            contract_profile_name=contract_profile_name,
+        )
+        with self._lock:
+            existing_frame_viewer = self._projected_frame_viewers_by_cache_key.get(
+                cache_key
+            )
+            if existing_frame_viewer is not None:
+                existing_frame_viewer.cleanup()
+            self._projected_frame_viewers_by_cache_key[cache_key] = (
+                projected_frame_viewer
+            )
+        return projected_frame_viewer.clone()
+
     @staticmethod
     def _make_projected_frame_view_cache_key(
             frame_name: str,
@@ -1529,6 +1611,33 @@ class Nexus(Cleanable, INexus):
         return (
             frame_name,
             configuration_id,
+            contract_profile_name or "",
+        )
+
+    @staticmethod
+    def _make_projected_frame_viewer_cache_key(
+            frame_names: Tuple[str, ...],
+            configuration_ids: Tuple[str, ...],
+            contract_profile_name: Optional[str],
+    ) -> Tuple[Tuple[str, ...], Tuple[str, ...], str]:
+        """
+        Build the stable cache key for one projected frame viewer.
+
+        Args:
+            frame_names:
+                Sorted projected frame names.
+            configuration_ids:
+                Sorted current ACL configuration ids aligned to `frame_names`.
+            contract_profile_name:
+                Optional downstream contract profile name.
+
+        Returns:
+            Tuple[Tuple[str, ...], Tuple[str, ...], str]:
+                Stable projected-viewer cache key.
+        """
+        return (
+            frame_names,
+            configuration_ids,
             contract_profile_name or "",
         )
 
@@ -1560,6 +1669,35 @@ class Nexus(Cleanable, INexus):
                 )
                 if projected_frame_view is not None:
                     projected_frame_view.cleanup()
+
+    def _invalidate_projected_frame_viewers(
+            self,
+            frame_name: Optional[str] = None,
+    ) -> None:
+        """
+        Invalidate cached projected frame viewers.
+
+        Args:
+            frame_name:
+                Optional single-frame scope. When omitted, every cached viewer
+                is invalidated.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            cache_keys_to_remove: List[Tuple[Tuple[str, ...], Tuple[str, ...], str]] = []
+            for cache_key in self._projected_frame_viewers_by_cache_key.keys():
+                if frame_name is None or frame_name in cache_key[0]:
+                    cache_keys_to_remove.append(cache_key)
+            for cache_key in cache_keys_to_remove:
+                projected_frame_viewer = self._projected_frame_viewers_by_cache_key.pop(
+                    cache_key,
+                    None,
+                )
+                if projected_frame_viewer is not None:
+                    projected_frame_viewer.cleanup()
 
     def get_nexus_frame_for_rift(
             self,

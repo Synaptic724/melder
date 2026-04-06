@@ -629,3 +629,34 @@ def test_frame_viewer_cleanup_cascades_into_owned_views_and_links() -> None:
     assert view.cleaned is True
     assert link.cleaned is True
     assert viewer._views_by_frame_name is None
+
+
+def test_frame_viewer_clone_returns_detached_views_and_metadata() -> None:
+    """
+    Verify viewer clones detach the projected views and metadata map.
+
+    Returns:
+        None.
+    """
+    viewer = FrameViewer(
+        views_by_frame_name={
+            "ops": _build_view(
+                frame_name="ops",
+                links=[
+                    _build_link(
+                        frame_name="ops",
+                        source_kind="frame",
+                        source_id="frame-1",
+                        display_name="ops",
+                    )
+                ],
+            )
+        },
+        metadata={"source": "viewer"},
+    )
+
+    cloned = viewer.clone()
+
+    assert cloned is not viewer
+    assert cloned.metadata == {"source": "viewer"}
+    assert cloned.get_view("ops") is not viewer.get_view("ops")

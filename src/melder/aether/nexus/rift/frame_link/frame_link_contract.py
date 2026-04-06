@@ -118,6 +118,23 @@ class FrameLinkContract(Cleanable):
         allowed_kinds = set(compiled_access_surface.allowed_kinds)
         allowed_commands = set(compiled_access_surface.allowed_commands)
         metadata = compiled_access_surface.metadata
+        metadata.update({
+            "frame_payload_fields": tuple(
+                compiled_access_surface.frame_payload_fields
+            ),
+            "conduit_payload_sections_by_id": {
+                conduit_id: tuple(sections)
+                for conduit_id, sections in (
+                    compiled_access_surface.conduit_payload_sections_by_id.items()
+                )
+            },
+            "spell_payload_sections_by_key": {
+                record_key: tuple(sections)
+                for record_key, sections in (
+                    compiled_access_surface.spell_payload_sections_by_key.items()
+                )
+            },
+        })
 
         if contract_profile is not None:
             view_profile = contract_profile.view_profile
@@ -211,7 +228,128 @@ class FrameLinkContract(Cleanable):
     def metadata(self) -> Dict[str, object]:
         """Return the contract metadata map."""
         self.check_cleaned()
-        return self._metadata
+        return dict(self._metadata)
+
+    def allows_kind(self, source_kind: str) -> bool:
+        """
+        Internal
+
+        Return whether the contract allows one source kind.
+
+        Args:
+            source_kind:
+                Source kind to inspect.
+
+        Returns:
+            bool: True when the source kind is allowed.
+        """
+        self.check_cleaned()
+        if not source_kind:
+            raise ValueError("source_kind cannot be empty.")
+        return source_kind in self._allowed_kinds
+
+    def allows_command(self, command_name: str) -> bool:
+        """
+        Internal
+
+        Return whether the contract allows one command.
+
+        Args:
+            command_name:
+                Command name to inspect.
+
+        Returns:
+            bool: True when the command is allowed.
+        """
+        self.check_cleaned()
+        if not command_name:
+            raise ValueError("command_name cannot be empty.")
+        return command_name in self._allowed_commands
+
+    def get_frame_payload_fields(self) -> Tuple[str, ...]:
+        """
+        Internal
+
+        Return the effective visible frame payload fields.
+
+        Returns:
+            Tuple[str, ...]: Visible frame payload fields.
+        """
+        self.check_cleaned()
+        fields = self._metadata.get("frame_payload_fields", tuple())
+        return tuple(fields)
+
+    def get_conduit_payload_sections(
+            self,
+            conduit_id: str,
+    ) -> Tuple[str, ...]:
+        """
+        Internal
+
+        Return the effective visible conduit payload sections for one conduit.
+
+        Args:
+            conduit_id:
+                Conduit id to inspect.
+
+        Returns:
+            Tuple[str, ...]: Visible conduit payload sections.
+        """
+        self.check_cleaned()
+        if not conduit_id:
+            raise ValueError("conduit_id cannot be empty.")
+        sections_by_id = self._metadata.get("conduit_payload_sections_by_id", {})
+        return tuple(sections_by_id.get(conduit_id, tuple()))
+
+    def get_spell_payload_sections(
+            self,
+            record_key: Tuple[str, str],
+    ) -> Tuple[str, ...]:
+        """
+        Internal
+
+        Return the effective visible spell payload sections for one spell key.
+
+        Args:
+            record_key:
+                Spell record key to inspect.
+
+        Returns:
+            Tuple[str, ...]: Visible spell payload sections.
+        """
+        self.check_cleaned()
+        if (
+                not isinstance(record_key, tuple)
+                or len(record_key) != 2
+                or not record_key[0]
+                or not record_key[1]
+        ):
+            raise ValueError("record_key must be a non-empty 2-item tuple.")
+        sections_by_key = self._metadata.get("spell_payload_sections_by_key", {})
+        return tuple(sections_by_key.get(record_key, tuple()))
+
+    def describe(self) -> Dict[str, object]:
+        """
+        Internal
+
+        Return one detached summary of the effective contract.
+
+        Returns:
+            Dict[str, object]: Detached contract summary.
+        """
+        self.check_cleaned()
+        return {
+            "frame_name": self._frame_name,
+            "allowed_kinds": self._allowed_kinds,
+            "allowed_commands": self._allowed_commands,
+            "frame_payload_fields": self.get_frame_payload_fields(),
+            "conduit_count": len(
+                self._metadata.get("conduit_payload_sections_by_id", {})
+            ),
+            "spell_count": len(
+                self._metadata.get("spell_payload_sections_by_key", {})
+            ),
+        }
 
     def cleanup(self) -> None:
         """

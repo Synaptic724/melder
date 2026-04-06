@@ -451,3 +451,26 @@ class FrameViewer(Cleanable):
                 frame_name,
             )
         )
+
+    def clone(self) -> "FrameViewer":
+        """
+        Internal
+
+        Return a detached copy of the viewer and its projected views.
+
+        Purpose:
+            Support safe cached viewer returns where Nexus keeps one canonical
+            projected viewer but callers receive cleanup-safe copies.
+
+        Returns:
+            FrameViewer: Detached viewer copy.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return FrameViewer(
+                views_by_frame_name={
+                    frame_name: frame_view.clone()
+                    for frame_name, frame_view in self._views_by_frame_name.items()
+                },
+                metadata=dict(self._metadata),
+            )
