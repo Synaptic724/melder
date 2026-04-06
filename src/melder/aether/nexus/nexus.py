@@ -22,14 +22,7 @@ from melder.aether.nexus.configuration.nexus_frame_mode import (
     NexusFrameMode,
 )
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
-from melder.aether.nexus.rift.frame_viewer.frame_view import FrameView
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
-from melder.aether.nexus.rift.frame_viewer.profiles.frame_view_profile import (
-    FrameViewProfile,
-)
-from melder.aether.nexus.rift.frame_viewer.profiles.frame_view_profile_builder import (
-    FrameViewProfileBuilder,
-)
 from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile import (
     FrameViewerProfile,
 )
@@ -102,7 +95,6 @@ class Nexus(Cleanable, INexus):
         "_rift_profiles_by_name",
         "_frame_acl_manager",
         "_frame_descriptor_manager",
-        "_projected_frame_views_by_cache_key",
         "_projected_frame_viewers_by_cache_key",
         "_target_frame_ref_counts",
     ]
@@ -195,10 +187,6 @@ class Nexus(Cleanable, INexus):
         self._frame_acl_manager: Optional[FrameACLManager] = None
         self._frame_descriptor_manager: Optional[FrameDescriptorManager] = None
         self._frame_acl_manager: FrameACLManager = FrameACLManager()
-        self._projected_frame_views_by_cache_key: Dict[
-            Tuple[str, str, str],
-            FrameView,
-        ] = {}
         self._projected_frame_viewers_by_cache_key: Dict[
             Tuple[Tuple[str, ...], Tuple[str, ...], str],
             FrameViewer,
@@ -250,8 +238,6 @@ class Nexus(Cleanable, INexus):
                 self._frame_acl_manager.cleanup()
             if self._frame_descriptor_manager is not None:
                 self._frame_descriptor_manager.cleanup()
-            for projected_frame_view in self._projected_frame_views_by_cache_key.values():
-                projected_frame_view.cleanup()
             for projected_frame_viewer in self._projected_frame_viewers_by_cache_key.values():
                 projected_frame_viewer.cleanup()
             self._configuration = None
@@ -264,7 +250,6 @@ class Nexus(Cleanable, INexus):
             self._next_indexed_nexus_frame_number = None
             self._rift_profiles_by_name.clear()
             self._target_frame_ref_counts.clear()
-            self._projected_frame_views_by_cache_key.clear()
             self._projected_frame_viewers_by_cache_key.clear()
             self._rifts_by_id = None
             self._rift_ids_by_name = None
@@ -273,7 +258,6 @@ class Nexus(Cleanable, INexus):
             self._rift_profiles_by_name = None
             self._frame_acl_manager = None
             self._frame_descriptor_manager = None
-            self._projected_frame_views_by_cache_key = None
             self._projected_frame_viewers_by_cache_key = None
             self._target_frame_ref_counts = None
             self._id = None
@@ -942,7 +926,6 @@ class Nexus(Cleanable, INexus):
         published = self._frame_descriptor_manager._publish_frame_record(spellbook)
         if self._frame_descriptor_manager._has_frame_descriptor(spellbook._aetheric_frame):
             self._ensure_frame_acl_container(spellbook._aetheric_frame)
-            self._invalidate_projected_frame_views(spellbook._aetheric_frame)
             self._invalidate_projected_frame_viewers(spellbook._aetheric_frame)
         return published
 
@@ -964,7 +947,6 @@ class Nexus(Cleanable, INexus):
         published = self._frame_descriptor_manager._publish_conduit_record(conduit)
         if self._frame_descriptor_manager._has_frame_descriptor(conduit._aetheric_frame):
             self._ensure_frame_acl_container(conduit._aetheric_frame)
-            self._invalidate_projected_frame_views(conduit._aetheric_frame)
             self._invalidate_projected_frame_viewers(conduit._aetheric_frame)
         return published
 
@@ -994,7 +976,6 @@ class Nexus(Cleanable, INexus):
         )
         if self._frame_descriptor_manager._has_frame_descriptor(frame_name):
             self._ensure_frame_acl_container(frame_name)
-            self._invalidate_projected_frame_views(frame_name)
             self._invalidate_projected_frame_viewers(frame_name)
         return removed
 
@@ -1028,7 +1009,6 @@ class Nexus(Cleanable, INexus):
         )
         if self._frame_descriptor_manager._has_frame_descriptor(spellbook._aetheric_frame):
             self._ensure_frame_acl_container(spellbook._aetheric_frame)
-            self._invalidate_projected_frame_views(spellbook._aetheric_frame)
             self._invalidate_projected_frame_viewers(spellbook._aetheric_frame)
         return published
 
@@ -1062,7 +1042,6 @@ class Nexus(Cleanable, INexus):
         )
         if self._frame_descriptor_manager._has_frame_descriptor(frame_name):
             self._ensure_frame_acl_container(frame_name)
-            self._invalidate_projected_frame_views(frame_name)
             self._invalidate_projected_frame_viewers(frame_name)
         return removed
 
@@ -1375,7 +1354,6 @@ class Nexus(Cleanable, INexus):
             configuration,
             select_as_current=select_as_current,
         )
-        self._invalidate_projected_frame_views(frame_name)
         self._invalidate_projected_frame_viewers(frame_name)
         return inserted_configuration
 
@@ -1407,7 +1385,6 @@ class Nexus(Cleanable, INexus):
             frame_name,
             configuration_id,
         )
-        self._invalidate_projected_frame_views(frame_name)
         self._invalidate_projected_frame_viewers(frame_name)
         return selected_configuration
 
@@ -1439,7 +1416,6 @@ class Nexus(Cleanable, INexus):
             frame_name,
             configuration_id,
         )
-        self._invalidate_projected_frame_views(frame_name)
         self._invalidate_projected_frame_viewers(frame_name)
         return rolled_back_configuration
 
@@ -1476,88 +1452,6 @@ class Nexus(Cleanable, INexus):
             configuration_id,
             reason=reason,
         )
-
-    def create_frame_view(
-            self,
-            frame_name: str,
-            *,
-            view_profile_name: str = "general",
-    ) -> FrameView:
-        """
-        Build one projected `FrameView` from Nexus descriptor and ACL truth.
-
-        Purpose:
-            Provide a thin Nexus facade that projects the current descriptor
-            state plus current ACL configuration into one consumer-facing
-            `FrameView`.
-
-        Contract:
-            - Requires an existing frame descriptor.
-            - Compiles the current frame ACL configuration on demand.
-            - Optionally narrows the projection through one downstream
-              frame-link contract profile.
-            - Returns a detached derived view and does not cache it.
-
-        Args:
-            frame_name:
-                Frame name to project.
-            view_profile_name:
-                View profile name used to shape defaults on the projected view.
-
-        Returns:
-            FrameView:
-                Derived projected frame view.
-        """
-        self.check_cleaned()
-        descriptor = self._get_required_frame_descriptor(frame_name)
-        configuration = self.get_current_frame_acl_configuration(frame_name)
-        self._frame_acl_manager._validate_frame_acl_configuration_against_descriptor(
-            frame_name,
-            configuration,
-            descriptor,
-        )
-        cache_key = self._make_projected_frame_view_cache_key(
-            frame_name,
-            configuration.configuration_id,
-            view_profile_name,
-        )
-        with self._lock:
-            cached_frame_view = self._projected_frame_views_by_cache_key.get(
-                cache_key
-            )
-        if cached_frame_view is not None:
-            return cached_frame_view.clone()
-        compiler = FrameACLCompiler(self._frame_acl_manager.frame_acl_profile_builder)
-        view_profile_builder: Optional[FrameViewProfileBuilder] = None
-        view_profile: Optional[FrameViewProfile] = None
-        try:
-            compiled_access_surface = compiler.compile_frame_access_surface(
-                descriptor,
-                configuration,
-            )
-            view_profile_builder = FrameViewProfileBuilder()
-            view_profile = view_profile_builder.get_required_profile(
-                view_profile_name
-            )
-            projected_frame_view = FrameView.from_compiled_access_surface(
-                frame_descriptor=descriptor,
-                compiled_access_surface=compiled_access_surface,
-                view_profile=view_profile,
-            )
-            with self._lock:
-                existing_frame_view = self._projected_frame_views_by_cache_key.get(
-                    cache_key
-                )
-                if existing_frame_view is not None:
-                    existing_frame_view.cleanup()
-                self._projected_frame_views_by_cache_key[cache_key] = (
-                    projected_frame_view
-                )
-            return projected_frame_view.clone()
-        finally:
-            if view_profile_builder is not None:
-                view_profile_builder.cleanup()
-            compiler.cleanup()
 
     def create_frame_viewer(
             self,
@@ -1845,32 +1739,6 @@ class Nexus(Cleanable, INexus):
         )
 
     @staticmethod
-    def _make_projected_frame_view_cache_key(
-            frame_name: str,
-            configuration_id: str,
-            view_profile_name: str,
-    ) -> Tuple[str, str, str]:
-        """
-        Build the stable cache key for one projected frame view.
-
-        Args:
-            frame_name:
-                Projected frame name.
-            configuration_id:
-                Current ACL configuration id.
-            view_profile_name:
-                Applied view profile name.
-
-        Returns:
-            Tuple[str, str, str]: Stable projected-view cache key.
-        """
-        return (
-            "{0}:{1}".format(frame_name, view_profile_name),
-            configuration_id,
-            view_profile_name,
-        )
-
-    @staticmethod
     def _make_projected_frame_viewer_cache_key(
             frame_names: Tuple[str, ...],
             configuration_ids: Tuple[str, ...],
@@ -1902,38 +1770,6 @@ class Nexus(Cleanable, INexus):
             configuration_ids,
             "{0}:{1}".format(view_profile_name, viewer_profile_name),
         )
-
-    def _invalidate_projected_frame_views(
-            self,
-            frame_name: Optional[str] = None,
-    ) -> None:
-        """
-        Invalidate cached projected frame views.
-
-        Args:
-            frame_name:
-                Optional single-frame scope. When omitted, every cached frame
-                view is invalidated.
-
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        with self._lock:
-            cache_keys_to_remove: List[Tuple[str, str, str]] = []
-            for cache_key in self._projected_frame_views_by_cache_key.keys():
-                if (
-                        frame_name is None
-                        or cache_key[0].split(":", 1)[0] == frame_name
-                ):
-                    cache_keys_to_remove.append(cache_key)
-            for cache_key in cache_keys_to_remove:
-                projected_frame_view = self._projected_frame_views_by_cache_key.pop(
-                    cache_key,
-                    None,
-                )
-                if projected_frame_view is not None:
-                    projected_frame_view.cleanup()
 
     def _invalidate_projected_frame_viewers(
             self,
@@ -2170,7 +2006,6 @@ class Nexus(Cleanable, INexus):
             acl_container_removed = self._frame_acl_manager._remove_frame_acl_container(
                 frame_name
             )
-            self._invalidate_projected_frame_views(frame_name)
             if nexus_frame_record is None:
                 if acl_container_removed:
                     self._logger.info(

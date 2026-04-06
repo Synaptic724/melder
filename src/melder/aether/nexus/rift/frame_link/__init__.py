@@ -11,5 +11,5 @@ Responsibilities:
 
 Endgame:
     This package will eventually hold the canonical link objects that connect
-    a `Rift`/`FrameView` to Nexus-owned frame-surface representations.
+    a `Rift`/`FrameViewer` to Nexus-owned frame-surface representations.
 """

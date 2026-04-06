@@ -7,7 +7,7 @@ from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.nexus.acl.frame_acl_compiler import FrameACLCompiler
 from melder.aether.nexus.nexus import Nexus
-from melder.aether.nexus.rift.frame_viewer.frame_view import FrameView
+from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
@@ -217,9 +217,9 @@ def test_integration_runtime_acl_commit_changes_compiled_command_surface() -> No
         conduit.cleanup()
 
 
-def test_integration_runtime_compiled_surface_projects_directly_into_frame_view() -> None:
+def test_integration_runtime_compiled_surface_projects_directly_into_frame_viewer() -> None:
     """
-    Verify runtime compiled ACL output projects directly into a frame view.
+    Verify runtime compiled ACL output projects directly into a descriptor-driven viewer.
 
     Returns:
         None.
@@ -242,12 +242,13 @@ def test_integration_runtime_compiled_surface_projects_directly_into_frame_view(
             nexus.get_current_frame_acl_configuration("ops"),
         )
 
-        frame_view = FrameView.from_compiled_access_surface(
-            frame_descriptor=descriptor,
-            compiled_access_surface=compiled_surface,
+        viewer = FrameViewer(
+            frame_descriptors_by_name={"ops": descriptor},
+            compiled_access_surfaces_by_frame_name={"ops": compiled_surface},
+            default_view_frame_name="ops",
         )
 
-        assert frame_view.metadata["available_target_count"] >= 1
-        assert "frame" in {link.source_kind for link in frame_view.links_by_id.values()}
+        assert len(viewer.list_available_targets()) >= 1
+        assert "frame" in {link.source_kind for link in viewer.list_links()}
     finally:
         conduit.cleanup()

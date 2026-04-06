@@ -25,7 +25,7 @@ class FrameLink(Cleanable):
         - Cleanup is idempotent and clears owned references.
 
     Lifecycle:
-        Owned by `FrameView` as part of the available-target surface for one
+        Built by `FrameViewer` as part of the available-target surface for one
         assigned frame.
     """
 

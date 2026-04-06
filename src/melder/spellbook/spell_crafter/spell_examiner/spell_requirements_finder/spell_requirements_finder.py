@@ -27,39 +27,45 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class SpellRequirementsFinder(Cleanable):
     """
-    Phase 1 **requirements extractor** for a single :class:`Spell`.
+    Build the Phase 1 requirement artifact for one bound :class:`Spell`.
 
-    High-level role
+    This finder is the boundary between raw Python callable inspection and the
+    later SpellCrafter phases that plan or resolve dependencies. Its job is to
+    examine the spell's callable surface, decide which parameters look like DI
+    sockets, and emit a :class:`SpellRequirements` artifact that downstream
+    planning code can trust without re-inspecting the original callable.
+
+    In practical terms, this object answers four questions for one spell:
+
+    * Which callable should Phase 1 inspect?
+    * Which parameters are plain Python arguments versus DI-managed sockets?
+    * Which sockets are optional, collection-based, or backed by explicit
+      contract objects?
+    * Which stable spell identity should later phase artifacts use?
+
+    Scope boundaries
     ----------------
-    This object is responsible for taking a bound :class:`Spell` and answering a
-    *single* question:
+    * Inspects signatures and annotations only.
+    * Does not query the Spellbook, walk dependency graphs, or resolve
+      providers.
+    * Copies spell identity and routing metadata into the result, but does not
+      interpret resolution policy beyond parameter classification.
 
-        **“According to this spell’s signature, what does it want from DI?”**
-
-    It does this by:
-
-    * Inspecting the spell’s **call target** (class, `__init__`, function, or method).
-    * Walking the `inspect.Signature` for the call target.
-    * Classifying each parameter into a :class:`SpellParameterRequirement`.
-    * Producing a :class:`SpellRequirements` artifact that later phases can consume.
-
-    Design constraints
-    ------------------
-    * **Per-spell**: one finder per spell per phase run.
-    * **Stateless-ish**: once :meth:`build_requirements` is called, you can discard
-      this object and keep only the :class:`SpellRequirements`.
-    * **No Spellbook access**: this finder does **not** perform lookups or DAG work.
-      It does not know about other spells, existence policies, or resolution.
+    Lifecycle
+    ---------
+    * Constructed for one spell and typically used for one Phase 1 pass.
+    * :meth:`build_requirements` caches the resulting
+      :class:`SpellRequirements` object for repeat callers.
+    * After cleanup, the finder is unusable and releases both the spell
+      reference and any cached requirements artifact.
 
     Identity model
     --------------
-    The resulting :class:`SpellRequirements` is keyed by the spell’s *version ID*:
-
-        ``spell.spell_index.current``
-
-    That version string is stored as ``SpellRequirements.spell_id`` and is the
-    canonical identity for all Phase 1+ artifacts (requirements, symbolic graphs,
-    DAG nodes, etc.).
+    The emitted :class:`SpellRequirements` is keyed by
+    ``spell.spell_index.current``. That versioned spell identifier is the
+    canonical Phase 1 identity used by later planning artifacts, so this finder
+    intentionally anchors its output to the current spell version rather than
+    any legacy unversioned spell id.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -108,7 +114,7 @@ class SpellRequirementsFinder(Cleanable):
         Deterministically tear down this finder.
 
         Behavior:
-            * Idempotent – safe to call multiple times.
+            * Idempotent - safe to call multiple times.
             * If a :class:`SpellRequirements` instance is attached, it is cleaned up.
             * Internal references to the :class:`Spell` and requirements are nulled.
 
@@ -159,30 +165,36 @@ class SpellRequirementsFinder(Cleanable):
             cancel_event: Optional[CancellationEvent] = None,
     ) -> SpellRequirements:
         """
-        Execute **Phase 1** for this Spell and return the resulting
-        :class:`SpellRequirements`.
+        Run Phase 1 for the bound spell and return its requirement artifact.
 
-        Semantics
-        ---------
-        This method is **idempotent**:
+        This is the public entrypoint for the finder. On the first call it
+        chooses the spell's inspection target, classifies the visible
+        parameters, and builds a :class:`SpellRequirements` object that later
+        phases can consume without touching the original callable again. On
+        later calls it returns the cached artifact.
 
-        * On first call, it performs the full inspection and constructs a
-          :class:`SpellRequirements` instance.
-        * On subsequent calls, it returns the previously computed requirements
-          object.
+        Contract:
+            * Idempotent for a live finder instance.
+            * Preserves signature order in the emitted parameter list.
+            * Copies spell identity, spell type, existence mode, spellframe, and
+              binding name into the result.
+            * Uses ``spell.spell_index.current`` as the result's canonical
+              ``spell_id``.
 
-        Cancellation
-        ------------
-        If ``cancel_event`` is provided and is set at any point during processing,
-        the method aborts and delegates to ``cancel_event.throw_if_set()`` which
-        raises the shared :class:`OperationCancelledError`.
+        Special case:
+            Existing-creation spell variants intentionally yield an empty
+            parameter list. Those spells represent already-instantiated objects,
+            so Phase 1 should preserve identity metadata but must not invent
+            constructor requirements that no longer participate in DI.
+
+        Cancellation:
+            If ``cancel_event`` is provided and becomes set during processing,
+            this method delegates to ``cancel_event.throw_if_set()`` and aborts
+            without finishing a new artifact.
 
         Returns:
             SpellRequirements:
-                A freshly built or cached requirements object for the underlying
-                spell. The ``spell_id`` field is always the *versioned* identifier:
-
-                    ``spell.spell_index.current``
+                The cached or newly-built Phase 1 artifact for this spell.
         """
         self.check_cleaned()
 
@@ -193,7 +205,7 @@ class SpellRequirementsFinder(Cleanable):
 
         spell = self._spell
 
-        # Existing creation spells have **no constructor DI** – they represent
+        # Existing creation spells have **no constructor DI** - they represent
         # already-instantiated objects, so we only need to project identity +
         # existence. Constructor parameters are irrelevant to DI.
         if spell.spell_type in (
@@ -212,7 +224,7 @@ class SpellRequirementsFinder(Cleanable):
         # IMPORTANT:
         # Use the **SpellIndex.current** as the canonical identifier for all
         # phase artifacts. This decouples phase logic from any legacy `spell_id`
-        # storage and allows versioning of the spell’s structure.
+        # storage and allows versioning of the spell's structure.
         version_id: str = spell.spell_index.current
 
         requirements = SpellRequirements(
@@ -256,12 +268,12 @@ class SpellRequirementsFinder(Cleanable):
         Rules
         -----
         * Class spells
-            → The class object itself (``inspect.signature`` handles mapping to
+            -> The class object itself (``inspect.signature`` handles mapping to
               ``__init__`` internally).
         * Method / lambda spells
-            → The underlying callable stored on ``spell.spell``.
+            -> The underlying callable stored on ``spell.spell``.
         * Everything else
-            → Still returns ``spell.spell``; later phases can decide how to treat it.
+            -> Still returns ``spell.spell``; later phases can decide how to treat it.
 
         This method does **not** call or mutate the target.
 
@@ -360,24 +372,40 @@ class SpellRequirementsFinder(Cleanable):
             call_target: Any,
     ) -> Dict[str, Any]:
         """
-        Resolve parameter annotations for the given call target.
+        Normalize parameter annotations into classifier-friendly runtime values.
 
-        This performs a best-effort forward-reference evaluation using
-        ``inspect.get_annotations(eval_str=True)``. If evaluation fails,
-        it falls back to raw annotations and then normalizes any forward
-        reference tokens or string expressions it can resolve from the
-        available namespaces.
-        If no forward references or string annotations are present, this
-        returns the raw annotations without eval.
+        This helper is where Phase 1 bridges Python's flexible annotation model
+        into the smaller set of shapes that Melder's requirement classifier
+        understands. The goal is not perfect typing evaluation; the goal is to
+        turn obvious forward references and generic expressions into stable
+        objects when possible so the classifier can make truthful DI decisions.
+
+        Resolution strategy:
+            * For class targets, inspect ``__init__`` annotations because that
+              is the callable surface DI will satisfy.
+            * Prefer ``inspect.get_annotations(..., eval_str=True)`` so string
+              annotations and forward refs resolve through the target's module
+              and local namespace.
+            * Fall back to non-evaluated annotations when full evaluation fails.
+            * Run a final normalization pass so nested string or generic
+              fragments can still be simplified when partial resolution
+              succeeded.
+
+        Failure posture:
+            Annotation resolution is best-effort. This method intentionally does
+            not raise when annotation evaluation fails; unresolved values are
+            carried forward so classification can degrade conservatively instead
+            of breaking Phase 1.
 
         Args:
             call_target:
-                The class or callable whose signature annotations should
-                be resolved.
+                The class or callable whose parameter annotations should be
+                normalized for Phase 1.
 
         Returns:
             Dict[str, Any]:
-                Mapping of parameter name -> normalized annotation.
+                Mapping of parameter name to the best normalized annotation value
+                Phase 1 could derive for that parameter.
         """
         if call_target is None:
             return {}
@@ -888,34 +916,38 @@ class SpellRequirementsFinder(Cleanable):
             cancel_event: Optional[CancellationEvent],
     ) -> List[SpellParameterRequirement]:
         """
-        Inspect the call target's signature and build a list of
-        :class:`SpellParameterRequirement` instances.
+        Convert the inspected callable signature into ordered requirement records.
 
-        This is the **core** of Phase 1 for a single spell: it intersects raw
-        Python signatures with Melder's DI heuristics.
+        This is the core Phase 1 transformation for a normal spell. It walks the
+        chosen call target once, preserves Python signature order, and emits one
+        :class:`SpellParameterRequirement` per visible parameter so later phases
+        can reason about sockets without re-inspecting the callable.
 
-        Steps
-        -----
-        * Obtain an :class:`inspect.Signature` for the call target.
-        * Iterate the parameters in order.
-        * For each parameter:
-            - Compute basic flags (var-positional, var-keyword, keyword-only, etc.).
-            - Resolve annotations (including forward references) when needed and
-              capture defaults.
-            - Classify DI shape via :meth:`_classify_parameter`.
-            - Construct a :class:`SpellParameterRequirement` that records all
-              relevant metadata.
+        The emitted records intentionally preserve both Python-level facts and
+        Melder-specific classification:
+
+            * Python-level facts: parameter order, kind, default presence, raw
+              or normalized annotation, and keyword-only or vararg flags.
+            * Melder-level facts: whether the parameter is optional for DI,
+              whether it should be ignored by DI, whether it requests a single
+              dependency, a collection, or an explicit contract object, and any
+              carried ``SpellMap`` default.
+
+        Non-DI boilerplate parameters such as ``self``, ``cls``, ``*args``, and
+        ``**kwargs`` still produce requirement rows, but they are explicitly
+        marked with :data:`ParameterDIShape.IGNORE` so later phases can keep the
+        original callable shape without trying to satisfy those parameters from
+        DI.
 
         Args:
             call_target:
-                The object to introspect. Typically a class, function or method.
+                The callable or class surface selected for signature inspection.
             cancel_event:
-                Optional cancellation token.
+                Optional cancellation token checked between parameters.
 
         Returns:
             list[SpellParameterRequirement]:
-                Ordered list of requirements corresponding to the call target's
-                parameters.
+                Ordered requirement records mirroring the target signature.
         """
         try:
             signature = inspect.signature(call_target)
@@ -1000,60 +1032,62 @@ class SpellRequirementsFinder(Cleanable):
             has_default: bool,
     ) -> Tuple[ParameterDIShape, bool, Any, Optional[SpellMap]]:
         """
-        Classify a parameter into a :class:`ParameterDIShape` plus metadata.
+        Classify one parameter into Melder's Phase 1 DI-shape model.
 
-        Decision rules
-        --------------
-        1. **SpellMap default wins**:
-           If the default value is a :class:`SpellMap`, this is always classified
-           as :data:`ParameterDIShape.SPELLMAP_DEFAULT`. This is the most explicit
-           form of DI, and is treated as logically optional (the SpellMap itself
-           is the fallback).
+        This method defines the precedence rules that later phases are allowed
+        to trust. Its output decides whether a parameter participates in DI at
+        all, whether it expects a single provider or a collection, and whether
+        an explicit contract or default object overrides normal
+        annotation-based inference.
 
-        2. **No annotation**:
-           If there is no annotation, the parameter is classified as
-           :data:`ParameterDIShape.PLAIN`. DI does not attempt to satisfy it;
-           caller / defaults must.
+        Precedence order:
+            1. ``MutationContract`` defaults win first because they describe a
+               dedicated mutation socket rather than a normal dependency.
+            2. ``SpellContract`` defaults win next for the same reason: the
+               parameter is explicitly asking for a spell contract object.
+            3. ``SpellMap`` defaults win over annotations because an explicit
+               map is a stronger statement than an inferred type-based lookup.
+            4. Missing annotations fall back to
+               :data:`ParameterDIShape.PLAIN`.
+            5. Optional wrappers are removed only far enough to inspect the
+               underlying dependency shape.
+            6. ``list[T]`` becomes
+               :data:`ParameterDIShape.COLLECTION_BY_ANNOTATION` when ``T``
+               looks like a DI candidate.
+            7. A remaining DI-eligible annotation becomes
+               :data:`ParameterDIShape.SINGLE_BY_ANNOTATION`.
+            8. Everything else stays
+               :data:`ParameterDIShape.PLAIN`.
 
-        3. **Optional / Union**:
-           Optional / Union-with-None shapes are unwrapped via
-           :meth:`_unwrap_optional` to determine a "base" annotation and an
-           `is_optional` flag.
-
-        4. **list[T] collections**:
-           If the base annotation is a parametrized list and the element looks like
-           a DI target, the parameter is classified as
-           :data:`ParameterDIShape.COLLECTION_BY_ANNOTATION`.
-
-        5. **Bare DI-eligible annotation**:
-           If the base annotation itself looks like a DI target (non-builtin class,
-           Protocol-like, or string), it is classified as
-           :data:`ParameterDIShape.SINGLE_BY_ANNOTATION`.
-
-        6. **Everything else**:
-           Classified as :data:`ParameterDIShape.PLAIN`.
+        The returned ``is_optional`` flag answers a Melder-specific question:
+        can Phase 1 treat failure to supply this dependency as acceptable
+        because the signature or explicit default already provides a fallback?
 
         Args:
             param_name:
-                The parameter name for diagnostics.
+                Parameter name retained for parity with future diagnostics.
             annotation:
-                The resolved annotation object.
+                Raw or normalized annotation chosen for classification.
             has_annotation:
                 Whether the parameter has an explicit annotation.
             default_value:
-                The raw default value from the signature.
+                Raw default object from the Python signature.
             has_default:
                 Whether a default value is present.
+
         Returns:
             tuple:
-                (di_shape, is_optional, collection_element_annotation, spellmap_default)
+                ``(di_shape, is_optional, collection_element_annotation,
+                spellmap_default)`` where the extra values carry the additional
+                metadata later phases need for collection resolution or explicit
+                SpellMap fallback handling.
         """
         # Mutation / contract defaults are explicit sockets controlled by
         # dynamic/mutation flows. They take precedence over normal DI hints.
         if has_default and isinstance(default_value, MutationContract):
             return (
                 ParameterDIShape.MUTATION_CONTRACT,
-                True,   # logically optional – the contract object itself is fallback
+                True,   # logically optional - the contract object itself is fallback
                 None,   # no collection element annotation
                 None,   # no SpellMap default
             )
@@ -1061,7 +1095,7 @@ class SpellRequirementsFinder(Cleanable):
         if has_default and isinstance(default_value, SpellContract):
             return (
                 ParameterDIShape.SPELL_CONTRACT,
-                True,   # logically optional – the contract object itself is fallback
+                True,   # logically optional - the contract object itself is fallback
                 None,
                 None,
             )
@@ -1125,18 +1159,24 @@ class SpellRequirementsFinder(Cleanable):
             args: Tuple[Any, ...],
     ) -> Tuple[Any, bool, Any, Tuple[Any, ...]]:
         """
-        If the annotation is an Optional/Union-with-None, unwrap it and
-        return ``(inner_annotation, is_optional, inner_origin, inner_args)``.
+        Strip the ``None`` wrapper from optional annotations for classification.
 
-        Supported shapes
-        ----------------
-        * ``Optional[T]``
-        * ``Union[T, None]``
-        * ``T | None`` (PEP 604)
+        Phase 1 cares about two separate facts:
 
-        For multi-type unions (e.g. ``Union[A, B, None]``) we still treat the
-        overall annotation as optional but keep the union intact as the
-        "base" annotation.
+            * whether the parameter is optional for DI purposes
+            * what the underlying dependency shape looks like once ``None`` is
+              removed from the type expression
+
+        This helper splits those concerns. For simple optional shapes it returns
+        the inner dependency annotation plus ``is_optional=True``. For broader
+        multi-type unions it still records the parameter as optional, but keeps
+        the original union intact so the classifier does not pretend it can
+        fully understand or simplify the remaining alternatives.
+
+        Returns:
+            Tuple[Any, bool, Any, Tuple[Any, ...]]:
+                ``(base_annotation, is_optional, base_origin, base_args)`` for
+                the classifier's next stage.
         """
         base_annotation = annotation
         is_optional = False
@@ -1158,7 +1198,7 @@ class SpellRequirementsFinder(Cleanable):
                 is_optional = True
                 if len(non_none_args) == 1:
                     base_annotation = non_none_args[0]
-                # Multiple non-None types – still optional, but we can't
+                # Multiple non-None types - still optional, but we cannot
                 # simplify the union further here.
                 else:
                     base_annotation = annotation
@@ -1172,19 +1212,26 @@ class SpellRequirementsFinder(Cleanable):
 
     def _looks_like_di_target(self, annotation: Any) -> bool:
         """
-        Heuristic check to decide if a type annotation is a DI candidate.
+        Apply a conservative heuristic for "does this annotation look injectable?"
 
-        Rules
-        -----
-        * Builtin scalars (``int``, ``str``, ``float``, ``bool``, ``bytes``,
-          etc.) are treated as **non-DI**.
-        * User-defined classes and Protocol/interface types (anything not in
-          the ``builtins`` module) are treated as DI candidates.
-        * String annotations are treated as **potential** DI candidates;
-          Phase 1 attempts to resolve them before classification.
+        This is intentionally a Phase 1 heuristic, not a full resolution engine.
+        The method leans conservative for builtin scalar values and permissive
+        for user-defined interfaces or classes because later phases can still
+        reject an unsatisfied dependency, but a false negative here would erase
+        a socket from the requirements artifact entirely.
+
+        Current policy:
+            * ``typing.Any`` and builtin scalar or object shapes are not treated
+              as DI targets.
+            * Forward refs and unresolved strings remain eligible because the
+              annotation-normalization step may resolve them into user types.
+            * Non-builtin classes, ABC-like interfaces, and Protocol-like types
+              are treated as DI candidates.
 
         Returns:
-            bool: True if this annotation is considered a DI target.
+            bool:
+                True when Phase 1 should treat the annotation as a possible DI
+                socket, otherwise False.
         """
         if annotation is typing.Any:
             return False
@@ -1204,9 +1251,9 @@ class SpellRequirementsFinder(Cleanable):
             module_name = getattr(annotation, "__module__", "")
             if module_name == "builtins":
                 return False
-            # Typing / Protocol / ABCs / user code – all fair game here.
+            # Typing / Protocol / ABCs / user code - all fair game here.
             return True
 
-        # Anything else – e.g. typing.Any, typing.Callable, etc. – is
+        # Anything else - e.g. typing.Any, typing.Callable, etc. - is
         # currently treated as non-DI. We can refine this later if needed.
         return False

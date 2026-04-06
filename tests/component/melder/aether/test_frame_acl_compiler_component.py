@@ -28,7 +28,7 @@ from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
 )
 from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
-from melder.aether.nexus.rift.frame_viewer.frame_view import FrameView
+from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.frame_acl_manager import FrameACLManager
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
@@ -212,9 +212,9 @@ def test_component_container_builder_commit_flows_into_compiler_output() -> None
     assert "write_attribute" in compiled_surface.allowed_commands
 
 
-def test_component_compiled_surface_flows_directly_into_frame_view_projection() -> None:
+def test_component_compiled_surface_flows_directly_into_frame_viewer_projection() -> None:
     """
-    Verify compiled ACL output flows directly into frame-view projection.
+    Verify compiled ACL output flows directly into descriptor-driven viewer projection.
 
     Returns:
         None.
@@ -226,13 +226,18 @@ def test_component_compiled_surface_flows_directly_into_frame_view_projection() 
         FrameACLConfiguration.create_default("ops"),
     )
 
-    frame_view = FrameView.from_compiled_access_surface(
-        frame_descriptor=descriptor,
-        compiled_access_surface=compiled_surface,
+    viewer = FrameViewer(
+        frame_descriptors_by_name={"ops": descriptor},
+        compiled_access_surfaces_by_frame_name={"ops": compiled_surface},
+        default_view_frame_name="ops",
     )
 
-    assert frame_view.metadata["allowed_kinds"] == ("conduit", "frame", "spell")
-    assert frame_view.metadata["available_target_count"] == 3
+    assert viewer.describe_frame("ops")["available_kinds"] == (
+        "conduit",
+        "frame",
+        "spell",
+    )
+    assert len(viewer.list_available_targets()) == 3
 
 
 def test_component_rollback_restores_original_compiled_command_surface() -> None:

@@ -78,35 +78,6 @@ def _enable_nexus_for_target_frame(frame_name: str) -> Nexus:
     return nexus
 
 
-def test_integration_nexus_can_project_frame_view_after_passive_publish() -> None:
-    """
-    Verify Nexus can project a `FrameView` after real passive publication.
-
-    Returns:
-        None.
-    """
-    configuration = _make_rift_publishable_configuration(aetheric_frame="ops")
-    spellbook = Spellbook(aetheric_frame="ops", configuration=configuration)
-    spellbook.bind(
-        spell=BasicService,
-        existence=Existence.unique,
-        permissions="create",
-    )
-
-    conduit = spellbook.conjure(name="root")
-    try:
-        nexus = Nexus()
-        frame_view = nexus.create_frame_view("ops")
-
-        assert frame_view.frame_name == "ops"
-        assert frame_view.metadata["link_count"] >= 3
-        assert "frame" in {
-            link.source_kind for link in frame_view.links_by_id.values()
-        }
-    finally:
-        conduit.cleanup()
-
-
 def test_integration_nexus_can_project_frame_viewer_after_passive_publish() -> None:
     """
     Verify Nexus can assemble a `FrameViewer` after real passive publication.
