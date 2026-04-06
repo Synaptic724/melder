@@ -7,9 +7,10 @@ class PhaseExecutionError(PhaseSchedulerError):
     """
     Raised when one or more units of work in a phase fail.
 
-    Attributes:
-        phase_name: Name of the failing phase.
-        errors: List of exceptions raised by the phase's units.
+    Contract:
+        - Preserves the phase name that failed.
+        - Preserves the collected error list so callers can inspect the full
+          failure set after the summary message is built.
     """
 
     def __init__(self, phase_name: str, errors: List[BaseException]) -> None:
@@ -25,6 +26,10 @@ class PhaseExecutionError(PhaseSchedulerError):
             errors: Exceptions raised by the phase's units of work.
         Returns:
             None.
+
+        Preserved state:
+            - `phase_name` stores the failing phase identifier.
+            - `errors` stores the original list passed to the constructor.
         """
         summary_parts: List[str] = []
         for err in errors[:3]:

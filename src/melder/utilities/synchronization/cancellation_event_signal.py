@@ -40,7 +40,7 @@ class CancellationEvent(Cleanable):
 
     def __init__(self, flag: threading.Event) -> None:
         """
-        Internal constructor.
+        Build a read-only cancellation view over one shared event object.
 
         Users should obtain instances from
         :meth:`CancellationEventSignal.event` instead of creating events
@@ -50,6 +50,9 @@ class CancellationEvent(Cleanable):
             flag:
                 The shared :class:`threading.Event` that represents the
                 underlying cancellation signal.
+
+        Raises:
+            ValueError: If `flag` is `None`.
         """
         Cleanable.__init__(self)
         if flag is None:
@@ -66,7 +69,7 @@ class CancellationEvent(Cleanable):
 
         Behavior:
             * Idempotent via Cleanable._cleaned flag.
-            * Nulls out the underlying flag.
+            * Drops the shared event reference owned by the parent signal.
             * After cleanup, any access raises RuntimeError.
         """
         if self._cleaned:
@@ -97,6 +100,7 @@ class CancellationEvent(Cleanable):
 
         Raises:
             OperationCancelledError: If cancellation has been signalled.
+            RuntimeError: If this event view has already been cleaned.
         """
         self.check_cleaned()
         if self._flag.is_set():
@@ -131,6 +135,14 @@ class CancellationEventSignal(Cleanable):
     __melder_internal__ = _mrg.sentinel
 
     def __init__(self) -> None:
+        """
+        Create a cancellation signal and pre-build its shared event view.
+
+        Contract:
+            - Owns one mutable :class:`threading.Event`.
+            - Owns one reusable :class:`CancellationEvent` wrapper that all
+              consumers share.
+        """
         Cleanable.__init__(self)
         self._flag = threading.Event()
         # Pre-create a single event view; all consumers share it.
@@ -148,7 +160,7 @@ class CancellationEventSignal(Cleanable):
             * Idempotent.
             * Cancels the signal.
             * Cleans the child CancellationEvent.
-            * Nulls out the underlying Threading.Event and event view.
+            * Nulls out the underlying threading event and event view.
             * Marks cleaned via Cleanable.
         """
         if self._cleaned:
@@ -177,8 +189,11 @@ class CancellationEventSignal(Cleanable):
         Return the read-only :class:`CancellationEvent` associated with this
         signal.
 
-        All callers receive the **same** event instance; this is intentional
-        so that everyone observes the same cancellation signal.
+        All callers receive the same event instance so every observer sees the
+        same cancellation state.
+
+        Raises:
+            RuntimeError: If this signal has already been cleaned.
         """
         self.check_cleaned()
         return self._event
@@ -189,6 +204,9 @@ class CancellationEventSignal(Cleanable):
 
         This method is idempotent: calling it multiple times has no additional
         effect beyond the first call.
+
+        Raises:
+            RuntimeError: If this signal has already been cleaned.
         """
         self.check_cleaned()
         self._flag.set()
@@ -200,6 +218,9 @@ class CancellationEventSignal(Cleanable):
 
         Returns:
             bool: True if cancellation has been signalled.
+
+        Raises:
+            RuntimeError: If this signal has already been cleaned.
         """
         self.check_cleaned()
         return self._flag.is_set()

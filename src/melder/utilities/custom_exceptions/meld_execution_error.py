@@ -66,6 +66,12 @@ class MeldExecutionError(RuntimeError):
                 Optional parameter name associated with the failure.
             inner:
                 Optional underlying exception that triggered this error.
+
+        Contract:
+            - Preserves all supplied diagnostic fields on the instance for
+              downstream logging and tooling.
+            - Uses `message` as the base `RuntimeError` payload while keeping
+              the richer metadata separate.
         """
         super().__init__(message)
         self.spell_id: str = spell_id
@@ -76,6 +82,14 @@ class MeldExecutionError(RuntimeError):
         self._message: str = message
 
     def __str__(self) -> str:
+        """
+        Render a diagnostic string from the stored spell and node metadata.
+
+        Returns:
+            str: Stable human-readable summary including the root spell id/name
+            plus any available node, parameter, message, and inner-exception
+            details.
+        """
         base = (
             f"[MELD] Execution failed for spell {self.spell_name!r} "
             f"({self.spell_id})"

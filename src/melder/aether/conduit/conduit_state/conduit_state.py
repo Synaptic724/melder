@@ -32,4 +32,4 @@ class ConduitState(Enum):
         Raises:
             ValueError: If the string does not match any ConduitState member.
         """
-        EnumHelpers.convert_enum_and_check(value=value, enum=ConduitState)
+        return EnumHelpers.convert_enum_and_check(value=value, enum=ConduitState)
