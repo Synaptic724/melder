@@ -2,134 +2,132 @@ from typing import Any, Optional, Union, Tuple
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import SpellInputUtils
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.__melder_registration_guard__ import (
+    __melder_registration_guard__ as _mrg,
+)
+
 
 class SpellContract(Cleanable):
     """
-    Intentional **late-binding contract socket** for **Dynamic Mode**.
+    Declarative late-binding contract socket for dynamic conduit linking.
 
-    This is *not* a generic DI placeholder like `SpellMap`. It is a **contract
-    declaration** that says:
+    `SpellContract` is not a generic in-spellbook DI placeholder like
+    `SpellMap`. It declares that a parameter or field should eventually be
+    satisfied by some spell matching a frame/binding contract, even if that
+    provider does not exist in the current Spellbook or Conduit yet.
 
-        “At this location, I expect *some* spell that satisfies this
-        frame/binding contract – but it may not exist in this Spellbook / Conduit
-        yet. It will be wired in later via **conduit linking**.”
+    In the runtime model, this descriptor marks a contract-bearing dependency:
 
-    Core intent
-    -----------
+    - during conjure/analysis, SpellCrafter records the socket as an unresolved
+      contract edge rather than resolving it eagerly
+    - during dynamic conduit linking, ConduitWard/linking flows look for a
+      provider in another conduit that satisfies the same `(frame, binding)`
+      identity
+    - once a provider is linked, later validation phases rerun so the consumer
+      graph is rebuilt against that now-satisfied contract
 
-    * **Dynamic Mode only**:
-        - In **Automatic Mode**, using `SpellContract` should be treated as a
-          configuration error. Automatic Mode expects everything to be resolved
-          inside a single Spellbook at build time.
-        - In **Dynamic Mode**, `SpellContract` is how you declare cross-Conduit,
-          post-conjure dependencies that will be satisfied later.
+    This is why the descriptor is dynamic-mode only in practice. Automatic mode
+    expects one self-contained Spellbook graph; `SpellContract` exists for
+    cross-conduit, post-conjure wiring that is intentionally deferred.
 
-    * **Late binding via Conduit links**:
-        - When a Conduit is conjured, `SpellContract` sockets are recorded as
-          *contract holes* in the graph.
-        - At this point, the Spell may be marked as “contract-pending” in
-          `SpellSystemState` / `SpellSystemStates`.
-        - Later, when you **link Conduits** (e.g. `link_conduits(consumer, provider)`),
-          the linker resolves these contracts by binding them to concrete spells
-          from other Conduits and then triggers revalidation (Phases 5–7).
+    Relationship to neighboring descriptor types:
 
-    * **Same construction shape as SpellMap, different semantics**:
-        - `SpellMap`:
-            - Normal in-Conduit DI placeholder.
-            - Resolved eagerly (relative to its Spellbook) during normal builds.
-        - `SpellContract`:
-            - Contract socket for **cross-Conduit / late-bound wiring**.
-            - Never treated as “just another SpellMap” by the pipeline.
-            - Phases 5–7 treat these edges as contract-bearing and expect them
-              to be satisfied by conduit linking.
+    - `SpellMap` expresses normal DI intent inside the current resolution
+      world and is expected to resolve relative to the current spellbook graph
+    - `SpellContract` expresses a late-bound dependency hole whose provider may
+      arrive from another conduit later
 
-    Typical Dynamic-mode usage
-    --------------------------
+    Typical usage:
 
-        class ReportingService:
-            def __init__(
-                self,
-                auth = SpellContract(
-                    spellframe=IAuthService,
-                    binding_name="primary",
-                ),
-            ):
-                self._auth = auth
+    ```python
+    class ReportingService:
+        def __init__(
+            self,
+            auth=SpellContract(
+                spellframe=IAuthService,
+                binding_name="primary",
+            ),
+        ):
+            self._auth = auth
+    ```
 
-        # When `reporting_conduit` is conjured:
-        #   - SpellCrafter sees SpellContract on `auth`.
-        #   - A contract hole is recorded in the graph for that parameter.
-        #   - SpellSystemStates marks the spell/Conduit as contract-pending.
+    When the reporting conduit is conjured, the socket remains unresolved but
+    explicitly declared. When a provider conduit is linked later, the linker
+    can satisfy the contract and trigger revalidation of the reporting lineage.
 
-        # Later, you link in an auth_conduit that provides an IAuthService:
-        link_conduits(reporting_conduit, auth_conduit)
-
-        # The linker finds a concrete spell in `auth_conduit` that satisfies
-        # (IAuthService, "primary"), binds it to this SpellContract socket, and
-        # revalidates the reporting graph.
-
-    ─────────────────────────────────────────────
-    ✅ Do NOT subclass SpellContract.
-    ✅ Only use in Dynamic Mode when you *intend* to satisfy contracts later via conduit links.
-    ✅ Use SpellMap for normal, in-Conduit DI.
-    ─────────────────────────────────────────────
+    Contract:
+        - Pure intent object; it does not perform linking or resolution itself.
+        - Used to describe cross-conduit dependency identity.
+        - Cleanable and invalid after cleanup.
+        - Should not be subclassed or used as a substitute for `SpellMap` in
+          ordinary in-conduit DI.
     """
+
     __melder_internal__ = _mrg.sentinel
-    __slots__ = Cleanable.__slots__ + ["spell", "spellframe", "binding_name", "spell_override"]
+    __slots__ = Cleanable.__slots__ + [
+        "spell",
+        "spellframe",
+        "binding_name",
+        "spell_override",
+    ]
 
     def __init__(
-            self,
-            spell: Any | None = None,
-            *,
-            spellframe: Optional[Any] = None,
-            binding_name: Optional[str] = None,
-            spell_override: Optional[Union[dict, list, tuple]] = None,
+        self,
+        spell: Any | None = None,
+        *,
+        spellframe: Optional[Any] = None,
+        binding_name: Optional[str] = None,
+        spell_override: Optional[Union[dict, list, tuple]] = None,
     ) -> None:
         """
-        Create a new **late-binding contract socket**.
+        Create one late-binding contract descriptor.
 
         Args:
             spell:
-                Concrete spell implementation *if known up front*, or None for
+                Concrete spell implementation if known up front, or `None` for
                 frame-only contracts.
 
-                In Dynamic Mode, this is most often:
+                In dynamic linking flows this is most often:
 
-                    - None (frame-only contract to be satisfied by another Conduit),
-                    - a class/type that *may* exist in another Conduit,
-                    - or a Protocol used as the frame.
+                - `None` for a frame-only contract satisfied by another conduit
+                - a class/type that may exist in another conduit
+                - or a Protocol used as the frame
 
-                The presence of `spell` does **not** force immediate resolution;
-                it simply becomes part of the contract descriptor.
+                The presence of `spell` does not force immediate resolution; it
+                simply becomes part of the contract descriptor.
 
             spellframe:
-                Optional logical interface / Protocol / frame key.
+                Optional logical interface, Protocol, or frame key.
 
-                In dynamic, cross-Conduit setups, this is typically the primary
-                identity used to match a provider in another Conduit.
+                In dynamic, cross-conduit setups, this is typically the primary
+                identity used to match a provider in another conduit.
 
             binding_name:
                 Optional binding name used to disambiguate multiple providers
-                under the same frame. Normalized via SpellInputUtils so the
-                contract is stable and case-insensitive. When None, the binding
-                name remains None so default-binding semantics remain intact.
+                under the same frame. Normalized via `SpellInputUtils` so the
+                contract is stable and case-insensitive. When `None`, the
+                binding name remains `None` so default-binding semantics remain
+                intact.
 
             spell_override:
                 Optional positional/keyword override payload that should be
                 applied when a concrete spell is finally bound to this contract
                 during linking or resolution.
 
-                Semantics mirror SpellMap:
+                Semantics mirror `SpellMap`:
 
-                    - dict       → treated as keyword arguments
-                    - list/tuple → treated as positional arguments
+                - `dict`: treated as keyword arguments
+                - `list` / `tuple`: treated as positional arguments
 
-                `SpellContract` itself does *not* interpret this payload; it is
+                `SpellContract` itself does not interpret this payload; it is
                 carried forward so that the linker / runtime planning path can
                 attach it to the eventual provider spell.
 
-                When None, no override payload is attached.
+                When `None`, no override payload is attached.
+
+        Raises:
+            ValueError: If both `spell` and `spellframe` are omitted, because
+                the contract would have no identity to match against.
         """
         if spell is None and spellframe is None:
             raise ValueError(
@@ -148,15 +146,15 @@ class SpellContract(Cleanable):
         # Preserve the caller payload; None means no override is attached.
         self.spell_override = spell_override
 
-
     def cleanup(self) -> None:
         """
-        Explicitly release references and mark this contract as cleaned.
+        Release descriptor references and invalidate the socket object.
 
-        Notes:
-            - Idempotent: safe to call multiple times.
-            - After cleanup, any attempt to use this contract should call
-              `check_cleaned()` first (e.g., via properties) and will raise.
+        Contract:
+            - Idempotent and safe to call multiple times.
+            - Clears any mutable override payload before dropping references.
+            - After cleanup the descriptor should be treated as unusable and
+              callers should rely on `check_cleaned()` before reading it.
         """
         if self._cleaned:
             return
@@ -172,48 +170,44 @@ class SpellContract(Cleanable):
         self.spell = None
         self.spellframe = None
         self.binding_name = None
-    # ------------------------------------------------------------------
-    # Raw data for higher-level systems
-    # ------------------------------------------------------------------
+
     @property
     def lookup_triplet(self) -> tuple[Any, Optional[Any], Optional[str]]:
         """
-        Raw lookup data:
+        Return the raw contract identity tuple.
 
-            (spell, spellframe, binding_name)
+        This is the descriptor shape consumed by the dynamic contract pipeline
+        when it captures unresolved contract sockets during analysis and later
+        tries to match them against linked provider spells.
 
-        This is what the Dynamic-mode contract pipeline consumes when:
-
-            - capturing contract sockets during SpellCrafter analysis, and
-            - later resolving them during conduit linking.
+        Returns:
+            tuple[Any, Optional[Any], Optional[str]]: `(spell, spellframe,
+            binding_name)` exactly as stored on the descriptor.
 
         Notes:
             - For frame-only contracts (`spell is None`), only `spellframe`
               and `binding_name` define the contract identity.
-            - When `spell` is present, it is part of the contract descriptor but
-              does *not* imply immediate resolution – the provider may live in
-              another Conduit.
+            - When `spell` is present, it is part of the contract descriptor
+              but does not imply immediate resolution; the provider may live in
+              another conduit.
             - If a binding name was provided at construction time, it is
               normalized for case-insensitive matching.
         """
         return (self.spell, self.spellframe, self.binding_name)
 
-    # ------------------------------------------------------------------
-    # Canonical key (String-based) for Spellbook / contract maps
-    # ------------------------------------------------------------------
     @property
     def canonical_key(self) -> Tuple[str, str]:
         """
-        Canonical `(frame_key, binding_key)` for use in Spellbook / contract maps.
+        Return the normalized contract identity used by runtime lookup tables.
 
-        This applies the same normalization as SpellMap:
+        In practice this is the stable `(frame_key, binding_key)` pair used to:
 
-            frame_key, bind_key = SpellInputUtils.normalize_spell_key(...)
+        - index contract sockets in Spellbook / SpellSystemStates style maps
+        - match a consumer contract hole against provider spells during conduit
+          linking
 
-        In practice, this becomes the **contract identity** used when:
-
-            - indexing contract sockets in the Spellbook / SpellSystemStates, and
-            - matching them against provider spells during conduit linking.
+        Returns:
+            Tuple[str, str]: Normalized `(frame_key, binding_key)` pair.
         """
         frame_key, bind_key = SpellInputUtils.normalize_spell_key(
             spell=self.spell,
@@ -225,13 +219,22 @@ class SpellContract(Cleanable):
     @property
     def spell_key(self) -> Tuple[str, str]:
         """
-        Alias to `canonical_key` for compatibility with existing key logic.
+        Compatibility alias for `canonical_key`.
 
-        Treat this as the `(frame_key, binding_key)` contract identifier.
+        Returns:
+            Tuple[str, str]: The same normalized contract identifier returned
+            by `canonical_key`.
         """
         return self.canonical_key
 
     def __repr__(self) -> str:
+        """
+        Return a debug-oriented representation of the contract descriptor.
+
+        Returns:
+            str: Representation showing the stored spell/frame/binding/override
+            fields without attempting any resolution.
+        """
         return (
             f"<SpellContract spell={self.spell!r} "
             f"spellframe={self.spellframe!r} "

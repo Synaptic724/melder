@@ -276,6 +276,164 @@ class GeneralViewSpell(Cleanable):
             "payload": rich_payload,
         }
 
+    def list_spells_by_payload_type(
+            self,
+            payload_type: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[FrameLink]:
+        """
+        Return visible spells whose published payload type matches exactly.
+
+        Args:
+            payload_type:
+                Required spell payload type.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            List[FrameLink]: Matching visible spell links.
+        """
+        self.check_cleaned()
+        if not payload_type:
+            raise ValueError("payload_type cannot be empty.")
+        matching_spells: List[FrameLink] = []
+        frame_view = self._get_required_frame_view()
+        descriptor = frame_view._get_required_frame_descriptor()
+        for spell_link in self.list_spells(frame_name=frame_name):
+            record_key = spell_link.metadata["record_key"]
+            spell_record = descriptor.spell_records_by_key[record_key]
+            if spell_record.payload.payload_type == payload_type:
+                matching_spells.append(spell_link)
+        return matching_spells
+
+    def find_spell_by_binding_name(
+            self,
+            binding_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[FrameLink]:
+        """
+        Return visible spells whose binding name matches exactly.
+
+        Args:
+            binding_name:
+                Exact published binding name.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            List[FrameLink]: Matching visible spell links.
+        """
+        self.check_cleaned()
+        if not binding_name:
+            raise ValueError("binding_name cannot be empty.")
+        return [
+            spell_link
+            for spell_link in self.list_spells(frame_name=frame_name)
+            if spell_link.display_name == binding_name
+        ]
+
+    def explain_spell_access(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Explain the effective ACL access posture for one spell.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            Dict[str, object]: Spell visibility, section, and detail posture
+            explanation.
+        """
+        self.check_cleaned()
+        explanation = self._get_required_frame_view().explain_target_access(
+            frame_name=frame_name,
+            source_kind="spell",
+            source_id=spell_source_id,
+        )
+        detail = self.describe_spell_detail(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+        visible_sections = tuple(explanation["visible_sections"])
+        return {
+            **explanation,
+            "payload_type": detail["payload_type"],
+            "detail_available": detail["detail_available"],
+            "detail_reason": detail["reason"],
+            "binding_payload_visible": "binding_payload" in visible_sections,
+            "resolution_payload_visible": "resolution_payload" in visible_sections,
+            "metadata_visible": "metadata" in visible_sections,
+            "rich_sections_visible": tuple(
+                section_name
+                for section_name in (
+                    "class_profile",
+                    "callable_profile",
+                    "instance_members",
+                    "dynamic_access",
+                )
+                if section_name in visible_sections
+            ),
+        }
+
+    def get_spell_payload_section(
+            self,
+            spell_source_id: str,
+            section_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one ACL-visible spell payload section or raise.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            section_name:
+                Required spell payload section name.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            object: ACL-visible spell payload section value.
+        """
+        self.check_cleaned()
+        if not section_name:
+            raise ValueError("section_name cannot be empty.")
+        spell_description = self.describe_spell(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+        visible_sections = spell_description["visible_sections"]
+        if section_name not in visible_sections:
+            raise ValueError(
+                "Spell payload section '{0}' is not visible for spell '{1}'.".format(
+                    section_name,
+                    spell_source_id,
+                )
+            )
+        payload = spell_description["payload"]
+        if section_name not in payload:
+            raise ValueError(
+                "Spell payload section '{0}' is not available in the published payload for spell '{1}'.".format(
+                    section_name,
+                    spell_source_id,
+                )
+            )
+        return payload[section_name]
+
     def get_required_spell(
             self,
             spell_source_id: str,

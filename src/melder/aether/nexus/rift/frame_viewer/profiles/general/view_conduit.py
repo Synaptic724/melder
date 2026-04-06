@@ -238,6 +238,109 @@ class GeneralViewConduit(Cleanable):
             ),
         }
 
+    def find_conduit_by_name(
+            self,
+            conduit_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[FrameLink]:
+        """
+        Return visible conduits whose display name matches exactly.
+
+        Args:
+            conduit_name:
+                Exact conduit display name.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            List[FrameLink]: Matching visible conduit links.
+        """
+        self.check_cleaned()
+        if not conduit_name:
+            raise ValueError("conduit_name cannot be empty.")
+        return [
+            conduit_link
+            for conduit_link in self.list_conduits(frame_name=frame_name)
+            if conduit_link.display_name == conduit_name
+        ]
+
+    def explain_conduit_access(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Explain the effective ACL access posture for one conduit.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            Dict[str, object]: Conduit visibility and section explanation.
+        """
+        self.check_cleaned()
+        explanation = self._get_required_frame_view().explain_target_access(
+            frame_name=frame_name,
+            source_kind="conduit",
+            source_id=conduit_id,
+        )
+        visible_sections = tuple(explanation["visible_sections"])
+        return {
+            **explanation,
+            "payload_visible": (
+                "conduit_name" in visible_sections
+                or "conduit_state" in visible_sections
+            ),
+            "policy_visible": "policy" in visible_sections,
+            "peer_links_visible": "peer_conduit_ids" in visible_sections,
+        }
+
+    def get_conduit_payload_field(
+            self,
+            conduit_id: str,
+            field_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one ACL-visible conduit payload field or raise.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            field_name:
+                Required conduit payload field name.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            object: ACL-visible conduit payload field value.
+        """
+        self.check_cleaned()
+        if not field_name:
+            raise ValueError("field_name cannot be empty.")
+        conduit_description = self.describe_conduit(
+            conduit_id,
+            frame_name=frame_name,
+        )
+        visible_sections = conduit_description["visible_sections"]
+        if field_name not in visible_sections:
+            raise ValueError(
+                "Conduit payload field '{0}' is not visible for conduit '{1}'.".format(
+                    field_name,
+                    conduit_id,
+                )
+            )
+        return conduit_description["payload"][field_name]
+
     def get_required_conduit(
             self,
             conduit_id: str,

@@ -207,6 +207,8 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
             "describe_frame_inventory": "view_frame.describe_frame_inventory",
             "describe_frame_access_contract": "view_frame.describe_frame_access_contract",
             "get_frame_payload_field": "view_frame.get_frame_payload_field",
+            "find_target_by_display_name": "view_frame.find_target_by_display_name",
+            "explain_target_access": "view_frame.explain_target_access",
             "describe_frames": "view_frame.describe_frames",
             "list_targets": "view_frame.list_targets",
             "describe_targets": "view_frame.describe_targets",
@@ -216,12 +218,19 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
             "describe_conduit": "view_conduit.describe_conduit",
             "list_conduit_spells": "view_conduit.list_conduit_spells",
             "describe_conduit_topology": "view_conduit.describe_conduit_topology",
+            "find_conduit_by_name": "view_conduit.find_conduit_by_name",
+            "explain_conduit_access": "view_conduit.explain_conduit_access",
+            "get_conduit_payload_field": "view_conduit.get_conduit_payload_field",
             "list_spells": "view_spell.list_spells",
             "describe_spells": "view_spell.describe_spells",
             "get_spell": "view_spell.get_required_spell",
             "describe_spell": "view_spell.describe_spell",
             "describe_spell_payload": "view_spell.describe_spell_payload",
             "describe_spell_detail": "view_spell.describe_spell_detail",
+            "list_spells_by_payload_type": "view_spell.list_spells_by_payload_type",
+            "find_spell_by_binding_name": "view_spell.find_spell_by_binding_name",
+            "explain_spell_access": "view_spell.explain_spell_access",
+            "get_spell_payload_section": "view_spell.get_spell_payload_section",
         }
 
 

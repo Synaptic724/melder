@@ -388,6 +388,137 @@ class GeneralViewFrame(Cleanable):
             "frame_payload_fields": compiled_access_surface.frame_payload_fields,
         }
 
+    def find_target_by_display_name(
+            self,
+            display_name: str,
+            *,
+            frame_name: Optional[str] = None,
+            source_kind: Optional[str] = None,
+    ) -> List[FrameLink]:
+        """
+        Return visible targets whose display name matches exactly.
+
+        Purpose:
+            Give the operator a fast exact-name lookup path over the currently
+            visible target surface without forcing a manual target scan.
+
+        Args:
+            display_name:
+                Exact display name to match.
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+            source_kind:
+                Optional target-kind filter.
+
+        Returns:
+            List[FrameLink]: Matching visible targets.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        if not display_name:
+            raise ValueError("display_name cannot be empty.")
+        return [
+            frame_link
+            for frame_link in self.list_targets(
+                frame_name=frame_name,
+                source_kind=source_kind,
+            )
+            if frame_link.display_name == display_name
+        ]
+
+    def explain_target_access(
+            self,
+            *,
+            source_kind: str,
+            source_id: str,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Explain whether one target is visible and what ACL data is exposed.
+
+        Purpose:
+            Make the effective access posture explicit for one frame, conduit,
+            or spell target instead of forcing the operator to infer it from
+            missing results or partial payloads.
+
+        Args:
+            source_kind:
+                Target kind to inspect.
+            source_id:
+                Target source id to inspect.
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            Dict[str, object]: Visibility and section/field explanation for the
+            requested target.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        if not source_kind:
+            raise ValueError("source_kind cannot be empty.")
+        if not source_id:
+            raise ValueError("source_id cannot be empty.")
+        compiled_access_surface = self._get_required_compiled_access_surface()
+        if source_kind == "frame":
+            frame_overview = self._get_required_frame_descriptor().frame_overview
+            target_exists = (
+                frame_overview is not None
+                and frame_overview.frame_id == source_id
+            )
+            return {
+                "source_kind": "frame",
+                "source_id": source_id,
+                "target_exists": target_exists,
+                "visible": "frame" in compiled_access_surface.allowed_kinds,
+                "reason": (
+                    "visible"
+                    if "frame" in compiled_access_surface.allowed_kinds
+                    else "not_visible_in_compiled_surface"
+                ),
+                "visible_fields": compiled_access_surface.frame_payload_fields,
+            }
+        if source_kind == "conduit":
+            target_exists = (
+                source_id in self._get_required_frame_descriptor().conduit_records_by_id
+            )
+            visible = source_id in compiled_access_surface.visible_conduit_ids
+            return {
+                "source_kind": "conduit",
+                "source_id": source_id,
+                "target_exists": target_exists,
+                "visible": visible,
+                "reason": "visible" if visible else "not_visible_in_compiled_surface",
+                "visible_sections": (
+                    compiled_access_surface.conduit_payload_sections_by_id.get(
+                        source_id,
+                        tuple(),
+                    )
+                ),
+            }
+        if source_kind == "spell":
+            record_key = self._find_spell_record_key_by_source_id(source_id)
+            target_exists = (
+                record_key in self._get_required_frame_descriptor().spell_records_by_key
+            )
+            visible = record_key in compiled_access_surface.visible_spell_keys
+            return {
+                "source_kind": "spell",
+                "source_id": source_id,
+                "target_exists": target_exists,
+                "visible": visible,
+                "reason": "visible" if visible else "not_visible_in_compiled_surface",
+                "visible_sections": (
+                    compiled_access_surface.spell_payload_sections_by_key.get(
+                        record_key,
+                        tuple(),
+                    )
+                ),
+            }
+        raise ValueError("Unsupported source_kind '{0}'.".format(source_kind))
+
     def get_frame_payload_field(
             self,
             field_name: str,
@@ -709,6 +840,27 @@ class GeneralViewFrame(Cleanable):
                 "GeneralViewFrame has no bound CompiledFrameACLAccessSurface."
             )
         return self._compiled_access_surface
+
+    @staticmethod
+    def _find_spell_record_key_by_source_id(source_id: str) -> tuple[str, str]:
+        """
+        Convert one published spell source id into a record key tuple.
+
+        Args:
+            source_id:
+                Published spell source id in `spellbook_id:spell_id` form.
+
+        Returns:
+            tuple[str, str]: Spell record key.
+        """
+        parts = source_id.split(":", 1)
+        if len(parts) != 2:
+            raise ValueError(
+                "spell source_id '{0}' must be in 'spellbook_id:spell_id' form.".format(
+                    source_id
+                )
+            )
+        return parts[0], parts[1]
 
     def _assert_optional_frame_name(self, frame_name: Optional[str]) -> None:
         """

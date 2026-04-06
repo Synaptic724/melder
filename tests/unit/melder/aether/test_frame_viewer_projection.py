@@ -321,6 +321,43 @@ def test_frame_viewer_describe_frame_access_contract_reports_acl_surface() -> No
     assert contract["frame_payload_fields"] == ("system_state", "rift_enabled")
 
 
+def test_frame_viewer_find_target_by_display_name_returns_exact_matches() -> None:
+    viewer = _build_viewer(("ops",))
+
+    targets = viewer.execute_tool(
+        "find_target_by_display_name",
+        frame_name="ops",
+        display_name="ops_spell",
+    )
+
+    assert len(targets) == 1
+    assert targets[0].source_kind == "spell"
+
+
+def test_frame_viewer_explain_target_access_reports_visible_spell_sections() -> None:
+    viewer = _build_viewer(("ops",))
+
+    explanation = viewer.execute_tool(
+        "explain_target_access",
+        frame_name="ops",
+        source_kind="spell",
+        source_id="ops-spellbook:ops-spell",
+    )
+
+    assert explanation == {
+        "source_kind": "spell",
+        "source_id": "ops-spellbook:ops-spell",
+        "target_exists": True,
+        "visible": True,
+        "reason": "visible",
+        "visible_sections": (
+            "binding_payload",
+            "resolution_payload",
+            "metadata",
+        ),
+    }
+
+
 def test_frame_viewer_describe_frame_payload_filters_to_visible_fields() -> None:
     viewer = _build_viewer(("ops",))
 
@@ -372,6 +409,54 @@ def test_frame_viewer_describe_conduit_topology_reports_visible_spell_links() ->
         "spell_count": 1,
         "spell_source_ids": ("ops-spellbook:ops-spell",),
     }
+
+
+def test_frame_viewer_find_conduit_by_name_returns_exact_matches() -> None:
+    viewer = _build_viewer(("ops",))
+
+    conduits = viewer.execute_tool(
+        "find_conduit_by_name",
+        frame_name="ops",
+        conduit_name="root",
+    )
+
+    assert len(conduits) == 1
+    assert conduits[0].source_kind == "conduit"
+
+
+def test_frame_viewer_explain_conduit_access_reports_acl_flags() -> None:
+    viewer = _build_viewer(("ops",))
+
+    explanation = viewer.execute_tool(
+        "explain_conduit_access",
+        frame_name="ops",
+        conduit_id="ops-conduit",
+    )
+
+    assert explanation == {
+        "source_kind": "conduit",
+        "source_id": "ops-conduit",
+        "target_exists": True,
+        "visible": True,
+        "reason": "visible",
+        "visible_sections": ("conduit_name", "conduit_state"),
+        "payload_visible": True,
+        "policy_visible": False,
+        "peer_links_visible": False,
+    }
+
+
+def test_frame_viewer_get_conduit_payload_field_returns_visible_value() -> None:
+    viewer = _build_viewer(("ops",))
+
+    conduit_state = viewer.execute_tool(
+        "get_conduit_payload_field",
+        frame_name="ops",
+        conduit_id="ops-conduit",
+        field_name="conduit_state",
+    )
+
+    assert conduit_state == "normal"
 
 
 def test_frame_viewer_describe_spell_returns_acl_filtered_payload() -> None:
@@ -459,6 +544,75 @@ def test_frame_viewer_describe_spell_detail_reports_payload_not_detailed() -> No
         ),
         "payload": {},
     }
+
+
+def test_frame_viewer_find_spell_by_binding_name_returns_exact_match() -> None:
+    viewer = _build_viewer(("ops",))
+
+    spells = viewer.execute_tool(
+        "find_spell_by_binding_name",
+        frame_name="ops",
+        binding_name="ops_spell",
+    )
+
+    assert len(spells) == 1
+    assert spells[0].source_kind == "spell"
+
+
+def test_frame_viewer_list_spells_by_payload_type_filters_visible_spells() -> None:
+    viewer = _build_viewer(("ops",))
+
+    spells = viewer.execute_tool(
+        "list_spells_by_payload_type",
+        frame_name="ops",
+        payload_type="general",
+    )
+
+    assert len(spells) == 1
+    assert spells[0].source_id == "ops-spellbook:ops-spell"
+
+
+def test_frame_viewer_explain_spell_access_reports_detail_reason() -> None:
+    viewer = _build_viewer(("ops",))
+
+    explanation = viewer.execute_tool(
+        "explain_spell_access",
+        frame_name="ops",
+        spell_source_id="ops-spellbook:ops-spell",
+    )
+
+    assert explanation == {
+        "source_kind": "spell",
+        "source_id": "ops-spellbook:ops-spell",
+        "target_exists": True,
+        "visible": True,
+        "reason": "visible",
+        "visible_sections": (
+            "binding_payload",
+            "resolution_payload",
+            "metadata",
+        ),
+        "payload_type": "general",
+        "detail_available": False,
+        "detail_reason": "payload_not_detailed",
+        "binding_payload_visible": True,
+        "resolution_payload_visible": True,
+        "metadata_visible": True,
+        "rich_sections_visible": tuple(),
+    }
+
+
+def test_frame_viewer_get_spell_payload_section_returns_visible_section() -> None:
+    viewer = _build_viewer(("ops",))
+
+    binding_payload = viewer.execute_tool(
+        "get_spell_payload_section",
+        frame_name="ops",
+        spell_source_id="ops-spellbook:ops-spell",
+        section_name="binding_payload",
+    )
+
+    assert binding_payload == {"kind": "class"}
 
 
 def test_frame_viewer_describe_spell_detail_reports_acl_restricted_for_detailed_payload() -> None:

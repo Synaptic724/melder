@@ -1,3 +1,5 @@
+import threading
+
 import pytest
 
 from melder.aether.dev_ops.spell_system_states.conduit_resolution_state import (
@@ -95,6 +97,14 @@ def test_root_validity_defaults_to_initial_validity() -> None:
     assert state.get_root_validity("root-1") is SpellValidity.unknown
 
 
+def test_empty_ids_return_none_for_validity_getters() -> None:
+    """Verify empty spell/root ids return None from validity accessors."""
+    state = ConduitResolutionState("cid")
+
+    assert state.get_spell_validity("") is None
+    assert state.get_root_validity("") is None
+
+
 def test_set_spell_validity_marks_dirty_and_reason() -> None:
     """
     Purpose:
@@ -141,6 +151,41 @@ def test_set_spell_validity_reuses_existing_without_change() -> None:
     assert state.get_spell_validity("spell-1") is SpellValidity.valid
 
 
+def test_set_spell_validity_validates_inputs_and_swallows_risk_callback_errors() -> None:
+    """Verify input guards and risk-callback failures do not escape."""
+    state = ConduitResolutionState("cid")
+
+    with pytest.raises(ValueError, match="spell_id"):
+        state.set_spell_validity("", SpellValidity.valid)
+    with pytest.raises(ValueError, match="validity"):
+        state.set_spell_validity("spell-1", None)
+
+    class _RiskManager:
+        def on_resolution_validity_change(self, conduit_id, spell_id, validity):
+            raise RuntimeError("risk boom")
+
+    state._set_risk_manager(_RiskManager())
+    state.set_spell_validity("spell-1", SpellValidity.valid)
+
+    assert state.get_spell_validity("spell-1") is SpellValidity.valid
+
+
+def test_set_spell_validity_same_value_updates_reason_without_dirtying() -> None:
+    """Verify unchanged spell validity can still refresh the last change reason."""
+    state = ConduitResolutionState("cid")
+    state.set_spell_validity("spell-1", SpellValidity.valid)
+    state.clear_dirty(1.0)
+
+    state.set_spell_validity(
+        "spell-1",
+        SpellValidity.valid,
+        change_reason=SpellStateChangeReason.validation_passed,
+    )
+
+    assert state.is_dirty() is False
+    assert state._last_change_reason is SpellStateChangeReason.validation_passed
+
+
 def test_bulk_set_spell_validity_marks_dirty_on_change() -> None:
     """
     Purpose:
@@ -172,6 +217,44 @@ def test_bulk_set_spell_validity_marks_dirty_on_change() -> None:
     )
 
     assert state.is_dirty() is False
+
+
+def test_bulk_set_spell_validity_validates_none_and_skips_invalid_entries() -> None:
+    """Verify bulk spell updates reject None maps and ignore invalid entries."""
+    state = ConduitResolutionState("cid")
+
+    with pytest.raises(ValueError, match="validity_map"):
+        state.bulk_set_spell_validity(None)
+
+    class _RiskManager:
+        def on_resolution_validity_change(self, conduit_id, spell_id, validity):
+            raise RuntimeError("risk boom")
+
+    state._set_risk_manager(_RiskManager())
+    state.bulk_set_spell_validity(
+        {
+            "": SpellValidity.valid,
+            "spell-none": None,
+            "spell-1": SpellValidity.valid,
+        }
+    )
+
+    assert state.snapshot_spell_validity() == {"spell-1": SpellValidity.valid}
+
+
+def test_bulk_set_spell_validity_same_values_updates_reason_without_dirtying() -> None:
+    """Verify unchanged bulk spell updates can still refresh the last change reason."""
+    state = ConduitResolutionState("cid")
+    state.bulk_set_spell_validity({"spell-1": SpellValidity.valid})
+    state.clear_dirty(1.0)
+
+    state.bulk_set_spell_validity(
+        {"spell-1": SpellValidity.valid},
+        change_reason=SpellStateChangeReason.validation_passed,
+    )
+
+    assert state.is_dirty() is False
+    assert state._last_change_reason is SpellStateChangeReason.validation_passed
 
 
 def test_snapshot_spell_validity_returns_copy() -> None:
@@ -214,6 +297,79 @@ def test_bulk_set_root_validity_marks_dirty_on_change() -> None:
     )
 
     assert state.is_dirty() is True
+
+
+def test_set_root_validity_validates_inputs_and_swallows_risk_callback_errors() -> None:
+    """Verify root validity guards and risk-callback failures do not escape."""
+    state = ConduitResolutionState("cid")
+
+    with pytest.raises(ValueError, match="root_id"):
+        state.set_root_validity("", SpellValidity.valid)
+    with pytest.raises(ValueError, match="validity"):
+        state.set_root_validity("root-1", None)
+
+    class _RiskManager:
+        def on_resolution_validity_change(self, conduit_id, root_id, validity):
+            raise RuntimeError("risk boom")
+
+    state._set_risk_manager(_RiskManager())
+    state.set_root_validity("root-1", SpellValidity.valid)
+
+    assert state.get_root_validity("root-1") is SpellValidity.valid
+
+
+def test_set_root_validity_same_value_updates_reason_without_dirtying() -> None:
+    """Verify unchanged root validity can still refresh the last change reason."""
+    state = ConduitResolutionState("cid")
+    state.set_root_validity("root-1", SpellValidity.valid)
+    state.clear_dirty(1.0)
+
+    state.set_root_validity(
+        "root-1",
+        SpellValidity.valid,
+        change_reason=SpellStateChangeReason.validation_passed,
+    )
+
+    assert state.is_dirty() is False
+    assert state._last_change_reason is SpellStateChangeReason.validation_passed
+
+
+def test_bulk_set_root_validity_validates_none_and_skips_invalid_entries() -> None:
+    """Verify bulk root updates reject None maps and ignore invalid entries."""
+    state = ConduitResolutionState("cid")
+
+    with pytest.raises(ValueError, match="validity_map"):
+        state.bulk_set_root_validity(None)
+
+    class _RiskManager:
+        def on_resolution_validity_change(self, conduit_id, root_id, validity):
+            raise RuntimeError("risk boom")
+
+    state._set_risk_manager(_RiskManager())
+    state.bulk_set_root_validity(
+        {
+            "": SpellValidity.valid,
+            "root-none": None,
+            "root-1": SpellValidity.valid,
+        }
+    )
+
+    assert state.snapshot_root_validity() == {"root-1": SpellValidity.valid}
+
+
+def test_bulk_set_root_validity_same_values_updates_reason_without_dirtying() -> None:
+    """Verify unchanged bulk root updates can still refresh the last change reason."""
+    state = ConduitResolutionState("cid")
+    state.bulk_set_root_validity({"root-1": SpellValidity.valid})
+    state.clear_dirty(1.0)
+
+    state.bulk_set_root_validity(
+        {"root-1": SpellValidity.valid},
+        change_reason=SpellStateChangeReason.validation_passed,
+    )
+
+    assert state.is_dirty() is False
+    assert state._last_change_reason is SpellStateChangeReason.validation_passed
 
 
 def test_snapshot_root_validity_returns_copy() -> None:
@@ -289,6 +445,22 @@ def test_record_diagnostics_skips_on_same_signature() -> None:
     assert stored_after[0].code == "A"
     assert original.cleaned is False
     assert duplicate.cleaned is False
+
+
+def test_record_diagnostics_validates_none_and_preserves_clean_state_on_same_signature() -> None:
+    """Verify diagnostics rejects None and same-signature updates are a no-op."""
+    state = ConduitResolutionState("cid")
+
+    with pytest.raises(ValueError, match="diagnostics"):
+        state.record_diagnostics(None)
+
+    original = _make_diagnostic(code="A", message="one")
+    duplicate = _make_diagnostic(code="A", message="one")
+    state.record_diagnostics([original])
+    state.clear_dirty(1.0)
+    state.record_diagnostics([duplicate])
+
+    assert state.is_dirty() is False
 
 
 def test_clear_diagnostics_cleans_entries() -> None:
@@ -383,3 +555,82 @@ def test_cleanup_marks_state_unusable() -> None:
 
     with pytest.raises(RuntimeError):
         state.get_spell_validity("spell-1")
+
+
+def test_internal_helpers_cover_none_and_exception_tolerance() -> None:
+    """Verify helper no-op paths and defensive exception swallowing branches."""
+    state = ConduitResolutionState("cid")
+    diag = _make_diagnostic(code="A", message="one")
+
+    class _BrokenDiagnostic:
+        code = "B"
+        message = "boom"
+        severity = SystemDiagnosticSeverity.ERROR
+        spell_id = None
+        root_id = None
+        source = None
+        details = None
+
+        def cleanup(self):
+            raise RuntimeError("cleanup boom")
+
+    class _Unrepr:
+        def __repr__(self):
+            raise RuntimeError("repr boom")
+
+    assert state._diagnostics_signature([None, diag])[0][0] == "A"
+    clones = state._clone_diagnostics([None, diag])
+    assert len(clones) == 1
+    assert state._details_signature(None) is None
+    assert state._details_signature({"x": _Unrepr()}) == (("x", "<unrepr>"),)
+
+    state._diagnostics = [_BrokenDiagnostic()]
+    state._cleanup_diagnostics_locked()
+    assert state._diagnostics == []
+    state._set_risk_manager(object())
+    assert state._risk_manager is not None
+
+
+def test_cleanup_rechecks_cleaned_inside_lock() -> None:
+    """Verify the inner cleanup re-check under concurrent teardown."""
+
+    class _CoordinatedLock:
+        def __init__(self) -> None:
+            self._entered_first = threading.Event()
+            self._second_attempted = threading.Event()
+            self._lock = threading.RLock()
+
+        def __enter__(self):
+            if self._entered_first.is_set():
+                self._second_attempted.set()
+            self._lock.acquire()
+            if not self._entered_first.is_set():
+                self._entered_first.set()
+                assert self._second_attempted.wait(timeout=1.0)
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self._lock.release()
+
+    state = ConduitResolutionState("cid")
+    state._lock = _CoordinatedLock()
+    failures = []
+
+    def _run_cleanup():
+        try:
+            state.cleanup()
+        except BaseException as exc:
+            failures.append(exc)
+
+    first = threading.Thread(target=_run_cleanup, name="crs-cleanup-first")
+    second = threading.Thread(target=_run_cleanup, name="crs-cleanup-second")
+
+    first.start()
+    assert state._lock._entered_first.wait(timeout=1.0)
+    second.start()
+    first.join()
+    second.join()
+
+    assert failures == []
+    assert state._cleaned is True
+    assert state._lock is None
