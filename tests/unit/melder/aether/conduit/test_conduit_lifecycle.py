@@ -459,6 +459,23 @@ def test_cleanup_is_idempotent_for_lesser_conduit(conduit_lesser: Conduit) -> No
     assert conduit_lesser._nexus is None
 
 
+def test_cleanup_raises_for_unknown_conduit_state(conduit_normal: Conduit) -> None:
+    """
+    Verify cleanup fails loudly when the conduit state is invalid.
+
+    Contract:
+        - Unknown conduit states raise RuntimeError.
+        - The logger records the invalid-state error.
+    """
+    conduit_normal._conduit_state = object()
+    conduit_normal._logger = MagicMock()
+
+    with pytest.raises(RuntimeError, match="unknown during cleanup"):
+        conduit_normal.cleanup()
+
+    conduit_normal._logger.error.assert_called_once()
+
+
 def test_cleanup_calls_spellbook_cleanup_for_normal_conduit(
     conduit_normal: Conduit,
     aether_stub: MagicMock,

@@ -1,6 +1,7 @@
 import logging
 import time
 from unittest.mock import MagicMock
+from unittest.mock import patch
 
 import pytest
 
@@ -57,6 +58,81 @@ def test_configure_logger_rejects_invalid_logger(
             policy=Policies.default,
             logger=object(),
         )
+
+
+def test_init_rejects_non_string_conduit_id(
+    configuration_automatic: Configuration,
+    spellbook_stub: MagicMock,
+) -> None:
+    """
+    Verify Conduit rejects non-string explicit conduit ids.
+
+    Contract:
+        - __init__ raises TypeError when conduit_id is provided as a non-string.
+    """
+    with pytest.raises(TypeError, match="conduit_id must be a string"):
+        Conduit(
+            spellbook=spellbook_stub,
+            configuration=configuration_automatic,
+            conduit_state=ConduitState.lesser,
+            aetheric_frame="default",
+            policy=Policies.default,
+            conduit_id=123,
+        )
+
+
+def test_init_rejects_empty_conduit_id(
+    configuration_automatic: Configuration,
+    spellbook_stub: MagicMock,
+) -> None:
+    """
+    Verify Conduit rejects empty explicit conduit ids.
+
+    Contract:
+        - __init__ raises ValueError when conduit_id is an empty string.
+    """
+    with pytest.raises(ValueError, match="conduit_id cannot be empty"):
+        Conduit(
+            spellbook=spellbook_stub,
+            configuration=configuration_automatic,
+            conduit_state=ConduitState.lesser,
+            aetheric_frame="default",
+            policy=Policies.default,
+            conduit_id="",
+        )
+
+
+def test_init_registers_existing_creation_gate_for_current_root(
+    configuration_automatic: Configuration,
+    spellbook_stub: MagicMock,
+) -> None:
+    """
+    Verify constructor uses the explicit creation_gate registration branch.
+
+    Contract:
+        - When an explicit gate is supplied, _register_existing_gate_for_current_root
+          is called and the same gate is retained on the conduit.
+    """
+    gate = MagicMock()
+
+    with patch.object(
+        Conduit,
+        "_register_existing_gate_for_current_root",
+        autospec=True,
+    ) as register_existing_gate:
+        conduit = Conduit(
+            spellbook=spellbook_stub,
+            configuration=configuration_automatic,
+            conduit_state=ConduitState.lesser,
+            aetheric_frame="default",
+            policy=Policies.default,
+            creation_gate=gate,
+        )
+    try:
+        register_existing_gate.assert_called_once_with(conduit, conduit._id, gate)
+        assert conduit._creation_gate is gate
+    finally:
+        conduit.cleanup()
 
 
 def test_configure_logger_prefers_explicit_logger_over_provider(
