@@ -12,6 +12,9 @@ from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
     FrameDescriptorPayload,
 )
 from melder.aether.nexus.nexus import Nexus
+from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
+from melder.aether.nexus.rift.frame_viewer.frame_view import FrameView
+from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.configuration.system_state import SystemState
@@ -527,6 +530,119 @@ def test_rift_can_use_spaces_without_separate_state_object() -> None:
     assert rift.active_space_id == space.space_id
 
 
+def test_rift_space_can_attach_and_detach_frame_viewer() -> None:
+    """
+    Verify a RiftSpace can own an attached frame viewer.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = FrameViewer()
+
+    space.attach_frame_viewer(viewer)
+
+    assert space.frame_viewer is viewer
+
+    space.detach_frame_viewer()
+
+    assert viewer.cleaned is True
+    assert space.frame_viewer is None
+
+
+def test_rift_space_can_delegate_frame_surface_calls_to_attached_viewer() -> None:
+    """
+    Verify a RiftSpace delegates frame-surface calls through the attached viewer.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = FrameViewer()
+    view = FrameView(
+        frame_name="ops",
+        links_by_id={},
+    )
+    viewer.add_available_view(view)
+    space.attach_frame_viewer(viewer)
+
+    assert space.get_required_frame_viewer() is viewer
+    assert space.list_frame_names() == ["ops"]
+    assert space.list_available_targets() == []
+    assert space.describe_available_targets() == []
+
+
+def test_rift_space_frame_surface_delegation_fails_fast_without_attached_viewer() -> None:
+    """
+    Verify RiftSpace delegation fails fast when no frame viewer is attached.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+
+    with pytest.raises(ValueError, match="has no attached frame viewer"):
+        space.get_required_frame_viewer()
+
+    with pytest.raises(ValueError, match="has no attached frame viewer"):
+        space.list_frame_names()
+
+
+def test_rift_space_can_select_and_describe_targets_from_attached_viewer() -> None:
+    """
+    Verify RiftSpace can hold a selected-target context over the hosted viewer.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = FrameViewer()
+    frame_link = FrameLink(
+        frame_name="ops",
+        source_kind="frame",
+        source_id="frame-1",
+        display_name="ops",
+    )
+    view = FrameView(
+        frame_name="ops",
+        links_by_id={frame_link.link_id: frame_link},
+    )
+    viewer.add_available_view(view)
+    space.attach_frame_viewer(viewer)
+
+    space.select_target(frame_link.link_id)
+
+    assert space.list_selected_target_ids() == [frame_link.link_id]
+    assert space.describe_selected_targets() == [
+        {
+            "frame_name": "ops",
+            "target_id": frame_link.link_id,
+            "source_kind": "frame",
+            "source_id": "frame-1",
+            "display_name": "ops",
+        }
+    ]
+
+
+def test_rift_space_selection_helpers_reject_invalid_target_inputs() -> None:
+    """
+    Verify RiftSpace selection helpers fail fast on invalid target inputs.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = FrameViewer()
+    viewer.add_available_view(FrameView(frame_name="ops", links_by_id={}))
+    space.attach_frame_viewer(viewer)
+
+    with pytest.raises(ValueError, match="target_id cannot be empty"):
+        space.select_target("")
+
+    with pytest.raises(ValueError, match="was not found"):
+        space.select_target("missing")
+
+
 def test_rift_exposes_frame_link_contract_from_assigned_frames() -> None:
     """
     Verify a created Rift exposes the assigned-frame availability contract.
@@ -585,6 +701,63 @@ def test_rift_can_build_frame_viewer_from_assigned_frame_contract() -> None:
     assert viewer.metadata["rift_id"] == rift.id
     assert viewer.default_view_frame_name == "ops"
     assert viewer.get_default_view().frame_name == "ops"
+
+
+def test_rift_can_attach_frame_viewer_to_active_space_and_read_it_back() -> None:
+    """
+    Verify a Rift can attach its frame viewer chain to the active space.
+
+    Returns:
+        None.
+    """
+    _bind_target_frame_configuration(
+        "ops",
+        rift_enabled=True,
+        ai_native_enabled=False,
+        system_state=SystemState.automatic,
+    )
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_direct_rift_access(True)
+    configuration.with_target_frame_override(True)
+    configuration.with_allowed_target_frame_names(("default", "ops"))
+    nexus.enable(configuration)
+    _seed_frame_descriptor("ops")
+
+    rift_configuration = nexus.create_rift_configuration().with_target_frame_name("ops")
+    rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
+    space = RiftSpace(owner_rift_id=rift.id, space_name="main")
+    rift.register_space(space)
+
+    viewer = rift.attach_frame_viewer_to_space()
+
+    assert viewer is space.frame_viewer
+    assert rift.get_space_frame_viewer() is viewer
+    assert viewer.default_view_frame_name == "ops"
+
+
+def test_rift_space_frame_viewer_helpers_fail_fast_without_target_space_or_attached_viewer() -> None:
+    """
+    Verify Rift viewer host helpers fail fast when the space/viewer is missing.
+
+    Returns:
+        None.
+    """
+    nexus = _create_enabled_nexus()
+    rift = nexus.create_rift(rift_name="alpha")
+
+    with pytest.raises(ValueError, match="no target space"):
+        rift.attach_frame_viewer_to_space()
+
+    with pytest.raises(ValueError, match="no target space"):
+        rift.get_space_frame_viewer()
+
+    space = RiftSpace(owner_rift_id=rift.id, space_name="main")
+    rift.register_space(space)
+
+    with pytest.raises(ValueError, match="has no attached frame viewer"):
+        rift.get_space_frame_viewer()
 
 
 def test_direct_rift_access_can_be_token_gated() -> None:

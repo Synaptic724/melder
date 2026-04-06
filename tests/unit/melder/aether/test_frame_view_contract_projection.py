@@ -24,6 +24,9 @@ from melder.aether.nexus.rift.frame_link.frame_link_contract import (
     FrameLinkContract,
 )
 from melder.aether.nexus.rift.frame_viewer.frame_view import FrameView
+from melder.aether.nexus.rift.frame_viewer.profiles.frame_view_profile import (
+    FrameViewProfile,
+)
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 
@@ -240,6 +243,77 @@ def test_frame_view_available_targets_surface_is_queryable_by_kind_and_id() -> N
     assert len(spell_targets) == 1
     assert spell_targets[0].source_kind == "spell"
     assert fetched is spell_targets[0]
+
+
+def test_frame_view_can_set_default_profile_and_order_targets_by_profile() -> None:
+    """
+    Verify the default local profile can reorder available targets.
+
+    Returns:
+        None.
+    """
+    frame_view = FrameView.from_compiled_access_surface(
+        frame_descriptor=_build_frame_descriptor(),
+        compiled_access_surface=_build_compiled_surface(),
+    )
+    inspection_profile = FrameViewProfile(
+        "inspection",
+        preferred_kind_order=("spell", "conduit", "frame"),
+        default_detail_level="summary",
+    )
+    frame_view.register_active_profile(inspection_profile)
+    frame_view.set_default_profile("inspection")
+
+    ordered_targets = frame_view.list_available_targets_in_profile_order()
+
+    assert frame_view.default_profile_name == "inspection"
+    assert [frame_link.source_kind for frame_link in ordered_targets] == [
+        "spell",
+        "conduit",
+        "frame",
+    ]
+
+
+def test_frame_view_describe_available_targets_uses_profile_detail_level() -> None:
+    """
+    Verify target descriptions respect the selected local profile detail level.
+
+    Returns:
+        None.
+    """
+    frame_view = FrameView.from_compiled_access_surface(
+        frame_descriptor=_build_frame_descriptor(),
+        compiled_access_surface=_build_compiled_surface(),
+    )
+    detailed_profile = FrameViewProfile(
+        "inspection",
+        preferred_kind_order=("frame", "conduit", "spell"),
+        default_detail_level="detailed",
+    )
+    frame_view.register_active_profile(detailed_profile)
+
+    descriptions = frame_view.describe_available_targets(profile_name="inspection")
+
+    assert all("metadata" in description for description in descriptions)
+
+
+def test_frame_view_default_profile_helpers_reject_missing_and_invalid_names() -> None:
+    """
+    Verify default-profile helpers fail fast on missing or invalid inputs.
+
+    Returns:
+        None.
+    """
+    frame_view = FrameView.from_compiled_access_surface(
+        frame_descriptor=_build_frame_descriptor(),
+        compiled_access_surface=_build_compiled_surface(),
+    )
+
+    with pytest.raises(ValueError, match="profile_name cannot be empty"):
+        frame_view.set_default_profile("")
+
+    with pytest.raises(ValueError, match="was not found"):
+        frame_view.set_default_profile("missing")
 
 
 def test_frame_view_from_compiled_access_surface_rejects_mismatched_frame_name() -> None:

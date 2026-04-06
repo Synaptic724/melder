@@ -122,6 +122,13 @@ class Rift(Cleanable, IRift):
 
         Returns:
             None.
+
+        Contract:
+            - Copies incoming frame-name sequences into Rift-owned tuples.
+            - Copies incoming metadata into a Rift-owned mutable dict.
+            - Builds and owns the initial `FrameLinkContract` for assigned
+              target-frame access.
+            - Defers logger resolution to `_initialize_logging(...)`.
         """
         if nexus is None:
             raise TypeError("nexus cannot be None.")
@@ -400,6 +407,10 @@ class Rift(Cleanable, IRift):
             viewer_profile_name:
                 Viewer profile name applied to the hosted viewer.
 
+        Contract:
+            Delegates viewer creation to the owning `Nexus` using this Rift's
+            current assigned-frame contract.
+
         Returns:
             FrameViewer: Hosted frame viewer for this Rift.
         """
@@ -428,6 +439,10 @@ class Rift(Cleanable, IRift):
             viewer_profile_name:
                 Viewer profile name applied to the hosted viewer.
 
+        Contract:
+            Delegates cached-viewer creation to the owning `Nexus` and may
+            reuse prior cached viewer state for this Rift/profile combination.
+
         Returns:
             FrameViewer: Detached cached frame viewer for this Rift.
         """
@@ -437,6 +452,77 @@ class Rift(Cleanable, IRift):
             view_profile_name=view_profile_name,
             viewer_profile_name=viewer_profile_name,
         )
+
+    def attach_frame_viewer_to_space(
+            self,
+            *,
+            space_id: Optional[str] = None,
+            cached: bool = False,
+            view_profile_name: str = "general",
+            viewer_profile_name: str = "general",
+    ) -> FrameViewer:
+        """
+        Internal
+
+        Build one frame viewer from this Rift and attach it to a space.
+
+        Args:
+            space_id:
+                Optional target space id. When omitted, the active space is
+                used.
+            cached:
+                When True, uses the cached viewer creation path.
+            view_profile_name:
+                View profile name applied to each assigned view.
+            viewer_profile_name:
+                Viewer profile name applied to the hosted viewer.
+
+        Returns:
+            FrameViewer: Attached frame viewer.
+        """
+        self.check_cleaned()
+        target_space_id = space_id or self._active_space_id
+        if target_space_id is None:
+            raise ValueError("Rift has no target space for frame viewer attachment.")
+        space = self.get_space(target_space_id)
+        frame_viewer = (
+            self.create_cached_frame_viewer(
+                view_profile_name=view_profile_name,
+                viewer_profile_name=viewer_profile_name,
+            )
+            if cached
+            else self.create_frame_viewer(
+                view_profile_name=view_profile_name,
+                viewer_profile_name=viewer_profile_name,
+            )
+        )
+        space.attach_frame_viewer(frame_viewer)
+        return frame_viewer
+
+    def get_space_frame_viewer(self, space_id: Optional[str] = None) -> FrameViewer:
+        """
+        Internal
+
+        Return the attached frame viewer for one space or raise.
+
+        Args:
+            space_id:
+                Optional target space id. When omitted, the active space is
+                used.
+
+        Returns:
+            FrameViewer: Attached frame viewer for the selected space.
+        """
+        self.check_cleaned()
+        target_space_id = space_id or self._active_space_id
+        if target_space_id is None:
+            raise ValueError("Rift has no target space for frame viewer access.")
+        frame_viewer = self.get_space(target_space_id).frame_viewer
+        if frame_viewer is None:
+            raise ValueError(
+                "RiftSpace '{0}' has no attached frame viewer.".format(target_space_id)
+            )
+        return frame_viewer
 
     @property
     def active_space_id(self) -> Optional[str]:
@@ -455,6 +541,10 @@ class Rift(Cleanable, IRift):
         """
         Purpose:
             Return the live Rift metadata map.
+
+        Contract:
+            Returns the live mutable metadata dict owned by this Rift, not a
+            detached copy.
 
         Returns:
             Dict[str, object]: Rift-level metadata.
@@ -492,6 +582,11 @@ class Rift(Cleanable, IRift):
 
         Mark this Rift as registered in Nexus.
 
+        Contract:
+            - Sets the local registration flag under the Rift lock.
+            - Does not register the Rift in Nexus by itself; callers should
+              use this after the owning Nexus registry mutation succeeds.
+
         Returns:
             None.
         """
@@ -505,6 +600,10 @@ class Rift(Cleanable, IRift):
 
         Mark this Rift as active.
 
+        Contract:
+            - Sets only the local active-state flag under the Rift lock.
+            - Does not create spaces or register additional runtime objects.
+
         Returns:
             None.
         """
@@ -517,6 +616,10 @@ class Rift(Cleanable, IRift):
         Internal
 
         Mark this Rift as inactive.
+
+        Contract:
+            - Clears only the local active-state flag under the Rift lock.
+            - Does not remove spaces or detach frame assignments.
 
         Returns:
             None.
@@ -534,6 +637,11 @@ class Rift(Cleanable, IRift):
         Args:
             space:
                 Room object to register.
+
+        Contract:
+            - Rejects spaces owned by another Rift.
+            - Indexes the room by id and, when present, by stable name.
+            - Sets the first registered room as the active room by default.
 
         Returns:
             None.
@@ -570,6 +678,9 @@ class Rift(Cleanable, IRift):
             space_id:
                 Canonical room id.
 
+        Contract:
+            Returns the live registered room object, not a detached copy.
+
         Returns:
             IRiftSpace: Registered room object.
         """
@@ -588,6 +699,10 @@ class Rift(Cleanable, IRift):
         Args:
             space_name:
                 Stable room name.
+
+        Contract:
+            Resolves through the Rift's name-to-id index and then returns the
+            same live room object exposed by `get_space(...)`.
 
         Returns:
             IRiftSpace: Registered room object.
@@ -609,6 +724,11 @@ class Rift(Cleanable, IRift):
             space_id:
                 Canonical room id.
 
+        Contract:
+            - Validates that the target room is already registered.
+            - Updates only the active-room pointer; it does not mutate the room
+              registry itself.
+
         Returns:
             None.
         """
@@ -627,6 +747,9 @@ class Rift(Cleanable, IRift):
 
         Return the current registered space ids.
 
+        Contract:
+            Returns a snapshot list built from the current room registry keys.
+
         Returns:
             list[str]: Snapshot of room ids.
         """
@@ -642,6 +765,10 @@ class Rift(Cleanable, IRift):
         Args:
             frame_name:
                 Optional explicit Nexus frame name.
+
+        Contract:
+            Delegates frame resolution to Nexus using this Rift's identity and
+            the current Nexus/Rift frame policy.
 
         Returns:
             IAethericFrame: Resolved Nexus frame.
@@ -665,6 +792,10 @@ class Rift(Cleanable, IRift):
             immutable:
                 Immutable flag for indexed/shared creation.
 
+        Contract:
+            Delegates frame creation/recovery to Nexus using this Rift's
+            identity and current frame policy.
+
         Returns:
             IAethericFrame: Created or recovered Nexus frame.
         """
@@ -680,6 +811,10 @@ class Rift(Cleanable, IRift):
         Internal
 
         Return the Nexus frame names this Rift may currently access.
+
+        Contract:
+            Delegates to Nexus and returns a snapshot tuple of currently
+            accessible frame names for this Rift.
 
         Returns:
             Tuple[str, ...]: Accessible Nexus frame names.
@@ -697,6 +832,10 @@ class Rift(Cleanable, IRift):
         Args:
             frame_name:
                 Frame name that was disposed externally.
+
+        Contract:
+            Currently logs the disposal observation only; it does not yet
+            mutate local frame-name state or room attachments.
 
         Returns:
             None.
@@ -717,6 +856,10 @@ class Rift(Cleanable, IRift):
         Args:
             frame_name:
                 Frame name to append if missing.
+
+        Contract:
+            - Deduplicates frame names.
+            - Replaces the stored tuple with a new tuple when appending.
 
         Returns:
             None.

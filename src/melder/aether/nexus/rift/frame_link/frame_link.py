@@ -67,6 +67,11 @@ class FrameLink(Cleanable):
 
         Returns:
             None.
+
+        Contract:
+            - Copies incoming metadata into a link-owned mutable dict.
+            - Derives `display_name` from `source_id` when callers do not
+              supply one.
         """
         super().__init__()
         if not frame_name:
@@ -86,6 +91,10 @@ class FrameLink(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently clear link-owned state.
+
+        Contract:
+            - Clears owned metadata and identity references.
+            - Leaves the link unusable after cleanup.
 
         Returns:
             None.
@@ -143,37 +152,37 @@ class FrameLink(Cleanable):
 
     @property
     def link_id(self) -> str:
-        """Return the canonical target-entry id."""
+        """Return the canonical target-entry id for this view-safe link."""
         self.check_cleaned()
         return self._link_id
 
     @property
     def frame_name(self) -> str:
-        """Return the owning frame name."""
+        """Return the owning frame name for this target entry."""
         self.check_cleaned()
         return self._frame_name
 
     @property
     def source_kind(self) -> str:
-        """Return the source kind."""
+        """Return the source kind label for this target entry."""
         self.check_cleaned()
         return self._source_kind
 
     @property
     def source_id(self) -> str:
-        """Return the source identifier."""
+        """Return the stable source identifier for this target entry."""
         self.check_cleaned()
         return self._source_id
 
     @property
     def display_name(self) -> str:
-        """Return the viewer-facing display name."""
+        """Return the viewer-facing display name for this target entry."""
         self.check_cleaned()
         return self._display_name
 
     @property
     def metadata(self) -> Dict[str, object]:
-        """Return the target metadata map."""
+        """Return a detached copy of the target metadata map."""
         self.check_cleaned()
         return dict(self._metadata)
 

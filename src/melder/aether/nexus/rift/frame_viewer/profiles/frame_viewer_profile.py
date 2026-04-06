@@ -127,8 +127,59 @@ class FrameViewerProfile(Cleanable):
         """
         return cls(
             "general",
+            tool_handler_names_by_name={
+                "list_frames": "list_frame_names",
+                "describe_views": "describe_available_views",
+                "list_targets": "list_available_targets",
+                "describe_targets": "describe_available_targets",
+                "list_view_profiles": "list_view_profile_names",
+                "describe_frames": "describe_frames",
+            },
             default_grouping="frame",
             default_detail_level="summary",
+        )
+
+    @classmethod
+    def create_navigation(cls) -> "FrameViewerProfile":
+        """
+        Create the seeded `navigation` frame-viewer profile.
+
+        Returns:
+            FrameViewerProfile: Seeded `navigation` frame-viewer profile.
+        """
+        return cls(
+            "navigation",
+            tool_handler_names_by_name={
+                "list_frames": "list_frame_names",
+                "describe_views": "describe_available_views",
+                "select_view": "set_default_view",
+                "list_targets": "list_available_targets",
+                "list_view_profiles": "list_view_profile_names",
+                "select_view_profile": "set_default_view_profile",
+            },
+            default_grouping="frame",
+            default_detail_level="summary",
+        )
+
+    @classmethod
+    def create_inspection(cls) -> "FrameViewerProfile":
+        """
+        Create the seeded `inspection` frame-viewer profile.
+
+        Returns:
+            FrameViewerProfile: Seeded `inspection` frame-viewer profile.
+        """
+        return cls(
+            "inspection",
+            tool_handler_names_by_name={
+                "describe_views": "describe_available_views",
+                "describe_targets": "describe_available_targets",
+                "describe_frame": "describe_frame",
+                "describe_frames": "describe_frames",
+                "get_link": "get_required_link_by_source",
+            },
+            default_grouping="kind",
+            default_detail_level="detailed",
         )
 
     @property

@@ -386,6 +386,11 @@ class Nexus(Cleanable, INexus):
             Provide deterministic singleton teardown for test environments that
             need a clean `Nexus` bootstrap path.
 
+        Contract:
+            - Cleans the current singleton instance when one exists.
+            - Resets class-level singleton bookkeeping even if cleanup raises
+              during teardown.
+
         Returns:
             None.
         """
@@ -417,6 +422,10 @@ class Nexus(Cleanable, INexus):
         """
         Purpose:
             Return the installed Nexus configuration.
+
+        Contract:
+            Returns the live installed configuration object, not a detached
+            copy.
 
         Returns:
             INexusConfiguration: Installed process-wide config.
@@ -458,6 +467,11 @@ class Nexus(Cleanable, INexus):
         Purpose:
             Provide callers with a mutable process-level Nexus configuration
             seeded with repo defaults.
+
+        Contract:
+            - Returns a new `NexusConfiguration` instance on each call.
+            - Applies the default property set before returning it.
+            - Does not install the configuration onto Nexus automatically.
 
         Returns:
             INexusConfiguration: Fresh mutable Nexus config.
@@ -624,6 +638,16 @@ class Nexus(Cleanable, INexus):
 
         Create and register one live Rift object.
 
+        Contract:
+            - Enforces the current Rift-creation gate before any object
+              creation begins.
+            - Finalizes the per-Rift configuration when needed and marks it
+              consumed after successful registration.
+            - Allocates default Rift and Nexus-frame names when callers do not
+              supply them.
+            - Registers the created Rift through `add_rift(...)` before
+              returning it.
+
         Args:
             configuration:
                 Optional per-Rift configuration override.
@@ -692,6 +716,13 @@ class Nexus(Cleanable, INexus):
 
         Register one already-constructed Rift into Nexus.
 
+        Contract:
+            - Rejects id/name collisions.
+            - Validates target-frame, Nexus-frame, and active-Rift budgets
+              before mutating registries.
+            - Updates the id/name registries, target-frame ref counts, and
+              Nexus-frame attachments as one Nexus-owned registration flow.
+
         Args:
             rift:
                 Live Rift object.
@@ -737,6 +768,10 @@ class Nexus(Cleanable, INexus):
             access_token:
                 Optional direct-access token.
 
+        Contract:
+            - Applies the current direct-Rift access gate before lookup.
+            - Returns the live registered Rift object, not a detached copy.
+
         Returns:
             IRift: Registered Rift object.
         """
@@ -762,6 +797,11 @@ class Nexus(Cleanable, INexus):
             access_token:
                 Optional direct-access token.
 
+        Contract:
+            - Applies the current direct-Rift access gate before lookup.
+            - Resolves through the name-to-id index and then returns the same
+              live object exposed by `get_rift(...)`.
+
         Returns:
             IRift: Registered Rift object.
         """
@@ -782,6 +822,10 @@ class Nexus(Cleanable, INexus):
             rift_id:
                 Canonical Rift id.
 
+        Contract:
+            Performs a registry existence check only; it does not apply the
+            direct-access gate or materialize any Rift object.
+
         Returns:
             bool: True when registered.
         """
@@ -793,6 +837,14 @@ class Nexus(Cleanable, INexus):
         Internal
 
         Remove one Rift from Nexus and update frame lifecycle state.
+
+        Contract:
+            - Removes the Rift from Nexus registries under the Nexus lock.
+            - Decrements target-frame ref counts and detaches the Rift from its
+              Nexus-managed frames as part of registry teardown.
+            - Disposes orphaned Nexus-managed frames only after the locked
+              registry mutation phase completes.
+            - Cleans the removed Rift before returning.
 
         Args:
             rift_id:
@@ -1032,6 +1084,10 @@ class Nexus(Cleanable, INexus):
         """
         Return the current placeholder ACL manager version string.
 
+        Contract:
+            Returns the version reported by the live Nexus-owned
+            `FrameACLManager`.
+
         Returns:
             str: Current ACL manager version.
         """
@@ -1049,6 +1105,10 @@ class Nexus(Cleanable, INexus):
             frame_acl_profile:
                 Profile object to store by its own name.
 
+        Contract:
+            Delegates registration to the Nexus-owned ACL manager and replaces
+            any existing distinct profile with the same name.
+
         Returns:
             None.
         """
@@ -1063,6 +1123,10 @@ class Nexus(Cleanable, INexus):
             profile_name:
                 Profile name to resolve.
 
+        Contract:
+            Resolves through the Nexus-owned ACL manager without synthesizing a
+            missing profile.
+
         Returns:
             FrameACLProfile: Existing stored profile.
 
@@ -1075,6 +1139,10 @@ class Nexus(Cleanable, INexus):
     def list_frame_acl_profile_names(self) -> List[str]:
         """
         Return the current ACL profile names in insertion order.
+
+        Contract:
+            Returns a snapshot list from the Nexus-owned ACL manager's composed
+            profile registry.
 
         Returns:
             List[str]: Current profile names.
@@ -1089,6 +1157,10 @@ class Nexus(Cleanable, INexus):
         Args:
             profile_name:
                 Profile name to remove.
+
+        Contract:
+            Delegates removal to the Nexus-owned ACL manager and returns False
+            when the profile name is not currently registered.
 
         Returns:
             bool: True when the profile existed and was removed.
@@ -1560,6 +1632,14 @@ class Nexus(Cleanable, INexus):
         """
         Build one projected `FrameViewer` from a Rift's assigned target frames.
 
+        Contract:
+            - Resolves the live Rift first and projects its currently assigned
+              target frames through `create_frame_viewer(...)`.
+            - Enriches the returned viewer metadata with Rift-specific
+              identifiers and assigned-frame information.
+            - Sets the returned viewer's default frame from the Rift's current
+              frame-link contract.
+
         Args:
             rift_id:
                 Existing Rift id whose assigned target frames should populate
@@ -1680,6 +1760,14 @@ class Nexus(Cleanable, INexus):
         """
         Build or reuse one cached projected viewer for a Rift's assigned
         target frames.
+
+        Contract:
+            - Resolves the live Rift first and projects its currently assigned
+              target frames through `create_cached_frame_viewer(...)`.
+            - Enriches the returned viewer metadata with Rift-specific
+              identifiers and assigned-frame information.
+            - Sets the returned viewer's default frame from the Rift's current
+              frame-link contract.
 
         Args:
             rift_id:
@@ -1994,6 +2082,12 @@ class Nexus(Cleanable, INexus):
             rift_id:
                 Requesting Rift id.
 
+        Contract:
+            - Requires Nexus to be enabled.
+            - Applies the current Nexus-frame topology mode when determining
+              visibility.
+            - Returns a snapshot tuple of currently accessible frame names.
+
         Returns:
             Tuple[str, ...]: Accessible Nexus frame names.
         """
@@ -2020,6 +2114,14 @@ class Nexus(Cleanable, INexus):
         Args:
             frame_name:
                 Frame name about to be removed from `Aether`.
+
+        Contract:
+            - Short-circuits when Nexus is cleaned, disabled, or missing the
+              descriptor manager.
+            - Detaches the Nexus-managed frame record and matching ACL
+              container before notifying attached Rifts.
+            - Logs and returns quietly when no Nexus-managed frame record is
+              present.
 
         Returns:
             None.
@@ -2068,6 +2170,10 @@ class Nexus(Cleanable, INexus):
 
         Require that Nexus has an installed configuration.
 
+        Contract:
+            Raises before callers touch configuration-dependent Nexus behavior
+            when no installed configuration is present.
+
         Returns:
             None.
 
@@ -2083,6 +2189,10 @@ class Nexus(Cleanable, INexus):
         Internal
 
         Require that Nexus is enabled.
+
+        Contract:
+            Requires configuration first, then enforces the enabled-state gate
+            for live Rift-domain operations.
 
         Returns:
             None.
@@ -2104,6 +2214,11 @@ class Nexus(Cleanable, INexus):
             creation_token:
                 Optional caller-supplied creation token.
 
+        Contract:
+            - Requires Nexus to be enabled first.
+            - Enforces both the global creation flag and the optional
+              creation-token gate.
+
         Returns:
             None.
         """
@@ -2123,6 +2238,11 @@ class Nexus(Cleanable, INexus):
         Args:
             access_token:
                 Optional caller-supplied Rift access token.
+
+        Contract:
+            - Requires Nexus to be enabled first.
+            - Enforces both the global direct-access flag and the optional
+              access-token gate.
 
         Returns:
             None.
@@ -2146,6 +2266,11 @@ class Nexus(Cleanable, INexus):
         Args:
             configuration:
                 Per-Rift configuration being applied.
+
+        Contract:
+            - Enforces target-frame override policy before runtime validation.
+            - Validates both target-frame naming policy and frame runtime
+              posture requirements for the requested space type.
 
         Returns:
             None.
@@ -2458,6 +2583,11 @@ class Nexus(Cleanable, INexus):
 
         Validate active-Rift budget before registration.
 
+        Contract:
+            - Treats `0` as "unlimited".
+            - Raises before registration when the configured active-Rift cap
+              would be exceeded.
+
         Returns:
             None.
         """
@@ -2479,6 +2609,11 @@ class Nexus(Cleanable, INexus):
                 Canonical Rift id used when the topology mode is
                 `one_per_workspace`.
 
+        Contract:
+            - Returns the shared default frame name in `single` mode.
+            - Returns a per-Rift derived name in `one_per_workspace` mode.
+            - Allocates the next indexed name in `indexed` mode.
+
         Returns:
             str: Assigned Nexus frame name.
         """
@@ -2495,6 +2630,11 @@ class Nexus(Cleanable, INexus):
         Internal
 
         Allocate the next deterministic default Rift name.
+
+        Contract:
+            - Probes forward from the current default-Rift counter.
+            - Skips names already present in the Rift-name registry.
+            - Advances the counter only after a free name is selected.
 
         Returns:
             str: Newly allocated default Rift name.
@@ -2528,6 +2668,10 @@ class Nexus(Cleanable, INexus):
 
         Allocate the next deterministic indexed Nexus frame name.
 
+        Contract:
+            Derives the name from the configured default Nexus frame name and
+            the current indexed-frame counter, then advances that counter.
+
         Returns:
             str: Newly allocated indexed Nexus frame name.
         """
@@ -2548,6 +2692,10 @@ class Nexus(Cleanable, INexus):
         Args:
             rift:
                 Rift being registered.
+
+        Contract:
+            Ensures every currently assigned Nexus frame record marks the Rift
+            as attached.
 
         Returns:
             None.
@@ -2571,6 +2719,12 @@ class Nexus(Cleanable, INexus):
         Args:
             rift:
                 Rift being removed.
+
+        Contract:
+            - Removes the Rift from every currently assigned Nexus-frame
+              record.
+            - Returns only the frame names that should be disposed after
+              detachment.
 
         Returns:
             List[str]: Frame names that should be disposed through `Aether`.
@@ -2598,6 +2752,10 @@ class Nexus(Cleanable, INexus):
         Args:
             frame_name:
                 Nexus frame name to dispose.
+
+        Contract:
+            Resolves the current Nexus-managed frame record first, then
+            delegates disposal to the underlying frame object.
 
         Returns:
             None.
@@ -2700,6 +2858,10 @@ class Nexus(Cleanable, INexus):
             rift_id:
                 Canonical Rift id.
 
+        Contract:
+            Resolves only existing live Rift registry entries and fails fast on
+            absence.
+
         Returns:
             IRift: Registered Rift object.
         """
@@ -2717,6 +2879,10 @@ class Nexus(Cleanable, INexus):
         Args:
             frame_name:
                 Nexus frame name to resolve.
+
+        Contract:
+            Resolves only existing descriptor-owned Nexus frame records and
+            fails fast when the frame has none.
 
         Returns:
             NexusFrameRecord: Existing frame record.
@@ -2800,6 +2966,10 @@ class Nexus(Cleanable, INexus):
         Args:
             frame_name:
                 Frame name whose ACL container should exist.
+
+        Contract:
+            Delegates container creation/lookup to the Nexus-owned ACL manager
+            and does not return the container to callers.
 
         Returns:
             None.

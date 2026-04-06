@@ -81,6 +81,7 @@ class FrameView(Cleanable):
         "_profile_version",
         "_profile_builder",
         "_active_profiles_by_name",
+        "_default_profile_name",
         "_links_by_id",
         "_available_target_ids_by_kind",
         "_metadata",
@@ -94,6 +95,7 @@ class FrameView(Cleanable):
             profile_version: Optional[str] = None,
             profile_builder: Optional[FrameViewProfileBuilder] = None,
             active_profiles_by_name: Optional[Dict[str, FrameViewProfile]] = None,
+            default_profile_name: Optional[str] = None,
             links_by_id: Optional[Dict[str, FrameLink]] = None,
             metadata: Optional[Dict[str, object]] = None,
     ) -> None:
@@ -113,6 +115,8 @@ class FrameView(Cleanable):
                 Optional local frame-view profile builder/registry.
             active_profiles_by_name:
                 Optional active local profiles hosted on this view.
+            default_profile_name:
+                Optional default local profile name.
             links_by_id:
                 Optional map of visible links keyed by link id.
             metadata:
@@ -148,6 +152,22 @@ class FrameView(Cleanable):
         else:
             default_profile = self._profile_builder.get_required_profile("general").clone()
             self._active_profiles_by_name = {default_profile.name: default_profile}
+        if default_profile_name is not None:
+            if not default_profile_name:
+                raise ValueError("default_profile_name cannot be empty.")
+            if default_profile_name not in self._active_profiles_by_name:
+                raise ValueError(
+                    "default_profile_name must be present in active_profiles_by_name."
+                )
+        self._default_profile_name: Optional[str] = (
+            default_profile_name
+            if default_profile_name is not None
+            else (
+                next(iter(self._active_profiles_by_name.keys()))
+                if len(self._active_profiles_by_name) > 0
+                else None
+            )
+        )
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
 
     def cleanup(self) -> None:
@@ -180,6 +200,7 @@ class FrameView(Cleanable):
             self._available_target_ids_by_kind = None
             self._active_profiles_by_name.clear()
             self._active_profiles_by_name = None
+            self._default_profile_name = None
             self._profile_builder = None
             self._metadata.clear()
             self._metadata = None
@@ -392,7 +413,7 @@ class FrameView(Cleanable):
 
     @property
     def links_by_id(self) -> Dict[str, FrameLink]:
-        """Return the currently visible links by id."""
+        """Return a detached snapshot of the currently visible links by id."""
         self.check_cleaned()
         with self._lock:
             return dict(self._links_by_id)
@@ -401,6 +422,10 @@ class FrameView(Cleanable):
     def available_targets_by_id(self) -> Dict[str, FrameLink]:
         """
         Return the currently available frame targets keyed by target id.
+
+        Contract:
+            Returns the same detached snapshot surface as `links_by_id`,
+            exposed under the viewer-facing target naming.
 
         Returns:
             Dict[str, FrameLink]: Available target surface for this frame.
@@ -414,6 +439,9 @@ class FrameView(Cleanable):
         """
         Return available target ids grouped by target kind.
 
+        Contract:
+            Returns a detached snapshot of the grouped available-target ids.
+
         Returns:
             Dict[str, Tuple[str, ...]]: Available target ids by kind.
         """
@@ -426,6 +454,9 @@ class FrameView(Cleanable):
         """
         Return the currently active local view profiles by name.
 
+        Contract:
+            Returns a detached snapshot of the active local profile map.
+
         Returns:
             Dict[str, FrameViewProfile]: Active local view profiles.
         """
@@ -434,8 +465,19 @@ class FrameView(Cleanable):
             return dict(self._active_profiles_by_name)
 
     @property
+    def default_profile_name(self) -> Optional[str]:
+        """
+        Return the default local profile name when one exists.
+
+        Returns:
+            Optional[str]: Default local profile name.
+        """
+        self.check_cleaned()
+        return self._default_profile_name
+
+    @property
     def metadata(self) -> Dict[str, object]:
-        """Return the view metadata map."""
+        """Return a detached copy of the view metadata map."""
         self.check_cleaned()
         with self._lock:
             return dict(self._metadata)
@@ -443,6 +485,9 @@ class FrameView(Cleanable):
     def list_available_target_ids(self) -> List[str]:
         """
         Return the current available target ids.
+
+        Contract:
+            Returns a snapshot list built from the current visible-link ids.
 
         Returns:
             List[str]: Available target ids.
@@ -462,6 +507,11 @@ class FrameView(Cleanable):
         Args:
             source_kind:
                 Optional target kind filter.
+
+        Contract:
+            - Returns a detached list of currently visible targets.
+            - When `source_kind` is supplied, filters against each link's
+              current source-kind label.
 
         Returns:
             List[FrameLink]: Available frame targets.
@@ -511,6 +561,39 @@ class FrameView(Cleanable):
         with self._lock:
             return list(self._active_profiles_by_name.keys())
 
+    def get_default_profile(self) -> FrameViewProfile:
+        """
+        Return the default local view profile.
+
+        Returns:
+            FrameViewProfile: Default local view profile.
+        """
+        self.check_cleaned()
+        if self._default_profile_name is None:
+            raise ValueError("FrameView has no default local profile.")
+        return self.get_required_active_profile(self._default_profile_name)
+
+    def set_default_profile(self, profile_name: str) -> None:
+        """
+        Set the default local profile by name.
+
+        Args:
+            profile_name:
+                Active local profile name.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if not profile_name:
+            raise ValueError("profile_name cannot be empty.")
+        with self._lock:
+            if profile_name not in self._active_profiles_by_name:
+                raise ValueError(
+                    "FrameView profile '{0}' was not found.".format(profile_name)
+                )
+            self._default_profile_name = profile_name
+
     def register_active_profile(self, profile: FrameViewProfile) -> None:
         """
         Register or replace one active local view profile.
@@ -530,6 +613,8 @@ class FrameView(Cleanable):
             if existing_profile is not None and existing_profile is not profile:
                 existing_profile.cleanup()
             self._active_profiles_by_name[profile.name] = profile
+            if self._default_profile_name is None:
+                self._default_profile_name = profile.name
 
     def get_required_active_profile(self, profile_name: str) -> FrameViewProfile:
         """
@@ -580,12 +665,96 @@ class FrameView(Cleanable):
                         self._active_profiles_by_name.items()
                     )
                 },
+                default_profile_name=self._default_profile_name,
                 links_by_id={
                     link_id: frame_link.clone()
                     for link_id, frame_link in self._links_by_id.items()
                 },
                 metadata=dict(self._metadata),
             )
+
+    def list_available_targets_in_profile_order(
+            self,
+            *,
+            profile_name: Optional[str] = None,
+            source_kind: Optional[str] = None,
+    ) -> List[FrameLink]:
+        """
+        Return available targets ordered by the selected local profile.
+
+        Args:
+            profile_name:
+                Optional local profile name. When omitted, the default local
+                profile is used.
+            source_kind:
+                Optional target-kind filter.
+
+        Returns:
+            List[FrameLink]: Available targets in profile-preferred order.
+        """
+        self.check_cleaned()
+        selected_profile = (
+            self.get_required_active_profile(profile_name)
+            if profile_name is not None
+            else self.get_default_profile()
+        )
+        available_targets = self.list_available_targets(source_kind=source_kind)
+        ordered_targets: List[FrameLink] = []
+        handled_target_ids = set()
+        for preferred_kind in selected_profile.preferred_kind_order:
+            for frame_link in available_targets:
+                if frame_link.link_id in handled_target_ids:
+                    continue
+                if frame_link.source_kind != preferred_kind:
+                    continue
+                ordered_targets.append(frame_link)
+                handled_target_ids.add(frame_link.link_id)
+        for frame_link in available_targets:
+            if frame_link.link_id in handled_target_ids:
+                continue
+            ordered_targets.append(frame_link)
+        return ordered_targets
+
+    def describe_available_targets(
+            self,
+            *,
+            profile_name: Optional[str] = None,
+            source_kind: Optional[str] = None,
+    ) -> List[Dict[str, object]]:
+        """
+        Return profile-shaped target descriptions for this frame.
+
+        Args:
+            profile_name:
+                Optional local profile name. When omitted, the default local
+                profile is used.
+            source_kind:
+                Optional target-kind filter.
+
+        Returns:
+            List[Dict[str, object]]: Target descriptions in profile order.
+        """
+        self.check_cleaned()
+        selected_profile = (
+            self.get_required_active_profile(profile_name)
+            if profile_name is not None
+            else self.get_default_profile()
+        )
+        target_descriptions: List[Dict[str, object]] = []
+        for frame_link in self.list_available_targets_in_profile_order(
+                profile_name=profile_name,
+                source_kind=source_kind,
+        ):
+            description = {
+                "target_id": frame_link.link_id,
+                "source_kind": frame_link.source_kind,
+                "source_id": frame_link.source_id,
+                "display_name": frame_link.display_name,
+            }
+            if selected_profile.default_detail_level == "detailed":
+                description["metadata"] = frame_link.metadata
+            target_descriptions.append(description)
+        return target_descriptions
 
     @staticmethod
     def _build_available_target_ids_by_kind(

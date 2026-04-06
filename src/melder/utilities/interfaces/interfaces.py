@@ -5986,6 +5986,90 @@ class IRiftSpace(ICleanable, Protocol):
         """
         ...
 
+    @property
+    def frame_viewer(self) -> Optional[object]:
+        """
+        Return the attached frame-surface viewer, if one exists.
+        """
+        ...
+
+    def list_frame_names(self) -> List[str]:
+        """
+        Return the assigned frame names visible through the attached viewer.
+        """
+        ...
+
+    def list_available_targets(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+            profile_name: Optional[str] = None,
+            source_kind: Optional[str] = None,
+    ) -> List[object]:
+        """
+        Return available targets from the attached viewer.
+        """
+        ...
+
+    def describe_available_targets(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+            profile_name: Optional[str] = None,
+            source_kind: Optional[str] = None,
+    ) -> List[Dict[str, object]]:
+        """
+        Return profile-shaped target descriptions from the attached viewer.
+        """
+        ...
+
+    def get_required_frame_viewer(self) -> object:
+        """
+        Return the attached frame viewer or raise.
+        """
+        ...
+
+    def list_selected_target_ids(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return selected target ids for one frame or for the default frame.
+        """
+        ...
+
+    def select_target(
+            self,
+            target_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> None:
+        """
+        Select one available target through the attached viewer.
+        """
+        ...
+
+    def clear_selected_targets(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> None:
+        """
+        Clear selected target ids for one frame or for every frame.
+        """
+        ...
+
+    def describe_selected_targets(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[Dict[str, object]]:
+        """
+        Return descriptions for the currently selected targets.
+        """
+        ...
+
 
 @runtime_checkable
 class IStaticRiftSpace(IRiftSpace, Protocol):

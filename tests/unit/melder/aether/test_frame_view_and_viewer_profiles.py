@@ -166,9 +166,27 @@ def test_frame_viewer_profile_create_general_exposes_expected_defaults() -> None
     assert profile.version == "0.0.1"
     assert profile.default_grouping == "frame"
     assert profile.default_detail_level == "summary"
-    assert "list_frame_names" in profile.enabled_helpers
-    assert "list_links" in profile.enabled_helpers
+    assert "list_frames" in profile.enabled_helpers
+    assert "list_targets" in profile.enabled_helpers
     assert "describe_frames" in profile.enabled_helpers
+
+
+def test_frame_viewer_profile_builder_seeds_navigation_and_inspection_profiles() -> None:
+    """
+    Verify the viewer profile builder seeds actionable navigation/inspection profiles.
+
+    Returns:
+        None.
+    """
+    builder = FrameViewerProfileBuilder()
+
+    assert builder.list_profile_names() == ["general", "navigation", "inspection"]
+    assert builder.get_required_profile("navigation").tool_handler_names_by_name[
+        "select_view"
+    ] == "set_default_view"
+    assert builder.get_required_profile("inspection").tool_handler_names_by_name[
+        "describe_targets"
+    ] == "describe_available_targets"
 
 
 def test_frame_viewer_profile_cleanup_clears_owned_state() -> None:

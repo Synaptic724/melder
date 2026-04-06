@@ -174,6 +174,11 @@ class FrameACLManager(Cleanable):
         """
         Return a snapshot of the manager-owned ACL profile registry.
 
+        Contract:
+            - Returns a shallow copy of the mapping.
+            - The returned dictionary is detached from future manager writes.
+            - Profile objects inside the snapshot remain manager-owned.
+
         Returns:
             Dict[str, FrameACLProfile]:
                 Snapshot of the profile-name keyed registry.
@@ -186,6 +191,9 @@ class FrameACLManager(Cleanable):
     def frame_acl_profile_builder(self) -> FrameACLProfileBuilder:
         """
         Return the manager-owned ACL profile builder/library.
+
+        Contract:
+            Returns the live manager-owned builder object, not a detached copy.
 
         Returns:
             FrameACLProfileBuilder: Manager-owned ACL profile builder/library.
@@ -588,6 +596,11 @@ class FrameACLManager(Cleanable):
             frame_acl_profile:
                 Profile object to store by its own name.
 
+        Contract:
+            - Replaces any existing distinct profile registered under the same
+              name.
+            - Cleans the displaced profile object before storing the new one.
+
         Returns:
             None.
 
@@ -615,6 +628,9 @@ class FrameACLManager(Cleanable):
             view_profile:
                 Reusable view profile to store.
 
+        Contract:
+            Delegates registration to the manager-owned profile builder/library.
+
         Returns:
             None.
         """
@@ -631,6 +647,9 @@ class FrameACLManager(Cleanable):
         Args:
             codegen_profile:
                 Reusable codegen profile to store.
+
+        Contract:
+            Delegates registration to the manager-owned profile builder/library.
 
         Returns:
             None.
@@ -649,6 +668,10 @@ class FrameACLManager(Cleanable):
             profile_name:
                 Profile name to resolve.
 
+        Contract:
+            - Does not synthesize or compose a missing profile.
+            - Fails fast when the requested name is absent.
+
         Returns:
             FrameACLProfile: Existing stored profile.
 
@@ -666,6 +689,10 @@ class FrameACLManager(Cleanable):
         """
         Return the current ACL profile names in insertion order.
 
+        Contract:
+            Returns a snapshot list of the manager-local composed profile
+            registry keys.
+
         Returns:
             List[str]: Current profile names.
         """
@@ -677,6 +704,10 @@ class FrameACLManager(Cleanable):
         """
         Return the current reusable view-profile names.
 
+        Contract:
+            Delegates to the manager-owned profile builder and returns a
+            snapshot of registered reusable view-profile names.
+
         Returns:
             List[str]: Current view-profile names.
         """
@@ -686,6 +717,10 @@ class FrameACLManager(Cleanable):
     def _list_codegen_acl_profile_names(self) -> List[str]:
         """
         Return the current reusable codegen-profile names.
+
+        Contract:
+            Delegates to the manager-owned profile builder and returns a
+            snapshot of registered reusable codegen-profile names.
 
         Returns:
             List[str]: Current codegen-profile names.
@@ -700,6 +735,11 @@ class FrameACLManager(Cleanable):
         Args:
             profile_name:
                 Profile name to remove.
+
+        Contract:
+            - Removes the composed profile from the manager-local registry.
+            - Cleans the removed profile before returning.
+            - Returns False when the name is not registered.
 
         Returns:
             bool: True when the profile existed and was removed.
@@ -733,6 +773,11 @@ class FrameACLManager(Cleanable):
                 Reusable view-profile name to compose in.
             codegen_profile_name:
                 Reusable codegen-profile name to compose in.
+
+        Contract:
+            - Delegates composition to the manager-owned profile builder.
+            - Registers the resulting composed profile in the manager-local
+              profile registry before returning it.
 
         Returns:
             FrameACLProfile: Newly composed and registered frame ACL profile.

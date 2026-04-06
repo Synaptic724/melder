@@ -58,12 +58,14 @@ class RiftEventConfiguration(Cleanable, IRiftEventConfiguration):
             memory_observers:
                 Optional ordered callables that observe `RiftMemory` events.
 
+        Contract:
+            - Normalizes iterable inputs into ordered lists owned by this
+              configuration.
+            - Preserves caller order for enrichers and observers.
+            - Does not perform custom callable validation in this scaffold.
+
         Returns:
             None.
-
-        Raises:
-            No custom validation errors are raised in this scaffold. Iterable
-            inputs are normalized to ordered lists owned by this configuration.
         """
         super().__init__()
         self._action_enrichers = list(action_enrichers) if action_enrichers else []
@@ -79,6 +81,7 @@ class RiftEventConfiguration(Cleanable, IRiftEventConfiguration):
 
         Contract:
             - Drops all ordered callback lists.
+            - Releases owned references to enrichers and observers.
             - Leaves the configuration unusable after cleanup.
 
         Returns:

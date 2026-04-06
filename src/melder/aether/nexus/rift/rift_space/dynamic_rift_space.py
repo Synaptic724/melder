@@ -15,8 +15,8 @@ class DynamicRiftSpace(RiftSpace, IDynamicRiftSpace):
     Contract:
         - Inherits all base room behavior.
         - Fixes `space_kind` to `dynamic`.
-        - Represents the richer room surface intended for local construction
-          and more open-ended workflows.
+        - Represents the richer room surface intended for local construction,
+          mutable room state, and more open-ended workflows.
     """
 
     def __init__(

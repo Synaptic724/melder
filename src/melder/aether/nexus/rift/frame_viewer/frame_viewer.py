@@ -358,6 +358,31 @@ class FrameViewer(Cleanable):
                 )
             self._default_view_frame_name = frame_name
 
+    def describe_available_views(self) -> List[Dict[str, object]]:
+        """
+        Return summaries for the currently assigned views.
+
+        Returns:
+            List[Dict[str, object]]: Assigned view summaries.
+        """
+        self.check_cleaned()
+        described_views: List[Dict[str, object]] = []
+        for frame_name in self.list_frame_names():
+            frame_view = self.get_available_view(frame_name)
+            described_views.append(
+                {
+                    "frame_name": frame_name,
+                    "is_default": frame_name == self._default_view_frame_name,
+                    "available_target_count": len(frame_view.available_targets_by_id),
+                    "available_kinds": tuple(
+                        sorted(frame_view.available_target_ids_by_kind.keys())
+                    ),
+                    "default_profile_name": frame_view.default_profile_name,
+                    "active_profile_names": frame_view.list_active_profile_names(),
+                }
+            )
+        return described_views
+
     def list_frame_names(self) -> List[str]:
         """
         Internal
@@ -586,6 +611,123 @@ class FrameViewer(Cleanable):
             frame_name: self.describe_frame(frame_name)
             for frame_name in sorted(self.list_frame_names())
         }
+
+    def list_available_targets(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+            profile_name: Optional[str] = None,
+            source_kind: Optional[str] = None,
+    ) -> List[FrameLink]:
+        """
+        Return available targets from one assigned view in profile order.
+
+        Args:
+            frame_name:
+                Optional assigned frame name. When omitted, the default
+                assigned view is used.
+            profile_name:
+                Optional local view profile name used for ordering.
+            source_kind:
+                Optional target-kind filter.
+
+        Returns:
+            List[FrameLink]: Available targets in view-profile order.
+        """
+        self.check_cleaned()
+        selected_view = (
+            self.get_available_view(frame_name)
+            if frame_name is not None
+            else self.get_default_view()
+        )
+        return selected_view.list_available_targets_in_profile_order(
+            profile_name=profile_name,
+            source_kind=source_kind,
+        )
+
+    def list_view_profile_names(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return the active view-profile names for one assigned view.
+
+        Args:
+            frame_name:
+                Optional assigned frame name. When omitted, the default
+                assigned view is used.
+
+        Returns:
+            List[str]: Active local view-profile names.
+        """
+        self.check_cleaned()
+        selected_view = (
+            self.get_available_view(frame_name)
+            if frame_name is not None
+            else self.get_default_view()
+        )
+        return selected_view.list_active_profile_names()
+
+    def set_default_view_profile(
+            self,
+            profile_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> None:
+        """
+        Set the default local view profile for one assigned view.
+
+        Args:
+            profile_name:
+                Active local view profile name.
+            frame_name:
+                Optional assigned frame name. When omitted, the default
+                assigned view is used.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        selected_view = (
+            self.get_available_view(frame_name)
+            if frame_name is not None
+            else self.get_default_view()
+        )
+        selected_view.set_default_profile(profile_name)
+
+    def describe_available_targets(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+            profile_name: Optional[str] = None,
+            source_kind: Optional[str] = None,
+    ) -> List[Dict[str, object]]:
+        """
+        Return profile-shaped target descriptions from one assigned view.
+
+        Args:
+            frame_name:
+                Optional assigned frame name. When omitted, the default
+                assigned view is used.
+            profile_name:
+                Optional local view profile name used for shaping.
+            source_kind:
+                Optional target-kind filter.
+
+        Returns:
+            List[Dict[str, object]]: Profile-shaped target descriptions.
+        """
+        self.check_cleaned()
+        selected_view = (
+            self.get_available_view(frame_name)
+            if frame_name is not None
+            else self.get_default_view()
+        )
+        return selected_view.describe_available_targets(
+            profile_name=profile_name,
+            source_kind=source_kind,
+        )
 
     def get_required_link_by_source(
             self,

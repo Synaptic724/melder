@@ -3,6 +3,9 @@ import pytest
 from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
 from melder.aether.nexus.rift.frame_viewer.frame_view import FrameView
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.aether.nexus.rift.frame_viewer.profiles.frame_view_profile import (
+    FrameViewProfile,
+)
 from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile import (
     FrameViewerProfile,
 )
@@ -177,6 +180,154 @@ def test_frame_viewer_can_set_default_view_to_another_assigned_view() -> None:
     assert viewer.get_default_view().frame_name == "finance"
 
 
+def test_frame_viewer_can_describe_available_views() -> None:
+    """
+    Verify the viewer can describe assigned views directly.
+
+    Returns:
+        None.
+    """
+    viewer = FrameViewer(
+        available_views_by_frame_name={
+            "ops": _build_view(
+                frame_name="ops",
+                links=[_build_link(
+                    frame_name="ops",
+                    source_kind="frame",
+                    source_id="frame-1",
+                    display_name="ops",
+                )],
+            ),
+            "finance": _build_view(
+                frame_name="finance",
+                links=[_build_link(
+                    frame_name="finance",
+                    source_kind="frame",
+                    source_id="frame-2",
+                    display_name="finance",
+                )],
+            ),
+        }
+    )
+
+    descriptions = viewer.describe_available_views()
+
+    assert descriptions[0]["frame_name"] == "finance"
+    assert descriptions[0]["is_default"] is False
+    assert descriptions[1]["frame_name"] == "ops"
+    assert descriptions[1]["is_default"] is True
+
+
+def test_frame_viewer_can_list_and_set_view_profiles_on_selected_view() -> None:
+    """
+    Verify the viewer can manage local view-profile selection on the selected view.
+
+    Returns:
+        None.
+    """
+    viewer = FrameViewer(
+        available_views_by_frame_name={
+            "ops": _build_view(
+                frame_name="ops",
+                links=[_build_link(
+                    frame_name="ops",
+                    source_kind="frame",
+                    source_id="frame-1",
+                    display_name="ops",
+                )],
+            )
+        }
+    )
+    viewer.get_default_view().register_active_profile(
+        FrameViewProfile("inspection", default_detail_level="detailed")
+    )
+
+    assert viewer.list_view_profile_names() == ["general", "inspection"]
+
+    viewer.set_default_view_profile("inspection")
+
+    assert viewer.get_default_view().default_profile_name == "inspection"
+
+
+def test_frame_viewer_can_delegate_available_targets_from_default_view() -> None:
+    """
+    Verify the viewer delegates available-target ordering to the default view.
+
+    Returns:
+        None.
+    """
+    viewer = FrameViewer(
+        available_views_by_frame_name={
+            "ops": _build_view(
+                frame_name="ops",
+                links=[
+                    _build_link(
+                        frame_name="ops",
+                        source_kind="frame",
+                        source_id="frame-1",
+                        display_name="ops",
+                    ),
+                    _build_link(
+                        frame_name="ops",
+                        source_kind="spell",
+                        source_id="spell-1",
+                        display_name="spell_one",
+                    ),
+                ],
+            )
+        }
+    )
+    viewer.get_default_view().register_active_profile(
+        FrameViewProfile(
+            "inspection",
+            preferred_kind_order=("spell", "frame"),
+        )
+    )
+    viewer.get_default_view().set_default_profile("inspection")
+
+    ordered_targets = viewer.list_available_targets()
+
+    assert [frame_link.source_kind for frame_link in ordered_targets] == [
+        "spell",
+        "frame",
+    ]
+
+
+def test_frame_viewer_can_describe_available_targets_from_assigned_view() -> None:
+    """
+    Verify the viewer can describe profile-shaped targets from one assigned view.
+
+    Returns:
+        None.
+    """
+    viewer = FrameViewer(
+        available_views_by_frame_name={
+            "ops": _build_view(
+                frame_name="ops",
+                links=[
+                    _build_link(
+                        frame_name="ops",
+                        source_kind="frame",
+                        source_id="frame-1",
+                        display_name="ops",
+                    )
+                ],
+            )
+        }
+    )
+    viewer.get_default_view().register_active_profile(
+        FrameViewProfile(
+            "inspection",
+            default_detail_level="detailed",
+        )
+    )
+
+    descriptions = viewer.describe_available_targets(profile_name="inspection")
+
+    assert descriptions[0]["source_kind"] == "frame"
+    assert "metadata" in descriptions[0]
+
+
 def test_frame_viewer_default_view_helpers_reject_missing_and_invalid_inputs() -> None:
     """
     Verify default-view helpers fail fast on empty or missing view inputs.
@@ -223,16 +374,19 @@ def test_frame_viewer_lists_enabled_helpers_from_selected_profile() -> None:
             "general": FrameViewerProfile(
                 "general",
                 version="0.0.1",
-                enabled_helpers=["list_frame_names", "list_links"],
+                tool_handler_names_by_name={
+                    "list_frames": "list_frame_names",
+                    "list_targets": "list_available_targets",
+                },
             )
         },
     )
 
     assert viewer.profile_name == "general"
     assert viewer.profile_version == "0.0.1"
-    assert viewer.list_enabled_helpers() == ("list_frame_names", "list_links")
-    assert viewer.list_available_tools() == ("list_frame_names", "list_links")
-    assert viewer.has_enabled_helper("list_links") is True
+    assert viewer.list_enabled_helpers() == ("list_frames", "list_targets")
+    assert viewer.list_available_tools() == ("list_frames", "list_targets")
+    assert viewer.has_enabled_helper("list_frames") is True
     assert viewer.has_enabled_helper("describe_frames") is False
 
 
@@ -382,7 +536,7 @@ def test_frame_viewer_execute_tool_routes_through_profile_owned_tool_mapping() -
         active_profiles_by_name={
             "inspection": FrameViewerProfile(
                 "inspection",
-                enabled_helpers=["list_links"],
+                tool_handler_names_by_name={"list_targets": "list_available_targets"},
             )
         },
         available_views_by_frame_name={
@@ -400,7 +554,7 @@ def test_frame_viewer_execute_tool_routes_through_profile_owned_tool_mapping() -
         },
     )
 
-    assert [link.source_id for link in viewer.execute_tool("list_links")] == ["frame-1"]
+    assert [link.source_id for link in viewer.execute_tool("list_targets")] == ["frame-1"]
 
 
 def test_frame_viewer_execute_tool_uses_explicit_profile_handler_alias() -> None:
@@ -504,6 +658,67 @@ def test_frame_viewer_execute_tool_can_target_non_default_active_profile() -> No
         "inventory",
         profile_name="inspection",
     )] == ["frame-1"]
+
+
+def test_frame_viewer_actionable_navigation_profile_can_select_views() -> None:
+    """
+    Verify the seeded navigation profile exposes actionable view-selection tools.
+
+    Returns:
+        None.
+    """
+    viewer = FrameViewer(
+        active_profiles_by_name={
+            "navigation": FrameViewerProfile.create_navigation(),
+        },
+        available_views_by_frame_name={
+            "ops": _build_view(
+                frame_name="ops",
+                links=[],
+            ),
+            "finance": _build_view(
+                frame_name="finance",
+                links=[],
+            ),
+        },
+    )
+
+    viewer.execute_tool("select_view", frame_name="finance", profile_name="navigation")
+
+    assert viewer.default_view_frame_name == "finance"
+
+
+def test_frame_viewer_actionable_inspection_profile_can_describe_targets() -> None:
+    """
+    Verify the seeded inspection profile exposes actionable target descriptions.
+
+    Returns:
+        None.
+    """
+    viewer = FrameViewer(
+        active_profiles_by_name={
+            "inspection": FrameViewerProfile.create_inspection(),
+        },
+        available_views_by_frame_name={
+            "ops": _build_view(
+                frame_name="ops",
+                links=[_build_link(
+                    frame_name="ops",
+                    source_kind="frame",
+                    source_id="frame-1",
+                    display_name="ops",
+                )],
+            )
+        },
+    )
+
+    descriptions = viewer.execute_tool(
+        "describe_targets",
+        profile_name="inspection",
+    )
+
+    assert descriptions[0]["source_kind"] == "frame"
+    assert "metadata" in descriptions[0]
 
 
 def test_frame_viewer_list_links_can_scope_to_single_frame() -> None:

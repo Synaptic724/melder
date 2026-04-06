@@ -41,6 +41,8 @@ class FrameViewerProfileBuilder(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._profiles_by_name: Dict[str, FrameViewerProfile] = {}
         self.register_profile(FrameViewerProfile.create_general())
+        self.register_profile(FrameViewerProfile.create_navigation())
+        self.register_profile(FrameViewerProfile.create_inspection())
 
     def register_profile(self, profile: FrameViewerProfile) -> None:
         """

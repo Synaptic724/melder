@@ -94,19 +94,19 @@ class FrameLinkContract(Cleanable):
 
     @property
     def contract_id(self) -> str:
-        """Return the canonical contract id."""
+        """Return the canonical contract id for this Rift-local frame contract."""
         self.check_cleaned()
         return self._contract_id
 
     @property
     def rift_id(self) -> str:
-        """Return the owning Rift id."""
+        """Return the owning Rift id for this contract."""
         self.check_cleaned()
         return self._rift_id
 
     @property
     def assigned_frame_names(self) -> Tuple[str, ...]:
-        """Return the currently assigned/available frame names."""
+        """Return the currently assigned/available frame names as a stable tuple."""
         self.check_cleaned()
         return self._assigned_frame_names
 
@@ -118,13 +118,17 @@ class FrameLinkContract(Cleanable):
 
     @property
     def metadata(self) -> Dict[str, object]:
-        """Return the contract metadata map."""
+        """Return a detached copy of the contract metadata map."""
         self.check_cleaned()
         return dict(self._metadata)
 
     def list_frame_names(self) -> List[str]:
         """
         Return the currently assigned frame names.
+
+        Contract:
+            Returns a snapshot list built from the current assigned-frame
+            tuple.
 
         Returns:
             List[str]: Assigned frame names.
@@ -165,6 +169,11 @@ class FrameLinkContract(Cleanable):
             set_as_default:
                 When True, the frame also becomes the default assigned frame.
 
+        Contract:
+            - Deduplicates assigned frame names.
+            - Sets the default frame when explicitly requested or when no
+              default frame currently exists.
+
         Returns:
             None.
         """
@@ -184,6 +193,11 @@ class FrameLinkContract(Cleanable):
         Args:
             frame_name:
                 Frame name to remove.
+
+        Contract:
+            - Returns quietly when the frame is not assigned.
+            - Recomputes the default frame when the removed frame was the
+              current default.
 
         Returns:
             None.
@@ -210,6 +224,10 @@ class FrameLinkContract(Cleanable):
         """
         Return one detached summary of the Rift frame availability contract.
 
+        Contract:
+            Returns a detached summary payload built from the current contract
+            state.
+
         Returns:
             Dict[str, object]: Detached contract summary.
         """
@@ -224,6 +242,10 @@ class FrameLinkContract(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently clear contract-owned state.
+
+        Contract:
+            - Clears assigned-frame and metadata state.
+            - Leaves the contract unusable after cleanup.
 
         Returns:
             None.

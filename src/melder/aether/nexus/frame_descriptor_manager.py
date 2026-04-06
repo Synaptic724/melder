@@ -568,6 +568,10 @@ class FrameDescriptorManager(Cleanable):
             frame_name:
                 Frame name to inspect.
 
+        Contract:
+            Performs an existence check only; it does not create a descriptor
+            on demand.
+
         Returns:
             bool: True when a descriptor exists for the frame.
         """
@@ -590,6 +594,11 @@ class FrameDescriptorManager(Cleanable):
             frame_name:
                 Frame name to resolve.
 
+        Contract:
+            - Does not create a descriptor or a frame record on demand.
+            - Returns None when the frame has never been registered or does
+              not currently carry a Nexus-managed frame record.
+
         Returns:
             Optional[NexusFrameRecord]:
                 Current Nexus-managed frame record.
@@ -610,6 +619,10 @@ class FrameDescriptorManager(Cleanable):
             Enumerate frame names currently backed by Nexus-managed frame
             records.
 
+        Contract:
+            Returns a snapshot list filtered from the current descriptor
+            registry.
+
         Returns:
             List[str]:
                 Current Nexus-managed frame names.
@@ -628,6 +641,10 @@ class FrameDescriptorManager(Cleanable):
 
         Purpose:
             Expose the size of the Nexus-managed frame-record set.
+
+        Contract:
+            Computes the count from the current descriptor-backed
+            Nexus-frame-name snapshot rather than tracking a second counter.
 
         Returns:
             int:

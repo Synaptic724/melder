@@ -89,6 +89,13 @@ class NexusFrameRecord(Cleanable):
 
         Returns:
             None.
+
+        Contract:
+            - Starts with an empty attached-Rift set.
+            - Holds the realized frame strongly for as long as the record is
+              live.
+            - Stores owner/creator metadata separately so ownership may later
+              transfer without rewriting creator provenance.
         """
         super().__init__()
         self._id: str = IDBuilder.create_id()
@@ -226,6 +233,10 @@ class NexusFrameRecord(Cleanable):
             rift_id:
                 Canonical Rift id to attach.
 
+        Contract:
+            - Adds the Rift id to the attachment set.
+            - Promotes the attaching Rift to owner when no current owner is set.
+
         Returns:
             None.
         """
@@ -244,6 +255,10 @@ class NexusFrameRecord(Cleanable):
         Args:
             rift_id:
                 Canonical Rift id to detach.
+
+        Contract:
+            - Removes the Rift id from the attachment set when present.
+            - Reassigns ownership when the departing Rift was the current owner.
 
         Returns:
             None.
@@ -301,6 +316,11 @@ class NexusFrameRecord(Cleanable):
         Internal
 
         Transfer ownership to one remaining attached Rift when possible.
+
+        Contract:
+            - Clears ownership when no attached Rift ids remain.
+            - Otherwise selects a deterministic replacement owner from the
+              current attachment set.
 
         Returns:
             None.
