@@ -2328,3 +2328,38 @@ def test_invalidate_contract_consumers_swallows_state_and_attribute_errors(ward)
     conduit._creations = object()
 
     ward._invalidate_contract_consumers()
+
+def test_invalidate_contract_consumers_noops_when_state_system_missing(ward) -> None:
+    """
+    Verify _invalidate_contract_consumers returns when the spellbook has no spell-system states.
+    """
+    spellbook = MagicMock()
+    spellbook._spell_system_states = None
+    conduit = MagicMock()
+    conduit._spellbook = spellbook
+    conduit._creations = MagicMock()
+    ward._conduit = conduit
+
+    ward._invalidate_contract_consumers()
+
+    conduit._creations.extract_spell_creations.assert_not_called()
+
+def test_invalidate_contract_consumers_skips_missing_state_entries(ward) -> None:
+    """
+    Verify _invalidate_contract_consumers skips lineage ids whose state entries cannot be resolved.
+    """
+    spellbook = MagicMock()
+    spellbook._id = "book-1"
+    spellbook._spell_system_states = MagicMock()
+    spellbook._spell_system_states.mark_contract_dependents_dirty.return_value = {"lineage-a"}
+    spellbook._spell_system_states.get_by_index_id.return_value = None
+
+    creations = MagicMock()
+    conduit = MagicMock()
+    conduit._spellbook = spellbook
+    conduit._creations = creations
+    ward._conduit = conduit
+
+    ward._invalidate_contract_consumers()
+
+    creations.extract_spell_creations.assert_not_called()

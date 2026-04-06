@@ -952,6 +952,39 @@ def test_remove_spell_from_contract_swallows_invalidate_contract_consumers_error
     assert borrower._conduit_ward._find_contract(owner) is None
 
 
+def test_remove_spell_from_contract_raises_when_contract_cleanup_fails(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify removal logs and re-raises when final contract cleanup fails after the spell is removed."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-cleanup-fail", permissions=Permissions.create)
+
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+        permissions="create",
+    )
+
+    with patch.object(
+        borrower._conduit_ward,
+        "_remove_contract",
+        side_effect=RuntimeError("cleanup boom"),
+    ):
+        with pytest.raises(RuntimeError, match="cleanup boom"):
+            borrower._conduit_ward._remove_spell_from_contract(
+                spell=spell,
+                spell_id=spell.spell_id,
+                conduit=owner,
+            )
+
+    assert borrower._spellbook._remove_contracted_calls == [(owner._id, spell.spell_id)]
+    assert any(
+        level == "error" and "contract cleanup failed" in message
+        for level, message in borrower._logger.messages
+    )
+
+
 def test_remove_all_spells_from_contract_swallows_invalidate_contract_consumers_error(
     linked_pair: tuple[FakeConduit, FakeConduit],
 ) -> None:

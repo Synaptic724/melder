@@ -29,22 +29,35 @@ _V = TypeVar("_V")
 
 
 class _WeakDictKeysView(Collection[_K]):
+    """
+    Dynamic keys view over the live-key surface of a WeakConcurrentDict.
+
+    This mirrors the role of `dict_keys`, but iteration snapshots keys through
+    the parent weak dict so dead values can be excluded by the parent's current
+    liveness rules.
+    """
+
     def __init__(self, parent: "WeakConcurrentDict[_K, _V]") -> None:
+        """Bind this keys view to its parent weak dictionary."""
         self._parent = parent
 
     def __iter__(self) -> Iterator[_K]:
+        """Iterate over the parent's currently visible keys."""
         self._parent.check_cleaned()
         for k, _ in self._parent._snapshot_items():
             yield k
 
     def __len__(self) -> int:
+        """Return the number of keys currently visible through the parent dict."""
         return len(self._parent)
 
     def __contains__(self, key: object) -> bool:
+        """Return whether `key` is present in the parent dict with a live value."""
         return key in self._parent
 
     # Set-like operations
     def _as_set(self) -> set[_K]:
+        """Materialize this dynamic view into a plain Python set."""
         return set(iter(self))
 
     def __and__(self, other: Iterable[Any]) -> set[_K]:
@@ -60,19 +73,31 @@ class _WeakDictKeysView(Collection[_K]):
         return self._as_set().__xor__(set(other))
 
     def __repr__(self) -> str:
+        """Return a debug-oriented representation of the current keys view."""
         return f"{self.__class__.__name__}({list(self)!r})"
 
 
 class _WeakDictItemsView(Collection[Tuple[_K, _V]]):
+    """
+    Dynamic items view over the live `(key, value)` pairs in a WeakConcurrentDict.
+
+    Values are dereferenced lazily through the parent dict's snapshot logic, so
+    dead entries are filtered or raised according to the parent container's
+    current semantics.
+    """
+
     def __init__(self, parent: "WeakConcurrentDict[_K, _V]") -> None:
+        """Bind this items view to its parent weak dictionary."""
         self._parent = parent
 
     def __iter__(self) -> Iterator[Tuple[_K, _V]]:
+        """Iterate over the parent's currently visible live `(key, value)` pairs."""
         self._parent.check_cleaned()
         for k, node in self._parent._snapshot_items():
             yield (k, node.deref(strict=True))
 
     def __len__(self) -> int:
+        """Return the number of currently visible live items."""
         return len(self._parent)
 
     def __contains__(self, item: object) -> bool:
@@ -87,6 +112,7 @@ class _WeakDictItemsView(Collection[Tuple[_K, _V]]):
 
     # Set-like operations
     def _as_set(self) -> set[Tuple[_K, _V]]:
+        """Materialize this dynamic items view into a plain Python set."""
         return set(iter(self))
 
     def __and__(self, other: Iterable[Any]) -> set[Tuple[_K, _V]]:
@@ -102,19 +128,30 @@ class _WeakDictItemsView(Collection[Tuple[_K, _V]]):
         return self._as_set().__xor__(set(other))
 
     def __repr__(self) -> str:
+        """Return a debug-oriented representation of the current items view."""
         return f"{self.__class__.__name__}({list(self)!r})"
 
 
 class _WeakDictValuesView(Collection[_V]):
+    """
+    Dynamic values view over the live values stored in a WeakConcurrentDict.
+
+    This mirrors the role of `dict_values`, but iteration dereferences weak
+    nodes through the parent container's liveness rules.
+    """
+
     def __init__(self, parent: "WeakConcurrentDict[_K, _V]") -> None:
+        """Bind this values view to its parent weak dictionary."""
         self._parent = parent
 
     def __iter__(self) -> Iterator[_V]:
+        """Iterate over the parent's currently visible live values."""
         self._parent.check_cleaned()
         for _, node in self._parent._snapshot_items():
             yield node.deref(strict=True)
 
     def __len__(self) -> int:
+        """Return the number of currently visible live values."""
         return len(self._parent)
 
     def __contains__(self, value: object) -> bool:
@@ -124,6 +161,7 @@ class _WeakDictValuesView(Collection[_V]):
         return False
 
     def __repr__(self) -> str:
+        """Return a debug-oriented representation of the current values view."""
         return f"{self.__class__.__name__}({list(self)!r})"
 
 
@@ -1218,7 +1256,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
 
     def __str__(self) -> str:
         """
-        Return a user-friendly string representation of the dict.
+        Return a user-facing string representation of the current live snapshot.
         """
         self.check_cleaned()
         return str(self.to_dict())
@@ -1246,7 +1284,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
 
     def __or__(self, other: Mapping[_K, _V] | Iterable[Tuple[_K, _V]]) -> "WeakConcurrentDict[_K, _V]":
         """
-        Merge two mappings/iterables into a new WeakConcurrentDict (PEP 584 style).
+        Merge this dict with another mapping or iterable into a new weak dict.
         """
         self.check_cleaned()
         if other is None:
@@ -1261,7 +1299,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
 
     def __ior__(self, other: Mapping[_K, _V] | Iterable[Tuple[_K, _V]]) -> "WeakConcurrentDict[_K, _V]":
         """
-        In-place merge (|=) with another mapping/iterable (PEP 584 style).
+        In-place merge (`|=`) with another mapping or iterable.
         """
         self.update(other)
         return self
