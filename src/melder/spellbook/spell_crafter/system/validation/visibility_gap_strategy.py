@@ -17,15 +17,14 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class VisibilityGapStrategy(SpellSystemValidationStrategy):
     """
-    Detect dependencies filtered out by spellbook visibility.
+    Guard that spellbook visibility filtering has not silently amputated needed
+    dependencies from the system graph.
 
-    Purpose:
-        Surface cases where a visible spell depends on spell ids that are not
-        present in the current SpellSystemIndex because they are not visible
-        to the spellbook (e.g., missing contracted dependencies).
-    Contract:
-        - Compares SpellSystemStates direct dependencies against index edges.
-        - Emits one diagnostic per spell with missing dependencies.
+    `SpellSystemStates` still knows the direct dependencies a visible spell was
+    built with. The visible `SpellSystemIndex` may be smaller because it only
+    contains what the current spellbook can see. This strategy compares those
+    two views to catch missing contracted/borrowed dependencies that were
+    filtered out by visibility boundaries.
     """
     __slots__ = []
 

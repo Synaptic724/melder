@@ -17,13 +17,13 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class LineageVersionConflictStrategy(SpellSystemValidationStrategy):
     """
-    Internal
+    Guard that one root DAG does not mix multiple versions of the same lineage.
 
-    Purpose:
-        Detect multiple versions of the same lineage within a single root DAG.
-    Contract:
-        - Emits ``lineage_version_conflict`` per root when a lineage appears as
-          multiple spell ids in that DAG.
+    Root blueprints are version-id graphs, but they still represent one
+    coherent runtime slice. If the same lineage appears multiple times under a
+    single root as different version ids, the root is effectively depending on
+    mutually conflicting revisions of the same logical spell family. This
+    strategy detects that drift and surfaces it as a root-scoped error.
     """
     __slots__ = []
 

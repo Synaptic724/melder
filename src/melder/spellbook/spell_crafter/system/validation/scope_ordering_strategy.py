@@ -18,15 +18,13 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class ScopeOrderingStrategy(SpellSystemValidationStrategy):
     """
-    Enforce lifecycle scope ordering across dependency edges.
+    Guard lifecycle-scope ordering across dependency edges.
 
-    Purpose:
-        Prevent broad-scope spells from depending on narrower-scope spells,
-        which can lead to leaking per-conduit or per-call instances into
-        shared contexts.
-    Contract:
-        - Emits errors when a broader scope depends on a narrower scope.
-        - Skips checks when existence metadata is missing.
+    This strategy checks whether broader-lived nodes are depending on narrower-
+    lived nodes in ways that would let per-conduit, per-spellspace, or per-call
+    instances leak upward into shared contexts. It is a system-level lifetime
+    sanity check layered on top of the existence metadata captured in the
+    `SpellSystemIndex`.
     """
     __slots__ = []
 

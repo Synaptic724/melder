@@ -18,14 +18,12 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class TopologyDependencyMismatchStrategy(SpellSystemValidationStrategy):
     """
-    Detect mismatches between local topologies and index dependencies.
+    Guard that Phase 3 local topology sockets agree with index-level edges.
 
-    Purpose:
-        Ensure Phase 3 local topology sockets remain consistent with the
-        dependency edges recorded in SpellSystemIndex.
-    Contract:
-        - Compares NORMAL socket targets to index dependency ids.
-        - Emits errors when topology targets and index dependencies disagree.
+    The Phase 3 local topology is the socket-aware per-spell view, while the
+    `SpellSystemIndex` is the broader system graph abstraction. This strategy
+    makes sure those two representations are still describing the same NORMAL
+    dependency edges before later rooted validation and planning trust them.
     """
     __slots__ = []
 

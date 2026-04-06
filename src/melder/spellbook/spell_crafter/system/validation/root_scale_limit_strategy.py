@@ -17,13 +17,12 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class RootScaleLimitStrategy(SpellSystemValidationStrategy):
     """
-    Internal
+    Guard root DAG size against configured operational scale limits.
 
-    Purpose:
-        Warn when a root's deep DAG exceeds configured scale limits.
-    Contract:
-        - Emits diagnostics for node, edge, depth, or fan-out limit breaches.
-        - Limits set to None or <= 0 are treated as disabled.
+    This strategy is not about correctness of edge structure; it is an
+    operational pressure gauge. It warns when a root blueprint becomes large,
+    deep, or wide enough that later planning, execution, or debugging is likely
+    to become problematic even if the graph is otherwise structurally valid.
     """
     __slots__ = [
         "_max_nodes",

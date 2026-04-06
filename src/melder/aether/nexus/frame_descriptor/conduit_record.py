@@ -20,6 +20,7 @@ class ConduitRecord(Cleanable):
         - Root conduits publish by default.
         - Lesser conduits remain derived through lineage walking unless later
           promoted to normal.
+        - Carries one deterministic Nexus publication contract.
         - Mutable through explicit Nexus upsert/remove paths only.
         - Cleanup is idempotent and clears all owned references.
     """
@@ -27,6 +28,8 @@ class ConduitRecord(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
+        "nexus_label",
+        "nexus_version",
         "conduit_id",
         "root_conduit_id",
         "frame_name",
@@ -37,6 +40,8 @@ class ConduitRecord(Cleanable):
     def __init__(
             self,
             *,
+            nexus_label: str = "default",
+            nexus_version: str = "0.0.1",
             conduit_id: str,
             root_conduit_id: str,
             frame_name: str,
@@ -47,6 +52,10 @@ class ConduitRecord(Cleanable):
         Initialize one canonical conduit record.
 
         Args:
+            nexus_label:
+                Published Nexus dataset label for this record.
+            nexus_version:
+                Published Nexus dataset version for this record.
             conduit_id:
                 Stable conduit id.
             root_conduit_id:
@@ -59,11 +68,17 @@ class ConduitRecord(Cleanable):
                 Descriptor-safe conduit payload for this record.
         """
         super().__init__()
+        if not nexus_label:
+            raise ValueError("nexus_label cannot be empty.")
+        if not nexus_version:
+            raise ValueError("nexus_version cannot be empty.")
         if payload is None:
             raise ValueError("payload cannot be None.")
         if not isinstance(payload, IConduitDescriptorPayload):
             raise TypeError("payload must satisfy IConduitDescriptorPayload.")
         self._id: str = IDBuilder.create_id()
+        self.nexus_label = nexus_label
+        self.nexus_version = nexus_version
         self.conduit_id = conduit_id
         self.root_conduit_id = root_conduit_id
         self.frame_name = frame_name
@@ -80,6 +95,8 @@ class ConduitRecord(Cleanable):
         if self._cleaned:
             return
         self._cleaned = True
+        self.nexus_label = None
+        self.nexus_version = None
         self.conduit_id = None
         self.root_conduit_id = None
         self.frame_name = None

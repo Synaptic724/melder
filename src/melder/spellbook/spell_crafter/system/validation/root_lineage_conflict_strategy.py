@@ -17,13 +17,12 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class RootLineageConflictStrategy(SpellSystemValidationStrategy):
     """
-    Internal
+    Guard that one lineage does not fan out into multiple structural roots.
 
-    Purpose:
-        Detect multiple root spell ids mapped to the same lineage.
-    Contract:
-        - Emits ``root_lineage_conflict`` when a lineage produces multiple roots.
-        - Skips roots missing from the index or without lineage metadata.
+    A root blueprint is supposed to represent a distinct root spell version in
+    the frame. If multiple root spell ids map back to the same lineage, the
+    system is effectively declaring multiple root revisions of one logical spell
+    family at once. This strategy detects that root-lineage split.
     """
     __slots__ = []
 

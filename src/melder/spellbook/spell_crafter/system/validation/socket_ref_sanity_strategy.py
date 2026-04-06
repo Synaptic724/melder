@@ -18,12 +18,16 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class SocketRefSanityStrategy(SpellSystemValidationStrategy):
     """
-    Ensures socket_refs and dag_index stay in sync for each root blueprint.
+    Guard that blueprint socket references and `DagIndex` stay perfectly aligned.
 
-    Checks:
-      * No duplicate SocketRef entries.
-      * Every socket_ref is reachable via dag_index by path and by name.
-      * Every dag_index entry corresponds to a socket_ref present on the blueprint.
+    Phase 5 and later override planning depend on two synchronized views of the
+    same targeting surface:
+
+    - the raw `socket_refs` list on each root blueprint
+    - the lookup-oriented `DagIndex` built over those refs
+
+    This strategy checks for duplicate refs, missing index entries, and orphaned
+    index entries so later override/mutation targeting can trust both views.
     """
     __slots__ = ()
     def run(

@@ -414,6 +414,7 @@ class ChangeControlOrchestrator(Cleanable):
         """
         self.check_cleaned()
         request: Optional[ChangeControlTransactionRequest] = None
+        cleanup_request: Optional[ChangeControlTransactionRequest] = None
         staged: Optional[ChangeControlStagedMutation] = None
         commit_validator: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         commit_hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None
@@ -422,6 +423,7 @@ class ChangeControlOrchestrator(Cleanable):
             request = transaction_manager.get_in_flight(request_id)
             if request is None:
                 return
+            cleanup_request = request
             staged = self._staged.get(request_id) if self._staged is not None else None
             commit_validator = self._commit_validator
             commit_hook = self._commit_hook
@@ -440,22 +442,22 @@ class ChangeControlOrchestrator(Cleanable):
                     pass
             with self._lock:
                 request = transaction_manager.get_in_flight(request_id)
-                if request is None:
-                    return
-                embargo_manager.release_implicit_embargoes(request)
+                if request is not None:
+                    cleanup_request = request
+                embargo_manager.release_implicit_embargoes(cleanup_request)
                 transaction_manager.remove_in_flight(request_id)
-                if self._staged is not None and request_id in self._staged:
-                    del self._staged[request_id]
+                if self._staged is not None:
+                    self._staged.pop(request_id, None)
             raise
 
         with self._lock:
             request = transaction_manager.get_in_flight(request_id)
-            if request is None:
-                return
-            embargo_manager.release_implicit_embargoes(request)
+            if request is not None:
+                cleanup_request = request
+            embargo_manager.release_implicit_embargoes(cleanup_request)
             transaction_manager.remove_in_flight(request_id)
-            if self._staged is not None and request_id in self._staged:
-                del self._staged[request_id]
+            if self._staged is not None:
+                self._staged.pop(request_id, None)
 
     def abort_request(
             self,
@@ -486,12 +488,14 @@ class ChangeControlOrchestrator(Cleanable):
             Acquires the admission lock while finalizing.
         """
         self.check_cleaned()
+        request_snapshot: Optional[ChangeControlTransactionRequest] = None
         staged: Optional[ChangeControlStagedMutation] = None
         abort_hook: Optional[Callable[[ChangeControlStagedMutation], None]] = None
         with self._lock:
             if self._staged is not None:
                 staged = self._staged.get(request_id)
             abort_hook = self._abort_hook
+            request_snapshot = transaction_manager.get_in_flight(request_id)
         if staged is not None and abort_hook is not None:
             try:
                 abort_hook(staged)
@@ -499,9 +503,10 @@ class ChangeControlOrchestrator(Cleanable):
                 pass
         with self._lock:
             request = transaction_manager.get_in_flight(request_id)
-            if request is None:
+            cleanup_request = request if request is not None else request_snapshot
+            if cleanup_request is None:
                 return
-            embargo_manager.release_implicit_embargoes(request)
+            embargo_manager.release_implicit_embargoes(cleanup_request)
             transaction_manager.remove_in_flight(request_id)
-            if self._staged is not None and request_id in self._staged:
-                del self._staged[request_id]
+            if self._staged is not None:
+                self._staged.pop(request_id, None)

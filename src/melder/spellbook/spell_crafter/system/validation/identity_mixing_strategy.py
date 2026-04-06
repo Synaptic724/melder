@@ -17,14 +17,13 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class IdentityMixingStrategy(SpellSystemValidationStrategy):
     """
-    Detect mixed identity usage between version ids and lineage ids.
+    Guard that dependency edges stay on version ids rather than lineage ids.
 
-    Purpose:
-        Ensure dependency edges only reference version ids, not lineage ids,
-        preventing ambiguous or unresolvable lookups.
-    Contract:
-        - Emits errors when dependency ids match known lineage ids.
-        - Skips nodes with missing lineage metadata.
+    The system graph is supposed to route concrete spell versions, while
+    lineage ids are DevOps/control-plane identity. If a dependency edge starts
+    pointing at lineage ids directly, later planning and resolution become
+    ambiguous because the graph is no longer naming executable versions. This
+    strategy catches that identity-layer mixing.
     """
     __slots__ = []
 

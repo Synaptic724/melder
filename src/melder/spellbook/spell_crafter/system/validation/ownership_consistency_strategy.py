@@ -17,14 +17,13 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class OwnershipConsistencyStrategy(SpellSystemValidationStrategy):
     """
-    Internal
+    Guard that a lineage does not claim conflicting conduit ownership.
 
-    Purpose:
-        Ensure a lineage is not associated with conflicting conduit ownership.
-    Contract:
-        - Emits ``lineage_conduit_conflict`` when a lineage maps to multiple
-          non-None conduit ids.
-        - Ignores None conduit ids (treated as unknown).
+    Ownership metadata becomes important once the system is reasoning about
+    contracted spells, transfer-of-ownership flows, and conduit-scoped
+    validation. A lineage that points at multiple concrete conduit owners at
+    once is a system-level inconsistency, so this strategy groups nodes by
+    lineage id and checks whether the non-None owner set stays singular.
     """
     __slots__ = []
 

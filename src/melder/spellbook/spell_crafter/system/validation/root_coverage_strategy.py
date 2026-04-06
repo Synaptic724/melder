@@ -17,14 +17,17 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class RootCoverageStrategy(SpellSystemValidationStrategy):
     """
-    Internal
+    Guard that root designation stays aligned between blueprints and the index.
 
-    Purpose:
-        Ensure root blueprints and index root flags stay in sync.
-    Contract:
-        - Emits ``root_missing_in_index`` when a blueprint root is absent from the index.
-        - Emits ``root_not_marked_in_index`` when the index node is not marked as root.
-        - Emits ``missing_root_blueprint`` when the index marks a root without a blueprint.
+    Phase 5 produces two different root-facing views:
+
+    - root blueprints used by later planning
+    - `SpellSystemIndex` nodes with `is_root` metadata used by system-level
+      reasoning and change control
+
+    This strategy checks both directions so we catch roots that exist in one
+    representation but not the other, or roots that are present in the index
+    but not explicitly marked as such.
     """
     __slots__ = []
 

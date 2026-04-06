@@ -14,16 +14,14 @@ class FrameDescriptorPayload(Cleanable):
         flattening posture and topology data back into the record surface.
 
     Contract:
-        - `profile_name` preserves the descriptor payload family name.
-        - `profile_version` preserves the descriptor payload contract version.
+        - `payload_version` preserves the descriptor payload contract version.
         - Payload fields are descriptor-safe and value-oriented.
         - Cleanup is idempotent and clears all owned payload references.
     """
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
-        "profile_name",
-        "profile_version",
+        "payload_version",
         "system_state",
         "ai_native_enabled",
         "rift_enabled",
@@ -49,7 +47,7 @@ class FrameDescriptorPayload(Cleanable):
             conduit_cloud_names: Tuple[str, ...],
             cluster_count: int,
             cluster_names: Tuple[str, ...],
-            profile_version: str = "0.0.1",
+            payload_version: str = "0.0.1",
     ) -> None:
         """
         Initialize one descriptor-safe frame payload.
@@ -75,17 +73,16 @@ class FrameDescriptorPayload(Cleanable):
                 Count of conduit clusters.
             cluster_names:
                 Sorted tuple of cluster names.
-            profile_version:
+            payload_version:
                 Descriptor payload contract version.
 
         Returns:
             None.
         """
         super().__init__()
-        if not profile_version:
-            raise ValueError("profile_version cannot be empty.")
-        self.profile_name: str = "frame"
-        self.profile_version: str = profile_version
+        if not payload_version:
+            raise ValueError("payload_version cannot be empty.")
+        self.payload_version: str = payload_version
         self.system_state = system_state
         self.ai_native_enabled = ai_native_enabled
         self.rift_enabled = rift_enabled
@@ -107,8 +104,7 @@ class FrameDescriptorPayload(Cleanable):
         if self._cleaned:
             return
         self._cleaned = True
-        self.profile_name = None
-        self.profile_version = None
+        self.payload_version = None
         self.system_state = None
         self.ai_native_enabled = None
         self.rift_enabled = None

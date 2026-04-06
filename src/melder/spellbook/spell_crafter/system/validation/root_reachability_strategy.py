@@ -17,14 +17,13 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class RootReachabilityStrategy(SpellSystemValidationStrategy):
     """
-    Internal
+    Guard that each root blueprint is a true root-reachable DAG.
 
-    Purpose:
-        Ensure each root blueprint only contains nodes reachable from its root.
-    Contract:
-        - Emits ``root_missing_in_dag`` when the root id is not present in the DAG.
-        - Emits ``dag_orphan_node`` for any DAG node not reachable from the root.
-        - Skips reachability traversal when the root is missing to avoid noisy cascades.
+    A root blueprint should contain exactly the dependency closure reachable
+    from its declared root. If the root node is missing or the DAG still holds
+    orphaned nodes that cannot be reached from that root, later occurrence and
+    execution planning are reasoning over stale or structurally invalid graph
+    state. This strategy catches that mismatch.
     """
     __slots__ = []
 

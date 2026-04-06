@@ -23,6 +23,7 @@ class SpellRecord(Cleanable):
         - `owner_conduit_id` may be absent in theory, but the first passive
           ingest slice only publishes spells after conjure so it is normally
           populated.
+        - Carries one deterministic Nexus publication contract.
         - Mutable through explicit Nexus upsert/remove paths only.
         - Cleanup is idempotent and clears all owned references.
     """
@@ -30,6 +31,8 @@ class SpellRecord(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
+        "nexus_label",
+        "nexus_version",
         "origin_spellbook_id",
         "frame_name",
         "owner_conduit_id",
@@ -46,6 +49,8 @@ class SpellRecord(Cleanable):
     def __init__(
             self,
             *,
+            nexus_label: str = "default",
+            nexus_version: str = "0.0.1",
             origin_spellbook_id: str,
             frame_name: str,
             owner_conduit_id: Optional[str],
@@ -62,6 +67,10 @@ class SpellRecord(Cleanable):
         Initialize one canonical spell record.
 
         Args:
+            nexus_label:
+                Published Nexus dataset label for this record.
+            nexus_version:
+                Published Nexus dataset version for this record.
             origin_spellbook_id:
                 Owning Spellbook id.
             frame_name:
@@ -86,11 +95,17 @@ class SpellRecord(Cleanable):
                 Sanitized spell descriptor payload for this record.
         """
         super().__init__()
+        if not nexus_label:
+            raise ValueError("nexus_label cannot be empty.")
+        if not nexus_version:
+            raise ValueError("nexus_version cannot be empty.")
         if payload is None:
             raise ValueError("payload cannot be None.")
         if not isinstance(payload, ISpellDescriptorPayload):
             raise TypeError("payload must satisfy ISpellDescriptorPayload.")
         self._id: str = IDBuilder.create_id()
+        self.nexus_label = nexus_label
+        self.nexus_version = nexus_version
         self.origin_spellbook_id = origin_spellbook_id
         self.frame_name = frame_name
         self.owner_conduit_id = owner_conduit_id
@@ -124,6 +139,8 @@ class SpellRecord(Cleanable):
         if self._cleaned:
             return
         self._cleaned = True
+        self.nexus_label = None
+        self.nexus_version = None
         self.origin_spellbook_id = None
         self.frame_name = None
         self.owner_conduit_id = None

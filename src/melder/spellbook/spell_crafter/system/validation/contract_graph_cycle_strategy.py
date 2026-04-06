@@ -19,14 +19,13 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class ContractGraphCycleStrategy(SpellSystemValidationStrategy):
     """
-    Detect cycles introduced by contract sockets.
+    Guard that contract-only edges do not introduce cycles outside the normal DAG.
 
-    Purpose:
-        Identify dependency loops formed by SpellContract or MutationContract
-        edges that are not present in the normal dependency DAG.
-    Contract:
-        - Builds a contract edge graph using visible providers.
-        - Emits errors for detected contract cycles.
+    The rooted system graph is primarily built from NORMAL dependency edges, but
+    SpellContract and MutationContract sockets can add an extra contract graph
+    on top of that structure. This strategy builds that contract-only view and
+    checks whether it introduces loops that are invisible to the ordinary DAG
+    cycle checks.
     """
     __slots__ = []
 
@@ -172,6 +171,14 @@ class ContractGraphCycleStrategy(SpellSystemValidationStrategy):
         seen_cycles: Set[Tuple[str, ...]] = set()
 
         def _walk(node_id: str) -> None:
+            """
+            Depth-first walk over the contract graph for cycle discovery.
+
+            Contract:
+                - Honors cancellation before descending.
+                - Records normalized cycles once even if discovered from
+                  multiple traversal entrypoints.
+            """
             if cancel_event is not None and cancel_event.is_set:
                 cancel_event.throw_if_set()
 

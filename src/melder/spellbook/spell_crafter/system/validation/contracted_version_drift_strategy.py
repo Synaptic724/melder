@@ -17,15 +17,13 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class ContractedVersionDriftStrategy(SpellSystemValidationStrategy):
     """
-    Detect version drift between index nodes and visible spells.
+    Guard that the visible system index does not drift onto stale lineage versions.
 
-    Purpose:
-        Ensure SpellSystemIndex nodes reference the current version id for
-        each visible lineage, preventing stale contracted versions.
-    Contract:
-        - Emits errors when a node's spell_id is not among the visible versions
-          for its lineage.
-        - Skips nodes without lineage metadata.
+    This strategy compares the version ids stored on `SpellSystemIndex` nodes
+    against the currently visible spell versions for each lineage. It is aimed
+    at contracted/borrowed visibility scenarios where the system graph can lag
+    behind the active visible version set and end up validating or planning
+    against an outdated node revision.
     """
     __slots__ = []
 

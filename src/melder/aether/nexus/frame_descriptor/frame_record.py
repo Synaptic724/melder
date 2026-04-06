@@ -19,6 +19,7 @@ class FrameRecord(Cleanable):
 
     Contract:
         - One record per frame name.
+        - Carries one deterministic Nexus publication contract.
         - Carries only the current frame-level posture needed for the first
           passive-ingest slice.
         - Mutable through explicit Nexus upsert paths only.
@@ -28,6 +29,8 @@ class FrameRecord(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
+        "nexus_label",
+        "nexus_version",
         "frame_name",
         "frame_id",
         "config_origin_spellbook_id",
@@ -37,6 +40,8 @@ class FrameRecord(Cleanable):
     def __init__(
             self,
             *,
+            nexus_label: str = "default",
+            nexus_version: str = "0.0.1",
             frame_name: str,
             frame_id: str,
             config_origin_spellbook_id: Optional[str],
@@ -46,6 +51,10 @@ class FrameRecord(Cleanable):
         Initialize one canonical frame record.
 
         Args:
+            nexus_label:
+                Published Nexus dataset label for this record.
+            nexus_version:
+                Published Nexus dataset version for this record.
             frame_name:
                 Stable frame name.
             frame_id:
@@ -57,11 +66,17 @@ class FrameRecord(Cleanable):
                 Descriptor-safe frame payload for this record.
         """
         super().__init__()
+        if not nexus_label:
+            raise ValueError("nexus_label cannot be empty.")
+        if not nexus_version:
+            raise ValueError("nexus_version cannot be empty.")
         if payload is None:
             raise ValueError("payload cannot be None.")
         if not isinstance(payload, IFrameDescriptorPayload):
             raise TypeError("payload must satisfy IFrameDescriptorPayload.")
         self._id: str = IDBuilder.create_id()
+        self.nexus_label = nexus_label
+        self.nexus_version = nexus_version
         self.frame_name = frame_name
         self.frame_id = frame_id
         self.config_origin_spellbook_id = config_origin_spellbook_id
@@ -77,6 +92,8 @@ class FrameRecord(Cleanable):
         if self._cleaned:
             return
         self._cleaned = True
+        self.nexus_label = None
+        self.nexus_version = None
         self.frame_name = None
         self.frame_id = None
         self.config_origin_spellbook_id = None

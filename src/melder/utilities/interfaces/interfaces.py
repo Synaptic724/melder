@@ -2229,8 +2229,7 @@ class IDescriptorPayload(ICleanable, Protocol):
         records.
     """
 
-    profile_name: str
-    profile_version: str
+    payload_version: str
 
 
 @runtime_checkable
@@ -2242,6 +2241,9 @@ class ISpellDescriptorPayload(IDescriptorPayload, Protocol):
         Define the minimum sanitized spell payload shape stored by `SpellRecord`.
     """
 
+    payload_type: str
+    source_profile_name: Optional[str]
+    source_profile_version: Optional[str]
     binding_payload: Dict[str, Any]
     resolution_payload: Any
     class_profile: Any
@@ -2295,6 +2297,8 @@ class IFrameRecord(ICleanable, Protocol):
     Descriptor-facing frame record contract.
     """
 
+    nexus_label: str
+    nexus_version: str
     frame_name: str
     frame_id: str
     config_origin_spellbook_id: Optional[str]
@@ -2307,6 +2311,8 @@ class IConduitRecord(ICleanable, Protocol):
     Descriptor-facing conduit record contract.
     """
 
+    nexus_label: str
+    nexus_version: str
     conduit_id: str
     root_conduit_id: str
     frame_name: str
@@ -2590,6 +2596,8 @@ class ISpellRecord(ICleanable, Protocol):
     Descriptor-facing spell record contract.
     """
 
+    nexus_label: str
+    nexus_version: str
     origin_spellbook_id: str
     frame_name: str
     owner_conduit_id: Optional[str]
