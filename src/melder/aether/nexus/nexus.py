@@ -27,6 +27,18 @@ from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile_bu
 )
 from melder.aether.nexus.rift.frame_viewer.frame_view import FrameView
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.aether.nexus.rift.frame_viewer.profiles.frame_view_profile import (
+    FrameViewProfile,
+)
+from melder.aether.nexus.rift.frame_viewer.profiles.frame_view_profile_builder import (
+    FrameViewProfileBuilder,
+)
+from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile import (
+    FrameViewerProfile,
+)
+from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile_builder import (
+    FrameViewerProfileBuilder,
+)
 from melder.aether.nexus.rift.rift_space.rift_event_configuration import RiftEventConfiguration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
@@ -1401,6 +1413,7 @@ class Nexus(Cleanable, INexus):
             frame_name: str,
             *,
             contract_profile_name: Optional[str] = None,
+            view_profile_name: str = "general",
     ) -> FrameView:
         """
         Build one projected `FrameView` from Nexus descriptor and ACL truth.
@@ -1422,6 +1435,8 @@ class Nexus(Cleanable, INexus):
                 Frame name to project.
             contract_profile_name:
                 Optional downstream contract profile name.
+            view_profile_name:
+                View profile name used to shape defaults on the projected view.
 
         Returns:
             FrameView:
@@ -1434,6 +1449,7 @@ class Nexus(Cleanable, INexus):
             frame_name,
             configuration.configuration_id,
             contract_profile_name,
+            view_profile_name,
         )
         with self._lock:
             cached_frame_view = self._projected_frame_views_by_cache_key.get(
@@ -1444,6 +1460,8 @@ class Nexus(Cleanable, INexus):
         compiler = FrameACLCompiler(self._frame_acl_manager.frame_acl_profile_builder)
         contract_profile_builder: Optional[FrameLinkContractProfileBuilder] = None
         contract_profile: Optional[FrameLinkContractProfile] = None
+        view_profile_builder: Optional[FrameViewProfileBuilder] = None
+        view_profile: Optional[FrameViewProfile] = None
         try:
             compiled_access_surface = compiler.compile_frame_access_surface(
                 descriptor,
@@ -1454,10 +1472,15 @@ class Nexus(Cleanable, INexus):
                 contract_profile = contract_profile_builder.get_required_profile(
                     contract_profile_name
                 )
+            view_profile_builder = FrameViewProfileBuilder()
+            view_profile = view_profile_builder.get_required_profile(
+                view_profile_name
+            )
             projected_frame_view = FrameView.from_compiled_access_surface(
                 frame_descriptor=descriptor,
                 compiled_access_surface=compiled_access_surface,
                 contract_profile=contract_profile,
+                view_profile=view_profile,
             )
             with self._lock:
                 existing_frame_view = self._projected_frame_views_by_cache_key.get(
@@ -1472,6 +1495,8 @@ class Nexus(Cleanable, INexus):
         finally:
             if contract_profile_builder is not None:
                 contract_profile_builder.cleanup()
+            if view_profile_builder is not None:
+                view_profile_builder.cleanup()
             compiler.cleanup()
 
     def create_frame_viewer(
@@ -1479,6 +1504,8 @@ class Nexus(Cleanable, INexus):
             frame_names: Sequence[str],
             *,
             contract_profile_name: Optional[str] = None,
+            view_profile_name: str = "general",
+            viewer_profile_name: str = "general",
     ) -> FrameViewer:
         """
         Build one projected `FrameViewer` from one or more frame names.
@@ -1498,6 +1525,10 @@ class Nexus(Cleanable, INexus):
             contract_profile_name:
                 Optional downstream contract profile name applied to every
                 projected frame.
+            view_profile_name:
+                View profile name applied to each projected view.
+            viewer_profile_name:
+                Viewer profile name applied to the projected viewer.
 
         Returns:
             FrameViewer:
@@ -1509,25 +1540,43 @@ class Nexus(Cleanable, INexus):
         for frame_name in frame_names:
             if not isinstance(frame_name, str) or not frame_name:
                 raise ValueError("frame_names must contain non-empty strings.")
-        projected_views: Dict[str, FrameView] = {}
-        for frame_name in frame_names:
-            projected_views[frame_name] = self.create_frame_view(
-                frame_name,
-                contract_profile_name=contract_profile_name,
-            )
-        return FrameViewer(
-            views_by_frame_name=projected_views,
-            metadata={
-                "frame_count": len(projected_views),
-                "contract_profile_name": contract_profile_name,
-            },
+        viewer_profile_builder = FrameViewerProfileBuilder()
+        viewer_profile = viewer_profile_builder.get_required_profile(
+            viewer_profile_name
         )
+        projected_views: Dict[str, FrameView] = {}
+        try:
+            for frame_name in frame_names:
+                projected_views[frame_name] = self.create_frame_view(
+                    frame_name,
+                    contract_profile_name=contract_profile_name,
+                    view_profile_name=view_profile_name,
+                )
+            return FrameViewer(
+                profile_name=viewer_profile.name,
+                profile_version=viewer_profile.version,
+                views_by_frame_name=projected_views,
+                metadata={
+                    "frame_count": len(projected_views),
+                    "contract_profile_name": contract_profile_name,
+                    "view_profile_name": view_profile_name,
+                    "viewer_profile_name": viewer_profile.name,
+                    "viewer_profile_version": viewer_profile.version,
+                    "default_grouping": viewer_profile.default_grouping,
+                    "default_detail_level": viewer_profile.default_detail_level,
+                    "enabled_helpers": viewer_profile.enabled_helpers,
+                },
+            )
+        finally:
+            viewer_profile_builder.cleanup()
 
     def create_cached_frame_viewer(
             self,
             frame_names: Sequence[str],
             *,
             contract_profile_name: Optional[str] = None,
+            view_profile_name: str = "general",
+            viewer_profile_name: str = "general",
     ) -> FrameViewer:
         """
         Build or reuse one cached projected `FrameViewer`.
@@ -1541,6 +1590,10 @@ class Nexus(Cleanable, INexus):
                 Frame names to project into the viewer.
             contract_profile_name:
                 Optional downstream contract profile name.
+            view_profile_name:
+                View profile name applied to each projected view.
+            viewer_profile_name:
+                Viewer profile name applied to the projected viewer.
 
         Returns:
             FrameViewer: Detached projected frame viewer.
@@ -1566,6 +1619,8 @@ class Nexus(Cleanable, INexus):
                 )
             ),
             contract_profile_name,
+            view_profile_name,
+            viewer_profile_name,
         )
         with self._lock:
             cached_frame_viewer = self._projected_frame_viewers_by_cache_key.get(
@@ -1576,6 +1631,8 @@ class Nexus(Cleanable, INexus):
         projected_frame_viewer = self.create_frame_viewer(
             normalized_frame_names,
             contract_profile_name=contract_profile_name,
+            view_profile_name=view_profile_name,
+            viewer_profile_name=viewer_profile_name,
         )
         with self._lock:
             existing_frame_viewer = self._projected_frame_viewers_by_cache_key.get(
@@ -1593,6 +1650,7 @@ class Nexus(Cleanable, INexus):
             frame_name: str,
             configuration_id: str,
             contract_profile_name: Optional[str],
+            view_profile_name: str,
     ) -> Tuple[str, str, str]:
         """
         Build the stable cache key for one projected frame view.
@@ -1604,12 +1662,14 @@ class Nexus(Cleanable, INexus):
                 Current ACL configuration id.
             contract_profile_name:
                 Optional downstream contract profile name.
+            view_profile_name:
+                Applied view profile name.
 
         Returns:
             Tuple[str, str, str]: Stable projected-view cache key.
         """
         return (
-            frame_name,
+            "{0}:{1}".format(frame_name, view_profile_name),
             configuration_id,
             contract_profile_name or "",
         )
@@ -1619,6 +1679,8 @@ class Nexus(Cleanable, INexus):
             frame_names: Tuple[str, ...],
             configuration_ids: Tuple[str, ...],
             contract_profile_name: Optional[str],
+            view_profile_name: str,
+            viewer_profile_name: str,
     ) -> Tuple[Tuple[str, ...], Tuple[str, ...], str]:
         """
         Build the stable cache key for one projected frame viewer.
@@ -1630,15 +1692,22 @@ class Nexus(Cleanable, INexus):
                 Sorted current ACL configuration ids aligned to `frame_names`.
             contract_profile_name:
                 Optional downstream contract profile name.
+            view_profile_name:
+                Applied view profile name.
+            viewer_profile_name:
+                Applied viewer profile name.
 
         Returns:
             Tuple[Tuple[str, ...], Tuple[str, ...], str]:
                 Stable projected-viewer cache key.
         """
         return (
-            frame_names,
+            tuple(
+                "{0}:{1}".format(frame_name, view_profile_name)
+                for frame_name in frame_names
+            ),
             configuration_ids,
-            contract_profile_name or "",
+            "{0}:{1}".format(contract_profile_name or "", viewer_profile_name),
         )
 
     def _invalidate_projected_frame_views(
@@ -1660,7 +1729,10 @@ class Nexus(Cleanable, INexus):
         with self._lock:
             cache_keys_to_remove: List[Tuple[str, str, str]] = []
             for cache_key in self._projected_frame_views_by_cache_key.keys():
-                if frame_name is None or cache_key[0] == frame_name:
+                if (
+                        frame_name is None
+                        or cache_key[0].split(":", 1)[0] == frame_name
+                ):
                     cache_keys_to_remove.append(cache_key)
             for cache_key in cache_keys_to_remove:
                 projected_frame_view = self._projected_frame_views_by_cache_key.pop(
@@ -1689,7 +1761,13 @@ class Nexus(Cleanable, INexus):
         with self._lock:
             cache_keys_to_remove: List[Tuple[Tuple[str, ...], Tuple[str, ...], str]] = []
             for cache_key in self._projected_frame_viewers_by_cache_key.keys():
-                if frame_name is None or frame_name in cache_key[0]:
+                if (
+                        frame_name is None
+                        or any(
+                            cached_frame_name.split(":", 1)[0] == frame_name
+                            for cached_frame_name in cache_key[0]
+                        )
+                ):
                     cache_keys_to_remove.append(cache_key)
             for cache_key in cache_keys_to_remove:
                 projected_frame_viewer = self._projected_frame_viewers_by_cache_key.pop(

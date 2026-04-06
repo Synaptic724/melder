@@ -3,22 +3,22 @@ from typing import Any, ClassVar
 
 class ISync:
     """
-    ISync
-    -----
-    Minimal marker & utility mix-in for *all* thread-safe value wrappers.
+    Abstract helper mix-in for thread-safe sync-value wrappers.
 
-    What it provides
-    ----------------
-    • _is_sync_value     – fast `True/False` marker
-    • _unwrap_other()    – convert *other* to your native scalar
-    • _perform_binary_op() – deadlock-safe dual-lock helper
+    `ISync` provides the shared coordination helpers used by the concrete sync
+    wrappers. It does not define the storage type itself; instead it standardizes
+    how sync values identify themselves, unwrap peer operands, coordinate dual-lock
+    binary operations, and survive pickling.
 
-    What every subclass **must** provide
-    ------------------------------------
-    • _value             – your stored scalar
-    • _lock              – a `threading.RLock`
-    • get()              – returns the scalar
-    • @classmethod _coerce(val) – cast any input to *your* scalar type
+    Contract:
+    - `_is_sync_value` is the fast marker used by runtime helpers.
+    - `_unwrap_other()` converts peer sync wrappers or raw values into the scalar
+      type owned by the current concrete subclass.
+    - `_perform_binary_op()` acquires two sync-wrapper locks in deterministic order
+      to reduce deadlock risk.
+    - Concrete subclasses must provide `_value`, `_lock`, `get()`, and a
+      `_coerce(...)` classmethod appropriate for their scalar type.
+
     """
 
     __slots__: ClassVar[tuple] = ()
@@ -33,7 +33,15 @@ class ISync:
     # NOTE: self._coerce(val) is defined in each concrete subclass
     def _unwrap_other(self, other):
         """
-        Convert *other* (Sync* or primitive) into the scalar type of `self`.
+        Convert `other` into the scalar type expected by this sync wrapper.
+
+        Contract:
+        - If `other` is another `ISync` wrapper, its exposed value is coerced through
+          this concrete wrapper's `_coerce(...)`.
+        - If `other` is a raw value, coercion is attempted directly.
+        - If coercion fails, the original value is returned so the caller's operation
+          can raise the real incompatibility error.
+
         """
         if self._is_sync(other):          # another Sync value
             return self._coerce(other.get())
@@ -43,6 +51,14 @@ class ISync:
             return other                  # let caller raise if truly incompatible
 
     def _perform_binary_op(self, other, op, r_operation=False):
+        """
+        Execute one binary operation with deterministic lock ordering.
+
+        Contract:
+        - Uses `_acquire_two(...)` when both operands are sync wrappers.
+        - Preserves reflected-operation ordering when `r_operation=True`.
+        - Falls back to `_unwrap_other(...)` for raw-value operands.
+        """
         if ISync._is_sync(other):
             first, second = ISync._acquire_two(self, other)
             with first._lock, second._lock:
@@ -57,7 +73,13 @@ class ISync:
 
     @staticmethod
     def _acquire_two(a: "ISync", b: "ISync"):
-        """Return the two locks in a deterministic order (smallest id first)."""
+        """
+        Return the two sync objects in deterministic lock order.
+
+        Contract:
+        - Orders by object id so both sides agree on the same acquisition order.
+        - Used to reduce deadlock risk in dual-sync binary operations.
+        """
         return ((a, b) if id(a) <= id(b) else (b, a))
 
     # ------------------------------------------------------------------ #
@@ -67,17 +89,19 @@ class ISync:
         """
         Return the instance state for pickling.
 
-        We only pickle the numeric value.  The lock is **not** pickled and
-        will be recreated in ``__setstate__``.
+        Contract:
+        - Serializes only the wrapped scalar value.
+        - Never serializes the runtime lock object.
         """
         return {"_value": self.get()}        # plain float, fully picklable
 
     def __setstate__(self, state):
         """
-        Re-initialise the object after unpickling.
+        Reinitialize the sync wrapper after unpickling.
 
-        A fresh ``threading.RLock`` is created each time, ensuring the
-        unpickled object is safe to share between threads.
+        Contract:
+        - Rebuilds `_value` through the concrete class `_coerce(...)`.
+        - Creates a fresh `threading.RLock` for the unpickled instance.
         """
         #self._value = float(state["_value"]) #Remove August 11 2025
         self._value = type(self)._coerce(state["_value"])

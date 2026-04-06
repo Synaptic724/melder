@@ -29,9 +29,6 @@ from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile im
 from melder.aether.nexus.rift.frame_link.profiles.frame_link_view_profile import (
     FrameLinkViewProfile,
 )
-from melder.aether.nexus.rift.frame_link.profiles.frame_link_codegen_profile import (
-    FrameLinkCodegenProfile,
-)
 from melder.aether.nexus.rift.frame_viewer.frame_view import FrameView
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
@@ -248,11 +245,7 @@ def test_frame_view_from_compiled_access_surface_respects_narrowed_contract_prof
                 "frame_only",
                 allowed_kinds=("frame",),
                 frame_payload_fields=("system_state",),
-        ),
-        codegen_profile=FrameLinkCodegenProfile(
-            "frame_only",
-            allowed_commands=("query",),
-        ),
+            ),
         ),
     )
 
