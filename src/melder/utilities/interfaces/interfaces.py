@@ -2304,6 +2304,222 @@ class IConduitRecord(ICleanable, Protocol):
 
 
 @runtime_checkable
+class IFrameACLRule(ICleanable, Protocol):
+    """
+    ACL rule contract for reusable profile and applied configuration work.
+    """
+
+    rule_name: str
+    operation: str
+    effect: str
+    conditions: Dict[str, Any]
+
+    def to_json_dict(self) -> Dict[str, Any]:
+        """
+        Return the rule as a JSON-compatible dictionary.
+
+        Returns:
+            Dict[str, Any]: JSON-compatible rule dictionary.
+        """
+        ...
+
+
+@runtime_checkable
+class IFrameACLRuleSet(ICleanable, Protocol):
+    """
+    ACL ruleset contract for reusable profile and applied configuration work.
+    """
+
+    name: str
+    rules_by_name: Dict[str, IFrameACLRule]
+
+    def list_rule_names(self) -> List[str]:
+        """
+        Return the current rule names in insertion order.
+
+        Returns:
+            List[str]: Current rule names.
+        """
+        ...
+
+    def get_required_rule(self, rule_name: str) -> IFrameACLRule:
+        """
+        Return one existing rule or raise.
+
+        Returns:
+            IFrameACLRule: Existing rule.
+        """
+        ...
+
+    def register_rule(self, rule: IFrameACLRule) -> None:
+        """
+        Register or replace one rule.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def remove_rule(self, rule_name: str) -> bool:
+        """
+        Remove one rule.
+
+        Returns:
+            bool: True when the rule existed and was removed.
+        """
+        ...
+
+    def to_json_dict(self) -> Dict[str, Any]:
+        """
+        Return the ruleset as a JSON-compatible dictionary.
+
+        Returns:
+            Dict[str, Any]: JSON-compatible ruleset dictionary.
+        """
+        ...
+
+    def clone(self) -> "IFrameACLRuleSet":
+        """
+        Return a detached ruleset copy.
+
+        Returns:
+            IFrameACLRuleSet: Detached ruleset copy.
+        """
+        ...
+
+
+@runtime_checkable
+class IFrameACLViewProfile(ICleanable, Protocol):
+    """
+    Reusable view-side ACL profile contract.
+    """
+
+    name: str
+    version: str
+    minimum_spell_payload_profile_name: str
+    frame_ruleset: IFrameACLRuleSet
+    conduit_ruleset: IFrameACLRuleSet
+    spell_ruleset: IFrameACLRuleSet
+    member_ruleset: IFrameACLRuleSet
+
+
+@runtime_checkable
+class IFrameACLCodegenProfile(ICleanable, Protocol):
+    """
+    Reusable codegen-side ACL profile contract.
+    """
+
+    name: str
+    version: str
+    frame_ruleset: IFrameACLRuleSet
+    conduit_ruleset: IFrameACLRuleSet
+    spell_ruleset: IFrameACLRuleSet
+    capability_ruleset: IFrameACLRuleSet
+
+
+@runtime_checkable
+class IFrameACLProfile(ICleanable, Protocol):
+    """
+    Composed frame ACL profile contract.
+    """
+
+    name: str
+    version: str
+    view_profile: IFrameACLViewProfile
+    codegen_profile: IFrameACLCodegenProfile
+    view_override_ruleset: IFrameACLRuleSet
+    codegen_override_ruleset: IFrameACLRuleSet
+
+
+@runtime_checkable
+class IFrameACLProfileBuilder(ICleanable, Protocol):
+    """
+    Reusable ACL profile builder/library contract.
+    """
+
+    version: str
+    view_profiles_by_name: Dict[str, IFrameACLViewProfile]
+    codegen_profiles_by_name: Dict[str, IFrameACLCodegenProfile]
+
+    def register_view_profile(self, view_profile: IFrameACLViewProfile) -> None:
+        ...
+
+    def register_codegen_profile(
+            self,
+            codegen_profile: IFrameACLCodegenProfile,
+    ) -> None:
+        ...
+
+    def get_required_view_profile(
+            self,
+            profile_name: str,
+    ) -> IFrameACLViewProfile:
+        ...
+
+    def get_required_codegen_profile(
+            self,
+            profile_name: str,
+    ) -> IFrameACLCodegenProfile:
+        ...
+
+    def list_view_profile_names(self) -> List[str]:
+        ...
+
+    def list_codegen_profile_names(self) -> List[str]:
+        ...
+
+    def remove_view_profile(self, profile_name: str) -> bool:
+        ...
+
+    def remove_codegen_profile(self, profile_name: str) -> bool:
+        ...
+
+    def create_profile(
+            self,
+            name: str,
+            *,
+            view_profile_name: str,
+            codegen_profile_name: str,
+            view_override_ruleset: Optional[IFrameACLRuleSet] = None,
+            codegen_override_ruleset: Optional[IFrameACLRuleSet] = None,
+    ) -> IFrameACLProfile:
+        ...
+
+
+@runtime_checkable
+class IFrameACLConfiguration(ICleanable, Protocol):
+    """
+    Typed frame ACL root configuration contract.
+    """
+
+    frame_name: str
+    configuration_id: str
+    locked: bool
+
+
+@runtime_checkable
+class IFrameACLContainer(ICleanable, Protocol):
+    """
+    Frame-local ACL container contract used by the builder boundary.
+    """
+
+    frame_name: str
+    frame_acl_configuration: IFrameACLConfiguration
+
+    def install_configuration(
+            self,
+            configuration: IFrameACLConfiguration,
+    ) -> None:
+        """
+        Install one validated ACL configuration into the container.
+
+        Returns:
+            None.
+        """
+        ...
+
+
+@runtime_checkable
 class ISpellRecord(ICleanable, Protocol):
     """
     Descriptor-facing spell record contract.

@@ -1,11 +1,21 @@
 import pytest
 
-from melder.aether.nexus.acl.frame_acl_profile import (
+from melder.aether.nexus.acl.profiles.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
+)
+from melder.aether.nexus.acl.profiles.frame_acl_profile import (
     FrameACLProfile,
+)
+from melder.aether.nexus.acl.profiles.frame_acl_profile_builder import (
     FrameACLProfileBuilder,
+)
+from melder.aether.nexus.acl.profiles.frame_acl_rule import (
     FrameACLRule,
+)
+from melder.aether.nexus.acl.profiles.frame_acl_ruleset import (
     FrameACLRuleSet,
+)
+from melder.aether.nexus.acl.profiles.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
 from melder.aether.nexus.frame_acl_manager import FrameACLManager

@@ -512,6 +512,55 @@ class FrameACLRule(Cleanable):
         self.check_cleaned()
         return dict(self._conditions)
 
+    def to_json_dict(self) -> Dict[str, Any]:
+        """
+        Return the rule as a detached JSON-compatible dictionary.
+
+        Returns:
+            Dict[str, Any]: JSON-compatible rule dictionary.
+        """
+        self.check_cleaned()
+        return {
+            "rule_name": self._rule_name,
+            "operation": self._operation,
+            "effect": self._effect,
+            "conditions": dict(self._conditions),
+        }
+
+    @classmethod
+    def from_json_dict(
+            cls,
+            payload: Dict[str, Any],
+    ) -> "FrameACLRule":
+        """
+        Build one rule from a JSON-compatible dictionary.
+
+        Args:
+            payload:
+                JSON-compatible rule dictionary.
+
+        Returns:
+            FrameACLRule: Reconstructed rule object.
+        """
+        if not isinstance(payload, dict):
+            raise TypeError("payload must be a dict.")
+        return cls(
+            rule_name=payload.get("rule_name"),
+            operation=payload.get("operation"),
+            effect=payload.get("effect"),
+            conditions=payload.get("conditions"),
+        )
+
+    def clone(self) -> "FrameACLRule":
+        """
+        Return a detached copy of the rule.
+
+        Returns:
+            FrameACLRule: Detached rule copy.
+        """
+        self.check_cleaned()
+        return FrameACLRule.from_json_dict(self.to_json_dict())
+
 
 class FrameACLRuleSet(Cleanable):
     """
@@ -678,6 +727,62 @@ class FrameACLRuleSet(Cleanable):
                 return False
             rule.cleanup()
             return True
+
+    def to_json_dict(self) -> Dict[str, Any]:
+        """
+        Return the ruleset as a detached JSON-compatible dictionary.
+
+        Returns:
+            Dict[str, Any]: JSON-compatible ruleset dictionary.
+        """
+        self.check_cleaned()
+        return {
+            "name": self._name,
+            "rules": [
+                rule.to_json_dict()
+                for rule in self._rules_by_name.values()
+            ],
+        }
+
+    @classmethod
+    def from_json_dict(
+            cls,
+            payload: Dict[str, Any],
+    ) -> "FrameACLRuleSet":
+        """
+        Build one ruleset from a JSON-compatible dictionary.
+
+        Args:
+            payload:
+                JSON-compatible ruleset dictionary.
+
+        Returns:
+            FrameACLRuleSet: Reconstructed ruleset object.
+        """
+        if not isinstance(payload, dict):
+            raise TypeError("payload must be a dict.")
+        rules_payload = payload.get("rules")
+        if rules_payload is None:
+            rules_payload = []
+        if not isinstance(rules_payload, list):
+            raise TypeError("rules must be a list.")
+        return cls(
+            payload.get("name"),
+            rules=[
+                FrameACLRule.from_json_dict(rule_payload)
+                for rule_payload in rules_payload
+            ],
+        )
+
+    def clone(self) -> "FrameACLRuleSet":
+        """
+        Return a detached copy of the ruleset.
+
+        Returns:
+            FrameACLRuleSet: Detached ruleset copy.
+        """
+        self.check_cleaned()
+        return FrameACLRuleSet.from_json_dict(self.to_json_dict())
 
 
 class FrameACLViewProfile(Cleanable):

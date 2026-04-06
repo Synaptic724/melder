@@ -4,6 +4,11 @@ from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.frame_acl_configuration_chain import FrameACLConfigurationChain
 from melder.aether.nexus.acl.frame_acl_container import FrameACLContainer
+from melder.aether.nexus.acl.profiles.frame_acl_rule import FrameACLRule
+from melder.aether.nexus.acl.profiles.frame_acl_ruleset import FrameACLRuleSet
+from melder.aether.nexus.acl.frame_acl_view_configuration import (
+    FrameACLViewConfiguration,
+)
 from melder.aether.nexus.acl.frame_acl_validator import FrameACLValidator
 
 
@@ -49,7 +54,7 @@ def test_frame_acl_container_install_configuration_appends_history() -> None:
     previous_configuration = container.frame_acl_configuration
     next_configuration = FrameACLConfiguration.from_json_configuration_string(
         frame_name="ops",
-        json_configuration_string='{"frame_name":"ops","frame_acl":{"visible":true},"conduit_acls":[],"spellbook_acls":[],"spell_acls":[]}',
+        json_configuration_string='{"frame_name":"ops","view_configuration":{"profile_name":"hybrid","profile_version":"0.0.1","minimum_spell_payload_profile_name":"detailed","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"member_override_ruleset":{"name":"member_override","rules":[]}},"codegen_configuration":{"profile_name":"safe","profile_version":"0.0.1","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"capability_override_ruleset":{"name":"capability_override","rules":[]}}}',
         source_configuration_id=None,
         previous_configuration_id=previous_configuration.configuration_id,
         reason="install",
@@ -76,7 +81,7 @@ def test_frame_acl_container_history_is_capped_and_drops_oldest() -> None:
 
     second_configuration = FrameACLConfiguration.from_json_configuration_string(
         frame_name="ops",
-        json_configuration_string='{"frame_name":"ops","view_acl":{"v":1},"codegen_acl":{}}',
+        json_configuration_string='{"frame_name":"ops","view_configuration":{"profile_name":"hybrid","profile_version":"0.0.1","minimum_spell_payload_profile_name":"detailed","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"member_override_ruleset":{"name":"member_override","rules":[]}},"codegen_configuration":{"profile_name":"safe","profile_version":"0.0.1","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"capability_override_ruleset":{"name":"capability_override","rules":[]}}}',
         source_configuration_id=None,
         previous_configuration_id=first_configuration.configuration_id,
         reason="second",
@@ -84,7 +89,7 @@ def test_frame_acl_container_history_is_capped_and_drops_oldest() -> None:
     )
     third_configuration = FrameACLConfiguration.from_json_configuration_string(
         frame_name="ops",
-        json_configuration_string='{"frame_name":"ops","view_acl":{"v":2},"codegen_acl":{}}',
+        json_configuration_string='{"frame_name":"ops","view_configuration":{"profile_name":"permissive","profile_version":"0.0.1","minimum_spell_payload_profile_name":"detailed","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"member_override_ruleset":{"name":"member_override","rules":[]}},"codegen_configuration":{"profile_name":"hybrid","profile_version":"0.0.1","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"capability_override_ruleset":{"name":"capability_override","rules":[]}}}',
         source_configuration_id=None,
         previous_configuration_id=second_configuration.configuration_id,
         reason="third",
@@ -92,7 +97,7 @@ def test_frame_acl_container_history_is_capped_and_drops_oldest() -> None:
     )
     fourth_configuration = FrameACLConfiguration.from_json_configuration_string(
         frame_name="ops",
-        json_configuration_string='{"frame_name":"ops","view_acl":{"v":3},"codegen_acl":{}}',
+        json_configuration_string='{"frame_name":"ops","view_configuration":{"profile_name":"safe","profile_version":"0.0.1","minimum_spell_payload_profile_name":"detailed","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"member_override_ruleset":{"name":"member_override","rules":[]}},"codegen_configuration":{"profile_name":"permissive","profile_version":"0.0.1","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"capability_override_ruleset":{"name":"capability_override","rules":[]}}}',
         source_configuration_id=None,
         previous_configuration_id=third_configuration.configuration_id,
         reason="fourth",
@@ -122,6 +127,41 @@ def test_frame_acl_container_install_rejects_wrong_frame_configuration() -> None
         container.install_configuration(wrong_configuration)
 
 
+def test_frame_acl_container_install_rejects_rule_invalid_configuration() -> None:
+    """
+    Verify container install fails when validator rejects the typed rules.
+
+    Returns:
+        None.
+    """
+    container = FrameACLContainer("ops")
+    invalid_configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        container.frame_acl_configuration,
+        reason="invalid",
+    )
+    invalid_configuration.set_view_configuration(
+        FrameACLViewConfiguration(
+            profile_name="custom",
+            profile_version="0.0.1",
+            minimum_spell_payload_profile_name="detailed",
+            frame_override_ruleset=FrameACLRuleSet(
+                "frame_override",
+                rules=[
+                    FrameACLRule(
+                        rule_name="bad_invoke",
+                        operation="invoke_method",
+                        effect="allow",
+                    )
+                ],
+            ),
+        )
+    )
+    invalid_configuration.finalize()
+
+    with pytest.raises(ValueError, match="Unsupported operation 'invoke_method' in view.frame ruleset"):
+        container.install_configuration(invalid_configuration)
+
+
 def test_frame_acl_container_select_and_rollback_delegate_to_chain() -> None:
     """
     Verify container selection helpers delegate to the underlying chain.
@@ -133,7 +173,7 @@ def test_frame_acl_container_select_and_rollback_delegate_to_chain() -> None:
     original = container.frame_acl_configuration
     next_configuration = FrameACLConfiguration.from_json_configuration_string(
         frame_name="ops",
-        json_configuration_string='{"frame_name":"ops","view_acl":{"visible":true},"codegen_acl":{}}',
+        json_configuration_string='{"frame_name":"ops","view_configuration":{"profile_name":"hybrid","profile_version":"0.0.1","minimum_spell_payload_profile_name":"detailed","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"member_override_ruleset":{"name":"member_override","rules":[]}},"codegen_configuration":{"profile_name":"safe","profile_version":"0.0.1","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"capability_override_ruleset":{"name":"capability_override","rules":[]}}}',
         source_configuration_id=None,
         previous_configuration_id=original.configuration_id,
         reason="next",
@@ -160,7 +200,7 @@ def test_frame_acl_container_cleanup_cleans_all_owned_acl_objects() -> None:
     previous_configuration = container.frame_acl_configuration
     next_configuration = FrameACLConfiguration.from_json_configuration_string(
         frame_name="ops",
-        json_configuration_string='{"frame_name":"ops","view_acl":{"visible":true},"codegen_acl":{}}',
+        json_configuration_string='{"frame_name":"ops","view_configuration":{"profile_name":"hybrid","profile_version":"0.0.1","minimum_spell_payload_profile_name":"detailed","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"member_override_ruleset":{"name":"member_override","rules":[]}},"codegen_configuration":{"profile_name":"safe","profile_version":"0.0.1","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"capability_override_ruleset":{"name":"capability_override","rules":[]}}}',
         source_configuration_id=None,
         previous_configuration_id=previous_configuration.configuration_id,
         reason="cleanup",

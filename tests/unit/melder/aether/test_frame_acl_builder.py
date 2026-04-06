@@ -1,13 +1,24 @@
+import json
+
 import pytest
 
 from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.frame_acl_container import FrameACLContainer
+from melder.aether.nexus.acl.profiles.frame_acl_codegen_profile import (
+    FrameACLCodegenProfile,
+)
+from melder.aether.nexus.acl.profiles.frame_acl_profile import (
+    FrameACLProfile,
+)
+from melder.aether.nexus.acl.profiles.frame_acl_view_profile import (
+    FrameACLViewProfile,
+)
 
 
-def test_frame_acl_builder_begin_change_seeds_current_payload() -> None:
+def test_frame_acl_builder_begin_change_seeds_typed_draft_from_current_config() -> None:
     """
-    Verify begin_change seeds the draft from the current configuration payload.
+    Verify begin_change seeds a typed draft cloned from the current config.
 
     Returns:
         None.
@@ -18,15 +29,20 @@ def test_frame_acl_builder_begin_change_seeds_current_payload() -> None:
     builder.begin_change()
 
     assert builder.change_active is True
+    assert builder._draft_configuration is not None
     assert (
-        builder._draft_json_configuration_string
-        == container.frame_acl_configuration.normalized_json_configuration_string
+        builder._draft_configuration.source_configuration_id
+        == container.frame_acl_configuration.configuration_id
+    )
+    assert (
+        builder._draft_configuration.view_configuration.profile_name
+        == container.frame_acl_configuration.view_configuration.profile_name
     )
 
 
 def test_frame_acl_builder_load_requires_active_change_and_string_payload() -> None:
     """
-    Verify loading JSON requires an active change and a string payload.
+    Verify JSON loading requires an active change and a string payload.
 
     Returns:
         None.
@@ -43,6 +59,25 @@ def test_frame_acl_builder_load_requires_active_change_and_string_payload() -> N
         builder.load_json_configuration_string(None)
 
 
+def test_frame_acl_builder_apply_profile_requires_active_change() -> None:
+    """
+    Verify reusable profile application requires an active draft session.
+
+    Returns:
+        None.
+    """
+    container = FrameACLContainer("ops")
+    builder = container.frame_acl_builder
+    frame_acl_profile = FrameACLProfile(
+        "support",
+        view_profile=FrameACLViewProfile.create_hybrid(),
+        codegen_profile=FrameACLCodegenProfile.create_permissive(),
+    )
+
+    with pytest.raises(RuntimeError, match="has no active change"):
+        builder.apply_frame_acl_profile(frame_acl_profile)
+
+
 def test_frame_acl_builder_commit_requires_active_change() -> None:
     """
     Verify commit_change rejects commits without an active change session.
@@ -57,9 +92,10 @@ def test_frame_acl_builder_commit_requires_active_change() -> None:
         builder.commit_change()
 
 
-def test_frame_acl_builder_commit_installs_new_configuration() -> None:
+def test_frame_acl_builder_commit_installs_new_typed_configuration() -> None:
     """
-    Verify commit_change installs and returns the next configuration revision.
+    Verify commit_change installs and returns the next typed configuration
+    revision.
 
     Returns:
         None.
@@ -69,8 +105,12 @@ def test_frame_acl_builder_commit_installs_new_configuration() -> None:
     builder = container.frame_acl_builder
 
     builder.begin_change()
-    builder.load_json_configuration_string(
-        '{"frame_name":"ops","frame_acl":{"visible":true},"conduit_acls":[],"spellbook_acls":[],"spell_acls":[]}'
+    builder.apply_frame_acl_profile(
+        FrameACLProfile(
+            "support",
+            view_profile=FrameACLViewProfile.create_hybrid(),
+            codegen_profile=FrameACLCodegenProfile.create_permissive(),
+        )
     )
     next_configuration = builder.commit_change()
 
@@ -78,7 +118,9 @@ def test_frame_acl_builder_commit_installs_new_configuration() -> None:
     assert container.frame_acl_configuration is next_configuration
     assert next_configuration.source_configuration_id == previous_configuration.configuration_id
     assert next_configuration.locked is True
-    assert builder._draft_json_configuration_string is None
+    assert next_configuration.view_configuration.profile_name == "hybrid"
+    assert next_configuration.codegen_configuration.profile_name == "permissive"
+    assert builder._draft_configuration is None
     assert builder.change_active is False
 
 
@@ -93,13 +135,10 @@ def test_frame_acl_builder_discard_resets_session_state() -> None:
     builder = container.frame_acl_builder
 
     builder.begin_change()
-    builder.load_json_configuration_string(
-        '{"frame_name":"ops","frame_acl":{"visible":false},"conduit_acls":[],"spellbook_acls":[],"spell_acls":[]}'
-    )
     builder.discard_change()
 
     assert builder.change_active is False
-    assert builder._draft_json_configuration_string is None
+    assert builder._draft_configuration is None
 
 
 def test_frame_acl_builder_rejects_double_begin_change() -> None:
@@ -138,6 +177,7 @@ def test_frame_acl_builder_cleanup_clears_fields() -> None:
     """
     container = FrameACLContainer("ops")
     builder = container.frame_acl_builder
+    builder.begin_change()
 
     builder.cleanup()
 
@@ -145,13 +185,12 @@ def test_frame_acl_builder_cleanup_clears_fields() -> None:
     assert builder._lock is None
     assert builder._container is None
     assert builder._change_active is None
-    assert builder._draft_json_configuration_string is None
+    assert builder._draft_configuration is None
 
 
-def test_frame_acl_builder_commit_uses_loaded_json_payload() -> None:
+def test_frame_acl_builder_load_json_rebuilds_typed_draft() -> None:
     """
-    Verify commit_change writes the loaded JSON payload into the committed
-    config node.
+    Verify loading JSON rebuilds the typed draft child configs.
 
     Returns:
         None.
@@ -161,12 +200,30 @@ def test_frame_acl_builder_commit_uses_loaded_json_payload() -> None:
 
     builder.begin_change()
     builder.load_json_configuration_string(
-        '{"frame_name":"ops","view_acl":{"visible":true},"codegen_acl":{"allowed":true}}'
+        json.dumps(
+            {
+                "frame_name": "ops",
+                "view_configuration": {
+                    "profile_name": "hybrid",
+                    "profile_version": "0.0.1",
+                    "minimum_spell_payload_profile_name": "detailed",
+                    "frame_override_ruleset": {"name": "frame_override", "rules": []},
+                    "conduit_override_ruleset": {"name": "conduit_override", "rules": []},
+                    "spell_override_ruleset": {"name": "spell_override", "rules": []},
+                    "member_override_ruleset": {"name": "member_override", "rules": []},
+                },
+                "codegen_configuration": {
+                    "profile_name": "permissive",
+                    "profile_version": "0.0.1",
+                    "frame_override_ruleset": {"name": "frame_override", "rules": []},
+                    "conduit_override_ruleset": {"name": "conduit_override", "rules": []},
+                    "spell_override_ruleset": {"name": "spell_override", "rules": []},
+                    "capability_override_ruleset": {"name": "capability_override", "rules": []},
+                },
+            },
+            sort_keys=True,
+        )
     )
-    configuration = builder.commit_change()
 
-    assert configuration.to_json_dict() == {
-        "codegen_acl": {"allowed": True},
-        "frame_name": "ops",
-        "view_acl": {"visible": True},
-    }
+    assert builder._draft_configuration.view_configuration.profile_name == "hybrid"
+    assert builder._draft_configuration.codegen_configuration.profile_name == "permissive"
