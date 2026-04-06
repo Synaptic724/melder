@@ -1,8 +1,12 @@
 from typing import Optional
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.__melder_registration_guard__ import (
+    __melder_registration_guard__ as _mrg,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ISpellSpace
-from melder.utilities.custom_exceptions.spell_space_scope_error import SpellSpaceScopeError
+from melder.utilities.custom_exceptions.spell_space_scope_error import (
+    SpellSpaceScopeError,
+)
 from melder.utilities.helpers.id_builder import IDBuilder
 
 
@@ -10,17 +14,25 @@ class SpellSpace(Cleanable, ISpellSpace):
     """
     Scope handle for `Existence.unique_per_spell_space`.
 
+    `SpellSpace` is the explicit runtime token that marks one spellspace-bound
+    resolution window on a conduit. It does not resolve anything by itself; it
+    enforces that spellspace-scoped meld calls only happen while this scope is
+    the currently active spellspace on the owner conduit.
+
     Responsibilities:
-    - Track identity/version for a spellspace scope owned by a Conduit.
-    - Enforce activation correctness (only the active spellspace can meld).
-    - Provide reset/cleanup hooks to clear spellspace-scoped instances.
+    - hold one stable identity for the spellspace scope
+    - track a monotonic version that changes on reset
+    - enforce active-scope usage for spellspace-bound meld calls
+    - clear spellspace-scoped instances when reset or cleanup occurs
 
     Lifecycle:
-    - Created by a Conduit via `enter_spellspace()` or direct construction.
-    - Must be the active spellspace on the owner Conduit to call `meld(...)`.
-    - `reset()` clears spellspace-bound instances and bumps the version counter.
-    - `cleanup()` is idempotent and releases the owner reference.
+    - created by a conduit via `enter_spellspace()` or direct construction
+    - must be the active spellspace on the owner conduit before `meld()` may
+      delegate successfully
+    - `reset()` clears spellspace-bound instances and bumps the version counter
+    - `cleanup()` is idempotent and detaches the scope from the owner conduit
     """
+
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
@@ -29,6 +41,16 @@ class SpellSpace(Cleanable, ISpellSpace):
     ]
 
     def __init__(self, owner_conduit) -> None:
+        """
+        Create one spellspace scope owned by a conduit.
+
+        Args:
+            owner_conduit: Conduit that owns this spellspace and will service
+                spellspace-scoped meld calls.
+
+        Raises:
+            ValueError: If `owner_conduit` is `None`.
+        """
         super().__init__()
         if owner_conduit is None:
             raise ValueError("owner_conduit must not be None.")
@@ -38,12 +60,13 @@ class SpellSpace(Cleanable, ISpellSpace):
 
     def cleanup(self) -> None:
         """
-        Finalize this SpellSpace and dispose spellspace-scoped instances.
+        Finalize this spellspace and clear its scoped instances.
 
-        Idempotent:
-        - Calls reset() (best-effort) to clear spellspace-bound instances.
-        - Drops the owner reference.
-        - Unregisters from the owner Conduit cleanup registry.
+        Contract:
+        - Idempotent cleanup.
+        - Best-effort calls `reset()` before detaching from the owner.
+        - Unregisters this scope from the owner conduit before releasing the
+          owner reference.
         """
         if self._cleaned:
             return
@@ -56,80 +79,76 @@ class SpellSpace(Cleanable, ISpellSpace):
             self._owner_conduit = None
             self._cleaned = True
 
-
-    # ------------------------------------------------------------------ #
-    # Properties
-    # ------------------------------------------------------------------ #
-
     @property
     def id(self) -> str:
         """
-        Stable identifier for this SpellSpace.
+        Return the stable identifier for this spellspace.
 
         Returns:
-            str: Unique ID assigned at construction.
+            str: Unique id assigned at construction.
         """
         return self._id
 
     @property
     def owner_conduit(self):
         """
-        Owning Conduit for this spellspace.
+        Return the conduit that owns this spellspace.
 
         Returns:
-            The Conduit instance that created/owns this SpellSpace.
+            The conduit instance that created and owns this spellspace.
         """
         return self._owner_conduit
 
     @property
     def version(self) -> int:
         """
-        Monotonic version number incremented on each reset().
+        Return the monotonic version counter for this scope.
 
         Returns:
-            int: Current version counter.
+            int: Current version, incremented by each successful `reset()`.
         """
         return self._version
 
-    # ------------------------------------------------------------------ #
-    # Public API
-    # ------------------------------------------------------------------ #
-
     def meld(
-            self,
-            spell_name: str | None = None,
-            *,
-            spell: str | object | None = None,
-            spellframe: str | object | None = None,
-            binding_name: str | None = None,
-            spell_override: Optional[dict | list | tuple] = None,
+        self,
+        spell_name: str | None = None,
+        *,
+        spell: str | object | None = None,
+        spellframe: str | object | None = None,
+        binding_name: str | None = None,
+        spell_override: Optional[dict | list | tuple] = None,
     ):
         """
-        Delegate to the owner Conduit’s `meld`, enforcing this SpellSpace is active.
+        Delegate to the owner conduit’s `meld`, enforcing active-scope usage.
 
         Mirrors `Conduit.meld(...)` and supports the same root entry modes:
-        - `spell` as a string spell_id
+        - `spell` as a string spell id
         - `spell` as a spell object (class/function)
-        - `spellframe` as a protocol/frame (or string frame key)
+        - `spellframe` as a protocol/frame or string frame key
         - `spell_name` as a logical name key
 
         Resolution, reuse, and lifecycle behavior are delegated to the owner
-        Conduit’s `Meld`.
+        conduit’s `Meld`.
 
         Args:
-            spell_name: Logical spell name (string) used for name-based resolution.
-            spell: Primary spell identifier (spell_id string or spell object).
+            spell_name: Logical spell name used for name-based resolution.
+            spell: Primary spell identifier (spell id string or spell object).
             spellframe: Optional spellframe / protocol / string frame key.
-            binding_name: Optional binding name (string) used for resolution.
-            spell_override: Optional per-call override payload (dict/list/tuple).
+            binding_name: Optional binding name used for resolution.
+            spell_override: Optional per-call override payload
+                (`dict` / `list` / `tuple`).
 
         Returns:
-            Any: The resolved component instance as returned by the owner Conduit’s `meld`.
+            Any: The resolved component instance returned by the owner
+            conduit’s `meld`.
 
         Raises:
-            SpellSpaceScopeError: If this spellspace is not the active one on the owner.
-            RuntimeError: If this SpellSpace has been cleaned.
-            Other errors: Propagated from the owner Conduit’s `meld` (ValueError/TypeError/KeyError/NotImplementedError/etc.).
+            SpellSpaceScopeError: If this spellspace is not the active one on
+                the owner conduit.
+            RuntimeError: If this spellspace has already been cleaned.
+            Other errors: Propagated from the owner conduit’s `meld`
+                (`ValueError`, `TypeError`, `KeyError`,
+                `NotImplementedError`, and related runtime failures).
         """
         self.check_cleaned()
         if self._owner_conduit.get_active_spellspace() is not self:
@@ -147,15 +166,18 @@ class SpellSpace(Cleanable, ISpellSpace):
 
     def reset(self) -> None:
         """
-        Clear all spellspace-bound instances for this space and bump version.
+        Clear all spellspace-bound instances for this scope and bump version.
 
         Raises:
-            SpellSpaceScopeError: If the owner does not expose spellspace storage.
-            RuntimeError: If this SpellSpace has been cleaned.
+            SpellSpaceScopeError: If the owner does not expose spellspace
+                storage.
+            RuntimeError: If this spellspace has already been cleaned.
         """
         self.check_cleaned()
         creations = self._owner_conduit._creations
         if creations is None:
-            raise SpellSpaceScopeError("Owner conduit does not expose spellspace storage.")
+            raise SpellSpaceScopeError(
+                "Owner conduit does not expose spellspace storage."
+            )
         creations.clear_spellspace_instances(self._id)
         self._version += 1

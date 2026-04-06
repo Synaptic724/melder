@@ -8,18 +8,29 @@ from melder.utilities.interfaces.interfaces import IConduit, ICreations
 from melder.aether.conduit.creations.creation import Creation
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
-#TODO: Create a creations object to encapsulate the objects under my control.
+# TODO: Narrow this manager's public surface so storage/disposal internals are
+# not the default interface exposed to the rest of the conduit runtime.
 
 class Creations(Cleanable, ICreations):
     """
-    Manages all instantiated objects within a Conduit (Normal Scope).
+    Conduit-owned registry for live creation objects and their disposal state.
 
-    This manager is responsible for tracking object instances based on their lifecycle
-    (`unique`, `many`, `unique_per_spell_space`) and enforcing resource disposal upon cleaning.
+    `Creations` is the runtime store behind meld reuse. It tracks live objects
+    under the spell's lifecycle contract, records disposal metadata, and owns
+    the ordered cleanup stacks that are drained when the conduit tears down.
 
-    **Key Responsibilities:**
-      * Storage and lifecycle management of created objects.
-      * Controlled resource disposal via `ICleanable` or configured cleanup methods.
+    Responsibilities:
+    - store non-spellspace and spellspace-scoped creations in one shared map
+    - preserve lifecycle semantics for singleton, many, and spellspace routes
+    - record disposal ordering through global and spellspace-local stacks
+    - support extraction/restoration workflows used by ownership transfer
+
+    Contract:
+    - cleanup is idempotent and drains disposal stacks before references are
+      nulled
+    - disposal method order comes from `Creation.disposal_method_names`
+    - cleanup errors are aggregated and raised only after teardown work
+      finishes
     """
     __melder_internal__ = _mrg.sentinel
     def __init__(self, conduit: IConduit):
@@ -136,29 +147,20 @@ class Creations(Cleanable, ICreations):
 
     def _attempt_cleanup(self, creation: Creation) -> Optional[Exception]:
         """
-        Internal
+        Attempt disposal for one creation using its configured method order.
 
-        Attempt to clean up an object strictly via a prioritized list of method names.
-
-        Behavior:
-          - Returns None if `item` is None or disposal is disabled.
-          - Iterates the Creation's `disposal_method_names` in order
-            (e.g., ["cleanup", "close", "dispose"]).
-          - For the first attribute found on `item` that is callable, calls it.
-          - If the call succeeds, returns None.
-          - If the call raises, returns a RuntimeError wrapping the original exception.
-          - If no listed methods exist on the object, returns None (treated as no-op).
-
-        Notes:
-          - No Protocol/type checks are performed.
-          - Cleanup semantics are entirely defined by the configured method list.
+        This helper is the core disposal-policy interpreter. It does not guess
+        or probe multiple protocols beyond the configured method-name list on
+        the `Creation`. The first configured method that exists is called; if it
+        raises, the error is wrapped and returned for later aggregation.
 
         Args:
-            creation:
-                Creation wrapper whose value may expose a configured disposal method.
+            creation: Creation wrapper whose value may expose one of the
+                configured disposal methods.
 
         Returns:
-            Optional[Exception]: RuntimeError if a chosen cleanup method raised; otherwise None.
+            Optional[Exception]: Wrapped disposal error when the chosen cleanup
+            method fails, otherwise `None`.
         """
         item = creation.value
         if item is None:
@@ -179,18 +181,22 @@ class Creations(Cleanable, ICreations):
 
     def _push_disposal_creation(self, creation: Creation) -> None:
         """
-        Internal
+        Register one creation on the global disposal stack.
 
-        Push a Creation onto the disposal stack when it declares disposal methods.
+        Only creations that actually declare disposal methods are pushed, so the
+        stack represents "must attempt explicit disposal" work rather than every
+        live object in the registry.
         """
         if creation.has_disposal_methods:
             self._disposal_stack.appendleft(creation)
 
     def _push_spellspace_disposal_creation(self, spellspace_id: str, creation: Creation) -> None:
         """
-        Internal
+        Register one creation on its spellspace-local disposal stack.
 
-        Push a Creation onto a spellspace-local disposal stack when it declares disposal methods.
+        Spellspace-scoped creations use a separate stack so teardown can drain
+        each spellspace bucket deterministically without mixing it into the
+        global conduit-level disposal order.
         """
         if creation.has_disposal_methods:
             stack = self._spellspace_disposal_stacks.setdefault(spellspace_id, deque())
@@ -198,9 +204,11 @@ class Creations(Cleanable, ICreations):
 
     def _remove_disposal_creation(self, creation: Creation) -> None:
         """
-        Internal
+        Remove one creation from the global disposal stack if present.
 
-        Remove a Creation from the disposal stack if present.
+        This is primarily used by extraction/transfer flows that move creations
+        out of the registry and need the disposal bookkeeping to stay aligned
+        with the moved objects.
         """
         if not creation.has_disposal_methods:
             return
@@ -213,9 +221,11 @@ class Creations(Cleanable, ICreations):
 
     def _remove_spellspace_disposal_creation(self, spellspace_id: str, creation: Creation) -> None:
         """
-        Internal
+        Remove one creation from a spellspace-local disposal stack if present.
 
-        Remove a Creation from a spellspace-local disposal stack if present.
+        This is the spellspace-scoped counterpart to `_remove_disposal_creation`
+        and keeps per-spellspace disposal bookkeeping aligned with extraction or
+        bucket-clearing flows.
         """
         if not creation.has_disposal_methods:
             return
@@ -229,9 +239,12 @@ class Creations(Cleanable, ICreations):
 
     def _drain_disposal_stack(self) -> List[Exception]:
         """
-        Internal
+        Drain the global disposal stack in LIFO order.
 
-        Drain the disposal stack in LIFO order and dispose each Creation.
+        The stack is drained front-to-back because creations are pushed with
+        `appendleft`, making the newest disposal candidate run first during
+        teardown. Disposal errors are collected rather than raised immediately
+        so the remaining cleanup work still executes.
         """
         errors: List[Exception] = []
         while self._disposal_stack:
@@ -244,9 +257,10 @@ class Creations(Cleanable, ICreations):
 
     def _drain_spellspace_disposal_stack(self, spellspace_id: str) -> List[Exception]:
         """
-        Internal
+        Drain one spellspace-local disposal stack in LIFO order.
 
-        Drain a spellspace-local disposal stack in LIFO order and dispose each Creation.
+        This keeps spellspace teardown deterministic and self-contained while
+        using the same error-collection model as the global disposal stack.
         """
         errors: List[Exception] = []
         stack = self._spellspace_disposal_stacks.get(spellspace_id)

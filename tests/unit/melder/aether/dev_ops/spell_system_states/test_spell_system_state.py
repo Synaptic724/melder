@@ -71,6 +71,19 @@ def test_flags_isolation(state):
     flags.add(SpellState.has_open_incident)
     assert SpellState.has_open_incident not in state.flags
 
+
+def test_snapshot_properties_return_empty_after_internal_collections_are_nulled(state):
+    """
+    Verify snapshot properties return empty collections when internals are already nulled.
+    """
+    state._direct_dependencies = None
+    state._direct_dependents = None
+    state._flags = None
+
+    assert state.direct_dependencies == set()
+    assert state.direct_dependents == set()
+    assert state.flags == set()
+
 # ----------------------------------------------------------------------
 # 3. Mutation & Wiring
 # ----------------------------------------------------------------------
@@ -181,6 +194,23 @@ def test_set_validity_generic(state):
     assert SpellState.has_open_incident in state.flags
     assert SpellState.new_lineage not in state.flags
 
+
+def test_set_validity_handles_missing_flags_and_swallows_risk_callback_errors(state):
+    """
+    Verify set_validity no-ops safely when flags are already nulled and swallows
+    risk-manager callback failures.
+    """
+
+    class _RiskManager:
+        def on_structural_validity_change(self, lineage_id, validity):
+            raise RuntimeError("risk boom")
+
+    state._set_risk_manager(_RiskManager())
+    state.set_validity(SpellValidity.valid)
+
+    state._flags = None
+    state.set_validity(SpellValidity.invalid)
+
 # ----------------------------------------------------------------------
 # 5. Cleanup
 # ----------------------------------------------------------------------
@@ -204,6 +234,80 @@ def test_cleanup_clears_state(state):
 def test_cleanup_idempotent(state):
     state.cleanup()
     state.cleanup()
+
+
+def test_cleanup_rechecks_cleaned_inside_lock(state):
+    """
+    Verify the inner cleanup re-check under concurrent teardown.
+    """
+
+    class _CoordinatedLock:
+        def __init__(self) -> None:
+            self._entered_first = threading.Event()
+            self._second_attempted = threading.Event()
+            self._lock = threading.RLock()
+
+        def __enter__(self):
+            if self._entered_first.is_set():
+                self._second_attempted.set()
+            self._lock.acquire()
+            if not self._entered_first.is_set():
+                self._entered_first.set()
+                assert self._second_attempted.wait(timeout=1.0)
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self._lock.release()
+
+    state._lock = _CoordinatedLock()
+    failures = []
+
+    def _run_cleanup():
+        try:
+            state.cleanup()
+        except BaseException as exc:
+            failures.append(exc)
+
+    first = threading.Thread(target=_run_cleanup, name="sss-cleanup-first")
+    second = threading.Thread(target=_run_cleanup, name="sss-cleanup-second")
+
+    first.start()
+    assert state._lock._entered_first.wait(timeout=1.0)
+    second.start()
+    first.join()
+    second.join()
+
+    assert failures == []
+    assert state._cleaned is True
+    assert state._lock is None
+
+
+def test_add_and_remove_dependent_ignore_empty_ids(state):
+    """
+    Verify dependent-edge helpers no-op on empty identifiers.
+    """
+    state.add_dependent("")
+    state.remove_dependent("")
+
+    assert state.direct_dependents == set()
+
+
+def test_clear_dirty_swallows_risk_callback_errors(state):
+    """
+    Verify clear_dirty tolerates risk-manager callback failures.
+    """
+
+    class _RiskManager:
+        def on_structural_validity_change(self, lineage_id, validity):
+            raise RuntimeError("risk boom")
+
+    state._set_risk_manager(_RiskManager())
+    state.mark_structural_change()
+
+    state.clear_dirty(last_validated_at=123.0)
+
+    assert state.validity is SpellValidity.valid
+    assert state.last_validated_at == 123.0
 
 def test_access_after_cleanup_raises(state):
     """

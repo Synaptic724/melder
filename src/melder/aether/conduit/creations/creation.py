@@ -7,13 +7,18 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class Creation(Cleanable):
     """
-    A wrapper around any instantiated object managed by Melder.
+    Wrapper for one live runtime object tracked by `Creations`.
 
-    Responsibilities:
-    - Provide a unique ULID identity.
-    - Encapsulate the underlying Python object.
-    - Allow Creations/LesserCreations to manage disposal.
-    - Store disposal metadata derived from the originating spell.
+    `Creation` is the small ownership shell around an instantiated object. It
+    gives the runtime a stable identity, stores disposal metadata derived from
+    the originating spell, and lets the larger `Creations` manager handle
+    registration, extraction, restoration, and ordered disposal.
+
+    Contract:
+    - The wrapper owns metadata about disposal, not disposal policy itself.
+    - `cleanup()` clears the wrapper's references but does not call
+      `cleanup()` / `close()` / `dispose()` on the wrapped object.
+    - The actual disposal decision belongs to `Creations`.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = (
@@ -33,12 +38,14 @@ class Creation(Cleanable):
             disposal_methods: list[str] | None = None,
     ):
         """
-        Wrap an object into a Creation container.
+        Wrap one runtime object in a `Creation` shell.
 
         Args:
-            value: Any Python object produced by a Spell.
-            has_disposal_methods: True when the spell declares disposal methods.
-            disposal_methods: Ordered list of disposal method names for this creation.
+            value: Runtime object produced by a spell.
+            has_disposal_methods: Whether the originating spell declared
+                disposal methods for the wrapped object.
+            disposal_methods: Ordered disposal-method names to be interpreted
+                later by `Creations`.
         """
         super().__init__()
         self._id: str = str(ulid.ULID())
@@ -49,12 +56,13 @@ class Creation(Cleanable):
 
     def cleanup(self):
         """
-        Cleanup the wrapper.
+        Release the wrapper's references without disposing the wrapped object.
 
-        IMPORTANT:
-        - Does NOT call cleanup()/close()/dispose() on the underlying object.
-        - Creations and LesserCreations are responsible for disposing the inner value.
-        - This method ONLY nulls out the internal reference so GC can eventually reclaim it.
+        Contract:
+        - Idempotent and lock-protected.
+        - Does not call disposal methods on the underlying value.
+        - Only clears wrapper-held references so the higher-level `Creations`
+          manager can own the actual disposal policy.
         """
         if self._cleaned:
             return
@@ -70,12 +78,16 @@ class Creation(Cleanable):
 
     @property
     def id(self) -> str:
-        """Return the ULID identity for this creation."""
+        """
+        Return the stable ULID assigned to this wrapper.
+        """
         return self._id
 
     @property
     def value(self) -> Any:
-        """Return the underlying Python object wrapped by this Creation."""
+        """
+        Return the wrapped runtime object.
+        """
         return self._value
 
     @property
@@ -101,11 +113,28 @@ class Creation(Cleanable):
         return self._disposal_methods
 
     def __repr__(self) -> str:
+        """
+        Return a debug-oriented representation of the wrapper.
+        """
         return f"<Creation id={self._id} value={self._value!r}>"
 
     def __enter__(self) -> 'Creation':
+        """
+        Enter the wrapper lock context.
+
+        Returns:
+            Creation: The wrapper itself while its internal lock is held.
+        """
         self._lock.acquire()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        """
+        Exit the wrapper lock context.
+
+        Args:
+            exc_type: Exception type raised inside the context, if any.
+            exc_value: Exception instance raised inside the context.
+            traceback: Traceback for the exception, if any.
+        """
         self._lock.release()

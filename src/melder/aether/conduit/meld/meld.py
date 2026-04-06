@@ -31,31 +31,28 @@ class Meld(Cleanable, IMeld):
     within a specific `Conduit`. It handles the full lifecycle of spell resolution,
     creation reuse, hook execution, and registration.
 
-    It implements the core dependency injection logic, mediating between the
-    `Spellbook` (which defines the components) and the `Creations` manager (which
-    holds the instantiated objects/components).
+    It is the conduit-local runtime bridge between:
+    - `Spellbook`, which owns spell metadata and lookup maps
+    - `Creations`, which owns live instances under Existence rules
+    - SpellSystemStates / change-control state, which decide whether runtime
+      resolution is allowed to continue
 
-    The primary method is `meld()`.
+    Primary responsibilities:
+    - resolve a target spell by spell id or normalized lookup key
+    - normalize per-call override payloads
+    - enforce structural validity, contract validity, and per-conduit
+      resolution validity before instance access
+    - reuse existing creations when allowed, or dispatch into creation-context
+      runtime lanes when construction is required
+    - run pre-cast, activation, post-cast, and meld-level hooks when present
 
-    ### High-Level Activation Flow
-
-    The `meld()` process follows these steps:
-
-    1.  **Resolve Spell:** Identifies the target `ISpell` object using its ID or a
-        `(spellframe, binding_name)` lookup key.
-    2.  **Apply Overrides:** Attaches any per-call `spell_override` metadata to the Spell.
-    3.  **Execute Pre-Cast Hooks:** Runs hooks that execute *before* instance resolution.
-    4.  **Attempt Reuse:** Checks the `Creations` manager for an existing instance
-        based on the Spell's `Existence` (e.g., `unique`, `unique_per_conduit`).
-    5.  **Instantiate/Register (if needed):**
-        * If no instance is found, dispatches to a spell-type specific path (e.g.,
-            for `EXISTING_CREATION` spells) to obtain a new instance.
-        * Registers the new instance with the `Creations` manager based on its
-            `Existence` mode.
-    6.  **Execute Activation Hooks:** Runs hooks that operate on the newly resolved/reused
-        instance, passing the instance as a context argument.
-    7.  **Execute Post-Cast Hooks:** Runs hooks that execute *after* activation.
-    8.  **Return Instance:** Returns the final, resolved instance.
+    High-level activation flow:
+    1. Resolve the target spell from the requested identity inputs.
+    2. Normalize per-call override payloads.
+    3. Enforce validity/change-control gates and rerun lazy phases when needed.
+    4. Reuse an existing creation or build through `CreationContext`.
+    5. Fire activation and meld-level hooks when the route requires them.
+    6. Return the final resolved instance.
     """
     __melder_internal__ = _mrg.sentinel
     def __init__(
@@ -190,24 +187,28 @@ class Meld(Cleanable, IMeld):
     # region Context Manager
     def __enter__(self):
         """
-        Acquire the internal lock for thread-safe operations within a context.
+        Enter the meld lock context.
 
         Returns:
-            Meld: The instance itself.
+            Meld: The resolver instance itself, with the caller now inside the
+            same lock-protected critical section used by other mutable meld
+            operations.
         """
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         """
-        Release the internal lock upon context manager exit.
+        Exit the meld lock context.
 
         Args:
-            exc_type: Exception type if an exception occurred.
-            exc_value: Exception value.
-            traceback: Exception traceback.
+            exc_type: Exception type if an exception occurred inside the
+                context.
+            exc_value: Exception instance raised inside the context.
+            traceback: Traceback for the exception, if any.
 
         Returns:
-            None.
+            None. The method exists for context-manager symmetry; the surrounding
+            lock usage determines the effective critical-section behavior.
         """
         pass
 
@@ -403,40 +404,27 @@ class Meld(Cleanable, IMeld):
 
     def _ensure_lineage_resolvable(self, spell: ISpell) -> None:
         """
-        Internal
+        Ensure the spell is structurally valid enough to continue toward
+        resolution.
 
-        Enforce structural SpellSystemState gating and per-conduit resolution
-        gating for this spell.
+        This is the main pre-resolution validity gate. It combines three
+        responsibilities:
 
-        Behaviour:
+        - rerun structural phases when the lineage is unknown or gated
+        - force contract-driven revalidation when `SpellContract` defaults are
+          present and need to invalidate conduit-local resolution state
+        - hand off to per-conduit resolution gating when structural validity is
+          no longer the blocking issue
 
-        - If there is no SpellSystemState:
-            -> no-op here; we rely on `spell.is_broken` later in `meld(...)`.
-
-        - If structural validity is UNKNOWN or GATED:
-            -> run the per-spell structural phases (1-4) via
-               `spell.run_structural_phases()`.
-              Then:
-                * if `spell.is_broken` -> mark INVALID and raise
-                  SpellbookValidationError.
-                * else -> if the lineage did not move to VALID, raise
-                  SpellbookValidationError.
-
-          After this call, the lineage should no longer be UNKNOWN/GATED. If it
-          is, that is treated as a validation failure.
-
-        - If structural validity is INVALID or DISABLED:
-            -> raise SpellbookValidationError immediately.
-        - If per-conduit resolution validity is UNKNOWN or GATED:
-            -> run conduit-scoped phases (5-7) via
-               `spell._spellbook._run_resolution_phases_for_target_spell(conduit_id, spell)`.
-              Then:
-                * if resolution validity is INVALID/DISABLED -> raise
-                  SpellbookValidationError.
-                * else if still UNKNOWN/GATED -> raise SpellbookValidationError.
         Threading:
-            - Uses the per-spell lock (`spell._lock`) to serialize revalidation
-              when validity is UNKNOWN or GATED, preventing concurrent phase runs.
+            Structural reruns are serialized under `spell._lock` so concurrent
+            meld calls do not race duplicate validation work.
+
+        Raises:
+            SpellbookValidationError: If structural or conduit-local validity
+                cannot be promoted into a runnable state.
+            MeldExecutionError: If change-control reports the root as dirty for
+                the active resolution conduit.
         """
         state = spell.system_state
         # Structural gating
@@ -553,24 +541,27 @@ class Meld(Cleanable, IMeld):
 
     def _gated_validation_required(self, spell: ISpell) -> bool:
         """
-        Internal
+        Decide whether structural revalidation must run before meld continues.
 
-        Decide whether this spell's lineage needs a **lazy structural revalidation**
-        pass before we attempt to meld it.
+        This helper is a decision gate only. It does not run phases itself. It
+        interprets the current spell-system state plus change-control state and
+        answers one question:
 
-        Semantics:
+        "Is this lineage eligible to continue as-is, or must meld force a
+        structural validation pass first?"
 
-        - If no SpellSystemState is attached -> False
-          (DevOps / change-control not wired; Meld falls back to Spell flags).
+        Decision rules:
 
-        - SpellValidity.valid   -> False  (safe to resolve as-is).
-        - SpellValidity.unknown -> True   (first-pass revalidation needed).
-        - SpellValidity.gated   -> True   (structural / contract / mutation gate).
-        - SpellValidity.invalid / disabled / cleaned -> raise SpellbookValidationError.
-        - Dirty root under change-control -> raise MeldExecutionError.
+        - `valid` -> safe to continue without structural rerun
+        - `unknown` / `gated` -> structural rerun required
+        - `invalid` / `disabled` / `cleaned` -> hard validation failure
+        - dirty root under change-control -> hard runtime block
 
-        This method does **not** run validation; it only answers:
-        "Should we try to revalidate this lineage now?"
+        Raises:
+            SpellbookValidationError: If the lineage is already in a hard-fail
+                state.
+            MeldExecutionError: If change-control reports the root as dirty for
+                the active conduit.
         """
         state = spell.system_state
         conduit_id = self._resolution_conduit_id
@@ -620,14 +611,20 @@ class Meld(Cleanable, IMeld):
 
     def _ensure_resolution_resolvable(self, spell: ISpell) -> None:
         """
-        Internal
+        Ensure the spell is resolution-valid for the active conduit.
 
-        Enforce per-conduit resolution validity for Phases 5-11.
+        Structural validity alone is not enough for meld. A spell can be
+        structurally sound but still require conduit-local resolution work
+        because phases 5-11 have not yet been completed for this conduit, or
+        for its root conduit in lesser-lineage cases.
 
-        This method checks the ConduitResolutionState for the active conduit
-        (or root conduit for lesser conduits) and runs conduit-scoped phases
-        if resolution validity is UNKNOWN or GATED. Invalid, disabled, or
-        cleaned validity states are hard blocks.
+        This helper reads the active `ConduitResolutionState`, reruns
+        conduit-scoped resolution phases when that state is unknown or gated,
+        and hard-blocks invalid, disabled, or cleaned states.
+
+        Raises:
+            SpellbookValidationError: If conduit-scoped resolution cannot be
+                promoted into a valid state.
         """
         spell_system_states = spell._spell_system_states
         conduit_id = self._resolution_conduit_id
@@ -831,7 +828,13 @@ class Meld(Cleanable, IMeld):
             resolution_state: Optional[Any],
     ) -> Optional[SpellValidity]:
         """
-        Resolve per-conduit validity for a spell, using root validity when applicable.
+        Return the effective conduit-local validity for this spell.
+
+        Some spells should be judged against root validity rather than
+        spell-local validity when they are the root blueprint for the current
+        conduit-local resolution graph. This helper hides that distinction so
+        callers can ask for one effective validity answer without duplicating
+        root-detection logic.
         """
         if resolution_state is None:
             return SpellValidity.unknown
@@ -890,7 +893,12 @@ class Meld(Cleanable, IMeld):
 
     def _fire_meld_hooks(self, hook_name: str, *args: Any) -> None:
         """
-        Invoke meld-level hooks by name. Exceptions are wrapped in HookExecutionError.
+        Invoke one meld-level hook list by name.
+
+        This is the dispatcher for conduit-supplied meld hooks such as
+        pre-resolve, activation, and post-resolve notifications. Hook failures
+        are normalized into `HookExecutionError` so callers see one stable
+        hook-failure contract instead of arbitrary raw exceptions.
         """
         hook_list = self._meld_hooks.get(hook_name)
         if not hook_list:
@@ -1059,14 +1067,11 @@ class Meld(Cleanable, IMeld):
 
     def _resolve_spell_by_id(self, spell_id: str) -> ISpell:
         """
-        Internal
+        Resolve a spell by its current canonical spell id.
 
-        Resolve an ``ISpell`` by its canonical current ``spell_id`` (SHA256).
-
-        This uses the Spellbook spell_id_pool first (owned + contracted),
-        then falls back to the owned map and per-conduit contracted maps.
-        It is intended for cases where the caller has an exact fingerprint
-        and does not care about logical identity keys.
+        This is the direct-id lookup path for callers that already know the
+        exact current lineage id and do not need logical frame/binding
+        normalization.
 
         Args:
             spell_id:
@@ -1102,19 +1107,16 @@ class Meld(Cleanable, IMeld):
             lookup_key: tuple[str, str],
     ) -> ISpell:
         """
-        Internal
+        Resolve a spell by normalized logical identity key.
 
-        Resolve an ``ISpell`` by its logical identity key:
+        The lookup order is:
 
-            (frame_key, binding_name)
+        1. local Spellbook maps
+        2. contracted-conduit maps
 
-        The lookup proceeds in two phases:
-
-        1. Check the local Spellbook lookup map.
-        2. Check each contracted-conduit lookup map.
-
-        This method orchestrates both lookups and is responsible for
-        raising a ``KeyError`` when no spell can be found.
+        This method is the orchestration point for that two-layer search and is
+        responsible for turning "not found anywhere" into one stable `KeyError`
+        contract.
 
         Args:
             lookup_key:
@@ -1156,10 +1158,7 @@ class Meld(Cleanable, IMeld):
             lookup_key: tuple[str, str],
     ) -> Optional[ISpell]:
         """
-        Internal
-
-        Attempt to resolve an ``ISpell`` from the **local** Spellbook maps
-        using a logical identity key.
+        Attempt local Spellbook resolution for one logical lookup key.
 
         Args:
             lookup_key:
@@ -1194,13 +1193,11 @@ class Meld(Cleanable, IMeld):
             lookup_key: tuple[str, str],
     ) -> Optional[ISpell]:
         """
-        Internal
+        Attempt contracted-conduit resolution for one logical lookup key.
 
-        Attempt to resolve an ``ISpell`` from **contracted** Spellbook maps
-        using a logical identity key.
-
-        This iterates over all peer conduits known to this Meld instance
-        and consults their per-conduit lookup maps.
+        This is the borrower/provider lookup path. It iterates through the
+        per-conduit contracted maps until it finds a matching SpellIndex and
+        then resolves that index back to the concrete spell object.
 
         Args:
             lookup_key:
