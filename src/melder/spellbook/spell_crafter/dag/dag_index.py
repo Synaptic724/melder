@@ -37,6 +37,14 @@ class PathRegistry(Cleanable):
     ]
 
     def __init__(self) -> None:
+        """
+        Initialize an empty path registry with the root path pre-seeded.
+
+        Contract:
+            - Path id `0` is reserved for the empty/root path.
+            - Parent, segment, depth, and child-id tables start aligned to that
+              root entry.
+        """
         super().__init__()
         self._root_path_id = 0
         self._parent_ids: List[Optional[int]] = [None]
@@ -239,6 +247,7 @@ class SocketRef:
     _hash: int = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
+        """Precompute the immutable hash used for socket-ref dictionary keys."""
         object.__setattr__(
             self,
             "_hash",
@@ -246,6 +255,7 @@ class SocketRef:
         )
 
     def __hash__(self) -> int:
+        """Return the precomputed stable hash for this socket reference."""
         return self._hash
 
 
@@ -270,6 +280,14 @@ class DagIndex(Cleanable):
     ]
 
     def __init__(self, path_registry: Optional[PathRegistry] = None) -> None:
+        """
+        Initialize an empty socket index.
+
+        Contract:
+            - Uses the supplied `PathRegistry` when provided.
+            - Otherwise allocates a fresh registry owned by this index.
+            - Starts with empty exact-path and name buckets.
+        """
         super().__init__()
         self._path_registry: PathRegistry = (
             path_registry if path_registry is not None else PathRegistry()
@@ -418,6 +436,7 @@ class DagTargetingEngine(Cleanable):
     __slots__ = Cleanable.__slots__ + ["_index",]
 
     def __init__(self, index: DagIndex) -> None:
+        """Initialize the targeting engine over one prebuilt `DagIndex`."""
         super().__init__()
         if index is None:
             raise ValueError("index must not be None.")
@@ -480,6 +499,13 @@ class DagTargetingEngine(Cleanable):
             spec: TargetSpec,
             filter_fn: Callable[[SocketRef], bool],
     ) -> List[SocketRef]:
+        """
+        Resolve a PATH target spec against the exact-path bucket.
+
+        Contract:
+            - Raises when the path is empty or no eligible sockets match.
+            - Applies `filter_fn` after exact-path lookup.
+        """
         if not spec.path:
             raise RuntimeError("PATH TargetSpec has no path segments.")
         candidates = self._index.get_by_exact_path(spec.path)
@@ -494,6 +520,13 @@ class DagTargetingEngine(Cleanable):
             spec: TargetSpec,
             filter_fn: Callable[[SocketRef], bool],
     ) -> List[SocketRef]:
+        """
+        Resolve a UNIQUE target spec and enforce single-match semantics.
+
+        Contract:
+            - Raises when the param name is missing.
+            - Raises when zero or multiple eligible sockets match.
+        """
         if not spec.param_name:
             raise RuntimeError("UNIQUE TargetSpec has no param_name.")
         candidates = self._index.get_by_name(spec.param_name)
@@ -515,6 +548,14 @@ class DagTargetingEngine(Cleanable):
             spec: TargetSpec,
             filter_fn: Callable[[SocketRef], bool],
     ) -> List[SocketRef]:
+        """
+        Resolve a BROADCAST target spec against the name bucket.
+
+        Contract:
+            - Raises when the param name is missing.
+            - Raises when no eligible sockets match.
+            - Returns every eligible socket sharing that parameter name.
+        """
         if not spec.param_name:
             raise RuntimeError("BROADCAST TargetSpec has no param_name.")
         candidates = self._index.get_by_name(spec.param_name)

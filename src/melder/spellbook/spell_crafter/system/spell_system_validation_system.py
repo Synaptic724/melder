@@ -47,6 +47,14 @@ class SpellSystemValidationSystem(Cleanable):
     ]
 
     def __init__(self, strategies: Iterable[SpellSystemValidationStrategy]) -> None:
+        """
+        Initialize the system-level validation orchestrator.
+
+        Contract:
+            - Requires a concrete iterable of validation strategies.
+            - Stores the strategy list by value for deterministic execution
+              order during `validate(...)`.
+        """
         super().__init__()
         if strategies is None:
             raise ValueError("strategies must not be None.")
@@ -55,6 +63,13 @@ class SpellSystemValidationSystem(Cleanable):
         )
 
     def cleanup(self) -> None:
+        """
+        Release the configured validation strategies.
+
+        Contract:
+            - Idempotent: safe to call multiple times.
+            - Clears the owned strategy list and drops the reference.
+        """
         if self._cleaned:
             return
         self._cleaned = True

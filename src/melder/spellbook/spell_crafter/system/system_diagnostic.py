@@ -91,6 +91,13 @@ class SystemDiagnostic(Cleanable):
         self._details: Optional[Dict[str, Any]] = dict(details) if details else None
 
     def cleanup(self) -> None:
+        """
+        Deterministically release diagnostic payload state.
+
+        Contract:
+            - Idempotent: safe to call multiple times.
+            - Clears detail payloads before dropping references.
+        """
         if self._cleaned:
             return
         self._cleaned = True
@@ -106,42 +113,50 @@ class SystemDiagnostic(Cleanable):
 
     @property
     def code(self) -> str:
+        """Return the machine-readable diagnostic code."""
         self.check_cleaned()
         return self._code
 
     @property
     def message(self) -> str:
+        """Return the human-readable diagnostic message."""
         self.check_cleaned()
         return self._message
 
     @property
     def severity(self) -> SystemDiagnosticSeverity:
+        """Return the diagnostic severity bucket."""
         self.check_cleaned()
         return self._severity
 
     @property
     def spell_id(self) -> Optional[str]:
+        """Return the optional spell id associated with this diagnostic."""
         self.check_cleaned()
         return self._spell_id
 
     @property
     def root_id(self) -> Optional[str]:
+        """Return the optional root id associated with this diagnostic."""
         self.check_cleaned()
         return self._root_id
 
     @property
     def source(self) -> Optional[str]:
+        """Return the optional producing strategy/source identifier."""
         self.check_cleaned()
         return self._source
 
     @property
     def details(self) -> Optional[Dict[str, Any]]:
+        """Return a defensive copy of the optional structured detail payload."""
         self.check_cleaned()
         if self._details is None:
             return None
         return dict(self._details)
 
     def __repr__(self) -> str:
+        """Return a compact debug representation of the diagnostic identity."""
         return (
             f"SystemDiagnostic(code={self._code!r}, severity={self._severity!r}, "
             f"spell_id={self._spell_id!r}, root_id={self._root_id!r}, "

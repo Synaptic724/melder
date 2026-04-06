@@ -94,6 +94,16 @@ class SpellSymbolicDependency(Cleanable):
             contract_key: Optional[Tuple[str, str]] = None,
             contract_late_binding: Optional[bool] = None,
     ) -> None:
+        """
+        Initialize one symbolic dependency edge for a spell version.
+
+        Contract:
+            - `spell_version_id` and `param_name` are required.
+            - Stores symbolic metadata only; no concrete dependency spell ids
+              are resolved here.
+            - Treats contract and SpellMap payloads as already-classified Phase
+              1 inputs.
+        """
         super().__init__()
 
         if not spell_version_id:

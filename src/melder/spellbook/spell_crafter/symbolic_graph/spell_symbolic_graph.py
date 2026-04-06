@@ -48,6 +48,15 @@ class SpellSymbolicGraph(Cleanable):
             spell_version_id: str,
             dependencies: Optional[List['SpellSymbolicDependency']] = None,
     ) -> None:
+        """
+        Initialize a symbolic graph for one spell version.
+
+        Contract:
+            - `spell_version_id` is required.
+            - Stores the dependency edge list by reference and treats it as
+              graph-owned after construction.
+            - Starts with an empty dependency list when none is supplied.
+        """
         super().__init__()
 
         if not spell_version_id:

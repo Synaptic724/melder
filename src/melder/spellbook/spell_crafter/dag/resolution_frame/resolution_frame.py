@@ -32,6 +32,14 @@ class ResolutionFrame(Cleanable):
         "_results",
     ]
     def __init__(self, overrides: Optional[Dict[str, Any]] = None) -> None:
+        """
+        Initialize a new per-meld resolution frame.
+
+        Contract:
+            - Allocates a fresh frame id for this resolution run.
+            - Copies caller overrides into frame-owned storage.
+            - Starts with empty result and error maps.
+        """
         super().__init__()
         self._id: str = IDBuilder.create_id()
         self._overrides: Dict[str, Any] = dict(overrides) if overrides else {}
@@ -200,6 +208,7 @@ class ResolutionFrame(Cleanable):
         return self._errors.get(node_id)
 
     def __repr__(self) -> str:
+        """Return a compact debug summary of stored overrides, results, and errors."""
         return (
             f"ResolutionFrame(id={self._id!r}, "
             f"overrides={len(self._overrides)}, "

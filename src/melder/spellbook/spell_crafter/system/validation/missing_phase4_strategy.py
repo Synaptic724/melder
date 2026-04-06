@@ -17,7 +17,14 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class MissingPhase4Strategy(SpellSystemValidationStrategy):
     """
-    Flags any spell in a root DAG that lacks Phase-4 validation results.
+    Guard that every spell appearing in a root DAG has a Phase 4 result.
+
+    This strategy bridges the spell-local and system-level validation layers.
+    By the time Phase 6 runs, every node reachable through a root blueprint is
+    expected to have already completed spell-local validation. If a spell is in
+    the rooted system graph but has no Phase 4 artifact, later system verdicts
+    become untrustworthy because the system layer would be validating an
+    incompletely checked spell set.
     """
     __slots__ = []
 
@@ -37,9 +44,12 @@ class MissingPhase4Strategy(SpellSystemValidationStrategy):
         Emit diagnostics for spells missing Phase 4 validation results.
 
         Purpose:
-            Surface spells present in root DAGs that never completed Phase 4.
+            Surface spells present in root DAGs that never completed the
+            spell-local validation phase.
         Contract:
             - Each missing spell id yields an error diagnostic.
+            - The same missing spell may be reported under multiple roots when
+              it is reachable from multiple root DAGs.
             - Cancellation is honored between roots.
         Args:
             index: Spell system index being validated.

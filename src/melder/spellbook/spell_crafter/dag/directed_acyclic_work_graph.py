@@ -38,6 +38,13 @@ class DirectedAcyclicWorkGraph(Cleanable):
         "_socket_kinds",
     ]
     def __init__(self) -> None:
+        """
+        Initialize an empty DAG with its own identity and lock.
+
+        Contract:
+            - Starts with no nodes or recorded socket-kind metadata.
+            - Owns a single re-entrant lock for all structural mutation.
+        """
         super().__init__()
         self._id: str = IDBuilder.create_id()
         self._lock: RLock = RLock()
@@ -293,4 +300,5 @@ class DirectedAcyclicWorkGraph(Cleanable):
             node.run_tasks()
 
     def __repr__(self) -> str:
+        """Return a compact debug representation of the DAG and node count."""
         return f"DirectedAcyclicWorkGraph(id={self._id!r}, nodes={len(self._nodes)})"

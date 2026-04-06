@@ -1,4 +1,5 @@
 import pytest
+from threading import RLock
 from unittest.mock import MagicMock, call, patch
 from melder.aether.dev_ops.change_control_manager.change_control_manager import ChangeControlManager
 from melder.aether.dev_ops.change_control_manager.orchestrator.staged_mutation import (
@@ -6,6 +7,9 @@ from melder.aether.dev_ops.change_control_manager.orchestrator.staged_mutation i
 )
 from melder.aether.dev_ops.change_control_manager.transaction_request.transaction_request import (
     ChangeTransactionType,
+)
+from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
+    SpellStateChangeReason,
 )
 from melder.utilities.interfaces.interfaces import ISpellIndex, ISpellSystemStates
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import RootResolutionBlueprint
@@ -419,6 +423,91 @@ def test_revalidate_does_nothing_if_clean(manager):
     
     manager.revalidate_dirty_roots(CONDUIT_ID)
     validator.assert_not_called()
+
+
+def test_default_structural_validator_resolves_spellbook_from_conduit_ids(manager, mock_sss):
+    """
+    Verify the default structural validator resolves staged bind targets.
+
+    Contract:
+    - `spellbook:` initiator ids are skipped during conduit resolution.
+    - Conduit ids are used to resolve the owning Spellbook.
+    - Only unresolved Phase-4 spells are passed to the post-conjure structural run.
+    """
+    spell_index = MagicMock(spec=ISpellIndex)
+    spell = MagicMock()
+    spell.validation_result_phase4 = None
+
+    spellbook = MagicMock()
+    spellbook._id = "spellbook-1"
+    spellbook._conjured = True
+    spellbook._lock = RLock()
+    spellbook._lookup_spells = {("frame-a", "binding-a"): spell_index}
+    spellbook._spells = {spell_index: spell}
+    spellbook.check_cleaned = MagicMock()
+    spellbook._run_post_conjure_structural_phases = MagicMock()
+
+    conduit = MagicMock()
+    conduit._spellbook = spellbook
+
+    frame = MagicMock()
+    frame._lock = RLock()
+    frame._conduits = {"conduit-1": conduit}
+    mock_sss._frame = frame
+
+    staged = ChangeControlStagedMutation.from_request(
+        request_id="req-structural-default",
+        request_type=ChangeTransactionType.BIND,
+        initiator_conduit_id="spellbook:spellbook-1",
+        spellbook_id="spellbook-1",
+        conduit_ids=("conduit-1",),
+        scope_keys=(),
+        binding_keys=(("frame-a", "binding-a"), ("frame-a", "binding-a")),
+        contract_keys=(),
+        metadata=None,
+    )
+
+    manager._default_structural_validator(staged)
+
+    spellbook._run_post_conjure_structural_phases.assert_called_once_with([spell])
+
+
+def test_default_dirty_marker_marks_collection_and_contract_dependents(manager, mock_sss):
+    """
+    Verify the default dirty marker propagates collection and contract invalidation.
+
+    Contract:
+    - Binding and contract frame keys are unioned for collection invalidation.
+    - Contract invalidation only includes complete `(frame_key, binding_key)` pairs.
+    - Contract invalidation uses `SpellStateChangeReason.contract_unvalidated`.
+    """
+    staged = ChangeControlStagedMutation.from_request(
+        request_id="req-dirty-marker-default",
+        request_type=ChangeTransactionType.BIND,
+        initiator_conduit_id="conduit-1",
+        spellbook_id="spellbook-1",
+        conduit_ids=("conduit-1",),
+        scope_keys=(),
+        binding_keys=(("frame-a", "binding-a"), ("frame-b", "binding-b")),
+        contract_keys=(
+            ("frame-a", "binding-a", "provider-a"),
+            ("", "binding-ignored", "provider-b"),
+            ("frame-c", "", "provider-c"),
+        ),
+        metadata=None,
+    )
+
+    manager._default_dirty_marker(staged)
+
+    mock_sss.mark_collection_dependents_dirty.assert_called_once_with(
+        spellbook_id="spellbook-1",
+        frame_keys={"frame-a", "frame-b", "frame-c"},
+    )
+    mock_sss.mark_contract_dependents_dirty.assert_called_once_with(
+        spellbook_id="spellbook-1",
+        contract_keys={("frame-a", "binding-a")},
+        change_reason=SpellStateChangeReason.contract_unvalidated,
+    )
 
 
 # ----------------------------------------------------------------------

@@ -17,12 +17,13 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class IndexCoverageStrategy(SpellSystemValidationStrategy):
     """
-    Internal
+    Guard that the Phase 5 index and root blueprints describe the same system.
 
-    Purpose:
-        Ensure every SpellSystemIndex node appears in at least one blueprint DAG.
-    Contract:
-        - Emits ``index_node_missing_from_blueprints`` for index nodes absent from all DAGs.
+    `SpellSystemIndex` is the frame-level catalog of nodes the system believes
+    exist, while the root-blueprint set is the rooted structural view the later
+    planning and validation phases actually walk. This strategy checks for
+    drift between those two products by ensuring every indexed node appears in
+    at least one rooted blueprint.
     """
     __slots__ = []
 
@@ -46,6 +47,7 @@ class IndexCoverageStrategy(SpellSystemValidationStrategy):
             in any root DAG.
         Contract:
             - Each uncovered node yields a diagnostic.
+            - Coverage is based on blueprint DAG membership, not just root ids.
             - Cancellation is honored between nodes.
         Args:
             index: Spell system index being validated.

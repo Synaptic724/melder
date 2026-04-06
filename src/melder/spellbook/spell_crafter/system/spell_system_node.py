@@ -48,6 +48,14 @@ class SpellSystemNode(Cleanable):
             ward_id: Optional[str] = None,
             is_root: bool = False,
     ) -> None:
+        """
+        Initialize one version-scoped system node.
+
+        Contract:
+            - `spell_id` and `lineage_id` are required.
+            - Dependency ids are copied into node-owned set storage.
+            - Optional metadata fields remain informational and may be absent.
+        """
         super().__init__()
 
         if spell_id is None:
@@ -101,11 +109,13 @@ class SpellSystemNode(Cleanable):
 
     @property
     def spell_id(self) -> str:
+        """Return the version-id identity for this system node."""
         self.check_cleaned()
         return self._spell_id
 
     @property
     def lineage_id(self) -> str:
+        """Return the lineage ULID associated with this system node."""
         self.check_cleaned()
         return self._lineage_id
 

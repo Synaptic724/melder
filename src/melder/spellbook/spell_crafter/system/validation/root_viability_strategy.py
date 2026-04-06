@@ -17,7 +17,13 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class RootViabilityStrategy(SpellSystemValidationStrategy):
     """
-    Emits a root-scoped ERROR diagnostic if any existing ERROR affects that root's DAG.
+    Collapse existing root-affecting errors into one root-viability verdict.
+
+    This strategy does not perform fresh structural analysis. Instead, it asks
+    a simpler system-level question after earlier strategies have already run:
+    "Given the errors already attached to this root's DAG, is this root viable
+    for downstream planning?" If the answer is no, it emits a single root-level
+    error that higher layers can use as a coarse viability signal.
     """
 
     __slots__ = []
@@ -44,6 +50,7 @@ class RootViabilityStrategy(SpellSystemValidationStrategy):
             - Only roots with existing ERROR diagnostics receive a new error.
             - This strategy does not introduce new root analysis; it aggregates
               existing error diagnostics for clarity.
+            - Emits at most one new viability diagnostic per root during a run.
             - Cancellation is honored between roots.
         Args:
             index: Spell system index being validated.

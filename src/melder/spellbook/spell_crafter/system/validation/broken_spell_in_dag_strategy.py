@@ -16,7 +16,12 @@ from melder.utilities.synchronization.cancellation_event_signal import Cancellat
 
 class BrokenSpellInDagStrategy(SpellSystemValidationStrategy):
     """
-    Flags any root blueprint that contains a spell broken at Phase 4.
+    Guard that broken Phase 4 spells do not silently survive into root DAGs.
+
+    This strategy lifts spell-local breakage into the rooted system view. If a
+    spell is already known to be broken at Phase 4, every root blueprint that
+    still reaches that spell should carry a system-level error so downstream
+    planning and viability checks do not treat the root as structurally usable.
     """
     __slots__ = []
 
@@ -41,6 +46,8 @@ class BrokenSpellInDagStrategy(SpellSystemValidationStrategy):
         Contract:
             - If no broken spell ids are provided, emits nothing.
             - Each broken node reachable from a root yields one diagnostic.
+            - A single broken spell may contribute diagnostics to multiple
+              roots when its lineage is shared across those rooted DAGs.
             - Cancellation is honored between roots.
         Args:
             index: Spell system index being validated.

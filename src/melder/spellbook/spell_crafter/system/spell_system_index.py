@@ -26,6 +26,13 @@ class SpellSystemIndex(Cleanable):
     __slots__ = Cleanable.__slots__ + ["_nodes"]
 
     def __init__(self) -> None:
+        """
+        Initialize an empty frame-level spell system index.
+
+        Contract:
+            Starts with no registered system nodes and owns the node mapping for
+            the life of the index.
+        """
         super().__init__()
         self._nodes: Dict[str, SpellSystemNode] = {}
 

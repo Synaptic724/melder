@@ -38,6 +38,15 @@ class SpellSystemAdjacencySnapshot(Cleanable):
             root_spell_ids: Set[str],
             topologies: Optional[Dict[str, 'SpellLocalTopology']] = None,
     ) -> None:
+        """
+        Initialize a frame-wide adjacency snapshot.
+
+        Contract:
+            - Stores the supplied adjacency collections by reference.
+            - Treats the topologies mapping as optional snapshot context owned
+              elsewhere.
+            - Does not copy or normalize the supplied graph structures.
+        """
         super().__init__()
         self._dependencies: Dict[str, Set[str]] = dependencies
         self._reverse_dependencies: Dict[str, Set[str]] = reverse_dependencies
@@ -48,6 +57,13 @@ class SpellSystemAdjacencySnapshot(Cleanable):
 
 
     def cleanup(self) -> None:
+        """
+        Release the snapshot's live references.
+
+        Contract:
+            The snapshot does not own the underlying graph/topology collections,
+            so cleanup only drops references instead of clearing them.
+        """
         if self._cleaned:
             return
         self._cleaned = True
