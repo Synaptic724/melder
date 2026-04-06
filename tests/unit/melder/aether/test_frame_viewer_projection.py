@@ -1,9 +1,6 @@
 import pytest
 
 from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
-from melder.aether.nexus.rift.frame_link.frame_link_contract import (
-    FrameLinkContract,
-)
 from melder.aether.nexus.rift.frame_viewer.frame_view import FrameView
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile import (
@@ -40,10 +37,6 @@ def _build_link(
         source_kind=source_kind,
         source_id=source_id,
         display_name=display_name,
-        contract=FrameLinkContract(
-            frame_name=frame_name,
-            allowed_kinds=(source_kind,),
-        ),
     )
 
 

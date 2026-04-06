@@ -22,10 +22,6 @@ from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
 )
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
-from melder.aether.nexus.rift.frame_link.frame_link_contract import FrameLinkContract
-from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile import (
-    FrameLinkContractProfile,
-)
 from melder.aether.nexus.rift.frame_viewer.profiles.frame_view_profile import (
     FrameViewProfile,
 )
@@ -199,7 +195,6 @@ class FrameView(Cleanable):
             *,
             frame_descriptor: FrameDescriptor,
             compiled_access_surface: CompiledFrameACLAccessSurface,
-            contract_profile: Optional[FrameLinkContractProfile] = None,
             view_profile: Optional[FrameViewProfile] = None,
     ) -> "FrameView":
         """
@@ -218,9 +213,6 @@ class FrameView(Cleanable):
                 Descriptor truth for the target frame.
             compiled_access_surface:
                 Derived ACL access surface for the same frame.
-            contract_profile:
-                Optional downstream frame-link contract profile used to narrow
-                the projected contract.
             view_profile:
                 Optional view profile that modifies view defaults only.
 
@@ -240,37 +232,22 @@ class FrameView(Cleanable):
                     frame_descriptor.frame_name,
                 )
             )
-        if (
-                contract_profile is not None
-                and not isinstance(contract_profile, FrameLinkContractProfile)
-        ):
-            raise TypeError(
-                "contract_profile must be a FrameLinkContractProfile."
-            )
         if view_profile is not None and not isinstance(view_profile, FrameViewProfile):
             raise TypeError("view_profile must be a FrameViewProfile.")
-        effective_contract = FrameLinkContract.from_compiled_access_surface(
-            compiled_access_surface,
-            contract_profile=contract_profile,
-        )
         links_by_id: Dict[str, FrameLink] = {}
         frame_overview = frame_descriptor.frame_overview
-        if "frame" in effective_contract.allowed_kinds:
+        if "frame" in compiled_access_surface.allowed_kinds:
             if frame_overview is None:
                 raise ValueError(
                     "FrameDescriptor must expose frame_overview for frame links."
                 )
-            frame_link = FrameLink.from_contract_subject(
+            frame_link = FrameLink.from_view_subject(
                 frame_name=frame_descriptor.frame_name,
                 source_kind="frame",
                 source_id=frame_overview.frame_id,
                 display_name=frame_overview.frame_name,
-                contract=effective_contract,
                 metadata={
-                    "payload_fields": cls._resolve_frame_payload_fields(
-                        effective_contract,
-                        compiled_access_surface,
-                    ),
+                    "payload_fields": tuple(compiled_access_surface.frame_payload_fields),
                     "frame_id": frame_overview.frame_id,
                     "config_origin_spellbook_id": (
                         frame_overview.config_origin_spellbook_id
@@ -281,11 +258,13 @@ class FrameView(Cleanable):
             links_by_id[frame_link.link_id] = frame_link
 
         conduit_records_by_id = frame_descriptor.conduit_records_by_id
-        conduit_sections_by_id = cls._resolve_conduit_sections_by_id(
-            effective_contract,
-            compiled_access_surface,
-        )
-        if "conduit" in effective_contract.allowed_kinds:
+        conduit_sections_by_id = {
+            conduit_id: tuple(sections)
+            for conduit_id, sections in (
+                compiled_access_surface.conduit_payload_sections_by_id.items()
+            )
+        }
+        if "conduit" in compiled_access_surface.allowed_kinds:
             for conduit_id in compiled_access_surface.visible_conduit_ids:
                 try:
                     conduit_record = conduit_records_by_id[conduit_id]
@@ -295,12 +274,11 @@ class FrameView(Cleanable):
                             conduit_id
                         )
                     ) from exc
-                conduit_link = FrameLink.from_contract_subject(
+                conduit_link = FrameLink.from_view_subject(
                     frame_name=frame_descriptor.frame_name,
                     source_kind="conduit",
                     source_id=conduit_id,
                     display_name=conduit_record.payload.conduit_name or conduit_id,
-                    contract=effective_contract,
                     metadata={
                         "payload_sections": conduit_sections_by_id.get(
                             conduit_id,
@@ -314,11 +292,13 @@ class FrameView(Cleanable):
                 links_by_id[conduit_link.link_id] = conduit_link
 
         spell_records_by_key = frame_descriptor.spell_records_by_key
-        spell_sections_by_key = cls._resolve_spell_sections_by_key(
-            effective_contract,
-            compiled_access_surface,
-        )
-        if "spell" in effective_contract.allowed_kinds:
+        spell_sections_by_key = {
+            record_key: tuple(sections)
+            for record_key, sections in (
+                compiled_access_surface.spell_payload_sections_by_key.items()
+            )
+        }
+        if "spell" in compiled_access_surface.allowed_kinds:
             for record_key in compiled_access_surface.visible_spell_keys:
                 try:
                     spell_record = spell_records_by_key[record_key]
@@ -328,7 +308,7 @@ class FrameView(Cleanable):
                             record_key
                         )
                     ) from exc
-                spell_link = FrameLink.from_contract_subject(
+                spell_link = FrameLink.from_view_subject(
                     frame_name=frame_descriptor.frame_name,
                     source_kind="spell",
                     source_id="{0}:{1}".format(record_key[0], record_key[1]),
@@ -337,7 +317,6 @@ class FrameView(Cleanable):
                         or spell_record.spell_name
                         or spell_record.spell_id
                     ),
-                    contract=effective_contract,
                     metadata={
                         "record_key": record_key,
                         "spell_id": spell_record.spell_id,
@@ -362,12 +341,8 @@ class FrameView(Cleanable):
             ),
             links_by_id=links_by_id,
             metadata={
-                "contract_id": effective_contract.contract_id,
-                "allowed_kinds": effective_contract.allowed_kinds,
-                "frame_payload_fields": cls._resolve_frame_payload_fields(
-                    effective_contract,
-                    compiled_access_surface,
-                ),
+                "allowed_kinds": tuple(sorted(compiled_access_surface.allowed_kinds)),
+                "frame_payload_fields": tuple(compiled_access_surface.frame_payload_fields),
                 "visible_conduit_ids": tuple(compiled_access_surface.visible_conduit_ids),
                 "visible_spell_keys": tuple(compiled_access_surface.visible_spell_keys),
                 "view_profile_name": (
@@ -632,81 +607,4 @@ class FrameView(Cleanable):
         return {
             source_kind: tuple(target_ids_by_kind[source_kind])
             for source_kind in sorted(target_ids_by_kind.keys())
-        }
-
-    @staticmethod
-    def _resolve_frame_payload_fields(
-            effective_contract: FrameLinkContract,
-            compiled_access_surface: CompiledFrameACLAccessSurface,
-    ) -> Tuple[str, ...]:
-        """
-        Return the effective visible frame payload fields for the view.
-
-        Args:
-            effective_contract:
-                Effective frame-link contract.
-            compiled_access_surface:
-                Source compiled ACL access surface.
-
-        Returns:
-            Tuple[str, ...]: Effective visible frame payload fields.
-        """
-        return tuple(
-            effective_contract.metadata.get(
-                "frame_payload_fields",
-                compiled_access_surface.frame_payload_fields,
-            )
-        )
-
-    @staticmethod
-    def _resolve_conduit_sections_by_id(
-            effective_contract: FrameLinkContract,
-            compiled_access_surface: CompiledFrameACLAccessSurface,
-    ) -> Dict[str, Tuple[str, ...]]:
-        """
-        Return the effective visible conduit sections by id.
-
-        Args:
-            effective_contract:
-                Effective frame-link contract.
-            compiled_access_surface:
-                Source compiled ACL access surface.
-
-        Returns:
-            Dict[str, Tuple[str, ...]]: Effective visible conduit sections.
-        """
-        sections_by_id = effective_contract.metadata.get(
-            "conduit_payload_sections_by_id",
-            compiled_access_surface.conduit_payload_sections_by_id,
-        )
-        return {
-            conduit_id: tuple(sections)
-            for conduit_id, sections in sections_by_id.items()
-        }
-
-    @staticmethod
-    def _resolve_spell_sections_by_key(
-            effective_contract: FrameLinkContract,
-            compiled_access_surface: CompiledFrameACLAccessSurface,
-    ) -> Dict[Tuple[str, str], Tuple[str, ...]]:
-        """
-        Return the effective visible spell sections by key.
-
-        Args:
-            effective_contract:
-                Effective frame-link contract.
-            compiled_access_surface:
-                Source compiled ACL access surface.
-
-        Returns:
-            Dict[Tuple[str, str], Tuple[str, ...]]: Effective visible spell
-            sections.
-        """
-        sections_by_key = effective_contract.metadata.get(
-            "spell_payload_sections_by_key",
-            compiled_access_surface.spell_payload_sections_by_key,
-        )
-        return {
-            record_key: tuple(sections)
-            for record_key, sections in sections_by_key.items()
         }

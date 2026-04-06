@@ -28,10 +28,7 @@ from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
 )
 from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
-from melder.aether.nexus.rift.frame_link.frame_link_contract import FrameLinkContract
-from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile_builder import (
-    FrameLinkContractProfileBuilder,
-)
+from melder.aether.nexus.rift.frame_viewer.frame_view import FrameView
 from melder.aether.nexus.frame_acl_manager import FrameACLManager
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
@@ -215,34 +212,27 @@ def test_component_container_builder_commit_flows_into_compiler_output() -> None
     assert "write_attribute" in compiled_surface.allowed_commands
 
 
-def test_component_frame_link_profile_builder_shapes_compiled_surface() -> None:
+def test_component_compiled_surface_flows_directly_into_frame_view_projection() -> None:
     """
-    Verify the downstream frame-link profile builder shapes compiled ACL output.
+    Verify compiled ACL output flows directly into frame-view projection.
 
     Returns:
         None.
     """
     compiler = FrameACLCompiler(FrameACLManager().frame_acl_profile_builder)
+    descriptor = _build_frame_descriptor()
     compiled_surface = compiler.compile_frame_access_surface(
-        _build_frame_descriptor(),
+        descriptor,
         FrameACLConfiguration.create_default("ops"),
     )
-    contract_profile = FrameLinkContractProfileBuilder().get_required_profile(
-        "safe"
+
+    frame_view = FrameView.from_compiled_access_surface(
+        frame_descriptor=descriptor,
+        compiled_access_surface=compiled_surface,
     )
 
-    contract = FrameLinkContract.from_compiled_access_surface(
-        compiled_surface,
-        contract_profile=contract_profile,
-    )
-
-    assert contract.allowed_kinds == ("conduit", "frame", "spell")
-    assert contract.allowed_commands == (
-        "bind_existing",
-        "query",
-        "resolve_existing",
-    )
-    assert contract.metadata["frame_link_profile_name"] == "safe"
+    assert frame_view.metadata["allowed_kinds"] == ("conduit", "frame", "spell")
+    assert frame_view.metadata["available_target_count"] == 3
 
 
 def test_component_rollback_restores_original_compiled_command_surface() -> None:

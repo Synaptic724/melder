@@ -127,7 +127,7 @@ def test_integration_nexus_can_project_frame_viewer_after_passive_publish() -> N
     conduit = spellbook.conjure(name="root")
     try:
         nexus = Nexus()
-        viewer = nexus.create_frame_viewer(["ops"], contract_profile_name="safe")
+        viewer = nexus.create_frame_viewer(["ops"])
 
         assert isinstance(viewer, FrameViewer)
         assert viewer.metadata["frame_count"] == 1

@@ -2,19 +2,13 @@
 Internal FrameLinkContract object.
 
 Purpose:
-    Represent the effective exposure boundary applied to one frame-surface
-    connection after ACL compilation and downstream projection shaping.
+    Represent the frame-availability contract for one live Rift.
 """
 
-from typing import Dict, Optional, Sequence, Tuple
+import threading
+from typing import Dict, List, Optional, Sequence, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
-    CompiledFrameACLAccessSurface,
-)
-from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile import (
-    FrameLinkContractProfile,
-)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -24,167 +18,79 @@ class FrameLinkContract(Cleanable):
     Internal
 
     Purpose:
-        Hold the effective consumer-facing exposure contract for one
-        frame-surface connection.
+        Represent the set of frames currently assigned/available to one Rift.
 
     Contract:
-        - Carries derived visible kinds and payload-section visibility only.
-        - Can be created directly or shaped from a compiled ACL access surface.
-        - Optional downstream contract profiles may further narrow the compiled
-          exposure output without redefining ACL truth.
-        - Cleanup is idempotent and clears owned references.
+        - Owns the Rift-local frame availability state only.
+        - Does not own ACL logic, payload filtering, or viewer commands.
+        - Provides the frame names that may be materialized into assigned
+          views on the viewer.
+        - Cleanup is idempotent and clears the owned availability state.
 
     Lifecycle:
-        Intended to sit close to the Nexus-owned frame-surface update path as
-        the downstream consumer-facing exposure object.
+        Created for a Rift and cleaned with that Rift unless explicitly cloned
+        into another local hosting object.
     """
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_contract_id",
-        "_frame_name",
-        "_allowed_kinds",
+        "_lock",
+        "_rift_id",
+        "_assigned_frame_names",
+        "_default_frame_name",
         "_metadata",
     ]
 
     def __init__(
             self,
             *,
-            frame_name: str,
-            allowed_kinds: Optional[Sequence[str]] = None,
+            rift_id: str,
+            assigned_frame_names: Optional[Sequence[str]] = None,
+            default_frame_name: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
     ) -> None:
         """
-        Internal
-
-        Initialize one frame-link exposure contract.
+        Initialize one Rift-local frame availability contract.
 
         Args:
-            frame_name:
-                Canonical frame name this contract applies to.
-            allowed_kinds:
-                Optional visible kind names for the linked surface.
+            rift_id:
+                Owning Rift id.
+            assigned_frame_names:
+                Optional assigned/available frame names.
+            default_frame_name:
+                Optional default assigned frame name.
             metadata:
-                Optional free-form contract metadata.
+                Optional contract-local metadata.
 
         Returns:
             None.
         """
         super().__init__()
+        if not rift_id:
+            raise ValueError("rift_id cannot be empty.")
+        normalized_assigned_frame_names: List[str] = []
+        for frame_name in assigned_frame_names or tuple():
+            if not isinstance(frame_name, str) or not frame_name:
+                raise ValueError(
+                    "assigned_frame_names must contain non-empty strings."
+                )
+            if frame_name in normalized_assigned_frame_names:
+                continue
+            normalized_assigned_frame_names.append(frame_name)
+        if default_frame_name is not None:
+            if not default_frame_name:
+                raise ValueError("default_frame_name cannot be empty.")
+            if default_frame_name not in normalized_assigned_frame_names:
+                raise ValueError(
+                    "default_frame_name must be present in assigned_frame_names."
+                )
         self._contract_id: str = IDBuilder.create_id()
-        self._frame_name: str = frame_name
-        self._allowed_kinds: Tuple[str, ...] = (
-            tuple(allowed_kinds) if allowed_kinds else tuple()
-        )
+        self._lock: threading.RLock = threading.RLock()
+        self._rift_id: str = rift_id
+        self._assigned_frame_names: Tuple[str, ...] = tuple(normalized_assigned_frame_names)
+        self._default_frame_name: Optional[str] = default_frame_name
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
-
-    @classmethod
-    def from_compiled_access_surface(
-            cls,
-            compiled_access_surface: CompiledFrameACLAccessSurface,
-            *,
-            contract_profile: Optional[FrameLinkContractProfile] = None,
-    ) -> "FrameLinkContract":
-        """
-        Build one frame-link exposure contract from compiled ACL access output.
-
-        Args:
-            compiled_access_surface:
-                Derived compiled ACL access surface.
-            contract_profile:
-                Optional downstream contract profile used to narrow the final
-                projection.
-
-        Returns:
-            FrameLinkContract: Effective downstream frame-link exposure contract.
-        """
-        if not isinstance(compiled_access_surface, CompiledFrameACLAccessSurface):
-            raise TypeError(
-                "compiled_access_surface must be a CompiledFrameACLAccessSurface."
-            )
-        if (
-                contract_profile is not None
-                and not isinstance(contract_profile, FrameLinkContractProfile)
-        ):
-            raise TypeError(
-                "contract_profile must be a FrameLinkContractProfile."
-            )
-
-        allowed_kinds = set(compiled_access_surface.allowed_kinds)
-        metadata = compiled_access_surface.metadata
-        metadata.update({
-            "frame_payload_fields": tuple(
-                compiled_access_surface.frame_payload_fields
-            ),
-            "conduit_payload_sections_by_id": {
-                conduit_id: tuple(sections)
-                for conduit_id, sections in (
-                    compiled_access_surface.conduit_payload_sections_by_id.items()
-                )
-            },
-            "spell_payload_sections_by_key": {
-                record_key: tuple(sections)
-                for record_key, sections in (
-                    compiled_access_surface.spell_payload_sections_by_key.items()
-                )
-            },
-        })
-
-        if contract_profile is not None:
-            view_profile = contract_profile.view_profile
-            if len(view_profile.allowed_kinds) > 0:
-                allowed_kinds = allowed_kinds.intersection(
-                    set(view_profile.allowed_kinds)
-                )
-            metadata.update({
-                "frame_link_profile_name": contract_profile.name,
-                "frame_link_profile_version": contract_profile.version,
-                "frame_link_view_profile_name": view_profile.name,
-                "frame_link_view_profile_version": view_profile.version,
-                "frame_payload_fields": tuple(
-                    field_name
-                    for field_name in compiled_access_surface.frame_payload_fields
-                    if "frame" in allowed_kinds
-                    and (
-                        len(view_profile.frame_payload_fields) == 0
-                        or field_name in view_profile.frame_payload_fields
-                    )
-                ),
-                "conduit_payload_sections_by_id": {
-                    conduit_id: tuple(
-                        section_name
-                        for section_name in sections
-                        if "conduit" in allowed_kinds
-                        and (
-                            len(view_profile.conduit_payload_sections) == 0
-                            or section_name in view_profile.conduit_payload_sections
-                        )
-                    )
-                    for conduit_id, sections in (
-                        compiled_access_surface.conduit_payload_sections_by_id.items()
-                    )
-                },
-                "spell_payload_sections_by_key": {
-                    record_key: tuple(
-                        section_name
-                        for section_name in sections
-                        if "spell" in allowed_kinds
-                        and (
-                            len(view_profile.spell_payload_sections) == 0
-                            or section_name in view_profile.spell_payload_sections
-                        )
-                    )
-                    for record_key, sections in (
-                        compiled_access_surface.spell_payload_sections_by_key.items()
-                    )
-                },
-            })
-
-        return cls(
-            frame_name=compiled_access_surface.frame_name,
-            allowed_kinds=tuple(sorted(allowed_kinds)),
-            metadata=metadata,
-        )
 
     @property
     def contract_id(self) -> str:
@@ -193,16 +99,22 @@ class FrameLinkContract(Cleanable):
         return self._contract_id
 
     @property
-    def frame_name(self) -> str:
-        """Return the frame name this contract applies to."""
+    def rift_id(self) -> str:
+        """Return the owning Rift id."""
         self.check_cleaned()
-        return self._frame_name
+        return self._rift_id
 
     @property
-    def allowed_kinds(self) -> Tuple[str, ...]:
-        """Return the currently declared visible kinds."""
+    def assigned_frame_names(self) -> Tuple[str, ...]:
+        """Return the currently assigned/available frame names."""
         self.check_cleaned()
-        return self._allowed_kinds
+        return self._assigned_frame_names
+
+    @property
+    def default_frame_name(self) -> Optional[str]:
+        """Return the default assigned frame name when one exists."""
+        self.check_cleaned()
+        return self._default_frame_name
 
     @property
     def metadata(self) -> Dict[str, object]:
@@ -210,112 +122,107 @@ class FrameLinkContract(Cleanable):
         self.check_cleaned()
         return dict(self._metadata)
 
-    def allows_kind(self, source_kind: str) -> bool:
+    def list_frame_names(self) -> List[str]:
         """
-        Internal
+        Return the currently assigned frame names.
 
-        Return whether one source kind is allowed by this contract.
+        Returns:
+            List[str]: Assigned frame names.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return list(self._assigned_frame_names)
+
+    def has_frame(self, frame_name: str) -> bool:
+        """
+        Return whether one frame is assigned to this Rift.
 
         Args:
-            source_kind:
-                Source kind to inspect.
+            frame_name:
+                Frame name to inspect.
 
         Returns:
-            bool: True when the source kind is allowed.
+            bool: True when the frame is assigned.
         """
         self.check_cleaned()
-        if not source_kind:
-            raise ValueError("source_kind cannot be empty.")
-        return source_kind in self._allowed_kinds
+        if not frame_name:
+            raise ValueError("frame_name cannot be empty.")
+        with self._lock:
+            return frame_name in self._assigned_frame_names
 
-    def get_frame_payload_fields(self) -> Tuple[str, ...]:
-        """
-        Internal
-
-        Return the effective visible frame payload fields.
-
-        Returns:
-            Tuple[str, ...]: Effective visible frame payload fields.
-        """
-        self.check_cleaned()
-        fields = self._metadata.get("frame_payload_fields", tuple())
-        return tuple(fields)
-
-    def get_conduit_payload_sections(
+    def register_frame(
             self,
-            conduit_id: str,
-    ) -> Tuple[str, ...]:
+            frame_name: str,
+            *,
+            set_as_default: bool = False,
+    ) -> None:
         """
-        Internal
-
-        Return the effective visible conduit payload sections for one conduit.
+        Register one assigned frame on this contract.
 
         Args:
-            conduit_id:
-                Conduit id to inspect.
+            frame_name:
+                Frame name to assign.
+            set_as_default:
+                When True, the frame also becomes the default assigned frame.
 
         Returns:
-            Tuple[str, ...]: Effective visible conduit payload sections.
+            None.
         """
         self.check_cleaned()
-        if not conduit_id:
-            raise ValueError("conduit_id cannot be empty.")
-        sections_by_id = self._metadata.get("conduit_payload_sections_by_id", {})
-        return tuple(sections_by_id.get(conduit_id, tuple()))
+        if not frame_name:
+            raise ValueError("frame_name cannot be empty.")
+        with self._lock:
+            if frame_name not in self._assigned_frame_names:
+                self._assigned_frame_names = self._assigned_frame_names + (frame_name,)
+            if set_as_default or self._default_frame_name is None:
+                self._default_frame_name = frame_name
 
-    def get_spell_payload_sections(
-            self,
-            record_key: Tuple[str, str],
-    ) -> Tuple[str, ...]:
+    def remove_frame(self, frame_name: str) -> None:
         """
-        Internal
-
-        Return the effective visible spell payload sections for one spell key.
+        Remove one assigned frame from this contract.
 
         Args:
-            record_key:
-                Spell record key to inspect.
+            frame_name:
+                Frame name to remove.
 
         Returns:
-            Tuple[str, ...]: Effective visible spell payload sections.
+            None.
         """
         self.check_cleaned()
-        if (
-                not isinstance(record_key, tuple)
-                or len(record_key) != 2
-                or not record_key[0]
-                or not record_key[1]
-        ):
-            raise ValueError("record_key must be a non-empty 2-item tuple.")
-        sections_by_key = self._metadata.get("spell_payload_sections_by_key", {})
-        return tuple(sections_by_key.get(record_key, tuple()))
+        if not frame_name:
+            raise ValueError("frame_name cannot be empty.")
+        with self._lock:
+            if frame_name not in self._assigned_frame_names:
+                return
+            self._assigned_frame_names = tuple(
+                assigned_frame_name
+                for assigned_frame_name in self._assigned_frame_names
+                if assigned_frame_name != frame_name
+            )
+            if self._default_frame_name == frame_name:
+                self._default_frame_name = (
+                    self._assigned_frame_names[0]
+                    if len(self._assigned_frame_names) > 0
+                    else None
+                )
 
     def describe(self) -> Dict[str, object]:
         """
-        Internal
-
-        Return one detached summary of the effective exposure contract.
+        Return one detached summary of the Rift frame availability contract.
 
         Returns:
             Dict[str, object]: Detached contract summary.
         """
         self.check_cleaned()
         return {
-            "frame_name": self._frame_name,
-            "allowed_kinds": self._allowed_kinds,
-            "frame_payload_fields": self.get_frame_payload_fields(),
-            "conduit_count": len(
-                self._metadata.get("conduit_payload_sections_by_id", {})
-            ),
-            "spell_count": len(
-                self._metadata.get("spell_payload_sections_by_key", {})
-            ),
+            "rift_id": self._rift_id,
+            "assigned_frame_names": self._assigned_frame_names,
+            "default_frame_name": self._default_frame_name,
+            "assigned_frame_count": len(self._assigned_frame_names),
         }
 
     def cleanup(self) -> None:
         """
-        Internal
-
         Idempotently clear contract-owned state.
 
         Returns:
@@ -323,25 +230,29 @@ class FrameLinkContract(Cleanable):
         """
         if self._cleaned:
             return
-        self._cleaned = True
-        self._frame_name = None
-        self._allowed_kinds = None
-        self._metadata.clear()
-        self._metadata = None
-        self._contract_id = None
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._assigned_frame_names = None
+            self._default_frame_name = None
+            self._metadata.clear()
+            self._metadata = None
+            self._rift_id = None
+            self._contract_id = None
+        self._lock = None
 
     def clone(self) -> "FrameLinkContract":
         """
-        Internal
-
-        Return a detached copy of this frame-link contract.
+        Return a detached copy of this frame availability contract.
 
         Returns:
             FrameLinkContract: Detached contract copy.
         """
         self.check_cleaned()
         return FrameLinkContract(
-            frame_name=self._frame_name,
-            allowed_kinds=self._allowed_kinds,
+            rift_id=self._rift_id,
+            assigned_frame_names=self._assigned_frame_names,
+            default_frame_name=self._default_frame_name,
             metadata=dict(self._metadata),
         )

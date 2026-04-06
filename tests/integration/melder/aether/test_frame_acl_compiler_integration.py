@@ -7,12 +7,7 @@ from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.nexus.acl.frame_acl_compiler import FrameACLCompiler
 from melder.aether.nexus.nexus import Nexus
-from melder.aether.nexus.rift.frame_link.frame_link_contract import (
-    FrameLinkContract,
-)
-from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile_builder import (
-    FrameLinkContractProfileBuilder,
-)
+from melder.aether.nexus.rift.frame_viewer.frame_view import FrameView
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
@@ -222,10 +217,9 @@ def test_integration_runtime_acl_commit_changes_compiled_command_surface() -> No
         conduit.cleanup()
 
 
-def test_integration_runtime_compiled_surface_can_be_shaped_by_safe_frame_link_profile() -> None:
+def test_integration_runtime_compiled_surface_projects_directly_into_frame_view() -> None:
     """
-    Verify runtime compiled ACL output can be shaped by the downstream
-    frame-link safe contract profile.
+    Verify runtime compiled ACL output projects directly into a frame view.
 
     Returns:
         None.
@@ -242,24 +236,18 @@ def test_integration_runtime_compiled_surface_can_be_shaped_by_safe_frame_link_p
     try:
         nexus = Nexus()
         compiler = FrameACLCompiler(nexus._frame_acl_manager.frame_acl_profile_builder)
+        descriptor = nexus._get_or_create_frame_descriptor("ops")
         compiled_surface = compiler.compile_frame_access_surface(
-            nexus._get_or_create_frame_descriptor("ops"),
+            descriptor,
             nexus.get_current_frame_acl_configuration("ops"),
         )
-        safe_contract_profile = FrameLinkContractProfileBuilder().get_required_profile(
-            "safe"
+
+        frame_view = FrameView.from_compiled_access_surface(
+            frame_descriptor=descriptor,
+            compiled_access_surface=compiled_surface,
         )
 
-        contract = FrameLinkContract.from_compiled_access_surface(
-            compiled_surface,
-            contract_profile=safe_contract_profile,
-        )
-
-        assert contract.allowed_commands == (
-            "bind_existing",
-            "query",
-            "resolve_existing",
-        )
-        assert contract.metadata["frame_link_profile_name"] == "safe"
+        assert frame_view.metadata["available_target_count"] >= 1
+        assert "frame" in {link.source_kind for link in frame_view.links_by_id.values()}
     finally:
         conduit.cleanup()

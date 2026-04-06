@@ -16,13 +16,6 @@ from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
 )
 from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
-from melder.aether.nexus.rift.frame_link.frame_link_contract import FrameLinkContract
-from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile import (
-    FrameLinkContractProfile,
-)
-from melder.aether.nexus.rift.frame_link.profiles.frame_link_view_profile import (
-    FrameLinkViewProfile,
-)
 from melder.aether.nexus.frame_acl_manager import FrameACLManager
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
@@ -80,10 +73,9 @@ def test_compiler_builds_safe_effective_access_surface_from_descriptor_truth() -
     }
 
 
-def test_frame_link_contract_can_be_shaped_from_compiled_access_surface() -> None:
+def test_compiled_surface_metadata_snapshot_is_detached_from_input_metadata() -> None:
     """
-    Verify frame-link contracts are created from compiled ACL access output and
-    can be narrowed by a downstream contract profile.
+    Verify compiled surface metadata snapshots remain detached from mutation.
 
     Returns:
         None.
@@ -95,30 +87,11 @@ def test_frame_link_contract_can_be_shaped_from_compiled_access_surface() -> Non
         frame_descriptor,
         configuration,
     )
-    contract_profile = FrameLinkContractProfile(
-        "frame_only",
-        view_profile=FrameLinkViewProfile(
-            "frame_only_view",
-            allowed_kinds=("frame",),
-            frame_payload_fields=("system_state",),
-        ),
-    )
 
-    contract = FrameLinkContract.from_compiled_access_surface(
-        compiled_surface,
-        contract_profile=contract_profile,
-    )
+    metadata = compiled_surface.metadata
+    metadata["source"] = "mutated"
 
-    assert contract.frame_name == "ops"
-    assert contract.allowed_kinds == ("frame",)
-    assert contract.metadata["frame_link_profile_name"] == "frame_only"
-    assert contract.metadata["frame_payload_fields"] == ("system_state",)
-    assert contract.metadata["conduit_payload_sections_by_id"] == {
-        "conduit-1": tuple(),
-    }
-    assert contract.metadata["spell_payload_sections_by_key"] == {
-        ("spellbook-1", "spell-1"): tuple(),
-    }
+    assert "source" not in compiled_surface.metadata
 
 
 def _build_frame_descriptor() -> FrameDescriptor:

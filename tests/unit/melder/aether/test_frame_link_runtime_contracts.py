@@ -1,16 +1,4 @@
 from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
-from melder.aether.nexus.rift.frame_link.frame_link_contract import (
-    FrameLinkContract,
-)
-
-
-class _ExplodingFrameLinkContract(FrameLinkContract):
-    """
-    Test helper contract that raises during cleanup.
-    """
-
-    def cleanup(self) -> None:
-        raise RuntimeError("boom")
 
 
 def test_frame_link_defaults_display_name_to_source_id() -> None:
@@ -50,35 +38,29 @@ def test_frame_link_preserves_explicit_display_name_and_metadata_copy() -> None:
     assert link.metadata == {"source": "compiled"}
 
 
-def test_frame_link_cleanup_cascades_to_contract() -> None:
+def test_frame_link_from_view_subject_detaches_metadata_input() -> None:
     """
-    Verify frame-link cleanup cascades into the owned contract.
+    Verify view-subject construction detaches metadata input.
 
     Returns:
         None.
     """
-    contract = FrameLinkContract(
-        frame_name="ops",
-        allowed_kinds=("frame",),
-    )
-    link = FrameLink(
+    metadata = {"payload_fields": ("system_state",)}
+    link = FrameLink.from_view_subject(
         frame_name="ops",
         source_kind="frame",
-        source_id="ops",
-        contract=contract,
+        source_id="frame-1",
+        display_name="ops",
+        metadata=metadata,
     )
+    metadata["mutated"] = True
 
-    link.cleanup()
-
-    assert contract.cleaned is True
-    assert link.cleaned is True
-    assert link._contract is None
-    assert link._metadata is None
+    assert link.metadata == {"payload_fields": ("system_state",)}
 
 
-def test_frame_link_cleanup_swallows_contract_cleanup_failures() -> None:
+def test_frame_link_cleanup_clears_owned_state() -> None:
     """
-    Verify frame-link cleanup still clears link state if contract cleanup fails.
+    Verify frame-link cleanup clears owned state.
 
     Returns:
         None.
@@ -87,7 +69,6 @@ def test_frame_link_cleanup_swallows_contract_cleanup_failures() -> None:
         frame_name="ops",
         source_kind="frame",
         source_id="ops",
-        contract=_ExplodingFrameLinkContract(frame_name="ops"),
     )
 
     link.cleanup()
@@ -97,3 +78,4 @@ def test_frame_link_cleanup_swallows_contract_cleanup_failures() -> None:
     assert link._source_kind is None
     assert link._source_id is None
     assert link._display_name is None
+    assert link._metadata is None

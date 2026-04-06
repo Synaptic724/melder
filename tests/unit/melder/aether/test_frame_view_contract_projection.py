@@ -23,12 +23,6 @@ from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
 from melder.aether.nexus.rift.frame_link.frame_link_contract import (
     FrameLinkContract,
 )
-from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile import (
-    FrameLinkContractProfile,
-)
-from melder.aether.nexus.rift.frame_link.profiles.frame_link_view_profile import (
-    FrameLinkViewProfile,
-)
 from melder.aether.nexus.rift.frame_viewer.frame_view import FrameView
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
@@ -39,9 +33,7 @@ def _build_frame_descriptor() -> FrameDescriptor:
     Build one payload-backed descriptor for frame-view projection tests.
 
     Returns:
-        FrameDescriptor:
-            Descriptor with one frame record, one conduit record, and one spell
-            record.
+        FrameDescriptor: Descriptor with frame, conduit, and spell records.
     """
     descriptor = FrameDescriptor("ops")
     descriptor.set_frame_overview(
@@ -109,8 +101,7 @@ def _build_compiled_surface() -> CompiledFrameACLAccessSurface:
     Build one compiled ACL access surface for frame-view projection tests.
 
     Returns:
-        CompiledFrameACLAccessSurface:
-            Surface with visible frame/conduit/spell access.
+        CompiledFrameACLAccessSurface: Surface with frame/conduit/spell access.
     """
     return CompiledFrameACLAccessSurface(
         frame_name="ops",
@@ -140,49 +131,44 @@ def _build_compiled_surface() -> CompiledFrameACLAccessSurface:
 
 def test_frame_link_contract_clone_detaches_metadata() -> None:
     """
-    Verify frame-link contract clones detach the metadata dictionary.
+    Verify Rift availability contract clones detach metadata and assignments.
 
     Returns:
         None.
     """
     contract = FrameLinkContract(
-        frame_name="ops",
-        allowed_kinds=("frame",),
-        metadata={"source": "compiled"},
+        rift_id="rift-1",
+        assigned_frame_names=("ops",),
+        default_frame_name="ops",
+        metadata={"source": "rift"},
     )
 
     cloned = contract.clone()
-    cloned.metadata["source"] = "mutated"
+    cloned.register_frame("finance")
 
     assert cloned is not contract
-    assert contract.metadata == {"source": "compiled"}
+    assert contract.assigned_frame_names == ("ops",)
+    assert cloned.assigned_frame_names == ("ops", "finance")
 
 
-def test_frame_link_from_contract_subject_clones_contract_and_metadata() -> None:
+def test_frame_link_from_view_subject_detaches_metadata_input() -> None:
     """
-    Verify link construction clones the contract and detaches metadata input.
+    Verify link construction detaches metadata input.
 
     Returns:
         None.
     """
-    contract = FrameLinkContract(
-        frame_name="ops",
-        allowed_kinds=("frame",),
-        metadata={"source": "compiled"},
-    )
     metadata = {"payload_fields": ("system_state",)}
 
-    link = FrameLink.from_contract_subject(
+    link = FrameLink.from_view_subject(
         frame_name="ops",
         source_kind="frame",
         source_id="frame-1",
         display_name="ops",
-        contract=contract,
         metadata=metadata,
     )
     metadata["mutated"] = True
 
-    assert link.contract is not contract
     assert link.metadata == {"payload_fields": ("system_state",)}
 
 
@@ -256,33 +242,6 @@ def test_frame_view_available_targets_surface_is_queryable_by_kind_and_id() -> N
     assert fetched is spell_targets[0]
 
 
-def test_frame_view_from_compiled_access_surface_respects_narrowed_contract_profile() -> None:
-    """
-    Verify downstream contract profiles narrow the projected frame view.
-
-    Returns:
-        None.
-    """
-    frame_view = FrameView.from_compiled_access_surface(
-        frame_descriptor=_build_frame_descriptor(),
-        compiled_access_surface=_build_compiled_surface(),
-        contract_profile=FrameLinkContractProfile(
-            "frame_only",
-            view_profile=FrameLinkViewProfile(
-                "frame_only",
-                allowed_kinds=("frame",),
-                frame_payload_fields=("system_state",),
-            ),
-        ),
-    )
-
-    links = list(frame_view.links_by_id.values())
-
-    assert len(links) == 1
-    assert links[0].source_kind == "frame"
-    assert links[0].metadata["payload_fields"] == ("system_state",)
-
-
 def test_frame_view_from_compiled_access_surface_rejects_mismatched_frame_name() -> None:
     """
     Verify frame-view projection rejects mismatched descriptor/compiled frames.
@@ -290,7 +249,10 @@ def test_frame_view_from_compiled_access_surface_rejects_mismatched_frame_name()
     Returns:
         None.
     """
-    with pytest.raises(ValueError, match="compiled_access_surface targets frame 'ops', expected 'finance'"):
+    with pytest.raises(
+            ValueError,
+            match="compiled_access_surface targets frame 'ops', expected 'finance'",
+    ):
         FrameView.from_compiled_access_surface(
             frame_descriptor=FrameDescriptor("finance"),
             compiled_access_surface=_build_compiled_surface(),
@@ -340,7 +302,10 @@ def test_frame_view_from_compiled_access_surface_rejects_missing_visible_records
         metadata={},
     )
 
-    with pytest.raises(ValueError, match="Missing ConduitRecord for compiled conduit id 'missing-conduit'"):
+    with pytest.raises(
+            ValueError,
+            match="Missing ConduitRecord for compiled conduit id 'missing-conduit'",
+    ):
         FrameView.from_compiled_access_surface(
             frame_descriptor=descriptor,
             compiled_access_surface=compiled_surface,
@@ -349,7 +314,7 @@ def test_frame_view_from_compiled_access_surface_rejects_missing_visible_records
 
 def test_frame_view_cleanup_cascades_into_owned_links() -> None:
     """
-    Verify frame-view cleanup cascades into the owned links and contracts.
+    Verify frame-view cleanup cascades into the owned links and profiles.
 
     Returns:
         None.

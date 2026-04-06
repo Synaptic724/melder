@@ -1,363 +1,185 @@
 import pytest
 
-from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
-    CompiledFrameACLAccessSurface,
-)
 from melder.aether.nexus.rift.frame_link.frame_link_contract import (
     FrameLinkContract,
 )
-from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile import (
-    FrameLinkContractProfile,
-)
-from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile_builder import (
-    FrameLinkContractProfileBuilder,
-)
-from melder.aether.nexus.rift.frame_link.profiles.frame_link_view_profile import (
-    FrameLinkViewProfile,
-)
-from melder.aether.nexus.rift.frame_link.profiles.hybrid_profile import (
-    create_hybrid_frame_link_contract_profile,
-)
-from melder.aether.nexus.rift.frame_link.profiles.permissive_profile import (
-    create_permissive_frame_link_contract_profile,
-)
-from melder.aether.nexus.rift.frame_link.profiles.safe_profile import (
-    create_safe_frame_link_contract_profile,
-)
 
 
-def _build_compiled_surface() -> CompiledFrameACLAccessSurface:
+def test_frame_link_contract_requires_non_empty_rift_id() -> None:
     """
-    Build one compiled ACL access surface for frame-link contract tests.
-
-    Returns:
-        CompiledFrameACLAccessSurface:
-            Compiled surface with frame, conduit, and spell visibility.
-    """
-    return CompiledFrameACLAccessSurface(
-        frame_name="ops",
-        configuration_id="cfg-1",
-        view_profile_name="safe",
-        view_profile_version="0.0.1",
-        codegen_profile_name="safe",
-        codegen_profile_version="0.0.1",
-        allowed_kinds=("frame", "conduit", "spell"),
-        allowed_commands=("bind_existing", "query", "resolve_existing"),
-        frame_payload_fields=("system_state", "rift_enabled", "root_conduit_count"),
-        visible_conduit_ids=("conduit-1",),
-        visible_spell_keys=(("spellbook-1", "spell-1"),),
-        conduit_payload_sections_by_id={
-            "conduit-1": ("conduit_name", "conduit_state", "policy"),
-        },
-        spell_payload_sections_by_key={
-            ("spellbook-1", "spell-1"): (
-                "binding_payload",
-                "resolution_payload",
-                "metadata",
-                "class_profile",
-            ),
-        },
-        metadata={"source": "compiled"},
-    )
-
-
-def test_frame_link_view_profile_requires_non_empty_name_and_version() -> None:
-    """
-    Verify frame-link view profiles reject invalid required identity fields.
+    Verify frame-link contracts reject empty Rift ids.
 
     Returns:
         None.
     """
-    with pytest.raises(ValueError, match="name cannot be empty"):
-        FrameLinkViewProfile("")
-
-    with pytest.raises(ValueError, match="version cannot be empty"):
-        FrameLinkViewProfile("safe", version="")
+    with pytest.raises(ValueError, match="rift_id cannot be empty"):
+        FrameLinkContract(rift_id="")
 
 
-def test_frame_link_view_profile_defaults_to_empty_filters() -> None:
+def test_frame_link_contract_rejects_invalid_assigned_frame_names() -> None:
     """
-    Verify frame-link view profiles default to empty narrowing filters.
+    Verify frame-link contracts reject invalid assigned frame-name entries.
 
     Returns:
         None.
     """
-    profile = FrameLinkViewProfile("safe")
+    with pytest.raises(
+            ValueError,
+            match="assigned_frame_names must contain non-empty strings",
+    ):
+        FrameLinkContract(rift_id="rift-1", assigned_frame_names=("ops", ""))
 
-    assert profile.allowed_kinds == tuple()
-    assert profile.frame_payload_fields == tuple()
-    assert profile.conduit_payload_sections == tuple()
-    assert profile.spell_payload_sections == tuple()
 
-
-def test_frame_link_view_profile_cleanup_clears_owned_state() -> None:
+def test_frame_link_contract_rejects_default_frame_outside_assignment() -> None:
     """
-    Verify frame-link view profile cleanup clears owned projection state.
+    Verify the default frame must be present in the assignment set.
 
     Returns:
         None.
     """
-    profile = FrameLinkViewProfile(
-        "safe",
-        allowed_kinds=("frame",),
-        frame_payload_fields=("system_state",),
-    )
-
-    profile.cleanup()
-
-    assert profile.cleaned is True
-    assert profile._allowed_kinds is None
-    assert profile._frame_payload_fields is None
-    assert profile._conduit_payload_sections is None
-    assert profile._spell_payload_sections is None
-
-
-def test_frame_link_contract_profile_requires_view_profile_only() -> None:
-    """
-    Verify downstream contract profiles only require a typed view profile.
-
-    Returns:
-        None.
-    """
-    with pytest.raises(ValueError, match="name cannot be empty"):
-        FrameLinkContractProfile(
-            "",
-            view_profile=FrameLinkViewProfile("safe"),
-        )
-
-    with pytest.raises(TypeError, match="view_profile must be a FrameLinkViewProfile"):
-        FrameLinkContractProfile(
-            "safe",
-            view_profile=object(),
+    with pytest.raises(
+            ValueError,
+            match="default_frame_name must be present in assigned_frame_names",
+    ):
+        FrameLinkContract(
+            rift_id="rift-1",
+            assigned_frame_names=("ops",),
+            default_frame_name="finance",
         )
 
 
-def test_frame_link_contract_profile_cleanup_clears_profile_reference() -> None:
+def test_frame_link_contract_deduplicates_assigned_frame_names_preserving_order() -> None:
     """
-    Verify composed downstream contract profile cleanup clears the view ref.
+    Verify duplicate assigned frame names are normalized once in order.
 
     Returns:
         None.
     """
-    profile = FrameLinkContractProfile(
-        "safe",
-        view_profile=FrameLinkViewProfile("safe"),
+    contract = FrameLinkContract(
+        rift_id="rift-1",
+        assigned_frame_names=("ops", "ops", "finance", "ops"),
+        default_frame_name="ops",
     )
 
-    profile.cleanup()
-
-    assert profile.cleaned is True
-    assert profile._view_profile is None
+    assert contract.assigned_frame_names == ("ops", "finance")
+    assert contract.default_frame_name == "ops"
 
 
-def test_frame_link_contract_profile_builder_seeds_named_catalog() -> None:
+def test_frame_link_contract_list_and_has_frame_reflect_current_assignment() -> None:
     """
-    Verify the downstream contract profile builder seeds safe/hybrid/permissive.
+    Verify frame-list and membership helpers reflect the current assignment set.
 
     Returns:
         None.
     """
-    builder = FrameLinkContractProfileBuilder()
-
-    assert builder.version == "0.0.1"
-    assert builder.list_profile_names() == ["safe", "hybrid", "permissive"]
-
-
-def test_frame_link_contract_profile_builder_get_required_profile_raises_missing_name() -> None:
-    """
-    Verify missing downstream contract profiles fail fast.
-
-    Returns:
-        None.
-    """
-    with pytest.raises(KeyError, match="missing"):
-        FrameLinkContractProfileBuilder().get_required_profile("missing")
-
-
-def test_frame_link_contract_profile_builder_replacing_profile_cleans_old_profile() -> None:
-    """
-    Verify replacing a downstream contract profile cleans the old object.
-
-    Returns:
-        None.
-    """
-    builder = FrameLinkContractProfileBuilder()
-    first_profile = FrameLinkContractProfile(
-        "custom",
-        view_profile=FrameLinkViewProfile("custom"),
-    )
-    second_profile = FrameLinkContractProfile(
-        "custom",
-        view_profile=FrameLinkViewProfile("custom"),
+    contract = FrameLinkContract(
+        rift_id="rift-1",
+        assigned_frame_names=("ops", "finance"),
+        default_frame_name="ops",
     )
 
-    builder.register_profile(first_profile)
-    builder.register_profile(second_profile)
-
-    assert first_profile.cleaned is True
-    assert builder.get_required_profile("custom") is second_profile
+    assert contract.list_frame_names() == ["ops", "finance"]
+    assert contract.has_frame("ops") is True
+    assert contract.has_frame("audit") is False
 
 
-def test_frame_link_contract_profile_builder_register_rejects_invalid_type() -> None:
+def test_frame_link_contract_register_frame_can_seed_and_replace_default() -> None:
     """
-    Verify downstream profile registration rejects invalid objects.
+    Verify registering frames can seed and replace the default frame.
 
     Returns:
         None.
     """
-    with pytest.raises(TypeError, match="profile must be a FrameLinkContractProfile"):
-        FrameLinkContractProfileBuilder().register_profile(None)
+    contract = FrameLinkContract(rift_id="rift-1")
+
+    contract.register_frame("ops")
+    contract.register_frame("finance", set_as_default=True)
+
+    assert contract.assigned_frame_names == ("ops", "finance")
+    assert contract.default_frame_name == "finance"
 
 
-def test_frame_link_contract_profile_builder_cleanup_cascades_to_owned_profiles() -> None:
+def test_frame_link_contract_remove_frame_updates_default_and_ignores_missing() -> None:
     """
-    Verify downstream profile-builder cleanup cascades into owned profiles.
+    Verify removing frames updates the default and ignores missing names.
 
     Returns:
         None.
     """
-    builder = FrameLinkContractProfileBuilder()
-    safe_profile = builder.get_required_profile("safe")
-
-    builder.cleanup()
-
-    assert builder.cleaned is True
-    assert safe_profile.cleaned is True
-    assert builder._profiles_by_name is None
-
-
-def test_safe_frame_link_contract_profile_has_expected_view_shape() -> None:
-    """
-    Verify the safe downstream contract profile carries the expected view filters.
-
-    Returns:
-        None.
-    """
-    profile = create_safe_frame_link_contract_profile()
-
-    assert profile.name == "safe"
-    assert profile.view_profile.allowed_kinds == ("frame", "conduit", "spell")
-    assert profile.view_profile.frame_payload_fields == (
-        "system_state",
-        "rift_enabled",
+    contract = FrameLinkContract(
+        rift_id="rift-1",
+        assigned_frame_names=("ops", "finance"),
+        default_frame_name="ops",
     )
 
+    contract.remove_frame("ops")
+    contract.remove_frame("missing")
 
-def test_hybrid_frame_link_contract_profile_has_expected_view_shape() -> None:
+    assert contract.assigned_frame_names == ("finance",)
+    assert contract.default_frame_name == "finance"
+
+
+def test_frame_link_contract_helper_methods_reject_empty_frame_name_inputs() -> None:
     """
-    Verify the hybrid downstream contract profile carries the expected view filters.
+    Verify frame helper methods reject empty frame-name inputs.
 
     Returns:
         None.
     """
-    profile = create_hybrid_frame_link_contract_profile()
+    contract = FrameLinkContract(rift_id="rift-1")
 
-    assert profile.name == "hybrid"
-    assert "root_conduit_count" in profile.view_profile.frame_payload_fields
-    assert "policy" in profile.view_profile.conduit_payload_sections
+    with pytest.raises(ValueError, match="frame_name cannot be empty"):
+        contract.has_frame("")
+
+    with pytest.raises(ValueError, match="frame_name cannot be empty"):
+        contract.register_frame("")
+
+    with pytest.raises(ValueError, match="frame_name cannot be empty"):
+        contract.remove_frame("")
 
 
-def test_permissive_frame_link_contract_profile_has_expected_view_shape() -> None:
+def test_frame_link_contract_clone_detaches_metadata_and_assignment_state() -> None:
     """
-    Verify the permissive downstream contract profile carries the widest view filters.
+    Verify cloned contracts detach the metadata and assignment state.
 
     Returns:
         None.
     """
-    profile = create_permissive_frame_link_contract_profile()
-
-    assert profile.name == "permissive"
-    assert "ai_native_enabled" in profile.view_profile.frame_payload_fields
-    assert "peer_conduit_ids" in profile.view_profile.conduit_payload_sections
-
-
-def test_frame_link_contract_from_compiled_access_surface_rejects_invalid_inputs() -> None:
-    """
-    Verify contract shaping rejects invalid compiled surfaces and profiles.
-
-    Returns:
-        None.
-    """
-    with pytest.raises(TypeError, match="compiled_access_surface must be a CompiledFrameACLAccessSurface"):
-        FrameLinkContract.from_compiled_access_surface(None)
-
-    with pytest.raises(TypeError, match="contract_profile must be a FrameLinkContractProfile"):
-        FrameLinkContract.from_compiled_access_surface(
-            _build_compiled_surface(),
-            contract_profile=object(),
-        )
-
-
-def test_frame_link_contract_without_profile_retains_compiled_exposure() -> None:
-    """
-    Verify direct contract shaping retains compiled exposure without narrowing.
-
-    Returns:
-        None.
-    """
-    contract = FrameLinkContract.from_compiled_access_surface(
-        _build_compiled_surface()
+    contract = FrameLinkContract(
+        rift_id="rift-1",
+        assigned_frame_names=("ops",),
+        default_frame_name="ops",
+        metadata={"source": "rift"},
     )
 
-    assert contract.frame_name == "ops"
-    assert contract.allowed_kinds == ("conduit", "frame", "spell")
-    assert contract.metadata["source"] == "compiled"
+    cloned = contract.clone()
+    cloned.register_frame("finance")
+
+    assert cloned is not contract
+    assert contract.assigned_frame_names == ("ops",)
+    assert cloned.assigned_frame_names == ("ops", "finance")
+    assert contract.metadata == {"source": "rift"}
 
 
-def test_frame_link_contract_with_profile_narrows_exposure() -> None:
+def test_frame_link_contract_describe_summarizes_availability() -> None:
     """
-    Verify downstream profiles narrow the compiled exposure projection.
+    Verify the contract summary exposes the assigned-frame availability.
 
     Returns:
         None.
     """
-    contract_profile = FrameLinkContractProfile(
-        "frame_only",
-        view_profile=FrameLinkViewProfile(
-            "frame_only",
-            allowed_kinds=("frame",),
-            frame_payload_fields=("system_state",),
-        ),
+    contract = FrameLinkContract(
+        rift_id="rift-1",
+        assigned_frame_names=("ops", "finance"),
+        default_frame_name="ops",
     )
 
-    contract = FrameLinkContract.from_compiled_access_surface(
-        _build_compiled_surface(),
-        contract_profile=contract_profile,
-    )
-
-    assert contract.allowed_kinds == ("frame",)
-    assert contract.metadata["frame_payload_fields"] == ("system_state",)
-    assert contract.metadata["conduit_payload_sections_by_id"] == {
-        "conduit-1": tuple(),
+    assert contract.describe() == {
+        "rift_id": "rift-1",
+        "assigned_frame_names": ("ops", "finance"),
+        "default_frame_name": "ops",
+        "assigned_frame_count": 2,
     }
-    assert contract.metadata["spell_payload_sections_by_key"] == {
-        ("spellbook-1", "spell-1"): tuple(),
-    }
-
-
-def test_frame_link_contract_profile_with_empty_filters_does_not_narrow_exposure() -> None:
-    """
-    Verify empty downstream filters preserve the compiled exposure.
-
-    Returns:
-        None.
-    """
-    contract_profile = FrameLinkContractProfile(
-        "passthrough",
-        view_profile=FrameLinkViewProfile("passthrough"),
-    )
-
-    contract = FrameLinkContract.from_compiled_access_surface(
-        _build_compiled_surface(),
-        contract_profile=contract_profile,
-    )
-
-    assert contract.allowed_kinds == tuple(sorted(_build_compiled_surface().allowed_kinds))
-    assert contract.metadata["frame_payload_fields"] == (
-        "system_state",
-        "rift_enabled",
-        "root_conduit_count",
-    )
 
 
 def test_frame_link_contract_cleanup_clears_owned_state() -> None:
@@ -367,76 +189,15 @@ def test_frame_link_contract_cleanup_clears_owned_state() -> None:
     Returns:
         None.
     """
-    contract = FrameLinkContract.from_compiled_access_surface(
-        _build_compiled_surface()
+    contract = FrameLinkContract(
+        rift_id="rift-1",
+        assigned_frame_names=("ops",),
+        default_frame_name="ops",
     )
 
     contract.cleanup()
 
     assert contract.cleaned is True
-    assert contract._frame_name is None
-    assert contract._allowed_kinds is None
+    assert contract._assigned_frame_names is None
+    assert contract._default_frame_name is None
     assert contract._metadata is None
-
-
-def test_frame_link_contract_helper_methods_expose_effective_contract_shape() -> None:
-    """
-    Verify contract helper APIs expose the effective exposure shape.
-
-    Returns:
-        None.
-    """
-    contract = FrameLinkContract.from_compiled_access_surface(
-        _build_compiled_surface()
-    )
-
-    assert contract.allows_kind("frame") is True
-    assert contract.allows_kind("mutation") is False
-    assert contract.get_frame_payload_fields() == (
-        "system_state",
-        "rift_enabled",
-        "root_conduit_count",
-    )
-    assert contract.get_conduit_payload_sections("conduit-1") == (
-        "conduit_name",
-        "conduit_state",
-        "policy",
-    )
-    assert contract.get_spell_payload_sections(("spellbook-1", "spell-1")) == (
-        "binding_payload",
-        "resolution_payload",
-        "metadata",
-        "class_profile",
-    )
-    assert contract.describe() == {
-        "frame_name": "ops",
-        "allowed_kinds": ("conduit", "frame", "spell"),
-        "frame_payload_fields": (
-            "system_state",
-            "rift_enabled",
-            "root_conduit_count",
-        ),
-        "conduit_count": 1,
-        "spell_count": 1,
-    }
-
-
-def test_frame_link_contract_helper_methods_reject_invalid_inputs() -> None:
-    """
-    Verify contract helper APIs reject invalid subject keys.
-
-    Returns:
-        None.
-    """
-    contract = FrameLinkContract.from_compiled_access_surface(
-        _build_compiled_surface()
-    )
-
-    with pytest.raises(ValueError, match="source_kind cannot be empty"):
-        contract.allows_kind("")
-
-    with pytest.raises(ValueError, match="conduit_id cannot be empty"):
-        contract.get_conduit_payload_sections("")
-
-    with pytest.raises(ValueError, match="record_key must be a non-empty 2-item tuple"):
-        contract.get_spell_payload_sections(("spellbook-1",))

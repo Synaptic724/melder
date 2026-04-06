@@ -487,7 +487,7 @@ class ISpell(ICleanable, Protocol):
 
         - Mutation and contract operations can ask for the current state.
         - Higher-level dev-ops / validation pipelines can use this hook to
-          inspect or assert state when orchestrating Phase 1â€“7 revalidation.
+          inspect or assert state when orchestrating Phase 1-7 revalidation.
 
         Returns:
             SpellSystemState | None:
@@ -808,11 +808,11 @@ class ISpell(ICleanable, Protocol):
             cancel_event: Optional['CancellationEvent'] = None,
     ) -> None:
         """
-        Phase 1 â€“ Requirements Extraction (facade).
+        Phase 1 - Requirements Extraction (facade).
 
         Delegates to :class:`SpellCrafter` to:
 
-            - Inspect the spellâ€™s constructor/signature and metadata.
+            - Inspect the spell's constructor/signature and metadata.
             - Determine dependencies (spellframes, binding names, types, etc.).
             - Capture existence constraints that are relevant to resolution.
 
@@ -829,7 +829,7 @@ class ISpell(ICleanable, Protocol):
             cancel_event: Optional['CancellationEvent'] = None,
     ) -> None:
         """
-        Phase 2 â€“ Symbolic Graph Construction (facade).
+        Phase 2 - Symbolic Graph Construction (facade).
 
         Delegates to :class:`SpellCrafter`.
 
@@ -849,7 +849,7 @@ class ISpell(ICleanable, Protocol):
             cancel_event: Optional['CancellationEvent'] = None,
     ) -> None:
         """
-        Phase 3 â€“ Local Resolution Frame / DAG (facade).
+        Phase 3 - Local Resolution Frame / DAG (facade).
 
         Delegates to :class:`SpellCrafter`.
 
@@ -871,7 +871,7 @@ class ISpell(ICleanable, Protocol):
             cancel_event: Optional['CancellationEvent'] = None,
     ) -> None:
         """
-        Phase 4 â€“ Validation (facade).
+        Phase 4 - Validation (facade).
 
         Delegates to :class:`SpellCrafter`.
 
@@ -1263,7 +1263,7 @@ class ISpellbook(ICleanable, Protocol):
 
         Returns:
             Mapping[SpellIndex, ISpell]:
-                An immutable map of `SpellIndex` â†’ spell object.
+                An immutable map of `SpellIndex` -> spell object.
         """
         ...
 
@@ -1275,11 +1275,11 @@ class ISpellbook(ICleanable, Protocol):
         Returns a per-conduit read-only view of all **borrowed** spells.
 
         Each peer conduit ID maps to its own immutable
-        `SpellIndex â†’ ISpell` map.
+        `SpellIndex -> ISpell` map.
 
         Returns:
             Mapping[str, Mapping[SpellIndex, ISpell]]:
-                Immutable map of peer Conduit ID â†’ immutable map of
+                Immutable map of peer Conduit ID -> immutable map of
                 borrowed spells.
         """
         ...
@@ -1807,7 +1807,7 @@ class ISpellbook(ICleanable, Protocol):
             * Each `conduit_id` in `_contracted_spells` will have a
               corresponding `Set[str]` in `_contracted_versions`
               containing **all version IDs** (SHA256) for that
-              conduitâ€™s spells.
+              conduit's spells.
         """
         ...
 
@@ -1955,9 +1955,9 @@ class ISpellbook(ICleanable, Protocol):
         Internal
 
         Resolves a contracted spell by its **version SHA** using the
-        Spellbookâ€™s local copies of contracted spells.
+        Spellbook's local copies of contracted spells.
 
-        Each contracted spellâ€™s `SpellIndex` contains all known versions,
+        Each contracted spell's `SpellIndex` contains all known versions,
         so this can be resolved purely from local SpellIndex data.
 
         Args:
@@ -2694,8 +2694,8 @@ class IUnitOfWork(ICleanable, Protocol):
 
     This class extends both:
 
-        * :class:`Cleanable` â€“ deterministic, idempotent cleanup semantics.
-        * :class:`concurrent.futures.Future` â€“ result(), exception(), callbacks, etc.
+        * :class:`Cleanable` - deterministic, idempotent cleanup semantics.
+        * :class:`concurrent.futures.Future` - result(), exception(), callbacks, etc.
 
     It **does not** own threads or an executor:
 
@@ -2743,7 +2743,7 @@ class IUnitOfWork(ICleanable, Protocol):
         disabling further use.
 
         Behavior:
-            * Idempotent â€“ safe to call multiple times.
+            * Idempotent - safe to call multiple times.
             * Clears:
                 - The wrapped callable and its bound args/kwargs.
                 - The associated CancellationEvent.
@@ -2884,18 +2884,36 @@ class IUnitOfWork(ICleanable, Protocol):
         ...
 
     def result(self, timeout: Optional[float] = None) -> Any:
+        """
+        Return the completed result value, waiting up to `timeout` seconds if needed.
+        """
         ...
 
     def exception(self, timeout: Optional[float] = None) -> BaseException | None:
+        """
+        Return the captured exception, waiting up to `timeout` seconds if needed.
+        """
         ...
 
     def add_done_callback(self, fn: Callable[[Any], Any]) -> None:
+        """
+        Register one callback to run when this unit of work reaches a done state.
+
+        Returns:
+            None.
+        """
         ...
 
     def done(self) -> bool:
+        """
+        Return whether this unit of work has reached a terminal Future state.
+        """
         ...
 
     def cancelled(self) -> bool:
+        """
+        Return whether this unit of work completed in a cancelled state.
+        """
         ...
 
 
@@ -4428,80 +4446,80 @@ class IConduit(ICleanable, Protocol):
         """
         Binds a spell into the Spellbook for future instantiation and dependency injection.
 
-        The `bind()` method registers a class, function, or object into Melderâ€™s system,
+        The `bind()` method registers a class, function, or object into Melder's system,
         associating it with a lifecycle (`Existence`), a permission policy, and optional metadata.
         Once bound, the spell becomes available for resolution and casting within its conduit
         or across systems (depending on permissions).
 
-        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        ðŸ§  Binding Overview:
+        Binding overview:
             - Profiles the spell via reflection.
             - Computes a unique SHA256 `spell_id`.
-            - Stores the spell into the internal spell registry.
+            - Stores the spell in the internal spell registry.
             - Assigns its lookup key via `(spellframe, binding_name)`.
             - Applies lifecycle and permission policies.
             - Optionally attaches lifecycle hooks.
 
-        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        ðŸ›¡ï¸ Permissions (access control to other conduits):
+        Permissions (access control to other conduits):
             - `"read"`:
-                Allows other conduits to *use* the spell but not create new instances.
+                Allows other conduits to use the spell but not create new instances.
                 Useful for shared utilities or resources.
 
             - `"create"` (default):
-                Allows other conduits to both use *and* create instances from this spell.
+                Allows other conduits to both use and create instances from this spell.
 
             - `"block"`:
                 Completely blocks access to the spell from other conduits.
                 Only the owning conduit can use or instantiate it.
 
-        ðŸ”„ Existence (spell lifecycle):
+        Existence (spell lifecycle):
             Determines how the spell instance is managed (singleton, transient, etc.).
             Use `Existence.unique`, `Existence.many`, etc., for fine-grained control.
 
-        ðŸ“¦ Spellframe (optional):
+        Spellframe (optional):
             Logical namespace or grouping label.
             Often corresponds to a shared interface, protocol, or feature group.
 
-        ðŸ”‘ Binding Name (optional):
+        Binding name (optional):
             Secondary key used to distinguish different versions or roles of the same type.
             Useful when multiple spells are bound under the same interface.
 
-        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        ðŸª Lifecycle Hooks (optional `**kwargs`):
-
-            - `pre_hooks`: List[Callable]
-                Executed *before* the spell is constructed or cast.
+        Lifecycle hooks (optional `**kwargs`):
+            - `pre_hooks`: `list[Callable]`
+                Executed before the spell is constructed or cast.
                 Can be used for validation, preparation, or logging.
 
-            - `activation_hooks`: List[Callable]
-                Executed *during* spell construction. Useful for modifying dependencies
+            - `activation_hooks`: `list[Callable]`
+                Executed during spell construction. Useful for modifying dependencies
                 or adapting runtime context.
 
-            - `post_hooks`: List[Callable]
-                Executed *after* the spell has been cast. Often used for initialization,
+            - `post_hooks`: `list[Callable]`
+                Executed after the spell has been cast. Often used for initialization,
                 analytics, or final injection steps.
 
-            âš ï¸ All hooks must be callables.
+            All hooks must be callables.
 
-        â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         Args:
             spell (Any): The class, function, or object to bind into the spellbook.
             existence (Existence): The lifecycle scope for this spell.
-            permissions (str): Permission level exposed to other conduits ("read", "create", "block").
+            permissions (str): Permission level exposed to other conduits ("read",
+                "create", "block").
             spellframe (Optional[Any]): Logical interface or category for grouping.
-            binding_name (Optional[str]): Name key to distinguish this spell among others in its frame.
+            binding_name (Optional[str]): Name key to distinguish this spell among
+                others in its frame.
             **kwargs:
-                - pre_hooks (Optional[List[Callable]]): Hooks executed before casting.
-                - activation_hooks (Optional[List[Callable]]): Hooks executed during casting/construction.
-                - post_hooks (Optional[List[Callable]]): Hooks executed after casting/construction.
+                - pre_hooks (Optional[list[Callable]]): Hooks executed before casting.
+                - activation_hooks (Optional[list[Callable]]): Hooks executed during
+                  casting/construction.
+                - post_hooks (Optional[list[Callable]]): Hooks executed after casting
+                  or construction.
 
         Returns:
             str: The unique SHA256 `spell_id` associated with the bound spell.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
-            RuntimeError: If the Conduit is not a 'normal' conduit (only normal conduits can bind spells).
+            RuntimeError: If the Conduit is not a 'normal' conduit (only normal conduits
+                can bind spells).
             RuntimeError: If no binding transaction is active for this Spellbook.
             RuntimeError: If the spell is already bound in the registry.
             TypeError: If invalid hook types are provided.
@@ -4677,7 +4695,7 @@ class IConduit(ICleanable, Protocol):
         Public API
 
         Get the permissions for a spell by its version spell_id, **within this
-        conduitâ€™s own spellbook**.
+        conduit's own spellbook**.
 
         This returns the access level ("read", "create", "block") defined when the
         spell was bound.
@@ -5391,7 +5409,7 @@ class IConduit(ICleanable, Protocol):
         Return a detailed diagnostic summary of one contract by conduit id.
 
         This method inspects the contract associated with the provided `conduit_id` and returns metadata
-        including the peer conduitâ€™s name, the number of active spells involved, and permission levels.
+        including the peer conduit's name, the number of active spells involved, and permission levels.
         Primarily used for debugging, introspection, and UI inspection tools.
 
         Args:
@@ -5580,6 +5598,9 @@ class IRiftAction(ICleanable, Protocol):
 
     @property
     def metadata(self) -> Dict[str, object]:
+        """
+        Return the metadata mapping attached to this RiftAction event object.
+        """
         ...
 
 
@@ -5594,6 +5615,9 @@ class IRiftMemory(ICleanable, Protocol):
 
     @property
     def metadata(self) -> Dict[str, object]:
+        """
+        Return the metadata mapping attached to this RiftMemory event object.
+        """
         ...
 
 
@@ -5681,72 +5705,141 @@ class INexusConfiguration(ICleanable, Protocol):
         ...
 
     def with_rift_creation_enabled(self, enabled: bool = True) -> "INexusConfiguration":
+        """
+        Set whether the Nexus may create new Rift instances and return this configuration.
+        """
         ...
 
     def with_creation_token_required(self, enabled: bool = True) -> "INexusConfiguration":
+        """
+        Set whether Rift creation requests must supply the configured creation token.
+        """
         ...
 
     def with_creation_token(self, token_value: Optional[str]) -> "INexusConfiguration":
+        """
+        Set the token value used to authorize Rift creation requests and return this configuration.
+        """
         ...
 
     def with_direct_rift_access(self, enabled: bool = True) -> "INexusConfiguration":
+        """
+        Set whether callers may access registered Rifts directly through Nexus lookups.
+        """
         ...
 
     def with_rift_access_token_required(self, enabled: bool = True) -> "INexusConfiguration":
+        """
+        Set whether Rift lookup and access operations require an access token.
+        """
         ...
 
     def with_rift_access_token(self, token_value: Optional[str]) -> "INexusConfiguration":
+        """
+        Set the token value used to authorize direct Rift access and return this configuration.
+        """
         ...
 
     def with_allow_external_rift_registration(self, enabled: bool = True) -> "INexusConfiguration":
+        """
+        Set whether externally created Rift instances may be registered with Nexus.
+        """
         ...
 
     def with_allow_nested_rift_creation(self, enabled: bool = True) -> "INexusConfiguration":
+        """
+        Set whether Rift creation flows may create child or nested Rifts.
+        """
         ...
 
     def with_max_active_rift_count(self, count: int) -> "INexusConfiguration":
+        """
+        Set the maximum number of concurrently active Rifts and return this configuration.
+        """
         ...
 
     def with_nexus_frame_mode(self, mode: object) -> "INexusConfiguration":
+        """
+        Set the Nexus frame exposure mode used when Rifts resolve accessible frames.
+        """
         ...
 
     def with_default_nexus_frame_name(self, frame_name: str) -> "INexusConfiguration":
+        """
+        Set the default Nexus frame name used when Rift operations do not name a frame.
+        """
         ...
 
     def with_auto_create_nexus_frames(self, enabled: bool = True) -> "INexusConfiguration":
+        """
+        Set whether missing Nexus frames may be created automatically on demand.
+        """
         ...
 
     def with_max_nexus_frame_count(self, count: int) -> "INexusConfiguration":
+        """
+        Set the maximum number of Nexus frames this configuration will allow.
+        """
         ...
 
     def with_default_target_frame_name(self, frame_name: str) -> "INexusConfiguration":
+        """
+        Set the default target frame name assigned to newly created Rifts.
+        """
         ...
 
     def with_allowed_target_frame_names(self, frame_names: Sequence[str]) -> "INexusConfiguration":
+        """
+        Set the allow-list of target frame names Rifts may select under this configuration.
+        """
         ...
 
     def with_denied_target_frame_names(self, frame_names: Sequence[str]) -> "INexusConfiguration":
+        """
+        Set the deny-list of target frame names Rifts must not target.
+        """
         ...
 
     def with_target_frame_override(self, enabled: bool = True) -> "INexusConfiguration":
+        """
+        Set whether callers may override the configured default target frame selection.
+        """
         ...
 
     def with_multiple_target_frames(self, enabled: bool = True) -> "INexusConfiguration":
+        """
+        Set whether one Rift may target more than one frame at the same time.
+        """
         ...
 
     def with_max_target_frame_count(self, count: int) -> "INexusConfiguration":
+        """
+        Set the maximum number of target frames one Rift may hold concurrently.
+        """
         ...
 
     def with_default_space_type(self, space_type: object) -> "INexusConfiguration":
+        """
+        Set the default RiftSpace type used when new spaces are created implicitly.
+        """
         ...
 
     def with_default_auto_activate_on_program(self, enabled: bool = True) -> "INexusConfiguration":
+        """
+        Set whether newly programmed Rifts auto-activate after creation.
+        """
         ...
 
     def with_default_auto_create_space(self, enabled: bool = True) -> "INexusConfiguration":
+        """
+        Set whether newly programmed Rifts auto-create their default working space.
+        """
         ...
 
     def with_default_validation_mode(self, mode: object) -> "INexusConfiguration":
+        """
+        Set the default validation mode applied to Rift programming and activation flows.
+        """
         ...
 
 
@@ -5760,40 +5853,88 @@ class IRiftConfiguration(ICleanable, Protocol):
 
     @property
     def frozen(self) -> bool:
+        """
+        Return whether this Rift configuration has been frozen against further mutation.
+        """
         ...
 
     @property
     def consumed(self) -> bool:
+        """
+        Return whether this configuration has already been consumed by a Rift creation flow.
+        """
         ...
 
     def set_property(self, key: str, value: object) -> None:
+        """
+        Set one Rift configuration property by key.
+
+        Returns:
+            None.
+        """
         ...
 
     def get_property(self, key: str) -> object:
+        """
+        Return one Rift configuration property value by key.
+        """
         ...
 
     def has_property(self, key: str) -> bool:
+        """
+        Return whether one Rift configuration property exists.
+        """
         ...
 
     def load_default_dictionary(self) -> None:
+        """
+        Load the default Rift configuration dictionary into this instance.
+
+        Returns:
+            None.
+        """
         ...
 
     def validate(self) -> bool:
+        """
+        Validate the current Rift configuration payload.
+        """
         ...
 
     def freeze(self) -> None:
+        """
+        Freeze the current Rift configuration so later mutation is disallowed.
+
+        Returns:
+            None.
+        """
         ...
 
     def finalize(self) -> "IRiftConfiguration":
+        """
+        Finalize this configuration and return the resulting configuration object.
+        """
         ...
 
     def build(self) -> "IRiftConfiguration":
+        """
+        Build and return the finalized Rift configuration object.
+        """
         ...
 
     def with_defaults(self) -> "IRiftConfiguration":
+        """
+        Apply the default Rift configuration values and return this configuration.
+        """
         ...
 
     def mark_consumed(self) -> None:
+        """
+        Mark this configuration as consumed so it is not reused for another Rift build.
+
+        Returns:
+            None.
+        """
         ...
 
 
@@ -5805,26 +5946,44 @@ class IRiftSpace(ICleanable, Protocol):
 
     @property
     def space_id(self) -> str:
+        """
+        Return the stable identifier for this RiftSpace instance.
+        """
         ...
 
     @property
     def space_name(self) -> Optional[str]:
+        """
+        Return the human-readable space name, if one has been assigned.
+        """
         ...
 
     @property
     def owner_rift_id(self) -> str:
+        """
+        Return the identifier of the Rift that owns this space.
+        """
         ...
 
     @property
     def space_kind(self) -> str:
+        """
+        Return the kind discriminator used to classify this RiftSpace.
+        """
         ...
 
     @property
     def metadata(self) -> Dict[str, object]:
+        """
+        Return the metadata mapping associated with this space.
+        """
         ...
 
     @property
     def event_configuration(self) -> IRiftEventConfiguration:
+        """
+        Return the event configuration that governs this space's local event behavior.
+        """
         ...
 
 
@@ -5850,77 +6009,155 @@ class IRift(ICleanable, Protocol):
 
     @property
     def id(self) -> str:
+        """
+        Return the stable identifier for this Rift instance.
+        """
         ...
 
     @property
     def rift_name(self) -> Optional[str]:
+        """
+        Return the human-readable Rift name, if one has been assigned.
+        """
         ...
 
     @property
     def configuration(self) -> IRiftConfiguration:
+        """
+        Return the configuration object that defines this Rift's runtime policy.
+        """
         ...
 
     @property
     def nexus_frame_names(self) -> Tuple[str, ...]:
+        """
+        Return the Nexus frame names currently accessible to this Rift.
+        """
         ...
 
     @property
     def default_nexus_frame_name(self) -> str:
+        """
+        Return the default Nexus frame name used when callers do not specify one.
+        """
         ...
 
     @property
     def target_frame_names(self) -> Tuple[str, ...]:
+        """
+        Return the target frame names this Rift is currently configured to use.
+        """
         ...
 
     @property
     def default_target_frame_name(self) -> str:
+        """
+        Return the default target frame name used for Rift-scoped operations.
+        """
         ...
 
     @property
     def local_conduit_id(self) -> Optional[str]:
+        """
+        Return the local conduit identifier bound to this Rift, if present.
+        """
         ...
 
     @property
     def active_space_id(self) -> Optional[str]:
+        """
+        Return the identifier of the currently active RiftSpace, if any.
+        """
         ...
 
     @property
     def metadata(self) -> Dict[str, object]:
+        """
+        Return the metadata mapping associated with this Rift.
+        """
         ...
 
     @property
     def is_registered(self) -> bool:
+        """
+        Return whether this Rift has been registered with Nexus.
+        """
         ...
 
     @property
     def is_active(self) -> bool:
+        """
+        Return whether this Rift is currently marked active.
+        """
         ...
 
     def mark_registered(self) -> None:
+        """
+        Mark this Rift as registered with its owning Nexus.
+
+        Returns:
+            None.
+        """
         ...
 
     def mark_active(self) -> None:
+        """
+        Mark this Rift as active.
+
+        Returns:
+            None.
+        """
         ...
 
     def mark_inactive(self) -> None:
+        """
+        Mark this Rift as inactive.
+
+        Returns:
+            None.
+        """
         ...
 
     def register_space(self, space: IRiftSpace) -> None:
+        """
+        Register one RiftSpace with this Rift.
+
+        Returns:
+            None.
+        """
         ...
 
     def get_space(self, space_id: str) -> IRiftSpace:
+        """
+        Return one registered RiftSpace by its stable identifier.
+        """
         ...
 
     def get_space_by_name(self, space_name: str) -> IRiftSpace:
+        """
+        Return one registered RiftSpace by its human-readable name.
+        """
         ...
 
     def set_active_space(self, space_id: str) -> None:
+        """
+        Mark one registered RiftSpace as the active working space for this Rift.
+
+        Returns:
+            None.
+        """
         ...
 
     def list_space_ids(self) -> List[str]:
+        """
+        Return the identifiers of all spaces currently registered with this Rift.
+        """
         ...
 
     def get_nexus_frame(self, frame_name: Optional[str] = None) -> "IAethericFrame":
+        """
+        Return one Nexus frame accessible through this Rift.
+        """
         ...
 
     def create_nexus_frame(
@@ -5928,12 +6165,24 @@ class IRift(ICleanable, Protocol):
             frame_name: Optional[str] = None,
             immutable: bool = False,
     ) -> "IAethericFrame":
+        """
+        Create and return one Nexus frame through this Rift's Nexus access surface.
+        """
         ...
 
     def list_accessible_nexus_frame_names(self) -> Tuple[str, ...]:
+        """
+        Return the Nexus frame names this Rift may currently access.
+        """
         ...
 
     def on_nexus_frame_disposed(self, frame_name: str) -> None:
+        """
+        Notify this Rift that one accessible Nexus frame has been disposed.
+
+        Returns:
+            None.
+        """
         ...
 
 
@@ -5945,36 +6194,66 @@ class INexus(ICleanable, Protocol):
 
     @property
     def id(self) -> str:
+        """
+        Return the stable identifier for this Nexus instance.
+        """
         ...
 
     @property
     def configuration(self) -> INexusConfiguration:
+        """
+        Return the active Nexus configuration object.
+        """
         ...
 
     @property
     def is_configured(self) -> bool:
+        """
+        Return whether Nexus has been configured with a finalized configuration.
+        """
         ...
 
     @property
     def is_enabled(self) -> bool:
+        """
+        Return whether Nexus is currently enabled for Rift management operations.
+        """
         ...
 
     def create_system_configuration(self) -> INexusConfiguration:
+        """
+        Create and return a new mutable Nexus configuration object.
+        """
         ...
 
     def enable(
             self,
             configuration: Optional[INexusConfiguration] = None,
     ) -> None:
+        """
+        Enable Nexus, optionally binding a configuration as part of the enable flow.
+
+        Returns:
+            None.
+        """
         ...
 
     def disable(self) -> None:
+        """
+        Disable Nexus and stop further Rift operations until re-enabled.
+
+        Returns:
+            None.
+        """
         ...
 
     def create_rift_configuration(
             self,
             profile_name: Optional[str] = None,
     ) -> IRiftConfiguration:
+        """
+        Create and return a new Rift configuration, optionally seeded from a named profile.
+        """
         ...
 
     def register_rift_profile(
@@ -5982,6 +6261,12 @@ class INexus(ICleanable, Protocol):
             name: str,
             configuration: IRiftConfiguration,
     ) -> None:
+        """
+        Register one reusable Rift configuration profile under a stable name.
+
+        Returns:
+            None.
+        """
         ...
 
     def create_rift(
@@ -5996,6 +6281,9 @@ class INexus(ICleanable, Protocol):
             creation_token: Optional[str] = None,
             logger: Optional[Any] = None,
     ) -> IRift:
+        """
+        Create, configure, and return one Rift through the Nexus root.
+        """
         ...
 
     def add_rift(self, rift: IRift) -> None:
@@ -6443,7 +6731,7 @@ class IChannelLogger(ICleanable, Protocol):
         """
         Stop routing this ChannelLogger to a specific IRIS channel.
 
-        We detect the child logger(s) to drop by inspecting their *parent* loggerâ€™s
+        We detect the child logger(s) to drop by inspecting their *parent* logger's
         monkey-patched attribute `_command_ops_name`, which IrisChannel sets when
         constructing the parent (e.g., "console").
         """
@@ -7270,7 +7558,7 @@ class IConfiguration(ICleanable, Protocol):
         """
         Fluent
 
-        Load Melderâ€™s standard defaults into this configuration and return `self`
+        Load Melder's standard defaults into this configuration and return `self`
         so you can keep chaining.
 
         Behavior:
@@ -7935,7 +8223,7 @@ class ISpellSystemStates(ICleanable, Protocol):
         """
         Attach direct dependency ids for this lineage and update reverse edges.
 
-        `dependency_ids` are generic "spell ids" (version or lineage ids) â€“ the
+        `dependency_ids` are generic "spell ids" (version or lineage ids) - the
         SpellCrafter / Spellbook decides the semantics. This manager only
         cares about connectivity, not the type system.
 
@@ -8084,7 +8372,7 @@ class ISpellSystemStates(ICleanable, Protocol):
         Pop and return the current set of dirty lineage ids.
 
         This is the handoff to whatever runs the revalidation / mutation
-        governor (your "Phase 5â€“7" or equivalent).
+        governor (your "Phase 5-7" or equivalent).
 
         Behaviour:
         - Snapshot all ids currently in `_dirty_lineages`.
@@ -8696,7 +8984,7 @@ class IChangeControlManager(ICleanable, Protocol):
         Record that a given lineage has a pending change (mutation candidate,
         promotion proposal, config swap, etc.).
 
-        This is *bookkeeping only* â€“ it does not apply the change, it just
+        This is *bookkeeping only* - it does not apply the change, it just
         surfaces it for DevOps / AI tooling.
 
         Args:
@@ -8735,7 +9023,7 @@ class IChangeControlManager(ICleanable, Protocol):
               ...
             }
 
-        This is intended for DevOps / AI tooling â€“ not for hot-path use.
+        This is intended for DevOps / AI tooling - not for hot-path use.
         """
         ...
 

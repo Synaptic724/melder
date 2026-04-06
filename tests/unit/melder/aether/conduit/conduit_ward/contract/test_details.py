@@ -302,6 +302,53 @@ def test_detail_cleanup_idempotent(sample_detail):
     sample_detail.cleanup() # Second call should not raise or change state further
     assert sample_detail._cleaned
 
+def test_detail_cleanup_noops_when_marked_cleaned_inside_lock(sample_detail):
+    """
+    Purpose:
+        Verify cleanup re-checks cleaned state after entering the lock.
+    Contract:
+        If cleaned flips to True inside the lock, cleanup returns before nulling fields.
+    Args:
+        sample_detail: Detail fixture under test.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cleanup continues after the second cleaned check.
+    """
+    class LockThatMarksCleaned:
+        """Context manager that flips the detail to cleaned once the lock is entered."""
+
+        def __init__(self, target_detail):
+            self._target_detail = target_detail
+
+        def __enter__(self):
+            self._target_detail._cleaned = True
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            return None
+
+    sample_detail._lock = LockThatMarksCleaned(sample_detail)
+
+    original_spell_index = sample_detail.spell_index
+    original_spell_id = sample_detail.spell_id
+    original_permissions = sample_detail.permissions
+    original_contract_type = sample_detail.contract_type
+    original_reason = sample_detail.reason
+    original_sources = sample_detail.sources
+    original_id = sample_detail._id
+
+    sample_detail.cleanup()
+
+    assert sample_detail._cleaned is True
+    assert sample_detail.spell_index is original_spell_index
+    assert sample_detail.spell_id == original_spell_id
+    assert sample_detail.permissions == original_permissions
+    assert sample_detail.contract_type == original_contract_type
+    assert sample_detail.reason == original_reason
+    assert sample_detail.sources is original_sources
+    assert sample_detail._id == original_id
+
 # ----------------------------------------------------------------------
 # has_version Tests
 # ----------------------------------------------------------------------
@@ -433,6 +480,25 @@ def test_add_source_none(sample_detail):
     initial_len = len(sample_detail.sources)
     sample_detail.add_source(None)
     assert len(sample_detail.sources) == initial_len # No change
+
+def test_add_source_recreates_sources_when_none(sample_detail):
+    """
+    Purpose:
+        Verify add_source recreates the sources set when it has become None.
+    Contract:
+        add_source initializes a new set and stores the incoming root id.
+    Args:
+        sample_detail: Detail fixture under test.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If sources are not recreated correctly.
+    """
+    sample_detail.sources = None
+
+    sample_detail.add_source("new_root_after_none")
+
+    assert sample_detail.sources == {"new_root_after_none"}
 
 def test_add_source_after_cleanup(sample_detail):
     """

@@ -91,6 +91,30 @@ def _populate_descriptor(nexus: Nexus, frame_name: str) -> None:
             ),
         )
     )
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="{0}-spellbook".format(frame_name),
+            frame_name=frame_name,
+            owner_conduit_id="{0}-conduit".format(frame_name),
+            spell_id="{0}-spell".format(frame_name),
+            lineage_id="{0}-lineage".format(frame_name),
+            spell_name="{0}Spell".format(frame_name.title()),
+            spellframe=None,
+            binding_name="{0}_spell".format(frame_name),
+            permissions=Permissions.create,
+            existence=Existence.unique,
+            payload=SpellDescriptorPayload(
+                profile_name="detailed",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile={"methods": []},
+                callable_profile=None,
+                metadata={"doc": frame_name},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
 
 
 def _bind_target_frame_configuration(
@@ -143,30 +167,6 @@ def _create_enabled_nexus() -> Nexus:
     configuration.with_allowed_target_frame_names(("default", "ops"))
     nexus.enable(configuration)
     return nexus
-    descriptor.upsert_spell_record(
-        SpellRecord(
-            origin_spellbook_id="{0}-spellbook".format(frame_name),
-            frame_name=frame_name,
-            owner_conduit_id="{0}-conduit".format(frame_name),
-            spell_id="{0}-spell".format(frame_name),
-            lineage_id="{0}-lineage".format(frame_name),
-            spell_name="{0}Spell".format(frame_name.title()),
-            spellframe=None,
-            binding_name="{0}_spell".format(frame_name),
-            permissions=Permissions.create,
-            existence=Existence.unique,
-            payload=SpellDescriptorPayload(
-                profile_name="detailed",
-                binding_payload={"kind": "class"},
-                resolution_payload={"requirements": []},
-                class_profile={"methods": []},
-                callable_profile=None,
-                metadata={"doc": frame_name},
-                instance_members={},
-                dynamic_access={},
-            ),
-        )
-    )
 
 
 def test_nexus_create_frame_view_projects_current_descriptor_and_acl() -> None:
@@ -183,17 +183,18 @@ def test_nexus_create_frame_view_projects_current_descriptor_and_acl() -> None:
 
     assert isinstance(frame_view, FrameView)
     assert frame_view.frame_name == "ops"
-    assert frame_view.metadata["link_count"] == 2
-    assert frame_view.metadata["available_target_count"] == 2
+    assert frame_view.metadata["link_count"] == 3
+    assert frame_view.metadata["available_target_count"] == 3
     assert sorted(link.source_kind for link in frame_view.links_by_id.values()) == [
         "conduit",
         "frame",
+        "spell",
     ]
 
 
-def test_nexus_create_frame_view_accepts_named_contract_profile() -> None:
+def test_nexus_create_frame_view_accepts_named_view_profile() -> None:
     """
-    Verify Nexus can apply a downstream contract profile while projecting a view.
+    Verify Nexus can apply a named view profile while projecting a view.
 
     Returns:
         None.
@@ -203,10 +204,10 @@ def test_nexus_create_frame_view_accepts_named_contract_profile() -> None:
 
     frame_view = nexus.create_frame_view(
         "ops",
-        contract_profile_name="safe",
+        view_profile_name="general",
     )
 
-    assert frame_view.metadata["allowed_kinds"] == ("conduit", "frame")
+    assert frame_view.metadata["view_profile_name"] == "general"
 
 
 def test_nexus_create_frame_view_caches_projection_but_returns_detached_clone() -> None:
@@ -227,22 +228,6 @@ def test_nexus_create_frame_view_caches_projection_but_returns_detached_clone() 
     assert len(nexus._projected_frame_views_by_cache_key) == 1
 
 
-def test_nexus_create_frame_view_cache_separates_contract_profile_names() -> None:
-    """
-    Verify downstream contract-profile names produce separate cache entries.
-
-    Returns:
-        None.
-    """
-    nexus = Nexus(aether=Aether())
-    _populate_descriptor(nexus, "ops")
-
-    nexus.create_frame_view("ops")
-    nexus.create_frame_view("ops", contract_profile_name="safe")
-
-    assert len(nexus._projected_frame_views_by_cache_key) == 2
-
-
 def test_nexus_create_frame_view_raises_for_missing_descriptor() -> None:
     """
     Verify Nexus view projection fails fast when the frame descriptor is absent.
@@ -256,9 +241,9 @@ def test_nexus_create_frame_view_raises_for_missing_descriptor() -> None:
         nexus.create_frame_view("missing")
 
 
-def test_nexus_create_frame_view_raises_for_unknown_contract_profile() -> None:
+def test_nexus_create_frame_view_raises_for_unknown_view_profile() -> None:
     """
-    Verify Nexus view projection fails fast on unknown contract profile names.
+    Verify Nexus view projection fails fast on unknown view profile names.
 
     Returns:
         None.
@@ -267,7 +252,7 @@ def test_nexus_create_frame_view_raises_for_unknown_contract_profile() -> None:
     _populate_descriptor(nexus, "ops")
 
     with pytest.raises(KeyError, match="missing_profile"):
-        nexus.create_frame_view("ops", contract_profile_name="missing_profile")
+        nexus.create_frame_view("ops", view_profile_name="missing_profile")
 
 
 def test_nexus_insert_head_acl_configuration_invalidates_projected_view_cache() -> None:
@@ -350,22 +335,6 @@ def test_nexus_create_cached_frame_viewer_reuses_cache_but_returns_detached_clon
     assert first_viewer is not second_viewer
     assert first_viewer.metadata == second_viewer.metadata
     assert len(nexus._projected_frame_viewers_by_cache_key) == 1
-
-
-def test_nexus_create_cached_frame_viewer_separates_contract_profile_names() -> None:
-    """
-    Verify downstream contract-profile names produce separate viewer cache entries.
-
-    Returns:
-        None.
-    """
-    nexus = Nexus(aether=Aether())
-    _populate_descriptor(nexus, "ops")
-
-    nexus.create_cached_frame_viewer(["ops"])
-    nexus.create_cached_frame_viewer(["ops"], contract_profile_name="safe")
-
-    assert len(nexus._projected_frame_viewers_by_cache_key) == 2
 
 
 def test_nexus_cached_frame_viewer_invalidates_on_acl_change() -> None:

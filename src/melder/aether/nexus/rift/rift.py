@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aether import Aether
+from melder.aether.nexus.rift.frame_link.frame_link_contract import FrameLinkContract
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
@@ -60,6 +61,7 @@ class Rift(Cleanable, IRift):
         "_default_nexus_frame_name",
         "_target_frame_names",
         "_default_target_frame_name",
+        "_frame_link_contract",
         "_local_conduit_id",
         "_active_space_id",
         "_is_registered",
@@ -152,6 +154,15 @@ class Rift(Cleanable, IRift):
         self._default_nexus_frame_name: str = default_nexus_frame_name
         self._target_frame_names: Tuple[str, ...] = tuple(target_frame_names)
         self._default_target_frame_name: str = default_target_frame_name
+        self._frame_link_contract: FrameLinkContract = FrameLinkContract(
+            rift_id=self._id,
+            assigned_frame_names=self._target_frame_names,
+            default_frame_name=self._default_target_frame_name,
+            metadata={
+                "rift_name": self._rift_name,
+                "nexus_frame_names": self._nexus_frame_names,
+            },
+        )
         self._local_conduit_id: Optional[str] = local_conduit_id
         self._active_space_id: Optional[str] = active_space_id
         self._is_registered: bool = False
@@ -235,6 +246,8 @@ class Rift(Cleanable, IRift):
             self._default_nexus_frame_name = None
             self._target_frame_names = None
             self._default_target_frame_name = None
+            self._frame_link_contract.cleanup()
+            self._frame_link_contract = None
             self._local_conduit_id = None
             self._active_space_id = None
             self._is_registered = None
@@ -344,6 +357,18 @@ class Rift(Cleanable, IRift):
         """
         self.check_cleaned()
         return self._local_conduit_id
+
+    @property
+    def frame_link_contract(self) -> FrameLinkContract:
+        """
+        Purpose:
+            Return the Rift-local frame availability contract.
+
+        Returns:
+            FrameLinkContract: Current Rift-local assigned-frame contract.
+        """
+        self.check_cleaned()
+        return self._frame_link_contract
 
     @property
     def active_space_id(self) -> Optional[str]:

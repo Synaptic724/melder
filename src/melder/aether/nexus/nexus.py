@@ -19,12 +19,6 @@ from melder.aether.nexus.configuration.nexus_frame_mode import (
     NexusFrameMode,
 )
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
-from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile import (
-    FrameLinkContractProfile,
-)
-from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile_builder import (
-    FrameLinkContractProfileBuilder,
-)
 from melder.aether.nexus.rift.frame_viewer.frame_view import FrameView
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.frame_viewer.profiles.frame_view_profile import (
@@ -1412,7 +1406,6 @@ class Nexus(Cleanable, INexus):
             self,
             frame_name: str,
             *,
-            contract_profile_name: Optional[str] = None,
             view_profile_name: str = "general",
     ) -> FrameView:
         """
@@ -1433,8 +1426,6 @@ class Nexus(Cleanable, INexus):
         Args:
             frame_name:
                 Frame name to project.
-            contract_profile_name:
-                Optional downstream contract profile name.
             view_profile_name:
                 View profile name used to shape defaults on the projected view.
 
@@ -1448,7 +1439,6 @@ class Nexus(Cleanable, INexus):
         cache_key = self._make_projected_frame_view_cache_key(
             frame_name,
             configuration.configuration_id,
-            contract_profile_name,
             view_profile_name,
         )
         with self._lock:
@@ -1458,8 +1448,6 @@ class Nexus(Cleanable, INexus):
         if cached_frame_view is not None:
             return cached_frame_view.clone()
         compiler = FrameACLCompiler(self._frame_acl_manager.frame_acl_profile_builder)
-        contract_profile_builder: Optional[FrameLinkContractProfileBuilder] = None
-        contract_profile: Optional[FrameLinkContractProfile] = None
         view_profile_builder: Optional[FrameViewProfileBuilder] = None
         view_profile: Optional[FrameViewProfile] = None
         try:
@@ -1467,11 +1455,6 @@ class Nexus(Cleanable, INexus):
                 descriptor,
                 configuration,
             )
-            if contract_profile_name is not None:
-                contract_profile_builder = FrameLinkContractProfileBuilder()
-                contract_profile = contract_profile_builder.get_required_profile(
-                    contract_profile_name
-                )
             view_profile_builder = FrameViewProfileBuilder()
             view_profile = view_profile_builder.get_required_profile(
                 view_profile_name
@@ -1479,7 +1462,6 @@ class Nexus(Cleanable, INexus):
             projected_frame_view = FrameView.from_compiled_access_surface(
                 frame_descriptor=descriptor,
                 compiled_access_surface=compiled_access_surface,
-                contract_profile=contract_profile,
                 view_profile=view_profile,
             )
             with self._lock:
@@ -1493,8 +1475,6 @@ class Nexus(Cleanable, INexus):
                 )
             return projected_frame_view.clone()
         finally:
-            if contract_profile_builder is not None:
-                contract_profile_builder.cleanup()
             if view_profile_builder is not None:
                 view_profile_builder.cleanup()
             compiler.cleanup()
@@ -1503,7 +1483,6 @@ class Nexus(Cleanable, INexus):
             self,
             frame_names: Sequence[str],
             *,
-            contract_profile_name: Optional[str] = None,
             view_profile_name: str = "general",
             viewer_profile_name: str = "general",
     ) -> FrameViewer:
@@ -1522,9 +1501,6 @@ class Nexus(Cleanable, INexus):
         Args:
             frame_names:
                 Frame names to project into the viewer.
-            contract_profile_name:
-                Optional downstream contract profile name applied to every
-                projected frame.
             view_profile_name:
                 View profile name applied to each projected view.
             viewer_profile_name:
@@ -1549,7 +1525,6 @@ class Nexus(Cleanable, INexus):
             for frame_name in frame_names:
                 projected_views[frame_name] = self.create_frame_view(
                     frame_name,
-                    contract_profile_name=contract_profile_name,
                     view_profile_name=view_profile_name,
                 )
             return FrameViewer(
@@ -1562,7 +1537,6 @@ class Nexus(Cleanable, INexus):
                     "frame_count": len(projected_views),
                     "available_view_count": len(projected_views),
                     "assigned_frame_names": tuple(frame_names),
-                    "contract_profile_name": contract_profile_name,
                     "view_profile_name": view_profile_name,
                     "viewer_profile_name": viewer_profile.name,
                     "viewer_profile_version": viewer_profile.version,
@@ -1580,7 +1554,6 @@ class Nexus(Cleanable, INexus):
             self,
             rift_id: str,
             *,
-            contract_profile_name: Optional[str] = None,
             view_profile_name: str = "general",
             viewer_profile_name: str = "general",
     ) -> FrameViewer:
@@ -1591,8 +1564,6 @@ class Nexus(Cleanable, INexus):
             rift_id:
                 Existing Rift id whose assigned target frames should populate
                 the viewer.
-            contract_profile_name:
-                Optional downstream contract profile name applied to each view.
             view_profile_name:
                 View profile name applied to each projected frame view.
             viewer_profile_name:
@@ -1607,14 +1578,14 @@ class Nexus(Cleanable, INexus):
             raise ValueError("rift_id cannot be empty.")
         rift = self._get_required_rift(rift_id)
         frame_viewer = self.create_frame_viewer(
-            rift.target_frame_names,
-            contract_profile_name=contract_profile_name,
+            rift.frame_link_contract.list_frame_names(),
             view_profile_name=view_profile_name,
             viewer_profile_name=viewer_profile_name,
         )
         current_metadata = frame_viewer.metadata
         current_metadata["rift_id"] = rift.id
-        current_metadata["assigned_frame_names"] = rift.target_frame_names
+        current_metadata["frame_link_contract_id"] = rift.frame_link_contract.contract_id
+        current_metadata["assigned_frame_names"] = rift.frame_link_contract.assigned_frame_names
         current_metadata["default_target_frame_name"] = rift.default_target_frame_name
         return FrameViewer(
             profile_builder=FrameViewerProfileBuilder(),
@@ -1632,7 +1603,6 @@ class Nexus(Cleanable, INexus):
             self,
             frame_names: Sequence[str],
             *,
-            contract_profile_name: Optional[str] = None,
             view_profile_name: str = "general",
             viewer_profile_name: str = "general",
     ) -> FrameViewer:
@@ -1646,8 +1616,6 @@ class Nexus(Cleanable, INexus):
         Args:
             frame_names:
                 Frame names to project into the viewer.
-            contract_profile_name:
-                Optional downstream contract profile name.
             view_profile_name:
                 View profile name applied to each projected view.
             viewer_profile_name:
@@ -1676,7 +1644,6 @@ class Nexus(Cleanable, INexus):
                     zip(normalized_frame_names, frame_configuration_ids)
                 )
             ),
-            contract_profile_name,
             view_profile_name,
             viewer_profile_name,
         )
@@ -1688,7 +1655,6 @@ class Nexus(Cleanable, INexus):
             return cached_frame_viewer.clone()
         projected_frame_viewer = self.create_frame_viewer(
             normalized_frame_names,
-            contract_profile_name=contract_profile_name,
             view_profile_name=view_profile_name,
             viewer_profile_name=viewer_profile_name,
         )
@@ -1707,7 +1673,6 @@ class Nexus(Cleanable, INexus):
             self,
             rift_id: str,
             *,
-            contract_profile_name: Optional[str] = None,
             view_profile_name: str = "general",
             viewer_profile_name: str = "general",
     ) -> FrameViewer:
@@ -1719,8 +1684,6 @@ class Nexus(Cleanable, INexus):
             rift_id:
                 Existing Rift id whose assigned target frames should populate
                 the viewer.
-            contract_profile_name:
-                Optional downstream contract profile name applied to each view.
             view_profile_name:
                 View profile name applied to each projected frame view.
             viewer_profile_name:
@@ -1735,14 +1698,14 @@ class Nexus(Cleanable, INexus):
             raise ValueError("rift_id cannot be empty.")
         rift = self._get_required_rift(rift_id)
         frame_viewer = self.create_cached_frame_viewer(
-            rift.target_frame_names,
-            contract_profile_name=contract_profile_name,
+            rift.frame_link_contract.list_frame_names(),
             view_profile_name=view_profile_name,
             viewer_profile_name=viewer_profile_name,
         )
         current_metadata = frame_viewer.metadata
         current_metadata["rift_id"] = rift.id
-        current_metadata["assigned_frame_names"] = rift.target_frame_names
+        current_metadata["frame_link_contract_id"] = rift.frame_link_contract.contract_id
+        current_metadata["assigned_frame_names"] = rift.frame_link_contract.assigned_frame_names
         current_metadata["default_target_frame_name"] = rift.default_target_frame_name
         return FrameViewer(
             profile_builder=FrameViewerProfileBuilder(),
@@ -1760,7 +1723,6 @@ class Nexus(Cleanable, INexus):
     def _make_projected_frame_view_cache_key(
             frame_name: str,
             configuration_id: str,
-            contract_profile_name: Optional[str],
             view_profile_name: str,
     ) -> Tuple[str, str, str]:
         """
@@ -1771,8 +1733,6 @@ class Nexus(Cleanable, INexus):
                 Projected frame name.
             configuration_id:
                 Current ACL configuration id.
-            contract_profile_name:
-                Optional downstream contract profile name.
             view_profile_name:
                 Applied view profile name.
 
@@ -1782,14 +1742,13 @@ class Nexus(Cleanable, INexus):
         return (
             "{0}:{1}".format(frame_name, view_profile_name),
             configuration_id,
-            contract_profile_name or "",
+            view_profile_name,
         )
 
     @staticmethod
     def _make_projected_frame_viewer_cache_key(
             frame_names: Tuple[str, ...],
             configuration_ids: Tuple[str, ...],
-            contract_profile_name: Optional[str],
             view_profile_name: str,
             viewer_profile_name: str,
     ) -> Tuple[Tuple[str, ...], Tuple[str, ...], str]:
@@ -1801,8 +1760,6 @@ class Nexus(Cleanable, INexus):
                 Sorted projected frame names.
             configuration_ids:
                 Sorted current ACL configuration ids aligned to `frame_names`.
-            contract_profile_name:
-                Optional downstream contract profile name.
             view_profile_name:
                 Applied view profile name.
             viewer_profile_name:
@@ -1818,7 +1775,7 @@ class Nexus(Cleanable, INexus):
                 for frame_name in frame_names
             ),
             configuration_ids,
-            "{0}:{1}".format(contract_profile_name or "", viewer_profile_name),
+            "{0}:{1}".format(view_profile_name, viewer_profile_name),
         )
 
     def _invalidate_projected_frame_views(
