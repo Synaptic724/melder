@@ -75,16 +75,34 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
 
     @property
     def view_frame(self) -> GeneralViewFrame:
+        """
+        Return the frame-scoped helper surface.
+
+        Returns:
+            GeneralViewFrame: Frame helper surface.
+        """
         self.check_cleaned()
         return self._view_frame
 
     @property
     def view_conduit(self) -> GeneralViewConduit:
+        """
+        Return the conduit-scoped helper surface.
+
+        Returns:
+            GeneralViewConduit: Conduit helper surface.
+        """
         self.check_cleaned()
         return self._view_conduit
 
     @property
     def view_spell(self) -> GeneralViewSpell:
+        """
+        Return the spell-scoped helper surface.
+
+        Returns:
+            GeneralViewSpell: Spell helper surface.
+        """
         self.check_cleaned()
         return self._view_spell
 
@@ -96,6 +114,22 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
             frame_acl_configuration: FrameACLConfiguration,
             compiled_access_surface: CompiledFrameACLAccessSurface,
     ) -> None:
+        """
+        Bind the profile and rebuild the helper surfaces.
+
+        Args:
+            frame_name:
+                Target frame name.
+            frame_descriptor:
+                Descriptor truth for the frame.
+            frame_acl_configuration:
+                Current ACL configuration for the frame.
+            compiled_access_surface:
+                Compiled ACL surface for the frame.
+
+        Returns:
+            None.
+        """
         super().bind_to_frame(
             frame_name=frame_name,
             frame_descriptor=frame_descriptor,
@@ -105,10 +139,22 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
         self._rebuild_helper_surfaces()
 
     def clone(self) -> "GeneralFrameViewerProfile":
+        """
+        Return one detached copy of the general profile template.
+
+        Returns:
+            GeneralFrameViewerProfile: Detached general profile copy.
+        """
         self.check_cleaned()
         return GeneralFrameViewerProfile()
 
     def cleanup(self) -> None:
+        """
+        Idempotently clear the general profile and helper surfaces.
+
+        Returns:
+            None.
+        """
         if self._cleaned:
             return
         if self._view_spell is not None:
@@ -123,6 +169,12 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
         super().cleanup()
 
     def _rebuild_helper_surfaces(self) -> None:
+        """
+        Rebuild helper surfaces against the currently bound frame state.
+
+        Returns:
+            None.
+        """
         if self._view_spell is not None:
             self._view_spell.cleanup()
         if self._view_conduit is not None:
@@ -141,19 +193,29 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
 
     @staticmethod
     def _default_tool_handler_map() -> Dict[str, str]:
+        """
+        Return the standard tool-to-helper routing map for `general`.
+
+        Returns:
+            Dict[str, str]: Standard `general` tool routing map.
+        """
         return {
             "list_frames": "view_frame.list_frames",
             "describe_views": "view_frame.describe_views",
             "describe_frame": "view_frame.describe_frame",
+            "describe_frame_payload": "view_frame.describe_frame_payload",
+            "get_frame_payload_field": "view_frame.get_frame_payload_field",
             "describe_frames": "view_frame.describe_frames",
             "list_targets": "view_frame.list_targets",
             "describe_targets": "view_frame.describe_targets",
             "list_conduits": "view_conduit.list_conduits",
             "describe_conduits": "view_conduit.describe_conduits",
             "get_conduit": "view_conduit.get_required_conduit",
+            "describe_conduit": "view_conduit.describe_conduit",
             "list_spells": "view_spell.list_spells",
             "describe_spells": "view_spell.describe_spells",
             "get_spell": "view_spell.get_required_spell",
+            "describe_spell": "view_spell.describe_spell",
         }
 
 

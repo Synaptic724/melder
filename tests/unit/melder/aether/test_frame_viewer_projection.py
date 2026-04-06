@@ -1,3 +1,5 @@
+from typing import Optional
+
 import pytest
 
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
@@ -93,6 +95,9 @@ def _build_descriptor(frame_name: str) -> FrameDescriptor:
 def _build_surface(
         frame_name: str,
         configuration: FrameACLConfiguration,
+        *,
+        conduit_sections_by_id: Optional[dict[str, tuple[str, ...]]] = None,
+        spell_sections_by_key: Optional[dict[tuple[str, str], tuple[str, ...]]] = None,
 ) -> CompiledFrameACLAccessSurface:
     return CompiledFrameACLAccessSurface(
         frame_name=frame_name,
@@ -106,10 +111,10 @@ def _build_surface(
         frame_payload_fields=("system_state", "rift_enabled"),
         visible_conduit_ids=("{0}-conduit".format(frame_name),),
         visible_spell_keys=(( "{0}-spellbook".format(frame_name), "{0}-spell".format(frame_name)),),
-        conduit_payload_sections_by_id={
+        conduit_payload_sections_by_id=conduit_sections_by_id or {
             "{0}-conduit".format(frame_name): ("conduit_name", "conduit_state")
         },
-        spell_payload_sections_by_key={
+        spell_payload_sections_by_key=spell_sections_by_key or {
             ("{0}-spellbook".format(frame_name), "{0}-spell".format(frame_name)): (
                 "binding_payload",
                 "resolution_payload",
@@ -253,6 +258,106 @@ def test_frame_viewer_describe_frame_summarizes_descriptor_driven_surface() -> N
     assert summary["available_kinds"] == ("conduit", "frame", "spell")
 
 
+def test_frame_viewer_describe_frame_payload_filters_to_visible_fields() -> None:
+    viewer = _build_viewer(("ops",))
+
+    payload_description = viewer.execute_tool(
+        "describe_frame_payload",
+        frame_name="ops",
+    )
+
+    assert payload_description["frame_name"] == "ops"
+    assert payload_description["visible_fields"] == ("system_state", "rift_enabled")
+    assert payload_description["payload"] == {
+        "system_state": "dynamic",
+        "rift_enabled": True,
+    }
+
+
+def test_frame_viewer_describe_conduit_returns_acl_filtered_payload() -> None:
+    viewer = _build_viewer(("ops",))
+
+    conduit_description = viewer.execute_tool(
+        "describe_conduit",
+        frame_name="ops",
+        conduit_id="ops-conduit",
+    )
+
+    assert conduit_description["source_kind"] == "conduit"
+    assert conduit_description["visible_sections"] == (
+        "conduit_name",
+        "conduit_state",
+    )
+    assert conduit_description["payload"] == {
+        "conduit_name": "root",
+        "conduit_state": "normal",
+    }
+
+
+def test_frame_viewer_describe_spell_returns_acl_filtered_payload() -> None:
+    viewer = _build_viewer(("ops",))
+
+    spell_description = viewer.execute_tool(
+        "describe_spell",
+        frame_name="ops",
+        spell_source_id="ops-spellbook:ops-spell",
+    )
+
+    assert spell_description["source_kind"] == "spell"
+    assert spell_description["payload_type"] == "general"
+    assert spell_description["visible_sections"] == (
+        "binding_payload",
+        "resolution_payload",
+        "metadata",
+    )
+    assert spell_description["payload"] == {
+        "binding_payload": {"kind": "class"},
+        "resolution_payload": {"requirements": []},
+        "metadata": {"frame": "ops"},
+    }
+
+
+def test_frame_viewer_describe_spell_omits_missing_detailed_sections_for_general_payload() -> None:
+    descriptor = _build_descriptor("ops")
+    configuration = FrameACLConfiguration.create_default("ops")
+    surface = _build_surface(
+        "ops",
+        configuration,
+        spell_sections_by_key={
+            ("ops-spellbook", "ops-spell"): (
+                "binding_payload",
+                "class_profile",
+                "callable_profile",
+                "metadata",
+            ),
+        },
+    )
+    viewer = FrameViewer(
+        frame_descriptors_by_name={"ops": descriptor},
+        frame_acl_configurations_by_frame_name={"ops": configuration},
+        compiled_access_surfaces_by_frame_name={"ops": surface},
+        default_view_frame_name="ops",
+    )
+
+    spell_description = viewer.execute_tool(
+        "describe_spell",
+        frame_name="ops",
+        spell_source_id="ops-spellbook:ops-spell",
+    )
+
+    assert spell_description["payload_type"] == "general"
+    assert spell_description["visible_sections"] == (
+        "binding_payload",
+        "class_profile",
+        "callable_profile",
+        "metadata",
+    )
+    assert spell_description["payload"] == {
+        "binding_payload": {"kind": "class"},
+        "metadata": {"frame": "ops"},
+    }
+
+
 def test_frame_viewer_cleanup_cascades_to_owned_surfaces_and_profiles_only() -> None:
     viewer = _build_viewer(("ops",))
     descriptor = viewer.frame_descriptors_by_name["ops"]
@@ -341,7 +446,7 @@ def test_frame_viewer_selected_profile_for_frame_shapes_execution() -> None:
 
     assert len(descriptions) == 1
     assert descriptions[0]["source_kind"] == "spell"
-    assert "metadata" in descriptions[0]
+    assert "payload" in descriptions[0]
 
 
 def test_frame_viewer_profile_binding_rejects_acl_view_profile_requirement_mismatch() -> None:

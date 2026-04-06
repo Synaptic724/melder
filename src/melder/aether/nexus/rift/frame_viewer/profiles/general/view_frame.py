@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
@@ -97,6 +97,17 @@ class GeneralViewFrame(Cleanable):
         self._lock = None
 
     def list_frames(self, *, frame_name: Optional[str] = None) -> List[str]:
+        """
+        Return the bound frame name as a one-item list.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            List[str]: Single bound frame name.
+        """
         self.check_cleaned()
         self._assert_optional_frame_name(frame_name)
         return [self._get_required_frame_name()]
@@ -106,6 +117,17 @@ class GeneralViewFrame(Cleanable):
             *,
             frame_name: Optional[str] = None,
     ) -> List[Dict[str, object]]:
+        """
+        Return one ACL-aware view description for the bound frame.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            List[Dict[str, object]]: One-item view description list.
+        """
         self.check_cleaned()
         self._assert_optional_frame_name(frame_name)
         return [
@@ -125,6 +147,19 @@ class GeneralViewFrame(Cleanable):
             frame_name: Optional[str] = None,
             source_kind: Optional[str] = None,
     ) -> List[FrameLink]:
+        """
+        Return ACL-filtered frame targets for the bound frame.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+            source_kind:
+                Optional target-kind filter (`frame`, `conduit`, or `spell`).
+
+        Returns:
+            List[FrameLink]: Ordered ACL-filtered targets.
+        """
         self.check_cleaned()
         self._assert_optional_frame_name(frame_name)
         targets = self._build_links()
@@ -144,6 +179,19 @@ class GeneralViewFrame(Cleanable):
             frame_name: Optional[str] = None,
             source_kind: Optional[str] = None,
     ) -> List[Dict[str, object]]:
+        """
+        Return target descriptions for the bound frame.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+            source_kind:
+                Optional target-kind filter.
+
+        Returns:
+            List[Dict[str, object]]: ACL-filtered target descriptions.
+        """
         self.check_cleaned()
         self._assert_optional_frame_name(frame_name)
         target_descriptions: List[Dict[str, object]] = []
@@ -164,6 +212,17 @@ class GeneralViewFrame(Cleanable):
             *,
             frame_name: Optional[str] = None,
     ) -> Dict[str, object]:
+        """
+        Return a summary of the bound frame surface.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            Dict[str, object]: Frame summary with Nexus-contract metadata.
+        """
         self.check_cleaned()
         self._assert_optional_frame_name(frame_name)
         compiled_access_surface = self._get_required_compiled_access_surface()
@@ -192,11 +251,116 @@ class GeneralViewFrame(Cleanable):
             },
         }
 
+    def describe_frame_payload(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the ACL-filtered frame payload for the bound frame.
+
+        Purpose:
+            Surface the real `FrameRecord.payload` content the viewer can use
+            after the compiled ACL surface has already reduced it to the
+            currently visible frame fields.
+
+        Contract:
+            - Uses the bound `FrameDescriptor` and compiled ACL surface only.
+            - Returns only fields present in
+              `CompiledFrameACLAccessSurface.frame_payload_fields`.
+            - Raises when the bound frame does not expose `frame_overview`.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            Dict[str, object]: ACL-filtered frame payload description.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        descriptor = self._get_required_frame_descriptor()
+        frame_overview = descriptor.frame_overview
+        if frame_overview is None:
+            raise ValueError(
+                "FrameDescriptor must expose frame_overview for frame payload description."
+            )
+        visible_fields = tuple(
+            self._get_required_compiled_access_surface().frame_payload_fields
+        )
+        return {
+            "frame_name": self._get_required_frame_name(),
+            "frame_id": frame_overview.frame_id,
+            "nexus_label": frame_overview.nexus_label,
+            "nexus_version": frame_overview.nexus_version,
+            "payload_version": frame_overview.payload.payload_version,
+            "visible_fields": visible_fields,
+            "payload": self._filter_frame_payload(
+                frame_overview.payload,
+                visible_fields,
+            ),
+        }
+
+    def get_frame_payload_field(
+            self,
+            field_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one ACL-visible frame payload field or raise.
+
+        Purpose:
+            Provide a fail-fast, field-level access path for agent use when the
+            caller needs one specific frame payload field instead of the whole
+            filtered payload map.
+
+        Contract:
+            - Requires the field to be visible in the compiled ACL surface.
+            - Returns the normalized field value from the bound frame payload.
+
+        Args:
+            field_name:
+                Required frame payload field name.
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            object: ACL-visible frame payload field value.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        if not field_name:
+            raise ValueError("field_name cannot be empty.")
+        payload_description = self.describe_frame_payload(frame_name=frame_name)
+        visible_fields = payload_description["visible_fields"]
+        if field_name not in visible_fields:
+            raise ValueError(
+                "Frame payload field '{0}' is not visible for frame '{1}'.".format(
+                    field_name,
+                    self._get_required_frame_name(),
+                )
+            )
+        return payload_description["payload"][field_name]
+
     def describe_frames(
             self,
             *,
             frame_name: Optional[str] = None,
     ) -> Dict[str, Dict[str, object]]:
+        """
+        Return the bound frame summary keyed by frame name.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            Dict[str, Dict[str, object]]: One-item frame summary map.
+        """
         self.check_cleaned()
         self._assert_optional_frame_name(frame_name)
         frame_name = self._get_required_frame_name()
@@ -211,6 +375,21 @@ class GeneralViewFrame(Cleanable):
             source_kind: str,
             source_id: str,
     ) -> FrameLink:
+        """
+        Return one ACL-filtered target by source identity or raise.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+            source_kind:
+                Required target kind.
+            source_id:
+                Required target source identifier.
+
+        Returns:
+            FrameLink: Matching ACL-filtered target.
+        """
         self.check_cleaned()
         self._assert_optional_frame_name(frame_name)
         if not source_kind:
@@ -232,6 +411,18 @@ class GeneralViewFrame(Cleanable):
         )
 
     def _build_links(self) -> List[FrameLink]:
+        """
+        Build ACL-filtered `FrameLink` objects for the bound frame.
+
+        Contract:
+            - Uses the bound `FrameDescriptor` and compiled ACL surface only.
+            - Preserves Nexus-contract metadata on the emitted links.
+            - Raises when compiled ACL output references missing descriptor
+              records.
+
+        Returns:
+            List[FrameLink]: ACL-filtered frame/conduit/spell links.
+        """
         descriptor = self._get_required_frame_descriptor()
         compiled_access_surface = self._get_required_compiled_access_surface()
         frame_name = self._get_required_frame_name()
@@ -341,17 +532,92 @@ class GeneralViewFrame(Cleanable):
                 )
         return links
 
+    @staticmethod
+    def _filter_frame_payload(
+            payload: Any,
+            visible_fields: tuple[str, ...],
+    ) -> Dict[str, object]:
+        """
+        Build a normalized frame payload map from ACL-visible fields.
+
+        Args:
+            payload:
+                Bound `FrameDescriptorPayload`.
+            visible_fields:
+                Frame payload fields currently visible through the ACL surface.
+
+        Returns:
+            Dict[str, object]: Normalized visible frame payload fields.
+        """
+        filtered_payload: Dict[str, object] = {}
+        for current_field in visible_fields:
+            filtered_payload[current_field] = GeneralViewFrame._normalize_value(
+                getattr(payload, current_field)
+            )
+        return filtered_payload
+
+    @staticmethod
+    def _normalize_value(value: object) -> object:
+        """
+        Return a viewer-safe representation for one payload value.
+
+        Args:
+            value:
+                Raw payload value.
+
+        Returns:
+            object: Normalized scalar/container value.
+        """
+        if isinstance(value, dict):
+            return {
+                current_key: GeneralViewFrame._normalize_value(current_value)
+                for current_key, current_value in value.items()
+            }
+        if isinstance(value, list):
+            return [
+                GeneralViewFrame._normalize_value(current_value)
+                for current_value in value
+            ]
+        if isinstance(value, tuple):
+            return tuple(
+                GeneralViewFrame._normalize_value(current_value)
+                for current_value in value
+            )
+        if hasattr(value, "name"):
+            current_name = getattr(value, "name", None)
+            if isinstance(current_name, str):
+                return current_name
+        return value
+
     def _get_required_frame_name(self) -> str:
+        """
+        Return the bound frame name or raise when unbound.
+
+        Returns:
+            str: Bound frame name.
+        """
         if self._frame_name is None:
             raise ValueError("GeneralViewFrame is not bound to a frame.")
         return self._frame_name
 
     def _get_required_frame_descriptor(self) -> FrameDescriptor:
+        """
+        Return the bound frame descriptor or raise when unbound.
+
+        Returns:
+            FrameDescriptor: Bound descriptor reference.
+        """
         if self._frame_descriptor is None:
             raise ValueError("GeneralViewFrame has no bound FrameDescriptor.")
         return self._frame_descriptor
 
     def _get_required_compiled_access_surface(self) -> CompiledFrameACLAccessSurface:
+        """
+        Return the bound compiled ACL surface or raise when unbound.
+
+        Returns:
+            CompiledFrameACLAccessSurface: Bound compiled ACL surface.
+        """
         if self._compiled_access_surface is None:
             raise ValueError(
                 "GeneralViewFrame has no bound CompiledFrameACLAccessSurface."
@@ -359,6 +625,16 @@ class GeneralViewFrame(Cleanable):
         return self._compiled_access_surface
 
     def _assert_optional_frame_name(self, frame_name: Optional[str]) -> None:
+        """
+        Validate an optional frame-name argument against the bound frame.
+
+        Args:
+            frame_name:
+                Optional frame name supplied by a caller.
+
+        Returns:
+            None.
+        """
         if frame_name is None:
             return
         if not frame_name:

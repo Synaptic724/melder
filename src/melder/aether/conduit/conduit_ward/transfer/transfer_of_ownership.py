@@ -365,10 +365,15 @@ class TransferOfOwnership:
 
     def _mark_lineage_dirty(self, spell_index: SpellIndex) -> None:
         """
-        Gate the lineage in SpellSystemStates so callers revalidate before use.
+        Record a structural-change gate for one lineage in `SpellSystemStates`.
+
+        This is the lighter-weight post-transfer invalidation path. Instead of
+        hard-disabling the lineage, it marks the lineage as structurally changed
+        so later spell-crafter phases rerun before callers trust the lineage
+        again.
 
         Args:
-            spell_index: Lineage to mark as structurally changed.
+            spell_index: Lineage whose spell-system state should be marked dirty.
         """
         spellbook = spell_index._owner_spellbook
         if spellbook is None:
@@ -388,10 +393,14 @@ class TransferOfOwnership:
             summary: Dict[str, Any],
     ) -> None:
         """
-        Gate the moved lineage and its dependents, and dirty resolution state for
-        all conduits that may resolve the spell.
+        Dirty the moved lineage and every conduit that may now see changed
+        transfer fallout.
 
-        This ensures phases 5-11 rerun for impacted conduits after ownership transfer.
+        The root lineage itself is structurally changed by the ownership flip,
+        but the runtime impact is wider than that one spell. Borrowers,
+        peers, cluster members, and any conduit currently holding an impacted
+        lineage may all need to rerun later spell-crafter phases before their
+        local view is trustworthy again.
         """
         spell_index = spell_obj.spell_index
         spell_states = spell_obj._spell_system_states
@@ -422,10 +431,19 @@ class TransferOfOwnership:
             summary: Dict[str, Any],
     ) -> Set[str]:
         """
-        Collect conduits that should rerun resolution after a transfer.
+        Collect every conduit whose local resolution view may be invalidated by
+        the transfer.
 
-        This includes the source/target conduits, linked peers, cluster members,
-        and any conduit that currently holds the impacted lineage.
+        The set intentionally combines several sources of truth:
+
+        - the source and target owners
+        - currently contracted peers
+        - cluster members surfaced by the borrower inventory
+        - any conduit whose owned or contracted spellbook already contains one
+          of the impacted lineages
+
+        That broader closure is what lets the transfer leave the runtime in a
+        safe gated state instead of assuming only the two owners were touched.
         """
         conduit_ids: Set[str] = set()
         if self.source_conduit._id:
@@ -474,7 +492,12 @@ class TransferOfOwnership:
             impacted_lineages: Set[str],
     ) -> bool:
         """
-        Return True if a conduit's spellbook holds any impacted lineage.
+        Check whether a conduit currently holds any lineage in the impacted
+        closure.
+
+        Both owned and contracted spell maps are considered because transfer
+        fallout is not limited to direct ownership; a borrower can also carry a
+        stale view that needs revalidation.
         """
         if conduit is None or not impacted_lineages:
             return False
@@ -494,10 +517,16 @@ class TransferOfOwnership:
 
     def _mark_lineage_disabled(self, spell_index: SpellIndex) -> None:
         """
-        Hard-disable the lineage while ownership transfer is in flight and record rollback state.
+        Hard-disable the lineage while the ownership flip is actively in flight.
+
+        This is stronger than the later dirty/gated state used after a
+        successful move. During the critical transfer window the lineage should
+        not resolve at all, because ownership, contract state, and creation
+        bookkeeping may be temporarily inconsistent. The previous validity state
+        is captured as a rollback action before the disable is applied.
 
         Args:
-            spell_index: Lineage to disable.
+            spell_index: Lineage being moved between conduit owners.
         """
         spell_states = self.source_conduit._spellbook._spell_system_states
         state = spell_states.get_by_index_id(spell_index.id)
