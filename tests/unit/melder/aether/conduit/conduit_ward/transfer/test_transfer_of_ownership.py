@@ -2260,6 +2260,67 @@ def test_unshare_everywhere_registers_rollback_and_restores() -> None:
     assert len(env.contract_ward_a.add_calls) == 1
 
 
+def test_unshare_everywhere_falls_back_to_owner_remove_when_borrower_remove_is_missing() -> None:
+    """
+    Verify unshare falls back to owner-side removal on borrower API mismatch.
+
+    Contract:
+    - The owner ward still removes the borrower-facing detail.
+    - Rollback registration remains intact.
+    """
+    env = build_environment(
+        include_contract=True,
+        contract_details_in_a=True,
+        contract_details_in_b=False,
+    )
+    borrower_remove_attempts: List[Dict[str, Any]] = []
+
+    def missing_remove(
+        *,
+        spell_id: str,
+        conduit: Any,
+        conduit_id: str,
+    ) -> None:
+        """
+        Simulate a borrower ward that lacks the expected remove API.
+
+        Args:
+            spell_id: Spell id requested for removal.
+            conduit: Peer conduit associated with the request.
+            conduit_id: Peer conduit id.
+        Raises:
+            AttributeError: Always raised to trigger fallback removal.
+        """
+        borrower_remove_attempts.append(
+            {
+                "spell_id": spell_id,
+                "conduit": conduit,
+                "conduit_id": conduit_id,
+            }
+        )
+        raise AttributeError("missing remove api")
+
+    env.contract_ward_b._remove_spell_from_contract = missing_remove
+
+    transfer = TransferOfOwnership(
+        source_conduit=env.source,
+        target_conduit=env.target,
+        spell=env.spell,
+    )
+    transfer._unshare_everywhere([{"type": "contract"}], env.spell)
+
+    assert borrower_remove_attempts == [
+        {
+            "spell_id": env.spell.spell_id,
+            "conduit": env.source,
+            "conduit_id": SOURCE_ID,
+        }
+    ]
+    assert env.contract_ward_a.remove_calls
+    assert env.contract_ward_a.remove_calls[-1]["conduit_id"] == PEER_ID
+    assert len(transfer._rollback_actions) == 1
+
+
 def test_repoint_borrowers_skips_peer_outbound_only() -> None:
     """
     Verify repointing skips peers with outbound_only policy.

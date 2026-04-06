@@ -7,6 +7,11 @@ def create_permissive_view_profile() -> FrameACLViewProfile:
     """
     Build the reusable `permissive` view profile.
 
+    Contract:
+        This is the most open of the standard view profiles. It keeps the main
+        frame/conduit/spell surfaces visible and also allows instance-member
+        and dynamic-access visibility that the stricter profiles deny.
+
     Returns:
         FrameACLViewProfile: Reusable `permissive` view profile.
     """
@@ -50,4 +55,3 @@ def create_permissive_view_profile() -> FrameACLViewProfile:
             ],
         ),
     )
-

@@ -7,6 +7,12 @@ def create_safe_view_profile() -> FrameACLViewProfile:
     """
     Build the reusable `safe` view profile.
 
+    Contract:
+        This is the most restrictive of the standard view profiles. It keeps
+        the main frame/conduit/spell surfaces visible while denying policy,
+        peer-link, class-profile, callable-profile, instance-member, and other
+        dynamic/introspection-heavy surfaces.
+
     Returns:
         FrameACLViewProfile: Reusable `safe` view profile.
     """
@@ -62,4 +68,3 @@ def create_safe_view_profile() -> FrameACLViewProfile:
             ],
         ),
     )
-

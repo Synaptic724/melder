@@ -187,7 +187,7 @@ class FrameViewer(Cleanable):
 
     @property
     def viewer_id(self) -> str:
-        """Return the canonical viewer id."""
+        """Return the canonical id for this hosted viewer surface."""
         self.check_cleaned()
         return self._viewer_id
 
@@ -224,7 +224,12 @@ class FrameViewer(Cleanable):
 
     @property
     def profile_name(self) -> Optional[str]:
-        """Return the selected default active viewer profile name when one exists."""
+        """
+        Return the selected default active viewer profile name when one exists.
+
+        Contract:
+            Returns `None` when no active viewer profile is currently hosted.
+        """
         self.check_cleaned()
         if len(self._active_profiles_by_name) == 0:
             return None
@@ -232,7 +237,12 @@ class FrameViewer(Cleanable):
 
     @property
     def profile_version(self) -> Optional[str]:
-        """Return the version of the selected default active viewer profile."""
+        """
+        Return the version of the selected default active viewer profile.
+
+        Contract:
+            Returns `None` when no active viewer profile is currently hosted.
+        """
         self.check_cleaned()
         if len(self._active_profiles_by_name) == 0:
             return None
@@ -240,7 +250,13 @@ class FrameViewer(Cleanable):
 
     @property
     def enabled_helpers(self) -> tuple[str, ...]:
-        """Return the helper ids exposed by the selected default active profile."""
+        """
+        Return the helper ids exposed by the selected default active profile.
+
+        Contract:
+            Returns an empty tuple when no active viewer profile is currently
+            hosted.
+        """
         self.check_cleaned()
         if len(self._active_profiles_by_name) == 0:
             return tuple()
@@ -248,7 +264,12 @@ class FrameViewer(Cleanable):
 
     @property
     def default_grouping(self) -> Optional[str]:
-        """Return the default grouping mode from the selected default active profile."""
+        """
+        Return the default grouping mode from the selected default active profile.
+
+        Contract:
+            Returns `None` when no active viewer profile is currently hosted.
+        """
         self.check_cleaned()
         if len(self._active_profiles_by_name) == 0:
             return None
@@ -256,7 +277,12 @@ class FrameViewer(Cleanable):
 
     @property
     def default_detail_level(self) -> Optional[str]:
-        """Return the default detail posture from the selected default active profile."""
+        """
+        Return the default detail posture from the selected default active profile.
+
+        Contract:
+            Returns `None` when no active viewer profile is currently hosted.
+        """
         self.check_cleaned()
         if len(self._active_profiles_by_name) == 0:
             return None
@@ -899,7 +925,9 @@ class FrameViewer(Cleanable):
         Return the tool ids exposed by the selected profile.
 
         Contract:
-            Returns an empty tuple when no active viewer profile is hosted.
+            - Returns an empty tuple when no active viewer profile is hosted.
+            - Otherwise delegates tool-name listing to the selected default
+              hosted profile.
 
         Returns:
             tuple[str, ...]: Exposed tool ids.
@@ -934,6 +962,7 @@ class FrameViewer(Cleanable):
         Contract:
             - Replaces any existing distinct hosted profile with the same name.
             - Cleans the displaced profile before storing the new one.
+            - Does not implicitly change the selected default profile.
 
         Returns:
             None.
@@ -956,6 +985,10 @@ class FrameViewer(Cleanable):
         Args:
             helper_name:
                 Helper id to inspect.
+
+        Contract:
+            - Returns False when no active hosted profile exists.
+            - Checks the selected default hosted profile only.
 
         Returns:
             bool: True when the helper is enabled.
@@ -986,6 +1019,11 @@ class FrameViewer(Cleanable):
             **kwargs:
                 Keyword arguments forwarded to the host-side handler.
 
+        Contract:
+            - Resolves the selected hosted profile first.
+            - Looks up the handler name from that profile's tool map.
+            - Invokes the resolved host-side handler directly.
+
         Returns:
             Any: Tool result.
         """
@@ -1015,6 +1053,9 @@ class FrameViewer(Cleanable):
             profile_name:
                 Active profile name to resolve.
 
+        Contract:
+            Resolves only existing hosted profiles and fails fast on absence.
+
         Returns:
             FrameViewerProfile: Matching active hosted profile.
         """
@@ -1038,6 +1079,11 @@ class FrameViewer(Cleanable):
         Args:
             helper_name:
                 Helper id that must be enabled.
+
+        Contract:
+            - Returns quietly when no active hosted profile exists.
+            - Accepts either a declared tool id or a declared handler name on
+              the selected default profile.
 
         Returns:
             None.

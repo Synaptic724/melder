@@ -7,6 +7,12 @@ def create_hybrid_view_profile() -> FrameACLViewProfile:
     """
     Build the reusable `hybrid` view profile.
 
+    Contract:
+        This profile sits between the stricter `safe` posture and the fully
+        open `permissive` posture. It allows the main frame/conduit/spell
+        payloads and selected profile information while still denying the more
+        aggressive dynamic/instance-member surfaces.
+
     Returns:
         FrameACLViewProfile: Reusable `hybrid` view profile.
     """
@@ -51,4 +57,3 @@ def create_hybrid_view_profile() -> FrameACLViewProfile:
             ],
         ),
     )
-
