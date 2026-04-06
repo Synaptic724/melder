@@ -3,18 +3,24 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class ContractTypes(Enum):
     """
-    Direction label for one `Detail` inside a symmetric contract.
+    Perspective label for a `Detail` stored inside one side of a `Contract`.
 
-    A `Contract` is symmetric, but each ward keeps its own detail map. This
-    enum tells you how to interpret one detail from the perspective of the ward
-    that owns that map:
+    The ward contract model is symmetric at the pair level, but it is not a
+    single shared detail table. Each participating ward stores its own detail
+    map describing which spell lineages it exposed or borrowed in that
+    relationship. `ContractTypes` marks the meaning of one detail entry from
+    the perspective of the ward that owns that map.
+
+    This matters during reconciliation and rollback because the same lineage
+    can appear with opposite labels across the two peers:
 
     - `initiated`:
-      this ward granted one of its own spell lineages outward to the peer.
+      the owning ward is the source of the lineage. This detail records a
+      spell the ward granted outward into the contract.
 
     - `received`:
-      this ward is the borrower and the detail represents a lineage granted by
-      the peer.
+      the owning ward is the borrower. This detail records a lineage that came
+      from the peer and is now visible locally through the contract.
     """
     __melder_internal__ = _mrg.sentinel
     initiated = auto()

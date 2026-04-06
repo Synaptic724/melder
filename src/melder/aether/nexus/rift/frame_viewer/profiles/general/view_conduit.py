@@ -52,19 +52,35 @@ class GeneralViewConduit(Cleanable):
         self._cleaned = True
         self._frame_view = None
 
-    def list_conduits(self) -> List[FrameLink]:
+    def list_conduits(self, *, frame_name: Optional[str] = None) -> List[FrameLink]:
         self.check_cleaned()
-        return self._get_required_frame_view().list_targets(source_kind="conduit")
+        return self._get_required_frame_view().list_targets(
+            frame_name=frame_name,
+            source_kind="conduit",
+        )
 
-    def describe_conduits(self) -> List[Dict[str, object]]:
+    def describe_conduits(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[Dict[str, object]]:
         self.check_cleaned()
-        return self._get_required_frame_view().describe_targets(source_kind="conduit")
+        return self._get_required_frame_view().describe_targets(
+            frame_name=frame_name,
+            source_kind="conduit",
+        )
 
-    def get_required_conduit(self, conduit_id: str) -> FrameLink:
+    def get_required_conduit(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> FrameLink:
         self.check_cleaned()
         if not conduit_id:
             raise ValueError("conduit_id cannot be empty.")
         return self._get_required_frame_view().get_required_target_by_source(
+            frame_name=frame_name,
             source_kind="conduit",
             source_id=conduit_id,
         )

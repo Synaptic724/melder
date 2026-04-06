@@ -1,3 +1,5 @@
+import threading
+
 import pytest
 from unittest.mock import MagicMock
 from melder.aether.dev_ops.incident_manager.incident_manager import IncidentManager
@@ -173,3 +175,53 @@ def test_methods_raise_after_cleanup(manager):
         
     with pytest.raises(RuntimeError):
         manager.list_incidents()
+
+
+def test_cleanup_rechecks_cleaned_inside_lock(manager):
+    """
+    Verify the inner cleanup re-check under concurrent teardown.
+
+    Contract:
+    - A second cleanup caller may pass the outer `_cleaned` check.
+    - The inner `_cleaned` check inside the lock returns safely without error.
+    """
+
+    class _CoordinatedLock:
+        def __init__(self) -> None:
+            self._entered_first = threading.Event()
+            self._second_attempted = threading.Event()
+            self._lock = threading.RLock()
+
+        def __enter__(self):
+            if self._entered_first.is_set():
+                self._second_attempted.set()
+            self._lock.acquire()
+            if not self._entered_first.is_set():
+                self._entered_first.set()
+                assert self._second_attempted.wait(timeout=1.0)
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self._lock.release()
+
+    manager._lock = _CoordinatedLock()
+    failures = []
+
+    def _run_cleanup():
+        try:
+            manager.cleanup()
+        except BaseException as exc:
+            failures.append(exc)
+
+    first = threading.Thread(target=_run_cleanup, name="incident-manager-cleanup-first")
+    second = threading.Thread(target=_run_cleanup, name="incident-manager-cleanup-second")
+
+    first.start()
+    assert manager._lock._entered_first.wait(timeout=1.0)
+    second.start()
+    first.join()
+    second.join()
+
+    assert failures == []
+    assert manager._cleaned is True
+    assert manager._lock is None

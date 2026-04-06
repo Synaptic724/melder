@@ -15,17 +15,32 @@ from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSev
 
 class TransferOfOwnership:
     """
-    Internal helper to migrate spell stewardship between conduits.
+    Control-plane helper that migrates a spell lineage between conduit owners.
 
-    This performs a preflight (read-only) and an execute step that:
-      - Flips ownership in Aether (SpellIndex -> target).
-      - Updates spellbooks (remove from source, add to target).
-      - Optionally moves creations and owned dependencies.
-      - Handles contracts/clusters via force-unshare or re-pointing.
-      - Marks the spell lineage dirty during transfer to block resolution.
+    This class is the implementation behind dynamic spell ownership transfer.
+    It keeps the high-risk parts of the move in one place so the runtime can
+    treat transfer as an explicit control-plane operation rather than an ad hoc
+    series of spellbook edits.
 
-    Thread-safety: Uses SafeGuard around the registry/spellbook flip; other operations
-    rely on their own internal locks or best-effort guards.
+    The transfer lifecycle has two phases:
+
+    - `preflight()` performs a read-only inventory of the lineage, its
+      borrowers, its dependent spell ids, and any creation/existence state that
+      will be affected.
+    - `execute()` performs the actual migration by temporarily disabling the
+      lineage, flipping the canonical registry/spellbook ownership under lock,
+      reconciling contracts/clusters, and then leaving the impacted state
+      gated/dirty so later validation phases can rebuild a truthful runtime
+      view.
+
+    The object also owns rollback bookkeeping, change-intent registration, and
+    incident reporting so transfer failures do not silently strand the runtime
+    in a half-moved state.
+
+    Thread-safety:
+        The registry/spellbook ownership flip is protected by `SafeGuard`.
+        Broader cleanup and post-flip repair flows rely on the locks and
+        invariants provided by the subsystems they call into.
     """
     __melder_internal__ = _mrg.sentinel
     def __init__(
@@ -41,17 +56,33 @@ class TransferOfOwnership:
         mark_dependencies_dirty: bool = False,
     ):
         """
-        Initialize a transfer operation between two conduits.
+        Initialize one ownership-transfer operation.
+
+        The constructor captures both the source/target endpoints and the
+        policy choices that define how aggressive the move should be. Those
+        options decide whether creations are carried forward or torn down,
+        whether owned dependencies move with the root lineage, whether existing
+        shares are force-unshared or repointed, and whether impacted lineages
+        should remain gated after the move so validation reruns before normal
+        resolution resumes.
 
         Args:
-            source_conduit: Conduit currently owning the spell.
-            target_conduit: Conduit that will receive ownership.
-            spell: Spell object, spell_id (str), or SpellIndex to transfer.
-            move_creations: Move scoped creations to target if True; otherwise tear them down.
-            include_dependencies: Transfer owned dependencies alongside the root spell.
-            force_unshare: When True, remove contracts/cluster shares instead of re-pointing.
-            invalidate_after_transfer: Mark lineage dirty/gated after move to force validation.
-            mark_dependencies_dirty: If dependencies are not moved, mark them dirty instead.
+            source_conduit: Conduit that currently owns the root lineage.
+            target_conduit: Conduit that should become the new owner.
+            spell: Spell object, spell id, or `SpellIndex` identifying the
+                lineage to move.
+            move_creations: When true, transfer creation-side state to the
+                target instead of tearing it down.
+            include_dependencies: When true, transfer owned dependency lineages
+                with the root instead of requiring the target side to resolve
+                them independently.
+            force_unshare: When true, remove outward shares/borrowers instead of
+                trying to repoint them at the new owner.
+            invalidate_after_transfer: When true, leave the moved lineage and
+                impacted conduits gated/dirty so the runtime revalidates phases
+                before reuse.
+            mark_dependencies_dirty: If dependencies are not moved, mark their
+                lineages dirty so stale downstream state is not reused.
         """
         self.source_conduit = source_conduit
         self.target_conduit = target_conduit
@@ -76,14 +107,23 @@ class TransferOfOwnership:
     # ------------------------------------------------------------------
     def preflight(self) -> Dict[str, Any]:
         """
-        Read-only analysis of what will be affected by the transfer.
+        Build a read-only transfer plan for the requested lineage.
+
+        Preflight does not mutate ownership. Its job is to prove the basic
+        invariants first, then capture the runtime surface that `execute()`
+        will have to reconcile: borrowers, dependencies, creations, and the
+        rollback snapshot needed to unwind a partially completed move.
 
         Returns:
-            Dict[str, Any]: Summary with spell_id, spell_index, source/target ids,
-            borrower/contracts, dependencies, creations, options, op_id, and a
-            rollback snapshot.
+            Dict[str, Any]: Structured summary containing the resolved spell
+            identity, source/target conduit ids, borrower descriptors,
+            dependency spell ids, creation/existence details, transfer options,
+            operation id, and the rollback snapshot captured from the current
+            runtime state.
         Raises:
-            RuntimeError: if basic invariants fail (ownership, dynamic mode).
+            RuntimeError: If dynamic-mode or ownership invariants fail, or if
+                the transfer was requested without dependency migration even
+                though the target side cannot resolve the current dependencies.
         """
         self._assert_dynamic_mode()
         spell_obj = self._resolve_spell()
@@ -116,21 +156,25 @@ class TransferOfOwnership:
     # ------------------------------------------------------------------
     def execute(self) -> None:
         """
-        Perform the transfer based on preflight/constructor options.
+        Perform the ownership migration described by the current preflight.
 
-        Steps:
-            - Disable lineage during transfer.
-            - If force_unshare is enabled, remove the target conduit contract entry
-              before the ownership flip so contracted cleanup does not clear the
-              newly owned lookup entry.
-            - Flip registry/spellbooks under lock.
-            - Move or teardown creations.
-            - Adjust contracts/clusters (unshare or re-point).
-            - Optionally move/dirty dependencies.
-            - Mark lineage and impacted conduits dirty/gated on success; rollback and incident on failure.
+        The method intentionally separates the minimal ownership flip from the
+        larger cleanup/repair surface:
+
+        1. disable the lineage so callers cannot resolve it mid-transfer
+        2. pre-clean contract state if `force_unshare` requires it
+        3. flip the canonical registry and spellbook ownership under lock
+        4. reconcile creations, contracts/clusters, and dependency handling
+        5. leave the lineage gated/dirty or simply re-enable it according to
+           the constructor options
+
+        If any step fails, rollback handlers attempt to restore a coherent
+        runtime view, the lineage is lifted back to a safe gated state, and the
+        incident/change-control systems are notified.
 
         Raises:
-            Exception: Re-raises any transfer failure after rollback attempts.
+            Exception: Re-raises the underlying transfer failure after rollback
+                and incident recording have been attempted.
         """
         summary = self._preflight_summary or self.preflight()
         spell_obj = self._resolve_spell()
@@ -187,22 +231,33 @@ class TransferOfOwnership:
     # ------------------------------------------------------------------
     def _assert_dynamic_mode(self) -> None:
         """
-        Ensure both conduits are running in dynamic mode.
+        Enforce the runtime precondition for ownership transfer.
+
+        Ownership transfer is only supported in the dynamic environment because
+        the move depends on runtime contract teardown/repointing and lineage
+        invalidation flows that do not exist in the static model.
 
         Raises:
-            RuntimeError: if either conduit is not dynamic.
+            RuntimeError: If either endpoint conduit is not running in dynamic
+                mode.
         """
         if not self.source_conduit.__dynamic_environment__ or not self.target_conduit.__dynamic_environment__:
             raise RuntimeError("Transfer requires dynamic mode on both source and target.")
 
     def _resolve_spell(self) -> Any:
         """
-        Resolve the spell input (object, id, or SpellIndex) to a spell object.
+        Normalize the caller-provided spell handle into the live spell object.
+
+        Transfer entrypoints allow several spell identifiers for convenience,
+        but the transfer machinery itself operates on the concrete spell object
+        so it can inspect ownership, dependencies, creations, and lineage
+        state.
 
         Returns:
-            A spell object resolved from the provided input.
+            The resolved spell object owned by the source conduit's spellbook.
         Raises:
-            RuntimeError: if the spell cannot be resolved.
+            RuntimeError: If the provided spell reference cannot be resolved
+                into a live spell object.
         """
         # spell may be object, id, or SpellIndex
         if hasattr(self.spell, "spell_id"):
@@ -228,10 +283,16 @@ class TransferOfOwnership:
 
     def _enumerate_borrowers(self, spell_id: str) -> List[Dict[str, Any]]:
         """
-        Enumerate borrowers via contracts or clusters for the given spell_id.
+        Enumerate downstream runtime surfaces currently borrowing this lineage.
+
+        Borrowers can come from direct ward contracts or conduit-cluster share
+        tables. `execute()` uses this inventory to decide whether those surfaces
+        should be force-unshared or repointed after the ownership flip.
 
         Returns:
-            List of borrower descriptors (type/ids).
+            List[Dict[str, Any]]: Borrower descriptors tagged by borrowing
+            mechanism (`contract` or `cluster`) plus the ids needed for later
+            reconciliation.
         """
         borrowers: List[Dict[str, Any]] = []
         ward = self.source_conduit._conduit_ward
@@ -266,19 +327,30 @@ class TransferOfOwnership:
 
     def _enumerate_creations(self, spell_obj: Any) -> Dict[str, Any]:
         """
-        Inspect creations associated with the spell.
+        Capture the creation/existence surface currently attached to the spell.
+
+        The current implementation only records the existence handle because
+        that is the minimum state needed by the present transfer flow. The
+        return shape is already dictionary-based so fuller creation inspection
+        can be added later without changing the preflight contract shape.
 
         Returns:
-            Dict describing existence/creations (placeholder until full inspection is added).
+            Dict[str, Any]: Creation/existence snapshot for preflight and
+            rollback planning.
         """
         return {"existence": spell_obj.existence}
 
     def _deps_resolvable_on_target(self, deps: List[str]) -> bool:
         """
-        Check if all dependency spell_ids are resolvable on the target conduit.
+        Check whether the target conduit can already resolve the dependency set.
+
+        This is the safety gate for transfers that do not move owned
+        dependencies. If the target side cannot already resolve the dependency
+        ids, the root lineage would arrive in a knowingly broken state.
 
         Returns:
-            True if all deps resolve on the target; False otherwise.
+            bool: `True` when every dependency id resolves on the target side,
+            otherwise `False`.
         """
         if not deps:
             return True

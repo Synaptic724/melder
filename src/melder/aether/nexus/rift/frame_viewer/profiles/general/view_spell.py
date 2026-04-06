@@ -52,19 +52,35 @@ class GeneralViewSpell(Cleanable):
         self._cleaned = True
         self._frame_view = None
 
-    def list_spells(self) -> List[FrameLink]:
+    def list_spells(self, *, frame_name: Optional[str] = None) -> List[FrameLink]:
         self.check_cleaned()
-        return self._get_required_frame_view().list_targets(source_kind="spell")
+        return self._get_required_frame_view().list_targets(
+            frame_name=frame_name,
+            source_kind="spell",
+        )
 
-    def describe_spells(self) -> List[Dict[str, object]]:
+    def describe_spells(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[Dict[str, object]]:
         self.check_cleaned()
-        return self._get_required_frame_view().describe_targets(source_kind="spell")
+        return self._get_required_frame_view().describe_targets(
+            frame_name=frame_name,
+            source_kind="spell",
+        )
 
-    def get_required_spell(self, spell_source_id: str) -> FrameLink:
+    def get_required_spell(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> FrameLink:
         self.check_cleaned()
         if not spell_source_id:
             raise ValueError("spell_source_id cannot be empty.")
         return self._get_required_frame_view().get_required_target_by_source(
+            frame_name=frame_name,
             source_kind="spell",
             source_id=spell_source_id,
         )

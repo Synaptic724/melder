@@ -3,21 +3,32 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class Permissions(Enum):
     """
-    Permission level attached to a contracted or locally owned spell lineage.
+    Capability ceiling for a spell lineage in ward-local and contracted views.
 
-    The values are ordered by capability:
+    `ConduitWard` uses this enum in two related places:
+
+    - on the spell itself, as the local maximum capability the owning conduit
+      is willing to expose
+    - on each contract detail, as the capability actually granted to a peer for
+      that lineage
+
+    The values are ordered by how much downstream behavior they permit, and the
+    ward logic deliberately never escalates a contracted lineage beyond the
+    spell's own local permission.
 
     - `read`:
-      the spell may be resolved/inspected through a contract, but not used as a
-      creation source for contract propagation.
+      the lineage may be resolved and inspected through a contract, but it
+      cannot be used as a creation-capable dependency when propagating work
+      into another conduit.
 
     - `create`:
-      the spell may be used as a creation-capable dependency and therefore
-      implies read access too.
+      the lineage may participate in creation-capable dependency resolution and
+      therefore also implies ordinary read/resolve access.
 
     - `block`:
-      the spell is intentionally not contractable in normal policy flows and is
-      used as an internal blocking signal within the spellbook/ward layer.
+      the lineage should not be contractable in normal flows. The ward treats
+      this as a hard stop unless a broader override policy such as
+      `Policies.whitelist_all` explicitly allows exposure.
     """
     __melder_internal__ = _mrg.sentinel
     read = auto()   # Allows read/resolve access only.

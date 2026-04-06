@@ -96,12 +96,18 @@ class GeneralViewFrame(Cleanable):
             self._default_detail_level = None
         self._lock = None
 
-    def list_frames(self) -> List[str]:
+    def list_frames(self, *, frame_name: Optional[str] = None) -> List[str]:
         self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
         return [self._get_required_frame_name()]
 
-    def describe_views(self) -> List[Dict[str, object]]:
+    def describe_views(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[Dict[str, object]]:
         self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
         return [
             {
                 "frame_name": self._get_required_frame_name(),
@@ -116,9 +122,11 @@ class GeneralViewFrame(Cleanable):
     def list_targets(
             self,
             *,
+            frame_name: Optional[str] = None,
             source_kind: Optional[str] = None,
     ) -> List[FrameLink]:
         self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
         targets = self._build_links()
         if source_kind is None:
             return targets
@@ -133,9 +141,11 @@ class GeneralViewFrame(Cleanable):
     def describe_targets(
             self,
             *,
+            frame_name: Optional[str] = None,
             source_kind: Optional[str] = None,
     ) -> List[Dict[str, object]]:
         self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
         target_descriptions: List[Dict[str, object]] = []
         for frame_link in self.list_targets(source_kind=source_kind):
             description = {
@@ -149,8 +159,13 @@ class GeneralViewFrame(Cleanable):
             target_descriptions.append(description)
         return target_descriptions
 
-    def describe_frame(self) -> Dict[str, object]:
+    def describe_frame(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
         self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
         compiled_access_surface = self._get_required_compiled_access_surface()
         grouped_links: Dict[str, List[FrameLink]] = {}
         for frame_link in self._build_links():
@@ -177,8 +192,13 @@ class GeneralViewFrame(Cleanable):
             },
         }
 
-    def describe_frames(self) -> Dict[str, Dict[str, object]]:
+    def describe_frames(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, Dict[str, object]]:
         self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
         frame_name = self._get_required_frame_name()
         return {
             frame_name: self.describe_frame(),
@@ -187,10 +207,12 @@ class GeneralViewFrame(Cleanable):
     def get_required_target_by_source(
             self,
             *,
+            frame_name: Optional[str] = None,
             source_kind: str,
             source_id: str,
     ) -> FrameLink:
         self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
         if not source_kind:
             raise ValueError("source_kind cannot be empty.")
         if not source_id:
@@ -335,3 +357,16 @@ class GeneralViewFrame(Cleanable):
                 "GeneralViewFrame has no bound CompiledFrameACLAccessSurface."
             )
         return self._compiled_access_surface
+
+    def _assert_optional_frame_name(self, frame_name: Optional[str]) -> None:
+        if frame_name is None:
+            return
+        if not frame_name:
+            raise ValueError("frame_name cannot be empty.")
+        if frame_name != self._get_required_frame_name():
+            raise ValueError(
+                "GeneralViewFrame is bound to frame '{0}', not '{1}'.".format(
+                    self._get_required_frame_name(),
+                    frame_name,
+                )
+            )
