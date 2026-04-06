@@ -6,10 +6,17 @@ from melder.aether.aether_utility_system import AetherUtilitySystem
 
 class InitHelpers:
     """
-    Centralized initializer utilities for Aether and related components.
+    Centralized startup-time helper wrappers for logger resolution.
 
-    Provides static helpers for resolving safe wrappers or facilities
-    during startup, before full DI/registry bootstraps are active.
+    `InitHelpers` exists so runtime constructors can ask for safe logger
+    wrappers without directly reaching into deeper utility-system ownership or
+    spreading bootstrapping logic across many classes.
+
+    Contract:
+    - Provides thin static wrappers only.
+    - Delegates actual logger policy and fallback behavior to
+      `AetherUtilitySystem`.
+    - Does not hold runtime state of its own.
     """
 
     __slots__ = ()
@@ -17,18 +24,21 @@ class InitHelpers:
     @staticmethod
     def resolve_safe_logger(logger: IChannelLogger | logging.Logger | None) -> SafeLogger:
         """
-        Returns a SafeLogger instance for any given logger-like object.
+        Resolve a plain logger-like object into a `SafeLogger`.
 
-        - If `logger` is None, returns a SafeLogger in null mode.
-        - If it's a CommandOps ChannelLogger, preserves its behavior.
-        - If it's a standard Python logger, wraps it safely.
-        - Never raises; always returns a usable SafeLogger.
+        Contract:
+        - Delegates directly to `AetherUtilitySystem.resolve_safe_logger(...)`.
+        - Accepts either an `IChannelLogger`, a stdlib `logging.Logger`, or
+          `None`.
+        - Returns a null-safe wrapper when no logger is supplied.
 
         Args:
-            logger: Logger-like object to wrap. May be None.
+            logger:
+                Logger-like object to wrap. May be None.
 
         Returns:
-            SafeLogger: The resolved, ready-to-use SafeLogger instance.
+            SafeLogger:
+                Ready-to-use safe logger wrapper.
         """
         return AetherUtilitySystem().resolve_safe_logger(logger)
 
@@ -44,6 +54,10 @@ class InitHelpers:
         """
         Resolve a channel-style logger through the hosted utility system.
 
+        Contract:
+        - Delegates directly to `AetherUtilitySystem.resolve_channel_logger(...)`.
+        - Does not own channel registration, fallback policy, or caching.
+
         Args:
             registrant:
                 Object requesting the logger.
@@ -57,8 +71,9 @@ class InitHelpers:
                 Optional channel or channel list.
 
         Returns:
-            SafeLogger: Iris-backed logger when configured, otherwise a null
-            `SafeLogger`.
+            SafeLogger:
+                Channel-backed logger when configured, otherwise the hosted
+                fallback/null-safe wrapper.
         """
         return AetherUtilitySystem().resolve_channel_logger(
             registrant,

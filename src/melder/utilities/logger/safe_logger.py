@@ -9,13 +9,18 @@ from melder.utilities.helpers.id_builder import IDBuilder
 
 class SafeLogger(Cleanable, ISafeLogger):
     """
-    A unified, low-overhead logger adapter that transparently handles both
-    IChannelLogger-compatible objects and standard Python loggers.
+    Unified logger adapter over channel loggers and stdlib loggers.
 
-    - Detects channel loggers by isinstance(logger, IChannelLogger).
-    - Passes through `_manual_stack` and `_method_name` for ChannelLoggers.
-    - Standard loggers drop channel-only kwargs and ignore masking.
-    - No getattr on our own classes.
+    `SafeLogger` gives the rest of the runtime one stable logging surface while
+    hiding the differences between `IChannelLogger` implementations and plain
+    `logging.Logger` instances.
+
+    Contract:
+    - Accepts either an `IChannelLogger`, a stdlib `logging.Logger`, or `None`.
+    - Preserves channel-specific stack metadata when the wrapped logger is a
+      channel logger.
+    - Ignores channel-only masking semantics on stdlib logger paths.
+    - Falls back to a no-op surface when no logger is configured.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_logger", "_is_channel", "_id", "_level", "_level_name"]
@@ -47,6 +52,14 @@ class SafeLogger(Cleanable, ISafeLogger):
             logger.setLevel(self._level)
 
     def cleanup(self):
+        """
+        Idempotently release the wrapped logger reference.
+
+        Contract:
+        - If the wrapped logger exposes `cleanup()`, this method attempts to
+          call it once on teardown.
+        - Always clears the local logger reference afterward.
+        """
         # Allow external polymorphic cleanup; std loggers won't have it.
         if self._logger is not None and hasattr(self._logger, "cleanup"):
             try:
@@ -57,7 +70,11 @@ class SafeLogger(Cleanable, ISafeLogger):
 
     def set_level_by_name(self, level_name: str):
         """
-        Set the log level by symbolic name (debug, info, warning, error, critical).
+        Set the active log level by symbolic name.
+
+        Contract:
+        - Normalizes the supplied level name to lowercase.
+        - Updates the wrapped logger immediately when one exists.
         """
         normalized = level_name.lower()
         if normalized not in self._LEVELS:
@@ -69,7 +86,11 @@ class SafeLogger(Cleanable, ISafeLogger):
 
     def set_level(self, level: int):
         """
-        Direct numeric setter (kept for parity).
+        Set the active log level by its numeric logging value.
+
+        Contract:
+        - Rejects values that are not one of the known stdlib logging levels.
+        - Updates the wrapped logger immediately when one exists.
         """
         if level not in self._LEVELS.values():
             raise ValueError(f"Invalid numeric log level: {level}")
@@ -96,8 +117,13 @@ class SafeLogger(Cleanable, ISafeLogger):
             **kwargs: Any,
     ) -> None:
         """
-        Internal: route to ChannelLogger with or without masking, or to std logger.
-        - Std logger path ignores masking entirely (as requested).
+        Internal unified emit path for both channel and stdlib loggers.
+
+        Contract:
+        - Returns immediately when no logger is configured or the message level
+          is below the current threshold.
+        - Preserves channel-specific metadata when using `IChannelLogger`.
+        - Ignores masking on stdlib logger paths by design.
         """
         if self._logger is None:
             return
@@ -187,6 +213,14 @@ class SafeLogger(Cleanable, ISafeLogger):
             system_groups: Optional[Iterable[str]] = None,
             properties: Optional[Dict[str, Any]] = None,
     ) -> None:
+        """
+        Emit one debug-level log event.
+
+        Contract:
+        - Delegates to `_emit(...)` with `logging.DEBUG`.
+        - Supports optional masking and channel metadata when the wrapped
+          logger is a channel logger.
+        """
         self._emit(
             logging.DEBUG, msg, method_name,
             mask=mask,
@@ -207,6 +241,14 @@ class SafeLogger(Cleanable, ISafeLogger):
             system_groups: Optional[Iterable[str]] = None,
             properties: Optional[Dict[str, Any]] = None,
     ) -> None:
+        """
+        Emit one info-level log event.
+
+        Contract:
+        - Delegates to `_emit(...)` with `logging.INFO`.
+        - Supports optional masking and channel metadata when the wrapped
+          logger is a channel logger.
+        """
         self._emit(
             logging.INFO, msg, method_name,
             mask=mask,
@@ -227,6 +269,14 @@ class SafeLogger(Cleanable, ISafeLogger):
             system_groups: Optional[Iterable[str]] = None,
             properties: Optional[Dict[str, Any]] = None,
     ) -> None:
+        """
+        Emit one warning-level log event.
+
+        Contract:
+        - Delegates to `_emit(...)` with `logging.WARNING`.
+        - Supports optional masking and channel metadata when the wrapped
+          logger is a channel logger.
+        """
         self._emit(
             logging.WARNING, msg, method_name,
             mask=mask,
@@ -250,6 +300,14 @@ class SafeLogger(Cleanable, ISafeLogger):
             system_groups: Optional[Iterable[str]] = None,
             properties: Optional[Dict[str, Any]] = None,
     ) -> None:
+        """
+        Emit one error-level log event.
+
+        Contract:
+        - Delegates to `_emit(...)` with `logging.ERROR`.
+        - Passes through `exc_info` so channel and stdlib paths can preserve
+          error context.
+        """
         self._emit(
             logging.ERROR, msg, method_name,
             exc_info=exc_info,
@@ -271,7 +329,12 @@ class SafeLogger(Cleanable, ISafeLogger):
             system_groups: Optional[Iterable[str]] = None,
             properties: Optional[Dict[str, Any]] = None,
     ):
-        """Convenience alias for .error(..., exc_info=True)."""
+        """
+        Convenience wrapper for emitting an error with exception context.
+
+        Contract:
+        - Delegates to `_emit(...)` with `logging.ERROR` and `exc_info=True`.
+        """
         self._emit(
             logging.ERROR, msg, method_name,
             exc_info=True,
@@ -293,6 +356,14 @@ class SafeLogger(Cleanable, ISafeLogger):
             system_groups: Optional[Iterable[str]] = None,
             properties: Optional[Dict[str, Any]] = None,
     ) -> None:
+        """
+        Emit one critical-level log event.
+
+        Contract:
+        - Delegates to `_emit(...)` with `logging.CRITICAL`.
+        - Supports optional masking and channel metadata when the wrapped
+          logger is a channel logger.
+        """
         self._emit(
             logging.CRITICAL, msg, method_name,
             mask=mask,

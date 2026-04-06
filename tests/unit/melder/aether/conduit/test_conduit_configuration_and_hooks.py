@@ -304,6 +304,54 @@ def test_configure_conduit_state_clears_name_for_lesser(
         conduit.cleanup()
 
 
+def test_configure_conduit_state_logs_warning_when_lesser_name_is_overridden(
+    configuration_automatic: Configuration,
+    spellbook_stub: MagicMock,
+) -> None:
+    """
+    Verify lesser conduit name override emits a warning.
+
+    Contract:
+        - Lesser conduits log a warning when a provided name is discarded.
+    """
+    conduit = Conduit(
+        spellbook=spellbook_stub,
+        configuration=configuration_automatic,
+        conduit_state=ConduitState.lesser,
+        aetheric_frame="default",
+        policy=Policies.default,
+        name="alpha",
+    )
+    try:
+        conduit._name = "alpha"
+        conduit._logger = MagicMock()
+        conduit._configure_conduit_state()
+        conduit._logger.warning.assert_called()
+        assert conduit.name is None
+    finally:
+        conduit.cleanup()
+
+
+def test_configure_conduit_state_logs_and_reraises_normal_registration_failure(
+    conduit_normal: Conduit,
+) -> None:
+    """
+    Verify normal conduit registration failures are logged and re-raised.
+
+    Contract:
+        - _configure_conduit_state logs the failure.
+        - The original error is propagated.
+    """
+    conduit_normal._logger = MagicMock()
+    conduit_normal._add_conduit_to_aether = MagicMock(side_effect=RuntimeError("register boom"))
+    conduit_normal._add_spells_to_aether = MagicMock()
+
+    with pytest.raises(RuntimeError, match="register boom"):
+        conduit_normal._configure_conduit_state()
+
+    conduit_normal._logger.error.assert_called_once()
+
+
 def test_initialize_conduit_hooks_attaches_configured_hooks_and_fires_on_cleanup(
     spellbook_stub: MagicMock,
     aether_stub: MagicMock,
@@ -628,6 +676,15 @@ def test_register_conduit_hooks_local_does_not_wire_non_meld_hooks_to_meld(
     assert "on_conduit_cleanup_start" not in config_hooks
 
 
+def test_register_conduit_hooks_noop_for_empty_mapping(
+    conduit_normal: Conduit,
+) -> None:
+    """register_conduit_hooks should no-op for an empty mapping."""
+    conduit_normal.register_conduit_hooks({})
+
+    assert conduit_normal._local_conduit_hooks is None
+
+
 def test_register_conduit_hooks_local_does_not_propagate_to_lesser(
     configuration_automatic: Configuration,
     spellbook_stub: MagicMock,
@@ -772,6 +829,30 @@ def test_fire_conduit_hooks_swallows_exceptions_and_continues(
     conduit_normal._fire_conduit_hooks("on_conduit_cleanup_start", conduit_normal)
 
     assert events == [conduit_normal]
+
+
+def test_apply_configuration_flags_logs_and_reraises_on_configuration_failure(
+    conduit_normal: Conduit,
+) -> None:
+    """_apply_configuration_flags should log and re-raise configuration lookup failures."""
+    conduit_normal._logger = MagicMock()
+    conduit_normal._configuration = MagicMock()
+    conduit_normal._configuration.get_property.side_effect = RuntimeError("config boom")
+
+    with pytest.raises(RuntimeError, match="config boom"):
+        conduit_normal._apply_configuration_flags()
+
+    conduit_normal._logger.error.assert_called_once()
+
+
+def test_repr_includes_name_and_id(conduit_normal: Conduit) -> None:
+    """__repr__ should include the conduit name and id."""
+    conduit_normal._name = "alpha"
+    text = repr(conduit_normal)
+
+    assert "Conduit" in text
+    assert "alpha" in text
+    assert conduit_normal._id in text
 
 
 def test_resolve_peer_conduit_for_contract_hooks_uses_aether_for_ids(
@@ -969,6 +1050,27 @@ def test_register_to_creations_accepts_lesser_conduits(
 
     conduit_lesser._register_to_creations(spell, object())
     conduit_lesser._creations.add_creation.assert_called_once()
+
+
+def test_register_to_creations_rejects_non_creations_manager(
+    conduit_normal: Conduit,
+) -> None:
+    """
+    Verify _register_to_creations fails fast when the creations manager is invalid.
+
+    Contract:
+        - Non-Creations managers raise RuntimeError and log the failure.
+    """
+    spell = MagicMock()
+    spell.existence = Existence.unique
+    spell.spell_id = "spell-1"
+    conduit_normal._creations = object()
+    conduit_normal._logger = MagicMock()
+
+    with pytest.raises(RuntimeError, match="requires a Creations manager"):
+        conduit_normal._register_to_creations(spell, object())
+
+    conduit_normal._logger.error.assert_called_once()
 
 
 def test_cleanup_normal_unregisters_from_aether_and_removes_spells(

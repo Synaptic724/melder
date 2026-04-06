@@ -476,6 +476,75 @@ def test_cleanup_raises_for_unknown_conduit_state(conduit_normal: Conduit) -> No
     conduit_normal._logger.error.assert_called_once()
 
 
+def test_cleanup_lesser_conduit_tolerates_child_cleanup_errors(
+    conduit_lesser: Conduit,
+) -> None:
+    """
+    Verify lesser conduit cleanup tolerates child cleanup failures and nulls state.
+
+    Contract:
+        - unregister gate, meld, ward, and creations failures are logged and do not abort cleanup.
+        - Key owned references are nulled after cleanup.
+    """
+    conduit_lesser._logger = MagicMock()
+    conduit_lesser._creation_gate_controller = MagicMock()
+    conduit_lesser._meld = MagicMock()
+    conduit_lesser._conduit_ward = MagicMock()
+    conduit_lesser._creations = MagicMock()
+    conduit_lesser._creation_gate_controller.unregister_conduit_gate.side_effect = RuntimeError("gate boom")
+    conduit_lesser._meld.cleanup.side_effect = RuntimeError("meld boom")
+    conduit_lesser._conduit_ward.cleanup.side_effect = RuntimeError("ward boom")
+    conduit_lesser._creations.cleanup.side_effect = RuntimeError("creations boom")
+
+    conduit_lesser._cleanup_lesser_conduit()
+
+    assert conduit_lesser._conduit_ward is None
+    assert conduit_lesser._meld is None
+    assert conduit_lesser._creation_gate is None
+    assert conduit_lesser._creation_gate_controller is None
+    assert conduit_lesser._creations is None
+    assert conduit_lesser._spellbook is None
+    assert conduit_lesser._logger.error.call_count >= 4
+
+
+def test_cleanup_normal_conduit_tolerates_child_cleanup_errors(
+    conduit_normal: Conduit,
+) -> None:
+    """
+    Verify normal conduit cleanup tolerates child cleanup failures and nulls state.
+
+    Contract:
+        - unregister gate, meld, ward, creations, Aether unregister, state drop,
+          and spellbook cleanup failures are logged and do not abort cleanup.
+        - Key owned references are nulled after cleanup.
+    """
+    conduit_normal._logger = MagicMock()
+    conduit_normal._creation_gate_controller = MagicMock()
+    conduit_normal._meld = MagicMock()
+    conduit_normal._conduit_ward = MagicMock()
+    conduit_normal._creations = MagicMock()
+    conduit_normal._spellbook = MagicMock()
+    conduit_normal._spellbook._spells = {}
+    conduit_normal._spellbook._spell_system_states = MagicMock()
+    conduit_normal._creation_gate_controller.unregister_conduit_gate.side_effect = RuntimeError("gate boom")
+    conduit_normal._meld.cleanup.side_effect = RuntimeError("meld boom")
+    conduit_normal._conduit_ward.cleanup.side_effect = RuntimeError("ward boom")
+    conduit_normal._creations.cleanup.side_effect = RuntimeError("creations boom")
+    conduit_normal._spellbook._spell_system_states.drop_conduit_resolution_state.side_effect = RuntimeError("state boom")
+    conduit_normal._spellbook.cleanup.side_effect = RuntimeError("spellbook boom")
+    Conduit._aether._remove_conduit.side_effect = RuntimeError("aether boom")
+
+    conduit_normal._cleanup_normal_conduit()
+
+    assert conduit_normal._conduit_ward is None
+    assert conduit_normal._meld is None
+    assert conduit_normal._creation_gate is None
+    assert conduit_normal._creation_gate_controller is None
+    assert conduit_normal._creations is None
+    assert conduit_normal._spellbook is None
+    assert conduit_normal._logger.error.call_count >= 6
+
+
 def test_cleanup_calls_spellbook_cleanup_for_normal_conduit(
     conduit_normal: Conduit,
     aether_stub: MagicMock,
@@ -505,3 +574,170 @@ def test_cleanup_calls_spellbook_cleanup_for_normal_conduit(
     assert spellbook.cleanup.called is True
     nexus._publish_frame_record.assert_called_once_with(spellbook)
     assert conduit_normal._nexus is None
+
+
+def test_cleanup_returns_early_when_cleaned_flips_inside_lock(
+    conduit_lesser: Conduit,
+) -> None:
+    """cleanup should return safely if another path marks the conduit cleaned inside the lock."""
+    conduit_lesser._logger = MagicMock()
+    conduit_lesser._conduit_hooks = {"on_conduit_cleanup_start": [MagicMock()]}
+    original_lock = conduit_lesser._lock
+
+    class _LockThatMarksCleaned:
+        def __enter__(self_inner):
+            conduit_lesser._cleaned = True
+            return self_inner
+
+        def __exit__(self_inner, exc_type, exc_value, traceback):
+            return False
+
+    try:
+        conduit_lesser._lock = _LockThatMarksCleaned()
+        conduit_lesser.cleanup()
+    finally:
+        conduit_lesser._lock = original_lock
+
+    assert conduit_lesser._conduit_hooks is not None
+
+
+def test_cleanup_swallows_logger_cleanup_failures(
+    conduit_lesser: Conduit,
+) -> None:
+    """cleanup should swallow logger cleanup failures and still clear the logger reference."""
+    conduit_lesser._conduit_ward = MagicMock()
+    conduit_lesser._meld = MagicMock()
+    conduit_lesser._creations = MagicMock()
+    conduit_lesser._logger = MagicMock()
+    conduit_lesser._logger.cleanup.side_effect = RuntimeError("logger boom")
+
+    conduit_lesser.cleanup()
+
+    assert conduit_lesser._logger is None
+
+
+def test_publish_conduit_record_to_nexus_skips_when_disabled(
+    conduit_normal: Conduit,
+) -> None:
+    """_publish_conduit_record_to_nexus should no-op when Nexus publication is disabled."""
+    conduit_normal._nexus = MagicMock()
+    conduit_normal._nexus_publish_enabled = False
+
+    conduit_normal._publish_conduit_record_to_nexus()
+
+    conduit_normal._nexus._publish_conduit_record.assert_not_called()
+
+
+def test_publish_conduit_record_to_nexus_skips_when_not_normal(
+    conduit_lesser: Conduit,
+) -> None:
+    """_publish_conduit_record_to_nexus should no-op for lesser conduits."""
+    conduit_lesser._nexus = MagicMock()
+    conduit_lesser._nexus_publish_enabled = True
+
+    conduit_lesser._publish_conduit_record_to_nexus()
+
+    conduit_lesser._nexus._publish_conduit_record.assert_not_called()
+
+
+def test_publish_frame_record_to_nexus_skips_when_spellbook_missing(
+    conduit_normal: Conduit,
+) -> None:
+    """_publish_frame_record_to_nexus should no-op when the spellbook is missing."""
+    conduit_normal._nexus = MagicMock()
+    conduit_normal._nexus_publish_enabled = True
+    conduit_normal._spellbook = None
+
+    conduit_normal._publish_frame_record_to_nexus()
+
+    conduit_normal._nexus._publish_frame_record.assert_not_called()
+
+
+def test_remove_conduit_record_from_nexus_skips_when_not_normal(
+    conduit_lesser: Conduit,
+) -> None:
+    """_remove_conduit_record_from_nexus should no-op for lesser conduits."""
+    conduit_lesser._nexus = MagicMock()
+    conduit_lesser._nexus_publish_enabled = True
+
+    conduit_lesser._remove_conduit_record_from_nexus()
+
+    conduit_lesser._nexus._remove_conduit_record.assert_not_called()
+
+
+def test_cleanup_spellspaces_logs_and_continues_when_space_cleanup_fails(
+    conduit_lesser: Conduit,
+) -> None:
+    """_cleanup_spellspaces should log spellspace cleanup failures and still drain the stack."""
+    conduit_lesser._logger = MagicMock()
+    bad_space = MagicMock()
+    bad_space.cleanup.side_effect = RuntimeError("space boom")
+    conduit_lesser._spellspace_stack.set([bad_space])
+
+    conduit_lesser._cleanup_spellspaces()
+
+    conduit_lesser._logger.error.assert_called()
+    assert conduit_lesser._spellspace_stack.get() == []
+
+
+def test_cleanup_spellspaces_logs_registry_cleanup_failures(
+    conduit_lesser: Conduit,
+) -> None:
+    """_cleanup_spellspaces should log registry spellspace cleanup failures and still clear the registry."""
+    conduit_lesser._logger = MagicMock()
+    good_space = MagicMock()
+    bad_space = MagicMock()
+    bad_space.cleanup.side_effect = RuntimeError("registry space boom")
+    conduit_lesser._spellspace_registry = {good_space, bad_space}
+
+    conduit_lesser._cleanup_spellspaces()
+
+    conduit_lesser._logger.error.assert_called()
+    assert conduit_lesser._spellspace_registry == set()
+
+
+def test_cleanup_spellspaces_logs_stack_flush_failure(
+    conduit_lesser: Conduit,
+) -> None:
+    """_cleanup_spellspaces should log failures from the stack context variable access itself."""
+    conduit_lesser._logger = MagicMock()
+    broken_stack = MagicMock()
+    broken_stack.get.side_effect = RuntimeError("stack boom")
+    conduit_lesser._spellspace_stack = broken_stack
+
+    conduit_lesser._cleanup_spellspaces()
+
+    conduit_lesser._logger.error.assert_called()
+
+
+def test_register_spellspace_ignores_none(
+    conduit_lesser: Conduit,
+) -> None:
+    """_register_spellspace should no-op when given None."""
+    before = set(conduit_lesser._spellspace_registry)
+
+    conduit_lesser._register_spellspace(None)
+
+    assert conduit_lesser._spellspace_registry == before
+
+
+def test_unregister_spellspace_ignores_none(
+    conduit_lesser: Conduit,
+) -> None:
+    """_unregister_spellspace should no-op when given None."""
+    before = set(conduit_lesser._spellspace_registry)
+
+    conduit_lesser._unregister_spellspace(None)
+
+    assert conduit_lesser._spellspace_registry == before
+
+
+def test_unregister_spellspace_ignores_missing_registry(
+    conduit_lesser: Conduit,
+) -> None:
+    """_unregister_spellspace should no-op when the registry is unavailable."""
+    conduit_lesser._spellspace_registry = None
+
+    conduit_lesser._unregister_spellspace(MagicMock())
+
+    assert conduit_lesser._spellspace_registry is None

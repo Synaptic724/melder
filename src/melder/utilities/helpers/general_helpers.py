@@ -7,15 +7,26 @@ from typing import Any, Optional, Tuple, Union, TypeVar, Type
 T = TypeVar("T", bound=Enum)
 
 class EnumHelpers:
-    """Utilities for Enum normalization and validation."""
+    """
+    Small helper surface for enum normalization and validation.
+
+    Contract:
+    - Converts raw string inputs into concrete enum members.
+    - Returns already-normalized enum members unchanged when they belong to the
+      requested enum type.
+    - Raises immediately on `None`, incompatible types, or unknown values.
+    """
     @staticmethod
     @lru_cache(maxsize=8)
     def convert_enum_and_check(value: str | Enum, enum: Type[T]) -> T:
         """
-        Converts a string input into the correct Enum member.
-        Raises ValueError if the string doesn't match an enum name.
+        Convert one raw value into a concrete enum member of the requested type.
 
-        If value is already an Enum member of the correct type, it is returned as-is.
+        Contract:
+        - Accepts either a string or an enum member.
+        - Returns the input unchanged when it is already an instance of the
+          requested enum type.
+        - Interprets string inputs by lowercased enum member name.
         """
         if value is None:
             raise ValueError("Enum value cannot be None.")
@@ -143,9 +154,14 @@ class SpellInputUtils:
     @staticmethod
     def normalize_spell_name(spell: Any) -> str:
         """
-        Normalize a spell object into a canonical spell *name*.
+        Normalize a spell object into a canonical spell display name.
 
         This is primarily used as a fallback when no spellframe is passed in.
+
+        Contract:
+        - Prefers `__name__` when the object exposes one.
+        - Falls back to `type(spell).__name__` for instances or anonymous
+          callables.
 
         Returns:
             str: The spell name (NOT lowercased; this is a display name).
@@ -209,6 +225,11 @@ class SpellInputUtils:
 
         Returns:
             Tuple[str, str]: (frame_key, binding_key)
+
+        Raises:
+            TypeError:
+                Propagated if one of the underlying normalizers receives an
+                incompatible value.
         """
         frame_base = spellframe if spellframe is not None else spell_name
         frame_key = SpellInputUtils.normalize_frame_key(frame_base)
@@ -251,6 +272,9 @@ class SpellInputUtils:
 
         Raises:
             ValueError: If both `spell` and `spellframe` are None.
+            TypeError:
+                Propagated if one of the underlying normalizers receives an
+                incompatible value.
         """
         if spell is None and spellframe is None:
             raise ValueError(
