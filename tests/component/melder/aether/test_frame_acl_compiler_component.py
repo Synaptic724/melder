@@ -236,11 +236,11 @@ def test_component_compiled_surface_flows_directly_into_frame_viewer_projection(
         default_view_frame_name="ops",
     )
 
-    assert viewer.execute_tool("describe_frame", frame_name="ops")["available_kinds"] == (
-        "conduit",
-        "frame",
-        "spell",
-    )
+    frame_summary = viewer.execute_tool("describe_frame", frame_name="ops")
+
+    assert frame_summary["frame_name"] == "ops"
+    assert frame_summary["conduit_record_count"] == 1
+    assert frame_summary["spell_record_count"] == 1
     assert len(viewer.list_available_targets()) == 3
 
 

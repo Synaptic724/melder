@@ -16,30 +16,11 @@ from melder.aether.dev_ops.change_control_manager.orchestrator.staged_mutation i
 @dataclass(frozen=True)
 class ChangeControlEmbargoRecord:
     """
-    Internal record for an embargoed scope key.
+    Immutable record describing one embargoed scope key.
 
-    Purpose:
-        Capture embargo ownership and timing metadata for a scope key.
-    Contract:
-        - Instances are immutable.
-        - owner_request_id ties the embargo to a specific transaction.
-    Args:
-        scope_key:
-            Scope key under embargo.
-        reason_tag:
-            Short reason code for diagnostics.
-        owner_request_id:
-            Request id that owns the embargo.
-        created_at:
-            Unix timestamp (seconds) when the embargo was created.
-    Returns:
-        None.
-    Raises:
-        None.
-    Threading:
-        Safe to share across threads because instances are immutable.
-    Lifecycle:
-        Immutable; no cleanup required.
+    The record ties one scope key to the request that currently owns the
+    embargo, along with lightweight diagnostic metadata such as the reason tag
+    and creation time.
     """
     __melder_internal__ = _mrg.sentinel
     scope_key: str
@@ -50,25 +31,17 @@ class ChangeControlEmbargoRecord:
 
 class ChangeControlEmbargoManager(Cleanable):
     """
-    Embargo registry for blocking or hinting against requests by scope key.
+    Scope-key embargo registry for transaction-driven gating.
 
-    Purpose:
-        Provide scope-based gating so conflicting requests can be rejected
-        while a change transaction is active.
+    This manager tracks temporary embargoes opened by admitted change-control
+    requests. Those embargoes are used during later admission checks so new
+    requests can be rejected or hinted away from scope that is already owned by
+    an in-flight request.
+
     Contract:
-        - Embargoes are internal, transaction-driven state (not standalone
-          transactions).
-        - Embargoes are released on commit/abort of their owning request.
-    Args:
-        None.
-    Returns:
-        None.
-    Raises:
-        None.
-    Threading:
-        All state mutations are guarded by an internal RLock.
-    Lifecycle:
-        cleanup() is idempotent and nulls internal references.
+    - Embargoes are owned by request id, not by standalone lifecycle objects.
+    - Scope and owner indexes stay in sync.
+    - Commit/abort flows release embargoes through the owner-request path.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -79,16 +52,10 @@ class ChangeControlEmbargoManager(Cleanable):
 
     def __init__(self) -> None:
         """
-        Initialize the embargo manager.
+        Initialize the embargo registry.
 
-        Purpose:
-            Create empty embargo registries for scope and owner tracking.
         Contract:
-            - Registries start empty.
-        Returns:
-            None.
-        Threading:
-            Safe to publish after initialization.
+        - Starts with empty scope and owner indexes.
         """
         super().__init__()
         self._lock: RLock = RLock()
@@ -97,16 +64,11 @@ class ChangeControlEmbargoManager(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Idempotent cleanup for embargo registries.
+        Finalize the embargo registry.
 
-        Purpose:
-            Release registries and lock references for GC safety.
         Contract:
-            - Safe to call multiple times.
-        Returns:
-            None.
-        Threading:
-            Acquires the internal lock while mutating state.
+        - Idempotent cleanup.
+        - Clears both embargo indexes before dropping the lock reference.
         """
         if self._cleaned:
             return
@@ -132,25 +94,14 @@ class ChangeControlEmbargoManager(Cleanable):
         """
         Open embargoes for the supplied scope keys.
 
-        Purpose:
-            Block conflicting requests while a transaction is active.
-        Contract:
-            - Each scope key becomes embargoed under the owner_request_id.
-            - Multiple embargo records can exist per scope key.
+        Each supplied scope key becomes associated with the owning request id.
+        Multiple embargo records may accumulate for the same scope when
+        different in-flight requests independently embargo it.
+
         Args:
-            scope_keys:
-                Scope keys to embargo.
-            reason_tag:
-                Short reason string for diagnostics.
-            owner_request_id:
-                Request id that owns the embargo.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If the manager has been cleaned.
-            ValueError: If owner_request_id or reason_tag is empty.
-        Threading:
-            Acquires the internal lock while updating registries.
+            scope_keys: Scope keys to embargo.
+            reason_tag: Short diagnostic reason for the embargo.
+            owner_request_id: Request id that owns the embargoes.
         """
         self.check_cleaned()
         if not owner_request_id or not reason_tag:
@@ -177,26 +128,14 @@ class ChangeControlEmbargoManager(Cleanable):
         """
         Extend embargoes for an existing request with additional scope keys.
 
-        Purpose:
-            Allow staged metadata updates to add new embargo scopes without
-            duplicating existing records.
-        Contract:
-            - Only new scope keys are added for the owner_request_id.
-            - Existing embargoes are preserved.
+        This is the staged-update path for requests that discover new scope
+        after admission. Existing embargoes for the same owner are preserved;
+        only genuinely new scope keys are added.
+
         Args:
-            owner_request_id:
-                Request id that owns the embargoes.
-            scope_keys:
-                Scope keys to add as embargoes.
-            reason_tag:
-                Reason tag for the embargo records.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If the manager has been cleaned.
-            ValueError: If owner_request_id or reason_tag is empty.
-        Threading:
-            Acquires the internal lock while updating registries.
+            owner_request_id: Request id that owns the embargoes.
+            scope_keys: Additional scope keys to embargo.
+            reason_tag: Diagnostic reason tag for the new records.
         """
         self.check_cleaned()
         if not owner_request_id or not reason_tag:
@@ -221,19 +160,11 @@ class ChangeControlEmbargoManager(Cleanable):
         """
         Close all embargoes owned by the supplied request id.
 
-        Purpose:
-            Release embargoes when a transaction commits or aborts.
-        Contract:
-            - No error if the owner has no active embargoes.
+        This is the normal release path after commit or abort. If the request
+        has no active embargoes, the method simply no-ops.
+
         Args:
-            owner_request_id:
-                Request id that owns the embargoes.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If the manager has been cleaned.
-        Threading:
-            Acquires the internal lock while updating registries.
+            owner_request_id: Request id whose embargoes should be released.
         """
         self.check_cleaned()
         if not owner_request_id:
@@ -252,10 +183,9 @@ class ChangeControlEmbargoManager(Cleanable):
         """
         Return scope keys that are currently embargoed.
 
-        Purpose:
-            Provide embargo evidence for admission checks.
-        Contract:
-            - Returns an empty tuple when no embargoes apply.
+        This is the query surface used by admission logic when it needs to know
+        whether any requested scope is currently embargoed.
+
         Args:
             scope_keys:
                 Scope keys to check for embargo status.

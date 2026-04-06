@@ -344,9 +344,25 @@ class FrameViewer(Cleanable):
             return dict(self._metadata)
 
     def list_frame_names(self) -> List[str]:
+        """
+        Return the hosted frame names in deterministic order.
+
+        Returns:
+            List[str]: Sorted hosted frame names.
+        """
         self.check_cleaned()
         with self._lock:
             return list(sorted(self._frame_descriptors_by_name.keys()))
+
+    def count_frames(self) -> int:
+        """
+        Return the number of hosted frame descriptors.
+
+        Returns:
+            int: Hosted frame count.
+        """
+        self.check_cleaned()
+        return len(self.list_frame_names())
 
     def set_default_view(self, frame_name: str) -> None:
         self.check_cleaned()
@@ -358,6 +374,16 @@ class FrameViewer(Cleanable):
             self._default_view_frame_name = frame_name
 
     def describe_available_views(self) -> List[Dict[str, object]]:
+        """
+        Return a simple host-level description of the hosted frames.
+
+        Contract:
+            This is a host-only descriptor surface. It does not expose payload
+            data or ACL-shaped visibility details.
+
+        Returns:
+            List[Dict[str, object]]: Hosted frame descriptions.
+        """
         self.check_cleaned()
         described_frames: List[Dict[str, object]] = []
         for frame_name in self.list_frame_names():
@@ -368,6 +394,112 @@ class FrameViewer(Cleanable):
                 }
             )
         return described_frames
+
+    def count_root_conduits(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> int:
+        """
+        Return the number of root conduit records.
+
+        Args:
+            frame_name:
+                Optional frame name. When omitted, counts across all hosted
+                frames.
+
+        Returns:
+            int: Root conduit record count.
+        """
+        self.check_cleaned()
+        frame_names = [frame_name] if frame_name is not None else self.list_frame_names()
+        total_count = 0
+        for current_frame_name in frame_names:
+            descriptor = self._get_required_frame_descriptor(current_frame_name)
+            total_count += len(
+                {
+                    conduit_record.root_conduit_id
+                    for conduit_record in descriptor.conduit_records_by_id.values()
+                }
+            )
+        return total_count
+
+    def count_spell_records(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> int:
+        """
+        Return the number of spell records.
+
+        Args:
+            frame_name:
+                Optional frame name. When omitted, counts across all hosted
+                frames.
+
+        Returns:
+            int: Spell record count.
+        """
+        self.check_cleaned()
+        frame_names = [frame_name] if frame_name is not None else self.list_frame_names()
+        total_count = 0
+        for current_frame_name in frame_names:
+            descriptor = self._get_required_frame_descriptor(current_frame_name)
+            total_count += len(descriptor.spell_records_by_key)
+        return total_count
+
+    def describe_frame(self, frame_name: str) -> Dict[str, object]:
+        """
+        Return a descriptor-level summary for one hosted frame.
+
+        Contract:
+            This host-level summary is limited to descriptor structure and
+            published record identity. It does not expose payload bodies or
+            ACL-shaped payload visibility.
+
+        Args:
+            frame_name:
+                Hosted frame name to summarize.
+
+        Returns:
+            Dict[str, object]: Descriptor-level frame summary.
+        """
+        self.check_cleaned()
+        descriptor = self._get_required_frame_descriptor(frame_name)
+        frame_overview = descriptor.frame_overview
+        return {
+            "frame_name": frame_name,
+            "frame_id": frame_overview.frame_id if frame_overview is not None else None,
+            "nexus_label": (
+                frame_overview.nexus_label if frame_overview is not None else None
+            ),
+            "nexus_version": (
+                frame_overview.nexus_version if frame_overview is not None else None
+            ),
+            "conduit_record_count": len(descriptor.conduit_records_by_id),
+            "root_conduit_count": len(
+                {
+                    conduit_record.root_conduit_id
+                    for conduit_record in descriptor.conduit_records_by_id.values()
+                }
+            ),
+            "spell_record_count": len(descriptor.spell_records_by_key),
+            "is_default": frame_name == self._default_view_frame_name,
+        }
+
+    def describe_frames(self) -> Dict[str, Dict[str, object]]:
+        """
+        Return descriptor-level summaries for all hosted frames.
+
+        Returns:
+            Dict[str, Dict[str, object]]: Hosted frame summaries keyed by frame
+            name.
+        """
+        self.check_cleaned()
+        return {
+            current_frame_name: self.describe_frame(current_frame_name)
+            for current_frame_name in self.list_frame_names()
+        }
 
     def list_links(
             self,

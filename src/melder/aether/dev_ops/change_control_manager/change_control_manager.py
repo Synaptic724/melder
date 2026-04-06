@@ -267,16 +267,10 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         """
         Return whether change-control admission is enabled.
 
-        Purpose:
-            Expose admission gating state for callers and diagnostics.
-        Contract:
-            - Returns True when admission gating is enabled.
         Returns:
-            bool: True if change-control admission is enabled.
-        Raises:
-            RuntimeError: If this manager has been cleaned.
-        Threading:
-            Acquires the internal lock while reading state.
+            bool: `True` when admission should pass through the normal
+            conflict/embargo gate and `False` when the manager is operating in
+            bypass mode.
         """
         self.check_cleaned()
         with self._lock:
@@ -289,20 +283,12 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         """
         Register an audit logger for admitted change-control requests.
 
-        Purpose:
-            Forward audit logging callbacks to the transaction manager.
-        Contract:
-            - Passing None disables audit logging.
-            - Callback is invoked outside internal locks by the transaction manager.
+        Passing `None` disables audit logging. The callback itself is later run
+        by the transaction manager, outside this manager's internal lock.
+
         Args:
-            fn:
-                Callable that receives the admitted request, or None.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If this manager has been cleaned.
-        Threading:
-            Acquires the internal lock while updating the callback.
+            fn: Callable that receives admitted requests, or `None` to disable
+                audit logging.
         """
         self.check_cleaned()
         with self._lock:
@@ -315,20 +301,12 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         """
         Register a commit validator hook for admitted requests.
 
-        Purpose:
-            Provide a hook for pre-commit structural validation.
-        Contract:
-            - Passing None disables validation.
-            - Hook is invoked outside the orchestrator lock.
+        This is the outer validator slot that runs after the structural
+        validator in `_dispatch_commit_validator`.
+
         Args:
-            fn:
-                Callable that validates a staged mutation, or None.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If this manager has been cleaned.
-        Threading:
-            Acquires the internal lock while updating the hook reference.
+            fn: Callable that validates a staged mutation, or `None` to disable
+                this hook.
         """
         self.check_cleaned()
         with self._lock:
@@ -341,19 +319,13 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         """
         Register a structural validation hook for admitted requests.
 
-        Purpose:
-            Provide a placeholder hook for running structural phases before commit.
-        Contract:
-            - Passing None disables the hook.
+        This is the first validator slot in commit dispatch and is intended for
+        structural/runtime validation work that should run before the general
+        commit validator.
+
         Args:
-            fn:
-                Callable that validates a staged mutation, or None.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If this manager has been cleaned.
-        Threading:
-            Acquires the internal lock while updating the hook reference.
+            fn: Callable that validates a staged mutation, or `None` to disable
+                this hook.
         """
         self.check_cleaned()
         with self._lock:
@@ -366,20 +338,12 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         """
         Register a commit hook for admitted requests.
 
-        Purpose:
-            Provide a hook for commit-time side effects (dirty marking, etc.).
-        Contract:
-            - Passing None disables the hook.
-            - Hook is invoked outside the orchestrator lock.
+        This is the general commit-side-effect hook and runs after the dirty
+        marker in `_dispatch_commit_hook`.
+
         Args:
-            fn:
-                Callable invoked with a staged mutation, or None.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If this manager has been cleaned.
-        Threading:
-            Acquires the internal lock while updating the hook reference.
+            fn: Callable invoked with a staged mutation, or `None` to disable
+                this hook.
         """
         self.check_cleaned()
         with self._lock:
@@ -392,20 +356,12 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         """
         Register a commit-time dirty-marking hook.
 
-        Purpose:
-            Provide a hook for marking dependency state dirty on commit.
-        Contract:
-            - Passing None disables dirty marking.
-            - Default is None (spellbooks own dirty marking).
+        This hook exists for the "mark runtime state dirty after commit"
+        responsibility and runs before the general commit hook.
+
         Args:
-            fn:
-                Callable invoked with a staged mutation, or None.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If this manager has been cleaned.
-        Threading:
-            Acquires the internal lock while updating the hook reference.
+            fn: Callable invoked with a staged mutation, or `None` to disable
+                dirty marking.
         """
         self.check_cleaned()
         with self._lock:
@@ -418,20 +374,9 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         """
         Register an abort hook for admitted requests.
 
-        Purpose:
-            Provide a hook for abort-time cleanup side effects.
-        Contract:
-            - Passing None disables the hook.
-            - Hook is invoked outside the orchestrator lock.
         Args:
-            fn:
-                Callable invoked with a staged mutation, or None.
-        Returns:
-            None.
-        Raises:
-            RuntimeError: If this manager has been cleaned.
-        Threading:
-            Acquires the internal lock while updating the hook reference.
+            fn: Callable invoked when an admitted staged mutation aborts, or
+                `None` to disable the hook.
         """
         self.check_cleaned()
         with self._lock:
@@ -439,26 +384,18 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
 
     def _dispatch_commit_validator(self, staged: ChangeControlStagedMutation) -> None:
         """
-        Internal
+        Run the registered commit validators in stable order.
 
-        Dispatch commit validators in a stable order.
+        Ordering matters here:
+        - structural validator first
+        - general commit validator second
 
-        Purpose:
-            Sequence structural validation ahead of the general commit validator.
-        Contract:
-            - Structural validator runs before the commit validator.
-            - Hook references are captured under the lock, then executed
-              without holding the lock to avoid deadlocks.
-            - No-op if both hooks are None.
+        The hook references are snapshotted under the manager lock and then
+        executed outside the lock so validator code cannot deadlock this
+        manager's internal state.
+
         Args:
-            staged:
-                Staged mutation metadata to validate.
-        Returns:
-            None.
-        Raises:
-            Exception: Propagates any exception raised by the validators.
-        Threading:
-            Uses the internal lock to snapshot hook references.
+            staged: Staged mutation metadata to validate.
         """
         self.check_cleaned()
         validator: Optional[Callable[[ChangeControlStagedMutation], None]] = None
@@ -473,26 +410,18 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
 
     def _dispatch_commit_hook(self, staged: ChangeControlStagedMutation) -> None:
         """
-        Internal
+        Run the registered commit-side hooks in stable order.
 
-        Dispatch commit hooks in a stable order.
+        Ordering matters here:
+        - dirty marker first
+        - general commit hook second
 
-        Purpose:
-            Sequence dirty marking ahead of the user-supplied commit hook.
-        Contract:
-            - Dirty marker runs before the commit hook.
-            - Hook references are captured under the lock, then executed
-              without holding the lock to avoid deadlocks.
-            - No-op if both hooks are None.
+        As with validator dispatch, the hook references are snapshotted under
+        the lock and executed outside it so hook code cannot deadlock this
+        manager.
+
         Args:
-            staged:
-                Staged mutation metadata to process.
-        Returns:
-            None.
-        Raises:
-            Exception: Propagates any exception raised by hooks.
-        Threading:
-            Uses the internal lock to snapshot hook references.
+            staged: Staged mutation metadata to process.
         """
         self.check_cleaned()
         marker: Optional[Callable[[ChangeControlStagedMutation], None]] = None
@@ -507,16 +436,11 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
 
     def _dispatch_abort_hook(self, staged: ChangeControlStagedMutation) -> None:
         """
-        Internal
+        Run the registered abort hook, if any.
 
-        Dispatch abort hooks.
+        The hook reference is snapshotted under the lock and then invoked
+        outside it so abort-side cleanup code cannot deadlock this manager.
 
-        Purpose:
-            Invoke the abort hook for staged mutations when a commit fails.
-        Contract:
-            - Hook reference is captured under the lock and invoked without
-              holding the lock.
-            - No-op if no hook is registered.
         Args:
             staged:
                 Staged mutation metadata to process.
@@ -639,22 +563,14 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             binding_keys: Iterable[Tuple[str, str]],
     ) -> list:
         """
-        Internal
+        Resolve live spell objects for staged binding keys.
 
-        Resolve spell instances for staged binding keys.
+        This helper translates normalized binding keys from staged mutation data
+        back into concrete spell objects so later validators or dirty markers
+        can work against live runtime state rather than key tuples.
 
-        Purpose:
-            Translate staged binding keys into live spell objects for validation.
-        Contract:
-            - Returns an empty list if no spellbook or keys are provided.
-        Args:
-            spellbook:
-                Spellbook to search.
-            binding_keys:
-                Normalized binding keys to resolve.
-        Returns:
-            list:
-                List of resolved spell instances.
+        Returns an empty list when the spellbook is unavailable, the keys are
+        empty, or a particular key no longer resolves cleanly.
         """
         self.check_cleaned()
         if spellbook is None or not binding_keys:
@@ -682,24 +598,18 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
 
     def _default_structural_validator(self, staged: ChangeControlStagedMutation) -> None:
         """
-        Internal
+        Default structural-validation hook for bind transactions.
 
-        Default structural validation hook for bind transactions.
+        This is the built-in validator used when a staged bind should force
+        Phase 1-4 validation before commit completes. It is intentionally
+        conservative:
 
-        Purpose:
-            Run Phases 1-4 for newly bound spells before a bind transaction commits
-            when a Conduit already owns the Spellbook.
-        Contract:
-            - Only runs for bind transactions.
-            - No-op if the Spellbook is unavailable or not conjured.
-            - Skips spells that already have Phase-4 validation results.
-        Args:
-            staged:
-                Staged mutation metadata to validate.
-        Returns:
-            None.
-        Raises:
-            Exception: Propagates structural phase errors from Spellbook.
+        - only bind transactions participate
+        - unconjured or unavailable spellbooks short-circuit to no-op
+        - spells that already have Phase 4 results are skipped
+
+        Any structural-phase exception is allowed to propagate so the commit
+        path can fail loudly instead of accepting a broken staged bind.
         """
         self.check_cleaned()
         if staged.request_type is not ChangeTransactionType.BIND:
@@ -721,27 +631,13 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
 
     def _default_dirty_marker(self, staged: ChangeControlStagedMutation) -> None:
         """
-        Internal
-
         Default dirty-marker for commit events.
 
-        Purpose:
-            Mark list[Frame] consumers and SpellContract consumers dirty for
-            the owning Spellbook when bindings or contracted spell maps change
-            as part of a transaction commit.
-        Contract:
-            - No-op if the staged mutation has no spellbook id.
-            - No-op if no binding/contract keys are present or frame keys are empty.
-            - Delegates to SpellSystemStates for scoped dirty marking.
-        Args:
-            staged:
-                Staged mutation metadata containing binding/contract keys.
-        Returns:
-            None.
-        Raises:
-            Exception: Propagates exceptions raised by SpellSystemStates.
-        Threading:
-            Uses SpellSystemStates internal locking; does not hold the manager lock.
+        This is the built-in commit-side hook that pushes follow-on invalidation
+        into `SpellSystemStates`. It marks collection dependents dirty for
+        changed frame keys and marks contract dependents dirty for changed
+        contract keys, but only when the staged mutation actually names a
+        spellbook and contributes relevant keys.
         """
         self.check_cleaned()
         if staged.spellbook_id is None:
@@ -773,76 +669,44 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
 
     def transaction_manager(self) -> ChangeControlTransactionManager:
         """
-        Return the transaction manager (admission facade).
+        Return the owned transaction manager.
 
-        Purpose:
-            Provide access to the transaction manager used for admission logging.
-        Contract:
-            - Returned reference is owned by this ChangeControlManager.
         Returns:
-            ChangeControlTransactionManager:
-                The manager instance.
-        Raises:
-            RuntimeError: If this manager has been cleaned.
-        Threading:
-            Thread-safe; no state mutation beyond check_cleaned().
+            ChangeControlTransactionManager: Admission/in-flight transaction
+            bookkeeping surface owned by this manager.
         """
         self.check_cleaned()
         return self._transaction_manager
 
     def conflict_manager(self) -> ChangeControlConflictManager:
         """
-        Return the conflict manager (scope overlap rules).
+        Return the owned conflict manager.
 
-        Purpose:
-            Provide access to the conflict manager used for overlap checks.
-        Contract:
-            - Returned reference is owned by this ChangeControlManager.
         Returns:
-            ChangeControlConflictManager:
-                The manager instance.
-        Raises:
-            RuntimeError: If this manager has been cleaned.
-        Threading:
-            Thread-safe; no state mutation beyond check_cleaned().
+            ChangeControlConflictManager: Scope-overlap/conflict surface owned
+            by this manager.
         """
         self.check_cleaned()
         return self._conflict_manager
 
     def embargo_manager(self) -> ChangeControlEmbargoManager:
         """
-        Return the embargo manager (scope gating + hints).
+        Return the owned embargo manager.
 
-        Purpose:
-            Provide access to the embargo manager used for scope gating.
-        Contract:
-            - Returned reference is owned by this ChangeControlManager.
         Returns:
-            ChangeControlEmbargoManager:
-                The manager instance.
-        Raises:
-            RuntimeError: If this manager has been cleaned.
-        Threading:
-            Thread-safe; no state mutation beyond check_cleaned().
+            ChangeControlEmbargoManager: Embargo/gating surface owned by this
+            manager.
         """
         self.check_cleaned()
         return self._embargo_manager
 
     def orchestrator(self) -> ChangeControlOrchestrator:
         """
-        Return the orchestrator (single admission gate).
+        Return the owned orchestrator.
 
-        Purpose:
-            Provide access to the orchestrator used for admission sequencing.
-        Contract:
-            - Returned reference is owned by this ChangeControlManager.
         Returns:
-            ChangeControlOrchestrator:
-                The manager instance.
-        Raises:
-            RuntimeError: If this manager has been cleaned.
-        Threading:
-            Thread-safe; no state mutation beyond check_cleaned().
+            ChangeControlOrchestrator: Admission-sequencing surface owned by
+            this manager.
         """
         self.check_cleaned()
         return self._orchestrator
@@ -857,22 +721,16 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         """
         Admit a transaction request through the change-control gate.
 
-        Purpose:
-            Centralize admission logic and enable/disable gating behavior.
-        Contract:
-            - When enabled, admission is serialized by the orchestrator and
-              conflict/embargo checks are enforced.
-            - When disabled, the request is accepted and tracked as in-flight.
-        Args:
-            request:
-                Transaction request to admit.
+        This is the main admission facade:
+
+        - when change-control is enabled, the orchestrator performs the real
+          conflict/embargo admission workflow
+        - when change-control is disabled, the request is accepted directly and
+          recorded as in-flight without that extra gating
+
         Returns:
-            ChangeControlAdmissionResult:
-                Admission decision with evidence for rejection.
-        Raises:
-            RuntimeError: If this manager has been cleaned.
-        Threading:
-            Uses the internal lock for enable/disable reads and in-flight updates.
+            ChangeControlAdmissionResult: Admission decision plus any rejection
+            evidence returned by the orchestrator path.
         """
         self.check_cleaned()
         enabled = True

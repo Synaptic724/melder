@@ -11,25 +11,17 @@ from melder.aether.dev_ops.change_control_manager.transaction_request.transactio
 
 class ChangeControlConflictManager(Cleanable):
     """
-    Conflict detection for transaction scope overlap.
+    Conflict detector for scope overlap between change-control requests.
 
-    Purpose:
-        Decide whether a new request can run in parallel or must be serialized
-        based on scope-key overlap with in-flight requests.
+    This manager answers one question for admission: "Does the incoming request
+    overlap any in-flight request strongly enough that it should not run in
+    parallel?"
+
     Contract:
-        - Compares scope hashes when available; derives hashes from keys when missing.
-        - Falls back to raw scope keys when both requests supply keys.
-        - Returns request ids of conflicting in-flight requests.
-    Args:
-        None.
-    Returns:
-        None.
-    Raises:
-        None.
-    Threading:
-        All state reads are guarded by an internal RLock.
-    Lifecycle:
-        cleanup() is idempotent and nulls internal references.
+    - Uses scope hashes when available.
+    - Derives hashes from raw scope keys when hashes are missing.
+    - Also checks direct raw-key overlap when both sides provide keys.
+    - Returns request ids for the in-flight requests that conflict.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -38,32 +30,21 @@ class ChangeControlConflictManager(Cleanable):
 
     def __init__(self) -> None:
         """
-        Initialize the conflict manager.
+        Initialize the conflict detector.
 
-        Purpose:
-            Allocate the internal lock used for conflict checks.
         Contract:
-            - No mutable state beyond the lock.
-        Returns:
-            None.
-        Threading:
-            Safe to publish after initialization.
+        - Owns no mutable state beyond the internal lock.
         """
         super().__init__()
         self._lock: RLock = RLock()
 
     def cleanup(self) -> None:
         """
-        Idempotent cleanup for the conflict manager.
+        Finalize the conflict detector.
 
-        Purpose:
-            Mark the manager as cleaned and drop the lock reference.
         Contract:
-            - Safe to call multiple times.
-        Returns:
-            None.
-        Threading:
-            Acquires the internal lock while mutating state.
+        - Idempotent cleanup.
+        - Drops the lock reference after the cleaned flag is set.
         """
         if self._cleaned:
             return
@@ -81,24 +62,16 @@ class ChangeControlConflictManager(Cleanable):
         """
         Return in-flight request ids whose scopes overlap the supplied request.
 
-        Purpose:
-            Provide deterministic conflict detection for admission decisions.
-        Contract:
-            - Uses scope_hashes when available; otherwise derives from scope_keys.
-            - Also checks raw scope_keys when both requests provide keys.
-            - Returns an empty tuple when no conflicts are found.
+        The method is intentionally conservative: hash overlap is enough to
+        report a conflict, and when both sides still have raw keys available it
+        also checks direct key overlap.
+
         Args:
-            request:
-                Incoming request to evaluate.
-            in_flight:
-                Iterable of currently admitted requests.
+            request: Incoming request to evaluate.
+            in_flight: Iterable of currently admitted requests.
         Returns:
-            Tuple[str, ...]:
-                Request ids that conflict with the incoming request.
-        Raises:
-            RuntimeError: If the manager has been cleaned.
-        Threading:
-            Acquires the internal lock while evaluating.
+            Tuple[str, ...]: Request ids that conflict with the incoming
+            request.
         """
         self.check_cleaned()
         if request is None:
@@ -125,28 +98,18 @@ class ChangeControlConflictManager(Cleanable):
             scope_hashes: Iterable[str],
     ) -> Set[str]:
         """
-        Internal
+        Normalize request scope into a hash set for conflict comparison.
 
-        Normalize scope hashes for conflict comparison.
+        If a request already supplies scope hashes, those win directly. If not,
+        the method derives SHA256 hashes from the raw scope keys so hash-based
+        and key-based requests still participate in the same overlap check.
 
-        Purpose:
-            Ensure hash-only and key-only requests still overlap during
-            conflict checks by deriving hashes when needed.
-        Contract:
-            - Returns provided scope_hashes when present.
-            - Derives SHA256 hashes from scope_keys when hashes are empty.
         Args:
-            scope_keys:
-                Raw scope keys provided by the request.
-            scope_hashes:
-                Precomputed scope hashes provided by the request.
+            scope_keys: Raw scope keys supplied by the request.
+            scope_hashes: Precomputed scope hashes supplied by the request.
+
         Returns:
-            Set[str]:
-                Normalized hash set for conflict comparison.
-        Raises:
-            RuntimeError: If the manager has been cleaned.
-        Threading:
-            Thread-safe without locks; no shared state is mutated.
+            Set[str]: Normalized hash set used by conflict detection.
         """
         self.check_cleaned()
         if scope_hashes:

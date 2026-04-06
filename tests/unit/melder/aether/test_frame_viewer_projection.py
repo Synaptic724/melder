@@ -289,8 +289,21 @@ def test_frame_viewer_describe_frame_summarizes_descriptor_driven_surface() -> N
     )
 
     assert summary["frame_name"] == "ops"
-    assert summary["link_count"] == 3
-    assert summary["available_kinds"] == ("conduit", "frame", "spell")
+    assert summary["frame_id"] == "ops-frame"
+    assert summary["nexus_label"] == "default"
+    assert summary["nexus_version"] == "0.0.1"
+    assert summary["conduit_record_count"] == 1
+    assert summary["root_conduit_count"] == 1
+    assert summary["spell_record_count"] == 1
+    assert summary["is_default"] is True
+
+
+def test_frame_viewer_host_count_methods_report_descriptor_counts() -> None:
+    viewer = _build_viewer(("ops", "finance"))
+
+    assert viewer.execute_tool("count_frames") == 2
+    assert viewer.execute_tool("count_root_conduits") == 2
+    assert viewer.execute_tool("count_spell_records") == 2
 
 
 def test_frame_viewer_describe_frame_inventory_reports_visible_ids() -> None:

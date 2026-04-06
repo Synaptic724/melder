@@ -30,9 +30,13 @@ def test_frame_viewer_profile_create_general_exposes_expected_defaults() -> None
     assert profile.default_grouping == "frame"
     assert profile.default_detail_level == "detailed"
     assert "list_frames" in profile.enabled_helpers
+    assert "count_frames" in profile.enabled_helpers
+    assert "count_root_conduits" in profile.enabled_helpers
+    assert "count_spell_records" in profile.enabled_helpers
     assert "list_conduits" in profile.enabled_helpers
     assert "list_spells" in profile.enabled_helpers
     assert profile.tool_handler_names_by_name["list_frames"] == "list_frame_names"
+    assert profile.tool_handler_names_by_name["describe_frame"] == "describe_frame"
     assert profile.tool_handler_names_by_name["list_spells"] == "view_spell.list_spells"
     assert profile.view_frame is not None
     assert profile.view_conduit is not None

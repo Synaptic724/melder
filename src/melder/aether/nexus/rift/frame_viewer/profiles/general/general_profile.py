@@ -201,7 +201,11 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
         """
         return {
             "list_frames": "list_frame_names",
-            "describe_frame": "view_frame.describe_frame",
+            "describe_frame": "describe_frame",
+            "describe_frames": "describe_frames",
+            "count_frames": "count_frames",
+            "count_root_conduits": "count_root_conduits",
+            "count_spell_records": "count_spell_records",
             "describe_frame_payload": "view_frame.describe_frame_payload",
             "describe_frame_inventory": "view_frame.describe_frame_inventory",
             "describe_frame_access_contract": "view_frame.describe_frame_access_contract",
