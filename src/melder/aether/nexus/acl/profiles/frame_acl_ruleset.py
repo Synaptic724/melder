@@ -65,6 +65,10 @@ class FrameACLRuleSet(Cleanable):
         """
         Idempotently clear the ruleset and owned rules.
 
+        Contract:
+            - Cleans all owned rules before dropping references.
+            - Leaves the ruleset unusable after cleanup.
+
         Returns:
             None.
         """
@@ -120,6 +124,9 @@ class FrameACLRuleSet(Cleanable):
         """
         Return current rule names in insertion order.
 
+        Contract:
+            Returns a snapshot list of the current rule-name keys.
+
         Returns:
             List[str]: Current rule names.
         """
@@ -134,6 +141,9 @@ class FrameACLRuleSet(Cleanable):
         Args:
             rule_name:
                 Rule name to resolve.
+
+        Contract:
+            Resolves only existing rules and fails fast on absence.
 
         Returns:
             FrameACLRule: Existing rule.
@@ -152,6 +162,10 @@ class FrameACLRuleSet(Cleanable):
         Args:
             rule:
                 Rule object to store by its own name.
+
+        Contract:
+            - Replaces any existing distinct rule with the same `rule_name`.
+            - Cleans the displaced rule before storing the new one.
 
         Returns:
             None.
@@ -173,6 +187,10 @@ class FrameACLRuleSet(Cleanable):
             rule_name:
                 Rule name to remove.
 
+        Contract:
+            - Cleans the removed rule before returning.
+            - Returns False when the rule name is not registered.
+
         Returns:
             bool: True when the rule existed and was removed.
         """
@@ -187,6 +205,10 @@ class FrameACLRuleSet(Cleanable):
     def to_json_dict(self) -> Dict[str, object]:
         """
         Return the ruleset as a detached JSON-compatible dictionary.
+
+        Contract:
+            Returns a detached JSON-ready payload built from the current rule
+            snapshot.
 
         Returns:
             Dict[str, object]: JSON-compatible ruleset dictionary.
@@ -208,6 +230,10 @@ class FrameACLRuleSet(Cleanable):
         Args:
             payload:
                 JSON-compatible ruleset dictionary.
+
+        Contract:
+            Validates only the outer payload shape here and delegates rule-level
+            invariants to `FrameACLRule.from_json_dict(...)`.
 
         Returns:
             FrameACLRuleSet: Reconstructed ruleset object.
@@ -231,9 +257,12 @@ class FrameACLRuleSet(Cleanable):
         """
         Return a detached copy of the ruleset.
 
+        Contract:
+            Clones through the JSON-compatible round-trip path so the returned
+            ruleset has detached rule state.
+
         Returns:
             FrameACLRuleSet: Detached ruleset copy.
         """
         self.check_cleaned()
         return FrameACLRuleSet.from_json_dict(self.to_json_dict())
-

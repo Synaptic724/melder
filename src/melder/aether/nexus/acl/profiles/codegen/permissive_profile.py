@@ -10,6 +10,11 @@ def create_permissive_codegen_profile() -> FrameACLCodegenProfile:
     """
     Build the reusable `permissive` codegen profile.
 
+    Contract:
+        This is the most open of the standard codegen profiles. It allows the
+        broadest set of conduit and spell operations while still denying the
+        highest-risk capability gates such as mutation and unsafe reflection.
+
     Returns:
         FrameACLCodegenProfile: Reusable `permissive` codegen profile.
     """
@@ -53,4 +58,3 @@ def create_permissive_codegen_profile() -> FrameACLCodegenProfile:
             ],
         ),
     )
-

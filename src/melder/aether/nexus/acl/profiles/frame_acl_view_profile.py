@@ -108,6 +108,10 @@ class FrameACLViewProfile(Cleanable):
         """
         Idempotently clear the view profile and owned rulesets.
 
+        Contract:
+            - Cleans all owned rulesets before dropping references.
+            - Leaves the profile unusable after cleanup.
+
         Returns:
             None.
         """
@@ -136,6 +140,9 @@ class FrameACLViewProfile(Cleanable):
         """
         Create the default reusable view profile.
 
+        Contract:
+            Delegates to the standard `safe` view profile factory.
+
         Returns:
             FrameACLViewProfile: Default reusable view profile.
         """
@@ -149,6 +156,9 @@ class FrameACLViewProfile(Cleanable):
     def create_safe(cls) -> "FrameACLViewProfile":
         """
         Create the reusable `safe` view profile.
+
+        Contract:
+            Returns the restrictive default view posture.
 
         Returns:
             FrameACLViewProfile: Reusable `safe` view profile.
@@ -164,6 +174,9 @@ class FrameACLViewProfile(Cleanable):
         """
         Create the reusable `hybrid` view profile.
 
+        Contract:
+            Returns the intermediate view posture between safe and permissive.
+
         Returns:
             FrameACLViewProfile: Reusable `hybrid` view profile.
         """
@@ -178,6 +191,9 @@ class FrameACLViewProfile(Cleanable):
         """
         Create the reusable `permissive` view profile.
 
+        Contract:
+            Returns the most open standard view posture.
+
         Returns:
             FrameACLViewProfile: Reusable `permissive` view profile.
         """
@@ -189,49 +205,49 @@ class FrameACLViewProfile(Cleanable):
 
     @property
     def id(self) -> str:
-        """Return the stable profile identifier."""
+        """Return the stable identifier for this reusable view profile."""
         self.check_cleaned()
         return self._id
 
     @property
     def version(self) -> str:
-        """Return the reusable profile version string."""
+        """Return the version string carried by this reusable view profile."""
         self.check_cleaned()
         return self._version
 
     @property
     def name(self) -> str:
-        """Return the stable profile name."""
+        """Return the stable name of this reusable view profile."""
         self.check_cleaned()
         return self._name
 
     @property
     def minimum_spell_payload_profile_name(self) -> str:
-        """Return the minimum spell payload floor for this profile."""
+        """Return the minimum spell payload floor required by this view profile."""
         self.check_cleaned()
         return self._minimum_spell_payload_profile_name
 
     @property
     def frame_ruleset(self) -> FrameACLRuleSet:
-        """Return the frame-scoped ruleset."""
+        """Return the owned frame-scoped ruleset for this view profile."""
         self.check_cleaned()
         return self._frame_ruleset
 
     @property
     def conduit_ruleset(self) -> FrameACLRuleSet:
-        """Return the conduit-scoped ruleset."""
+        """Return the owned conduit-scoped ruleset for this view profile."""
         self.check_cleaned()
         return self._conduit_ruleset
 
     @property
     def spell_ruleset(self) -> FrameACLRuleSet:
-        """Return the spell-scoped ruleset."""
+        """Return the owned spell-scoped ruleset for this view profile."""
         self.check_cleaned()
         return self._spell_ruleset
 
     @property
     def member_ruleset(self) -> FrameACLRuleSet:
-        """Return the member-scoped ruleset."""
+        """Return the owned member-scoped ruleset for this view profile."""
         self.check_cleaned()
         return self._member_ruleset
 
@@ -240,7 +256,7 @@ class FrameACLViewProfile(Cleanable):
             ruleset: Optional[FrameACLRuleSet],
             default_name: str,
     ) -> FrameACLRuleSet:
-        """Normalize one optional ruleset input."""
+        """Normalize one optional ruleset input into a usable ruleset object."""
         return FrameACLViewProfile._coerce_ruleset(ruleset, default_name)
 
     @staticmethod
@@ -250,7 +266,7 @@ class FrameACLViewProfile(Cleanable):
             effect: str,
             conditions: Optional[dict] = None,
     ) -> FrameACLRule:
-        """Build one typed ACL rule."""
+        """Build one typed ACL rule from the supplied rule components."""
         return FrameACLViewProfile._build_rule(
             rule_name,
             operation,
@@ -263,7 +279,7 @@ class FrameACLViewProfile(Cleanable):
             name: str,
             rules: List[FrameACLRule],
     ) -> FrameACLRuleSet:
-        """Build one typed ACL ruleset."""
+        """Build one typed ACL ruleset from a name and rule list."""
         return FrameACLViewProfile._build_ruleset(name, rules)
 
     @staticmethod
@@ -271,6 +287,13 @@ class FrameACLViewProfile(Cleanable):
             ruleset: Optional[FrameACLRuleSet],
             default_name: str,
     ) -> FrameACLRuleSet:
+        """
+        Normalize one optional ruleset into a concrete ruleset instance.
+
+        Contract:
+            Returns a new empty ruleset when `ruleset` is None and otherwise
+            validates that the supplied object is already a `FrameACLRuleSet`.
+        """
         if ruleset is None:
             return FrameACLRuleSet(default_name)
         if not isinstance(ruleset, FrameACLRuleSet):
@@ -284,6 +307,9 @@ class FrameACLViewProfile(Cleanable):
             effect: str,
             conditions: Optional[dict] = None,
     ) -> FrameACLRule:
+        """
+        Build one typed ACL rule from primitive rule components.
+        """
         return FrameACLRule(
             rule_name=rule_name,
             operation=operation,
@@ -296,4 +322,7 @@ class FrameACLViewProfile(Cleanable):
             name: str,
             rules: List[FrameACLRule],
     ) -> FrameACLRuleSet:
+        """
+        Build one typed ACL ruleset from a ruleset name and rule list.
+        """
         return FrameACLRuleSet(name, rules=rules)

@@ -349,6 +349,10 @@ class Creations(Cleanable, ICreations):
         """
         self.check_cleaned()
         many_list = self._creations.setdefault(key, [])
+        if not isinstance(many_list, list):
+            raise ValueError(
+                f"Key {key} already exists in creations with non-list slot."
+            )
         creation = Creation(
             item,
             has_disposal_methods=has_disposal_methods,

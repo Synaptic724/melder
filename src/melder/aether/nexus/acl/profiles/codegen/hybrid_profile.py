@@ -10,6 +10,12 @@ def create_hybrid_codegen_profile() -> FrameACLCodegenProfile:
     """
     Build the reusable `hybrid` codegen profile.
 
+    Contract:
+        This profile sits between the stricter `safe` posture and the fully
+        open `permissive` posture. It allows core query/link/invoke/read
+        operations while still denying local creation, direct mutation, and
+        the more aggressive capability overrides.
+
     Returns:
         FrameACLCodegenProfile: Reusable `hybrid` codegen profile.
     """
@@ -53,4 +59,3 @@ def create_hybrid_codegen_profile() -> FrameACLCodegenProfile:
             ],
         ),
     )
-

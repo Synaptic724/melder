@@ -84,6 +84,11 @@ class FrameACLProfileBuilder(Cleanable):
         """
         Idempotently clear the builder/library and owned reusable profiles.
 
+        Contract:
+            - Cleans all owned reusable view and codegen profiles before
+              dropping references.
+            - Leaves the builder/library unusable after cleanup.
+
         Returns:
             None.
         """
@@ -107,26 +112,26 @@ class FrameACLProfileBuilder(Cleanable):
 
     @property
     def id(self) -> str:
-        """Return the stable builder identifier."""
+        """Return the stable identifier for this ACL profile builder/library."""
         self.check_cleaned()
         return self._id
 
     @property
     def version(self) -> str:
-        """Return the current builder version string."""
+        """Return the current version string for this ACL profile builder/library."""
         self.check_cleaned()
         return self._version
 
     @property
     def view_profiles_by_name(self) -> Dict[str, FrameACLViewProfile]:
-        """Return a detached snapshot of the view-profile registry."""
+        """Return a detached snapshot of the reusable view-profile registry."""
         self.check_cleaned()
         with self._lock:
             return dict(self._view_profiles_by_name)
 
     @property
     def codegen_profiles_by_name(self) -> Dict[str, FrameACLCodegenProfile]:
-        """Return a detached snapshot of the codegen-profile registry."""
+        """Return a detached snapshot of the reusable codegen-profile registry."""
         self.check_cleaned()
         with self._lock:
             return dict(self._codegen_profiles_by_name)
@@ -138,6 +143,11 @@ class FrameACLProfileBuilder(Cleanable):
         Args:
             view_profile:
                 Reusable view profile to store by name.
+
+        Contract:
+            - Replaces any existing distinct reusable view profile with the
+              same name.
+            - Cleans the displaced profile before storing the new one.
 
         Returns:
             None.
@@ -162,6 +172,11 @@ class FrameACLProfileBuilder(Cleanable):
             codegen_profile:
                 Reusable codegen profile to store by name.
 
+        Contract:
+            - Replaces any existing distinct reusable codegen profile with the
+              same name.
+            - Cleans the displaced profile before storing the new one.
+
         Returns:
             None.
         """
@@ -180,7 +195,7 @@ class FrameACLProfileBuilder(Cleanable):
             self,
             profile_name: str,
     ) -> FrameACLViewProfile:
-        """Return one reusable view profile or raise."""
+        """Return one reusable view profile or raise without synthesizing it."""
         self.check_cleaned()
         with self._lock:
             try:
@@ -192,7 +207,7 @@ class FrameACLProfileBuilder(Cleanable):
             self,
             profile_name: str,
     ) -> FrameACLCodegenProfile:
-        """Return one reusable codegen profile or raise."""
+        """Return one reusable codegen profile or raise without synthesizing it."""
         self.check_cleaned()
         with self._lock:
             try:
@@ -201,13 +216,13 @@ class FrameACLProfileBuilder(Cleanable):
                 raise KeyError(profile_name) from exc
 
     def list_view_profile_names(self) -> List[str]:
-        """Return the current reusable view-profile names."""
+        """Return a snapshot list of the current reusable view-profile names."""
         self.check_cleaned()
         with self._lock:
             return list(self._view_profiles_by_name.keys())
 
     def list_codegen_profile_names(self) -> List[str]:
-        """Return the current reusable codegen-profile names."""
+        """Return a snapshot list of the current reusable codegen-profile names."""
         self.check_cleaned()
         with self._lock:
             return list(self._codegen_profiles_by_name.keys())
@@ -215,6 +230,11 @@ class FrameACLProfileBuilder(Cleanable):
     def remove_view_profile(self, profile_name: str) -> bool:
         """
         Remove one reusable view profile unless it is the default profile.
+
+        Contract:
+            - Refuses to remove the designated default reusable profile.
+            - Cleans the removed profile before returning.
+            - Returns False when the profile name is not registered.
 
         Returns:
             bool: True when the profile existed and was removed.
@@ -232,6 +252,11 @@ class FrameACLProfileBuilder(Cleanable):
     def remove_codegen_profile(self, profile_name: str) -> bool:
         """
         Remove one reusable codegen profile unless it is the default profile.
+
+        Contract:
+            - Refuses to remove the designated default reusable profile.
+            - Cleans the removed profile before returning.
+            - Returns False when the profile name is not registered.
 
         Returns:
             bool: True when the profile existed and was removed.
@@ -272,6 +297,12 @@ class FrameACLProfileBuilder(Cleanable):
                 Optional local view override ruleset.
             codegen_override_ruleset:
                 Optional local codegen override ruleset.
+
+        Contract:
+            - Resolves the reusable view/codegen profiles from the builder's
+              registries first.
+            - Returns a new composed `FrameACLProfile` without storing it back
+              into the builder automatically.
 
         Returns:
             FrameACLProfile: Newly composed frame ACL profile.

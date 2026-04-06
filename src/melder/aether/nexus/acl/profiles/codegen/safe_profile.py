@@ -10,6 +10,12 @@ def create_safe_codegen_profile() -> FrameACLCodegenProfile:
     """
     Build the reusable `safe` codegen profile.
 
+    Contract:
+        This is the most restrictive of the standard codegen profiles. It
+        limits codegen to safe query/bind-existing operations and denies link
+        mutation, local creation, invocation, writes, and dangerous capability
+        escalation.
+
     Returns:
         FrameACLCodegenProfile: Reusable `safe` codegen profile.
     """
@@ -53,4 +59,3 @@ def create_safe_codegen_profile() -> FrameACLCodegenProfile:
             ],
         ),
     )
-
