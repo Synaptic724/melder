@@ -1,6 +1,3 @@
-from melder.aether.nexus.rift.frame_link.profiles.frame_link_codegen_profile import (
-    FrameLinkCodegenProfile,
-)
 from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile import (
     FrameLinkContractProfile,
 )
@@ -45,21 +42,4 @@ def create_permissive_frame_link_contract_profile() -> FrameLinkContractProfile:
                 "dynamic_access",
             ),
         ),
-        codegen_profile=FrameLinkCodegenProfile(
-            "permissive",
-            allowed_commands=(
-                "bind_existing",
-                "create_lesser_conduit",
-                "invoke_method",
-                "link",
-                "local_create",
-                "query",
-                "read_attribute",
-                "resolve_existing",
-                "transfer_ownership",
-                "unlink",
-                "write_attribute",
-            ),
-        ),
     )
-

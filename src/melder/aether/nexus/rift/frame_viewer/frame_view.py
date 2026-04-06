@@ -26,6 +26,9 @@ from melder.aether.nexus.rift.frame_link.frame_link_contract import FrameLinkCon
 from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile import (
     FrameLinkContractProfile,
 )
+from melder.aether.nexus.rift.frame_viewer.profiles.frame_view_profile import (
+    FrameViewProfile,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -75,6 +78,8 @@ class FrameView(Cleanable):
         "_view_id",
         "_lock",
         "_frame_name",
+        "_profile_name",
+        "_profile_version",
         "_links_by_id",
         "_metadata",
     ]
@@ -83,6 +88,8 @@ class FrameView(Cleanable):
             self,
             *,
             frame_name: str,
+            profile_name: Optional[str] = None,
+            profile_version: Optional[str] = None,
             links_by_id: Optional[Dict[str, FrameLink]] = None,
             metadata: Optional[Dict[str, object]] = None,
     ) -> None:
@@ -94,6 +101,10 @@ class FrameView(Cleanable):
         Args:
             frame_name:
                 Frame name this view is scoped to.
+            profile_name:
+                Optional view profile name applied to this projection.
+            profile_version:
+                Optional view profile version applied to this projection.
             links_by_id:
                 Optional map of visible links keyed by link id.
             metadata:
@@ -108,6 +119,8 @@ class FrameView(Cleanable):
         self._view_id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
+        self._profile_name: Optional[str] = profile_name
+        self._profile_version: Optional[str] = profile_version
         self._links_by_id: Dict[str, FrameLink] = dict(links_by_id) if links_by_id else {}
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
 
@@ -137,6 +150,8 @@ class FrameView(Cleanable):
             self._metadata.clear()
             self._metadata = None
             self._frame_name = None
+            self._profile_name = None
+            self._profile_version = None
             self._view_id = None
         self._lock = None
 
@@ -147,6 +162,7 @@ class FrameView(Cleanable):
             frame_descriptor: FrameDescriptor,
             compiled_access_surface: CompiledFrameACLAccessSurface,
             contract_profile: Optional[FrameLinkContractProfile] = None,
+            view_profile: Optional[FrameViewProfile] = None,
     ) -> "FrameView":
         """
         Internal
@@ -167,6 +183,8 @@ class FrameView(Cleanable):
             contract_profile:
                 Optional downstream frame-link contract profile used to narrow
                 the projected contract.
+            view_profile:
+                Optional view profile that modifies view defaults only.
 
         Returns:
             FrameView: Derived frame-scoped view containing view-safe links.
@@ -191,6 +209,8 @@ class FrameView(Cleanable):
             raise TypeError(
                 "contract_profile must be a FrameLinkContractProfile."
             )
+        if view_profile is not None and not isinstance(view_profile, FrameViewProfile):
+            raise TypeError("view_profile must be a FrameViewProfile.")
         effective_contract = FrameLinkContract.from_compiled_access_surface(
             compiled_access_surface,
             contract_profile=contract_profile,
@@ -296,10 +316,32 @@ class FrameView(Cleanable):
 
         return cls(
             frame_name=frame_descriptor.frame_name,
+            profile_name=(
+                view_profile.name if view_profile is not None else None
+            ),
+            profile_version=(
+                view_profile.version if view_profile is not None else None
+            ),
             links_by_id=links_by_id,
             metadata={
                 "contract_id": effective_contract.contract_id,
                 "allowed_kinds": effective_contract.allowed_kinds,
+                "view_profile_name": (
+                    view_profile.name if view_profile is not None else None
+                ),
+                "view_profile_version": (
+                    view_profile.version if view_profile is not None else None
+                ),
+                "default_detail_level": (
+                    view_profile.default_detail_level
+                    if view_profile is not None
+                    else None
+                ),
+                "preferred_kind_order": (
+                    view_profile.preferred_kind_order
+                    if view_profile is not None
+                    else tuple()
+                ),
                 "link_count": len(links_by_id),
             },
         )
@@ -315,6 +357,18 @@ class FrameView(Cleanable):
         """Return the frame name this view is scoped to."""
         self.check_cleaned()
         return self._frame_name
+
+    @property
+    def profile_name(self) -> Optional[str]:
+        """Return the optional applied view profile name."""
+        self.check_cleaned()
+        return self._profile_name
+
+    @property
+    def profile_version(self) -> Optional[str]:
+        """Return the optional applied view profile version."""
+        self.check_cleaned()
+        return self._profile_version
 
     @property
     def links_by_id(self) -> Dict[str, FrameLink]:
@@ -348,6 +402,8 @@ class FrameView(Cleanable):
         with self._lock:
             return FrameView(
                 frame_name=self._frame_name,
+                profile_name=self._profile_name,
+                profile_version=self._profile_version,
                 links_by_id={
                     link_id: frame_link.clone()
                     for link_id, frame_link in self._links_by_id.items()

@@ -22,6 +22,9 @@ from typing import Dict, List, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
 from melder.aether.nexus.rift.frame_viewer.frame_view import FrameView
+from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile import (
+    FrameViewerProfile,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -69,6 +72,8 @@ class FrameViewer(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_viewer_id",
         "_lock",
+        "_profile_name",
+        "_profile_version",
         "_views_by_frame_name",
         "_metadata",
     ]
@@ -76,6 +81,8 @@ class FrameViewer(Cleanable):
     def __init__(
             self,
             *,
+            profile_name: Optional[str] = None,
+            profile_version: Optional[str] = None,
             views_by_frame_name: Optional[Dict[str, FrameView]] = None,
             metadata: Optional[Dict[str, object]] = None,
     ) -> None:
@@ -87,6 +94,10 @@ class FrameViewer(Cleanable):
         Args:
             views_by_frame_name:
                 Optional frame-name -> FrameView map.
+            profile_name:
+                Optional viewer profile name applied to this projection.
+            profile_version:
+                Optional viewer profile version applied to this projection.
             metadata:
                 Optional viewer-local metadata.
 
@@ -96,6 +107,8 @@ class FrameViewer(Cleanable):
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
         self._viewer_id: str = IDBuilder.create_id()
+        self._profile_name: Optional[str] = profile_name
+        self._profile_version: Optional[str] = profile_version
         self._views_by_frame_name: Dict[str, FrameView] = (
             dict(views_by_frame_name) if views_by_frame_name else {}
         )
@@ -126,6 +139,8 @@ class FrameViewer(Cleanable):
             self._views_by_frame_name = None
             self._metadata.clear()
             self._metadata = None
+            self._profile_name = None
+            self._profile_version = None
             self._viewer_id = None
         self._lock = None
 
@@ -141,6 +156,18 @@ class FrameViewer(Cleanable):
         self.check_cleaned()
         with self._lock:
             return dict(self._views_by_frame_name)
+
+    @property
+    def profile_name(self) -> Optional[str]:
+        """Return the optional applied viewer profile name."""
+        self.check_cleaned()
+        return self._profile_name
+
+    @property
+    def profile_version(self) -> Optional[str]:
+        """Return the optional applied viewer profile version."""
+        self.check_cleaned()
+        return self._profile_version
 
     @property
     def metadata(self) -> Dict[str, object]:
@@ -472,5 +499,7 @@ class FrameViewer(Cleanable):
                     frame_name: frame_view.clone()
                     for frame_name, frame_view in self._views_by_frame_name.items()
                 },
+                profile_name=self._profile_name,
+                profile_version=self._profile_version,
                 metadata=dict(self._metadata),
             )

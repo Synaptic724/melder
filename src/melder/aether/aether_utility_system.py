@@ -28,6 +28,8 @@ class AetherUtilitySystem(Cleanable):
         - Resolves channel loggers directly through the registered resolver.
         - Explicit logger objects may still be resolved bottom-up via
           `resolve_safe_logger(...)`.
+        - Resets singleton state during cleanup so tests can construct a fresh
+          instance later.
 
     Lifecycle:
         Created eagerly by `Aether` at boot. Cleanup clears the registered
@@ -48,6 +50,10 @@ class AetherUtilitySystem(Cleanable):
         """
         Ensure the utility system behaves as a singleton.
 
+        Contract:
+            - Uses the class-level lock to serialize singleton creation.
+            - Returns the existing instance when one already exists.
+
         Returns:
             AetherUtilitySystem: The one process-wide utility system instance.
         """
@@ -63,6 +69,10 @@ class AetherUtilitySystem(Cleanable):
 
         Initialize the utility-system singleton.
 
+        Contract:
+            - Initializes process-wide resolver/default-logger state exactly
+              once per singleton lifetime.
+
         Returns:
             None.
         """
@@ -77,6 +87,11 @@ class AetherUtilitySystem(Cleanable):
     def _reset_singleton_for_tests(cls) -> None:
         """
         Reset the utility-system singleton for test isolation.
+
+        Contract:
+            - Cleans the existing singleton when present.
+            - Clears `_instance` and `_initialized` so later access rebuilds
+              the singleton from scratch.
 
         Returns:
             None.
@@ -96,7 +111,12 @@ class AetherUtilitySystem(Cleanable):
         """
         Internal
 
-        Idempotently cleanup the utility system.
+        Idempotently clean up the utility system.
+
+        Contract:
+            - Safe to call multiple times.
+            - Clears the registered channel resolver and default logger.
+            - Resets singleton bootstrap state for future reinitialization.
 
         Returns:
             None.
@@ -120,7 +140,8 @@ class AetherUtilitySystem(Cleanable):
             Return whether a channel-logger resolver has been registered.
 
         Returns:
-            bool: True when configured.
+            bool:
+                True when a channel-logger resolver is currently configured.
         """
         self.check_cleaned()
         return self._channel_logger_resolver is not None
@@ -132,7 +153,11 @@ class AetherUtilitySystem(Cleanable):
         """
         Internal
 
-        Register the callable used to request Iris-backed channel loggers.
+        Register the callable used to request channel-style loggers.
+
+        Contract:
+            - Replaces any previously registered resolver.
+            - Requires a callable object.
 
         Args:
             resolver:
@@ -153,7 +178,8 @@ class AetherUtilitySystem(Cleanable):
             Return whether a plain stdlib logger fallback has been registered.
 
         Returns:
-            bool: True when configured.
+            bool:
+                True when a stdlib fallback logger is currently configured.
         """
         self.check_cleaned()
         return self._default_logger is not None
@@ -164,6 +190,10 @@ class AetherUtilitySystem(Cleanable):
 
         Register one process-wide default stdlib logger for message-only
         fallback behavior when no channel resolver is available.
+
+        Contract:
+            - Replaces any previously registered fallback logger.
+            - Requires a concrete `logging.Logger` instance.
 
         Args:
             logger:
@@ -198,6 +228,9 @@ class AetherUtilitySystem(Cleanable):
 
         Remove the currently registered channel-logger resolver.
 
+        Contract:
+            - Leaves the utility system in fallback-only mode.
+
         Returns:
             None.
         """
@@ -211,6 +244,10 @@ class AetherUtilitySystem(Cleanable):
     ) -> SafeLogger:
         """
         Resolve a plain logger-like object into a `SafeLogger`.
+
+        Contract:
+            - Returns a null `SafeLogger` when `logger` is None.
+            - Accepts either an `IChannelLogger` or stdlib `logging.Logger`.
 
         Args:
             logger:
@@ -239,6 +276,13 @@ class AetherUtilitySystem(Cleanable):
     ) -> SafeLogger:
         """
         Resolve a channel-style logger for one registrant.
+
+        Contract:
+            - Uses the registered channel resolver when available.
+            - Falls back to the registered stdlib logger when the resolver is
+              missing or raises.
+            - Falls back to a null `SafeLogger` when no resolver or fallback
+              logger exists.
 
         Args:
             registrant:

@@ -144,6 +144,28 @@ def test_cleanup_is_idempotent(conduit_cloud):
     conduit_cloud.cleanup()
     assert conduit_cloud._cleaned
 
+
+def test_cleanup_returns_early_when_cleaned_flips_inside_lock(conduit_cloud):
+    """cleanup should return safely if another path marks the cloud cleaned inside the lock."""
+    conduit_cloud._registry["x"] = MagicMock(spec=IConduit)
+    original_lock = conduit_cloud._lock
+
+    class _LockThatMarksCleaned:
+        def __enter__(self_inner):
+            conduit_cloud._cleaned = True
+            return self_inner
+
+        def __exit__(self_inner, exc_type, exc_value, traceback):
+            return False
+
+    try:
+        conduit_cloud._lock = _LockThatMarksCleaned()
+        conduit_cloud.cleanup()
+    finally:
+        conduit_cloud._lock = original_lock
+
+    assert conduit_cloud._registry is not None
+
 def test_context_manager(conduit_cloud):
     """
     Test that ConduitCloud can be used as a context manager.

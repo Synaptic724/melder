@@ -6,9 +6,6 @@ from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
 from melder.aether.nexus.rift.frame_link.frame_link_contract import (
     FrameLinkContract,
 )
-from melder.aether.nexus.rift.frame_link.profiles.frame_link_codegen_profile import (
-    FrameLinkCodegenProfile,
-)
 from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile import (
     FrameLinkContractProfile,
 )
@@ -31,7 +28,7 @@ from melder.aether.nexus.rift.frame_link.profiles.safe_profile import (
 
 def _build_compiled_surface() -> CompiledFrameACLAccessSurface:
     """
-    Build one compiled ACL access surface for frame-link profile tests.
+    Build one compiled ACL access surface for frame-link contract tests.
 
     Returns:
         CompiledFrameACLAccessSurface:
@@ -115,52 +112,9 @@ def test_frame_link_view_profile_cleanup_clears_owned_state() -> None:
     assert profile._spell_payload_sections is None
 
 
-def test_frame_link_codegen_profile_requires_non_empty_name_and_version() -> None:
+def test_frame_link_contract_profile_requires_view_profile_only() -> None:
     """
-    Verify frame-link codegen profiles reject invalid required identity fields.
-
-    Returns:
-        None.
-    """
-    with pytest.raises(ValueError, match="name cannot be empty"):
-        FrameLinkCodegenProfile("")
-
-    with pytest.raises(ValueError, match="version cannot be empty"):
-        FrameLinkCodegenProfile("safe", version="")
-
-
-def test_frame_link_codegen_profile_defaults_to_empty_command_filter() -> None:
-    """
-    Verify frame-link codegen profiles default to no explicit narrowing.
-
-    Returns:
-        None.
-    """
-    profile = FrameLinkCodegenProfile("safe")
-
-    assert profile.allowed_commands == tuple()
-
-
-def test_frame_link_codegen_profile_cleanup_clears_owned_state() -> None:
-    """
-    Verify frame-link codegen profile cleanup clears owned state.
-
-    Returns:
-        None.
-    """
-    profile = FrameLinkCodegenProfile("safe", allowed_commands=("query",))
-
-    profile.cleanup()
-
-    assert profile.cleaned is True
-    assert profile._allowed_commands is None
-    assert profile._version is None
-    assert profile._name is None
-
-
-def test_frame_link_contract_profile_requires_typed_children() -> None:
-    """
-    Verify composed downstream contract profiles require typed child profiles.
+    Verify downstream contract profiles only require a typed view profile.
 
     Returns:
         None.
@@ -169,27 +123,18 @@ def test_frame_link_contract_profile_requires_typed_children() -> None:
         FrameLinkContractProfile(
             "",
             view_profile=FrameLinkViewProfile("safe"),
-            codegen_profile=FrameLinkCodegenProfile("safe"),
         )
 
     with pytest.raises(TypeError, match="view_profile must be a FrameLinkViewProfile"):
         FrameLinkContractProfile(
             "safe",
             view_profile=object(),
-            codegen_profile=FrameLinkCodegenProfile("safe"),
-        )
-
-    with pytest.raises(TypeError, match="codegen_profile must be a FrameLinkCodegenProfile"):
-        FrameLinkContractProfile(
-            "safe",
-            view_profile=FrameLinkViewProfile("safe"),
-            codegen_profile=object(),
         )
 
 
-def test_frame_link_contract_profile_cleanup_clears_profile_references() -> None:
+def test_frame_link_contract_profile_cleanup_clears_profile_reference() -> None:
     """
-    Verify composed downstream contract profile cleanup clears child refs.
+    Verify composed downstream contract profile cleanup clears the view ref.
 
     Returns:
         None.
@@ -197,19 +142,17 @@ def test_frame_link_contract_profile_cleanup_clears_profile_references() -> None
     profile = FrameLinkContractProfile(
         "safe",
         view_profile=FrameLinkViewProfile("safe"),
-        codegen_profile=FrameLinkCodegenProfile("safe"),
     )
 
     profile.cleanup()
 
     assert profile.cleaned is True
     assert profile._view_profile is None
-    assert profile._codegen_profile is None
 
 
 def test_frame_link_contract_profile_builder_seeds_named_catalog() -> None:
     """
-    Verify the downstream profile builder seeds safe, hybrid, and permissive.
+    Verify the downstream contract profile builder seeds safe/hybrid/permissive.
 
     Returns:
         None.
@@ -242,12 +185,10 @@ def test_frame_link_contract_profile_builder_replacing_profile_cleans_old_profil
     first_profile = FrameLinkContractProfile(
         "custom",
         view_profile=FrameLinkViewProfile("custom"),
-        codegen_profile=FrameLinkCodegenProfile("custom"),
     )
     second_profile = FrameLinkContractProfile(
         "custom",
         view_profile=FrameLinkViewProfile("custom"),
-        codegen_profile=FrameLinkCodegenProfile("custom"),
     )
 
     builder.register_profile(first_profile)
@@ -285,9 +226,9 @@ def test_frame_link_contract_profile_builder_cleanup_cascades_to_owned_profiles(
     assert builder._profiles_by_name is None
 
 
-def test_safe_frame_link_contract_profile_has_expected_contract_shape() -> None:
+def test_safe_frame_link_contract_profile_has_expected_view_shape() -> None:
     """
-    Verify the safe downstream contract profile carries the expected filters.
+    Verify the safe downstream contract profile carries the expected view filters.
 
     Returns:
         None.
@@ -300,16 +241,11 @@ def test_safe_frame_link_contract_profile_has_expected_contract_shape() -> None:
         "system_state",
         "rift_enabled",
     )
-    assert profile.codegen_profile.allowed_commands == (
-        "bind_existing",
-        "query",
-        "resolve_existing",
-    )
 
 
-def test_hybrid_frame_link_contract_profile_has_expected_contract_shape() -> None:
+def test_hybrid_frame_link_contract_profile_has_expected_view_shape() -> None:
     """
-    Verify the hybrid downstream contract profile carries the expected filters.
+    Verify the hybrid downstream contract profile carries the expected view filters.
 
     Returns:
         None.
@@ -319,12 +255,11 @@ def test_hybrid_frame_link_contract_profile_has_expected_contract_shape() -> Non
     assert profile.name == "hybrid"
     assert "root_conduit_count" in profile.view_profile.frame_payload_fields
     assert "policy" in profile.view_profile.conduit_payload_sections
-    assert "invoke_method" in profile.codegen_profile.allowed_commands
 
 
-def test_permissive_frame_link_contract_profile_has_expected_contract_shape() -> None:
+def test_permissive_frame_link_contract_profile_has_expected_view_shape() -> None:
     """
-    Verify the permissive downstream contract profile carries the widest filters.
+    Verify the permissive downstream contract profile carries the widest view filters.
 
     Returns:
         None.
@@ -334,7 +269,6 @@ def test_permissive_frame_link_contract_profile_has_expected_contract_shape() ->
     assert profile.name == "permissive"
     assert "ai_native_enabled" in profile.view_profile.frame_payload_fields
     assert "peer_conduit_ids" in profile.view_profile.conduit_payload_sections
-    assert "write_attribute" in profile.codegen_profile.allowed_commands
 
 
 def test_frame_link_contract_from_compiled_access_surface_rejects_invalid_inputs() -> None:
@@ -354,30 +288,29 @@ def test_frame_link_contract_from_compiled_access_surface_rejects_invalid_inputs
         )
 
 
-def test_frame_link_contract_without_profile_retains_compiled_values() -> None:
+def test_frame_link_contract_without_profile_retains_compiled_exposure() -> None:
     """
-    Verify direct contract shaping retains compiled values without narrowing.
+    Verify direct contract shaping retains compiled exposure without narrowing.
 
     Returns:
         None.
     """
-    compiled_surface = _build_compiled_surface()
-
-    contract = FrameLinkContract.from_compiled_access_surface(compiled_surface)
+    contract = FrameLinkContract.from_compiled_access_surface(
+        _build_compiled_surface()
+    )
 
     assert contract.frame_name == "ops"
     assert contract.allowed_kinds == ("conduit", "frame", "spell")
     assert contract.metadata["source"] == "compiled"
 
 
-def test_frame_link_contract_with_profile_narrows_projection() -> None:
+def test_frame_link_contract_with_profile_narrows_exposure() -> None:
     """
-    Verify downstream profiles narrow the compiled projection.
+    Verify downstream profiles narrow the compiled exposure projection.
 
     Returns:
         None.
     """
-    compiled_surface = _build_compiled_surface()
     contract_profile = FrameLinkContractProfile(
         "frame_only",
         view_profile=FrameLinkViewProfile(
@@ -385,14 +318,10 @@ def test_frame_link_contract_with_profile_narrows_projection() -> None:
             allowed_kinds=("frame",),
             frame_payload_fields=("system_state",),
         ),
-        codegen_profile=FrameLinkCodegenProfile(
-            "frame_only",
-            allowed_commands=("query",),
-        ),
     )
 
     contract = FrameLinkContract.from_compiled_access_surface(
-        compiled_surface,
+        _build_compiled_surface(),
         contract_profile=contract_profile,
     )
 
@@ -406,26 +335,24 @@ def test_frame_link_contract_with_profile_narrows_projection() -> None:
     }
 
 
-def test_frame_link_contract_profile_with_empty_filters_does_not_narrow_projection() -> None:
+def test_frame_link_contract_profile_with_empty_filters_does_not_narrow_exposure() -> None:
     """
-    Verify empty downstream filters preserve the compiled projection.
+    Verify empty downstream filters preserve the compiled exposure.
 
     Returns:
         None.
     """
-    compiled_surface = _build_compiled_surface()
     contract_profile = FrameLinkContractProfile(
         "passthrough",
         view_profile=FrameLinkViewProfile("passthrough"),
-        codegen_profile=FrameLinkCodegenProfile("passthrough"),
     )
 
     contract = FrameLinkContract.from_compiled_access_surface(
-        compiled_surface,
+        _build_compiled_surface(),
         contract_profile=contract_profile,
     )
 
-    assert contract.allowed_kinds == tuple(sorted(compiled_surface.allowed_kinds))
+    assert contract.allowed_kinds == tuple(sorted(_build_compiled_surface().allowed_kinds))
     assert contract.metadata["frame_payload_fields"] == (
         "system_state",
         "rift_enabled",
@@ -454,59 +381,7 @@ def test_frame_link_contract_cleanup_clears_owned_state() -> None:
 
 def test_frame_link_contract_helper_methods_expose_effective_contract_shape() -> None:
     """
-    Verify contract helper APIs expose the effective consumer-facing shape.
-
-    Returns:
-        None.
-    """
-    contract = FrameLinkContract.from_compiled_access_surface(
-        _build_compiled_surface()
-    )
-
-    assert contract.allows_kind("frame") is True
-    assert contract.allows_kind("mutation") is False
-    assert contract.get_frame_payload_fields() == (
-        "system_state",
-        "rift_enabled",
-        "root_conduit_count",
-    )
-    assert contract.get_conduit_payload_sections("conduit-1") == (
-        "conduit_name",
-        "conduit_state",
-        "policy",
-    )
-    assert contract.get_spell_payload_sections(("spellbook-1", "spell-1")) == (
-        "binding_payload",
-        "resolution_payload",
-        "metadata",
-        "class_profile",
-    )
-
-
-def test_frame_link_contract_helper_methods_reject_invalid_inputs() -> None:
-    """
-    Verify contract helper APIs reject invalid subject keys.
-
-    Returns:
-        None.
-    """
-    contract = FrameLinkContract.from_compiled_access_surface(
-        _build_compiled_surface()
-    )
-
-    with pytest.raises(ValueError, match="source_kind cannot be empty"):
-        contract.allows_kind("")
-
-    with pytest.raises(ValueError, match="conduit_id cannot be empty"):
-        contract.get_conduit_payload_sections("")
-
-    with pytest.raises(ValueError, match="record_key must be a non-empty 2-item tuple"):
-        contract.get_spell_payload_sections(("spellbook-1",))
-
-
-def test_frame_link_contract_helper_methods_expose_effective_contract_shape() -> None:
-    """
-    Verify contract helper APIs expose the effective consumer-facing shape.
+    Verify contract helper APIs expose the effective exposure shape.
 
     Returns:
         None.
@@ -548,7 +423,7 @@ def test_frame_link_contract_helper_methods_expose_effective_contract_shape() ->
 
 def test_frame_link_contract_helper_methods_reject_invalid_inputs() -> None:
     """
-    Verify contract helper APIs fail fast on invalid subject keys.
+    Verify contract helper APIs reject invalid subject keys.
 
     Returns:
         None.

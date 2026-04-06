@@ -116,3 +116,79 @@ def test_nexus_runtime_posture_accepts_bound_frame_configuration() -> None:
 
     assert rift.default_target_frame_name == "ops"
     assert rift.target_frame_names == ("ops",)
+
+
+def test_aetheric_frame_configuration_rejects_non_bool_ai_native_flag() -> None:
+    """Constructor should reject non-bool ai_native_enabled values."""
+    with pytest.raises(TypeError, match="ai_native_enabled must be a bool"):
+        AethericFrameConfiguration(
+            origin_spellbook_id="spellbook-alpha",
+            system_state=SystemState.dynamic,
+            ai_native_enabled="yes",
+            rift_enabled=True,
+        )
+
+
+def test_aetheric_frame_configuration_rejects_non_bool_rift_flag() -> None:
+    """Constructor should reject non-bool rift_enabled values."""
+    with pytest.raises(TypeError, match="rift_enabled must be a bool"):
+        AethericFrameConfiguration(
+            origin_spellbook_id="spellbook-alpha",
+            system_state=SystemState.dynamic,
+            ai_native_enabled=True,
+            rift_enabled="yes",
+        )
+
+
+def test_from_spellbook_configuration_rejects_none_configuration() -> None:
+    """from_spellbook_configuration should reject None."""
+    with pytest.raises(TypeError, match="configuration cannot be None"):
+        AethericFrameConfiguration.from_spellbook_configuration(
+            origin_spellbook_id="spellbook-alpha",
+            configuration=None,
+        )
+
+
+def test_aetheric_frame_configuration_exposes_id_and_describe_posture() -> None:
+    """Configuration should expose a stable id and a detached posture description."""
+    frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-alpha",
+        system_state=SystemState.dynamic,
+        ai_native_enabled=True,
+        rift_enabled=False,
+    )
+
+    assert frame_configuration.id is not None
+    assert frame_configuration.describe_posture() == {
+        "origin_spellbook_id": "spellbook-alpha",
+        "system_state": SystemState.dynamic,
+        "ai_native_enabled": True,
+        "rift_enabled": False,
+    }
+
+
+def test_matches_posture_returns_false_for_none() -> None:
+    """matches_posture should return False when the comparison target is None."""
+    frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-alpha",
+        system_state=SystemState.dynamic,
+        ai_native_enabled=True,
+        rift_enabled=False,
+    )
+
+    assert frame_configuration.matches_posture(None) is False
+
+
+def test_cleanup_is_idempotent_for_frame_configuration() -> None:
+    """cleanup should be safe to call repeatedly."""
+    frame_configuration = AethericFrameConfiguration(
+        origin_spellbook_id="spellbook-alpha",
+        system_state=SystemState.dynamic,
+        ai_native_enabled=True,
+        rift_enabled=False,
+    )
+
+    frame_configuration.cleanup()
+    frame_configuration.cleanup()
+
+    assert frame_configuration._cleaned is True

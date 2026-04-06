@@ -1,6 +1,3 @@
-from melder.aether.nexus.rift.frame_link.profiles.frame_link_codegen_profile import (
-    FrameLinkCodegenProfile,
-)
 from melder.aether.nexus.rift.frame_link.profiles.frame_link_contract_profile import (
     FrameLinkContractProfile,
 )
@@ -31,17 +28,4 @@ def create_hybrid_frame_link_contract_profile() -> FrameLinkContractProfile:
                 "callable_profile",
             ),
         ),
-        codegen_profile=FrameLinkCodegenProfile(
-            "hybrid",
-            allowed_commands=(
-                "bind_existing",
-                "invoke_method",
-                "link",
-                "query",
-                "read_attribute",
-                "resolve_existing",
-                "unlink",
-            ),
-        ),
     )
-
