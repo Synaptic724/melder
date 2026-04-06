@@ -2413,7 +2413,10 @@ class IFrameACLViewProfile(ICleanable, Protocol):
 
     name: str
     version: str
-    minimum_spell_payload_profile_name: str
+    required_nexus_label: str
+    required_nexus_version: str
+    minimum_spell_payload_type: str
+    minimum_spell_payload_version: str
     frame_ruleset: IFrameACLRuleSet
     conduit_ruleset: IFrameACLRuleSet
     spell_ruleset: IFrameACLRuleSet

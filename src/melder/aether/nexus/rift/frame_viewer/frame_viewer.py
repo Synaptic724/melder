@@ -466,11 +466,11 @@ class FrameViewer(Cleanable):
         compiled_access_surface = self._get_required_compiled_access_surface(frame_name)
         grouped_links = self.list_links_grouped_by_kind(frame_name=frame_name)
         descriptor = self._get_required_frame_descriptor(frame_name)
-        frame_payload_profile = None
+        frame_nexus_contract = None
         if descriptor.frame_overview is not None:
-            frame_payload_profile = "{0}:{1}".format(
-                descriptor.frame_overview.payload.profile_name,
-                descriptor.frame_overview.payload.profile_version,
+            frame_nexus_contract = "{0}:{1}".format(
+                descriptor.frame_overview.nexus_label,
+                descriptor.frame_overview.nexus_version,
             )
         return {
             "frame_name": frame_name,
@@ -482,7 +482,7 @@ class FrameViewer(Cleanable):
             },
             "metadata": {
                 **compiled_access_surface.metadata,
-                "frame_payload_profile": frame_payload_profile,
+                "frame_nexus_contract": frame_nexus_contract,
             },
         }
 

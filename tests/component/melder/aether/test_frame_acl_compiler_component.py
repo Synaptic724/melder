@@ -221,13 +221,17 @@ def test_component_compiled_surface_flows_directly_into_frame_viewer_projection(
     """
     compiler = FrameACLCompiler(FrameACLManager().frame_acl_profile_builder)
     descriptor = _build_frame_descriptor()
+    configuration = FrameACLConfiguration.create_default("ops")
     compiled_surface = compiler.compile_frame_access_surface(
         descriptor,
-        FrameACLConfiguration.create_default("ops"),
+        configuration,
     )
 
     viewer = FrameViewer(
         frame_descriptors_by_name={"ops": descriptor},
+        frame_acl_configurations_by_frame_name={
+            "ops": configuration,
+        },
         compiled_access_surfaces_by_frame_name={"ops": compiled_surface},
         default_view_frame_name="ops",
     )
