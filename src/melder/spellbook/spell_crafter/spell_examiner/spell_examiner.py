@@ -14,22 +14,27 @@ from melder.utilities.helpers.id_builder import IDBuilder
 class SpellExaminer(Cleanable):
     """
     Purpose:
-        Provide one registry-driven profile factory for spell examination.
+        Act as the registry-backed front door for spell-examination profiles.
 
     Contract:
-        - `create_profile(...)` is the only public profile-creation entrypoint.
-        - The default registry exposes only `general` and `detailed`.
-        - Both profile kinds support a two-step lifecycle:
-          phase 1 from a raw candidate, phase 2 completion after `Spell`
-          exists.
-        - `create_profile(...)` returns a partial or complete profile depending
-          on whether the supplied target is a raw candidate or a fully formed
-          `Spell`.
-        - The registry is mutable through explicit `register_profile_builder(...)`
-          calls without carrying an additional explicit mutex on the examiner.
+        - This class does not inspect raw candidates itself; it routes requests
+          to named builder callables.
+        - Callers can ask for a profile by stable name instead of depending on
+          concrete profile classes directly.
+        - The runtime seeds only the built-in `general` and `detailed`
+          builders, but the registry remains open for explicit extension.
+        - Builders receive the original target object unchanged plus the shared
+          formatting knobs (`show_dunders`, `max_repr`).
+        - The returned object is whatever the resolved builder produces. For a
+          raw candidate that may be a partial examination view; for a bound
+          `Spell` it may be a fuller runtime-aware profile.
+        - Registry mutation is explicit through
+          `register_profile_builder(...)` and uses plain dictionary semantics:
+          later registrations replace earlier ones for the same name.
 
     Lifecycle:
-        Cleanup is idempotent and clears the registered builder registry.
+        The examiner owns its builder registry and stable id only. Cleanup is
+        idempotent, clears the registry, and leaves the object unusable.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -40,7 +45,13 @@ class SpellExaminer(Cleanable):
 
     def __init__(self) -> None:
         """
-        Initialize one registry-driven SpellExaminer.
+        Initialize one registry-driven SpellExaminer instance.
+
+        Contract:
+            - Allocates a stable examiner id for tracing/introspection.
+            - Creates an empty mutable builder registry.
+            - Seeds the built-in runtime builders through
+              `_register_default_profile_builders()`.
 
         Returns:
             None.
@@ -52,11 +63,13 @@ class SpellExaminer(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Idempotently clear the profile-builder registry.
+        Idempotently release examiner-owned registry state.
 
         Contract:
-            Clears the examiner-owned builder registry and leaves the examiner
-            unusable after cleanup.
+            - Clears the examiner-owned builder registry.
+            - Does not invoke or clean the registered builders; they are
+              treated as external callables rather than owned child objects.
+            - Leaves the examiner unusable after cleanup.
 
         Returns:
             None.
@@ -85,17 +98,20 @@ class SpellExaminer(Cleanable):
             builder: Callable[[Any, bool, int], Any],
     ) -> None:
         """
-        Register or replace one named profile builder.
+        Register or replace one named examination-profile builder.
 
         Args:
             profile_name:
-                Stable profile-builder name.
+                Stable profile name exposed to `create_profile(...)`.
             builder:
-                Callable accepting `(target, show_dunders, max_repr)`.
+                Callable accepting `(target, show_dunders, max_repr)` and
+                returning the profile object for that target.
 
         Contract:
-            Replaces any existing builder registered under the same profile
-            name.
+            - Replaces any existing builder registered under the same profile
+              name.
+            - Does not normalize or wrap the supplied callable.
+            - Serves as the extension seam for new spell-examination views.
 
         Returns:
             None.
@@ -122,8 +138,9 @@ class SpellExaminer(Cleanable):
                 Profile-builder name to inspect.
 
         Contract:
-            Performs an existence check only; it does not synthesize or
-            validate the builder.
+            Performs an existence check only; it does not validate builder
+            behavior, call the builder, or imply that the builder will succeed
+            for a specific target.
 
         Returns:
             bool: True when the builder is registered.
@@ -136,7 +153,9 @@ class SpellExaminer(Cleanable):
         Return the current registered profile-builder names in insertion order.
 
         Contract:
-            Returns a snapshot list of the current builder-registry keys.
+            Returns a snapshot list of the current builder-registry keys, so
+            later registry mutation does not retroactively change the returned
+            list object.
 
         Returns:
             List[str]: Current builder names.
@@ -152,13 +171,13 @@ class SpellExaminer(Cleanable):
             max_repr: int = 120,
     ) -> Any:
         """
-        Create one profile using the named registered builder.
+        Build one examination profile through the named registered builder.
 
         Args:
             target:
-                Raw candidate object or fully formed `Spell`.
+                Raw candidate object or fully formed `Spell` to examine.
             profile:
-                Registered profile-builder name.
+                Registered profile-builder name to resolve.
             show_dunders:
                 Dunder-inspection preference for builders that honor it.
             max_repr:
@@ -166,8 +185,12 @@ class SpellExaminer(Cleanable):
 
         Contract:
             - Resolves the requested builder from the current registry.
-            - Delegates all profile construction to that builder.
-            - Returns whatever profile object the resolved builder produces.
+            - Delegates all examination work to that builder.
+            - Does not reinterpret the target or verify the builder's return
+              type.
+            - Provides one stable front door for binding-time and post-binding
+              profile creation so callers do not have to know which concrete
+              profile class to instantiate themselves.
 
         Returns:
             Any: Profile object returned by the resolved builder.
@@ -188,11 +211,14 @@ class SpellExaminer(Cleanable):
 
     def _register_default_profile_builders(self) -> None:
         """
-        Register the default profile builders used by the runtime.
+        Seed the built-in examination profiles used by the runtime.
 
         Contract:
-            Seeds the built-in `general` and `detailed` builders into the
-            mutable registry used by `create_profile()`.
+            - Registers the built-in `general` and `detailed` builders into the
+              mutable registry used by `create_profile()`.
+            - Defines the default public profile surface for a fresh examiner.
+            - Leaves room for callers to replace or extend that surface later
+              through `register_profile_builder(...)`.
 
         Returns:
             None.

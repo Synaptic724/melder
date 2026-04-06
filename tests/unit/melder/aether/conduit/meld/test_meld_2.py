@@ -338,6 +338,54 @@ def test_resolve_spell_lookup_missing_raises_keyerror() -> None:
         )
 
 
+def test_resolve_spell_string_uses_spell_id_path() -> None:
+    """
+    Verify string spell inputs route through spell_id resolution.
+
+    Contract:
+        - String `spell` values are treated as spell ids.
+    """
+    spell = _SpellStub(spell_id="spell-1")
+    spellbook = _SpellbookStub()
+    spellbook._spell_id_pool["spell-1"] = spell
+    meld = _make_meld(spellbook=spellbook)
+    assert meld._resolve_spell(
+        spell="spell-1",
+        spell_name=None,
+        spellframe=None,
+        binding_name=None,
+    ) is spell
+
+
+def test_resolve_spell_with_spell_name_and_spellframe_uses_name_as_spell_source() -> None:
+    """
+    Verify spell_name participates in normalization when spellframe is also provided.
+
+    Contract:
+        - `spell_name` becomes the spell source when `spell` is None.
+        - `spellframe` remains part of the normalized lookup key.
+    """
+    spell = _SpellStub(spell_id="spell-1")
+    frame_key, bind_key = SpellInputUtils.normalize_spell_key(
+        spell="NamedSpell",
+        spellframe="frame",
+        binding_name="primary",
+    )
+    lookup_key = (frame_key, bind_key)
+    spell_index = object()
+    spellbook = _SpellbookStub(
+        spells={spell_index: spell},
+        lookup_spells={lookup_key: spell_index},
+    )
+    meld = _make_meld(spellbook=spellbook)
+    assert meld._resolve_spell(
+        spell=None,
+        spell_name="NamedSpell",
+        spellframe="frame",
+        binding_name="primary",
+    ) is spell
+
+
 def test_resolve_spell_by_lookup_key_finds_contracted_spell() -> None:
     """
     Verify lookup-key resolution finds contracted spells.
@@ -361,6 +409,20 @@ def test_resolve_spell_by_lookup_key_finds_contracted_spell() -> None:
     )
     meld = _make_meld(spellbook=spellbook)
     assert meld._resolve_spell_by_lookup_key(lookup_key) is spell
+
+
+def test_resolve_spell_by_id_prefers_spell_id_pool() -> None:
+    """
+    Verify spell_id resolution prefers the pooled spell map before other maps.
+
+    Contract:
+        - `_spell_id_pool` entries are returned first.
+    """
+    pooled_spell = _SpellStub(spell_id="spell-pooled")
+    spellbook = _SpellbookStub()
+    spellbook._spell_id_pool["spell-pooled"] = pooled_spell
+    meld = _make_meld(spellbook=spellbook)
+    assert meld._resolve_spell_by_id("spell-pooled") is pooled_spell
 
 
 def test_meld_does_not_own_creation_context_factory() -> None:

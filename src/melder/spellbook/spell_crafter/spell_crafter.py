@@ -137,40 +137,49 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class SpellCrafter(Cleanable):
     """
-    Per-spell **compiler / resolution helper**.
+    Per-spell orchestration surface for the SpellCrafter pipeline.
 
-    This object owns all *ephemeral* artifacts across the four conceptual
-    phases for a single :class:`Spell`:
+    This class is the spell-local owner for the artifacts that turn one bound
+    :class:`Spell` from "registered metadata" into "validated, plan-bearing
+    runtime input." It starts with the structural phases that inspect the
+    callable surface and build the local dependency picture, then retains the
+    later conduit-scoped artifacts that resolution and meld-time gates depend
+    on for that same spell.
+
+    Conceptual ownership is split like this:
+
+        * :class:`Spellbook` owns long-lived registries, frame integration, and
+          the multi-spell phase orchestration.
+        * :class:`Spell` owns durable identity and the final concrete build
+          details pushed back into the spell.
+        * :class:`SpellCrafter` owns the transient and semi-transient artifacts
+          produced while compiling one spell through Phases 1-11.
+
+    Phase coverage:
 
         1. Requirements (signature -> SpellRequirements)
         2. Symbolic graph (requirements -> symbolic constructor sockets)
         3. Local frame / DAG (symbolic graph + Spellbook -> executable frame)
-        4. Validation (frame + policies -> validated / broken flags)
+        4. Structural validation (frame + policies -> validated / broken flags)
+        5-11. Root blueprints, system validation, change-control wiring, and
+              later plan/codegen artifacts when this spell participates in them
 
-    It also retains selected **frame-level artifacts** produced in later phases
-    when they are available for this spell (e.g., Phase 5 blueprints and
-    Phase 8-10 artifacts plus Phase 11 execution plans for constructed
-    spells). Existing-creation spells may bypass Phase 8-10 and Phase 11
-    artifacts because they already have instances.
+    Existing-creation spells can legitimately stop earlier in that later phase
+    family because they already own a backing instance and therefore do not
+    need the same execution-plan artifacts as constructed spells.
 
-    The :class:`Spell` instance only persists:
+    Lifecycle:
+        - One crafter instance is attached to one spell version at a time.
+        - Artifacts are cached so later phases and meld-time revalidation can
+          reuse them without rebuilding from scratch on every access.
+        - :meth:`cleanup` releases crafter-owned artifacts only; it does not
+          dispose the owning :class:`Spell`, its :class:`Spellbook`, or the
+          frame-level control-plane services they reference.
 
-        * Its immutable structural metadata (spell_index, spellframe, etc.).
-        * The final dependency graph / resolution DAG (once implemented).
-        * The final list of concrete dependency spell_ids (version IDs).
-
-    Everything else (requirements, symbolic graph, intermediate frames) is owned
-    by this crafter and can be discarded after a resolution cycle by calling
-    :meth:`cleanup`.
-
-    Identity
-    --------
-    All phase artifacts produced by this crafter are keyed by the Spell's
-    **versioned identity**:
-
-        ``spell.spell_index.current``
-
-    That value is written into:
+    Identity:
+        All phase artifacts produced by this crafter are keyed by the spell's
+        versioned identity ``spell.spell_index.current``. That version id is
+        written into artifacts such as:
 
         * :class:`SpellRequirements.spell_id`
         * :class:`SpellSymbolicGraph.spell_id`
@@ -220,17 +229,24 @@ class SpellCrafter(Cleanable):
             resolution_profile: Optional[Any] = None,
     ) -> None:
         """
-        Create a new SpellCrafter for the given :class:`Spell`.
+        Create a new SpellCrafter for one bound :class:`Spell`.
 
         Args:
             spell:
-                The owning Spell. The crafter treats it as read-only, except when
-                later phases push the final DAG back into the Spell via internal
-                methods like ``_add_build_details``.
+                The owning spell. The crafter treats it as read-only except
+                when later phases push finalized build details back into the
+                spell through internal spell-owned update hooks.
             resolution_profile:
-                Optional prebuilt resolution profile from the spell-owned
-                profile. When supplied, SpellCrafter seeds Phase 1 requirements
-                from it instead of rebuilding them immediately.
+                Optional prebuilt resolution profile. When supplied, the crafter
+                seeds Phase 1 requirements from that profile instead of
+                rebuilding them immediately.
+
+        Contract:
+            - Captures shared spell-owned services needed by later phases, such
+              as the spell validator and spell-system-state view.
+            - Starts with empty artifact caches for all later phases.
+            - Allows callers that already built a resolution profile to avoid
+              duplicating the first requirements extraction step.
         """
         Cleanable.__init__(self)
 
@@ -280,19 +296,20 @@ class SpellCrafter(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Deterministically tear down this crafter and all owned artifacts.
+        Deterministically release all crafter-owned phase artifacts.
 
         Behavior:
-            * Cleans up :class:`SpellRequirements` if present.
-            * Cleans up :class:`SpellSymbolicGraph` and its dependencies.
-            * Resets the resolution frame (the owning :class:`Spell` keeps the
-              concrete DAG and dependency ids).
-            * Cleans Phase 5 artifacts (root blueprints and system index).
-            * Cleans Phase 8 occurrence plans if present.
-            * Resets validation state.
-            * Nulls the Spell reference (but does **not** mutate/dispose the Spell).
+            * Cleans and clears structural artifacts from Phases 1-4.
+            * Cleans and clears later blueprint/plan/index artifacts from
+              Phases 5-11 when present.
+            * Drops cached compiled executor/codegen state.
+            * Resets validation and broken-state flags held by the crafter.
+            * Releases references to the owning spell and shared helper
+              services without mutating or disposing those external owners.
 
-        After cleanup, the crafter is unusable.
+        Contract:
+            Cleanup is idempotent. After cleanup, the crafter is unusable and
+            future accesses must fail through `check_cleaned()`.
         """
         if self._cleaned:
             return
@@ -399,11 +416,12 @@ class SpellCrafter(Cleanable):
         The owning :class:`Spell` for this crafter.
 
         Returns:
-            Spell: The spell instance supplied at construction time.
+            ISpell: The live spell instance supplied at construction time.
 
         Raises:
             RuntimeError:
-                If this crafter has been cleaned.
+                If this crafter has been cleaned and no longer owns a spell
+                reference.
         """
         self.check_cleaned()
         return self._spell
@@ -414,6 +432,8 @@ class SpellCrafter(Cleanable):
         Phase 1 artifact for this spell, if it has been computed.
 
         This is the same object returned by :meth:`run_phase_requirements`.
+        When the crafter was initialized from a prebuilt resolution profile,
+        this property may be populated before Phase 1 is run locally.
         """
         self.check_cleaned()
         return self._requirements
@@ -455,7 +475,12 @@ class SpellCrafter(Cleanable):
     @property
     def root_blueprint_phase5(self) -> Optional[RootResolutionBlueprint]:
         """
-        Deep DAG blueprint for this spell when Phase 5 attaches one.
+        Phase 5 root blueprint for this spell, if one has been attached.
+
+        The root blueprint is the bridge from spell-local structural work into
+        the later system-validation and change-control layers. It describes the
+        owned root DAG that downstream phases use for system diagnostics,
+        component-of indexing, and later plan compilation.
         """
         self.check_cleaned()
         return self._root_blueprint_phase5
@@ -468,7 +493,8 @@ class SpellCrafter(Cleanable):
         Returns:
             Optional[OccurrencePlan]:
                 The compiled OccurrencePlan for this spell, or None if Phase 8
-                has not run yet (or the spell bypasses Phase 8).
+                has not run yet, foundational resolution blocked later phases,
+                or the spell bypasses this plan family.
         """
         self.check_cleaned()
         return self._occurrence_plan_phase8
@@ -481,7 +507,8 @@ class SpellCrafter(Cleanable):
         Returns:
             Optional[InjectionPlan]:
                 The compiled InjectionPlan for this spell, or None if Phase 9
-                has not run yet (or the spell bypasses Phase 9).
+                has not run yet, foundational resolution blocked later phases,
+                or the spell bypasses this plan family.
         """
         self.check_cleaned()
         return self._injection_plan_phase9

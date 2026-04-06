@@ -12,6 +12,9 @@ from melder.aether.conduit.meld.meld import Meld
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.aether.dev_ops.spell_system_states.spell_state import SpellState
+from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import (
+    SpellStateChangeReason,
+)
 from melder.spellbook.existence.existence import Existence
 from melder.utilities.custom_exceptions.hook_execution_error import HookExecutionError
 from melder.utilities.custom_exceptions.meld_execution_error import MeldExecutionError
@@ -1460,6 +1463,96 @@ def test_ensure_lineage_resolvable_contract_forces_revalidation() -> None:
     assert any(call[1] is SpellValidity.gated for call in resolution_state.spell_set_calls)
 
 
+def test_force_resolution_revalidation_uses_root_validity_for_root_blueprints() -> None:
+    """
+    Verify root spells gate root validity rather than spell validity.
+
+    Contract:
+        - Root blueprints drive `set_root_validity`.
+        - `set_spell_validity` is not used for root spells.
+    """
+    resolution_state = _ResolutionStateStub()
+    spell_system_states = _SpellSystemStatesStub(resolution_state)
+    spell = _SpellStub(
+        spell_id="spell-root",
+        spell_system_states=spell_system_states,
+    )
+    spell._crafter = SimpleNamespace(
+        root_blueprint_phase5=SimpleNamespace(root_spell_id=spell.spell_index.current)
+    )
+    meld = _make_meld()
+    meld._resolution_conduit_id = "conduit-1"
+
+    meld._force_resolution_revalidation(spell)
+
+    assert resolution_state.root_set_calls == [
+        (
+            spell.spell_index.current,
+            SpellValidity.gated,
+            SpellStateChangeReason.contract_unvalidated,
+        )
+    ]
+    assert resolution_state.spell_set_calls == []
+
+
+def test_get_resolution_validity_uses_root_validity_for_root_blueprints() -> None:
+    """
+    Verify root validity reads use the root-validity slot.
+
+    Contract:
+        - Root spells read `get_root_validity`.
+        - Non-root spell validity is not consulted for root blueprints.
+    """
+    resolution_state = _ResolutionStateStub()
+    resolution_state.set_root_validity(
+        "spell-root",
+        SpellValidity.gated,
+        change_reason=SpellStateChangeReason.contract_unvalidated,
+    )
+    spell = _SpellStub(spell_id="spell-root")
+    spell._crafter = SimpleNamespace(
+        root_blueprint_phase5=SimpleNamespace(root_spell_id=spell.spell_index.current)
+    )
+    meld = _make_meld()
+
+    assert meld._get_resolution_validity(spell, resolution_state) is SpellValidity.gated
+
+
+def test_iter_spell_contract_defaults_skips_non_contract_and_special_params() -> None:
+    """
+    Verify SpellContract default scanning skips self/cls/varargs and plain defaults.
+    """
+    contract = SpellContract(spellframe="svc", binding_name="primary")
+
+    class ContractConsumer:
+        def __init__(
+                self,
+                service: Any = contract,
+                plain: int = 1,
+                *args: Any,
+                **kwargs: Any,
+        ) -> None:
+            self.service = service
+            self.plain = plain
+
+    spell = _SpellStub(spell_id="spell-1")
+    spell.spell = ContractConsumer
+    meld = _make_meld()
+
+    assert meld._iter_spell_contract_defaults(spell) == [("service", contract)]
+
+
+def test_iter_spell_contract_defaults_returns_empty_when_signature_unavailable() -> None:
+    """
+    Verify SpellContract default scanning returns empty when inspect.signature fails.
+    """
+    spell = _SpellStub(spell_id="spell-1")
+    spell.spell = object()
+    meld = _make_meld()
+
+    assert meld._iter_spell_contract_defaults(spell) == []
+
+
 def test_gated_validation_required_returns_false_without_state() -> None:
     """
     Verify gated validation short-circuits without system state.
@@ -1586,6 +1679,32 @@ def test_gated_validation_required_reuses_cached_change_control_manager() -> Non
     assert meld._gated_validation_required(spell) is False
     assert meld._gated_validation_required(spell) is False
     assert aether.get_change_control_manager_calls == 1
+
+
+def test_gated_validation_required_ignores_change_control_errors() -> None:
+    """
+    Verify change-control failures fall back to the existing validity gate.
+
+    Contract:
+        - Non-MeldExecutionError failures from change-control are ignored.
+        - Valid lineages still return False.
+    """
+
+    class _FailingChangeControlManager:
+        def is_root_dirty(self, conduit_id: str, root_id: str) -> bool:
+            raise RuntimeError("ccm unavailable")
+
+    aether = _AetherStub(_FailingChangeControlManager())
+    spellbook = _SpellbookStub(aetheric_frame="default", aether=aether)
+    meld = _make_meld(spellbook=spellbook)
+    state = _SystemStateStub(validity=SpellValidity.valid)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        system_state=state,
+        spellbook=spellbook,
+    )
+
+    assert meld._gated_validation_required(spell) is False
 
 
 def test_meld_reuses_cached_context_without_factory_rebuild() -> None:
