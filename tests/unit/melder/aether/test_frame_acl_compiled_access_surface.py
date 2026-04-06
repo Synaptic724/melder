@@ -1,156 +1,126 @@
-from melder.aether.conduit.conduit_state.conduit_state import ConduitState
-from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
-from melder.aether.conduit.conduit_ward.policies.policies import Policies
-from melder.aether.nexus.acl.frame_acl_compiler import FrameACLCompiler
-from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-from melder.aether.nexus.frame_descriptor.conduit_descriptor_payload import (
-    ConduitDescriptorPayload,
+import threading
+
+from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
+    CompiledFrameACLAccessSurface,
 )
-from melder.aether.nexus.frame_descriptor.conduit_record import ConduitRecord
-from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
-from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
-    FrameDescriptorPayload,
-)
-from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
-from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
-    SpellDescriptorPayload,
-)
-from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
-from melder.aether.nexus.frame_acl_manager import FrameACLManager
-from melder.spellbook.configuration.system_state import SystemState
-from melder.spellbook.existence.existence import Existence
 
 
-def test_compiler_builds_safe_effective_access_surface_from_descriptor_truth() -> None:
+def _build_surface() -> CompiledFrameACLAccessSurface:
     """
-    Verify the compiler derives effective access from descriptor truth plus the
-    safe ACL configuration.
+    Build one small compiled access surface for direct unit coverage.
+
+    Returns:
+        CompiledFrameACLAccessSurface: Directly constructed compiled ACL surface.
+    """
+    return CompiledFrameACLAccessSurface(
+        frame_name="ops",
+        configuration_id="cfg-1",
+        view_profile_name="safe",
+        view_profile_version="0.0.1",
+        codegen_profile_name="safe",
+        codegen_profile_version="0.0.1",
+        allowed_kinds=("frame", "spell"),
+        allowed_commands=("query", "describe"),
+        frame_payload_fields=("system_state", "rift_enabled"),
+        visible_conduit_ids=("conduit-1",),
+        visible_spell_keys=(("spellbook-1", "spell-1"),),
+        conduit_payload_sections_by_id={"conduit-1": ("conduit_name",)},
+        spell_payload_sections_by_key={
+            ("spellbook-1", "spell-1"): ("binding_payload", "metadata")
+        },
+        metadata={"visible_spell_count": 1},
+    )
+
+
+def test_compiled_access_surface_exposes_expected_accessors() -> None:
+    """
+    Verify the compiled surface exposes the derived immutable answers it owns.
 
     Returns:
         None.
     """
-    frame_descriptor = _build_frame_descriptor()
-    compiler = FrameACLCompiler(FrameACLManager().frame_acl_profile_builder)
-    configuration = FrameACLConfiguration.create_default("ops")
+    surface = _build_surface()
 
-    compiled_surface = compiler.compile_frame_access_surface(
-        frame_descriptor,
-        configuration,
-    )
-
-    assert compiled_surface.frame_name == "ops"
-    assert compiled_surface.view_profile_name == "safe"
-    assert compiled_surface.codegen_profile_name == "safe"
-    assert compiled_surface.allowed_kinds == ("conduit", "frame", "spell")
-    assert compiled_surface.allowed_commands == (
-        "bind_existing",
-        "query",
-        "resolve_existing",
-    )
-    assert compiled_surface.frame_payload_fields == (
-        "ai_native_enabled",
-        "cluster_count",
-        "cluster_names",
-        "conduit_cloud_entry_count",
-        "conduit_cloud_names",
-        "named_root_conduits",
-        "rift_enabled",
-        "root_conduit_count",
-        "root_conduit_ids",
-        "system_state",
-    )
-    assert compiled_surface.visible_conduit_ids == ("conduit-1",)
-    assert compiled_surface.visible_spell_keys == (("spellbook-1", "spell-1"),)
-    assert compiled_surface.conduit_payload_sections_by_id == {
-        "conduit-1": ("conduit_name", "conduit_state"),
+    assert surface.frame_name == "ops"
+    assert surface.configuration_id == "cfg-1"
+    assert surface.view_profile_name == "safe"
+    assert surface.view_profile_version == "0.0.1"
+    assert surface.codegen_profile_name == "safe"
+    assert surface.codegen_profile_version == "0.0.1"
+    assert surface.allowed_kinds == ("frame", "spell")
+    assert surface.allowed_commands == ("query", "describe")
+    assert surface.frame_payload_fields == ("system_state", "rift_enabled")
+    assert surface.visible_conduit_ids == ("conduit-1",)
+    assert surface.visible_spell_keys == (("spellbook-1", "spell-1"),)
+    assert surface.conduit_payload_sections_by_id == {
+        "conduit-1": ("conduit_name",),
     }
-    assert compiled_surface.spell_payload_sections_by_key == {
-        ("spellbook-1", "spell-1"): (
-            "binding_payload",
-            "metadata",
-            "resolution_payload",
-        ),
+    assert surface.spell_payload_sections_by_key == {
+        ("spellbook-1", "spell-1"): ("binding_payload", "metadata"),
     }
+    assert surface.metadata == {"visible_spell_count": 1}
 
 
-def test_compiled_surface_metadata_snapshot_is_detached_from_input_metadata() -> None:
+def test_compiled_access_surface_cleanup_is_idempotent() -> None:
     """
-    Verify compiled surface metadata snapshots remain detached from mutation.
+    Verify cleanup can be called more than once safely.
 
     Returns:
         None.
     """
-    frame_descriptor = _build_frame_descriptor()
-    compiler = FrameACLCompiler(FrameACLManager().frame_acl_profile_builder)
-    configuration = FrameACLConfiguration.create_default("ops")
-    compiled_surface = compiler.compile_frame_access_surface(
-        frame_descriptor,
-        configuration,
-    )
+    surface = _build_surface()
 
-    metadata = compiled_surface.metadata
-    metadata["source"] = "mutated"
+    surface.cleanup()
+    surface.cleanup()
 
-    assert "source" not in compiled_surface.metadata
+    assert surface.cleaned is True
+    assert surface._lock is None
 
 
-def _build_frame_descriptor() -> FrameDescriptor:
-    descriptor = FrameDescriptor("ops")
-    descriptor.set_frame_overview(
-        FrameRecord(
-            frame_name="ops",
-            frame_id="frame-1",
-            config_origin_spellbook_id="spellbook-1",
-            payload=FrameDescriptorPayload(
-                system_state=SystemState.dynamic,
-                ai_native_enabled=True,
-                rift_enabled=True,
-                root_conduit_count=1,
-                root_conduit_ids=("conduit-1",),
-                named_root_conduits=(("conduit-1", "default"),),
-                conduit_cloud_entry_count=1,
-                conduit_cloud_names=("default",),
-                cluster_count=0,
-                cluster_names=tuple(),
-            ),
-        )
-    )
-    descriptor.upsert_conduit_record(
-        ConduitRecord(
-            conduit_id="conduit-1",
-            root_conduit_id="conduit-1",
-            frame_name="ops",
-            origin_spellbook_id="spellbook-1",
-            payload=ConduitDescriptorPayload(
-                conduit_name="default",
-                conduit_state=ConduitState.normal,
-                policy=Policies.default,
-                peer_conduit_ids=tuple(),
-            ),
-        )
-    )
-    descriptor.upsert_spell_record(
-        SpellRecord(
-            origin_spellbook_id="spellbook-1",
-            frame_name="ops",
-            owner_conduit_id="conduit-1",
-            spell_id="spell-1",
-            lineage_id="lineage-1",
-            spell_name="SpellOne",
-            spellframe=None,
-            binding_name="spell_one",
-                permissions=Permissions.create,
-                existence=Existence.unique,
-                payload=SpellDescriptorPayload(
-                    payload_type="detailed",
-                    binding_payload={"kind": "class"},
-                    resolution_payload={"requirements": []},
-                    class_profile={"methods": []},
-                callable_profile=None,
-                metadata={"doc": "spell"},
-                instance_members={},
-                dynamic_access={},
-            ),
-        )
-    )
-    return descriptor
+def test_compiled_access_surface_cleanup_rechecks_cleaned_inside_lock() -> None:
+    """
+    Verify cleanup returns early when another thread already cleaned the surface.
+
+    Returns:
+        None.
+    """
+
+    class _CoordinatedLock:
+        def __init__(self) -> None:
+            self._entered_first = threading.Event()
+            self._second_attempted = threading.Event()
+            self._lock = threading.RLock()
+
+        def __enter__(self):
+            if self._entered_first.is_set():
+                self._second_attempted.set()
+            self._lock.acquire()
+            if not self._entered_first.is_set():
+                self._entered_first.set()
+                assert self._second_attempted.wait(timeout=1.0)
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self._lock.release()
+
+    surface = _build_surface()
+    coordinated_lock = _CoordinatedLock()
+    surface._lock = coordinated_lock
+
+    thread_results = []
+
+    def _run_cleanup() -> None:
+        surface.cleanup()
+        thread_results.append(True)
+
+    first = threading.Thread(target=_run_cleanup)
+    second = threading.Thread(target=_run_cleanup)
+    first.start()
+    coordinated_lock._entered_first.wait(timeout=1.0)
+    second.start()
+    first.join(timeout=1.0)
+    second.join(timeout=1.0)
+
+    assert thread_results == [True, True]
+    assert surface.cleaned is True
+    assert surface._lock is None
