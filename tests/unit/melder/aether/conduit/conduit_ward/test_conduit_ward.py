@@ -118,6 +118,55 @@ def test_cleanup_clears_state(ward):
     assert ward._contracts == {}
     assert ward._conduit is None
 
+def test_cleanup_noops_when_marked_cleaned_inside_lock(ward) -> None:
+    """
+    Verify cleanup re-checks cleaned state after entering the lock.
+    """
+    class LockThatMarksCleaned:
+        """Context manager that flips the ward to cleaned once the lock is entered."""
+
+        def __init__(self, target_ward) -> None:
+            self._target_ward = target_ward
+
+        def __enter__(self):
+            self._target_ward._cleaned = True
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback) -> None:
+            return None
+
+    ward._lock = LockThatMarksCleaned(ward)
+
+    with patch.object(ward, "_clean_up_links") as mock_links, patch.object(
+        ward,
+        "_clean_up_lesser_conduits_links",
+    ) as mock_lesser:
+        ward.cleanup()
+
+    mock_links.assert_not_called()
+    mock_lesser.assert_not_called()
+
+def test_cleanup_all_lesser_conduits_logs_child_cleanup_error(ward) -> None:
+    """
+    Verify cleanup_all_lesser_conduits logs and continues when a child cleanup fails.
+    """
+    child_ok = MagicMock(spec=IConduit)
+    child_ok._id = "child-ok"
+    child_ok.cleanup = MagicMock()
+    child_bad = MagicMock(spec=IConduit)
+    child_bad._id = "child-bad"
+    child_bad.cleanup = MagicMock(side_effect=RuntimeError("boom"))
+
+    ward._link_lesser_conduit(child_ok)
+    ward._link_lesser_conduit(child_bad)
+
+    ward.cleanup_all_lesser_conduits()
+
+    child_ok.cleanup.assert_called_once()
+    child_bad.cleanup.assert_called_once()
+    ward._logger.error.assert_called()
+    assert ward._lesser_conduits == {}
+
 # ----------------------------------------------------------------------
 # 3. Policy Configuration
 # ----------------------------------------------------------------------
@@ -305,6 +354,35 @@ def test_link_lesser_conduit_rejects_non_normal_root() -> None:
 
     with pytest.raises(RuntimeError, match="Root conduit must be a normal conduit"):
         parent_ward._link_lesser_conduit(child)
+
+def test_root_conduit_property_raises_when_missing_for_lesser_lineage() -> None:
+    """
+    Verify root_conduit rejects lesser wards whose root pointer is missing.
+    """
+    conduit = MagicMock(spec=IConduit)
+    conduit._id = "lesser-1"
+    conduit._logger = MagicMock()
+    conduit._conduit_state = ConduitState.lesser
+    ward = ConduitWard(conduit, True, ConduitState.lesser, Policies.default)
+
+    with pytest.raises(RuntimeError, match="Root conduit is not set"):
+        _ = ward.root_conduit
+
+def test_root_conduit_property_raises_when_root_not_normal() -> None:
+    """
+    Verify root_conduit rejects non-normal root conduits.
+    """
+    conduit = MagicMock(spec=IConduit)
+    conduit._id = "lesser-2"
+    conduit._logger = MagicMock()
+    conduit._conduit_state = ConduitState.lesser
+    ward = ConduitWard(conduit, True, ConduitState.lesser, Policies.default)
+    root = MagicMock(spec=IConduit)
+    root._conduit_state = ConduitState.lesser
+    ward._root_conduit = root
+
+    with pytest.raises(RuntimeError, match="Root conduit must be a normal conduit"):
+        _ = ward.root_conduit
 
 
 def test_link_lesser_conduit_propagates_root_from_lesser_lineage() -> None:
@@ -1121,6 +1199,27 @@ def test_remove_contract_clears_indices_when_received(ward):
     assert target_ward._contracts == {}
     assert "conduit-2" not in ward._received_index
     assert "conduit-1" not in target_ward._initiated_index
+
+def test_remove_contract_logs_cleanup_failure_but_returns_true(ward) -> None:
+    """
+    Verify _remove_contract swallows contract.cleanup() failures after core state is already removed.
+    """
+    target_conduit, target_ward = _make_conduit_with_ward("conduit-2")
+
+    ward._conduit._spellbook = MagicMock()
+    target_conduit._spellbook = MagicMock()
+
+    ward._create_new_contract(target_conduit)
+    contract_id = next(iter(ward._contracts))
+    contract = ward._contracts[contract_id]
+    contract.cleanup = MagicMock(side_effect=RuntimeError("cleanup boom"))
+
+    result = ward._remove_contract(target_conduit)
+
+    assert result is True
+    assert ward._contracts == {}
+    assert target_ward._contracts == {}
+    ward._logger.error.assert_called()
 
 def test_remove_contract_raises_when_spellbook_sever_fails(ward) -> None:
     """
@@ -2046,6 +2145,23 @@ def test_get_spell_contract_keys_returns_empty_on_signature_error(ward):
     spell.spell = object()
 
     assert ward._get_spell_contract_keys(spell) == set()
+
+def test_get_spell_contract_keys_ignores_required_parameters(ward) -> None:
+    """
+    Verify _get_spell_contract_keys skips required parameters with no default value.
+    """
+    contract_default = SpellContract(spellframe="FrameA", binding_name="primary")
+
+    def _callable(self, required_value, dep=contract_default):
+        """Provide one required arg and one SpellContract default."""
+        return None
+
+    spell = MagicMock(spec=ISpell)
+    spell.spell = _callable
+
+    keys = ward._get_spell_contract_keys(spell)
+
+    assert keys == {contract_default.canonical_key}
 
 def test_invalidate_contract_consumers_filters_by_contract_key(ward):
     """

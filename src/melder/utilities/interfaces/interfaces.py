@@ -3798,13 +3798,12 @@ class IConduitWard(ICleanable, Protocol):
         """
         Internal
 
-        Returns all conduits that currently have active spell contracts with this conduit.
-
-        Args:
-            None
+        Return all conduits that currently have active spell contracts with this conduit.
 
         Returns:
-            list[Tuple[str, IConduit]] | None: A list of (`conduit_id`, `IConduit`) tuples. Returns None if no links exist.
+            list[tuple[str, IConduit]] | None:
+                List of ``(conduit_id, conduit)`` tuples for current contract
+                peers, or ``None`` when no links exist.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -3815,13 +3814,14 @@ class IConduitWard(ICleanable, Protocol):
         """
         Internal
 
-        Returns a detailed diagnostic summary of a contract established with a specific peer conduit ID.
+        Return a detailed diagnostic summary of one contract by peer conduit id.
 
         Args:
             conduit_id (str): id of the peer conduit whose contract you wish to examine.
 
         Returns:
-            dict: Dictionary containing contract metadata, including spell list and permissions.
+            dict: Contract metadata payload, including spell list and
+            permissions.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -3838,11 +3838,9 @@ class IConduitWard(ICleanable, Protocol):
         This ensures both sides list the same spells, permissions are consistent, and all
         referenced contracted spells exist in the peer's spellbook.
 
-        Args:
-            None
-
         Returns:
-            dict[str, bool]: Dictionary mapping contract id to validation results (True/False).
+            dict[str, bool]:
+                Mapping of contract id to validation result.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -3856,9 +3854,6 @@ class IConduitWard(ICleanable, Protocol):
         Performs a high-level validation check across all contracts involving this conduit.
 
         This aggregates the results of `_validate_contracts_and_define` to provide a simple pass/fail status.
-
-        Args:
-            None
 
         Returns:
             bool: True if all active contracts pass validation, False otherwise.
@@ -4033,7 +4028,7 @@ class IConduit(ICleanable, Protocol):
         """
         Public API
 
-        Cleans up this Conduit and all its lesser Conduits.
+        Clean up this conduit and all of its lesser conduits.
 
         Prevents further operation, releases internal references,
         and unregisters from the Aether.
@@ -4047,10 +4042,10 @@ class IConduit(ICleanable, Protocol):
         """
         Public API
 
-        Enters the context of this Conduit.
+        Enter the conduit coordination context.
 
         Returns:
-            Conduit: The current Conduit instance.
+            IConduit: The current conduit instance.
         """
         ...
 
@@ -4058,7 +4053,7 @@ class IConduit(ICleanable, Protocol):
         """
         Public API
 
-        Exits the context of this Conduit.
+        Exit the conduit coordination context.
 
         Args:
             exc_type: The exception type, if any.
@@ -4072,7 +4067,7 @@ class IConduit(ICleanable, Protocol):
     # ------------------------------------------------------------------
     def _resolve_logger_from_config(self, configuration: 'IConfiguration') -> 'ISafeLogger':
         """
-        This internal method resolves the logger for this Conduit based on the provided configuration.
+        Resolve the logger for this conduit from the provided configuration.
 
         Args:
             configuration (IConfiguration): The locked system configuration.
@@ -4089,8 +4084,7 @@ class IConduit(ICleanable, Protocol):
         """
         Public API
 
-        Returns a string representation of the Conduit instance.
-        :return:
+        Return a debug-oriented representation of this conduit instance.
         """
         ...
 
@@ -4120,7 +4114,7 @@ class IConduit(ICleanable, Protocol):
         """
         Public API
 
-        Returns the unique identifier of this Conduit.
+        Return the unique identifier of this conduit.
         """
         ...
 
@@ -4129,7 +4123,7 @@ class IConduit(ICleanable, Protocol):
         """
         Public API
 
-        Returns the name of this Conduit. Name must be created during conduit creation.
+        Return the human-readable name of this conduit, if one has been assigned.
         """
         ...
 
@@ -4138,7 +4132,7 @@ class IConduit(ICleanable, Protocol):
         """
         Public API
 
-        Allows user to name conduit if available
+        Assign a human-readable name to this conduit when naming is still allowed.
 
         Raises:
             RuntimeError: If the Conduit name is already set.
@@ -4884,12 +4878,12 @@ class IConduit(ICleanable, Protocol):
         """
         Public API
 
-        Returns a list of all active peer links associated with this conduit.
+        Return all active peer links associated with this conduit.
 
         This list excludes links to lesser (child) conduits.
 
         Returns:
-            list: A list of the linked conduit instances.
+            list[IConduit]: Linked peer conduits.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -4899,9 +4893,9 @@ class IConduit(ICleanable, Protocol):
 
     def get_lesser_conduit(self, conduit_id: str) -> Optional['IConduit']:
         """
-        Internal
+        Public API
 
-        Returns a specific lesser conduit (child) linked to this conduit by its ID.
+        Return one specific lesser conduit (child) by id.
 
         Args:
             conduit_id (str): The ID of the lesser conduit to retrieve.
@@ -4958,12 +4952,12 @@ class IConduit(ICleanable, Protocol):
         """
         Public API
 
-        Returns a list of all conduits that this conduit has initiated contracts toward (outbound links).
+        Return all conduits that this conduit has initiated contracts toward.
 
         This is useful for understanding the dependencies and relationships initiated by this conduit.
 
         Returns:
-            list[IConduit]: A list of conduits this conduit linked to.
+            list[IConduit]: Outbound linked conduits.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -4974,12 +4968,12 @@ class IConduit(ICleanable, Protocol):
         """
         Public API
 
-        Returns a list of all conduits that have initiated contracts to this conduit (inbound links).
+        Return all conduits that have initiated contracts to this conduit.
 
         These are the conduits that depend on this one for contracted spells.
 
         Returns:
-            list[IConduit]: A list of conduits that have linked to this conduit as the provider.
+            list[IConduit]: Inbound provider conduits.
 
         Raises:
             RuntimeError: If the Conduit is cleaned.
@@ -4990,7 +4984,7 @@ class IConduit(ICleanable, Protocol):
         """
         Public API
 
-        Cleans up all lesser conduits (children) linked to this conduit.
+        Clean up all lesser conduits (children) linked to this conduit.
 
         This prevents further operations on lesser conduits and is typically used when the parent
         is cleaning or undergoing a major state change (e.g., upgrade).
@@ -5376,12 +5370,14 @@ class IConduit(ICleanable, Protocol):
         """
         Public API
 
-        Lists all conduits that have an active spell contract with this conduit.
+        Return all conduits that have an active spell contract with this conduit.
 
         Each returned conduit represents a peer in the current dynamic spell network.
 
         Returns:
-            list[Tuple[str, IConduit]] | None: List of (`conduit_id`, `IConduit`) tuples, or None if no contracts exist.
+            list[tuple[str, IConduit]] | None:
+                List of ``(conduit_id, conduit)`` tuples, or ``None`` when no
+                contracts exist.
 
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
@@ -5392,7 +5388,7 @@ class IConduit(ICleanable, Protocol):
         """
         Public API
 
-        Produces a detailed diagnostic summary of a contract established with a specific conduit.
+        Return a detailed diagnostic summary of one contract by conduit id.
 
         This method inspects the contract associated with the provided `conduit_id` and returns metadata
         including the peer conduitâ€™s name, the number of active spells involved, and permission levels.
@@ -5402,7 +5398,7 @@ class IConduit(ICleanable, Protocol):
             conduit_id (str): str of the peer conduit whose contract you wish to examine.
 
         Returns:
-            dict: Dictionary containing contract metadata, including a list of spells and their permissions.
+            dict: Contract metadata payload, including spells and permissions.
 
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
@@ -5413,15 +5409,14 @@ class IConduit(ICleanable, Protocol):
         """
         Public API
 
-        Validates all known contracts attached to this conduit and confirms mutual agreement and consistency.
+        Validate all known contracts attached to this conduit.
 
         This performs a deep validation pass, ensuring both sides list the same spells, permissions are symmetrical,
         and all referenced spells are valid.
 
         Returns:
-            dict[str, bool]: Dictionary mapping contract ids to validation results:
-                 - True: Contract is valid and consistent
-                 - False: Contract is malformed or inconsistent
+            dict[str, bool]:
+                Mapping of contract ids to validation results.
 
         Raises:
             RuntimeError: If the Conduit fails contract qualification checks (cleaned, not normal, not dynamic).
@@ -5432,7 +5427,7 @@ class IConduit(ICleanable, Protocol):
         """
         Public API
 
-        Performs a high-level validation check across all contracts involving this conduit.
+        Perform a high-level validation check across all contracts involving this conduit.
 
         Aggregates the results of `_validate_contracts_and_define` to determine whether every connected
         contract is structurally valid and symmetrical.
@@ -5610,37 +5605,79 @@ class INexusConfiguration(ICleanable, Protocol):
 
     @property
     def frozen(self) -> bool:
+        """
+        Return whether this Nexus configuration has been frozen.
+        """
         ...
 
     @property
     def id(self) -> str:
+        """
+        Return the stable identifier for this configuration instance.
+        """
         ...
 
     def set_property(self, key: str, value: object) -> None:
+        """
+        Set one configuration property by key.
+
+        Returns:
+            None.
+        """
         ...
 
     def get_property(self, key: str) -> object:
+        """
+        Return one configuration property value by key.
+        """
         ...
 
     def has_property(self, key: str) -> bool:
+        """
+        Return whether one configuration property exists.
+        """
         ...
 
     def load_default_dictionary(self) -> None:
+        """
+        Load the default Nexus configuration dictionary into this instance.
+
+        Returns:
+            None.
+        """
         ...
 
     def validate(self) -> bool:
+        """
+        Validate the current Nexus configuration payload.
+        """
         ...
 
     def freeze(self) -> None:
+        """
+        Freeze the current configuration so further mutation is disallowed.
+
+        Returns:
+            None.
+        """
         ...
 
     def finalize(self) -> "INexusConfiguration":
+        """
+        Finalize this configuration and return the resulting configuration object.
+        """
         ...
 
     def build(self) -> "INexusConfiguration":
+        """
+        Build and return the finalized Nexus configuration object.
+        """
         ...
 
     def with_defaults(self) -> "INexusConfiguration":
+        """
+        Apply the default Nexus configuration values and return this configuration.
+        """
         ...
 
     def with_rift_creation_enabled(self, enabled: bool = True) -> "INexusConfiguration":

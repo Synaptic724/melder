@@ -676,6 +676,30 @@ def test_add_spell_to_contract_rolls_back_detail_when_spellbook_add_fails(
     assert borrower._spellbook._contracted_spells[owner._id] == {}
 
 
+def test_add_spell_to_contract_logs_when_spellbook_add_rollback_fails(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify spellbook-add rollback failures are logged while the original add error still propagates."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-add-rollback-log", permissions=Permissions.create)
+    borrower._spellbook._add_contracted_spell = MagicMock(side_effect=RuntimeError("add boom"))
+    contract = borrower._conduit_ward._find_contract(owner)
+
+    with patch.object(contract, "_remove_source", side_effect=RuntimeError("rollback boom")):
+        with pytest.raises(RuntimeError, match="add boom"):
+            borrower._conduit_ward._add_spell_to_contract(
+                spell=spell,
+                spell_id=spell.spell_id,
+                conduit=owner,
+                permissions="create",
+            )
+
+    assert any(
+        level == "error" and "rollback failed after spellbook add error" in message
+        for level, message in borrower._logger.messages
+    )
+
+
 def test_add_spell_to_contract_rolls_back_root_when_dependency_linking_fails(
     linked_pair: tuple[FakeConduit, FakeConduit],
 ) -> None:
@@ -700,6 +724,37 @@ def test_add_spell_to_contract_rolls_back_root_when_dependency_linking_fails(
     contract = borrower._conduit_ward._find_contract(owner)
     assert contract is None
     assert owner._id not in borrower._spellbook._contracted_spells
+
+
+def test_add_spell_to_contract_logs_when_dependency_link_rollback_fails(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify dependency-link rollback failures are logged while the original dependency error still propagates."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-dep-rollback-log", permissions=Permissions.create)
+
+    with patch.object(
+        borrower._conduit_ward,
+        "_link_spell_dependencies",
+        side_effect=RuntimeError("dep boom"),
+    ), patch.object(
+        borrower._conduit_ward,
+        "_remove_root_from_contracts",
+        side_effect=RuntimeError("rollback boom"),
+    ):
+        with pytest.raises(RuntimeError, match="dep boom"):
+            borrower._conduit_ward._add_spell_to_contract(
+                spell=spell,
+                spell_id=spell.spell_id,
+                conduit=owner,
+                permissions="create",
+                link_dependencies=True,
+            )
+
+    assert any(
+        level == "error" and "rollback failed after dependency link error" in message
+        for level, message in borrower._logger.messages
+    )
 
 
 def test_add_spell_to_contract_rejects_different_permissions(
@@ -984,6 +1039,58 @@ def test_remove_spell_from_contract_raises_when_contract_cleanup_fails(
         level == "error" and "contract cleanup failed" in message
         for level, message in borrower._logger.messages
     )
+
+
+def test_remove_spell_from_contract_succeeds_when_contract_key_lookup_fails(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify removal still succeeds when contracted-spell lookup for invalidation metadata fails."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-key-lookup-fail", permissions=Permissions.create)
+
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+        permissions="create",
+    )
+    borrower._spellbook._find_contracted_spell_by_id = MagicMock(side_effect=RuntimeError("lookup boom"))
+    borrower._conduit_ward._invalidate_contract_consumers = MagicMock()
+
+    result = borrower._conduit_ward._remove_spell_from_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+    )
+
+    assert result is True
+    borrower._conduit_ward._invalidate_contract_consumers.assert_called_once_with(None)
+
+
+def test_remove_spell_from_contract_succeeds_when_contract_key_lookup_fails(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify removal still succeeds when contracted-spell lookup for invalidation metadata fails."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-key-lookup-fail", permissions=Permissions.create)
+
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+        permissions="create",
+    )
+    borrower._spellbook._find_contracted_spell_by_id = MagicMock(side_effect=RuntimeError("lookup boom"))
+    borrower._conduit_ward._invalidate_contract_consumers = MagicMock()
+
+    result = borrower._conduit_ward._remove_spell_from_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+    )
+
+    assert result is True
+    borrower._conduit_ward._invalidate_contract_consumers.assert_called_once_with(None)
 
 
 def test_remove_all_spells_from_contract_swallows_invalidate_contract_consumers_error(
@@ -1371,6 +1478,74 @@ def test_remove_root_from_contracts_restores_detail_when_spellbook_remove_fails(
     assert spell.spell_index in borrower._spellbook._contracted_spells[owner._id]
 
 
+def test_remove_root_from_contracts_logs_when_restore_rollback_fails(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify remove_root logs rollback failures when detail restoration itself fails."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-root-restore-log", permissions=Permissions.create)
+
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+        permissions="create",
+        root_spell_id="root-restore-log",
+    )
+    with patch.object(
+        borrower._spellbook,
+        "_remove_contracted_spell",
+        side_effect=RuntimeError("remove boom"),
+    ), patch.object(
+        borrower._conduit_ward,
+        "_restore_detail_snapshot",
+        side_effect=RuntimeError("restore boom"),
+    ):
+        report = borrower._conduit_ward._remove_root_from_contracts(
+            root_spell_id="root-restore-log",
+            conduit=owner,
+        )
+
+    assert report["success"] == []
+    assert any(
+        level == "error" and "rollback failed for" in message
+        for level, message in borrower._logger.messages
+    )
+
+
+def test_remove_root_from_contracts_logs_contract_sever_failure(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify root removal logs and continues when empty-contract severing fails."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-root-sever-fail", permissions=Permissions.create)
+
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+        permissions="create",
+        root_spell_id="root-sever-fail",
+    )
+    contract = borrower._conduit_ward._find_contract(owner)
+
+    with patch.object(
+        borrower._conduit_ward,
+        "_remove_contract",
+        side_effect=RuntimeError("sever boom"),
+    ):
+        report = borrower._conduit_ward._remove_root_from_contracts(
+            root_spell_id="root-sever-fail",
+            conduit=owner,
+        )
+
+    assert report["success"] == [contract._id]
+    assert any(
+        level == "error" and "contract sever failed" in message
+        for level, message in borrower._logger.messages
+    )
+
+
 def test_link_spell_dependencies_creates_contract_and_details(
     conduit_pair: tuple[FakeConduit, FakeConduit],
 ) -> None:
@@ -1436,6 +1611,121 @@ def test_link_spell_dependencies_skips_local_versions(
     assert borrower._spellbook._add_contracted_calls == []
 
 
+def test_preflight_contract_dependency_collisions_skips_duplicate_dependency_ids() -> None:
+    """Verify preflight treats duplicate dependency ids as one visited lineage."""
+    owner, borrower = _build_conduit_pair()
+    dep_spell = _register_spell(owner, "dep-dup-id", permissions=Permissions.create)
+    root_spell = _register_spell(
+        borrower,
+        "root-dup-id",
+        permissions=Permissions.create,
+        dependencies=[dep_spell.spell_id, dep_spell.spell_id],
+    )
+    borrower.register_spell_owner(dep_spell.spell_id, owner)
+    borrower._spellbook._assert_lookup_key_available = MagicMock()
+
+    borrower._conduit_ward._preflight_contract_dependency_collisions(
+        root_spell=root_spell,
+        root_spell_id=root_spell.spell_id,
+        requested_permissions=Permissions.create,
+    )
+
+    assert borrower._spellbook._assert_lookup_key_available.call_count == 2
+
+
+def test_preflight_contract_dependency_collisions_skips_local_versions() -> None:
+    """Verify preflight skips dependency ids already present locally."""
+    owner, borrower = _build_conduit_pair()
+    local_dep = _register_spell(borrower, "dep-local-preflight", permissions=Permissions.create)
+    root_spell = _register_spell(
+        borrower,
+        "root-local-preflight",
+        permissions=Permissions.create,
+        dependencies=[local_dep.spell_id],
+    )
+    borrower.register_spell_owner(local_dep.spell_id, owner)
+    borrower.get_conduit_by_spell_id = MagicMock(side_effect=RuntimeError("should not resolve owner"))
+
+    borrower._conduit_ward._preflight_contract_dependency_collisions(
+        root_spell=root_spell,
+        root_spell_id=root_spell.spell_id,
+        requested_permissions=Permissions.create,
+    )
+
+
+def test_preflight_contract_dependency_collisions_skips_owner_self_when_not_local() -> None:
+    """Verify preflight skips dependency ids whose reported owner is the borrower itself."""
+    _, borrower = _build_conduit_pair()
+    root_spell = _register_spell(
+        borrower,
+        "root-self-preflight",
+        permissions=Permissions.create,
+        dependencies=["dep-self-preflight"],
+    )
+    borrower.register_spell_owner("dep-self-preflight", borrower)
+    borrower.get_spell_by_id = MagicMock(side_effect=RuntimeError("should not resolve spell"))
+
+    borrower._conduit_ward._preflight_contract_dependency_collisions(
+        root_spell=root_spell,
+        root_spell_id=root_spell.spell_id,
+        requested_permissions=Permissions.create,
+    )
+
+
+def test_preflight_contract_dependency_collisions_downgrades_requested_read() -> None:
+    """Verify preflight downgrades dependency permissions to read when the request is read-scoped."""
+    owner, borrower = _build_conduit_pair()
+    dep_spell = _register_spell(owner, "dep-preflight-read", permissions=Permissions.create)
+    root_spell = _register_spell(
+        borrower,
+        "root-preflight-read",
+        permissions=Permissions.create,
+        dependencies=[dep_spell.spell_id],
+    )
+    borrower.register_spell_owner(dep_spell.spell_id, owner)
+
+    with patch.object(borrower._conduit_ward, "_check_spell_if_eligible") as mock_eligible:
+        borrower._conduit_ward._preflight_contract_dependency_collisions(
+            root_spell=root_spell,
+            root_spell_id=root_spell.spell_id,
+            requested_permissions=Permissions.read,
+        )
+
+    assert mock_eligible.call_args.args[2] == Permissions.read
+
+
+def test_preflight_contract_dependency_collisions_rejects_duplicate_contract_keys_in_batch() -> None:
+    """Verify preflight raises when two dependency spells in the same batch share one contract key."""
+    owner, borrower = _build_conduit_pair()
+    dep_one = _register_spell(
+        owner,
+        "dep-dup-one",
+        permissions=Permissions.create,
+        binding_name="dup-binding",
+    )
+    dep_two = _register_spell(
+        owner,
+        "dep-dup-two",
+        permissions=Permissions.create,
+        binding_name="dup-binding",
+    )
+    root_spell = _register_spell(
+        borrower,
+        "root-dup-batch",
+        permissions=Permissions.create,
+        dependencies=[dep_one.spell_id, dep_two.spell_id],
+    )
+    borrower.register_spell_owner(dep_one.spell_id, owner)
+    borrower.register_spell_owner(dep_two.spell_id, owner)
+
+    with pytest.raises(RuntimeError, match="binding key collision"):
+        borrower._conduit_ward._preflight_contract_dependency_collisions(
+            root_spell=root_spell,
+            root_spell_id=root_spell.spell_id,
+            requested_permissions=Permissions.create,
+        )
+
+
 def test_link_spell_dependencies_skips_owner_self_when_dependency_not_local(
     conduit_pair: tuple[FakeConduit, FakeConduit],
 ) -> None:
@@ -1457,6 +1747,33 @@ def test_link_spell_dependencies_skips_owner_self_when_dependency_not_local(
 
     assert borrower._conduit_ward._contracts == {}
     assert borrower._spellbook._add_contracted_calls == []
+
+
+def test_link_spell_dependencies_skips_duplicate_dependency_ids(
+    conduit_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify duplicate dependency ids are visited only once during dependency linking."""
+    owner, borrower = conduit_pair
+    dep_spell = _register_spell(owner, "dep-dup-link", permissions=Permissions.create)
+    root_spell = _register_spell(
+        borrower,
+        "root-dup-link",
+        permissions=Permissions.create,
+        dependencies=[dep_spell.spell_id, dep_spell.spell_id],
+    )
+    borrower.register_spell_owner(dep_spell.spell_id, owner)
+
+    borrower._conduit_ward._link_spell_dependencies(
+        root_spell=root_spell,
+        root_spell_id=root_spell.spell_id,
+        requested_permissions=Permissions.create,
+    )
+
+    contract = borrower._conduit_ward._find_contract(owner)
+    detail_map = contract._get_detail_map(owner._conduit_ward)
+
+    assert list(detail_map.keys()) == [dep_spell.spell_id]
+    assert borrower._spellbook._add_contracted_calls == [(owner._id, dep_spell.spell_id)]
 
 
 def test_link_spell_dependencies_adds_transitive_dependencies(
@@ -1549,6 +1866,33 @@ def test_link_spell_dependencies_handles_dependency_without_dependencies_attr(
     assert dep_spell.spell_id in contract._get_detail_map(owner._conduit_ward)
 
 
+def test_link_spell_dependencies_raises_when_contract_cannot_be_established(
+    conduit_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify dependency linking raises when the owner contract still does not exist after link attempt."""
+    owner, borrower = conduit_pair
+    dep_spell = _register_spell(owner, "dep-missing-contract", permissions=Permissions.create)
+    root_spell = _register_spell(
+        borrower,
+        "root-missing-contract",
+        permissions=Permissions.create,
+        dependencies=[dep_spell.spell_id],
+    )
+    borrower.register_spell_owner(dep_spell.spell_id, owner)
+
+    with patch.object(borrower._conduit_ward, "_find_contract", return_value=None), patch.object(
+        borrower._conduit_ward,
+        "_link",
+        return_value=True,
+    ):
+        with pytest.raises(RuntimeError, match="Failed to create contract"):
+            borrower._conduit_ward._link_spell_dependencies(
+                root_spell=root_spell,
+                root_spell_id=root_spell.spell_id,
+                requested_permissions=Permissions.create,
+            )
+
+
 def test_add_spell_to_contract_preflight_rejects_dependency_collision() -> None:
     """Verify dependency collisions fail fast before contract mutation when linking dependencies."""
     owner, borrower = _build_conduit_pair()
@@ -1597,6 +1941,38 @@ def test_add_spell_to_contract_preflight_rejects_dependency_collision() -> None:
 
     contract = borrower._conduit_ward._find_contract(owner)
     assert contract._get_detail_map(owner._conduit_ward) == {}
+
+
+def test_preflight_contract_dependency_collisions_rejects_duplicate_contract_keys_in_batch() -> None:
+    """Verify preflight raises when two dependency spells in the same batch share one contract key."""
+    owner, borrower = _build_conduit_pair()
+    dep_one = _register_spell(
+        owner,
+        "dep-dup-one",
+        permissions=Permissions.create,
+        binding_name="dup-binding",
+    )
+    dep_two = _register_spell(
+        owner,
+        "dep-dup-two",
+        permissions=Permissions.create,
+        binding_name="dup-binding",
+    )
+    root_spell = _register_spell(
+        borrower,
+        "root-dup-batch",
+        permissions=Permissions.create,
+        dependencies=[dep_one.spell_id, dep_two.spell_id],
+    )
+    borrower.register_spell_owner(dep_one.spell_id, owner)
+    borrower.register_spell_owner(dep_two.spell_id, owner)
+
+    with pytest.raises(RuntimeError, match="binding key collision"):
+        borrower._conduit_ward._preflight_contract_dependency_collisions(
+            root_spell=root_spell,
+            root_spell_id=root_spell.spell_id,
+            requested_permissions=Permissions.create,
+        )
 
 
 def test_add_spell_to_contract_preflight_rejects_root_collision() -> None:
@@ -2176,6 +2552,121 @@ def test_preflight_contract_dependency_collisions_noops_without_spellbook() -> N
     )
 
 
+def test_preflight_contract_dependency_collisions_skips_duplicate_dependency_ids() -> None:
+    """Verify preflight treats duplicate dependency ids as one visited lineage."""
+    owner, borrower = _build_conduit_pair()
+    dep_spell = _register_spell(owner, "dep-dup-id", permissions=Permissions.create)
+    root_spell = _register_spell(
+        borrower,
+        "root-dup-id",
+        permissions=Permissions.create,
+        dependencies=[dep_spell.spell_id, dep_spell.spell_id],
+    )
+    borrower.register_spell_owner(dep_spell.spell_id, owner)
+    borrower._spellbook._assert_lookup_key_available = MagicMock()
+
+    borrower._conduit_ward._preflight_contract_dependency_collisions(
+        root_spell=root_spell,
+        root_spell_id=root_spell.spell_id,
+        requested_permissions=Permissions.create,
+    )
+
+    assert borrower._spellbook._assert_lookup_key_available.call_count == 2
+
+
+def test_preflight_contract_dependency_collisions_skips_local_versions() -> None:
+    """Verify preflight skips dependency ids already present locally."""
+    owner, borrower = _build_conduit_pair()
+    local_dep = _register_spell(borrower, "dep-local-preflight", permissions=Permissions.create)
+    root_spell = _register_spell(
+        borrower,
+        "root-local-preflight",
+        permissions=Permissions.create,
+        dependencies=[local_dep.spell_id],
+    )
+    borrower.register_spell_owner(local_dep.spell_id, owner)
+    borrower.get_conduit_by_spell_id = MagicMock(side_effect=RuntimeError("should not resolve owner"))
+
+    borrower._conduit_ward._preflight_contract_dependency_collisions(
+        root_spell=root_spell,
+        root_spell_id=root_spell.spell_id,
+        requested_permissions=Permissions.create,
+    )
+
+
+def test_preflight_contract_dependency_collisions_skips_owner_self_when_not_local() -> None:
+    """Verify preflight skips dependency ids whose reported owner is the borrower itself."""
+    _, borrower = _build_conduit_pair()
+    root_spell = _register_spell(
+        borrower,
+        "root-self-preflight",
+        permissions=Permissions.create,
+        dependencies=["dep-self-preflight"],
+    )
+    borrower.register_spell_owner("dep-self-preflight", borrower)
+    borrower.get_spell_by_id = MagicMock(side_effect=RuntimeError("should not resolve spell"))
+
+    borrower._conduit_ward._preflight_contract_dependency_collisions(
+        root_spell=root_spell,
+        root_spell_id=root_spell.spell_id,
+        requested_permissions=Permissions.create,
+    )
+
+
+def test_preflight_contract_dependency_collisions_downgrades_requested_read() -> None:
+    """Verify preflight downgrades dependency permissions to read when the request is read-scoped."""
+    owner, borrower = _build_conduit_pair()
+    dep_spell = _register_spell(owner, "dep-preflight-read", permissions=Permissions.create)
+    root_spell = _register_spell(
+        borrower,
+        "root-preflight-read",
+        permissions=Permissions.create,
+        dependencies=[dep_spell.spell_id],
+    )
+    borrower.register_spell_owner(dep_spell.spell_id, owner)
+
+    with patch.object(borrower._conduit_ward, "_check_spell_if_eligible") as mock_eligible:
+        borrower._conduit_ward._preflight_contract_dependency_collisions(
+            root_spell=root_spell,
+            root_spell_id=root_spell.spell_id,
+            requested_permissions=Permissions.read,
+        )
+
+    assert mock_eligible.call_args.args[2] == Permissions.read
+
+
+def test_preflight_contract_dependency_collisions_rejects_duplicate_contract_keys_in_batch() -> None:
+    """Verify preflight raises when two dependency spells in the same batch share one contract key."""
+    owner, borrower = _build_conduit_pair()
+    dep_one = _register_spell(
+        owner,
+        "dep-dup-one",
+        permissions=Permissions.create,
+        binding_name="dup-binding",
+    )
+    dep_two = _register_spell(
+        owner,
+        "dep-dup-two",
+        permissions=Permissions.create,
+        binding_name="dup-binding",
+    )
+    root_spell = _register_spell(
+        borrower,
+        "root-dup-batch",
+        permissions=Permissions.create,
+        dependencies=[dep_one.spell_id, dep_two.spell_id],
+    )
+    borrower.register_spell_owner(dep_one.spell_id, owner)
+    borrower.register_spell_owner(dep_two.spell_id, owner)
+
+    with pytest.raises(RuntimeError, match="binding key collision"):
+        borrower._conduit_ward._preflight_contract_dependency_collisions(
+            root_spell=root_spell,
+            root_spell_id=root_spell.spell_id,
+            requested_permissions=Permissions.create,
+        )
+
+
 def test_get_spells_in_contract_by_conduit_name_returns_match(
     linked_pair: tuple[FakeConduit, FakeConduit],
 ) -> None:
@@ -2251,6 +2742,39 @@ def test_remove_root_from_contracts_across_all_contracts() -> None:
         (owner._id, spell_one.spell_id),
         (owner_two._id, spell_two.spell_id),
     }
+
+
+def test_remove_root_from_contracts_logs_contract_sever_failure(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify root removal logs and continues when empty-contract severing fails."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-root-sever-fail", permissions=Permissions.create)
+
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+        permissions="create",
+        root_spell_id="root-sever-fail",
+    )
+    contract = borrower._conduit_ward._find_contract(owner)
+
+    with patch.object(
+        borrower._conduit_ward,
+        "_remove_contract",
+        side_effect=RuntimeError("sever boom"),
+    ):
+        report = borrower._conduit_ward._remove_root_from_contracts(
+            root_spell_id="root-sever-fail",
+            conduit=owner,
+        )
+
+    assert report["success"] == [contract._id]
+    assert any(
+        level == "error" and "contract sever failed" in message
+        for level, message in borrower._logger.messages
+    )
 
 
 def test_link_spell_dependencies_raises_when_owner_missing(
@@ -2395,6 +2919,39 @@ def test_remove_root_from_contracts_no_matching_sources(
     assert report["success"] == []
     assert spell.spell_id in contract._get_detail_map(owner._conduit_ward)
     assert borrower._spellbook._remove_contracted_calls == []
+
+
+def test_remove_root_from_contracts_logs_contract_sever_failure(
+    linked_pair: tuple[FakeConduit, FakeConduit],
+) -> None:
+    """Verify root removal logs and continues when empty-contract severing fails."""
+    owner, borrower = linked_pair
+    spell = _register_spell(owner, "spell-root-sever-fail", permissions=Permissions.create)
+
+    borrower._conduit_ward._add_spell_to_contract(
+        spell=spell,
+        spell_id=spell.spell_id,
+        conduit=owner,
+        permissions="create",
+        root_spell_id="root-sever-fail",
+    )
+    contract = borrower._conduit_ward._find_contract(owner)
+
+    with patch.object(
+        borrower._conduit_ward,
+        "_remove_contract",
+        side_effect=RuntimeError("sever boom"),
+    ):
+        report = borrower._conduit_ward._remove_root_from_contracts(
+            root_spell_id="root-sever-fail",
+            conduit=owner,
+        )
+
+    assert report["success"] == [contract._id]
+    assert any(
+        level == "error" and "contract sever failed" in message
+        for level, message in borrower._logger.messages
+    )
 
 
 def test_add_spell_to_contract_rejects_block_all_policy() -> None:
