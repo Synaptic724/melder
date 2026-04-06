@@ -196,6 +196,10 @@ class FrameViewer(Cleanable):
         """
         Return the currently assigned/available views by frame name.
 
+        Contract:
+            Returns a detached snapshot of the currently attached views by
+            frame name.
+
         Returns:
             Dict[str, FrameView]: Assigned available views.
         """
@@ -208,6 +212,10 @@ class FrameViewer(Cleanable):
         """
         Return the default assigned view frame name when one exists.
 
+        Contract:
+            Returns only the stored default-view pointer; it does not validate
+            that the view still exists at access time.
+
         Returns:
             Optional[str]: Default assigned view frame name.
         """
@@ -216,7 +224,7 @@ class FrameViewer(Cleanable):
 
     @property
     def profile_name(self) -> Optional[str]:
-        """Return the default active viewer profile name."""
+        """Return the selected default active viewer profile name when one exists."""
         self.check_cleaned()
         if len(self._active_profiles_by_name) == 0:
             return None
@@ -224,7 +232,7 @@ class FrameViewer(Cleanable):
 
     @property
     def profile_version(self) -> Optional[str]:
-        """Return the default active viewer profile version."""
+        """Return the version of the selected default active viewer profile."""
         self.check_cleaned()
         if len(self._active_profiles_by_name) == 0:
             return None
@@ -232,7 +240,7 @@ class FrameViewer(Cleanable):
 
     @property
     def enabled_helpers(self) -> tuple[str, ...]:
-        """Return the enabled helper ids exposed by the default active profile."""
+        """Return the helper ids exposed by the selected default active profile."""
         self.check_cleaned()
         if len(self._active_profiles_by_name) == 0:
             return tuple()
@@ -240,7 +248,7 @@ class FrameViewer(Cleanable):
 
     @property
     def default_grouping(self) -> Optional[str]:
-        """Return the default grouping mode from the default active profile."""
+        """Return the default grouping mode from the selected default active profile."""
         self.check_cleaned()
         if len(self._active_profiles_by_name) == 0:
             return None
@@ -248,7 +256,7 @@ class FrameViewer(Cleanable):
 
     @property
     def default_detail_level(self) -> Optional[str]:
-        """Return the default detail posture from the default active profile."""
+        """Return the default detail posture from the selected default active profile."""
         self.check_cleaned()
         if len(self._active_profiles_by_name) == 0:
             return None
@@ -258,6 +266,10 @@ class FrameViewer(Cleanable):
     def profile(self) -> Optional[FrameViewerProfile]:
         """
         Return the hosted viewer profile clone when present.
+
+        Contract:
+            Returns the same live active profile object currently selected as
+            default.
 
         Returns:
             Optional[FrameViewerProfile]: Hosted selected viewer profile.
@@ -272,6 +284,9 @@ class FrameViewer(Cleanable):
         """
         Return the currently active local viewer profiles by name.
 
+        Contract:
+            Returns a detached snapshot of the active hosted profile map.
+
         Returns:
             Dict[str, FrameViewerProfile]: Active hosted viewer profiles.
         """
@@ -281,7 +296,7 @@ class FrameViewer(Cleanable):
 
     @property
     def metadata(self) -> Dict[str, object]:
-        """Return the viewer metadata map."""
+        """Return a detached copy of the viewer metadata map."""
         self.check_cleaned()
         with self._lock:
             return dict(self._metadata)
@@ -293,6 +308,11 @@ class FrameViewer(Cleanable):
         Args:
             frame_view:
                 View to register.
+
+        Contract:
+            - Replaces any existing view registered under the same frame name.
+            - Sets the first registered view as default when no default is
+              currently selected.
 
         Returns:
             None.
@@ -313,6 +333,10 @@ class FrameViewer(Cleanable):
             frame_name:
                 Frame name to resolve.
 
+        Contract:
+            Returns the same live `FrameView` object currently hosted by this
+            viewer.
+
         Returns:
             FrameView: Registered view.
         """
@@ -329,6 +353,10 @@ class FrameViewer(Cleanable):
         """
         Return the default assigned view.
 
+        Contract:
+            Resolves through the current default frame-name pointer and returns
+            the same live hosted view object.
+
         Returns:
             FrameView: Default assigned view.
         """
@@ -344,6 +372,10 @@ class FrameViewer(Cleanable):
         Args:
             frame_name:
                 Assigned frame name to make default.
+
+        Contract:
+            Requires the named view to already be attached to this viewer and
+            updates only the default-view pointer.
 
         Returns:
             None.
@@ -490,6 +522,10 @@ class FrameViewer(Cleanable):
                 Optional single-frame scope. When omitted, every attached view
                 is considered.
 
+        Contract:
+            Returns a deterministic source-kind keyed map built from the
+            current visible-link snapshot.
+
         Returns:
             Dict[str, List[FrameLink]]: Deterministic source-kind keyed link map.
         """
@@ -519,6 +555,10 @@ class FrameViewer(Cleanable):
                 Optional single-frame scope.
             source_kind:
                 Optional source-kind filter.
+
+        Contract:
+            Returns display names derived from the current visible-link
+            snapshot under the requested scope/filter.
 
         Returns:
             List[str]: Deterministic visible display names.
@@ -554,6 +594,10 @@ class FrameViewer(Cleanable):
             source_kind:
                 Optional source-kind filter.
 
+        Contract:
+            Counts the current visible-link snapshot under the requested
+            scope/filter rather than tracking a separate counter.
+
         Returns:
             int: Visible link count.
         """
@@ -578,6 +622,10 @@ class FrameViewer(Cleanable):
             frame_name:
                 Frame name to summarize.
 
+        Contract:
+            Builds a detached summary payload from the currently hosted
+            `FrameView` and grouped link snapshot for that frame.
+
         Returns:
             Dict[str, object]: Summary of the projected frame view.
         """
@@ -601,6 +649,10 @@ class FrameViewer(Cleanable):
         Internal
 
         Return deterministic summaries for every attached frame view.
+
+        Contract:
+            Returns a frame-name keyed summary map built from the current
+            attached-view snapshot.
 
         Returns:
             Dict[str, Dict[str, object]]: Frame-name keyed summary map.
@@ -631,6 +683,10 @@ class FrameViewer(Cleanable):
             source_kind:
                 Optional target-kind filter.
 
+        Contract:
+            Delegates target ordering/filtering to the selected hosted
+            `FrameView` rather than rebuilding that logic locally.
+
         Returns:
             List[FrameLink]: Available targets in view-profile order.
         """
@@ -658,6 +714,9 @@ class FrameViewer(Cleanable):
                 Optional assigned frame name. When omitted, the default
                 assigned view is used.
 
+        Contract:
+            Delegates profile-name lookup to the selected hosted `FrameView`.
+
         Returns:
             List[str]: Active local view-profile names.
         """
@@ -684,6 +743,10 @@ class FrameViewer(Cleanable):
             frame_name:
                 Optional assigned frame name. When omitted, the default
                 assigned view is used.
+
+        Contract:
+            Delegates the default-profile pointer update to the selected hosted
+            `FrameView`.
 
         Returns:
             None.
@@ -714,6 +777,9 @@ class FrameViewer(Cleanable):
                 Optional local view profile name used for shaping.
             source_kind:
                 Optional target-kind filter.
+
+        Contract:
+            Delegates description shaping to the selected hosted `FrameView`.
 
         Returns:
             List[Dict[str, object]]: Profile-shaped target descriptions.
@@ -749,6 +815,10 @@ class FrameViewer(Cleanable):
             source_id:
                 Stable source identifier to resolve.
 
+        Contract:
+            Scans the current visible-link snapshot for the requested frame and
+            returns the matching live `FrameLink` object.
+
         Returns:
             FrameLink: Matching visible link.
         """
@@ -782,6 +852,10 @@ class FrameViewer(Cleanable):
             Support safe cached viewer returns where Nexus keeps one canonical
             projected viewer but callers receive cleanup-safe copies.
 
+        Contract:
+            - Clones hosted views and active profiles into a detached viewer.
+            - Uses a fresh `FrameViewerProfileBuilder` for the clone.
+
         Returns:
             FrameViewer: Detached viewer copy.
         """
@@ -811,6 +885,9 @@ class FrameViewer(Cleanable):
 
         Return the helper ids exposed by the selected profile.
 
+        Contract:
+            Returns the helper ids from the selected default profile state.
+
         Returns:
             tuple[str, ...]: Enabled helper ids.
         """
@@ -820,6 +897,9 @@ class FrameViewer(Cleanable):
     def list_available_tools(self) -> tuple[str, ...]:
         """
         Return the tool ids exposed by the selected profile.
+
+        Contract:
+            Returns an empty tuple when no active viewer profile is hosted.
 
         Returns:
             tuple[str, ...]: Exposed tool ids.
@@ -832,6 +912,9 @@ class FrameViewer(Cleanable):
     def list_active_profile_names(self) -> List[str]:
         """
         Return the currently active viewer profile names.
+
+        Contract:
+            Returns a snapshot list of the active hosted viewer-profile names.
 
         Returns:
             List[str]: Active viewer profile names.
@@ -847,6 +930,10 @@ class FrameViewer(Cleanable):
         Args:
             profile:
                 Hosted profile to activate.
+
+        Contract:
+            - Replaces any existing distinct hosted profile with the same name.
+            - Cleans the displaced profile before storing the new one.
 
         Returns:
             None.

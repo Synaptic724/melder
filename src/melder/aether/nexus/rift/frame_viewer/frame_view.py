@@ -536,6 +536,10 @@ class FrameView(Cleanable):
             target_id:
                 Available target id to resolve.
 
+        Contract:
+            Resolves only currently visible targets and returns the same live
+            link object stored in this view.
+
         Returns:
             FrameLink: Matching available target.
         """
@@ -554,6 +558,9 @@ class FrameView(Cleanable):
         """
         Return the active local profile names for this view.
 
+        Contract:
+            Returns a snapshot list of the active local profile-name keys.
+
         Returns:
             List[str]: Active local view profile names.
         """
@@ -564,6 +571,10 @@ class FrameView(Cleanable):
     def get_default_profile(self) -> FrameViewProfile:
         """
         Return the default local view profile.
+
+        Contract:
+            Resolves through the current default profile name and returns the
+            same live active profile object stored on the view.
 
         Returns:
             FrameViewProfile: Default local view profile.
@@ -580,6 +591,11 @@ class FrameView(Cleanable):
         Args:
             profile_name:
                 Active local profile name.
+
+        Contract:
+            - Requires the profile to already be active on this view.
+            - Updates only the default-profile pointer; it does not clone or
+              register a new profile.
 
         Returns:
             None.
@@ -602,6 +618,12 @@ class FrameView(Cleanable):
             profile:
                 Local profile to activate on this view.
 
+        Contract:
+            - Replaces any existing distinct active profile with the same name.
+            - Cleans the displaced profile before storing the new one.
+            - Sets the first registered profile as default when no default is
+              currently selected.
+
         Returns:
             None.
         """
@@ -623,6 +645,10 @@ class FrameView(Cleanable):
         Args:
             profile_name:
                 Active profile name to resolve.
+
+        Contract:
+            Resolves only existing active local profiles and fails fast on
+            absence.
 
         Returns:
             FrameViewProfile: Matching active local profile.
@@ -648,6 +674,10 @@ class FrameView(Cleanable):
             Support safe cached projection returns where Nexus stores one
             canonical projected view but callers receive their own cleanup-safe
             copy.
+
+        Contract:
+            - Clones owned links and active profiles into a detached view.
+            - Uses a fresh `FrameViewProfileBuilder` for the clone.
 
         Returns:
             FrameView: Detached frame-view copy.
@@ -688,6 +718,11 @@ class FrameView(Cleanable):
                 profile is used.
             source_kind:
                 Optional target-kind filter.
+
+        Contract:
+            - Orders the currently visible targets by the selected profile's
+              preferred kind order.
+            - Preserves remaining targets after the preferred ordering pass.
 
         Returns:
             List[FrameLink]: Available targets in profile-preferred order.
@@ -731,6 +766,11 @@ class FrameView(Cleanable):
             source_kind:
                 Optional target-kind filter.
 
+        Contract:
+            Builds detached description payloads from the current ordered
+            target surface rather than exposing the raw `FrameLink` objects
+            directly.
+
         Returns:
             List[Dict[str, object]]: Target descriptions in profile order.
         """
@@ -766,6 +806,10 @@ class FrameView(Cleanable):
         Args:
             links_by_id:
                 Available frame targets keyed by target id.
+
+        Contract:
+            Returns immutable per-kind tuples derived from the supplied link
+            snapshot.
 
         Returns:
             Dict[str, Tuple[str, ...]]: Target ids grouped by kind.

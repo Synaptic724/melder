@@ -1701,6 +1701,187 @@ def test_mark_lineage_dirty_records_structural_change() -> None:
     assert env.states_system.mark_calls[-1]["reason"] == SpellStateChangeReason.structure_changed
 
 
+def test_conduit_has_impacted_lineage_detects_owned_and_contracted_entries() -> None:
+    """
+    Verify impacted-lineage detection checks owned and contracted maps.
+
+    Contract:
+    - Owned spellbook entries mark the conduit as impacted.
+    - Contracted spellbook entries also mark the conduit as impacted.
+    """
+    env = build_environment()
+    transfer = TransferOfOwnership(
+        source_conduit=env.source,
+        target_conduit=env.target,
+        spell=env.spell,
+    )
+
+    owned_index = SpellIndex("owned-impact")
+    owned_spell = build_spell(
+        spell_id="owned-impact",
+        owner_id=PEER_ID,
+        spell_index=owned_index,
+    )
+    env.peer._spellbook._spells[owned_index] = owned_spell
+
+    contracted_index = SpellIndex("contracted-impact")
+    contracted_spell = build_spell(
+        spell_id="contracted-impact",
+        owner_id=PEER_ID,
+        spell_index=contracted_index,
+    )
+    env.peer._spellbook._contracted_spells["borrower"] = {
+        contracted_index: contracted_spell,
+    }
+
+    assert transfer._conduit_has_impacted_lineage(env.peer, {owned_index.id}) is True
+    assert transfer._conduit_has_impacted_lineage(env.peer, {contracted_index.id}) is True
+
+
+def test_conduit_has_impacted_lineage_returns_false_for_missing_inputs() -> None:
+    """
+    Verify impacted-lineage detection rejects missing conduits or spellbooks.
+
+    Contract:
+    - None conduits return False.
+    - Empty impacted-lineage sets return False.
+    - Conduits without spellbooks return False.
+    """
+    env = build_environment()
+    transfer = TransferOfOwnership(
+        source_conduit=env.source,
+        target_conduit=env.target,
+        spell=env.spell,
+    )
+
+    assert transfer._conduit_has_impacted_lineage(None, {env.spell_index.id}) is False
+    assert transfer._conduit_has_impacted_lineage(env.source, set()) is False
+    assert (
+        transfer._conduit_has_impacted_lineage(
+            SimpleNamespace(_spellbook=None),
+            {env.spell_index.id},
+        )
+        is False
+    )
+
+
+def test_collect_impacted_conduit_ids_includes_peers_clusters_and_lineage_holders() -> None:
+    """
+    Verify impacted conduit collection includes every relevant runtime holder.
+
+    Contract:
+    - Source and target conduits are always included.
+    - Contracted peers are included.
+    - Cluster members from borrower summaries are included.
+    - Live conduits holding impacted lineages are included.
+    """
+    env = build_environment(include_cluster=True)
+    env.source._conduit_ward._get_contracted_conduits = lambda: [(PEER_ID, env.peer)]
+    env.target._conduit_ward._get_contracted_conduits = lambda: []
+    env.cluster.shared_spells[PEER_ID] = set()
+
+    holder_book = FakeSpellbook(env.states_system)
+    holder_ward = FakeConduitWard(Policies.default)
+    holder = FakeConduit(
+        "holder",
+        frame_name=env.source._aetheric_frame,
+        spellbook=holder_book,
+        creations=FakeCreations(),
+        ward=holder_ward,
+    )
+    holder_index = SpellIndex("holder-impact")
+    holder_spell = build_spell(
+        spell_id="holder-impact",
+        owner_id="holder",
+        spell_index=holder_index,
+    )
+    holder_book._spells[holder_index] = holder_spell
+    env.frame._conduits["holder"] = holder
+
+    transfer = TransferOfOwnership(
+        source_conduit=env.source,
+        target_conduit=env.target,
+        spell=env.spell,
+    )
+
+    conduit_ids = transfer._collect_impacted_conduit_ids(
+        impacted_lineages={holder_index.id},
+        summary={"borrowers": [{"type": "cluster", "cluster": "cluster-1"}]},
+    )
+
+    assert conduit_ids == {SOURCE_ID, TARGET_ID, PEER_ID, "holder"}
+
+
+def test_gate_transfer_impacts_marks_root_and_impacted_conduits_dirty() -> None:
+    """
+    Verify impact gating marks the moved lineage and every impacted conduit.
+
+    Contract:
+    - The transferred lineage is marked structurally changed.
+    - Contracted peers, cluster members, and lineage holders are marked dirty.
+    """
+    env = build_environment(include_cluster=True)
+    env.source._conduit_ward._get_contracted_conduits = lambda: [(PEER_ID, env.peer)]
+    env.target._conduit_ward._get_contracted_conduits = lambda: []
+    env.cluster.shared_spells[PEER_ID] = set()
+
+    holder_book = FakeSpellbook(env.states_system)
+    holder_ward = FakeConduitWard(Policies.default)
+    holder = FakeConduit(
+        "holder",
+        frame_name=env.source._aetheric_frame,
+        spellbook=holder_book,
+        creations=FakeCreations(),
+        ward=holder_ward,
+    )
+    holder_index = SpellIndex("holder-impact")
+    holder_spell = build_spell(
+        spell_id="holder-impact",
+        owner_id="holder",
+        spell_index=holder_index,
+    )
+    holder_book._spells[holder_index] = holder_spell
+    env.frame._conduits["holder"] = holder
+
+    def compute_impact_closure(lineage_ids: List[str]) -> Set[str]:
+        """
+        Return the transferred lineage plus an extra impacted holder lineage.
+
+        Args:
+            lineage_ids: Root lineage ids passed by the transfer helper.
+        Returns:
+            Set of impacted lineage ids.
+        """
+        return {lineage_ids[0], holder_index.id}
+
+    env.states_system.compute_impact_closure = compute_impact_closure
+
+    transfer = TransferOfOwnership(
+        source_conduit=env.source,
+        target_conduit=env.target,
+        spell=env.spell,
+    )
+
+    transfer._gate_transfer_impacts(
+        spell_obj=env.spell,
+        summary={"borrowers": [{"type": "cluster", "cluster": "cluster-1"}]},
+    )
+
+    assert env.states_system.mark_calls == [
+        {
+            "spell_index": env.spell_index,
+            "reason": SpellStateChangeReason.structure_changed,
+        }
+    ]
+    assert {
+        call["conduit_id"] for call in env.states_system.conduit_dirty_calls
+    } == {SOURCE_ID, TARGET_ID, PEER_ID, "holder"}
+    assert all(
+        call["change_reason"] == SpellStateChangeReason.structure_changed
+        for call in env.states_system.conduit_dirty_calls
+    )
+
+
 def test_mark_lineage_disabled_registers_state_when_missing() -> None:
     """
     Verify mark_lineage_disabled registers a state when none exists.
@@ -1779,6 +1960,228 @@ def test_snapshot_current_state_reflects_target_registry_and_spellbook() -> None
     snapshot = transfer._snapshot_current_state(env.spell)
     assert snapshot["in_target_registry"] is True
     assert snapshot["in_target_spellbook"] is True
+
+
+def test_unshare_target_conduit_contract_noops_when_contract_missing() -> None:
+    """
+    Verify target-contract unshare does nothing when no contract exists.
+
+    Contract:
+    - No remove call is made.
+    - No rollback action is registered.
+    """
+    env = build_environment()
+    remove_calls: List[Dict[str, Any]] = []
+
+    def find_contract_by_id(conduit_id: str) -> None:
+        """
+        Return no contract for the requested conduit id.
+
+        Args:
+            conduit_id: Peer conduit id requested by the helper.
+        Returns:
+            None, indicating no contract exists.
+        """
+        return None
+
+    def remove_from_contract(
+        *,
+        spell_id: str,
+        conduit: Any,
+        conduit_id: str,
+        aetheric_frame: str,
+    ) -> None:
+        """
+        Record any unexpected target-contract removal attempt.
+
+        Args:
+            spell_id: Spell id requested for removal.
+            conduit: Peer conduit associated with the request.
+            conduit_id: Peer conduit id.
+            aetheric_frame: Frame name passed by the helper.
+        """
+        remove_calls.append(
+            {
+                "spell_id": spell_id,
+                "conduit": conduit,
+                "conduit_id": conduit_id,
+                "aetheric_frame": aetheric_frame,
+            }
+        )
+
+    env.target_ward._find_contract_by_id = find_contract_by_id
+    env.target_ward._remove_spell_from_contract = remove_from_contract
+
+    transfer = TransferOfOwnership(
+        source_conduit=env.source,
+        target_conduit=env.target,
+        spell=env.spell,
+    )
+    transfer._unshare_target_conduit_contract(env.spell)
+
+    assert remove_calls == []
+    assert transfer._rollback_actions == []
+
+
+def test_unshare_target_conduit_contract_noops_when_target_detail_missing() -> None:
+    """
+    Verify target-contract unshare skips when the target contract lacks the spell.
+
+    Contract:
+    - No remove call is made when the contract has no matching detail.
+    - No rollback action is registered.
+    """
+    env = build_environment()
+    remove_calls: List[Dict[str, Any]] = []
+    target_contract = FakeContract(
+        "target-contract",
+        env.target_ward,
+        env.source_ward,
+        env.target,
+        env.source,
+        spell_id=env.spell.spell_id,
+        details_in_a=False,
+        details_in_b=False,
+    )
+    target_contract._lock = threading.RLock()
+
+    def find_contract_by_id(conduit_id: str) -> Any:
+        """
+        Return the target contract for the source conduit id.
+
+        Args:
+            conduit_id: Peer conduit id requested by the helper.
+        Returns:
+            FakeContract when the source conduit is requested.
+        """
+        if conduit_id == env.source._id:
+            return target_contract
+        return None
+
+    def remove_from_contract(
+        *,
+        spell_id: str,
+        conduit: Any,
+        conduit_id: str,
+        aetheric_frame: str,
+    ) -> None:
+        """
+        Record any unexpected target-contract removal attempt.
+
+        Args:
+            spell_id: Spell id requested for removal.
+            conduit: Peer conduit associated with the request.
+            conduit_id: Peer conduit id.
+            aetheric_frame: Frame name passed by the helper.
+        """
+        remove_calls.append(
+            {
+                "spell_id": spell_id,
+                "conduit": conduit,
+                "conduit_id": conduit_id,
+                "aetheric_frame": aetheric_frame,
+            }
+        )
+
+    env.target_ward._find_contract_by_id = find_contract_by_id
+    env.target_ward._remove_spell_from_contract = remove_from_contract
+
+    transfer = TransferOfOwnership(
+        source_conduit=env.source,
+        target_conduit=env.target,
+        spell=env.spell,
+    )
+    transfer._unshare_target_conduit_contract(env.spell)
+
+    assert remove_calls == []
+    assert transfer._rollback_actions == []
+
+
+def test_unshare_target_conduit_contract_removes_target_detail_and_registers_rollback() -> None:
+    """
+    Verify target-contract unshare removes the target detail and captures rollback.
+
+    Contract:
+    - The target ward removes its contract detail for the source conduit.
+    - One rollback action is registered to restore the contract entry.
+    """
+    env = build_environment()
+    remove_calls: List[Dict[str, Any]] = []
+    target_contract = FakeContract(
+        "target-contract",
+        env.target_ward,
+        env.source_ward,
+        env.target,
+        env.source,
+        spell_id=env.spell.spell_id,
+        details_in_a=True,
+        details_in_b=False,
+    )
+    target_contract._lock = threading.RLock()
+
+    def find_contract_by_id(conduit_id: str) -> Any:
+        """
+        Return the target contract for the source conduit id.
+
+        Args:
+            conduit_id: Peer conduit id requested by the helper.
+        Returns:
+            FakeContract when the source conduit is requested.
+        """
+        if conduit_id == env.source._id:
+            return target_contract
+        return None
+
+    def remove_from_contract(
+        *,
+        spell_id: str,
+        conduit: Any,
+        conduit_id: str,
+        aetheric_frame: str,
+    ) -> None:
+        """
+        Record the target-contract removal request.
+
+        Args:
+            spell_id: Spell id requested for removal.
+            conduit: Peer conduit associated with the request.
+            conduit_id: Peer conduit id.
+            aetheric_frame: Frame name passed by the helper.
+        """
+        remove_calls.append(
+            {
+                "spell_id": spell_id,
+                "conduit": conduit,
+                "conduit_id": conduit_id,
+                "aetheric_frame": aetheric_frame,
+            }
+        )
+
+    env.target_ward._find_contract_by_id = find_contract_by_id
+    env.target_ward._remove_spell_from_contract = remove_from_contract
+
+    transfer = TransferOfOwnership(
+        source_conduit=env.source,
+        target_conduit=env.target,
+        spell=env.spell,
+    )
+    transfer._unshare_target_conduit_contract(env.spell)
+
+    assert remove_calls == [
+        {
+            "spell_id": env.spell.spell_id,
+            "conduit": env.source,
+            "conduit_id": SOURCE_ID,
+            "aetheric_frame": env.source._aetheric_frame,
+        }
+    ]
+    assert len(transfer._rollback_actions) == 1
+
+    transfer._rollback_actions[0]()
+
+    assert len(env.target_ward.add_calls) == 1
+    assert env.target_ward.add_calls[0]["conduit_id"] == SOURCE_ID
+    assert env.target_ward.add_calls[0]["root_spell_id"] == env.spell.spell_id
 
 
 def test_restore_cluster_shares_noop_when_already_present() -> None:
@@ -2942,6 +3345,96 @@ def test_flip_registry_and_spellbooks_raises_on_spellbook_failure() -> None:
         spell=env.spell,
     )
     with pytest.raises(RuntimeError, match="Failed to flip spellbooks"):
+        transfer._flip_registry_and_spellbooks(env.spell)
+
+
+def test_flip_registry_and_spellbooks_raises_on_target_owned_spell_id_collision() -> None:
+    """
+    Verify flipping fails when the target already owns a conflicting spell id.
+
+    Contract:
+    - A conflicting target `_spells_by_id` entry raises a RuntimeError.
+    """
+    env = build_environment()
+    conflicting_index = SpellIndex(DEFAULT_SPELL_ID)
+    conflicting_spell = build_spell(
+        spell_id=DEFAULT_SPELL_ID,
+        owner_id=TARGET_ID,
+        spell_index=conflicting_index,
+    )
+    env.target._spellbook._spells_by_id[env.spell_index.current] = conflicting_spell
+
+    transfer = TransferOfOwnership(
+        source_conduit=env.source,
+        target_conduit=env.target,
+        spell=env.spell,
+    )
+
+    with pytest.raises(RuntimeError, match="Owned spell_id collision on target"):
+        transfer._flip_registry_and_spellbooks(env.spell)
+
+
+def test_flip_registry_and_spellbooks_raises_on_target_spell_id_pool_collision() -> None:
+    """
+    Verify flipping fails when the target spell-id pool already holds a conflict.
+
+    Contract:
+    - A conflicting target `_spell_id_pool` entry raises a RuntimeError.
+    """
+    env = build_environment()
+    env.target._spellbook._spell_id_pool[env.spell_index.current] = object()
+
+    transfer = TransferOfOwnership(
+        source_conduit=env.source,
+        target_conduit=env.target,
+        spell=env.spell,
+    )
+
+    with pytest.raises(RuntimeError, match="spell_id_pool collision on target"):
+        transfer._flip_registry_and_spellbooks(env.spell)
+
+
+def test_flip_registry_and_spellbooks_raises_on_spellindex_owner_book_mismatch() -> None:
+    """
+    Verify flipping fails when the SpellIndex owner book is already corrupt.
+
+    Contract:
+    - A non-source owner spellbook raises a RuntimeError.
+    """
+    env = build_environment()
+    env.spell.spell_index._owner_spellbook = env.target._spellbook
+
+    transfer = TransferOfOwnership(
+        source_conduit=env.source,
+        target_conduit=env.target,
+        spell=env.spell,
+    )
+
+    with pytest.raises(RuntimeError, match="SpellIndex owner mismatch during transfer"):
+        transfer._flip_registry_and_spellbooks(env.spell)
+
+
+def test_flip_registry_and_spellbooks_raises_on_spellindex_owner_spell_mismatch() -> None:
+    """
+    Verify flipping fails when the SpellIndex owner spell is already corrupt.
+
+    Contract:
+    - A non-matching owner spell raises a RuntimeError.
+    """
+    env = build_environment()
+    env.spell.spell_index._owner_spell = build_spell(
+        spell_id="other-spell",
+        owner_id=SOURCE_ID,
+        spell_index=SpellIndex("other-spell"),
+    )
+
+    transfer = TransferOfOwnership(
+        source_conduit=env.source,
+        target_conduit=env.target,
+        spell=env.spell,
+    )
+
+    with pytest.raises(RuntimeError, match="SpellIndex owner spell mismatch during transfer"):
         transfer._flip_registry_and_spellbooks(env.spell)
 
 
