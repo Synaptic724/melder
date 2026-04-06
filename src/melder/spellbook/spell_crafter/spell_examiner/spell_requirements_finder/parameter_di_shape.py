@@ -6,7 +6,7 @@ class ParameterDIShape(Enum):
     High-level classification of how a single parameter is expected to be
     satisfied during resolution.
 
-    This is a **Phase 1 artifact** – it does not perform lookups or graph
+    This is a **Phase 1 artifact** - it does not perform lookups or graph
     building; it just describes what the parameter *wants*.
 
     Values

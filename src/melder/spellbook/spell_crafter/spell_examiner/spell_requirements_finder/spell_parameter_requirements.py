@@ -64,6 +64,43 @@ class SpellParameterRequirement(Cleanable):
             collection_element_annotation: Any = None,
             spellmap_default: Optional[SpellMap] = None,
     ) -> None:
+        """
+        Initialize one phase-1 parameter requirement descriptor.
+
+        Args:
+            name:
+                Parameter name from the inspected signature.
+            position:
+                Positional index within the inspected callable signature.
+            kind:
+                Raw `inspect.Parameter.kind` value.
+            annotation:
+                Effective annotation object for the parameter.
+            default_value:
+                Raw default value from the signature.
+            has_default:
+                Whether the signature exposes a default value.
+            is_var_positional:
+                Whether the parameter is `*args`.
+            is_var_keyword:
+                Whether the parameter is `**kwargs`.
+            is_keyword_only:
+                Whether the parameter is keyword-only.
+            is_optional:
+                Whether the parameter is logically optional from the DI point
+                of view.
+            di_shape:
+                Phase-1 DI classification for the parameter.
+            collection_element_annotation:
+                Optional collection element annotation when the parameter
+                expects a collection.
+            spellmap_default:
+                Optional default `SpellMap` when the parameter uses the
+                explicit spell-map shape.
+
+        Returns:
+            None.
+        """
         Cleanable.__init__(self)
 
         if not name:
@@ -125,16 +162,25 @@ class SpellParameterRequirement(Cleanable):
 
     @property
     def name(self) -> str:
+        """
+        Return the parameter name from the inspected signature.
+        """
         self.check_cleaned()
         return self._name
 
     @property
     def position(self) -> int:
+        """
+        Return the parameter's positional index within the inspected signature.
+        """
         self.check_cleaned()
         return self._position
 
     @property
     def kind(self) -> inspect._ParameterKind:
+        """
+        Return the raw `inspect.Parameter.kind` classification.
+        """
         self.check_cleaned()
         return self._kind
 
@@ -164,21 +210,33 @@ class SpellParameterRequirement(Cleanable):
 
     @property
     def has_default(self) -> bool:
+        """
+        Return whether the parameter exposes a default value in the signature.
+        """
         self.check_cleaned()
         return self._has_default
 
     @property
     def is_var_positional(self) -> bool:
+        """
+        Return whether the parameter represents `*args`.
+        """
         self.check_cleaned()
         return self._is_var_positional
 
     @property
     def is_var_keyword(self) -> bool:
+        """
+        Return whether the parameter represents `**kwargs`.
+        """
         self.check_cleaned()
         return self._is_var_keyword
 
     @property
     def is_keyword_only(self) -> bool:
+        """
+        Return whether the parameter is keyword-only.
+        """
         self.check_cleaned()
         return self._is_keyword_only
 
