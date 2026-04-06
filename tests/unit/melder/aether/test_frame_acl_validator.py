@@ -39,6 +39,7 @@ from melder.spellbook.existence.existence import Existence
 
 def _build_descriptor(
         *,
+        nexus_version: str = "0.0.1",
         frame_payload_version: str = "0.0.1",
         conduit_payload_version: str = "0.0.1",
         spell_payload_type: str = "detailed",
@@ -63,6 +64,7 @@ def _build_descriptor(
     descriptor = FrameDescriptor("ops")
     descriptor.set_frame_overview(
         FrameRecord(
+            nexus_version=nexus_version,
             frame_name="ops",
             frame_id="ops-frame",
             config_origin_spellbook_id="ops-spellbook",
@@ -83,6 +85,7 @@ def _build_descriptor(
     )
     descriptor.upsert_conduit_record(
         ConduitRecord(
+            nexus_version=nexus_version,
             conduit_id="ops-conduit",
             root_conduit_id="ops-conduit",
             frame_name="ops",
@@ -98,6 +101,7 @@ def _build_descriptor(
     )
     descriptor.upsert_spell_record(
         SpellRecord(
+            nexus_version=nexus_version,
             origin_spellbook_id="ops-spellbook",
             frame_name="ops",
             owner_conduit_id="ops-conduit",
@@ -256,11 +260,11 @@ def test_frame_acl_validator_rejects_frame_payload_contract_mismatch() -> None:
     """
     validator = FrameACLValidator("ops")
     configuration = FrameACLConfiguration.create_default("ops")
-    descriptor = _build_descriptor(frame_payload_version="9.9.9")
+    descriptor = _build_descriptor(nexus_version="9.9.9")
 
     with pytest.raises(
             ValueError,
-            match="Unsupported frame descriptor payload version '9.9.9'",
+            match="Descriptor frame record Nexus contract 'default:9.9.9' does not match required ACL contract 'default:0.0.1' for frame 'ops'",
     ):
         validator.validate_configuration_against_descriptor(
             configuration,

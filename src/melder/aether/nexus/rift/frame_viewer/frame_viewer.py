@@ -890,11 +890,12 @@ class FrameViewer(Cleanable):
                             compiled_access_surface.frame_payload_fields
                         ),
                         "frame_id": frame_overview.frame_id,
+                        "nexus_label": frame_overview.nexus_label,
+                        "nexus_version": frame_overview.nexus_version,
                         "config_origin_spellbook_id": (
                             frame_overview.config_origin_spellbook_id
                         ),
-                        "payload_profile_name": frame_overview.payload.profile_name,
-                        "payload_profile_version": frame_overview.payload.profile_version,
+                        "payload_version": frame_overview.payload.payload_version,
                     },
                 )
             )
@@ -923,10 +924,11 @@ class FrameViewer(Cleanable):
                                 conduit_id,
                                 tuple(),
                             ),
+                            "nexus_label": conduit_record.nexus_label,
+                            "nexus_version": conduit_record.nexus_version,
                             "root_conduit_id": conduit_record.root_conduit_id,
                             "origin_spellbook_id": conduit_record.origin_spellbook_id,
-                            "payload_profile_name": conduit_record.payload.profile_name,
-                            "payload_profile_version": conduit_record.payload.profile_version,
+                            "payload_version": conduit_record.payload.payload_version,
                         },
                     )
                 )
@@ -961,8 +963,16 @@ class FrameViewer(Cleanable):
                                 record_key,
                                 tuple(),
                             ),
-                            "payload_profile_name": spell_record.payload.profile_name,
-                            "payload_profile_version": spell_record.payload.profile_version,
+                            "nexus_label": spell_record.nexus_label,
+                            "nexus_version": spell_record.nexus_version,
+                            "payload_type": spell_record.payload.payload_type,
+                            "payload_version": spell_record.payload.payload_version,
+                            "source_profile_name": (
+                                spell_record.payload.source_profile_name
+                            ),
+                            "source_profile_version": (
+                                spell_record.payload.source_profile_version
+                            ),
                         },
                     )
                 )

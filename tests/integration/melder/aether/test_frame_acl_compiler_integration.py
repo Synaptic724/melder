@@ -244,6 +244,9 @@ def test_integration_runtime_compiled_surface_projects_directly_into_frame_viewe
 
         viewer = FrameViewer(
             frame_descriptors_by_name={"ops": descriptor},
+            frame_acl_configurations_by_frame_name={
+                "ops": nexus.get_current_frame_acl_configuration("ops"),
+            },
             compiled_access_surfaces_by_frame_name={"ops": compiled_surface},
             default_view_frame_name="ops",
         )

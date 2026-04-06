@@ -48,12 +48,13 @@ class _PayloadProfile(Cleanable):
     def __init__(self, name: str = "detailed") -> None:
         super().__init__()
         self.profile_name = name
+        self.profile_version = "0.0.1"
         self.binding_profile = object()
         self.resolution_profile = object()
 
     def to_descriptor_payload(self) -> SpellDescriptorPayload:
         return SpellDescriptorPayload(
-            profile_name=self.profile_name,
+            payload_type=self.profile_name,
             binding_payload={},
             resolution_payload={},
             class_profile=None,

@@ -5,7 +5,19 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class ConduitState(Enum):
     """
-    Enum representing the state of a Conduit.
+    Lifecycle classification for a conduit instance.
+
+    This enum is the compact runtime label used to distinguish whether a
+    conduit is a normal/root-visible conduit, a lesser lineage child, or an
+    already-cleaned conduit that should no longer participate in runtime work.
+
+    Contract:
+        - `normal` means a full conduit that can be registered into the wider
+          frame/runtime surfaces.
+        - `lesser` means a lineage child conduit that inherits state from a
+          parent/root conduit until it is upgraded.
+        - `cleaned` means teardown has completed and the conduit should be
+          treated as unusable.
     """
     __melder_internal__ = _mrg.sentinel
     normal = auto()
@@ -14,22 +26,27 @@ class ConduitState(Enum):
 
     def __str__(self):
         """
-        String representation of the ConduitState.
+        Return the stable lowercase state name used in logs and diagnostics.
         """
         return self.name.lower()
 
     @staticmethod
     def resolve(value: str | Enum | None) -> Optional['ConduitState']:
         """
-        Resolve a string or ConduitState value into a valid ConduitState enum.
+        Normalize external conduit-state input into a `ConduitState` value.
 
         Args:
-            value: Either a lowercase string ("normal", "lesser", etc.), a ConduitState, or None.
+            value:
+                Either a lowercase string (`"normal"`, `"lesser"`, etc.), an
+                enum member, or `None`.
 
         Returns:
-            ConduitState enum.
+            Optional[ConduitState]:
+                Resolved conduit state or `None` when the caller passed `None`.
 
         Raises:
-            ValueError: If the string does not match any ConduitState member.
+            ValueError:
+                If the string or enum value does not map to a valid conduit
+                state.
         """
         return EnumHelpers.convert_enum_and_check(value=value, enum=ConduitState)
