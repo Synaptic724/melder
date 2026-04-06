@@ -496,6 +496,8 @@ class GeneralViewFrame(Cleanable):
                         source_id,
                         tuple(),
                     )
+                    if visible
+                    else tuple()
                 ),
             }
         if source_kind == "spell":
@@ -515,6 +517,8 @@ class GeneralViewFrame(Cleanable):
                         record_key,
                         tuple(),
                     )
+                    if visible
+                    else tuple()
                 ),
             }
         raise ValueError("Unsupported source_kind '{0}'.".format(source_kind))

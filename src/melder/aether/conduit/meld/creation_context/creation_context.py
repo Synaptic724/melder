@@ -569,7 +569,23 @@ class CreationContext(Cleanable):
             caller_creations_lock_held: bool,
     ) -> Any:
         """
-        Execute one override-bearing call through phase 10/11/12 specialization.
+        Execute one override-bearing meld call through the specialization
+        pipeline.
+
+        This is the hot-path entry for override execution after Meld has already
+        normalized the frontdoor payload. The method:
+
+        - separates root positional overrides from targeted socket overrides
+        - uses the Phase 10 patch map to turn targeted payloads into an
+          override map plus deterministic socket shape
+        - reuses the most recent executor when the socket shape and root
+          positional arity are identical
+        - otherwise resolves or compiles a specialized Phase 12 executor keyed
+          by the current override shape
+
+        The override payload values themselves do not participate in executor
+        cache identity. Only the structural shape matters for specialization
+        reuse.
         """
         spell = self._spell
         override_route_config = self._override_route_config_active
@@ -706,7 +722,17 @@ class CreationContext(Cleanable):
             override_payload: Dict[str, Any],
     ) -> Tuple[Dict[str, Any], Optional[Sequence[Any]]]:
         """
-        Split root positional overrides from keyed TargetSpec override payload.
+        Separate root positional overrides from targeted socket overrides.
+
+        `__args__` is the reserved root-level positional override carrier. This
+        helper removes that payload from the keyed override mapping and returns
+        the two channels separately so the later specialization path can reason
+        about:
+
+        - targeted socket override shape
+        - root positional arity
+
+        without conflating the two.
         """
         raw_args = override_payload.get("__args__")
         if raw_args is None:
@@ -928,7 +954,16 @@ class CreationContext(Cleanable):
             override_map: Dict[Any, Any],
     ) -> Tuple[Dict[str, Tuple[Any, ...]], Tuple[Tuple[Any, ...], ...]]:
         """
-        Group override sockets by spell id and build deterministic shape tuples.
+        Build both grouped override targets and the deterministic socket-shape
+        tuple in one pass.
+
+        This is the full preprocessing path used when the caller needs both:
+
+        - per-spell grouped override targets for executor compilation, and
+        - a stable socket-shape tuple for specialization identity
+
+        The helper keeps one- and two-socket fast paths so small override sets
+        avoid the heavier generic ordering workflow.
         """
         if not override_map:
             return {}, ()
@@ -1050,7 +1085,18 @@ class CreationContext(Cleanable):
             root_positional_override: Optional[Sequence[Any]],
     ) -> Tuple[Any, ...]:
         """
-        Build a deterministic specialization key for override executor cache.
+        Build the specialization-cache key for one override call shape.
+
+        The key intentionally captures only structural information needed to
+        decide executor reuse:
+
+        - the Phase 11 plan signature
+        - the deterministic socket-shape tuple
+        - the arity of root positional overrides
+
+        It does not encode concrete override values, because those values are
+        runtime data passed to the compiled executor, not part of specialization
+        identity.
         """
         positional_arity = -1
         if root_positional_override is not None:
@@ -1074,7 +1120,13 @@ class CreationContext(Cleanable):
             prefilter_cache_key: Optional[Tuple[Any, ...]] = None,
     ) -> Callable[..., Any]:
         """
-        Resolve one cached override specialization executor or compile on miss.
+        Return a cached override specialization executor, compiling it on miss.
+
+        This is the main specialization-cache lookup for override execution.
+        Callers supply the already-derived structural shape and the grouped
+        targets for the current override call. If a matching executor is not
+        cached yet, the method compiles one using either the spell's plan rows
+        or the generic Phase 12 fallback path.
         """
         override_specialization_cache = self._override_specialization_cache
         cached = override_specialization_cache.get(shape_key)
@@ -1189,7 +1241,11 @@ class CreationContext(Cleanable):
             has_root_positional_override: bool,
     ) -> str:
         """
-        Return cached emitted override source for one override specialization shape.
+        Return the emitted Python source for one override specialization shape.
+
+        Source text is cached separately from compiled code objects so later
+        specialization work can reuse the emitted shape-specific program text
+        without regenerating it from plan rows each time.
         """
         override_executor_source_cache = (
             self._override_executor_source_cache_by_plan_signature
@@ -1216,7 +1272,11 @@ class CreationContext(Cleanable):
             source: str,
     ) -> Any:
         """
-        Return cached compiled override code object for one specialization shape.
+        Return the compiled code object for one specialization shape.
+
+        This is the second stage of specialization caching: emitted source is
+        compiled once per shape key, then reused by later executor builds that
+        need to bind fresh runtime namespaces against the same program body.
         """
         override_executor_code_object_cache = (
             self._override_executor_code_object_cache_by_plan_signature

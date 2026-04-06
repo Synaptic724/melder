@@ -197,7 +197,11 @@ def _select_overrides_only_template(
         resolve_route_key: str,
 ) -> Callable[..., Any]:
     """
-    Resolve one precompiled overrides-only template by existence route.
+    Return the no-hooks overrides-only template factory for one resolve route.
+
+    This is the route selector for the override-bearing instance lane. It maps
+    the builder-selected existence route onto the precompiled template family
+    that emits the correct runtime body for that route.
     """
     template = _OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE.get(resolve_route_key)
     if template is not None:
@@ -212,7 +216,12 @@ def _select_overrides_only_hooks_template(
         resolve_route_key: str,
 ) -> Callable[..., Any]:
     """
-    Resolve one precompiled hooks overrides-only template by existence route.
+    Return the hooks-aware overrides-only template factory for one resolve
+    route.
+
+    This is the hook-lane companion to `_select_overrides_only_template`,
+    choosing the template family that returns `(instance, created)` for hook
+    activation routing.
     """
     template = _OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE.get(resolve_route_key)
     if template is not None:
@@ -228,7 +237,12 @@ def _select_no_overrides_only_template(
         use_fast_transient: bool,
 ) -> Callable[..., Any]:
     """
-    Resolve one precompiled no-overrides-only template by existence route.
+    Return the no-hooks no-overrides template factory for one route/fast-path
+    combination.
+
+    The additional `use_fast_transient` bit matters only for transient-many
+    spells, where the runtime may bypass the standard creation call shape and
+    use a tighter direct executor lane.
     """
     template = _NO_OVERRIDES_ONLY_INSTANCE_TEMPLATE_BY_ROUTE_AND_FAST.get(
         (resolve_route_key, use_fast_transient),
@@ -246,7 +260,12 @@ def _select_no_overrides_only_hooks_template(
         use_fast_transient: bool,
 ) -> Callable[..., Any]:
     """
-    Resolve one precompiled hooks no-overrides-only template by route.
+    Return the hooks-aware no-overrides template factory for one route/fast
+    combination.
+
+    This is the hook-lane counterpart to
+    `_select_no_overrides_only_template`, preserving the same route selection
+    semantics while targeting the `(instance, created)` return contract.
     """
     template = _NO_OVERRIDES_ONLY_HOOKS_TEMPLATE_BY_ROUTE_AND_FAST.get(
         (resolve_route_key, use_fast_transient),
@@ -264,7 +283,11 @@ def _compile_creation_context_overrides_only_template(
         return_created: bool,
 ) -> Callable[..., Any]:
     """
-    Compile one overrides-only template factory for no-hooks overrides door.
+    Compile the route-specific overrides-only template factory.
+
+    The emitted factory later receives spell-static bindings and returns the
+    concrete runtime callable used for one override-bearing creation-context
+    lane.
     """
     with_overrides_lines = _build_with_overrides_lines(
         resolve_route_key=resolve_route_key,
@@ -300,7 +323,11 @@ def _compile_creation_context_no_overrides_only_template(
         return_created: bool,
 ) -> Callable[..., Any]:
     """
-    Compile one no-overrides-only template factory for no-hooks fast door.
+    Compile the route-specific no-overrides template factory.
+
+    This is the no-override counterpart to the override template compiler,
+    including the optional fast-transient specialization bit for the transient
+    many route.
     """
     no_overrides_lines = _build_no_overrides_lines(
         resolve_route_key=resolve_route_key,
@@ -370,7 +397,11 @@ def _build_creation_context_template_source_name(
         fast_transient_no_overrides_enabled: Optional[bool] = None,
 ) -> str:
     """
-    Build one deterministic compile source name for emitted template code.
+    Build the synthetic compile filename for one emitted template shape.
+
+    The source name is deterministic so tracebacks, debugging output, and
+    compile caches remain readable and stable across repeated runs for the same
+    route/template combination.
     """
     source_name = (
         f"<{template_kind}:{resolve_route_key}:"
@@ -390,7 +421,11 @@ def _build_creation_context_template_source(
         execution_lines: Sequence[str],
 ) -> str:
     """
-    Build emitted source for one CreationContext template/executor pair.
+    Assemble the emitted Python source for one template-factory/executor pair.
+
+    All higher-level source builders eventually funnel through this helper. It
+    creates the outer template factory plus the inner runtime callable body that
+    will later be compiled and resolved by name.
     """
     lines = [f"def {template_callable_name}("]
     lines.extend(template_parameter_lines)
@@ -406,7 +441,10 @@ def _build_no_overrides_only_template_source(
         no_overrides_lines: Sequence[str],
 ) -> str:
     """
-    Build emitted source for one no-overrides-only template factory.
+    Build the full emitted source string for a no-overrides template family.
+
+    This is the thin wrapper that binds the route-specific body lines into the
+    shared outer template/executor source shape for no-override lanes.
     """
     return _build_creation_context_template_source(
         template_callable_name="_creation_context_no_overrides_only_template",
@@ -430,7 +468,11 @@ def _build_overrides_only_template_source(
         with_overrides_lines: Sequence[str],
 ) -> str:
     """
-    Build emitted source for one overrides-only template factory.
+    Build the full emitted source string for an overrides-only template family.
+
+    This is the override-bearing counterpart to
+    `_build_no_overrides_only_template_source`, binding route-specific override
+    body lines into the shared template/executor source skeleton.
     """
     return _build_creation_context_template_source(
         template_callable_name="_creation_context_overrides_only_template",
@@ -459,7 +501,12 @@ def _build_no_overrides_lines(
         return_created: bool,
 ) -> Sequence[str]:
     """
-    Build no-overrides existence path source lines.
+    Build the route-specific runtime body for no-override execution.
+
+    The returned lines are the inner emitted executor body for the chosen
+    existence route. This is where route semantics such as existing-creation
+    reuse, spellspace enforcement, shared-instance reuse, or transient creation
+    are converted into emitted Python statements.
     """
     if resolve_route_key == "existing_creation":
         return [
@@ -595,7 +642,13 @@ def _build_with_overrides_lines(
         overrides_maybe_none: bool = True,
 ) -> Sequence[str]:
     """
-    Build with-overrides existence path source lines.
+    Build the route-specific emitted body for override-aware execution.
+
+    The returned source lines become the inner runtime body for the selected
+    existence route when override payloads are permitted. This is where the
+    generated program decides whether a route can override an existing instance,
+    whether it must create under a lock, and what error path should be emitted
+    for invalid override usage.
     """
     if resolve_route_key == "existing_creation":
         if not overrides_maybe_none:
@@ -854,7 +907,11 @@ def _build_no_overrides_create_lines(
         return_created: bool,
 ) -> Sequence[str]:
     """
-    Build emitted source lines for no-overrides creation executor call.
+    Build the emitted call block for the no-overrides creation executor.
+
+    This helper generates the shared snippet used by multiple routes when they
+    fall through to actual creation work rather than returning an existing
+    instance.
     """
     return [
         "instance = _no_overrides_executor(",
@@ -877,7 +934,11 @@ def _build_return_statement(
         return_created: bool,
 ) -> str:
     """
-    Build one emitted return line for template route branches.
+    Build the final emitted return statement for one route branch.
+
+    The helper centralizes the difference between instance-only lanes and
+    `(instance, created)` hook lanes so branch builders do not duplicate that
+    formatting logic.
     """
     if return_created:
         return f"return {value_expression}, {created}"
@@ -886,21 +947,31 @@ def _build_return_statement(
 
 def _prefix_one_indent(line: str) -> str:
     """
-    Prefix one indentation level to one emitted source line.
+    Prefix one emitted source line with one indentation level.
+
+    This helper exists because many of the emitted route builders need to splice
+    generated single lines into larger nested source blocks.
     """
     return f"    {line}"
 
 
 def _prefix_two_indent(line: str) -> str:
     """
-    Prefix two indentation levels to one emitted source line.
+    Prefix one emitted source line with two indentation levels.
+
+    This is the two-level companion to `_prefix_one_indent` for generated code
+    that must be nested inside a lock branch or other multi-level emitted block.
     """
     return f"        {line}"
 
 
 def _indent_lines(lines: Sequence[str], level: int) -> list[str]:
     """
-    Indent emitted source lines by indentation level.
+    Indent a sequence of emitted source lines by the requested level.
+
+    These small formatting helpers exist because the file assembles Python
+    source programmatically; keeping indentation generation centralized reduces
+    copy-paste mistakes across the emitted template builders.
     """
     prefix = "    " * level
     return [f"{prefix}{line}" for line in lines]

@@ -120,7 +120,12 @@ class CreationContextBuilder(Cleanable):
     @staticmethod
     def _resolve_route_key(spell: ISpell) -> str:
         """
-        Resolve one deterministic resolve-route key for the target spell.
+        Select the runtime execution route for the spell's existence model.
+
+        This is the builder's existence-policy switch. It collapses the spell's
+        lifecycle semantics into one of the `CreationContext` route constants so
+        the context can bind the correct hot-path executor family once at build
+        time instead of branching repeatedly at runtime.
         """
         if spell.is_existing_creation:
             return CreationContext.ROUTE_EXISTING_CREATION
@@ -154,7 +159,12 @@ class CreationContextBuilder(Cleanable):
     @staticmethod
     def _resolve_fast_transient_no_overrides_enabled(spell: ISpell) -> bool:
         """
-        Resolve whether no-overrides calls can use fast transient dispatch.
+        Decide whether no-override calls may use the fast transient lane.
+
+        This helper inspects spell-static execution-plan data to determine
+        whether the spell has a specialized transient path for plain no-override
+        calls. Existing-creation spells are always excluded, because they do not
+        participate in transient construction.
         """
         if spell.is_existing_creation:
             return False
@@ -174,7 +184,11 @@ class CreationContextBuilder(Cleanable):
             spell: ISpell,
     ) -> Optional[Callable[..., Any]]:
         """
-        Resolve the compiled no-overrides phase 12 executor for this spell.
+        Return the spell's precompiled no-overrides Phase 12 executor.
+
+        The builder keeps this lookup separate so `CreationContext` can be
+        seeded with the direct no-override execution lane only when the spell
+        actually has one.
         """
         if spell.is_existing_creation:
             return None
@@ -184,7 +198,12 @@ class CreationContextBuilder(Cleanable):
     @staticmethod
     def _resolve_override_patch_map_phase10(spell: ISpell) -> Optional[Any]:
         """
-        Resolve the compiled Phase 10 override patch map for this spell.
+        Return the spell's compiled Phase 10 override patch map artifact.
+
+        This artifact is the bridge between frontdoor override payloads and the
+        override-specialization runtime in `CreationContext`: it turns override
+        input into socket-targeted patch data that the later executor pipeline
+        can specialize against.
         """
         if spell.is_existing_creation:
             return None

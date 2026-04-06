@@ -100,7 +100,11 @@ class CreationContextFactory(Cleanable):
             creation_context: Optional[CreationContext],
     ) -> None:
         """
-        Best-effort cleanup helper for detached CreationContext instances.
+        Best-effort cleanup helper for a superseded spell-owned context.
+
+        This is used when publication logic replaces one spell-bound
+        `CreationContext` with another and needs to retire the old instance
+        without letting cleanup failures break the successful publish path.
         """
         if creation_context is None:
             return
@@ -112,41 +116,35 @@ class CreationContextFactory(Cleanable):
 
     def _lineage_id_for_spell(self, spell: ISpell) -> str:
         """
-        Internal
+        Return the stable lineage id used for gate-controller operations.
 
-        Resolve the spell-lineage identifier used for gate registry operations.
-
-        Contract:
-            - Uses SpellIndex lineage id as the stable spell-lineage key.
+        The factory keys creation-gate registration by lineage rather than by
+        current spell version so all contexts for the same evolving spell line
+        share one admission gate.
 
         Args:
-            spell:
-                Spell whose lineage id should be resolved.
+            spell: Spell whose lineage id should be resolved.
 
         Returns:
-            str:
-                Stable spell-lineage id.
+            str: Stable spell-lineage id derived from `SpellIndex.id`.
         """
         return spell.spell_index.id
 
     def _resolve_or_create_spell_lineage_gate(self, lineage_id: str) -> CreationGate:
         """
-        Internal
+        Return the shared creation gate for one spell lineage.
 
-        Resolve existing or create a new spell-lineage CreationGate.
-
-        Contract:
-            - Reuses existing lineage gate when already registered.
-            - Creates and registers a new lineage gate when missing.
-            - Factory does not perform gate admission/ticket operations.
+        The factory does not perform admission or ticket management itself; it
+        only ensures that every context built for the same lineage sees the
+        same `CreationGate` object. If the controller has not seen the lineage
+        yet, the gate is created and the lineage id is recorded as factory-
+        created bookkeeping.
 
         Args:
-            lineage_id:
-                Spell-lineage key.
+            lineage_id: Stable spell-lineage key.
 
         Returns:
-            CreationGate:
-                Resolved gate for this lineage.
+            CreationGate: Shared gate object for this lineage.
         """
         creation_gate_controller = self._creation_gate_controller
         gate = creation_gate_controller.get_spell_lineage_gate(lineage_id)
@@ -161,17 +159,17 @@ class CreationContextFactory(Cleanable):
             spell: ISpell,
     ) -> tuple[Optional[CreationGate], Optional[str]]:
         """
-        Internal
+        Resolve the gate metadata that should be injected into the built
+        context.
 
-        Resolve runtime gate metadata injected into built CreationContext objects.
+        This is the mode switch between automatic and dynamic runtime paths:
 
-        Contract:
-            - Automatic mode returns `(None, None)`.
-            - Dynamic mode returns a shared spell-lineage gate and lineage id.
+        - automatic mode builds contexts with no gate metadata
+        - dynamic mode injects the shared lineage gate plus its stable id so the
+          context can enforce runtime admission checks during execute paths
 
         Args:
-            spell:
-                Spell target whose lineage gate should be attached.
+            spell: Spell whose runtime gate metadata should be attached.
 
         Returns:
             tuple[Optional[CreationGate], Optional[str]]:
@@ -185,15 +183,14 @@ class CreationContextFactory(Cleanable):
 
     def build_for_spell(self, spell: ISpell) -> CreationContext:
         """
-        Build one context for the given spell.
+        Build one fresh context for the spell without publishing it back onto
+        the spell.
 
         Args:
-            spell:
-                Spell that will own the built context.
+            spell: Spell that conceptually owns the built context.
 
         Returns:
-            CreationContext:
-                New spell-shaped context ready for runtime execution.
+            CreationContext: New spell-shaped context ready for runtime use.
         """
         creation_gate, lineage_id = self._resolve_runtime_gate_for_spell(spell)
         return self._builder.build(
@@ -266,8 +263,6 @@ class CreationContextFactory(Cleanable):
     @staticmethod
     def _set_creation_context_switch_open(spell: ISpell) -> None:
         """
-        Internal
-
         Force a spell-owned CounterSwitch into open latch state (`2`).
 
         Purpose:

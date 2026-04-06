@@ -112,11 +112,14 @@ def build_descriptor(
     )
     for conduit_index in range(1, conduit_count + 1):
         conduit_id = "{0}-conduit-{1}".format(frame_name, conduit_index)
-        peer_ids = (
-            conduit_peer_ids_by_index.get(conduit_index, tuple())
-            if conduit_peer_ids_by_index is not None
-            else tuple()
-        )
+        if conduit_peer_ids_by_index is not None:
+            peer_ids = conduit_peer_ids_by_index.get(conduit_index, tuple())
+        else:
+            peer_ids = tuple(
+                current_conduit_id
+                for current_conduit_id in root_conduit_ids
+                if current_conduit_id != conduit_id
+            )
         descriptor.upsert_conduit_record(
             ConduitRecord(
                 nexus_label="default",
