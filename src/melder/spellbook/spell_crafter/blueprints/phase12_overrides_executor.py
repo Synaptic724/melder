@@ -1074,6 +1074,15 @@ def _append_overrides_kwargs_inline_source(
             param_name_literal: str,
             inner_indent: str,
     ) -> None:
+        """
+        Append emitted source for a missing single dependency failure.
+
+        Contract:
+            - Emits the same MeldExecutionError shape used by the runtime
+              kwargs builders.
+            - Leaves the generated code positioned inside a surrounding
+              `except KeyError as exc:` block.
+        """
         lines.extend([
             f"{inner_indent}raise MeldExecutionError(",
             f"{inner_indent}    spell_id=spell_id_{step_index},",
@@ -1368,6 +1377,15 @@ def _append_no_overrides_kwargs_inline_source(
             param_name_literal: str,
             inner_indent: str,
     ) -> None:
+        """
+        Append emitted source for a missing dependency failure in the generic
+        kwargs builder path.
+
+        Contract:
+            - Emits the same MeldExecutionError shape as the inline override
+              constructor path.
+            - Assumes the generated code is nested inside an `except` block.
+        """
         lines.extend([
             f"{inner_indent}raise MeldExecutionError(",
             f"{inner_indent}    spell_id=spell_id_{step_index},",
@@ -1560,6 +1578,14 @@ def _append_overrides_invoke_source(
           invoke-time exceptions.
     """
     def _append_existing_creation_body(body_indent: str) -> None:
+        """
+        Append emitted source for the existing-creation fast path.
+
+        Contract:
+            - Reuses `user_created_object` directly.
+            - Emits a RuntimeError when an existing-creation spell lacks the
+              required prebound object.
+        """
         lines.extend([
             f"{body_indent}instance_{step_index} = plan_step_{step_index}.spell.user_created_object",
             f"{body_indent}if instance_{step_index} is None:",
@@ -1570,6 +1596,15 @@ def _append_overrides_invoke_source(
         ])
 
     def _append_callable_body(body_indent: str) -> None:
+        """
+        Append emitted source for callable-spell invocation.
+
+        Contract:
+            - Supports `__args__` positional override payloads only when the
+              selected shape allows them.
+            - Preserves MeldExecutionError wrapping for invalid `__args__`
+              payloads and invoke-time exceptions.
+        """
         if positional_args_possible:
             lines.extend([
                 f"{body_indent}raw_args_{step_index} = kwargs_{step_index}.get(\"__args__\", _MISSING)",
@@ -1651,6 +1686,13 @@ def _append_overrides_invoke_source(
         ])
 
     def _append_raw_value_body(body_indent: str) -> None:
+        """
+        Append emitted source for raw-value spell resolution.
+
+        Contract:
+            Raw-value spells bypass callable invocation and reuse the spell's
+            stored object/value directly.
+        """
         lines.append(
             f"{body_indent}instance_{step_index} = plan_step_{step_index}.spell.spell"
         )
@@ -2570,6 +2612,13 @@ def _build_step_override_targets(
         path_metadata_cache = {}
 
     def _resolve_socket_path_metadata(socket_ref: Any) -> Tuple[Any, Any]:
+        """
+        Resolve and memoize parent-path metadata for one socket reference.
+
+        Contract:
+            - Caches `(parent_id, depth)` by socket object identity.
+            - Uses the supplied `path_registry` as the source of truth.
+        """
         metadata = path_metadata_cache.get(socket_ref)
         if metadata is not None:
             return metadata

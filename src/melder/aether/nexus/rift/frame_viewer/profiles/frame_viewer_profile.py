@@ -1,6 +1,11 @@
 from typing import Dict, Mapping, Optional, Sequence, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
+    CompiledFrameACLAccessSurface,
+)
+from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -15,6 +20,7 @@ class FrameViewerProfile(Cleanable):
         - Maps stable tool ids to host-side handler method names.
         - Does not redefine permissions.
         - Carries stable profile identity and version.
+        - May be bound by reference to one frame's descriptor + ACL state.
 
     Lifecycle:
         Cleanup is idempotent and clears owned metadata only.
@@ -25,9 +31,15 @@ class FrameViewerProfile(Cleanable):
         "_profile_id",
         "_name",
         "_version",
+        "_required_acl_view_profile_name",
+        "_required_acl_view_profile_version",
         "_tool_handler_names_by_name",
         "_default_grouping",
         "_default_detail_level",
+        "_bound_frame_name",
+        "_frame_descriptor",
+        "_frame_acl_configuration",
+        "_compiled_access_surface",
     ]
 
     def __init__(
@@ -35,6 +47,8 @@ class FrameViewerProfile(Cleanable):
             name: str,
             *,
             version: str = "0.0.1",
+            required_acl_view_profile_name: Optional[str] = None,
+            required_acl_view_profile_version: Optional[str] = None,
             enabled_helpers: Optional[Sequence[str]] = None,
             tool_handler_names_by_name: Optional[Mapping[str, str]] = None,
             default_grouping: str = "frame",
@@ -48,6 +62,10 @@ class FrameViewerProfile(Cleanable):
                 Stable profile name.
             version:
                 Profile version string.
+            required_acl_view_profile_name:
+                Optional required ACL view profile name for frame binding.
+            required_acl_view_profile_version:
+                Optional required ACL view profile version for frame binding.
             enabled_helpers:
                 Backward-compatible shorthand for a tool surface where each
                 tool id maps directly to the same-named host handler.
@@ -71,6 +89,13 @@ class FrameViewerProfile(Cleanable):
             raise ValueError("default_grouping cannot be empty.")
         if not default_detail_level:
             raise ValueError("default_detail_level cannot be empty.")
+        if (
+                required_acl_view_profile_version is not None
+                and required_acl_view_profile_name is None
+        ):
+            raise ValueError(
+                "required_acl_view_profile_version requires required_acl_view_profile_name."
+            )
         if enabled_helpers is not None and tool_handler_names_by_name is not None:
             raise ValueError(
                 "enabled_helpers and tool_handler_names_by_name cannot both be provided."
@@ -78,6 +103,12 @@ class FrameViewerProfile(Cleanable):
         self._profile_id: str = IDBuilder.create_id()
         self._name: str = name
         self._version: str = version
+        self._required_acl_view_profile_name: Optional[str] = (
+            required_acl_view_profile_name
+        )
+        self._required_acl_view_profile_version: Optional[str] = (
+            required_acl_view_profile_version
+        )
         if tool_handler_names_by_name is not None:
             if len(tool_handler_names_by_name) == 0:
                 raise ValueError("tool_handler_names_by_name cannot be empty.")
@@ -116,6 +147,10 @@ class FrameViewerProfile(Cleanable):
             }
         self._default_grouping: str = default_grouping
         self._default_detail_level: str = default_detail_level
+        self._bound_frame_name: Optional[str] = None
+        self._frame_descriptor: Optional[FrameDescriptor] = None
+        self._frame_acl_configuration: Optional[FrameACLConfiguration] = None
+        self._compiled_access_surface: Optional[CompiledFrameACLAccessSurface] = None
 
     @classmethod
     def create_general(cls) -> "FrameViewerProfile":
@@ -193,6 +228,28 @@ class FrameViewerProfile(Cleanable):
         return self._version
 
     @property
+    def required_acl_view_profile_name(self) -> Optional[str]:
+        """
+        Return the optional ACL view profile name required by this profile.
+
+        Returns:
+            Optional[str]: Required ACL view profile name when constrained.
+        """
+        self.check_cleaned()
+        return self._required_acl_view_profile_name
+
+    @property
+    def required_acl_view_profile_version(self) -> Optional[str]:
+        """
+        Return the optional ACL view profile version required by this profile.
+
+        Returns:
+            Optional[str]: Required ACL view profile version when constrained.
+        """
+        self.check_cleaned()
+        return self._required_acl_view_profile_version
+
+    @property
     def enabled_helpers(self) -> Tuple[str, ...]:
         """
         Return the enabled tool ids exposed by this profile.
@@ -223,6 +280,61 @@ class FrameViewerProfile(Cleanable):
     def default_detail_level(self) -> str:
         self.check_cleaned()
         return self._default_detail_level
+
+    @property
+    def bound_frame_name(self) -> Optional[str]:
+        """
+        Return the currently bound frame name when this profile is frame-bound.
+
+        Returns:
+            Optional[str]: Bound frame name.
+        """
+        self.check_cleaned()
+        return self._bound_frame_name
+
+    @property
+    def frame_descriptor(self) -> Optional[FrameDescriptor]:
+        """
+        Return the bound frame descriptor reference when this profile is bound.
+
+        Returns:
+            Optional[FrameDescriptor]: Bound frame descriptor.
+        """
+        self.check_cleaned()
+        return self._frame_descriptor
+
+    @property
+    def frame_acl_configuration(self) -> Optional[FrameACLConfiguration]:
+        """
+        Return the bound frame ACL configuration when this profile is bound.
+
+        Returns:
+            Optional[FrameACLConfiguration]: Bound frame ACL configuration.
+        """
+        self.check_cleaned()
+        return self._frame_acl_configuration
+
+    @property
+    def compiled_access_surface(self) -> Optional[CompiledFrameACLAccessSurface]:
+        """
+        Return the bound compiled ACL surface when this profile is bound.
+
+        Returns:
+            Optional[CompiledFrameACLAccessSurface]: Bound compiled ACL surface.
+        """
+        self.check_cleaned()
+        return self._compiled_access_surface
+
+    @property
+    def is_bound(self) -> bool:
+        """
+        Return whether this profile is currently bound to one frame.
+
+        Returns:
+            bool: True when frame-bound.
+        """
+        self.check_cleaned()
+        return self._bound_frame_name is not None
 
     def list_tool_names(self) -> Tuple[str, ...]:
         """
@@ -274,6 +386,150 @@ class FrameViewerProfile(Cleanable):
                 )
             ) from exc
 
+    def bind_to_frame(
+            self,
+            *,
+            frame_name: str,
+            frame_descriptor: FrameDescriptor,
+            frame_acl_configuration: FrameACLConfiguration,
+            compiled_access_surface: CompiledFrameACLAccessSurface,
+    ) -> None:
+        """
+        Bind this profile by reference to one frame's descriptor + ACL state.
+
+        Args:
+            frame_name:
+                Target frame name this profile is being bound to.
+            frame_descriptor:
+                Descriptor truth for the frame.
+            frame_acl_configuration:
+                Current ACL configuration for the frame.
+            compiled_access_surface:
+                Compiled ACL surface for the same frame/configuration.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if not frame_name:
+            raise ValueError("frame_name cannot be empty.")
+        if not isinstance(frame_descriptor, FrameDescriptor):
+            raise TypeError("frame_descriptor must be a FrameDescriptor.")
+        if not isinstance(frame_acl_configuration, FrameACLConfiguration):
+            raise TypeError(
+                "frame_acl_configuration must be a FrameACLConfiguration."
+            )
+        if not isinstance(
+                compiled_access_surface,
+                CompiledFrameACLAccessSurface,
+        ):
+            raise TypeError(
+                "compiled_access_surface must be a CompiledFrameACLAccessSurface."
+            )
+        if frame_descriptor.frame_name != frame_name:
+            raise ValueError(
+                "FrameDescriptor targets frame '{0}', expected '{1}'.".format(
+                    frame_descriptor.frame_name,
+                    frame_name,
+                )
+            )
+        if frame_acl_configuration.frame_name != frame_name:
+            raise ValueError(
+                "FrameACLConfiguration targets frame '{0}', expected '{1}'.".format(
+                    frame_acl_configuration.frame_name,
+                    frame_name,
+                )
+            )
+        if compiled_access_surface.frame_name != frame_name:
+            raise ValueError(
+                "CompiledFrameACLAccessSurface targets frame '{0}', expected '{1}'.".format(
+                    compiled_access_surface.frame_name,
+                    frame_name,
+                )
+            )
+        if (
+                compiled_access_surface.configuration_id
+                != frame_acl_configuration.configuration_id
+        ):
+            raise ValueError(
+                "CompiledFrameACLAccessSurface configuration_id '{0}' does not match FrameACLConfiguration '{1}'.".format(
+                    compiled_access_surface.configuration_id,
+                    frame_acl_configuration.configuration_id,
+                )
+            )
+        bound_view_configuration = frame_acl_configuration.view_configuration
+        if (
+                compiled_access_surface.view_profile_name
+                != bound_view_configuration.profile_name
+                or compiled_access_surface.view_profile_version
+                != bound_view_configuration.profile_version
+        ):
+            raise ValueError(
+                "Compiled ACL view profile '{0}:{1}' does not match bound FrameACLViewConfiguration '{2}:{3}'.".format(
+                    compiled_access_surface.view_profile_name,
+                    compiled_access_surface.view_profile_version,
+                    bound_view_configuration.profile_name,
+                    bound_view_configuration.profile_version,
+                )
+            )
+        if self._required_acl_view_profile_name is not None:
+            required_version = (
+                self._required_acl_view_profile_version
+                or compiled_access_surface.view_profile_version
+            )
+            if (
+                    compiled_access_surface.view_profile_name
+                    != self._required_acl_view_profile_name
+                    or compiled_access_surface.view_profile_version
+                    != required_version
+            ):
+                raise ValueError(
+                    "FrameViewerProfile '{0}' requires ACL view profile '{1}:{2}', got '{3}:{4}'.".format(
+                        self._name,
+                        self._required_acl_view_profile_name,
+                        required_version,
+                        compiled_access_surface.view_profile_name,
+                        compiled_access_surface.view_profile_version,
+                    )
+                )
+        self._bound_frame_name = frame_name
+        self._frame_descriptor = frame_descriptor
+        self._frame_acl_configuration = frame_acl_configuration
+        self._compiled_access_surface = compiled_access_surface
+
+    def clone_bound_to_frame(
+            self,
+            *,
+            frame_name: str,
+            frame_descriptor: FrameDescriptor,
+            frame_acl_configuration: FrameACLConfiguration,
+            compiled_access_surface: CompiledFrameACLAccessSurface,
+    ) -> "FrameViewerProfile":
+        """
+        Return a detached copy of this profile bound to one frame by reference.
+
+        Args:
+            frame_name:
+                Bound frame name.
+            frame_descriptor:
+                Descriptor truth for the frame.
+            frame_acl_configuration:
+                Current ACL configuration for the frame.
+            compiled_access_surface:
+                Compiled ACL surface for the same frame/configuration.
+
+        Returns:
+            FrameViewerProfile: Detached bound profile copy.
+        """
+        cloned_profile = self.clone()
+        cloned_profile.bind_to_frame(
+            frame_name=frame_name,
+            frame_descriptor=frame_descriptor,
+            frame_acl_configuration=frame_acl_configuration,
+            compiled_access_surface=compiled_access_surface,
+        )
+        return cloned_profile
+
     def clone(self) -> "FrameViewerProfile":
         """
         Return a detached copy of this viewer profile.
@@ -285,6 +541,8 @@ class FrameViewerProfile(Cleanable):
         return FrameViewerProfile(
             self._name,
             version=self._version,
+            required_acl_view_profile_name=self._required_acl_view_profile_name,
+            required_acl_view_profile_version=self._required_acl_view_profile_version,
             tool_handler_names_by_name=self._tool_handler_names_by_name,
             default_grouping=self._default_grouping,
             default_detail_level=self._default_detail_level,
@@ -304,6 +562,12 @@ class FrameViewerProfile(Cleanable):
         self._tool_handler_names_by_name = None
         self._default_grouping = None
         self._default_detail_level = None
+        self._required_acl_view_profile_name = None
+        self._required_acl_view_profile_version = None
+        self._bound_frame_name = None
+        self._frame_descriptor = None
+        self._frame_acl_configuration = None
+        self._compiled_access_surface = None
         self._version = None
         self._name = None
         self._profile_id = None

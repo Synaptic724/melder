@@ -26,13 +26,21 @@ InstanceKey = Tuple[str, Optional[int]]
 @dataclass(frozen=True, slots=True)
 class OccurrencePlanSelection:
     """
-    Internal
-
-    Runtime-ready selection derived from a Phase 8 OccurrencePlan.
+    Runtime-ready Phase 8 handoff bundle.
 
     Purpose:
-        Bundle the occurrence plan data needed by CreationContext-backed meld execution while
-        keeping selection logic in the Phase 8 module.
+        Package the subset of occurrence-plan data that runtime execution needs
+        after Phase 8 is finished. This keeps CreationContext and later
+        execution layers from reaching back into the full builder object for
+        selection logic they do not own.
+
+    Contract:
+        - Carries only already-selected runtime data; it does not perform plan
+          expansion, validation, or filtering on its own.
+        - Preserves the path-aware occurrence graph, execution ordering,
+          instance-key planning, and any resolved SpellContract override
+          payloads needed by later phases.
+        - Is intended to be an immutable handoff object once constructed.
     """
     __melder_internal__ = _mrg.sentinel
     occurrence_graph: Dict[OccurrenceKey, Dict[str, List[OccurrenceKey]]]
@@ -51,20 +59,31 @@ def select_occurrence_plan(
         root_spell_id: str,
 ) -> Optional[OccurrencePlanSelection]:
     """
-    Determine whether a Phase 8 OccurrencePlan can drive a meld execution.
+    Lift a Phase 8 plan into its runtime-ready handoff form.
 
     Contract:
-        - Assumes plan is not None; callers own any availability checks.
-        - Does not filter on contract completeness; callers decide how to handle
-          missing SpellContract providers.
-        - Uses plan-provided contract override mappings when available.
+        - Expected to be called only after the caller has confirmed that a
+          concrete Phase 8 plan is available.
+        - Does not recompute or filter occurrence data; it forwards the
+          plan-owned runtime payload as-is.
+        - Does not enforce contract-completeness policy; callers decide whether
+          incomplete SpellContract state is acceptable for the current runtime
+          path.
+        - Returns a lightweight `OccurrencePlanSelection` wrapper instead of
+          exposing the full plan object as the runtime contract.
 
     Args:
-        plan: Phase 8 OccurrencePlan or None.
-        root_spell_id: Current root spell id for this execution.
+        plan:
+            Phase 8 occurrence plan to expose to runtime execution.
+        root_spell_id:
+            Current root spell id for this execution context. The current
+            implementation does not re-filter by this value, but the parameter
+            remains part of the handoff contract because callers select plans in
+            root-spell context.
 
     Returns:
-        Optional[OccurrencePlanSelection]: Selected plan data for runtime use.
+        Optional[OccurrencePlanSelection]:
+            Runtime-ready selection payload for the supplied plan.
     """
     return OccurrencePlanSelection(
         occurrence_graph=plan.occurrence_graph,
@@ -80,26 +99,28 @@ def select_occurrence_plan(
 
 class OccurrencePlan(Cleanable):
     """
-    Internal
-
-    Phase 8 artifact that captures occurrence expansion and execution ordering
-    for a single root blueprint.
+    Phase 8 occurrence-expansion artifact for one root blueprint.
 
     Purpose:
-        Precompute the path-aware occurrence graph and instance planning that
-        the meld entry path would otherwise build per call, including resolved
-        SpellContract override payloads when available.
+        Capture the path-aware runtime expansion of a rooted blueprint before
+        Phase 9 injection planning and Phase 11 execution assembly run. This is
+        the point where the blueprint stops being just a structural DAG and
+        starts carrying occurrence-specific runtime semantics such as shared
+        instance collapse, canonical occurrences, and resolved SpellContract
+        payload routing.
 
     Contract:
-        - Instances are treated as immutable once built.
-        - This object owns the provided collections and clears them on cleanup.
-        - root_spell_id must be the version id used to build the plan.
+        - `root_spell_id` must match the root blueprint used to build the plan.
+        - The plan owns its occurrence graph, execution order, instance-key
+          maps, and contract-override payload maps.
         - Contract override payloads are recorded only for resolved providers.
-        - Contract dependencies are required in automatic mode; dynamic mode may
-          leave them incomplete until contracts are linked and phases re-run.
+        - Automatic mode expects contract dependencies to be complete; dynamic
+          mode may carry an intentionally incomplete plan until linking and
+          later phase reruns resolve the missing providers.
+        - After build, the plan is treated as immutable runtime input.
 
     Threading:
-        - Not thread-safe. Treat as single-threaded, read-only data.
+        - Not thread-safe. Treat as read-only data after construction.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [

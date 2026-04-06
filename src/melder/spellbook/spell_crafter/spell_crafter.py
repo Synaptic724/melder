@@ -517,6 +517,10 @@ class SpellCrafter(Cleanable):
     def override_patch_map_phase10(self) -> Optional[OverridePatchMap]:
         """
         Phase 10 override patch map artifact, if compiled for this spell.
+
+        This artifact describes how caller-supplied override payloads should be
+        projected onto the spell's rooted blueprint without rebuilding the
+        earlier structural phases.
         """
         self.check_cleaned()
         return self._override_patch_map_phase10
@@ -525,6 +529,11 @@ class SpellCrafter(Cleanable):
     def mutation_patch_map_phase10(self) -> Optional[MutationPatchMap]:
         """
         Phase 10 mutation patch map artifact, if compiled for this spell.
+
+        This artifact carries the mutation-overlay mapping needed when the
+        runtime applies spell-level mutation overrides to the rooted blueprint.
+        It remains absent when Phase 10 has not run or when the spell does not
+        participate in that mutation-capable path.
         """
         self.check_cleaned()
         return self._mutation_patch_map_phase10
@@ -532,7 +541,11 @@ class SpellCrafter(Cleanable):
     @property
     def execution_plan_phase11(self) -> Optional[ExecutionPlan]:
         """
-        Phase 11 execution plan artifact, if compiled for this spell.
+        Canonical Phase 11 execution plan artifact for this spell.
+
+        This is the broad execution-plan view produced after occurrence,
+        injection, and patch-map compilation. More specialized plan variants
+        may also be cached for fast override-free or override-only dispatch.
         """
         self.check_cleaned()
         return self._execution_plan_phase11
@@ -540,7 +553,11 @@ class SpellCrafter(Cleanable):
     @property
     def execution_plan_phase11_no_overrides(self) -> Optional[ExecutionPlan]:
         """
-        Phase 11 execution plan variant for override-free fast paths.
+        Cached Phase 11 execution plan variant for override-free fast paths.
+
+        This plan exists so the runtime can dispatch the common no-overrides
+        lane without re-specializing the broader Phase 11 artifact at call
+        time.
         """
         self.check_cleaned()
         return self._execution_plan_phase11_no_overrides
@@ -548,7 +565,8 @@ class SpellCrafter(Cleanable):
     @property
     def execution_plan_phase11_overrides(self) -> Optional[ExecutionPlan]:
         """
-        Phase 11 execution plan variant for override payloads without mutations.
+        Cached Phase 11 execution plan variant for override payloads without
+        mutation overlays.
         """
         self.check_cleaned()
         return self._execution_plan_phase11_overrides
@@ -558,7 +576,12 @@ class SpellCrafter(Cleanable):
             self,
     ) -> Optional[ExecutionPlan]:
         """
-        Phase 11 execution plan variant for override payloads with mutations.
+        Phase 11 execution plan variant that still carries mutation-aware
+        override semantics.
+
+        The current implementation exposes the broad `_execution_plan_phase11`
+        cache for this lane rather than storing a second dedicated mutation
+        variant field.
         """
         self.check_cleaned()
         return self._execution_plan_phase11
@@ -605,7 +628,12 @@ class SpellCrafter(Cleanable):
 
     @property
     def spell_system_index_phase5(self) -> Optional[SpellSystemIndex]:
-        """Frame-level index built during Phase 5."""
+        """
+        Phase 5 spell-system index attached to this spell, if available.
+
+        This index is the spell-local handle to the wider Phase 5 system view
+        used by later validation and planning work.
+        """
         self.check_cleaned()
         return self._spell_system_index_phase5
 
@@ -646,9 +674,14 @@ class SpellCrafter(Cleanable):
     # ------------------------------------------------------------------
     def reset_phase_artifacts(self) -> None:
         """
-        Release transient Phase 1-4 and Phase 6 artifacts without disposing the crafter.
+        Release transient validation/build artifacts without disposing the
+        crafter.
 
-        This keeps Phase 5 artifacts and validation flags intact for runtime use.
+        Contract:
+            - Clears the reusable artifacts owned by Phases 1-4 and Phase 6.
+            - Preserves later rooted/planning artifacts so a spell that already
+              advanced into runtime planning does not lose those caches.
+            - Keeps the crafter alive for future phase runs.
         """
         self.check_cleaned()
         with self._lock:
@@ -661,13 +694,20 @@ class SpellCrafter(Cleanable):
         Backward-compatible alias for reset_phase_artifacts.
 
         This keeps the SpellCrafter reusable for future phase runs while
-        releasing transient Phase 1-4 and Phase 6 artifacts.
+        releasing the transient structural-validation artifact set.
         """
         self.reset_phase_artifacts()
 
     def _cleanup_phase_artifacts_locked(self) -> None:
         """
-        Internal helper to clean phase artifacts under the crafter lock.
+        Internal helper that clears the reusable structural-validation artifact
+        set under the crafter lock.
+
+        Contract:
+            - Best-effort cleans owned artifact objects before nulling them.
+            - Leaves Phase 5 and later plan/codegen artifacts untouched.
+            - Refreshes the phase2_5 codegen snapshot after the structural
+              layers are cleared.
         """
         if self._requirements is not None:
             try:
@@ -708,7 +748,14 @@ class SpellCrafter(Cleanable):
 
     def set_root_blueprint_phase5(self, blueprint: RootResolutionBlueprint) -> None:
         """
-        Set the Phase-5 blueprint for this spell.
+        Attach the Phase 5 root blueprint for this spell.
+
+        Contract:
+            - Stores the owned-root blueprint that later validation and plan
+              phases consume.
+            - Refreshes Phase 2-5 exported IR.
+            - Invalidates later Phase 8-11 IR caches because they depend on the
+              rooted blueprint shape.
         """
         self.check_cleaned()
         if blueprint is None:
@@ -718,7 +765,15 @@ class SpellCrafter(Cleanable):
         self._reset_phase8_11_codegen_ir()
 
     def set_spell_system_index_phase5(self, index: SpellSystemIndex) -> None:
-        """Set the Phase-5 spell system index for this spell."""
+        """
+        Attach the Phase 5 spell-system index for this spell.
+
+        Contract:
+            - Stores the spell-local handle to the wider system index.
+            - Refreshes Phase 2-5 exported IR.
+            - Invalidates later Phase 8-11 IR caches because downstream
+              planning may depend on index content.
+        """
         self.check_cleaned()
         if index is None:
             raise ValueError("index must not be None.")
@@ -728,12 +783,14 @@ class SpellCrafter(Cleanable):
 
     def clear_phase5_artifacts(self) -> None:
         """
-        Deterministically clear Phase-5 state and dependent Phase 8 artifacts.
+        Deterministically clear Phase 5 state and all dependent later-phase
+        artifacts.
 
         Contract:
             - Drops the Phase 5 blueprint reference.
-            - Cleans and nulls any compiled OccurrencePlan.
-            - Cleans and nulls any compiled InjectionPlan.
+            - Cleans and nulls compiled occurrence, injection, patch-map, and
+              execution-plan artifacts that depend on that Phase 5 state.
+            - Clears the spell-system index and later-phase cache signatures.
             - Leaves Phase 1-4 artifacts intact.
         """
         self._root_blueprint_phase5 = None
@@ -3920,11 +3977,26 @@ class SpellCrafter(Cleanable):
                 cancel_event: Optional[CancellationEvent],
         ) -> Set[str]:
             """
-            Re-run Phases 1-7 for the supplied root spell_ids.
+            Revalidate the supplied dirty roots for this conduit.
+
+            This closure is the Phase 5 bridge back into the change-control
+            manager. When a conduit marks owned roots dirty, the frame-level
+            change-control layer calls this hook with the affected root spell
+            ids so each root can rebuild its structural and foundational
+            resolution artifacts in the context of the same conduit.
+
+            Contract:
+                - Resolves each root spell from the live Spellbook
+                  `_spell_id_pool`.
+                - Reuses the spell-owned `SpellCrafter` for that root.
+                - Runs `run_all_phases(...)` through the foundational phase set
+                  needed for dirty-root recovery.
+                - Returns only the subset of root ids that completed
+                  revalidation successfully.
 
             Returns:
                 Set[str]:
-                    Root ids that successfully revalidated.
+                    Root ids that successfully revalidated for this conduit.
             """
             validated_roots: Set[str] = set()
             for root_id in dirty_roots:
@@ -5202,6 +5274,22 @@ class SpellCrafter(Cleanable):
                     dirty_roots: Set[str],
                     cancel_event: Optional[CancellationEvent],
             ) -> Set[str]:
+                """
+                Revalidate dirty roots for the conduit-wide Phase 7 hook.
+
+                This closure is registered once on the conduit's
+                ChangeControlManager slot so later dirty-root events can drive
+                a full spell-level recompilation through the current
+                Spellbook/runtime view.
+
+                Contract:
+                    - Resolves each dirty root from the live spell pool.
+                    - Reuses the spell's attached crafter rather than creating
+                      a new orchestration object.
+                    - Runs full `run_all_phases(...)` recovery for each root in
+                      this conduit context.
+                    - Returns only the roots that completed successfully.
+                """
                 validated_roots: Set[str] = set()
                 for root_id in dirty_roots:
                     spell_instance = spellbook._spell_id_pool[root_id]
@@ -5232,6 +5320,21 @@ class SpellCrafter(Cleanable):
                     dirty_roots: Set[str],
                     cancel_event: Optional[CancellationEvent],
             ) -> Set[str]:
+                """
+                Revalidate dirty roots for the local Phase 7 change-control hook.
+
+                This local variant mirrors the frame-wide revalidation contract
+                but is installed from the local wiring path so scoped
+                revalidation can still hand dirty roots back into the full
+                spell-phase pipeline for this conduit.
+
+                Contract:
+                    - Resolves each dirty root from the live spell pool.
+                    - Reuses the spell's attached crafter.
+                    - Runs full `run_all_phases(...)` recovery for each root in
+                      this conduit context.
+                    - Returns only the roots that completed successfully.
+                """
                 validated_roots: Set[str] = set()
                 for root_id in dirty_roots:
                     spell_instance = spellbook._spell_id_pool[root_id]

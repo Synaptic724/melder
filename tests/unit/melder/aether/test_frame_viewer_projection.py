@@ -3,6 +3,7 @@ import pytest
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
+from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
     CompiledFrameACLAccessSurface,
 )
@@ -89,14 +90,17 @@ def _build_descriptor(frame_name: str) -> FrameDescriptor:
     return descriptor
 
 
-def _build_surface(frame_name: str) -> CompiledFrameACLAccessSurface:
+def _build_surface(
+        frame_name: str,
+        configuration: FrameACLConfiguration,
+) -> CompiledFrameACLAccessSurface:
     return CompiledFrameACLAccessSurface(
         frame_name=frame_name,
-        configuration_id="{0}-cfg".format(frame_name),
-        view_profile_name="safe",
-        view_profile_version="0.0.1",
-        codegen_profile_name="safe",
-        codegen_profile_version="0.0.1",
+        configuration_id=configuration.configuration_id,
+        view_profile_name=configuration.view_configuration.profile_name,
+        view_profile_version=configuration.view_configuration.profile_version,
+        codegen_profile_name=configuration.codegen_configuration.profile_name,
+        codegen_profile_version=configuration.codegen_configuration.profile_version,
         allowed_kinds=("frame", "conduit", "spell"),
         allowed_commands=("query",),
         frame_payload_fields=("system_state", "rift_enabled"),
@@ -118,9 +122,17 @@ def _build_surface(frame_name: str) -> CompiledFrameACLAccessSurface:
 
 def _build_viewer(frame_names: tuple[str, ...]) -> FrameViewer:
     descriptors = {name: _build_descriptor(name) for name in frame_names}
-    surfaces = {name: _build_surface(name) for name in frame_names}
+    configurations = {
+        name: FrameACLConfiguration.create_default(name)
+        for name in frame_names
+    }
+    surfaces = {
+        name: _build_surface(name, configurations[name])
+        for name in frame_names
+    }
     return FrameViewer(
         frame_descriptors_by_name=descriptors,
+        frame_acl_configurations_by_frame_name=configurations,
         compiled_access_surfaces_by_frame_name=surfaces,
         default_view_frame_name=frame_names[0] if len(frame_names) > 0 else None,
     )
@@ -293,3 +305,58 @@ def test_frame_viewer_rejects_empty_tool_and_kind_inputs() -> None:
 
     with pytest.raises(ValueError, match="source_kind cannot be empty"):
         viewer.list_links_by_kind("")
+
+
+def test_frame_viewer_selected_profile_is_bound_to_frame_context() -> None:
+    viewer = _build_viewer(("ops",))
+
+    selected_profile = viewer.get_selected_profile_for_frame("ops")
+
+    assert selected_profile.is_bound is True
+    assert selected_profile.bound_frame_name == "ops"
+    assert selected_profile.frame_descriptor is viewer.frame_descriptors_by_name["ops"]
+    assert (
+        selected_profile.frame_acl_configuration
+        is viewer.frame_acl_configurations_by_frame_name["ops"]
+    )
+    assert (
+        selected_profile.compiled_access_surface
+        is viewer.compiled_access_surfaces_by_frame_name["ops"]
+    )
+
+
+def test_frame_viewer_can_set_selected_profile_for_frame() -> None:
+    viewer = _build_viewer(("ops",))
+    viewer.register_active_profile(FrameViewerProfile.create_inspection())
+
+    viewer.set_selected_profile_for_frame("ops", "inspection")
+
+    assert viewer.selected_profile_names_by_frame_name == {"ops": "inspection"}
+    assert viewer.get_selected_profile_for_frame("ops").name == "inspection"
+
+
+def test_frame_viewer_selected_profile_for_frame_shapes_execution() -> None:
+    viewer = _build_viewer(("ops",))
+    viewer.register_active_profile(FrameViewerProfile.create_inspection())
+    viewer.set_selected_profile_for_frame("ops", "inspection")
+
+    descriptions = viewer.describe_available_targets(frame_name="ops")
+
+    assert "metadata" in descriptions[0]
+
+
+def test_frame_viewer_profile_binding_rejects_acl_view_profile_requirement_mismatch() -> None:
+    viewer = _build_viewer(("ops",))
+    constrained_profile = FrameViewerProfile(
+        "hybrid_only",
+        required_acl_view_profile_name="hybrid",
+        required_acl_view_profile_version="0.0.1",
+        tool_handler_names_by_name={"list_frames": "list_frame_names"},
+    )
+    viewer.register_active_profile(constrained_profile)
+
+    with pytest.raises(
+            ValueError,
+            match="requires ACL view profile 'hybrid:0.0.1', got 'safe:0.0.1'",
+    ):
+        viewer.set_selected_profile_for_frame("ops", "hybrid_only")

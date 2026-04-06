@@ -143,6 +143,18 @@ class ExecutionPlanStep:
             must_register: bool,
             disposal_method_names: List[str],
     ) -> None:
+        """
+        Initialize one Phase 11 execution step.
+
+        Contract:
+            - Stores all precomputed routing and execution metadata for one
+              instance key in the plan.
+            - Does not derive or normalize semantics beyond required-null
+              validation; upstream builders are responsible for producing
+              coherent values.
+            - Treats dependency, override, and contract metadata as already
+              compiled runtime inputs.
+        """
         if instance_key is None:
             raise ValueError("instance_key must not be None.")
         if occurrence is None:
@@ -217,38 +229,47 @@ class ExecutionPlanStep:
 
     @property
     def instance_key(self) -> InstanceKey:
+        """Return the instance key this execution step constructs or reuses."""
         return self._instance_key
 
     @property
     def occurrence(self) -> OccurrenceKey:
+        """Return the occurrence-plan entry this step was derived from."""
         return self._occurrence
 
     @property
     def spell(self) -> ISpell:
+        """Return the spell object this step executes."""
         return self._spell
 
     @property
     def existence(self) -> Existence:
+        """Return the existence policy that governs reuse/registration here."""
         return self._existence
 
     @property
     def creations_target_kind(self) -> int:
+        """Return which creations container this step should target at runtime."""
         return self._creations_target_kind
 
     @property
     def shared_instance(self) -> bool:
+        """Return whether this step resolves through a shared-instance lane."""
         return self._shared_instance
 
     @property
     def inject_spec(self) -> Optional[InjectionSpec]:
+        """Return the Phase 9 injection spec attached to this step, if any."""
         return self._inject_spec
 
     @property
     def dependency_keys(self) -> List[InstanceKey]:
+        """Return the flattened dependency instance keys for this step."""
         return self._dependency_keys
 
     @property
     def dependency_keys_by_param(self) -> Dict[str, List[InstanceKey]]:
+        """Return dependency instance keys grouped by constructor parameter."""
         return self._dependency_keys_by_param
 
     @property
@@ -260,6 +281,7 @@ class ExecutionPlanStep:
 
     @property
     def override_keys(self) -> List[str]:
+        """Return the Phase 10 override keys that can target this step."""
         return self._override_keys
 
     @property
@@ -285,18 +307,22 @@ class ExecutionPlanStep:
 
     @property
     def contract_keys(self) -> List[str]:
+        """Return the SpellContract keys associated with this step."""
         return self._contract_keys
 
     @property
     def allow_list_aggregation(self) -> bool:
+        """Return whether list-style dependency aggregation is allowed here."""
         return self._allow_list_aggregation
 
     @property
     def uses_positional_override(self) -> bool:
+        """Return whether this step expects positional override payloads."""
         return self._uses_positional_override
 
     @property
     def contract_payload(self) -> Optional[Dict[str, Any]]:
+        """Return the pre-normalized contract payload for this step, if any."""
         return self._contract_payload
 
     @property
@@ -315,26 +341,32 @@ class ExecutionPlanStep:
 
     @property
     def lock_hint(self) -> str:
+        """Return the runtime lock strategy hint for this step."""
         return self._lock_hint
 
     @property
     def use_spell_lock_hint(self) -> bool:
+        """Return whether the runtime should prefer the spell lock for this step."""
         return self._use_spell_lock_hint
 
     @property
     def requires_spellspace(self) -> bool:
+        """Return whether this step requires an active spellspace context."""
         return self._requires_spellspace
 
     @property
     def owner_conduit_required(self) -> bool:
+        """Return whether owner-conduit access is required for this step."""
         return self._owner_conduit_required
 
     @property
     def must_register(self) -> bool:
+        """Return whether the created/reused result must be registered."""
         return self._must_register
 
     @property
     def disposal_method_names(self) -> List[str]:
+        """Return disposal-method names carried into runtime registration."""
         return self._disposal_method_names
 
 
@@ -612,6 +644,13 @@ class ExecutionPlan(Cleanable):
             fast_transient_plan: Specialized plan for transient-only fast execution.
             fast_has_contract_payloads: True when any fast step has contract payloads.
             fast_has_existing_creations: True when any fast step is an existing-creation.
+
+        Contract:
+            - The plan owns its step list, index maps, and optional fast-path
+              arrays after construction.
+            - Optional fast-path arrays are only meaningful for the
+              `NO_OVERRIDES_FAST` variant and are expected to stay aligned to
+              `steps`.
         """
         super().__init__()
         if root_spell_id is None:
@@ -898,30 +937,37 @@ class ExecutionPlan(Cleanable):
 
     @property
     def root_spell_id(self) -> str:
+        """Return the root spell id this execution plan was compiled for."""
         return self._root_spell_id
 
     @property
     def root_instance_key(self) -> InstanceKey:
+        """Return the root occurrence's instance key for result lookup."""
         return self._root_instance_key
 
     @property
     def steps(self) -> List[ExecutionPlanStep]:
+        """Return the ordered execution steps owned by this plan."""
         return self._steps
 
     @property
     def spell_id_step_index(self) -> Dict[str, int]:
+        """Return the first step index for each spell id in the plan."""
         return self._spell_id_step_index
 
     @property
     def optimistic_object_refs_by_spell_id(self) -> Dict[str, Any]:
+        """Return pre-known optimistic object refs keyed by spell id."""
         return self._optimistic_object_refs_by_spell_id
 
     @property
     def available_param_by_spell_id(self) -> Dict[str, int]:
+        """Return precomputed creations-target routing keyed by spell id."""
         return self._available_param_by_spell_id
 
     @property
     def plan_variant(self) -> str:
+        """Return which Phase 11 variant this plan represents."""
         return self._plan_variant
 
     @property
@@ -1156,6 +1202,14 @@ class ExecutionPlanBuilder:
             spell_lookup: Dict[str, ISpell],
             plan_variant: str,
     ) -> None:
+        """
+        Initialize the Phase 11 execution-plan builder.
+
+        Contract:
+            - Stores references to the Phase 8/9 inputs without copying them.
+            - Assumes callers have already selected a compatible plan variant.
+            - Treats the supplied occurrence and injection plans as read-only.
+        """
         if occurrence_plan is None:
             raise ValueError("occurrence_plan must not be None.")
         if spell_lookup is None:
@@ -2097,6 +2151,12 @@ class ExecutionPlanBuilder:
 
     @staticmethod
     def _creation_target_for_existence(existence: Existence) -> int:
+        """
+        Map an existence policy to the runtime creations-target kind.
+
+        Shared/root-owned existences route to owner creations, while per-caller
+        or spellspace-scoped existences stay on the caller-side container.
+        """
         if existence is Existence.unique_per_conduit:
             return ExecutionPlanTargetKind.CALLER
         if existence is Existence.unique_per_spell_space:
@@ -2107,6 +2167,12 @@ class ExecutionPlanBuilder:
 
     @staticmethod
     def _lock_hint_for_existence(existence: Existence) -> str:
+        """
+        Return the preferred runtime lock family for an existence policy.
+
+        Shared existences prefer the spell lock; caller-local existences use
+        the creations lock path.
+        """
         if existence in (
                 Existence.unique,
                 Existence.unique_per_conduit_cluster,
@@ -2117,11 +2183,24 @@ class ExecutionPlanBuilder:
 
     @staticmethod
     def _should_register(spell: ISpell) -> bool:
+        """
+        Decide whether a spell's result must be registered in creations.
+
+        Contract:
+            `Existence.many` without disposal methods can skip registration;
+            all other spell shapes remain registration-backed.
+        """
         if spell.existence is Existence.many and not spell.has_disposal_methods:
             return False
         return True
 
     def _occurrence_for_instance_key(self, instance_key: InstanceKey) -> OccurrenceKey:
+        """
+        Resolve the occurrence key backing one instance key.
+
+        Shared instance keys recover their canonical occurrence from the Phase 8
+        plan; path-bearing instance keys map directly.
+        """
         spell_id, path = instance_key
         if path is not None:
             return spell_id, path
@@ -2136,6 +2215,14 @@ class ExecutionPlanBuilder:
     def _extract_param_keys(
             inject_spec: Optional[InjectionSpec],
     ) -> tuple[List[InstanceKey], Dict[str, List[InstanceKey]], List[str], List[str]]:
+        """
+        Flatten dependency, override, and contract keys from one injection spec.
+
+        Returns:
+            tuple:
+                `(dependency_keys, dependency_keys_by_param, override_keys,
+                contract_keys)` for use while building execution steps.
+        """
         if inject_spec is None:
             return [], {}, [], []
         dependency_keys: List[InstanceKey] = []

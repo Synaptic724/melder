@@ -10,24 +10,24 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class RootResolutionBlueprint(Cleanable):
     """
-    Internal
+    Phase 5 rooted deep-DAG artifact for one spell.
 
-    Deep DAG blueprint for a single entrypoint spell (Phase 5 artifact).
+    This blueprint is the handoff object between structural spell compilation
+    and the later system/planning phases. It does not discover dependencies or
+    validate policy by itself; instead it packages the rooted DAG, stable
+    execution order, and socket-targeting metadata that later components use
+    for system validation, change-control/component-of wiring, and Phase 8-10
+    planning/override targeting.
 
-    This object is intentionally dumb:
-        * It does not perform discovery or validation.
-        * It just packages:
-            - the deep DAG (all reachable version-ids),
-            - a stable execution order (dependencies before root),
-            - socket metadata for targeting (SocketRef + DagIndex + PathRegistry).
-
-    Identity model:
-        root_spell_id:
-            Version id of the root spell (spell.spell_index.current at compile time).
-
-        root_lineage_id:
-            Lineage ULID of the root spell (spell.spell_index.id). Optional metadata
-            for DevOps / change-control; graph logic is always version-id based.
+    Contract:
+        - `root_spell_id` is the versioned identity of the root spell at
+          blueprint-build time.
+        - `root_lineage_id` is optional lineage metadata for DevOps/change-
+          control use; graph semantics remain version-id based.
+        - The blueprint owns its DAG, socket reference collection, and
+          targeting index.
+        - Consumers should treat exposed list/index data as read-only, even
+          when accessors return copies.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -49,6 +49,31 @@ class RootResolutionBlueprint(Cleanable):
             socket_refs: Optional[Sequence[SocketRef]] = None,
             dag_index: Optional[DagIndex] = None,
     ) -> None:
+        """
+        Initialize a rooted deep-DAG blueprint.
+
+        Args:
+            root_spell_id:
+                Versioned spell id for the root node this blueprint represents.
+            root_lineage_id:
+                Optional lineage id for DevOps/change-control consumers.
+            dag:
+                Owned deep DAG for the root spell's reachable dependency
+                closure.
+            ordered_node_ids:
+                Optional precomputed topological order. Dependencies should
+                appear before the root.
+            socket_refs:
+                Optional prebuilt socket-reference collection for targeting.
+            dag_index:
+                Optional prebuilt targeting index. When omitted, a fresh empty
+                `DagIndex` is allocated.
+
+        Contract:
+            - `root_spell_id` and `dag` are required.
+            - Sequence inputs are copied into blueprint-owned lists.
+            - The blueprint always owns a non-None `DagIndex`.
+        """
         super().__init__()
 
         if root_spell_id is None:
@@ -80,9 +105,13 @@ class RootResolutionBlueprint(Cleanable):
         Deterministically tear down the blueprint and its heavy children.
 
         Behaviour:
-            * Idempotent – safe to call multiple times.
+            * Idempotent - safe to call multiple times.
             * Cleans up the DAG and index if present.
             * Drops references to node ids and socket refs to help GC.
+
+        Contract:
+            Cleanup releases only blueprint-owned artifacts. It does not mutate
+            the spell/runtime payload objects stored inside the DAG.
         """
         if self._cleaned:
             return
@@ -116,7 +145,7 @@ class RootResolutionBlueprint(Cleanable):
     @property
     def root_spell_id(self) -> str:
         """
-        Version id of the entrypoint spell for this blueprint.
+        Return the versioned root spell id for this blueprint.
         """
         self.check_cleaned()
         return self._root_spell_id
@@ -124,7 +153,10 @@ class RootResolutionBlueprint(Cleanable):
     @property
     def root_lineage_id(self) -> Optional[str]:
         """
-        Lineage ULID of the entrypoint spell (SpellIndex.id), if known.
+        Return the optional lineage id for the root spell.
+
+        This value is metadata for DevOps/change-control consumers; execution
+        and targeting still key off `root_spell_id`.
         """
         self.check_cleaned()
         return self._root_lineage_id
@@ -132,7 +164,10 @@ class RootResolutionBlueprint(Cleanable):
     @property
     def dag(self) -> DirectedAcyclicWorkGraph:
         """
-        Deep DAG for this root (nodes keyed by spell version id).
+        Return the owned deep DAG for this root.
+
+        The DAG nodes are keyed by spell version id and represent the full
+        reachable dependency closure rooted at `root_spell_id`.
         """
         self.check_cleaned()
         return self._dag
@@ -140,9 +175,11 @@ class RootResolutionBlueprint(Cleanable):
     @property
     def ordered_node_ids(self) -> List[str]:
         """
-        Topological order for execution: dependencies first, root last.
+        Return the stable topological order for this rooted DAG.
 
-        Callers should treat this as read-only.
+        Contract:
+            Returns a copy of the stored order so callers cannot mutate the
+            blueprint's internal list. Dependencies appear before the root.
         """
         self.check_cleaned()
         return list(self._ordered_node_ids)
@@ -150,8 +187,11 @@ class RootResolutionBlueprint(Cleanable):
     @property
     def socket_refs(self) -> List[SocketRef]:
         """
-        All sockets participating in this deep DAG, with param paths
-        from the root represented as PathIds (for overrides and diagnostics).
+        Return all socket references participating in this rooted DAG.
+
+        Each socket ref carries the root-relative path information later used
+        for override targeting, diagnostics, and patch-map construction. The
+        returned list is a copy.
         """
         self.check_cleaned()
         return list(self._socket_refs)
@@ -159,11 +199,11 @@ class RootResolutionBlueprint(Cleanable):
     @property
     def dag_index(self) -> DagIndex:
         """
-        Targeting index over `socket_refs` (by path and param name).
+        Return the targeting index built over `socket_refs`.
 
         Note:
             The index maps are built lazily. Call ensure_dag_index_built()
-            before using the index for targeting.
+            before using the index for targeting-heavy runtime work.
         """
         self.check_cleaned()
         return self._dag_index
@@ -171,7 +211,8 @@ class RootResolutionBlueprint(Cleanable):
     @property
     def path_registry(self) -> PathRegistry:
         """
-        PathRegistry used to intern param paths for this blueprint.
+        Return the PathRegistry that interns root-relative parameter paths for
+        this blueprint.
         """
         self.check_cleaned()
         return self._dag_index.path_registry
@@ -186,6 +227,8 @@ class RootResolutionBlueprint(Cleanable):
 
         Contract:
             - SocketRef param_path_id must belong to this blueprint's registry.
+            - If the DagIndex is already built, the new socket is inserted into
+              the live index immediately.
         """
         self.check_cleaned()
         if socket is None:

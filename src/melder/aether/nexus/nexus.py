@@ -1494,7 +1494,12 @@ class Nexus(Cleanable, INexus):
         viewer_profile = viewer_profile_builder.get_required_profile(
             viewer_profile_name
         )
+        active_profiles_by_name = {
+            profile_name: viewer_profile_builder.get_required_profile(profile_name).clone()
+            for profile_name in viewer_profile_builder.list_profile_names()
+        }
         frame_descriptors_by_name: Dict[str, FrameDescriptor] = {}
+        frame_acl_configurations_by_frame_name: Dict[str, FrameACLConfiguration] = {}
         compiled_access_surfaces_by_frame_name: Dict[
             str,
             CompiledFrameACLAccessSurface,
@@ -1516,15 +1521,22 @@ class Nexus(Cleanable, INexus):
                     )
                 )
                 frame_descriptors_by_name[frame_name] = descriptor
+                frame_acl_configurations_by_frame_name[frame_name] = configuration
             return FrameViewer(
                 profile_builder=FrameViewerProfileBuilder(),
-                active_profiles_by_name={
-                    viewer_profile.name: viewer_profile.clone(),
-                },
+                active_profiles_by_name=active_profiles_by_name,
                 frame_descriptors_by_name=frame_descriptors_by_name,
+                frame_acl_configurations_by_frame_name=(
+                    frame_acl_configurations_by_frame_name
+                ),
                 compiled_access_surfaces_by_frame_name=(
                     compiled_access_surfaces_by_frame_name
                 ),
+                default_profile_name=viewer_profile.name,
+                selected_profile_names_by_frame_name={
+                    frame_name: viewer_profile.name
+                    for frame_name in frame_descriptors_by_name.keys()
+                },
                 metadata={
                     "frame_count": len(frame_descriptors_by_name),
                     "available_view_count": len(frame_descriptors_by_name),
@@ -1598,10 +1610,77 @@ class Nexus(Cleanable, INexus):
             },
             default_profile_name=frame_viewer.profile_name,
             frame_descriptors_by_name=frame_viewer.frame_descriptors_by_name,
+            frame_acl_configurations_by_frame_name=(
+                frame_viewer.frame_acl_configurations_by_frame_name
+            ),
             compiled_access_surfaces_by_frame_name=(
                 frame_viewer.compiled_access_surfaces_by_frame_name
             ),
             default_view_frame_name=rift.frame_link_contract.default_frame_name,
+            metadata=current_metadata,
+        )
+
+    def create_frame_viewer_for_rift_frame(
+            self,
+            rift_id: str,
+            frame_name: str,
+            *,
+            viewer_profile_name: str = "general",
+    ) -> FrameViewer:
+        """
+        Build one frame-specific viewer transaction for a Rift.
+
+        Args:
+            rift_id:
+                Existing Rift id.
+            frame_name:
+                Target frame name already available to the Rift contract.
+            viewer_profile_name:
+                Viewer profile name selected for the target frame.
+
+        Returns:
+            FrameViewer: Frame-scoped viewer for the requested frame.
+        """
+        self.check_cleaned()
+        if not rift_id:
+            raise ValueError("rift_id cannot be empty.")
+        if not frame_name:
+            raise ValueError("frame_name cannot be empty.")
+        rift = self._get_required_rift(rift_id)
+        if not rift.frame_link_contract.has_frame(frame_name):
+            raise ValueError(
+                "Rift '{0}' is not engaged with frame '{1}'.".format(
+                    rift_id,
+                    frame_name,
+                )
+            )
+        frame_viewer = self.create_frame_viewer(
+            [frame_name],
+            viewer_profile_name=viewer_profile_name,
+        )
+        current_metadata = frame_viewer.metadata
+        current_metadata["rift_id"] = rift.id
+        current_metadata["frame_link_contract_id"] = rift.frame_link_contract.contract_id
+        current_metadata["assigned_frame_names"] = (frame_name,)
+        current_metadata["default_target_frame_name"] = frame_name
+        return FrameViewer(
+            profile_builder=FrameViewerProfileBuilder(),
+            active_profiles_by_name={
+                profile_key: frame_viewer_profile.clone()
+                for profile_key, frame_viewer_profile in (
+                    frame_viewer.active_profiles_by_name.items()
+                )
+            },
+            default_profile_name=frame_viewer.profile_name,
+            frame_descriptors_by_name=frame_viewer.frame_descriptors_by_name,
+            frame_acl_configurations_by_frame_name=(
+                frame_viewer.frame_acl_configurations_by_frame_name
+            ),
+            compiled_access_surfaces_by_frame_name=(
+                frame_viewer.compiled_access_surfaces_by_frame_name
+            ),
+            selected_profile_names_by_frame_name={frame_name: viewer_profile_name},
+            default_view_frame_name=frame_name,
             metadata=current_metadata,
         )
 

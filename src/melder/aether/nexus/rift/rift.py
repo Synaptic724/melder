@@ -390,6 +390,52 @@ class Rift(Cleanable, IRift):
         self.check_cleaned()
         return self._frame_link_contract.assigned_frame_names
 
+    def engage_frame(
+            self,
+            frame_name: str,
+            *,
+            set_as_default: bool = False,
+    ) -> None:
+        """
+        Internal
+
+        Engage one target frame on this Rift's frame contract.
+
+        Args:
+            frame_name:
+                Target frame name to engage.
+            set_as_default:
+                When True, the engaged frame also becomes the default target
+                frame for this Rift.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if not frame_name:
+            raise ValueError("frame_name cannot be empty.")
+        is_new_frame = not self._frame_link_contract.has_frame(frame_name)
+        self._nexus._validate_target_frame_names((frame_name,))
+        requested_space_type = self._configuration.get_property("space_type")
+        self._nexus._validate_target_frame_runtime_requirements(
+            frame_name,
+            requested_space_type,
+        )
+        if is_new_frame:
+            self._nexus._validate_target_frame_budget((frame_name,))
+        self._frame_link_contract.register_frame(
+            frame_name,
+            set_as_default=set_as_default,
+        )
+        if is_new_frame:
+            self._nexus._increment_ref_count(
+                self._nexus._target_frame_ref_counts,
+                frame_name,
+            )
+            self._target_frame_names = self._frame_link_contract.assigned_frame_names
+        if set_as_default:
+            self._default_target_frame_name = frame_name
+
     def create_frame_viewer(
             self,
             *,
@@ -450,6 +496,40 @@ class Rift(Cleanable, IRift):
         return self._nexus.create_cached_frame_viewer_for_rift(
             self._id,
             view_profile_name=view_profile_name,
+            viewer_profile_name=viewer_profile_name,
+        )
+
+    def create_new_frame_viewer(
+            self,
+            frame_name: str,
+            *,
+            viewer_profile_name: str = "general",
+    ) -> FrameViewer:
+        """
+        Internal
+
+        Build one new frame-specific viewer transaction through this Rift.
+
+        Args:
+            frame_name:
+                Target frame name to materialize for this Rift.
+            viewer_profile_name:
+                Selected viewer profile name for the target frame.
+
+        Returns:
+            FrameViewer: Frame-scoped viewer for the requested frame.
+        """
+        self.check_cleaned()
+        if not self._frame_link_contract.has_frame(frame_name):
+            raise ValueError(
+                "Rift '{0}' is not engaged with frame '{1}'.".format(
+                    self._id,
+                    frame_name,
+                )
+            )
+        return self._nexus.create_frame_viewer_for_rift_frame(
+            self._id,
+            frame_name,
             viewer_profile_name=viewer_profile_name,
         )
 

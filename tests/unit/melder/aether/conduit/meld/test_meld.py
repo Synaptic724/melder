@@ -1413,6 +1413,34 @@ def test_ensure_lineage_resolvable_missing_contract_raises() -> None:
         meld._ensure_lineage_resolvable(spell)
 
 
+def test_ensure_lineage_resolvable_wraps_contracted_lookup_failures() -> None:
+    """
+    Verify contract lookup failures are wrapped with spell/parameter context.
+
+    Contract:
+        - Unexpected contracted lookup failures raise MeldExecutionError.
+        - Error payload includes the failing parameter name.
+    """
+    spellbook = _SpellbookStub()
+    meld = _make_meld(spellbook=spellbook)
+    state = _SystemStateStub(validity=SpellValidity.valid)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        system_state=state,
+        spellbook=spellbook,
+    )
+
+    class ContractConsumer:
+        def __init__(self, service: Any = SpellContract(spellframe="svc", binding_name="primary")) -> None:
+            self.service = service
+
+    spell.spell = ContractConsumer
+    meld._resolve_contracted_by_lookup_key = MagicMock(side_effect=RuntimeError("lookup failed"))
+
+    with pytest.raises(MeldExecutionError, match="param 'service'"):
+        meld._ensure_lineage_resolvable(spell)
+
+
 def test_ensure_lineage_resolvable_contract_forces_revalidation() -> None:
     """
     Verify resolved SpellContracts force resolution revalidation.

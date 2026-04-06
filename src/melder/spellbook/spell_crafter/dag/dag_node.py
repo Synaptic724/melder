@@ -107,14 +107,17 @@ class DagNode(Cleanable):
     # --------------------------------------------------------------------- #
     @property
     def id(self) -> str:
+        """Return the stable node identifier used by the DAG."""
         return self._id
 
     @property
     def payload(self) -> Any | None:
+        """Return the optional payload attached to this node."""
         return self._payload
 
     @payload.setter
     def payload(self, value: Any | None) -> None:
+        """Replace the optional payload attached to this node."""
         self.check_cleaned()
         self._payload = value
 
@@ -219,4 +222,5 @@ class DagNode(Cleanable):
             task()
 
     def __repr__(self) -> str:
+        """Return a compact debug representation of the node and edge counts."""
         return f"DagNode(id={self._id!r}, deps={len(self._dependencies)}, dependents={len(self._dependents)})"

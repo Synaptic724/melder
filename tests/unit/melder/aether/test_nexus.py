@@ -7,6 +7,7 @@ from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.nexus.rift.rift import Rift
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.configuration.rift_configuration import RiftConfiguration
+from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
     CompiledFrameACLAccessSurface,
 )
@@ -144,13 +145,14 @@ def _build_descriptor_backed_viewer(frame_name: str) -> FrameViewer:
     """
     _seed_frame_descriptor(frame_name)
     descriptor: FrameDescriptor = Nexus()._get_required_frame_descriptor(frame_name)
+    frame_acl_configuration = FrameACLConfiguration.create_default(frame_name)
     compiled_access_surface = CompiledFrameACLAccessSurface(
         frame_name=frame_name,
-        configuration_id="{0}-cfg".format(frame_name),
-        view_profile_name="safe",
-        view_profile_version="0.0.1",
-        codegen_profile_name="safe",
-        codegen_profile_version="0.0.1",
+        configuration_id=frame_acl_configuration.configuration_id,
+        view_profile_name=frame_acl_configuration.view_configuration.profile_name,
+        view_profile_version=frame_acl_configuration.view_configuration.profile_version,
+        codegen_profile_name=frame_acl_configuration.codegen_configuration.profile_name,
+        codegen_profile_version=frame_acl_configuration.codegen_configuration.profile_version,
         allowed_kinds=("frame",),
         allowed_commands=("query",),
         frame_payload_fields=("system_state", "rift_enabled"),
@@ -162,6 +164,9 @@ def _build_descriptor_backed_viewer(frame_name: str) -> FrameViewer:
     )
     return FrameViewer(
         frame_descriptors_by_name={frame_name: descriptor},
+        frame_acl_configurations_by_frame_name={
+            frame_name: frame_acl_configuration,
+        },
         compiled_access_surfaces_by_frame_name={
             frame_name: compiled_access_surface,
         },
@@ -687,6 +692,8 @@ def test_rift_exposes_frame_link_contract_from_assigned_frames() -> None:
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_target_frame_override(True)
+    configuration.with_multiple_target_frames(True)
+    configuration.with_max_target_frame_count(2)
     configuration.with_allowed_target_frame_names(("default", "ops"))
     nexus.enable(configuration)
 
@@ -715,6 +722,8 @@ def test_rift_can_build_frame_viewer_from_assigned_frame_contract() -> None:
     configuration.with_rift_creation_enabled(True)
     configuration.with_direct_rift_access(True)
     configuration.with_target_frame_override(True)
+    configuration.with_multiple_target_frames(True)
+    configuration.with_max_target_frame_count(2)
     configuration.with_allowed_target_frame_names(("default", "ops"))
     nexus.enable(configuration)
     _seed_frame_descriptor("ops")
@@ -727,6 +736,76 @@ def test_rift_can_build_frame_viewer_from_assigned_frame_contract() -> None:
     assert viewer.metadata["rift_id"] == rift.id
     assert viewer.default_view_frame_name == "ops"
     assert viewer.frame_descriptors_by_name["ops"].frame_name == "ops"
+
+
+def test_rift_can_engage_frame_through_contract_after_nexus_validation() -> None:
+    """
+    Verify Rift engages a target frame through its contract after Nexus validation.
+
+    Returns:
+        None.
+    """
+    _bind_target_frame_configuration(
+        "ops",
+        rift_enabled=True,
+        ai_native_enabled=False,
+        system_state=SystemState.automatic,
+    )
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_direct_rift_access(True)
+    configuration.with_target_frame_override(True)
+    configuration.with_multiple_target_frames(True)
+    configuration.with_max_target_frame_count(2)
+    configuration.with_allowed_target_frame_names(("default", "ops"))
+    nexus.enable(configuration)
+
+    rift_configuration = nexus.create_rift_configuration()
+    rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
+
+    rift.engage_frame("ops", set_as_default=True)
+
+    assert rift.frame_link_contract.has_frame("ops") is True
+    assert rift.frame_link_contract.default_frame_name == "ops"
+    assert rift.default_target_frame_name == "ops"
+
+
+def test_rift_can_create_new_frame_viewer_for_one_engaged_frame() -> None:
+    """
+    Verify Rift can create one frame-specific viewer transaction.
+
+    Returns:
+        None.
+    """
+    _bind_target_frame_configuration(
+        "ops",
+        rift_enabled=True,
+        ai_native_enabled=False,
+        system_state=SystemState.automatic,
+    )
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_direct_rift_access(True)
+    configuration.with_target_frame_override(True)
+    configuration.with_multiple_target_frames(True)
+    configuration.with_max_target_frame_count(2)
+    configuration.with_allowed_target_frame_names(("default", "ops"))
+    nexus.enable(configuration)
+    _seed_frame_descriptor("ops")
+
+    rift_configuration = nexus.create_rift_configuration()
+    rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
+    rift.engage_frame("ops", set_as_default=True)
+
+    viewer = rift.create_new_frame_viewer("ops", viewer_profile_name="inspection")
+
+    assert viewer.list_frame_names() == ["ops"]
+    assert viewer.selected_profile_names_by_frame_name == {"ops": "inspection"}
+    assert viewer.get_selected_profile_for_frame("ops").frame_descriptor is (
+        viewer.frame_descriptors_by_name["ops"]
+    )
 
 
 def test_rift_can_attach_frame_viewer_to_active_space_and_read_it_back() -> None:
