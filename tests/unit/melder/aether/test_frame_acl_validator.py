@@ -158,6 +158,18 @@ def test_frame_acl_validator_rejects_invalid_inputs() -> None:
     with pytest.raises(ValueError, match="targets frame 'finance', expected 'ops'"):
         validator.validate_configuration(finance_configuration)
 
+    with pytest.raises(TypeError, match="frame_descriptor must be a FrameDescriptor"):
+        validator.validate_configuration_against_descriptor(
+            FrameACLConfiguration.create_default("ops"),
+            None,
+        )
+
+    with pytest.raises(ValueError, match="FrameDescriptor targets frame 'finance', expected 'ops'"):
+        validator.validate_configuration_against_descriptor(
+            FrameACLConfiguration.create_default("ops"),
+            FrameDescriptor("finance"),
+        )
+
 
 def test_frame_acl_validator_init_rejects_empty_frame_name() -> None:
     """
@@ -186,6 +198,21 @@ def test_frame_acl_validator_cleanup_clears_state() -> None:
     assert validator.cleaned is True
     assert validator._frame_name is None
     assert validator._last_validated_configuration_id is None
+
+
+def test_frame_acl_validator_cleanup_is_idempotent() -> None:
+    """
+    Verify validator cleanup can be called repeatedly.
+
+    Returns:
+        None.
+    """
+    validator = FrameACLValidator("ops")
+
+    validator.cleanup()
+    validator.cleanup()
+
+    assert validator.cleaned is True
 
 
 def test_frame_acl_validator_properties_return_expected_values() -> None:
@@ -230,6 +257,44 @@ def test_frame_acl_validator_rejects_unsupported_spell_payload_floor() -> None:
     with pytest.raises(ValueError, match="Unsupported minimum_spell_payload_type"):
         validator.validate_configuration(configuration)
 
+    configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        FrameACLConfiguration.create_default("ops"),
+        reason="draft",
+    )
+    configuration.set_view_configuration(
+        FrameACLViewConfiguration(
+            profile_name="custom",
+            profile_version="0.0.1",
+            minimum_spell_payload_type="general",
+            minimum_spell_payload_version="9.9.9",
+        )
+    )
+    configuration.finalize()
+
+    with pytest.raises(ValueError, match="Unsupported minimum_spell_payload_version"):
+        validator.validate_configuration(configuration)
+
+    with pytest.raises(TypeError, match="view_configuration must be a FrameACLViewConfiguration"):
+        validator._validate_view_configuration(None)
+
+    configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        FrameACLConfiguration.create_default("ops"),
+        reason="draft",
+    )
+    configuration.set_view_configuration(
+        FrameACLViewConfiguration(
+            profile_name="custom",
+            profile_version="0.0.1",
+            required_nexus_label="legacy",
+            required_nexus_version="9.9.9",
+            minimum_spell_payload_type="general",
+        )
+    )
+    configuration.finalize()
+
+    with pytest.raises(ValueError, match="Unsupported required Nexus record contract 'legacy:9.9.9'"):
+        validator.validate_configuration(configuration)
+
 
 def test_frame_acl_validator_accepts_matching_descriptor_payload_contracts() -> None:
     """
@@ -249,6 +314,24 @@ def test_frame_acl_validator_accepts_matching_descriptor_payload_contracts() -> 
         )
         is True
     )
+
+
+def test_frame_acl_validator_rejects_missing_frame_overview() -> None:
+    """
+    Verify descriptor-aware validation rejects descriptors with no overview.
+
+    Returns:
+        None.
+    """
+    validator = FrameACLValidator("ops")
+    configuration = FrameACLConfiguration.create_default("ops")
+    descriptor = FrameDescriptor("ops")
+
+    with pytest.raises(ValueError, match="has no frame_overview for record-contract validation"):
+        validator.validate_configuration_against_descriptor(
+            configuration,
+            descriptor,
+        )
 
 
 def test_frame_acl_validator_rejects_frame_payload_contract_mismatch() -> None:
@@ -434,6 +517,41 @@ def test_frame_acl_validator_flags_unsafe_safe_profile_widening() -> None:
         validator.validate_configuration(configuration)
 
 
+def test_frame_acl_validator_flags_safe_view_dunder_member_widening() -> None:
+    """
+    Verify validator rejects safe-view member overrides that expose dunder access.
+
+    Returns:
+        None.
+    """
+    validator = FrameACLValidator("ops")
+    configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        FrameACLConfiguration.create_default("ops"),
+        reason="draft",
+    )
+    unsafe_member_ruleset = FrameACLRuleSet(
+        "member_override",
+        rules=[
+            FrameACLRule(
+                rule_name="unsafe_dunder",
+                operation="show_member",
+                effect="allow",
+                conditions={"pattern": "__*"},
+            )
+        ],
+    )
+    configuration.set_view_configuration(
+        FrameACLViewConfiguration.from_profile(
+            FrameACLViewProfile.create_safe(),
+            member_override_ruleset=unsafe_member_ruleset,
+        )
+    )
+    configuration.finalize()
+
+    with pytest.raises(ValueError, match="Safe profile cannot allow dunder member access"):
+        validator.validate_configuration(configuration)
+
+
 def test_frame_acl_validator_flags_unsafe_safe_codegen_widening() -> None:
     """
     Verify validator flags safe codegen overrides that widen forbidden actions.
@@ -466,4 +584,50 @@ def test_frame_acl_validator_flags_unsafe_safe_codegen_widening() -> None:
 
     with pytest.raises(ValueError, match="Safe profile cannot allow 'dynamic_access' in safe codegen capability ruleset"):
         validator.validate_configuration(configuration)
+
+
+def test_frame_acl_validator_rejects_invalid_codegen_configuration_type() -> None:
+    """
+    Verify the codegen validator rejects non-codegen configuration objects.
+
+    Returns:
+        None.
+    """
+    validator = FrameACLValidator("ops")
+
+    with pytest.raises(TypeError, match="codegen_configuration must be a FrameACLCodegenConfiguration"):
+        validator._validate_codegen_configuration(None)
+
+
+def test_frame_acl_validator_rejects_invalid_ruleset_family_input() -> None:
+    """
+    Verify ruleset-family validation rejects non-ruleset inputs.
+
+    Returns:
+        None.
+    """
+    with pytest.raises(TypeError, match="view.frame ruleset must be a FrameACLRuleSet"):
+        FrameACLValidator("ops")._validate_ruleset_family(
+            None,
+            {"visible"},
+            "view.frame",
+        )
+
+
+def test_frame_acl_validator_rejects_unsupported_descriptor_spell_payload_type() -> None:
+    """
+    Verify descriptor-aware validation rejects unknown payload families.
+
+    Returns:
+        None.
+    """
+    validator = FrameACLValidator("ops")
+    configuration = FrameACLConfiguration.create_default("ops")
+    descriptor = _build_descriptor(spell_payload_type="mystery")
+
+    with pytest.raises(ValueError, match="Unsupported descriptor spell payload type 'mystery'"):
+        validator.validate_configuration_against_descriptor(
+            configuration,
+            descriptor,
+        )
 

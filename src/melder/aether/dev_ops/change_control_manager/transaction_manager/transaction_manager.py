@@ -229,6 +229,10 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Build a normalized spellbook scope key.
 
+        This is the broadest transaction scope helper in the file. It is used
+        when a request should be considered to touch an entire spellbook rather
+        than one narrower binding, contract, or conduit slice.
+
         Returns:
             str: Scope key in the form `"scope:spellbook:<id>"`.
         """
@@ -240,6 +244,9 @@ class ChangeControlTransactionManager(Cleanable):
     def make_scope_key_conduit(self, conduit_id: str) -> str:
         """
         Build a normalized conduit scope key.
+
+        This helper is used when admission should reason about one conduit as a
+        conflict/embargo unit.
 
         Returns:
             str: Scope key in the form `"scope:conduit:<id>"`.
@@ -253,6 +260,10 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Build a normalized cluster scope key.
 
+        This is the cluster-level counterpart to the spellbook/conduit scope
+        helpers and is intended for requests that conceptually touch one shared
+        conduit-cluster surface.
+
         Returns:
             str: Scope key in the form `"scope:cluster:<id>"`.
         """
@@ -264,6 +275,10 @@ class ChangeControlTransactionManager(Cleanable):
     def make_scope_key_binding(self, frame_key: str, binding_key: str) -> str:
         """
         Build a normalized binding scope key.
+
+        This is the narrow "one frame/binding slot" scope helper used when
+        conflict or embargo checks should reason about one logical binding
+        location rather than the larger spellbook or conduit that contains it.
 
         Returns:
             str: Scope key in the form `"binding:<frame_key>:<binding_key>"`.
@@ -282,6 +297,10 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Build a normalized contract scope key.
 
+        This is the contract-facing scope helper used when a request should be
+        scoped to one borrower/provider contract edge rather than to an entire
+        binding surface.
+
         Returns:
             str: Scope key in the form
             `"contract:<frame_key>:<binding_key>:<peer_conduit_id>"`.
@@ -299,6 +318,10 @@ class ChangeControlTransactionManager(Cleanable):
         - Replaces any older entry with the same request id.
         - Invokes the audit callback, when configured, after the registry
           update and outside the lock.
+
+        This is the handoff point between admission and lifecycle tracking:
+        once a request is added here, the rest of the change-control system may
+        treat it as active until commit or abort removes it again.
         """
         self.check_cleaned()
         audit_fn: Optional[Callable[[ChangeControlTransactionRequest], None]] = None
@@ -324,6 +347,9 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Return a snapshot list of in-flight requests.
 
+        The returned list is a snapshot, not a live view, so callers can inspect
+        it without mutating manager state or holding the lock.
+
         Returns:
             List[ChangeControlTransactionRequest]: New list snapshot of the
             current in-flight registry.
@@ -335,6 +361,9 @@ class ChangeControlTransactionManager(Cleanable):
     def get_in_flight(self, request_id: str) -> Optional[ChangeControlTransactionRequest]:
         """
         Return an in-flight request by id, if present.
+
+        This is the direct lookup path used by commit/abort and other lifecycle
+        flows that need the original immutable request payload after admission.
 
         Returns:
             Optional[ChangeControlTransactionRequest]: The tracked request, or
@@ -353,6 +382,10 @@ class ChangeControlTransactionManager(Cleanable):
         - The mirror is keyed by provider conduit id.
         - Borrowers are stored in a set, so repeated registration of the same
           borrower/provider pair is naturally deduplicated.
+
+        This mirror is descriptive state today, but it is shaped so future
+        admission policy could reason about borrower/provider fan-out without
+        redesigning the registry.
         """
         self.check_cleaned()
         if not borrower_conduit_id or not provider_conduit_id:
@@ -382,6 +415,10 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Return the current borrower set for a provider conduit.
 
+        This exposes the provider-to-borrower mirror as a detached set snapshot
+        so diagnostics can inspect current fan-out without mutating manager
+        state.
+
         Returns:
             Set[str]: New set snapshot of borrower conduit ids currently
             mirrored under the provider.
@@ -395,6 +432,11 @@ class ChangeControlTransactionManager(Cleanable):
     def describe(self) -> Dict[str, Any]:
         """
         Diagnostic snapshot for transaction manager state.
+
+        This is the compact introspection surface for the manager itself:
+        enough to understand how many requests are in flight and what the
+        provider-to-borrower mirror currently contains, without exposing live
+        internal containers.
 
         Returns:
             Dict[str, Any]: Snapshot metadata for current in-flight request

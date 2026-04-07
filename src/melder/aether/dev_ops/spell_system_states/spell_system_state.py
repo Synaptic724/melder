@@ -57,6 +57,25 @@ class SpellSystemState(Cleanable):
     ]
 
     def __init__(self, spell_index_id: str, current_spell_id: str) -> None:
+        """
+        Initialize one lineage-scoped structural state record.
+
+        Args:
+            spell_index_id:
+                Stable lineage identifier for the SpellIndex this state tracks.
+            current_spell_id:
+                Currently promoted spell version id for the lineage.
+        Contract:
+            - Starts with empty dependency and dependent sets.
+            - Starts with `SpellValidity.unknown` plus the `new_lineage` flag so
+              higher-level validation can distinguish first registration from a
+              previously validated lineage.
+            - Starts with no attached `RiskManager`; structural-risk propagation
+              is enabled later by the owning registry.
+        Raises:
+            ValueError:
+                If either identifier is empty.
+        """
         super().__init__()
 
         if not spell_index_id:
@@ -93,6 +112,13 @@ class SpellSystemState(Cleanable):
         - idempotent
         - guarded by an internal lock
         - null-out references to assist GC
+
+        Contract:
+            - Clears topology and flag collections before dropping identity and
+              validity fields.
+            - Detaches the `RiskManager` reference so no later validity changes
+              can be published accidentally.
+            - Leaves future callers to fail through `check_cleaned()`.
         """
         if self._cleaned:
             return
@@ -290,6 +316,12 @@ class SpellSystemState(Cleanable):
             flags_to_add: Optional iterable of SpellState flags to add.
             flags_to_remove: Optional iterable of SpellState flags to remove.
             transitively_dirty: Optional bool to set the transitively_dirty flag.
+        Contract:
+            - Applies validity, flags, change reason, and transitive-dirty state
+              as one coordinated transition.
+            - Publishes to `RiskManager` only when the structural validity value
+              itself changes; flag-only updates stay local.
+            - Ignores None entries in add/remove flag iterables.
         """
         self.check_cleaned()
         risk_manager = self._risk_manager
@@ -339,6 +371,9 @@ class SpellSystemState(Cleanable):
 
         Args:
             spell_id: New current spell version id (non-empty).
+        Contract:
+            - Updates lineage identity for the promoted spell version only.
+            - Does not change validity, flags, dependency edges, or dirty state.
 
         Raises:
             ValueError: If spell_id is empty.
@@ -359,6 +394,12 @@ class SpellSystemState(Cleanable):
 
         Args:
             dependency_ids: Iterable of dependency ids (falsy entries ignored).
+        Contract:
+            - Treats the supplied iterable as the full desired dependency set.
+            - Rebuilds the stored dependency set rather than mutating it
+              incrementally, so stale edges do not survive.
+            - Does not update reverse dependents; the owning manager handles
+              reverse-edge maintenance separately.
         Raises:
             RuntimeError: If this state object has been cleaned.
         """
@@ -375,6 +416,10 @@ class SpellSystemState(Cleanable):
 
         Args:
             index_id: Lineage id to add as a dependent.
+        Contract:
+            - Adds one reverse-edge entry if the id is non-empty.
+            - Does not dirty or revalidate the lineage; this is topology
+              bookkeeping only.
         """
         self.check_cleaned()
         if not index_id:
@@ -389,6 +434,10 @@ class SpellSystemState(Cleanable):
 
         Args:
             index_id: Lineage id to remove from dependents.
+        Contract:
+            - Best-effort removes the reverse-edge entry if present.
+            - Missing or empty ids are ignored so caller cleanup can stay
+              idempotent.
         """
         self.check_cleaned()
         if not index_id:
@@ -411,6 +460,11 @@ class SpellSystemState(Cleanable):
 
         Args:
             change_reason: Optional reason override; defaults to structure_changed.
+        Contract:
+            - Gates the lineage structurally.
+            - Adds the `structure_changed` flag.
+            - Forces `transitively_dirty` to False because this helper models a
+              direct change to the lineage itself, not downstream impact.
         """
         self.check_cleaned()
         if change_reason is None:
@@ -435,6 +489,11 @@ class SpellSystemState(Cleanable):
 
         Args:
             change_reason: Optional reason override; defaults to dependencies_changed.
+        Contract:
+            - Gates the lineage.
+            - Adds the `dependencies_changed` flag.
+            - Leaves `transitively_dirty` unchanged unless a higher-level
+              closure pass decides this lineage is only indirectly impacted.
         """
         self.check_cleaned()
         if change_reason is None:
@@ -457,6 +516,11 @@ class SpellSystemState(Cleanable):
 
         Args:
             change_reason: Optional reason override; defaults to dependency_changed.
+        Contract:
+            - Gates the lineage.
+            - Adds the `impacted_by_dependency` flag.
+            - Sets `transitively_dirty` to True so callers can distinguish
+              downstream fallout from direct structural changes.
         """
         self.check_cleaned()
         if change_reason is None:
@@ -474,10 +538,10 @@ class SpellSystemState(Cleanable):
         Mark this lineage as clean after successful validation.
 
         Behaviour:
-        - validity → SpellValidity.valid
+        - validity -> SpellValidity.valid
         - topology-related flags (new_lineage / structure_changed /
           dependencies_changed / impacted_by_dependency) are cleared.
-        - transitively_dirty → False
+        - transitively_dirty -> False
         - last_validated_at is set to the provided timestamp.
 
         Note:
@@ -486,6 +550,12 @@ class SpellSystemState(Cleanable):
 
         Args:
             last_validated_at: Timestamp (seconds) of successful validation.
+        Contract:
+            - Clears only topology/registration dirty markers.
+            - Leaves contract, mutation, and ops flags untouched because those
+              subsystems own their own cleanup semantics.
+            - Publishes `SpellValidity.valid` to `RiskManager` only when this
+              call actually changes the stored validity.
         """
         self.check_cleaned()
         risk_manager = self._risk_manager
@@ -515,8 +585,10 @@ class SpellSystemState(Cleanable):
 
     def _set_risk_manager(self, risk_manager: Optional[object]) -> None:
         """
-        Internal
+        Attach or detach the `RiskManager` callback reference.
 
-        Attach a RiskManager for validity change tracking.
+        This is a wiring helper used by the owning registry. It does not replay
+        historical lineage state; it only controls where future validity
+        transitions are published.
         """
         self._risk_manager = risk_manager

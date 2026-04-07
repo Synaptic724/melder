@@ -92,8 +92,29 @@ def _build_descriptor(frame_name: str) -> FrameDescriptor:
     return descriptor
 
 
-def _build_detailed_descriptor(frame_name: str) -> FrameDescriptor:
+def _build_detailed_descriptor(
+        frame_name: str,
+        *,
+        include_dunders: bool = False,
+) -> FrameDescriptor:
     descriptor = _build_descriptor(frame_name)
+    class_profile = {"methods": ["run"]}
+    instance_members = {"state": {"type": "str"}}
+    if include_dunders:
+        class_profile = {
+            "members": {
+                "__dict__": {"kind": "attribute"},
+                "state": {"kind": "attribute"},
+            },
+            "methods": {
+                "__enter__": {"signature": "() -> Self"},
+                "run": {"signature": "() -> None"},
+            },
+        }
+        instance_members = {
+            "__dict__": {"type": "dict", "is_dunder": True},
+            "state": {"type": "str", "is_dunder": False},
+        }
     descriptor.upsert_spell_record(
         SpellRecord(
             nexus_label="default",
@@ -112,10 +133,10 @@ def _build_detailed_descriptor(frame_name: str) -> FrameDescriptor:
                 payload_type="detailed",
                 binding_payload={"kind": "class"},
                 resolution_payload={"requirements": []},
-                class_profile={"methods": ["run"]},
+                class_profile=class_profile,
                 callable_profile={"signature": "() -> None"},
                 metadata={"frame": frame_name},
-                instance_members={"state": {"type": "str"}},
+                instance_members=instance_members,
                 dynamic_access={"has_getattr": False},
             ),
         )
@@ -714,6 +735,623 @@ def test_frame_viewer_describe_spell_detail_returns_rich_sections_for_detailed_p
             "dynamic_access": {"has_getattr": False},
         },
     }
+
+
+def test_frame_viewer_descriptor_host_methods_report_record_level_inventory() -> None:
+    viewer = _build_viewer(("ops", "finance"))
+
+    assert viewer.list_frame_ids() == ["finance-frame", "ops-frame"]
+    assert viewer.list_nexus_contracts() == [
+        {
+            "frame_name": "finance",
+            "nexus_label": "default",
+            "nexus_version": "0.0.1",
+        },
+        {
+            "frame_name": "ops",
+            "nexus_label": "default",
+            "nexus_version": "0.0.1",
+        },
+    ]
+    assert viewer.count_conduit_records() == 2
+    assert viewer.list_conduit_record_ids() == ["finance-conduit", "ops-conduit"]
+    assert viewer.list_root_conduit_ids() == ["finance-conduit", "ops-conduit"]
+    assert viewer.count_spellbooks() == 2
+    assert viewer.list_origin_spellbook_ids() == ["finance-spellbook", "ops-spellbook"]
+    assert viewer.list_spell_record_ids() == ["finance-spell", "ops-spell"]
+    assert viewer.list_spell_record_keys() == [
+        ("finance-spellbook", "finance-spell"),
+        ("ops-spellbook", "ops-spell"),
+    ]
+    assert viewer.list_spell_names() == ["FinanceSpell", "OpsSpell"]
+    assert viewer.list_binding_names() == ["finance_spell", "ops_spell"]
+    assert viewer.list_lineage_ids() == ["finance-lineage", "ops-lineage"]
+    assert viewer.list_spellframes() == []
+    assert viewer.list_permissions() == ["create"]
+    assert viewer.list_existence_kinds() == ["unique"]
+
+
+def test_frame_viewer_descriptor_host_descriptions_report_topology_and_records() -> None:
+    viewer = _build_viewer(("ops",))
+
+    inventory = viewer.describe_descriptor_inventory(frame_name="ops")
+    topology = viewer.describe_descriptor_topology("ops")
+    conduit_records = viewer.describe_conduit_records("ops")
+    spell_records = viewer.describe_spell_records("ops")
+    spell_record = viewer.describe_spell_record("ops-spellbook:ops-spell")
+    owned_spells = viewer.list_spells_by_owner_conduit("ops-conduit")
+    spellbook_spells = viewer.list_spells_by_spellbook_id("ops-spellbook")
+    permission_spells = viewer.list_spells_by_permission("create")
+    existence_spells = viewer.list_spells_by_existence("unique")
+
+    assert inventory == {
+        "frame_count": 1,
+        "frame_names": ("ops",),
+        "frame_ids": ("ops-frame",),
+        "conduit_record_count": 1,
+        "root_conduit_ids": ("ops-conduit",),
+        "spell_record_count": 1,
+        "origin_spellbook_count": 1,
+        "origin_spellbook_ids": ("ops-spellbook",),
+        "permissions": ("create",),
+        "existence_kinds": ("unique",),
+    }
+    assert topology == {
+        "frame_name": "ops",
+        "frame_id": "ops-frame",
+        "root_conduit_ids": ("ops-conduit",),
+        "conduit_ids_by_root_id": {"ops-conduit": ("ops-conduit",)},
+        "spell_source_ids_by_conduit_id": {
+            "ops-conduit": ("ops-spellbook:ops-spell",),
+        },
+        "spell_record_keys_by_spellbook_id": {
+            "ops-spellbook": (("ops-spellbook", "ops-spell"),),
+        },
+    }
+    assert conduit_records == [
+        {
+            "frame_name": "ops",
+            "conduit_id": "ops-conduit",
+            "root_conduit_id": "ops-conduit",
+            "origin_spellbook_id": "ops-spellbook",
+            "nexus_label": "default",
+            "nexus_version": "0.0.1",
+            "is_root_conduit": True,
+            "owned_spell_record_count": 1,
+        }
+    ]
+    assert spell_records == [spell_record]
+    assert spell_record == {
+        "frame_name": "ops",
+        "source_id": "ops-spellbook:ops-spell",
+        "record_key": ("ops-spellbook", "ops-spell"),
+        "spell_id": "ops-spell",
+        "lineage_id": "ops-lineage",
+        "origin_spellbook_id": "ops-spellbook",
+        "owner_conduit_id": "ops-conduit",
+        "spell_name": "OpsSpell",
+        "binding_name": "ops_spell",
+        "spellframe": None,
+        "permissions": "create",
+        "existence": "unique",
+        "payload_type": "general",
+        "payload_version": "0.0.1",
+        "nexus_label": "default",
+        "nexus_version": "0.0.1",
+    }
+    assert owned_spells == ["ops-spellbook:ops-spell"]
+    assert spellbook_spells == ["ops-spellbook:ops-spell"]
+    assert permission_spells == ["ops-spellbook:ops-spell"]
+    assert existence_spells == ["ops-spellbook:ops-spell"]
+
+
+def test_frame_viewer_brief_and_compare_methods_report_expected_shapes() -> None:
+    viewer = _build_viewer(("ops", "finance"))
+
+    assert viewer.describe_frame_brief("ops") == {
+        "frame_name": "ops",
+        "frame_id": "ops-frame",
+        "nexus_contract": "default:0.0.1",
+        "conduit_record_count": 1,
+        "root_conduit_count": 1,
+        "spell_record_count": 1,
+        "is_default": True,
+    }
+    assert viewer.describe_host_inventory() == {
+        "frame_count": 2,
+        "default_view_frame_name": "ops",
+        "frame_names": ("finance", "ops"),
+        "frame_ids": ("finance-frame", "ops-frame"),
+        "conduit_record_count": 2,
+        "root_conduit_count": 2,
+        "spell_record_count": 2,
+        "origin_spellbook_count": 2,
+        "origin_spellbook_ids": ("finance-spellbook", "ops-spellbook"),
+        "permissions": ("create",),
+        "existence_kinds": ("unique",),
+    }
+    assert viewer.compare_frame_conduits("ops", "finance") == {
+        "record_counts": {"left": 1, "right": 1},
+        "conduit_ids": {
+            "shared": tuple(),
+            "left_only": ("ops-conduit",),
+            "right_only": ("finance-conduit",),
+        },
+        "root_conduit_ids": {
+            "shared": tuple(),
+            "left_only": ("ops-conduit",),
+            "right_only": ("finance-conduit",),
+        },
+    }
+    assert viewer.compare_frame_spells("ops", "finance") == {
+        "record_counts": {"left": 1, "right": 1},
+        "spell_source_ids": {
+            "shared": tuple(),
+            "left_only": ("ops-spellbook:ops-spell",),
+            "right_only": ("finance-spellbook:finance-spell",),
+        },
+        "lineage_ids": {
+            "shared": tuple(),
+            "left_only": ("ops-lineage",),
+            "right_only": ("finance-lineage",),
+        },
+        "spell_names": {
+            "shared": tuple(),
+            "left_only": ("OpsSpell",),
+            "right_only": ("FinanceSpell",),
+        },
+        "binding_names": {
+            "shared": tuple(),
+            "left_only": ("ops_spell",),
+            "right_only": ("finance_spell",),
+        },
+    }
+    comparison = viewer.compare_frames("ops", "finance")
+    assert comparison["left_frame_name"] == "ops"
+    assert comparison["right_frame_name"] == "finance"
+    assert comparison["same_frame_id"] is False
+    assert comparison["same_nexus_contract"] is True
+
+
+def test_view_frame_visible_surface_methods_report_inventory_and_topology() -> None:
+    viewer = _build_viewer(("ops",))
+    view_frame = viewer.get_selected_profile_for_frame("ops").view_frame
+
+    assert view_frame.list_visible_target_ids() == [
+        "ops:frame:ops-frame",
+        "ops:conduit:ops-conduit",
+        "ops:spell:ops-spellbook:ops-spell",
+    ]
+    assert view_frame.list_visible_target_ids_by_kind() == {
+        "conduit": ("ops:conduit:ops-conduit",),
+        "frame": ("ops:frame:ops-frame",),
+        "spell": ("ops:spell:ops-spellbook:ops-spell",),
+    }
+    assert view_frame.list_visible_conduit_ids() == ["ops-conduit"]
+    assert view_frame.list_visible_spell_source_ids() == ["ops-spellbook:ops-spell"]
+    assert [link.source_id for link in view_frame.list_visible_root_conduits()] == [
+        "ops-conduit"
+    ]
+    assert view_frame.list_visible_binding_names() == ["ops_spell"]
+    assert view_frame.list_visible_spell_names() == ["OpsSpell"]
+    assert view_frame.list_visible_spellframes() == []
+    assert view_frame.list_visible_lineage_ids() == ["ops-lineage"]
+    assert view_frame.describe_visible_spell_ownership() == {
+        "ops-conduit": ("ops-spellbook:ops-spell",)
+    }
+    assert view_frame.describe_visible_conduit_tree() == {
+        "ops-conduit": ("ops-conduit",)
+    }
+    assert view_frame.describe_visible_inventory_by_kind() == {
+        "conduit": {
+            "count": 1,
+            "target_ids": ("ops:conduit:ops-conduit",),
+            "source_ids": ("ops-conduit",),
+            "display_names": ("root",),
+        },
+        "frame": {
+            "count": 1,
+            "target_ids": ("ops:frame:ops-frame",),
+            "source_ids": ("ops-frame",),
+            "display_names": ("ops",),
+        },
+        "spell": {
+            "count": 1,
+            "target_ids": ("ops:spell:ops-spellbook:ops-spell",),
+            "source_ids": ("ops-spellbook:ops-spell",),
+            "display_names": ("ops_spell",),
+        },
+    }
+    assert view_frame.describe_frame_topology() == {
+        "frame_name": "ops",
+        "root_conduit_ids": ("ops-conduit",),
+        "conduit_ids_by_root_id": {"ops-conduit": ("ops-conduit",)},
+        "spell_source_ids_by_conduit_id": {
+            "ops-conduit": ("ops-spellbook:ops-spell",)
+        },
+        "visible_spell_source_ids": ("ops-spellbook:ops-spell",),
+    }
+    assert view_frame.describe_visible_surface()["frame_name"] == "ops"
+
+
+def test_view_frame_brief_and_missing_surface_methods_work() -> None:
+    viewer = _build_viewer(("ops",))
+    view_frame = viewer.get_selected_profile_for_frame("ops").view_frame
+
+    assert view_frame.describe_frame_brief() == {
+        "frame_name": "ops",
+        "visible_target_count": 3,
+        "visible_conduit_count": 1,
+        "visible_spell_count": 1,
+        "allowed_kinds": ("frame", "conduit", "spell"),
+        "frame_payload_field_count": 2,
+    }
+    assert view_frame.describe_target_brief(
+        source_kind="spell",
+        source_id="ops-spellbook:ops-spell",
+    ) == {
+        "target_id": "ops:spell:ops-spellbook:ops-spell",
+        "source_kind": "spell",
+        "source_id": "ops-spellbook:ops-spell",
+        "display_name": "ops_spell",
+        "visible": True,
+        "reason": "visible",
+        "visible_payload_keys": (
+            "binding_payload",
+            "resolution_payload",
+            "metadata",
+        ),
+    }
+    assert view_frame.describe_missing_surface() == {
+        "frame_name": "ops",
+        "hidden_frame_payload_fields": (
+            "ai_native_enabled",
+            "root_conduit_count",
+            "root_conduit_ids",
+            "named_root_conduits",
+            "conduit_cloud_entry_count",
+            "conduit_cloud_names",
+            "cluster_count",
+            "cluster_names",
+        ),
+        "hidden_conduit_ids": tuple(),
+        "hidden_spell_source_ids": tuple(),
+        "hidden_conduit_sections_by_id": {
+            "ops-conduit": ("policy", "peer_conduit_ids"),
+        },
+        "hidden_spell_sections_by_source_id": {
+            "ops-spellbook:ops-spell": (
+                "class_profile",
+                "callable_profile",
+                "instance_members",
+                "dynamic_access",
+            ),
+        },
+    }
+
+
+def test_view_frame_search_and_identity_helpers_work() -> None:
+    viewer = _build_viewer(("ops",))
+    view_frame = viewer.get_selected_profile_for_frame("ops").view_frame
+
+    contains_hits = view_frame.search_targets_contains("spell")
+    prefix_hits = view_frame.search_targets_prefix("ops")
+    grouped_targets = view_frame.group_targets_by_kind()
+    spell_identity = view_frame.describe_target_identity(
+        source_kind="spell",
+        source_id="ops-spellbook:ops-spell",
+    )
+
+    assert [hit.source_id for hit in contains_hits] == ["ops-spellbook:ops-spell"]
+    assert [hit.source_kind for hit in prefix_hits] == ["frame", "conduit", "spell"]
+    assert tuple(grouped_targets.keys()) == ("conduit", "frame", "spell")
+    assert spell_identity == {
+        "frame_name": "ops",
+        "target_id": "ops:spell:ops-spellbook:ops-spell",
+        "source_kind": "spell",
+        "source_id": "ops-spellbook:ops-spell",
+        "display_name": "ops_spell",
+        "spell_id": "ops-spell",
+        "lineage_id": "ops-lineage",
+        "owner_conduit_id": "ops-conduit",
+        "origin_spellbook_id": "ops-spellbook",
+        "spell_name": "OpsSpell",
+        "binding_name": "ops_spell",
+        "spellframe": None,
+        "permissions": "create",
+        "existence": "unique",
+        "payload_type": "general",
+        "payload_version": "0.0.1",
+        "nexus_label": "default",
+        "nexus_version": "0.0.1",
+    }
+
+
+def test_view_conduit_extended_methods_report_inventory_and_relationships() -> None:
+    viewer = _build_viewer(("ops",))
+    view_conduit = viewer.get_selected_profile_for_frame("ops").view_conduit
+
+    assert [link.source_id for link in view_conduit.list_root_conduits()] == [
+        "ops-conduit"
+    ]
+    assert view_conduit.is_root_conduit("ops-conduit") is True
+    assert view_conduit.get_root_conduit_id("ops-conduit") == "ops-conduit"
+    assert [link.source_id for link in view_conduit.list_conduits_by_root_id("ops-conduit")] == [
+        "ops-conduit"
+    ]
+    assert [link.source_id for link in view_conduit.list_conduits_by_policy("default")] == [
+        "ops-conduit"
+    ]
+    assert [link.source_id for link in view_conduit.list_conduits_by_state("normal")] == [
+        "ops-conduit"
+    ]
+    assert view_conduit.list_peer_conduits("ops-conduit") == []
+    assert view_conduit.list_peer_conduit_ids("ops-conduit") == tuple()
+    assert view_conduit.list_spell_source_ids_for_conduit("ops-conduit") == (
+        "ops-spellbook:ops-spell",
+    )
+    assert view_conduit.list_binding_names_for_conduit("ops-conduit") == ("ops_spell",)
+    assert view_conduit.list_spell_names_for_conduit("ops-conduit") == ("OpsSpell",)
+    assert view_conduit.describe_conduit_inventory("ops-conduit") == {
+        "conduit_id": "ops-conduit",
+        "is_root_conduit": True,
+        "root_conduit_id": "ops-conduit",
+        "visible_sections": ("conduit_name", "conduit_state"),
+        "peer_conduit_ids": tuple(),
+        "peer_count": 0,
+        "spell_count": 1,
+        "spell_source_ids": ("ops-spellbook:ops-spell",),
+    }
+    assert view_conduit.describe_conduit_relationships("ops-conduit") == {
+        "conduit_id": "ops-conduit",
+        "is_root_conduit": True,
+        "root_conduit_id": "ops-conduit",
+        "peer_conduit_ids": tuple(),
+        "peer_conduits": tuple(),
+        "spell_source_ids": ("ops-spellbook:ops-spell",),
+    }
+    assert view_conduit.describe_conduit_access_summary("ops-conduit")["access"][
+        "visible"
+    ] is True
+
+
+def test_view_conduit_brief_and_missing_section_methods_work() -> None:
+    viewer = _build_viewer(("ops",))
+    view_conduit = viewer.get_selected_profile_for_frame("ops").view_conduit
+
+    assert view_conduit.describe_conduit_brief("ops-conduit") == {
+        "conduit_id": "ops-conduit",
+        "display_name": "root",
+        "is_root_conduit": True,
+        "visible_section_count": 2,
+        "visible_spell_count": 1,
+    }
+    assert view_conduit.describe_conduit_missing_sections("ops-conduit") == {
+        "conduit_id": "ops-conduit",
+        "visible_sections": ("conduit_name", "conduit_state"),
+        "hidden_sections": ("policy", "peer_conduit_ids"),
+    }
+
+
+def test_view_spell_extended_identity_origin_and_filter_methods_work() -> None:
+    viewer = _build_viewer(("ops",))
+    view_spell = viewer.get_selected_profile_for_frame("ops").view_spell
+
+    assert view_spell.describe_spell_identity("ops-spellbook:ops-spell") == {
+        "source_id": "ops-spellbook:ops-spell",
+        "record_key": ("ops-spellbook", "ops-spell"),
+        "spell_id": "ops-spell",
+        "lineage_id": "ops-lineage",
+        "spell_name": "OpsSpell",
+        "binding_name": "ops_spell",
+        "spellframe": None,
+        "permissions": "create",
+        "existence": "unique",
+        "payload_type": "general",
+        "payload_version": "0.0.1",
+    }
+    assert view_spell.describe_spell_origin("ops-spellbook:ops-spell") == {
+        "frame_name": "ops",
+        "origin_spellbook_id": "ops-spellbook",
+        "owner_conduit_id": "ops-conduit",
+        "nexus_label": "default",
+        "nexus_version": "0.0.1",
+        "source_profile_name": None,
+        "source_profile_version": None,
+    }
+    assert view_spell.describe_spell_lineage("ops-spellbook:ops-spell") == {
+        "source_id": "ops-spellbook:ops-spell",
+        "lineage_id": "ops-lineage",
+        "related_source_ids": ("ops-spellbook:ops-spell",),
+        "visible_related_source_ids": ("ops-spellbook:ops-spell",),
+    }
+    assert view_spell.describe_spell_binding("ops-spellbook:ops-spell") == {
+        "source_id": "ops-spellbook:ops-spell",
+        "spell_name": "OpsSpell",
+        "binding_name": "ops_spell",
+        "spellframe": None,
+        "binding_payload_visible": True,
+        "binding_payload": {"kind": "class"},
+    }
+    assert view_spell.describe_spell_resolution("ops-spellbook:ops-spell") == {
+        "source_id": "ops-spellbook:ops-spell",
+        "resolution_payload_visible": True,
+        "resolution_payload": {"requirements": []},
+        "requirement_count": 0,
+    }
+    assert view_spell.describe_spell_metadata("ops-spellbook:ops-spell") == {
+        "source_id": "ops-spellbook:ops-spell",
+        "metadata_visible": True,
+        "metadata": {"frame": "ops"},
+    }
+    assert [link.source_id for link in view_spell.list_spells_by_owner_conduit("ops-conduit")] == [
+        "ops-spellbook:ops-spell"
+    ]
+    assert [link.source_id for link in view_spell.list_spells_by_spellbook_id("ops-spellbook")] == [
+        "ops-spellbook:ops-spell"
+    ]
+    assert [link.source_id for link in view_spell.list_spells_by_lineage_id("ops-lineage")] == [
+        "ops-spellbook:ops-spell"
+    ]
+    assert [link.source_id for link in view_spell.list_spells_by_permission("create")] == [
+        "ops-spellbook:ops-spell"
+    ]
+    assert [link.source_id for link in view_spell.list_spells_by_existence("unique")] == [
+        "ops-spellbook:ops-spell"
+    ]
+    assert [link.source_id for link in view_spell.list_spells_by_spell_name("OpsSpell")] == [
+        "ops-spellbook:ops-spell"
+    ]
+    assert view_spell.list_spells_by_spellframe("LogicFrame") == []
+    assert [link.source_id for link in view_spell.search_spells_contains("spell")] == [
+        "ops-spellbook:ops-spell"
+    ]
+    assert [link.source_id for link in view_spell.search_spells_prefix("ops")] == [
+        "ops-spellbook:ops-spell"
+    ]
+    assert view_spell.describe_spell_access_summary("ops-spellbook:ops-spell")[
+        "access"
+    ]["detail_reason"] == "payload_not_detailed"
+
+
+def test_view_spell_brief_and_missing_section_methods_work() -> None:
+    viewer = _build_viewer(("ops",))
+    view_spell = viewer.get_selected_profile_for_frame("ops").view_spell
+
+    assert view_spell.describe_spell_brief("ops-spellbook:ops-spell") == {
+        "source_id": "ops-spellbook:ops-spell",
+        "display_name": "ops_spell",
+        "payload_type": "general",
+        "visible_section_count": 3,
+        "detail_reason": "payload_not_detailed",
+    }
+    assert view_spell.describe_spell_missing_sections("ops-spellbook:ops-spell") == {
+        "source_id": "ops-spellbook:ops-spell",
+        "visible_sections": (
+            "binding_payload",
+            "resolution_payload",
+            "metadata",
+        ),
+        "published_sections": (
+            "binding_payload",
+            "metadata",
+            "resolution_payload",
+        ),
+        "hidden_sections": (
+            "class_profile",
+            "callable_profile",
+            "instance_members",
+            "dynamic_access",
+        ),
+        "not_published_sections": tuple(),
+    }
+
+
+def test_execute_method_routes_new_brief_and_compare_methods() -> None:
+    viewer = _build_viewer(("ops", "finance"))
+
+    frame_brief = viewer.execute_method("describe_frame_brief", frame_name="ops")
+    host_inventory = viewer.execute_method("describe_host_inventory")
+    frame_compare = viewer.execute_method(
+        "compare_frames",
+        left_frame_name="ops",
+        right_frame_name="finance",
+    )
+    frame_view_brief = viewer.execute_method(
+        "describe_frame_brief_local",
+        frame_name="ops",
+    )
+    missing_surface = viewer.execute_method(
+        "describe_missing_surface",
+        frame_name="ops",
+    )
+    conduit_brief = viewer.execute_method(
+        "describe_conduit_brief",
+        frame_name="ops",
+        conduit_id="ops-conduit",
+    )
+    conduit_missing = viewer.execute_method(
+        "describe_conduit_missing_sections",
+        frame_name="ops",
+        conduit_id="ops-conduit",
+    )
+    spell_brief = viewer.execute_method(
+        "describe_spell_brief",
+        frame_name="ops",
+        spell_source_id="ops-spellbook:ops-spell",
+    )
+    spell_missing = viewer.execute_method(
+        "describe_spell_missing_sections",
+        frame_name="ops",
+        spell_source_id="ops-spellbook:ops-spell",
+    )
+
+    assert frame_brief["frame_name"] == "ops"
+    assert host_inventory["frame_count"] == 2
+    assert frame_compare["left_frame_name"] == "ops"
+    assert frame_view_brief["visible_target_count"] == 3
+    assert "hidden_frame_payload_fields" in missing_surface
+    assert conduit_brief["conduit_id"] == "ops-conduit"
+    assert conduit_missing["hidden_sections"] == ("policy", "peer_conduit_ids")
+    assert spell_brief["source_id"] == "ops-spellbook:ops-spell"
+    assert spell_missing["hidden_sections"] == (
+        "class_profile",
+        "callable_profile",
+        "instance_members",
+        "dynamic_access",
+    )
+
+
+def test_view_spell_detailed_methods_surface_profile_sections_and_dunders() -> None:
+    configuration = FrameACLConfiguration.create_default("ops")
+    surface = _build_surface(
+        "ops",
+        configuration,
+        spell_sections_by_key={
+            ("ops-spellbook", "ops-spell"): (
+                "binding_payload",
+                "class_profile",
+                "callable_profile",
+                "instance_members",
+                "dynamic_access",
+                "metadata",
+            ),
+        },
+    )
+    viewer = FrameViewer(
+        frame_descriptors_by_name={"ops": _build_detailed_descriptor("ops", include_dunders=True)},
+        frame_acl_configurations_by_frame_name={"ops": configuration},
+        compiled_access_surfaces_by_frame_name={"ops": surface},
+        default_view_frame_name="ops",
+    )
+    view_spell = viewer.get_selected_profile_for_frame("ops").view_spell
+
+    class_profile = view_spell.describe_spell_class_profile("ops-spellbook:ops-spell")
+    callable_profile = view_spell.describe_spell_callable_profile("ops-spellbook:ops-spell")
+    instance_members = view_spell.describe_spell_instance_members("ops-spellbook:ops-spell")
+    dynamic_access = view_spell.describe_spell_dynamic_access("ops-spellbook:ops-spell")
+    dunder_members = view_spell.describe_spell_dunder_members("ops-spellbook:ops-spell")
+
+    assert class_profile["detail_available"] is True
+    assert class_profile["payload"]["dunder_member_names"] == ("__dict__",)
+    assert class_profile["payload"]["dunder_method_names"] == ("__enter__",)
+    assert callable_profile["detail_available"] is True
+    assert callable_profile["payload"]["signature"] == "() -> None"
+    assert instance_members["detail_available"] is True
+    assert "__dict__" in instance_members["payload"]
+    assert dynamic_access["detail_available"] is True
+    assert dynamic_access["payload"] == {"has_getattr": False}
+    assert dunder_members == {
+        "source_id": "ops-spellbook:ops-spell",
+        "detail_available": True,
+        "class_member_names": ("__dict__",),
+        "class_method_names": ("__enter__",),
+        "instance_member_names": ("__dict__",),
+    }
+    assert view_spell.list_spell_dunder_member_names("ops-spellbook:ops-spell") == (
+        "__dict__",
+        "__enter__",
+    )
 
 
 def test_frame_viewer_cleanup_cascades_to_owned_surfaces_and_profiles_only() -> None:

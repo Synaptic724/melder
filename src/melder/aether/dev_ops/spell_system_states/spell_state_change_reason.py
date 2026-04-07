@@ -8,6 +8,16 @@ class SpellStateChangeReason(Enum):
     This is a single, coarse-grained "why did this change" tag that is easy to
     surface in logs / TOON snapshots / incidents. Detailed context can live in
     SpellSystemState fields (booleans, counters, etc.).
+
+    Contract:
+    - This enum is the coarse companion to `SpellState`: one value captures the
+      latest triggering event, while `SpellState` flags capture overlapping
+      long-lived conditions.
+    - A lineage typically stores only one active change reason at a time, so
+      callers should treat it as a summary of the latest transition rather than
+      a full audit history.
+    - The subsystem that performs the transition owns choosing the most truthful
+      reason value.
     """
     __melder_internal__ = _mrg.sentinel
     # Registrations / bindings

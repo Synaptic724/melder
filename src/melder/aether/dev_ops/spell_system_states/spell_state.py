@@ -8,6 +8,15 @@ class SpellState(Enum):
 
     These are orthogonal markers explaining **why** a lineage is in a
     particular validity state, and what kind of follow-up work is needed.
+
+    Contract:
+    - These flags do not replace `SpellValidity`; they explain the reason a
+      lineage is gated, invalid, quarantined, or otherwise notable.
+    - Multiple flags may be present on the same lineage at once because
+      topology, contract, mutation, and ops concerns can overlap.
+    - Flag lifecycle is owned by the subsystem that set the flag. Validation
+      clears only topology-driven dirt flags; contract, mutation, and ops flags
+      must be flipped by their own control-plane logic.
     """
     __melder_internal__ = _mrg.sentinel
     # Topology / graph-level
@@ -18,7 +27,7 @@ class SpellState(Enum):
 
     # Contracts / sockets / mutation
     contract_unvalidated = auto()    # has SpellContracts; needs a pass
-    contract_violation = auto()      # contract failed; usually → invalid
+    contract_violation = auto()      # contract failed; usually -> invalid
     mutation_candidate = auto()      # current version comes from MutationLab
     mutation_quarantined = auto()    # candidate exists but not allowed in prod
     mutation_failed = auto()         # last mutation release failed

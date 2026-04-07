@@ -282,6 +282,105 @@ class GeneralViewSpell(Cleanable):
             "payload": rich_payload,
         }
 
+    def describe_spell_brief(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return one compact operator-oriented spell summary.
+
+        Purpose:
+            Give the operator a smaller spell summary than the richer identity,
+            access, and detail methods when they just need the essentials.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            Dict[str, object]: Compact spell summary.
+        """
+        self.check_cleaned()
+        spell_description = self.describe_spell(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+        return {
+            "source_id": spell_source_id,
+            "display_name": spell_description["display_name"],
+            "payload_type": spell_description["payload_type"],
+            "visible_section_count": len(spell_description["visible_sections"]),
+            "detail_reason": self.describe_spell_detail(
+                spell_source_id,
+                frame_name=frame_name,
+            )["reason"],
+        }
+
+    def describe_spell_missing_sections(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the spell payload sections not currently visible or published.
+
+        Purpose:
+            Make the spell-local "what is missing and why?" answer explicit
+            instead of forcing the operator to infer it from absent detail
+            fields.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            Dict[str, object]: Missing spell-section summary.
+        """
+        self.check_cleaned()
+        spell_record = self._get_required_spell_record(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+        spell_description = self.describe_spell(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+        all_sections = self._get_required_frame_view()._payload_field_names(
+            spell_record.payload,
+            excluded_fields=(
+                "payload_type",
+                "payload_version",
+                "source_profile_name",
+                "source_profile_version",
+            ),
+        )
+        visible_sections = spell_description["visible_sections"]
+        published_sections = tuple(sorted(spell_description["payload"].keys()))
+        return {
+            "source_id": spell_source_id,
+            "visible_sections": visible_sections,
+            "published_sections": published_sections,
+            "hidden_sections": tuple(
+                current_section
+                for current_section in all_sections
+                if current_section not in visible_sections
+            ),
+            "not_published_sections": tuple(
+                current_section
+                for current_section in visible_sections
+                if current_section not in published_sections
+            ),
+        }
+
     def describe_spell_identity(
             self,
             spell_source_id: str,

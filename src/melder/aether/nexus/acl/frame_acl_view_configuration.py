@@ -469,10 +469,11 @@ class FrameACLViewConfiguration(Cleanable):
                 Ruleset name used when a default ruleset must be created.
 
         Returns:
-            FrameACLRuleSet: Existing or newly created ruleset.
+            FrameACLRuleSet: Detached existing ruleset clone or a newly created
+            default ruleset.
         """
         if ruleset is None:
             return FrameACLRuleSet(default_name)
         if not isinstance(ruleset, FrameACLRuleSet):
             raise TypeError("ruleset must be a FrameACLRuleSet.")
-        return ruleset
+        return ruleset.clone()

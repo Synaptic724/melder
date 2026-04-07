@@ -77,6 +77,14 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
                 Unique identifier of the conduit this state represents.
             initial_validity:
                 Default validity returned when no explicit entry exists.
+        Contract:
+            - Starts with empty spell/root verdict maps and no diagnostics.
+            - Starts clean; callers must explicitly mark or mutate the state
+              before it reports pending validation work.
+            - Uses `initial_validity` as the fallback verdict for unknown spell
+              and root ids until concrete results are published.
+            - Starts without a `RiskManager`; risk propagation is enabled later
+              when the owning registry wires one in.
 
         Raises:
             ValueError:
@@ -152,7 +160,7 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
             change_reason: Optional[SpellStateChangeReason] = None,
     ) -> None:
         """
-        Set resolution validity for a single spell id.
+        Publish one spell-level resolution verdict for this conduit.
 
         Args:
             spell_id:
@@ -161,6 +169,14 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
                 New validity to assign.
             change_reason:
                 Optional reason describing the update.
+        Contract:
+            - Overwrites the stored verdict for the spell id.
+            - Marks the conduit state dirty only when the effective verdict
+              actually changes.
+            - Forwards changed verdicts to the attached `RiskManager`, if any,
+              so conduit-local risk stays aligned with the published state.
+            - If the verdict is unchanged but `change_reason` is supplied, the
+              change reason is still refreshed for later introspection.
 
         Raises:
             ValueError:
@@ -195,13 +211,20 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
             change_reason: Optional[SpellStateChangeReason] = None,
     ) -> None:
         """
-        Bulk update spell validity values.
+        Publish a batch of spell-level resolution verdicts.
 
         Args:
             validity_map:
                 Mapping of spell_id -> SpellValidity to apply.
             change_reason:
                 Optional reason to store if any value changes.
+        Contract:
+            - Applies each supplied verdict into the owned spell-validity map.
+            - Ignores empty spell ids and None validity entries rather than
+              publishing partial garbage into the registry.
+            - Marks the conduit state dirty once if any effective verdict
+              changes.
+            - Forwards only changed entries to the attached `RiskManager`.
 
         Raises:
             ValueError:
@@ -286,7 +309,7 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
             change_reason: Optional[SpellStateChangeReason] = None,
     ) -> None:
         """
-        Set resolution validity for a single root id.
+        Publish one root-level resolution verdict for this conduit.
 
         Args:
             root_id:
@@ -295,6 +318,15 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
                 New validity to assign.
             change_reason:
                 Optional reason describing the update.
+        Contract:
+            - Overwrites the stored root verdict for the root id.
+            - Marks the conduit state dirty only when the effective verdict
+              actually changes.
+            - Forwards changed root verdicts to the attached `RiskManager`, if
+              any, using the same conduit-local propagation path as spell
+              verdicts.
+            - If the verdict is unchanged but `change_reason` is supplied, the
+              change reason is still refreshed for later introspection.
 
         Raises:
             ValueError:
@@ -329,13 +361,20 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
             change_reason: Optional[SpellStateChangeReason] = None,
     ) -> None:
         """
-        Bulk update root validity values.
+        Publish a batch of root-level resolution verdicts.
 
         Args:
             validity_map:
                 Mapping of root_id -> SpellValidity to apply.
             change_reason:
                 Optional reason to store if any value changes.
+        Contract:
+            - Applies each supplied verdict into the owned root-validity map.
+            - Ignores empty root ids and None validity entries rather than
+              polluting the registry with unusable keys.
+            - Marks the conduit state dirty once if any effective verdict
+              changes.
+            - Forwards only changed entries to the attached `RiskManager`.
 
         Raises:
             ValueError:
@@ -385,6 +424,9 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
             - Stores cloned diagnostics so later cleanup of the input list
               does not invalidate this state.
             - Incoming diagnostics are never cleaned by this method.
+            - If the incoming diagnostics are signature-identical to the
+              current snapshot, this method leaves the state unchanged and does
+              not create dirty churn.
 
         Args:
             diagnostics:
@@ -409,7 +451,13 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
 
     def clear_diagnostics(self) -> None:
         """
-        Clear and clean all stored diagnostics.
+        Drop every owned diagnostic from this conduit state.
+
+        Contract:
+            - Cleans each stored diagnostic before discarding it.
+            - Leaves the conduit state alive and reusable; only the diagnostic
+              snapshot is reset.
+            - Safe to call repeatedly when no diagnostics are stored.
         """
         self.check_cleaned()
         with self._lock:
@@ -419,6 +467,12 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
     def list_diagnostics(self) -> List[SystemDiagnostic]:
         """
         Return a snapshot list of stored diagnostics.
+
+        Contract:
+            - Returns a new list container so callers cannot mutate the
+              internal diagnostics list directly.
+            - The contained diagnostics remain the owned cloned instances held
+              by this state.
         """
         self.check_cleaned()
         with self._lock:
@@ -427,6 +481,9 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
     def has_errors(self) -> bool:
         """
         Return True if any stored diagnostic has ERROR severity.
+
+        This is the quick "hard failure present?" probe used by higher-level
+        validation surfaces when they do not need the full diagnostic payload.
         """
         self.check_cleaned()
         with self._lock:
@@ -438,6 +495,9 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
     def has_warnings(self) -> bool:
         """
         Return True if any stored diagnostic has WARNING severity.
+
+        This is the quick "non-fatal issue present?" probe used by higher-level
+        validation surfaces when they do not need the full diagnostic payload.
         """
         self.check_cleaned()
         with self._lock:
@@ -478,6 +538,12 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
         Args:
             change_reason:
                 Optional reason describing why the state became dirty.
+        Contract:
+            - Sets the dirty flag immediately.
+            - Preserves the previous `last_validated_at` timestamp so callers
+              can still see when the last successful validation happened.
+            - Updates `last_change_reason` only when an explicit reason is
+              supplied.
         """
         self.check_cleaned()
         self._dirty = True
@@ -491,6 +557,12 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
         Args:
             validated_at:
                 Timestamp (seconds) of successful validation.
+        Contract:
+            - Clears the dirty flag.
+            - Records the validation timestamp as the new
+              `last_validated_at` value.
+            - Resets `last_change_reason` because the current state is now the
+              validated baseline.
         """
         self.check_cleaned()
         self._dirty = False
@@ -500,6 +572,11 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
     def last_validated_at(self) -> Optional[float]:
         """
         Return the timestamp of the last successful validation.
+
+        Returns:
+            Optional[float]:
+                Seconds timestamp for the most recent successful validation, or
+                None if this conduit state has never been validated cleanly.
         """
         self.check_cleaned()
         return self._last_validated_at
@@ -510,6 +587,14 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
     def cleanup(self) -> None:
         """
         Deterministically tear down this resolution state.
+
+        Contract:
+            - Idempotent and lock-guarded.
+            - Cleans owned diagnostic clones before dropping references.
+            - Clears spell/root verdict maps and resets dirty/validation
+              markers.
+            - Nulls owned references so later callers fail through
+              `check_cleaned()`.
         """
         if self._cleaned:
             return
@@ -538,9 +623,11 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
 
     def _set_risk_manager(self, risk_manager: Optional[object]) -> None:
         """
-        Internal
+        Attach or detach the `RiskManager` callback reference.
 
-        Attach a RiskManager for resolution validity tracking.
+        This is a wiring helper used by the owning registry. It does not
+        replay historical verdicts; it only controls where future changed
+        verdicts are published.
         """
         self._risk_manager = risk_manager
 
@@ -549,7 +636,13 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
     # ------------------------------------------------------------------ #
     def _cleanup_diagnostics_locked(self) -> None:
         """
-        Internal helper to cleanup diagnostics under the lock.
+        Cleanup all owned diagnostics while the caller already holds `_lock`.
+
+        Contract:
+            - Cleans each owned diagnostic best-effort.
+            - Clears the internal diagnostics list before returning.
+            - Caller is responsible for lock discipline; this helper does not
+              acquire `_lock` on its own.
         """
         if not self._diagnostics:
             return
@@ -566,6 +659,10 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
     ) -> Tuple[Tuple[object, ...], ...]:
         """
         Build a stable signature for diagnostics comparison.
+
+        The signature intentionally ignores object identity so repeated
+        validation runs that produce equivalent diagnostics do not churn the
+        conduit state or mark it dirty again unnecessarily.
         """
         signatures: List[Tuple[object, ...]] = []
         for diag in diagnostics:
@@ -628,7 +725,13 @@ class ConduitResolutionState(Cleanable, IConduitResolutionState):
             details: Optional[Dict[str, object]],
     ) -> Optional[Tuple[Tuple[str, str], ...]]:
         """
-        Normalize details into a stable signature tuple.
+        Normalize diagnostic details into a stable signature tuple.
+
+        Contract:
+            - Returns None when the diagnostic carries no details payload.
+            - Sorts keys so equivalent dictionaries compare identically.
+            - Falls back to `"<unrepr>"` when a detail value cannot be safely
+              represented.
         """
         if details is None:
             return None

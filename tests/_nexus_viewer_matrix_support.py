@@ -51,6 +51,11 @@ def build_descriptor(
         conduit_count: int = 1,
         conduit_peer_ids_by_index: Optional[Dict[int, Tuple[str, ...]]] = None,
         visible_root_conduit_names: Optional[Tuple[str, ...]] = None,
+        spellframe_values: Optional[Sequence[Optional[str]]] = None,
+        permission_values: Optional[Sequence[Permissions]] = None,
+        existence_values: Optional[Sequence[Existence]] = None,
+        spellbook_ids: Optional[Sequence[str]] = None,
+        include_detail_dunders: bool = False,
 ) -> FrameDescriptor:
     """
     Build one descriptor fixture with configurable conduits and spells.
@@ -66,6 +71,17 @@ def build_descriptor(
             Optional conduit-index -> peer-id tuple map.
         visible_root_conduit_names:
             Optional visible conduit names for the frame payload summary.
+        spellframe_values:
+            Optional spellframe values aligned to `spell_payload_types`.
+        permission_values:
+            Optional permission values aligned to `spell_payload_types`.
+        existence_values:
+            Optional existence values aligned to `spell_payload_types`.
+        spellbook_ids:
+            Optional origin spellbook ids aligned to `spell_payload_types`.
+        include_detail_dunders:
+            Whether detailed payloads should include explicit dunder member and
+            method names.
 
     Returns:
         FrameDescriptor: Populated descriptor fixture.
@@ -137,7 +153,57 @@ def build_descriptor(
             )
         )
     for spell_index, payload_type in enumerate(spell_payload_types, start=1):
+        spellframe_value = (
+            spellframe_values[spell_index - 1]
+            if spellframe_values is not None
+            else None
+        )
+        permission_value = (
+            permission_values[spell_index - 1]
+            if permission_values is not None
+            else Permissions.create
+        )
+        existence_value = (
+            existence_values[spell_index - 1]
+            if existence_values is not None
+            else Existence.unique
+        )
+        spellbook_id = (
+            spellbook_ids[spell_index - 1]
+            if spellbook_ids is not None
+            else "{0}-spellbook".format(frame_name)
+        )
         record_key = build_spell_record_key(frame_name, spell_index)
+        if spellbook_ids is not None:
+            record_key = (
+                spellbook_id,
+                "{0}-spell-{1}".format(frame_name, spell_index),
+            )
+        class_profile = (
+            {"methods": ["run", "cleanup"]}
+            if payload_type == "detailed"
+            else None
+        )
+        instance_members = (
+            {"state": {"type": "str"}}
+            if payload_type == "detailed"
+            else {}
+        )
+        if payload_type == "detailed" and include_detail_dunders:
+            class_profile = {
+                "members": {
+                    "__dict__": {"kind": "attribute"},
+                    "state": {"kind": "attribute"},
+                },
+                "methods": {
+                    "__enter__": {"signature": "() -> Self"},
+                    "run": {"signature": "() -> None"},
+                },
+            }
+            instance_members = {
+                "__dict__": {"type": "dict", "is_dunder": True},
+                "state": {"type": "str", "is_dunder": False},
+            }
         descriptor.upsert_spell_record(
             SpellRecord(
                 nexus_label="default",
@@ -148,30 +214,22 @@ def build_descriptor(
                 spell_id=record_key[1],
                 lineage_id="{0}-lineage-{1}".format(frame_name, spell_index),
                 spell_name="{0}Spell{1}".format(frame_name.title(), spell_index),
-                spellframe=None,
+                spellframe=spellframe_value,
                 binding_name="{0}_spell_{1}".format(frame_name, spell_index),
-                permissions=Permissions.create,
-                existence=Existence.unique,
+                permissions=permission_value,
+                existence=existence_value,
                 payload=SpellDescriptorPayload(
                     payload_type=payload_type,
                     binding_payload={"kind": "class", "spell_index": spell_index},
                     resolution_payload={"requirements": [spell_index]},
-                    class_profile=(
-                        {"methods": ["run", "cleanup"]}
-                        if payload_type == "detailed"
-                        else None
-                    ),
+                    class_profile=class_profile,
                     callable_profile=(
                         {"signature": "() -> None"}
                         if payload_type == "detailed"
                         else None
                     ),
                     metadata={"frame": frame_name, "spell_index": spell_index},
-                    instance_members=(
-                        {"state": {"type": "str"}}
-                        if payload_type == "detailed"
-                        else {}
-                    ),
+                    instance_members=instance_members,
                     dynamic_access=(
                         {"has_getattr": False, "has_setattr": True}
                         if payload_type == "detailed"
@@ -243,6 +301,11 @@ def build_viewer(
         conduit_sections_by_id: Optional[Dict[str, Tuple[str, ...]]] = None,
         spell_sections_by_key: Optional[Dict[Tuple[str, str], Tuple[str, ...]]] = None,
         frame_payload_fields: Tuple[str, ...] = ("system_state", "rift_enabled"),
+        spellframe_values: Optional[Sequence[Optional[str]]] = None,
+        permission_values: Optional[Sequence[Permissions]] = None,
+        existence_values: Optional[Sequence[Existence]] = None,
+        spellbook_ids: Optional[Sequence[str]] = None,
+        include_detail_dunders: bool = False,
 ) -> FrameViewer:
     """
     Build one matrix-style `FrameViewer` fixture.
@@ -264,6 +327,17 @@ def build_viewer(
             Optional spell-section visibility map.
         frame_payload_fields:
             Visible frame payload fields.
+        spellframe_values:
+            Optional spellframe values aligned to `spell_payload_types`.
+        permission_values:
+            Optional permission values aligned to `spell_payload_types`.
+        existence_values:
+            Optional existence values aligned to `spell_payload_types`.
+        spellbook_ids:
+            Optional origin spellbook ids aligned to `spell_payload_types`.
+        include_detail_dunders:
+            Whether detailed payloads should include explicit dunder member and
+            method names.
 
     Returns:
         FrameViewer: Matrix-style viewer fixture.
@@ -272,6 +346,11 @@ def build_viewer(
         frame_name,
         spell_payload_types=spell_payload_types,
         conduit_count=conduit_count,
+        spellframe_values=spellframe_values,
+        permission_values=permission_values,
+        existence_values=existence_values,
+        spellbook_ids=spellbook_ids,
+        include_detail_dunders=include_detail_dunders,
     )
     configuration = FrameACLConfiguration.create_default(frame_name)
     compiled_surface = build_surface(
@@ -288,4 +367,56 @@ def build_viewer(
         frame_acl_configurations_by_frame_name={frame_name: configuration},
         compiled_access_surfaces_by_frame_name={frame_name: compiled_surface},
         default_view_frame_name=frame_name,
+    )
+
+
+def build_multi_frame_viewer(
+        frame_names: Sequence[str],
+        *,
+        descriptor_kwargs_by_frame_name: Optional[Dict[str, Dict[str, object]]] = None,
+        surface_kwargs_by_frame_name: Optional[Dict[str, Dict[str, object]]] = None,
+) -> FrameViewer:
+    """
+    Build one multi-frame `FrameViewer` fixture.
+
+    Args:
+        frame_names:
+            Hosted frame names to include.
+        descriptor_kwargs_by_frame_name:
+            Optional descriptor-builder kwargs keyed by frame name.
+        surface_kwargs_by_frame_name:
+            Optional compiled-surface kwargs keyed by frame name.
+
+    Returns:
+        FrameViewer: Multi-frame viewer fixture.
+    """
+    descriptors = {}
+    configurations = {}
+    compiled_surfaces = {}
+    for frame_name in frame_names:
+        descriptor_kwargs = (
+            descriptor_kwargs_by_frame_name.get(frame_name, {})
+            if descriptor_kwargs_by_frame_name is not None
+            else {}
+        )
+        descriptors[frame_name] = build_descriptor(
+            frame_name,
+            **descriptor_kwargs,
+        )
+        configurations[frame_name] = FrameACLConfiguration.create_default(frame_name)
+        surface_kwargs = (
+            surface_kwargs_by_frame_name.get(frame_name, {})
+            if surface_kwargs_by_frame_name is not None
+            else {}
+        )
+        compiled_surfaces[frame_name] = build_surface(
+            frame_name,
+            configurations[frame_name],
+            **surface_kwargs,
+        )
+    return FrameViewer(
+        frame_descriptors_by_name=descriptors,
+        frame_acl_configurations_by_frame_name=configurations,
+        compiled_access_surfaces_by_frame_name=compiled_surfaces,
+        default_view_frame_name=frame_names[0] if len(frame_names) > 0 else None,
     )

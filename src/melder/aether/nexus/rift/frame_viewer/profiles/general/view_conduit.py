@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
@@ -235,6 +235,96 @@ class GeneralViewConduit(Cleanable):
             "spell_source_ids": tuple(
                 spell_link.source_id
                 for spell_link in spell_links
+            ),
+        }
+
+    def describe_conduit_brief(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return one compact operator-oriented conduit summary.
+
+        Purpose:
+            Give the operator a smaller "start here" conduit summary than the
+            richer inventory and relationship methods.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            Dict[str, object]: Compact conduit summary.
+        """
+        self.check_cleaned()
+        conduit_description = self.describe_conduit(
+            conduit_id,
+            frame_name=frame_name,
+        )
+        spell_links = self.list_conduit_spells(
+            conduit_id,
+            frame_name=frame_name,
+        )
+        return {
+            "conduit_id": conduit_id,
+            "display_name": conduit_description["display_name"],
+            "is_root_conduit": self.is_root_conduit(
+                conduit_id,
+                frame_name=frame_name,
+            ),
+            "visible_section_count": len(conduit_description["visible_sections"]),
+            "visible_spell_count": len(spell_links),
+        }
+
+    def describe_conduit_missing_sections(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the conduit payload sections not currently visible.
+
+        Purpose:
+            Make the conduit-local "what is hidden?" answer explicit instead of
+            forcing the operator to infer it from missing payload keys.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            Dict[str, object]: Missing conduit-section summary.
+        """
+        self.check_cleaned()
+        conduit_record = self._get_required_conduit_record(
+            conduit_id,
+            frame_name=frame_name,
+        )
+        conduit_description = self.describe_conduit(
+            conduit_id,
+            frame_name=frame_name,
+        )
+        all_sections = self._get_required_frame_view()._payload_field_names(
+            conduit_record.payload,
+            excluded_fields=("payload_version",),
+        )
+        visible_sections = conduit_description["visible_sections"]
+        return {
+            "conduit_id": conduit_id,
+            "visible_sections": visible_sections,
+            "hidden_sections": tuple(
+                current_section
+                for current_section in all_sections
+                if current_section not in visible_sections
             ),
         }
 

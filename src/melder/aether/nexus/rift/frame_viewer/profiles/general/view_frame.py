@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
@@ -341,6 +341,203 @@ class GeneralViewFrame(Cleanable):
             "allowed_kinds": compiled_access_surface.allowed_kinds,
             "allowed_commands": compiled_access_surface.allowed_commands,
             "frame_payload_fields": compiled_access_surface.frame_payload_fields,
+        }
+
+    def describe_frame_brief(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return one compact operator-oriented frame summary.
+
+        Purpose:
+            Give the operator a smaller "start here" summary than the richer
+            frame surface methods while still reflecting visible inventory and
+            ACL posture.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            Dict[str, object]: Compact frame-local summary.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        frame_inventory = self.describe_frame_inventory(frame_name=frame_name)
+        frame_contract = self.describe_frame_access_contract(frame_name=frame_name)
+        return {
+            "frame_name": self._get_required_frame_name(),
+            "visible_target_count": frame_inventory["target_count"],
+            "visible_conduit_count": frame_inventory["conduit_count"],
+            "visible_spell_count": frame_inventory["spell_count"],
+            "allowed_kinds": frame_contract["allowed_kinds"],
+            "frame_payload_field_count": len(frame_contract["frame_payload_fields"]),
+        }
+
+    def describe_target_brief(
+            self,
+            *,
+            source_kind: str,
+            source_id: str,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return one compact summary for a visible target.
+
+        Purpose:
+            Give the operator a quick identity/access snapshot for one visible
+            target without forcing the richer identity or payload-specific
+            methods immediately.
+
+        Args:
+            source_kind:
+                Required target kind.
+            source_id:
+                Required target source id.
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            Dict[str, object]: Compact visible target summary.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        frame_link = self.get_required_target_by_source(
+            frame_name=frame_name,
+            source_kind=source_kind,
+            source_id=source_id,
+        )
+        explanation = self.explain_target_access(
+            frame_name=frame_name,
+            source_kind=source_kind,
+            source_id=source_id,
+        )
+        visible_payload_keys = tuple()
+        if source_kind == "frame":
+            visible_payload_keys = tuple(explanation["visible_fields"])
+        else:
+            visible_payload_keys = tuple(explanation["visible_sections"])
+        return {
+            "target_id": frame_link.link_id,
+            "source_kind": frame_link.source_kind,
+            "source_id": frame_link.source_id,
+            "display_name": frame_link.display_name,
+            "visible": explanation["visible"],
+            "reason": explanation["reason"],
+            "visible_payload_keys": visible_payload_keys,
+        }
+
+    def describe_missing_surface(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return what is currently hidden or absent from the bound frame surface.
+
+        Purpose:
+            Help the operator answer "what am I not seeing right now?" by
+            comparing descriptor-owned records and payload fields against the
+            currently visible ACL-shaped surface.
+
+        Contract:
+            - Uses descriptor truth plus the compiled ACL surface only.
+            - Distinguishes hidden frame payload fields, hidden conduit/spell
+              records, and payload sections not currently visible.
+            - Does not expose hidden payload bodies.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            Dict[str, object]: Missing/hidden surface summary.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        descriptor = self._get_required_frame_descriptor()
+        compiled_access_surface = self._get_required_compiled_access_surface()
+        frame_overview = descriptor.frame_overview
+        all_frame_payload_fields = tuple()
+        if frame_overview is not None:
+            all_frame_payload_fields = self._payload_field_names(
+                frame_overview.payload,
+                excluded_fields=("payload_version",),
+            )
+        hidden_frame_payload_fields = tuple(
+            current_field
+            for current_field in all_frame_payload_fields
+            if current_field not in compiled_access_surface.frame_payload_fields
+        )
+        hidden_conduit_ids = tuple(
+            sorted(
+                conduit_id
+                for conduit_id in descriptor.conduit_records_by_id.keys()
+                if conduit_id not in compiled_access_surface.visible_conduit_ids
+            )
+        )
+        hidden_spell_source_ids = tuple(
+            sorted(
+                self._build_spell_source_id(
+                    descriptor.spell_records_by_key[record_key]
+                )
+                for record_key in descriptor.spell_records_by_key.keys()
+                if record_key not in compiled_access_surface.visible_spell_keys
+            )
+        )
+        hidden_conduit_sections_by_id: Dict[str, Tuple[str, ...]] = {}
+        for conduit_id, conduit_record in descriptor.conduit_records_by_id.items():
+            all_sections = self._payload_field_names(
+                conduit_record.payload,
+                excluded_fields=("payload_version",),
+            )
+            visible_sections = tuple(
+                compiled_access_surface.conduit_payload_sections_by_id.get(
+                    conduit_id,
+                    tuple(),
+                )
+            )
+            hidden_conduit_sections_by_id[conduit_id] = tuple(
+                current_section
+                for current_section in all_sections
+                if current_section not in visible_sections
+            )
+        hidden_spell_sections_by_source_id: Dict[str, Tuple[str, ...]] = {}
+        for record_key, spell_record in descriptor.spell_records_by_key.items():
+            all_sections = self._payload_field_names(
+                spell_record.payload,
+                excluded_fields=(
+                    "payload_type",
+                    "payload_version",
+                    "source_profile_name",
+                    "source_profile_version",
+                ),
+            )
+            visible_sections = tuple(
+                compiled_access_surface.spell_payload_sections_by_key.get(
+                    record_key,
+                    tuple(),
+                )
+            )
+            hidden_spell_sections_by_source_id[
+                self._build_spell_source_id(spell_record)
+            ] = tuple(
+                current_section
+                for current_section in all_sections
+                if current_section not in visible_sections
+            )
+        return {
+            "frame_name": self._get_required_frame_name(),
+            "hidden_frame_payload_fields": hidden_frame_payload_fields,
+            "hidden_conduit_ids": hidden_conduit_ids,
+            "hidden_spell_source_ids": hidden_spell_source_ids,
+            "hidden_conduit_sections_by_id": hidden_conduit_sections_by_id,
+            "hidden_spell_sections_by_source_id": hidden_spell_sections_by_source_id,
         }
 
     def describe_visible_surface(
@@ -1003,6 +1200,8 @@ class GeneralViewFrame(Cleanable):
             "spellframe": self._normalize_spellframe_value(spell_record.spellframe),
             "permissions": spell_record.permissions.name,
             "existence": spell_record.existence.name,
+            "payload_type": spell_record.payload.payload_type,
+            "payload_version": spell_record.payload.payload_version,
             "nexus_label": spell_record.nexus_label,
             "nexus_version": spell_record.nexus_version,
         }
@@ -1425,6 +1624,50 @@ class GeneralViewFrame(Cleanable):
         if isinstance(spellframe, type):
             return spellframe.__name__
         return str(spellframe)
+
+    @staticmethod
+    def _payload_field_names(
+            payload: object,
+            *,
+            excluded_fields: Tuple[str, ...] = tuple(),
+    ) -> Tuple[str, ...]:
+        """
+        Return the stable field names exposed by one payload object.
+
+        Args:
+            payload:
+                Payload object whose declared fields should be enumerated.
+            excluded_fields:
+                Optional payload field names to exclude from the result.
+
+        Returns:
+            Tuple[str, ...]: Declared payload field names in deterministic
+            order.
+        """
+        payload_slots = getattr(type(payload), "__slots__", tuple())
+        return tuple(
+            current_field_name
+            for current_field_name in payload_slots
+            if current_field_name not in excluded_fields
+            and not current_field_name.startswith("_")
+        )
+
+    @staticmethod
+    def _build_spell_source_id(spell_record: object) -> str:
+        """
+        Build the published spell source id for one spell record.
+
+        Args:
+            spell_record:
+                Spell record whose published source id should be derived.
+
+        Returns:
+            str: Published spell source id in `spellbook_id:spell_id` form.
+        """
+        return "{0}:{1}".format(
+            spell_record.origin_spellbook_id,
+            spell_record.spell_id,
+        )
 
     def _get_required_frame_name(self) -> str:
         """

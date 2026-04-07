@@ -268,6 +268,9 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         """
         Lookup a SpellSystemState by lineage id.
 
+        This is the primary lineage-first lookup path for callers that already
+        have a `SpellIndex.id`.
+
         Returns:
             - The SpellSystemState instance for this lineage, or
             - None if no state has been registered for the id.
@@ -285,7 +288,8 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         Lookup a SpellSystemState by current spell version id.
 
         This is a convenience when the caller only knows the version id
-        (e.g., SpellIndex.current) and wants to find the associated lineage state.
+        (for example, `SpellIndex.current`) and wants to find the associated
+        lineage state without resolving the lineage id separately.
 
         Returns:
             - The SpellSystemState instance, or
@@ -304,9 +308,11 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
     # ------------------------------------------------------------------
     def _resolve_spellbook_id(self, spell: ISpell) -> Optional[str]:
         """
-        Internal
+        Resolve the owning spellbook id for a spell, if available.
 
-        Resolve the owning Spellbook id for a spell, if available.
+        This is the bridge between one lineage and the spellbook-scoped reverse
+        indexes maintained later in this file. If a spell can no longer be tied
+        back to a spellbook, those scoped indexes cannot be updated safely.
 
         Args:
             spell: Spell instance that may carry a Spellbook reference.
@@ -332,9 +338,12 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             lineage_id: str,
     ) -> None:
         """
-        Internal
+        Remove one lineage from the spellbook-scoped collection-dependency index.
 
-        Remove a lineage from the collection-dependency index for a spellbook.
+        This is the cleanup side of the list[Frame]-dependent reverse index.
+        When a lineage changes owners or is removed, every collection-frame key
+        previously associated with that lineage must be detached so stale
+        spellbook-level revalidation targets do not survive.
         """
         if not spellbook_id or not lineage_id:
             return
@@ -369,9 +378,12 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             lineage_id: str,
     ) -> None:
         """
-        Internal
+        Remove one lineage from the spellbook-scoped contract-dependent index.
 
-        Remove a lineage from the contract-dependent index for a spellbook.
+        This is the companion cleanup path for `SpellContract` reverse-index
+        state. It detaches every contract key previously recorded for the
+        lineage and removes empty spellbook buckets when the last dependent is
+        gone.
         """
         if not spellbook_id or not lineage_id:
             return
@@ -407,7 +419,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         """
         Attach direct dependency ids for this lineage and update reverse edges.
 
-        `dependency_ids` are generic "spell ids" (version or lineage ids) – the
+        `dependency_ids` are generic "spell ids" (version or lineage ids) - the
         SpellCrafter / Spellbook decides the semantics. This manager only
         cares about connectivity, not the type system.
 
@@ -566,7 +578,7 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         Pop and return the current set of dirty lineage ids.
 
         This is the handoff to whatever runs the revalidation / mutation
-        governor (your "Phase 5–7" or equivalent).
+        governor (your "Phase 5-7" or equivalent).
 
         Behaviour:
         - Snapshot all ids currently in `_dirty_lineages`.
@@ -586,10 +598,10 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
     # ------------------------------------------------------------------
     def iter_states(self) -> List[SpellSystemState]:
         """
-        Snapshot of all SpellSystemState instances currently registered.
+        Return a snapshot of all registered lineage states.
 
         Returns:
-            A list of SpellSystemState objects. The list is detached from the
+            A list of `SpellSystemState` objects. The list is detached from the
             underlying ConcurrentDict so callers cannot accidentally keep a
             live iterator into internal state.
         """
@@ -605,6 +617,10 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
     def get_conduit_resolution_state(self, conduit_id: str) -> Optional[ConduitResolutionState]:
         """
         Retrieve the per-conduit resolution state for a given conduit id.
+
+        This is the read path for conduit-local Phase 5-7 state. It does not
+        create a missing state object; callers that need create-or-return
+        behavior should use `get_or_create_conduit_resolution_state(...)`.
 
         Args:
             conduit_id:
@@ -625,9 +641,21 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         """
         Retrieve or create the per-conduit resolution state for a conduit id.
 
+        This is the single creation gateway for conduit-local Phase 5-7 state.
+        The returned object is the live `ConduitResolutionState` owned by this
+        registry, so later writes to spell validity, root validity, diagnostics,
+        and dirty state all converge on the same conduit bucket.
+
         Args:
             conduit_id:
                 Conduit identifier used as the resolution-state key.
+        Contract:
+            - Returns the existing live state object when the conduit has
+              already been registered in the resolution registry.
+            - Creates a new state object on first use and wires the current
+              `RiskManager` into it so conduit-local verdict changes keep
+              risk tracking in sync.
+            - Never returns a detached copy.
         Returns:
             ConduitResolutionState:
                 The resolution state instance for this conduit.
@@ -742,7 +770,12 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
 
     def set_risk_manager(self, risk_manager: Optional[object]) -> None:
         """
-        Attach a RiskManager to all registered state objects.
+        Attach one `RiskManager` to the registry and all live child state
+        objects.
+
+        This is the propagation point that keeps newly attached risk tracking
+        coherent across both frame-level lineage state and per-conduit
+        resolution state.
         """
         self.check_cleaned()
         with self._lock:
@@ -762,11 +795,17 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
 
     def drop_conduit_resolution_state(self, conduit_id: str) -> None:
         """
-        Remove and cleanup the per-conduit resolution state for a conduit id.
+        Remove and cleanup the per-conduit resolution state for one conduit id.
 
         Args:
-            conduit_id:
-                Conduit identifier to remove.
+            conduit_id: Conduit identifier to remove.
+
+        Contract:
+        - This is the teardown side of `get_or_create_conduit_resolution_state(...)`.
+        - No-op if the conduit has no registered resolution state.
+        - Removes the conduit bucket from the registry before cleanup so no
+          later lookup can observe half-cleaned state.
+        - Best-effort cleans the removed state object before discarding it.
         """
         self.check_cleaned()
         if not conduit_id:
@@ -783,7 +822,11 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
 
     def iter_conduit_resolution_states(self) -> Iterator[ConduitResolutionState]:
         """
-        Iterate over all registered per-conduit resolution states.
+        Iterate over a snapshot of all registered per-conduit resolution states.
+
+        Returns a detached iterator over the live state objects currently
+        registered. The iterator itself is snapshot-based, but the contained
+        `ConduitResolutionState` objects are still the owned live instances.
 
         Returns:
             Iterator[ConduitResolutionState]:
@@ -804,7 +847,18 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             change_reason: Optional[SpellStateChangeReason] = None,
     ) -> None:
         """
-        Set per-conduit resolution validity for a spell id.
+        Publish one conduit-local spell-validity verdict.
+
+        This is the narrow write path used when a validator or resolver has a
+        verdict for one spell as seen through one conduit. The write is scoped
+        to `ConduitResolutionState`; it does not change the lineage's global
+        structural validity in `SpellSystemState`.
+
+        Contract:
+            - Creates the conduit bucket on first use.
+            - Overwrites the previous verdict for this conduit/spell pair.
+            - Lets `ConduitResolutionState` mark the conduit bucket dirty and
+              notify `RiskManager` when the verdict changes.
         """
         self.check_cleaned()
         state = self.get_or_create_conduit_resolution_state(conduit_id)
@@ -818,7 +872,19 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             change_reason: Optional[SpellStateChangeReason] = None,
     ) -> None:
         """
-        Bulk update per-conduit resolution validity for spell ids.
+        Publish a whole conduit-local spell-validity map.
+
+        This is the batched companion to `set_conduit_spell_validity(...)`,
+        used when a validator has already computed the full spell-level verdict
+        map for one conduit and wants to publish it as one logical update.
+
+        Contract:
+            - Creates the conduit bucket on first use.
+            - Replaces individual spell verdicts entry-by-entry through the
+              owned `ConduitResolutionState`.
+            - Dirty tracking and risk notifications are delegated to the
+              conduit-state object so batched writes stay consistent with
+              scalar writes.
         """
         self.check_cleaned()
         state = self.get_or_create_conduit_resolution_state(conduit_id)
@@ -833,7 +899,19 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             change_reason: Optional[SpellStateChangeReason] = None,
     ) -> None:
         """
-        Set per-conduit resolution validity for a root spell id.
+        Publish one conduit-local root-validity verdict.
+
+        Root validity is tracked separately because some DevOps and validation
+        flows reason specifically about root readiness, not only individual
+        spell entries. This method is the scalar write path for that
+        root-oriented view.
+
+        Contract:
+            - Creates the conduit bucket on first use.
+            - Updates only conduit-local root state; it does not mutate the
+              frame-level lineage registry.
+            - Delegates dirty tracking and risk propagation to the owned
+              `ConduitResolutionState`.
         """
         self.check_cleaned()
         state = self.get_or_create_conduit_resolution_state(conduit_id)
@@ -847,7 +925,18 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             change_reason: Optional[SpellStateChangeReason] = None,
     ) -> None:
         """
-        Bulk update per-conduit resolution validity for root spell ids.
+        Publish a whole conduit-local root-validity map.
+
+        This is the batched companion to `set_conduit_root_validity(...)`,
+        used when a caller already has a whole root-validity map ready to
+        publish for one conduit.
+
+        Contract:
+            - Creates the conduit bucket on first use.
+            - Applies all supplied root verdicts through the owned
+              `ConduitResolutionState`.
+            - Keeps batched root updates consistent with the scalar root write
+              path for dirty tracking and risk propagation.
         """
         self.check_cleaned()
         state = self.get_or_create_conduit_resolution_state(conduit_id)
@@ -859,7 +948,18 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             diagnostics: Sequence[SystemDiagnostic],
     ) -> None:
         """
-        Record per-conduit system diagnostics, replacing if signatures differ.
+        Replace the diagnostic snapshot for one conduit-local resolution state.
+
+        The supplied diagnostics replace the previous conduit-local diagnostic
+        snapshot for that resolution state. This is the publish point used when
+        a validation pass has produced the current set of conduit-scoped
+        `SystemDiagnostic` entries.
+
+        Contract:
+            - Creates the conduit bucket on first use.
+            - Replaces the prior diagnostic list; it does not append.
+            - Leaves global lineage validity unchanged because diagnostics here
+              are scoped to conduit-local resolution state.
         """
         self.check_cleaned()
         state = self.get_or_create_conduit_resolution_state(conduit_id)
@@ -867,7 +967,15 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
 
     def clear_conduit_diagnostics(self, conduit_id: str) -> None:
         """
-        Clear per-conduit system diagnostics for a conduit id.
+        Clear conduit-local diagnostics for one conduit id.
+
+        Missing conduit-state entries are ignored so teardown and reset flows
+        can clear diagnostics without pre-checking for presence.
+
+        Contract:
+            - Does not create a conduit bucket just to clear it.
+            - Clears only conduit-local diagnostics; spell/root verdicts remain
+              untouched.
         """
         self.check_cleaned()
         state = self.get_conduit_resolution_state(conduit_id)
@@ -881,7 +989,17 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             change_reason: Optional[SpellStateChangeReason] = None,
     ) -> None:
         """
-        Mark a per-conduit resolution state as dirty.
+        Mark one conduit-local resolution state as dirty.
+
+        This is the coarse-grained "this conduit view needs another validation
+        pass" signal for the per-conduit registry. It is useful when a caller
+        knows the conduit snapshot is stale even if it does not yet have the
+        final per-spell or per-root verdict deltas.
+
+        Contract:
+            - Creates the conduit bucket on first use.
+            - Marks only conduit-local resolution state dirty; it does not add
+              lineage ids to the frame-level dirty registry.
         """
         self.check_cleaned()
         state = self.get_or_create_conduit_resolution_state(conduit_id)
@@ -889,7 +1007,15 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
 
     def clear_conduit_dirty(self, conduit_id: str, validated_at: float) -> None:
         """
-        Mark a per-conduit resolution state as clean after validation.
+        Mark one conduit-local resolution state as clean after validation.
+
+        Missing conduit-state entries are ignored so validation cleanup can call
+        this method idempotently.
+
+        Contract:
+            - Does not create a conduit bucket just to clear it.
+            - Records the supplied validation timestamp on the existing
+              conduit-state object.
         """
         self.check_cleaned()
         state = self.get_conduit_resolution_state(conduit_id)
@@ -907,6 +1033,11 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         """
         Mark list[Frame] consumers dirty for a specific Spellbook scope.
 
+        This is the targeted fan-out path used when a spell's local topology
+        changes collection membership. Instead of dirtying every lineage in the
+        frame, the method consults the spellbook-scoped reverse index and only
+        marks lineages that consume one of the affected collection frame keys.
+
         Args:
             spellbook_id:
                 Owning Spellbook id used to scope the collection index.
@@ -914,6 +1045,12 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
                 Frame keys whose collection memberships changed.
             change_reason:
                 Optional change reason override; defaults to dependencies_changed.
+        Contract:
+            - Fan-out is limited to the owning spellbook scope.
+            - Each impacted lineage is marked through
+              `SpellSystemState.mark_dependency_change(...)` and added to the
+              frame-level dirty registry.
+            - Missing spellbook buckets or frame keys are treated as no-op.
         Returns:
             Set[str]: Lineage ids marked dirty by this call.
         """
@@ -965,6 +1102,11 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
         """
         Mark SpellContract consumers dirty for a specific Spellbook scope.
 
+        This is the targeted invalidation path for late-bound `SpellContract`
+        consumers. It uses the spellbook-scoped reverse index built from local
+        topology so a contract change can gate only the lineages that actually
+        consume that contract.
+
         Args:
             spellbook_id:
                 Owning Spellbook id used to scope the contract index.
@@ -973,6 +1115,13 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
                 SpellContract dependents for the spellbook are marked dirty.
             change_reason:
                 Optional change reason override; defaults to contract_unvalidated.
+        Contract:
+            - Fan-out is limited to the owning spellbook scope.
+            - When `contract_keys` is None, every contract consumer recorded for
+              the spellbook is invalidated.
+            - Impacted lineages are gated with the `contract_unvalidated` flag
+              rather than marked transitively dirty, because the topology did
+              not change; only contract truth must be recomputed.
         Returns:
             Set[str]: Lineage ids marked dirty by this call.
         """
@@ -1028,14 +1177,21 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             topology: 'SpellLocalTopology',
     ) -> None:
         """
-        Internal / DevOps
-
         Register or replace the local constructor topology for the given spell.
 
         This is called by :class:`SpellCrafter` during Phase 3 and is the
-        primary entry point for building higher-level blueprints in phases 5–7.
+        primary entry point for building higher-level blueprints in phases 5-7.
         It also refreshes the collection-dependency index used for targeted
         list[Frame] revalidation within the owning Spellbook scope.
+
+        Contract:
+            - Stores the live topology object under `spell_index.current`.
+            - Replaces any previous topology registered for the same promoted
+              spell id.
+            - Rebuilds the spellbook-scoped collection and contract reverse
+              indexes for the lineage when owner information is available.
+            - Does not synthesize an owner spellbook id if the lineage has not
+              yet been associated with a spellbook.
         """
         self.check_cleaned()
         if spell_index is None:
@@ -1077,9 +1233,17 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             spell_index: SpellIndex,
     ) -> Optional['SpellLocalTopology']:
         """
-        Internal / DevOps
+        Return the local constructor topology for the given spell, if any.
 
-        Retrieve the local constructor topology for the given spell, if any.
+        This is the object-oriented lookup path when the caller already has the
+        live `SpellIndex`.
+
+        Contract:
+            - Returns the live topology object currently stored for
+              `spell_index.current`.
+            - Returns None if Phase 3 has not published a topology for that
+              promoted spell id.
+            - Does not clone the topology object.
         """
         self.check_cleaned()
         if spell_index is None:
@@ -1093,9 +1257,16 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             spell_id: str,
     ) -> Optional['SpellLocalTopology']:
         """
-        Internal / DevOps
+        Return the local constructor topology using a version-id key.
 
-        Retrieve the local constructor topology using a version-id key.
+        This is the id-based lookup path for callers that only know the current
+        spell version id.
+
+        Contract:
+            - Returns the live topology object currently stored for the spell id.
+            - Returns None if no topology has been registered for that promoted
+              version id.
+            - Does not clone the topology object.
         """
         self.check_cleaned()
         if not spell_id:
@@ -1109,9 +1280,15 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             topology: 'SpellLocalTopology',
     ) -> Set[str]:
         """
-        Internal
-
         Extract collection frame keys from a local topology.
+
+        These frame keys feed the spellbook-scoped collection-dependent index
+        used later for targeted invalidation of list[Frame] consumers.
+
+        Contract:
+            - Only NORMAL sockets that are marked as collections participate.
+            - The frame key is taken from `socket.dependency_key[0]`.
+            - Returns a detached set suitable for index replacement.
         """
         frames: Set[str] = set()
         if topology is None:
@@ -1131,9 +1308,15 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             topology: 'SpellLocalTopology',
     ) -> Set[Tuple[str, str]]:
         """
-        Internal
+        Extract `SpellContract` keys from a local topology.
 
-        Extract SpellContract keys from a local topology.
+        These keys feed the spellbook-scoped contract-dependent index used later
+        for targeted invalidation of contract consumers.
+
+        Contract:
+            - Only SPELL_CONTRACT sockets participate.
+            - Missing contract keys are ignored.
+            - Returns a detached set suitable for index replacement.
         """
         keys: Set[Tuple[str, str]] = set()
         if topology is None:
@@ -1154,9 +1337,18 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             frame_keys: Set[str],
     ) -> None:
         """
-        Internal
+        Rebuild collection-dependent index membership for one lineage.
 
-        Update the collection-dependency index for a lineage within a spellbook.
+        This is the write side of the spellbook-scoped collection-dependent
+        reverse index. It removes stale frame memberships for the lineage and
+        then records the current frame-key set extracted from topology.
+
+        Contract:
+            - Treats `frame_keys` as the full desired membership for the
+              lineage within the owning spellbook bucket.
+            - Removes stale frame memberships before adding new ones so reverse
+              lookups never retain dead lineage references.
+            - Deletes empty spellbook buckets and empty lineage memberships.
         """
         if not spellbook_id or not lineage_id:
             return
@@ -1202,9 +1394,18 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             contract_keys: Set[Tuple[str, str]],
     ) -> None:
         """
-        Internal
+        Rebuild contract-dependent index membership for one lineage.
 
-        Update the SpellContract-dependent index for a lineage within a spellbook.
+        This is the write side of the spellbook-scoped contract-dependent
+        reverse index. It removes stale contract-key memberships for the
+        lineage and then records the current set extracted from topology.
+
+        Contract:
+            - Treats `contract_keys` as the full desired contract membership for
+              the lineage within the owning spellbook bucket.
+            - Removes stale contract memberships before adding new ones so
+              contract invalidation cannot target dead consumers.
+            - Deletes empty spellbook buckets and empty lineage memberships.
         """
         if not spellbook_id or not lineage_id:
             return

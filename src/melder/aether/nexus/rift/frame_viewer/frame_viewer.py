@@ -23,20 +23,32 @@ from melder.utilities.helpers.id_builder import IDBuilder
 
 class FrameViewer(Cleanable):
     """
-    Internal
-
     Purpose:
-        Hold descriptor truth plus compiled ACL surfaces and expose the
-        query/selection methods the agent uses.
+        Hold the hosted frame descriptors plus the selected profile/runtime
+        context an operator uses to inspect the current Rift-visible frame
+        surface.
 
     Contract:
         - Holds non-owned `FrameDescriptor` references keyed by frame name.
         - Owns detached `CompiledFrameACLAccessSurface` objects keyed by frame
           name.
-        - Owns active `FrameViewerProfile` objects and one default active
-          profile pointer.
-        - Exposes only ACL-filtered frame/conduit/spell targets.
-        - Does not expose raw runtime objects or code execution behavior.
+        - Owns reusable active `FrameViewerProfile` templates and one selected
+          bound profile per hosted frame.
+        - Exposes descriptor-only multi-frame host methods directly on the
+          viewer.
+        - Exposes frame-local ACL/payload-aware behavior only through the
+          selected bound profile surface.
+        - Does not expose raw runtime objects or any direct code-execution
+          behavior.
+
+    Threading:
+        Uses one instance `threading.RLock` to serialize cleanup and multi-step
+        profile/selection mutations.
+
+    Lifecycle:
+        Cleanup cascades into owned compiled ACL surfaces, active profile
+        templates, and selected bound profiles before clearing viewer-owned
+        maps and metadata.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -363,6 +375,26 @@ class FrameViewer(Cleanable):
         return len(self.list_frame_names())
 
     def set_default_view(self, frame_name: str) -> None:
+        """
+        Select the default hosted frame for subsequent host/profile calls.
+
+        Purpose:
+            Move the viewer's default frame pointer so host methods and
+            frame-local profile execution can fall back to a known frame when
+            callers omit `frame_name`.
+
+        Args:
+            frame_name:
+                Hosted frame name to promote to the default view.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                Raised when `frame_name` is empty or not hosted by this
+                viewer.
+        """
         self.check_cleaned()
         if not frame_name:
             raise ValueError("frame_name cannot be empty.")
@@ -498,6 +530,270 @@ class FrameViewer(Cleanable):
             current_frame_name: self.describe_frame(current_frame_name)
             for current_frame_name in self.list_frame_names()
         }
+
+    def describe_frame_brief(self, frame_name: str) -> Dict[str, object]:
+        """
+        Return one compact descriptor-level frame summary.
+
+        Purpose:
+            Give the operator a smaller "start here" frame summary than
+            `describe_frame(...)` while staying entirely on descriptor-owned
+            host data.
+
+        Contract:
+            - Uses only descriptor/record identity and count data.
+            - Does not expose payload bodies or ACL-shaped visibility details.
+            - Always includes the frame's Nexus contract and top-level record
+              counts.
+
+        Args:
+            frame_name:
+                Hosted frame name to summarize.
+
+        Returns:
+            Dict[str, object]: Compact descriptor-level frame summary.
+        """
+        self.check_cleaned()
+        frame_summary = self.describe_frame(frame_name)
+        return {
+            "frame_name": frame_summary["frame_name"],
+            "frame_id": frame_summary["frame_id"],
+            "nexus_contract": "{0}:{1}".format(
+                frame_summary["nexus_label"],
+                frame_summary["nexus_version"],
+            ),
+            "conduit_record_count": frame_summary["conduit_record_count"],
+            "root_conduit_count": frame_summary["root_conduit_count"],
+            "spell_record_count": frame_summary["spell_record_count"],
+            "is_default": frame_summary["is_default"],
+        }
+
+    def describe_host_inventory(self) -> Dict[str, object]:
+        """
+        Return one compact host-level inventory summary.
+
+        Purpose:
+            Give the operator a quick overview of what the `FrameViewer` host
+            is carrying without forcing a deeper descriptor walk.
+
+        Contract:
+            - Aggregates only descriptor-owned counts, names, and record-level
+              identities.
+            - Does not expose payload bodies or ACL-shaped detail.
+
+        Returns:
+            Dict[str, object]: Compact host-level inventory summary.
+        """
+        self.check_cleaned()
+        return {
+            "frame_count": self.count_frames(),
+            "default_view_frame_name": self._default_view_frame_name,
+            "frame_names": tuple(self.list_frame_names()),
+            "frame_ids": tuple(self.list_frame_ids()),
+            "conduit_record_count": self.count_conduit_records(),
+            "root_conduit_count": self.count_root_conduits(),
+            "spell_record_count": self.count_spell_records(),
+            "origin_spellbook_count": self.count_spellbooks(),
+            "origin_spellbook_ids": tuple(self.list_origin_spellbook_ids()),
+            "permissions": tuple(self.list_permissions()),
+            "existence_kinds": tuple(self.list_existence_kinds()),
+        }
+
+    def compare_frames(
+            self,
+            left_frame_name: str,
+            right_frame_name: str,
+    ) -> Dict[str, object]:
+        """
+        Compare two hosted frame descriptors at the record-identity level.
+
+        Purpose:
+            Give the operator one descriptor-only diff between two hosted
+            frames so they can see what differs without manually comparing the
+            individual host list methods.
+
+        Contract:
+            - Uses descriptor-owned identities, counts, and normalized values
+              only.
+            - Does not expose payload bodies or ACL-shaped detail.
+            - Returns shared sets plus left-only/right-only deltas for the most
+              important descriptor-level inventories.
+
+        Args:
+            left_frame_name:
+                Left hosted frame name.
+            right_frame_name:
+                Right hosted frame name.
+
+        Returns:
+            Dict[str, object]: Descriptor-level comparison summary.
+        """
+        self.check_cleaned()
+        left_descriptor = self._get_required_frame_descriptor(left_frame_name)
+        self._get_required_frame_descriptor(right_frame_name)
+        left_frame_overview = left_descriptor.frame_overview
+        right_frame_overview = self._get_required_frame_descriptor(
+            right_frame_name
+        ).frame_overview
+        return {
+            "left_frame_name": left_frame_name,
+            "right_frame_name": right_frame_name,
+            "same_frame_id": (
+                left_frame_overview is not None
+                and right_frame_overview is not None
+                and left_frame_overview.frame_id == right_frame_overview.frame_id
+            ),
+            "same_nexus_contract": (
+                left_frame_overview is not None
+                and right_frame_overview is not None
+                and left_frame_overview.nexus_label == right_frame_overview.nexus_label
+                and left_frame_overview.nexus_version == right_frame_overview.nexus_version
+            ),
+            "conduits": self.compare_frame_conduits(
+                left_frame_name,
+                right_frame_name,
+            ),
+            "spells": self.compare_frame_spells(
+                left_frame_name,
+                right_frame_name,
+            ),
+            "spellbooks": self._compare_sorted_value_sets(
+                tuple(self.list_origin_spellbook_ids(frame_name=left_frame_name)),
+                tuple(self.list_origin_spellbook_ids(frame_name=right_frame_name)),
+            ),
+            "permissions": self._compare_sorted_value_sets(
+                tuple(self.list_permissions(frame_name=left_frame_name)),
+                tuple(self.list_permissions(frame_name=right_frame_name)),
+            ),
+            "existence_kinds": self._compare_sorted_value_sets(
+                tuple(self.list_existence_kinds(frame_name=left_frame_name)),
+                tuple(self.list_existence_kinds(frame_name=right_frame_name)),
+            ),
+            "spellframes": self._compare_sorted_value_sets(
+                tuple(self.list_spellframes(frame_name=left_frame_name)),
+                tuple(self.list_spellframes(frame_name=right_frame_name)),
+            ),
+        }
+
+    def compare_frame_conduits(
+            self,
+            left_frame_name: str,
+            right_frame_name: str,
+    ) -> Dict[str, object]:
+        """
+        Compare the conduit-record inventories of two hosted frames.
+
+        Args:
+            left_frame_name:
+                Left hosted frame name.
+            right_frame_name:
+                Right hosted frame name.
+
+        Returns:
+            Dict[str, object]: Conduit-record comparison summary.
+        """
+        self.check_cleaned()
+        left_conduit_ids = tuple(
+            self.list_conduit_record_ids(frame_name=left_frame_name)
+        )
+        right_conduit_ids = tuple(
+            self.list_conduit_record_ids(frame_name=right_frame_name)
+        )
+        left_root_conduit_ids = tuple(
+            self.list_root_conduit_ids(frame_name=left_frame_name)
+        )
+        right_root_conduit_ids = tuple(
+            self.list_root_conduit_ids(frame_name=right_frame_name)
+        )
+        return {
+            "record_counts": {
+                "left": len(left_conduit_ids),
+                "right": len(right_conduit_ids),
+            },
+            "conduit_ids": self._compare_sorted_value_sets(
+                left_conduit_ids,
+                right_conduit_ids,
+            ),
+            "root_conduit_ids": self._compare_sorted_value_sets(
+                left_root_conduit_ids,
+                right_root_conduit_ids,
+            ),
+        }
+
+    def compare_frame_spells(
+            self,
+            left_frame_name: str,
+            right_frame_name: str,
+    ) -> Dict[str, object]:
+        """
+        Compare the spell-record inventories of two hosted frames.
+
+        Args:
+            left_frame_name:
+                Left hosted frame name.
+            right_frame_name:
+                Right hosted frame name.
+
+        Returns:
+            Dict[str, object]: Spell-record comparison summary.
+        """
+        self.check_cleaned()
+        left_spell_source_ids = tuple(
+            self.list_spell_source_ids_for_frame(left_frame_name)
+        )
+        right_spell_source_ids = tuple(
+            self.list_spell_source_ids_for_frame(right_frame_name)
+        )
+        left_lineage_ids = tuple(self.list_lineage_ids(frame_name=left_frame_name))
+        right_lineage_ids = tuple(self.list_lineage_ids(frame_name=right_frame_name))
+        left_spell_names = tuple(self.list_spell_names(frame_name=left_frame_name))
+        right_spell_names = tuple(self.list_spell_names(frame_name=right_frame_name))
+        left_binding_names = tuple(self.list_binding_names(frame_name=left_frame_name))
+        right_binding_names = tuple(self.list_binding_names(frame_name=right_frame_name))
+        return {
+            "record_counts": {
+                "left": len(left_spell_source_ids),
+                "right": len(right_spell_source_ids),
+            },
+            "spell_source_ids": self._compare_sorted_value_sets(
+                left_spell_source_ids,
+                right_spell_source_ids,
+            ),
+            "lineage_ids": self._compare_sorted_value_sets(
+                left_lineage_ids,
+                right_lineage_ids,
+            ),
+            "spell_names": self._compare_sorted_value_sets(
+                left_spell_names,
+                right_spell_names,
+            ),
+            "binding_names": self._compare_sorted_value_sets(
+                left_binding_names,
+                right_binding_names,
+            ),
+        }
+
+    def list_spell_source_ids_for_frame(self, frame_name: str) -> List[str]:
+        """
+        Return spell source ids for one hosted frame.
+
+        Purpose:
+            Provide the canonical published spell identities for one hosted
+            descriptor in deterministic order.
+
+        Args:
+            frame_name:
+                Hosted frame name whose spell source ids should be returned.
+
+        Returns:
+            List[str]: Spell source ids for the frame.
+        """
+        self.check_cleaned()
+        descriptor = self._get_required_frame_descriptor(frame_name)
+        return [
+            self._build_spell_source_id(descriptor.spell_records_by_key[record_key])
+            for record_key in sorted(descriptor.spell_records_by_key.keys())
+        ]
 
     def list_frame_ids(
             self,
@@ -1136,6 +1432,8 @@ class FrameViewer(Cleanable):
             "spellframe": self._normalize_spellframe_value(spell_record.spellframe),
             "permissions": spell_record.permissions.name,
             "existence": spell_record.existence.name,
+            "payload_type": spell_record.payload.payload_type,
+            "payload_version": spell_record.payload.payload_version,
             "nexus_label": spell_record.nexus_label,
             "nexus_version": spell_record.nexus_version,
         }
@@ -1290,6 +1588,12 @@ class FrameViewer(Cleanable):
         return matching_source_ids
 
     def list_view_profile_names(self) -> List[str]:
+        """
+        Return the reusable profile names registered on this viewer host.
+
+        Returns:
+            List[str]: Sorted reusable profile names.
+        """
         self.check_cleaned()
         return self.list_active_profile_names()
 
@@ -1315,6 +1619,17 @@ class FrameViewer(Cleanable):
         self.set_selected_profile_for_frame(target_frame_name, profile_name)
 
     def clone(self) -> "FrameViewer":
+        """
+        Return a detached copy of the viewer host.
+
+        Purpose:
+            Preserve the non-owned descriptor references while cloning the
+            owned compiled ACL surfaces, reusable profiles, selected profile
+            bindings, and metadata into a new viewer instance.
+
+        Returns:
+            FrameViewer: Detached viewer clone.
+        """
         self.check_cleaned()
         with self._lock:
             return FrameViewer(
@@ -1344,10 +1659,28 @@ class FrameViewer(Cleanable):
             )
 
     def list_enabled_helpers(self) -> Tuple[str, ...]:
+        """
+        Return the exposed method names for the default reusable profile.
+
+        Returns:
+            Tuple[str, ...]: Exposed method names for the default profile.
+        """
         self.check_cleaned()
         return self.enabled_helpers
 
     def list_available_tools(self) -> Tuple[str, ...]:
+        """
+        Return the exposed profile-method names for the default profile.
+
+        Purpose:
+            Preserve the older helper-surface inventory method while the
+            underlying semantics are now method-oriented rather than
+            tool-oriented.
+
+        Returns:
+            Tuple[str, ...]: Exposed profile-method names for the default
+            profile.
+        """
         self.check_cleaned()
         if self._default_profile_name is None:
             return tuple()
@@ -1356,11 +1689,36 @@ class FrameViewer(Cleanable):
         ].list_tool_names()
 
     def list_active_profile_names(self) -> List[str]:
+        """
+        Return the reusable profile names registered on the viewer.
+
+        Returns:
+            List[str]: Sorted reusable profile names.
+        """
         self.check_cleaned()
         with self._lock:
             return list(sorted(self._active_profiles_by_name.keys()))
 
     def register_active_profile(self, profile: FrameViewerProfile) -> None:
+        """
+        Register or replace one reusable viewer profile template.
+
+        Purpose:
+            Add a reusable profile template to the viewer host and refresh any
+            currently selected frame bindings that pointed at the same profile
+            name.
+
+        Args:
+            profile:
+                Reusable viewer profile template to register.
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError:
+                Raised when `profile` is not a `FrameViewerProfile`.
+        """
         self.check_cleaned()
         if not isinstance(profile, FrameViewerProfile):
             raise TypeError("profile must be a FrameViewerProfile.")
@@ -1382,6 +1740,24 @@ class FrameViewer(Cleanable):
                 )
 
     def set_default_profile(self, profile_name: str) -> None:
+        """
+        Select the default reusable profile template for the viewer host.
+
+        Purpose:
+            Change the viewer's default profile template and immediately rebind
+            the current default frame to that same profile name.
+
+        Args:
+            profile_name:
+                Registered reusable profile name.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                Raised when `profile_name` is empty or unregistered.
+        """
         self.check_cleaned()
         if not profile_name:
             raise ValueError("profile_name cannot be empty.")
@@ -1459,6 +1835,16 @@ class FrameViewer(Cleanable):
             )
 
     def has_enabled_helper(self, helper_name: str) -> bool:
+        """
+        Return whether the default reusable profile exposes one method name.
+
+        Args:
+            helper_name:
+                Exposed profile-method name to inspect.
+
+        Returns:
+            bool: True when the default profile exposes the method.
+        """
         self.check_cleaned()
         if not helper_name:
             raise ValueError("helper_name cannot be empty.")
@@ -1534,6 +1920,20 @@ class FrameViewer(Cleanable):
         return handler(**kwargs)
 
     def get_required_active_profile(self, profile_name: str) -> FrameViewerProfile:
+        """
+        Return one registered reusable profile template or raise.
+
+        Args:
+            profile_name:
+                Registered reusable profile name.
+
+        Returns:
+            FrameViewerProfile: Reusable profile template.
+
+        Raises:
+            ValueError:
+                Raised when `profile_name` is empty or unregistered.
+        """
         self.check_cleaned()
         if not profile_name:
             raise ValueError("profile_name cannot be empty.")
@@ -1567,13 +1967,14 @@ class FrameViewer(Cleanable):
             viewer: Optional["FrameViewer"] = None,
     ) -> Optional[Any]:
         """
-        Resolve one tool handler against the bound profile first, then viewer.
+        Resolve one profile-method handler against the bound profile first, then
+        the viewer host.
 
         Args:
             selected_profile:
                 Bound selected profile for the current frame.
             handler_name:
-                Tool handler name or dotted helper path.
+                Profile-method handler name or dotted helper path.
             viewer:
                 Optional viewer host fallback.
 
@@ -1596,7 +1997,7 @@ class FrameViewer(Cleanable):
             root_object:
                 Root object to traverse.
             handler_name:
-                Handler name or dotted helper path.
+                Method name or dotted helper path.
 
         Returns:
             Optional[Any]: Resolved callable when found.
@@ -1848,6 +2249,31 @@ class FrameViewer(Cleanable):
                 )
             )
         return parts[0], parts[1]
+
+    @staticmethod
+    def _compare_sorted_value_sets(
+            left_values: Tuple[str, ...],
+            right_values: Tuple[str, ...],
+    ) -> Dict[str, Tuple[str, ...]]:
+        """
+        Return one deterministic shared/left-only/right-only value diff.
+
+        Args:
+            left_values:
+                Left normalized value tuple.
+            right_values:
+                Right normalized value tuple.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Shared and directional set deltas.
+        """
+        left_set = set(left_values)
+        right_set = set(right_values)
+        return {
+            "shared": tuple(sorted(left_set & right_set)),
+            "left_only": tuple(sorted(left_set - right_set)),
+            "right_only": tuple(sorted(right_set - left_set)),
+        }
 
     def _create_bound_profile_for_frame(
             self,
