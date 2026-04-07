@@ -343,6 +343,670 @@ class GeneralViewFrame(Cleanable):
             "frame_payload_fields": compiled_access_surface.frame_payload_fields,
         }
 
+    def describe_visible_surface(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the current visible frame-local surface in one summary.
+
+        Purpose:
+            Give the operator a single "what can I actually see right now?"
+            entry point over the bound frame without making them manually merge
+            inventory, topology, and access-contract calls.
+
+        Contract:
+            - Uses only the bound frame descriptor plus the compiled ACL
+              surface.
+            - Summarizes the currently visible target ids, grouped inventory,
+              visible topology, and access contract.
+            - Remains frame-local; it never spans multiple hosted frames.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            Dict[str, object]: Summary of the currently visible frame-local
+            surface.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        return {
+            "frame_name": self._get_required_frame_name(),
+            "available_kinds": tuple(
+                self.describe_frame()["available_kinds"]
+            ),
+            "inventory_by_kind": self.describe_visible_inventory_by_kind(
+                frame_name=frame_name
+            ),
+            "visible_target_ids_by_kind": self.list_visible_target_ids_by_kind(
+                frame_name=frame_name
+            ),
+            "visible_root_conduit_ids": tuple(
+                conduit_link.source_id
+                for conduit_link in self.list_visible_root_conduits(
+                    frame_name=frame_name
+                )
+            ),
+            "visible_spell_ownership": self.describe_visible_spell_ownership(
+                frame_name=frame_name
+            ),
+            "access_contract": self.describe_frame_access_contract(
+                frame_name=frame_name
+            ),
+        }
+
+    def describe_visible_inventory_by_kind(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, Dict[str, object]]:
+        """
+        Return visible inventory grouped by target kind.
+
+        Purpose:
+            Provide a frame-local grouped inventory over visible targets so the
+            operator can see counts, source ids, and names without manually
+            regrouping raw links.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            Dict[str, Dict[str, object]]: Inventory grouped by target kind.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        grouped_targets = self.group_targets_by_kind(frame_name=frame_name)
+        return {
+            source_kind: {
+                "count": len(frame_links),
+                "target_ids": tuple(
+                    frame_link.link_id
+                    for frame_link in frame_links
+                ),
+                "source_ids": tuple(
+                    frame_link.source_id
+                    for frame_link in frame_links
+                ),
+                "display_names": tuple(
+                    frame_link.display_name
+                    for frame_link in frame_links
+                ),
+            }
+            for source_kind, frame_links in grouped_targets.items()
+        }
+
+    def describe_frame_topology(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the visible conduit/spell topology for the bound frame.
+
+        Purpose:
+            Summarize how the currently visible conduits and spells relate to
+            each other so the operator can navigate the frame structure without
+            reading each target individually first.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            Dict[str, object]: Visible frame-local topology summary.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        root_conduit_links = self.list_visible_root_conduits(frame_name=frame_name)
+        return {
+            "frame_name": self._get_required_frame_name(),
+            "root_conduit_ids": tuple(
+                conduit_link.source_id
+                for conduit_link in root_conduit_links
+            ),
+            "conduit_ids_by_root_id": self.describe_visible_conduit_tree(
+                frame_name=frame_name
+            ),
+            "spell_source_ids_by_conduit_id": self.describe_visible_spell_ownership(
+                frame_name=frame_name
+            ),
+            "visible_spell_source_ids": tuple(
+                self.list_visible_spell_source_ids(frame_name=frame_name)
+            ),
+        }
+
+    def list_visible_target_ids(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+            source_kind: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return visible target ids for the bound frame.
+
+        Purpose:
+            Provide a compact id-only view over the currently visible target
+            surface.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+            source_kind:
+                Optional target-kind filter.
+
+        Returns:
+            List[str]: Visible target ids in deterministic order.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        return [
+            frame_link.link_id
+            for frame_link in self.list_targets(
+                frame_name=frame_name,
+                source_kind=source_kind,
+            )
+        ]
+
+    def list_visible_target_ids_by_kind(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, Tuple[str, ...]]:
+        """
+        Return visible target ids grouped by target kind.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Visible target ids grouped by kind.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        return {
+            source_kind: tuple(
+                frame_link.link_id
+                for frame_link in frame_links
+            )
+            for source_kind, frame_links in self.group_targets_by_kind(
+                frame_name=frame_name
+            ).items()
+        }
+
+    def list_visible_conduit_ids(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return visible conduit ids for the bound frame.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            List[str]: Visible conduit ids in deterministic order.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        return [
+            conduit_link.source_id
+            for conduit_link in self.list_targets(
+                frame_name=frame_name,
+                source_kind="conduit",
+            )
+        ]
+
+    def list_visible_spell_source_ids(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return visible spell source ids for the bound frame.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            List[str]: Visible spell source ids in deterministic order.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        return [
+            spell_link.source_id
+            for spell_link in self.list_targets(
+                frame_name=frame_name,
+                source_kind="spell",
+            )
+        ]
+
+    def list_visible_root_conduits(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[FrameLink]:
+        """
+        Return visible conduit links that are also root conduits.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            List[FrameLink]: Visible root conduit links.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        descriptor = self._get_required_frame_descriptor()
+        root_conduits: List[FrameLink] = []
+        for conduit_link in self.list_targets(
+                frame_name=frame_name,
+                source_kind="conduit",
+        ):
+            conduit_record = descriptor.conduit_records_by_id[conduit_link.source_id]
+            if conduit_record.root_conduit_id == conduit_record.conduit_id:
+                root_conduits.append(conduit_link)
+        return root_conduits
+
+    def list_visible_binding_names(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return visible spell binding names for the bound frame.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            List[str]: Visible binding names in deterministic spell order.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        descriptor = self._get_required_frame_descriptor()
+        binding_names: List[str] = []
+        for spell_link in self.list_targets(
+                frame_name=frame_name,
+                source_kind="spell",
+        ):
+            record_key = spell_link.metadata["record_key"]
+            binding_name = descriptor.spell_records_by_key[record_key].binding_name
+            if binding_name is None:
+                continue
+            binding_names.append(binding_name)
+        return binding_names
+
+    def list_visible_spell_names(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return visible spell names for the bound frame.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            List[str]: Visible spell names in deterministic spell order.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        descriptor = self._get_required_frame_descriptor()
+        return [
+            descriptor.spell_records_by_key[spell_link.metadata["record_key"]].spell_name
+            for spell_link in self.list_targets(
+                frame_name=frame_name,
+                source_kind="spell",
+            )
+        ]
+
+    def list_visible_spellframes(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return visible normalized spellframe values for the bound frame.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            List[str]: Distinct visible spellframe values in deterministic
+            order.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        descriptor = self._get_required_frame_descriptor()
+        spellframes = []
+        seen_spellframes = set()
+        for spell_link in self.list_targets(
+                frame_name=frame_name,
+                source_kind="spell",
+        ):
+            record_key = spell_link.metadata["record_key"]
+            spellframe_name = self._normalize_spellframe_value(
+                descriptor.spell_records_by_key[record_key].spellframe
+            )
+            if spellframe_name is None or spellframe_name in seen_spellframes:
+                continue
+            spellframes.append(spellframe_name)
+            seen_spellframes.add(spellframe_name)
+        return spellframes
+
+    def list_visible_lineage_ids(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return visible lineage ids for the bound frame.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            List[str]: Visible lineage ids in deterministic spell order.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        descriptor = self._get_required_frame_descriptor()
+        return [
+            descriptor.spell_records_by_key[spell_link.metadata["record_key"]].lineage_id
+            for spell_link in self.list_targets(
+                frame_name=frame_name,
+                source_kind="spell",
+            )
+        ]
+
+    def describe_visible_spell_ownership(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, Tuple[str, ...]]:
+        """
+        Return visible spell ownership grouped by conduit id.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Visible spell source ids grouped by
+            owner conduit id.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        descriptor = self._get_required_frame_descriptor()
+        spells_by_conduit_id: Dict[str, List[str]] = {}
+        for spell_link in self.list_targets(
+                frame_name=frame_name,
+                source_kind="spell",
+        ):
+            record_key = spell_link.metadata["record_key"]
+            owner_conduit_id = descriptor.spell_records_by_key[record_key].owner_conduit_id
+            if owner_conduit_id is None:
+                continue
+            spells_by_conduit_id.setdefault(owner_conduit_id, []).append(
+                spell_link.source_id
+            )
+        return {
+            conduit_id: tuple(spell_source_ids)
+            for conduit_id, spell_source_ids in spells_by_conduit_id.items()
+        }
+
+    def describe_visible_conduit_tree(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, Tuple[str, ...]]:
+        """
+        Return visible conduit ids grouped by root conduit id.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Visible conduit ids grouped by root
+            conduit id.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        descriptor = self._get_required_frame_descriptor()
+        conduit_ids_by_root_id: Dict[str, List[str]] = {}
+        for conduit_link in self.list_targets(
+                frame_name=frame_name,
+                source_kind="conduit",
+        ):
+            conduit_record = descriptor.conduit_records_by_id[conduit_link.source_id]
+            conduit_ids_by_root_id.setdefault(
+                conduit_record.root_conduit_id,
+                [],
+            ).append(conduit_link.source_id)
+        return {
+            root_conduit_id: tuple(conduit_ids)
+            for root_conduit_id, conduit_ids in conduit_ids_by_root_id.items()
+        }
+
+    def search_targets_contains(
+            self,
+            text: str,
+            *,
+            frame_name: Optional[str] = None,
+            source_kind: Optional[str] = None,
+    ) -> List[FrameLink]:
+        """
+        Return visible targets whose identity contains one text fragment.
+
+        Purpose:
+            Provide a forgiving search path over visible target display names
+            and source ids.
+
+        Args:
+            text:
+                Case-insensitive text fragment to search for.
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+            source_kind:
+                Optional target-kind filter.
+
+        Returns:
+            List[FrameLink]: Matching visible targets in deterministic order.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        if not text:
+            raise ValueError("text cannot be empty.")
+        lowered_text = text.lower()
+        return [
+            frame_link
+            for frame_link in self.list_targets(
+                frame_name=frame_name,
+                source_kind=source_kind,
+            )
+            if lowered_text in frame_link.display_name.lower()
+            or lowered_text in frame_link.source_id.lower()
+        ]
+
+    def search_targets_prefix(
+            self,
+            prefix: str,
+            *,
+            frame_name: Optional[str] = None,
+            source_kind: Optional[str] = None,
+    ) -> List[FrameLink]:
+        """
+        Return visible targets whose identity starts with one prefix.
+
+        Args:
+            prefix:
+                Case-insensitive prefix to match against display names and
+                source ids.
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+            source_kind:
+                Optional target-kind filter.
+
+        Returns:
+            List[FrameLink]: Matching visible targets in deterministic order.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        if not prefix:
+            raise ValueError("prefix cannot be empty.")
+        lowered_prefix = prefix.lower()
+        return [
+            frame_link
+            for frame_link in self.list_targets(
+                frame_name=frame_name,
+                source_kind=source_kind,
+            )
+            if frame_link.display_name.lower().startswith(lowered_prefix)
+            or frame_link.source_id.lower().startswith(lowered_prefix)
+        ]
+
+    def group_targets_by_kind(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, List[FrameLink]]:
+        """
+        Return visible targets grouped by target kind.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            Dict[str, List[FrameLink]]: Visible targets grouped by source kind.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        grouped_targets: Dict[str, List[FrameLink]] = {}
+        for frame_link in self.list_targets(frame_name=frame_name):
+            grouped_targets.setdefault(frame_link.source_kind, []).append(frame_link)
+        return {
+            source_kind: grouped_targets[source_kind]
+            for source_kind in sorted(grouped_targets.keys())
+        }
+
+    def describe_target_identity(
+            self,
+            *,
+            source_kind: str,
+            source_id: str,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return a compact identity summary for one visible target.
+
+        Purpose:
+            Give the operator a stable identity/provenance snapshot for one
+            currently visible target without forcing a wider payload dump.
+
+        Args:
+            source_kind:
+                Required target kind.
+            source_id:
+                Required target source id.
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            Dict[str, object]: Visible target identity summary.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        frame_link = self.get_required_target_by_source(
+            frame_name=frame_name,
+            source_kind=source_kind,
+            source_id=source_id,
+        )
+        descriptor = self._get_required_frame_descriptor()
+        if source_kind == "frame":
+            frame_overview = descriptor.frame_overview
+            return {
+                "frame_name": self._get_required_frame_name(),
+                "target_id": frame_link.link_id,
+                "source_kind": source_kind,
+                "source_id": source_id,
+                "display_name": frame_link.display_name,
+                "frame_id": frame_overview.frame_id if frame_overview is not None else None,
+                "nexus_label": (
+                    frame_overview.nexus_label if frame_overview is not None else None
+                ),
+                "nexus_version": (
+                    frame_overview.nexus_version if frame_overview is not None else None
+                ),
+            }
+        if source_kind == "conduit":
+            conduit_record = descriptor.conduit_records_by_id[source_id]
+            return {
+                "frame_name": self._get_required_frame_name(),
+                "target_id": frame_link.link_id,
+                "source_kind": source_kind,
+                "source_id": source_id,
+                "display_name": frame_link.display_name,
+                "root_conduit_id": conduit_record.root_conduit_id,
+                "origin_spellbook_id": conduit_record.origin_spellbook_id,
+                "nexus_label": conduit_record.nexus_label,
+                "nexus_version": conduit_record.nexus_version,
+            }
+        record_key = frame_link.metadata["record_key"]
+        spell_record = descriptor.spell_records_by_key[record_key]
+        return {
+            "frame_name": self._get_required_frame_name(),
+            "target_id": frame_link.link_id,
+            "source_kind": source_kind,
+            "source_id": source_id,
+            "display_name": frame_link.display_name,
+            "spell_id": spell_record.spell_id,
+            "lineage_id": spell_record.lineage_id,
+            "owner_conduit_id": spell_record.owner_conduit_id,
+            "origin_spellbook_id": spell_record.origin_spellbook_id,
+            "spell_name": spell_record.spell_name,
+            "binding_name": spell_record.binding_name,
+            "spellframe": self._normalize_spellframe_value(spell_record.spellframe),
+            "permissions": spell_record.permissions.name,
+            "existence": spell_record.existence.name,
+            "nexus_label": spell_record.nexus_label,
+            "nexus_version": spell_record.nexus_version,
+        }
+
     def find_target_by_display_name(
             self,
             display_name: str,
@@ -741,6 +1405,26 @@ class GeneralViewFrame(Cleanable):
             if isinstance(current_name, str):
                 return current_name
         return value
+
+    @staticmethod
+    def _normalize_spellframe_value(spellframe: object) -> Optional[str]:
+        """
+        Return one stable string view of a spellframe value.
+
+        Args:
+            spellframe:
+                Raw spellframe value from a spell record.
+
+        Returns:
+            Optional[str]: Normalized spellframe value when present.
+        """
+        if spellframe is None:
+            return None
+        if isinstance(spellframe, str):
+            return spellframe
+        if isinstance(spellframe, type):
+            return spellframe.__name__
+        return str(spellframe)
 
     def _get_required_frame_name(self) -> str:
         """

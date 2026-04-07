@@ -3,7 +3,7 @@ Internal descriptor-driven FrameViewer surface.
 """
 
 import threading
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
@@ -499,6 +499,796 @@ class FrameViewer(Cleanable):
             for current_frame_name in self.list_frame_names()
         }
 
+    def list_frame_ids(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return published frame ids for the selected descriptor scope.
+
+        Purpose:
+            Surface the stable published frame identifiers without exposing any
+            payload body data.
+
+        Contract:
+            - Reads only `FrameRecord` identity fields.
+            - Returns ids in deterministic frame-order.
+            - Omits frames that do not currently expose a `frame_overview`
+              record.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, returns frame ids
+                across all hosted descriptors.
+
+        Returns:
+            List[str]: Published frame ids in deterministic order.
+        """
+        self.check_cleaned()
+        frame_ids: List[str] = []
+        for current_frame_name in self._get_frame_names_for_query(frame_name):
+            descriptor = self._get_required_frame_descriptor(current_frame_name)
+            frame_overview = descriptor.frame_overview
+            if frame_overview is None:
+                continue
+            frame_ids.append(frame_overview.frame_id)
+        return frame_ids
+
+    def list_nexus_contracts(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[Dict[str, str]]:
+        """
+        Return the published Nexus dataset contracts for hosted frames.
+
+        Purpose:
+            Give the operator a direct host-level view of the record contracts
+            currently attached to the selected descriptor scope.
+
+        Contract:
+            - Uses only record-level `nexus_label` / `nexus_version`.
+            - Does not expose payload body content.
+            - Returns one contract entry per frame that currently exposes a
+              `frame_overview` record.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, returns contract
+                entries across all hosted frames.
+
+        Returns:
+            List[Dict[str, str]]: Nexus contract entries in deterministic frame
+            order.
+        """
+        self.check_cleaned()
+        contracts: List[Dict[str, str]] = []
+        for current_frame_name in self._get_frame_names_for_query(frame_name):
+            descriptor = self._get_required_frame_descriptor(current_frame_name)
+            frame_overview = descriptor.frame_overview
+            if frame_overview is None:
+                continue
+            contracts.append(
+                {
+                    "frame_name": current_frame_name,
+                    "nexus_label": frame_overview.nexus_label,
+                    "nexus_version": frame_overview.nexus_version,
+                }
+            )
+        return contracts
+
+    def count_conduit_records(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> int:
+        """
+        Return the number of published conduit records.
+
+        Purpose:
+            Surface conduit-record inventory at the descriptor host level
+            without reaching into conduit payload bodies.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, counts conduit
+                records across all hosted frames.
+
+        Returns:
+            int: Published conduit-record count.
+        """
+        self.check_cleaned()
+        return len(self.list_conduit_record_ids(frame_name=frame_name))
+
+    def list_conduit_record_ids(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return published conduit record ids for the selected scope.
+
+        Purpose:
+            Expose the conduit ids owned by the selected frame descriptor scope
+            without surfacing payload details.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, returns conduit ids
+                across all hosted frames.
+
+        Returns:
+            List[str]: Conduit ids in deterministic order.
+        """
+        self.check_cleaned()
+        conduit_ids: List[str] = []
+        for conduit_record in self._iter_conduit_records(frame_name=frame_name):
+            conduit_ids.append(conduit_record.conduit_id)
+        return conduit_ids
+
+    def list_root_conduit_ids(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return root conduit ids for the selected descriptor scope.
+
+        Purpose:
+            Surface conduit-root topology at the host level using record
+            identity only.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, returns unique root
+                conduit ids across all hosted frames.
+
+        Returns:
+            List[str]: Deterministically sorted root conduit ids.
+        """
+        self.check_cleaned()
+        root_conduit_ids = {
+            conduit_record.root_conduit_id
+            for conduit_record in self._iter_conduit_records(frame_name=frame_name)
+        }
+        return list(sorted(root_conduit_ids))
+
+    def count_spellbooks(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> int:
+        """
+        Return the number of distinct published origin spellbooks.
+
+        Purpose:
+            Surface spellbook provenance breadth at the descriptor host level.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, counts distinct
+                spellbook ids across all hosted frames.
+
+        Returns:
+            int: Distinct origin spellbook count.
+        """
+        self.check_cleaned()
+        return len(self.list_origin_spellbook_ids(frame_name=frame_name))
+
+    def list_origin_spellbook_ids(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return distinct origin spellbook ids for the selected scope.
+
+        Purpose:
+            Expose the spellbook provenance ids attached to the hosted spell
+            records.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, returns distinct
+                spellbook ids across all hosted frames.
+
+        Returns:
+            List[str]: Distinct spellbook ids in deterministic order.
+        """
+        self.check_cleaned()
+        spellbook_ids = {
+            spell_record.origin_spellbook_id
+            for spell_record in self._iter_spell_records(frame_name=frame_name)
+        }
+        return list(sorted(spellbook_ids))
+
+    def list_spell_record_ids(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return published spell record ids for the selected scope.
+
+        Purpose:
+            Expose spell ids directly from `SpellRecord` ownership without
+            surfacing payload bodies.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, returns spell ids
+                across all hosted frames.
+
+        Returns:
+            List[str]: Spell ids in deterministic record order.
+        """
+        self.check_cleaned()
+        spell_ids: List[str] = []
+        for spell_record in self._iter_spell_records(frame_name=frame_name):
+            spell_ids.append(spell_record.spell_id)
+        return spell_ids
+
+    def list_spell_record_keys(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[Tuple[str, str]]:
+        """
+        Return canonical spell record keys for the selected scope.
+
+        Purpose:
+            Surface the exact `(spellbook_id, spell_id)` storage identities
+            attached to the selected descriptors.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, returns record keys
+                across all hosted frames.
+
+        Returns:
+            List[Tuple[str, str]]: Spell record keys in deterministic order.
+        """
+        self.check_cleaned()
+        record_keys: List[Tuple[str, str]] = []
+        for spell_record in self._iter_spell_records(frame_name=frame_name):
+            record_keys.append(spell_record.record_key)
+        return record_keys
+
+    def list_spell_names(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return published spell names for the selected scope.
+
+        Purpose:
+            Expose spell-name inventory directly from `SpellRecord` metadata.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, returns spell names
+                across all hosted frames.
+
+        Returns:
+            List[str]: Spell names in deterministic record order.
+        """
+        self.check_cleaned()
+        spell_names: List[str] = []
+        for spell_record in self._iter_spell_records(frame_name=frame_name):
+            spell_names.append(spell_record.spell_name)
+        return spell_names
+
+    def list_binding_names(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return published binding names for the selected scope.
+
+        Purpose:
+            Expose the spell binding identities currently represented in the
+            hosted descriptors.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, returns binding names
+                across all hosted frames.
+
+        Returns:
+            List[str]: Non-empty binding names in deterministic record order.
+        """
+        self.check_cleaned()
+        binding_names: List[str] = []
+        for spell_record in self._iter_spell_records(frame_name=frame_name):
+            if spell_record.binding_name is None:
+                continue
+            binding_names.append(spell_record.binding_name)
+        return binding_names
+
+    def list_lineage_ids(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return lineage ids for the selected descriptor scope.
+
+        Purpose:
+            Expose lineage identity directly from `SpellRecord` metadata.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, returns lineage ids
+                across all hosted frames.
+
+        Returns:
+            List[str]: Lineage ids in deterministic record order.
+        """
+        self.check_cleaned()
+        lineage_ids: List[str] = []
+        for spell_record in self._iter_spell_records(frame_name=frame_name):
+            lineage_ids.append(spell_record.lineage_id)
+        return lineage_ids
+
+    def list_spellframes(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return normalized spellframe values for the selected scope.
+
+        Purpose:
+            Surface the logical spellframe inventory directly from
+            `SpellRecord.spellframe` without exposing payload data.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, returns unique
+                spellframe values across all hosted frames.
+
+        Returns:
+            List[str]: Distinct normalized spellframe values in deterministic
+            order.
+        """
+        self.check_cleaned()
+        spellframes = {
+            self._normalize_spellframe_value(spell_record.spellframe)
+            for spell_record in self._iter_spell_records(frame_name=frame_name)
+            if self._normalize_spellframe_value(spell_record.spellframe) is not None
+        }
+        return list(sorted(spellframes))
+
+    def list_permissions(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return distinct spell permission names for the selected scope.
+
+        Purpose:
+            Surface the spell permission posture currently represented in the
+            hosted descriptors.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, returns permission
+                names across all hosted frames.
+
+        Returns:
+            List[str]: Distinct permission names in deterministic order.
+        """
+        self.check_cleaned()
+        permissions = {
+            spell_record.permissions.name
+            for spell_record in self._iter_spell_records(frame_name=frame_name)
+        }
+        return list(sorted(permissions))
+
+    def list_existence_kinds(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return distinct spell existence kinds for the selected scope.
+
+        Purpose:
+            Surface spell lifetime categories directly from `SpellRecord`
+            metadata.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, returns existence
+                kinds across all hosted frames.
+
+        Returns:
+            List[str]: Distinct existence-kind names in deterministic order.
+        """
+        self.check_cleaned()
+        existence_kinds = {
+            spell_record.existence.name
+            for spell_record in self._iter_spell_records(frame_name=frame_name)
+        }
+        return list(sorted(existence_kinds))
+
+    def describe_descriptor_inventory(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return a descriptor-only inventory summary for the selected scope.
+
+        Purpose:
+            Give the operator one compact host-level answer to "what descriptors
+            do I have here?" without crossing into payload bodies.
+
+        Contract:
+            - Uses only `FrameRecord`, `ConduitRecord`, and `SpellRecord`
+              identity/provenance fields.
+            - May summarize one frame or the entire hosted viewer scope.
+            - Does not expose payload body contents.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, summarizes all hosted
+                descriptors together.
+
+        Returns:
+            Dict[str, object]: Descriptor-only inventory summary.
+        """
+        self.check_cleaned()
+        frame_names = self._get_frame_names_for_query(frame_name)
+        return {
+            "frame_count": len(frame_names),
+            "frame_names": tuple(frame_names),
+            "frame_ids": tuple(self.list_frame_ids(frame_name=frame_name)),
+            "conduit_record_count": self.count_conduit_records(frame_name=frame_name),
+            "root_conduit_ids": tuple(self.list_root_conduit_ids(frame_name=frame_name)),
+            "spell_record_count": self.count_spell_records(frame_name=frame_name),
+            "origin_spellbook_count": self.count_spellbooks(frame_name=frame_name),
+            "origin_spellbook_ids": tuple(
+                self.list_origin_spellbook_ids(frame_name=frame_name)
+            ),
+            "permissions": tuple(self.list_permissions(frame_name=frame_name)),
+            "existence_kinds": tuple(
+                self.list_existence_kinds(frame_name=frame_name)
+            ),
+        }
+
+    def describe_descriptor_topology(self, frame_name: str) -> Dict[str, object]:
+        """
+        Return descriptor-topology groupings for one hosted frame.
+
+        Purpose:
+            Surface the descriptor-owned conduit/spell index structure in one
+            place so the operator can understand how records are grouped before
+            moving into payload-aware helper methods.
+
+        Contract:
+            - Uses only descriptor-owned indexes and record identity fields.
+            - Does not expose payload body contents.
+            - Requires one concrete hosted frame.
+
+        Args:
+            frame_name:
+                Hosted frame name whose descriptor topology should be
+                summarized.
+
+        Returns:
+            Dict[str, object]: Descriptor topology summary for the frame.
+        """
+        self.check_cleaned()
+        descriptor = self._get_required_frame_descriptor(frame_name)
+        conduit_ids_by_root_id: Dict[str, List[str]] = {}
+        for conduit_record in self._iter_conduit_records(frame_name=frame_name):
+            conduit_ids_by_root_id.setdefault(
+                conduit_record.root_conduit_id,
+                [],
+            ).append(conduit_record.conduit_id)
+        spell_source_ids_by_conduit_id: Dict[str, List[str]] = {}
+        for conduit_id, record_keys in descriptor.spell_keys_by_conduit_id.items():
+            for record_key in sorted(record_keys):
+                spell_record = descriptor.spell_records_by_key[record_key]
+                spell_source_ids_by_conduit_id.setdefault(conduit_id, []).append(
+                    self._build_spell_source_id(spell_record)
+                )
+        spell_record_keys_by_spellbook_id: Dict[str, Tuple[Tuple[str, str], ...]] = {
+            spellbook_id: tuple(sorted(record_keys))
+            for spellbook_id, record_keys in (
+                descriptor.spell_keys_by_spellbook_id.items()
+            )
+        }
+        return {
+            "frame_name": frame_name,
+            "frame_id": (
+                descriptor.frame_overview.frame_id
+                if descriptor.frame_overview is not None
+                else None
+            ),
+            "root_conduit_ids": tuple(
+                sorted(conduit_ids_by_root_id.keys())
+            ),
+            "conduit_ids_by_root_id": {
+                root_conduit_id: tuple(sorted(conduit_ids))
+                for root_conduit_id, conduit_ids in conduit_ids_by_root_id.items()
+            },
+            "spell_source_ids_by_conduit_id": {
+                conduit_id: tuple(spell_source_ids)
+                for conduit_id, spell_source_ids in (
+                    spell_source_ids_by_conduit_id.items()
+                )
+            },
+            "spell_record_keys_by_spellbook_id": spell_record_keys_by_spellbook_id,
+        }
+
+    def describe_conduit_records(self, frame_name: str) -> List[Dict[str, object]]:
+        """
+        Return descriptor-only conduit record descriptions for one frame.
+
+        Purpose:
+            Surface the conduit record identities and lineage grouping owned by
+            one frame descriptor without exposing conduit payload bodies.
+
+        Args:
+            frame_name:
+                Hosted frame name whose conduit records should be described.
+
+        Returns:
+            List[Dict[str, object]]: Conduit record descriptions.
+        """
+        self.check_cleaned()
+        descriptor = self._get_required_frame_descriptor(frame_name)
+        descriptions: List[Dict[str, object]] = []
+        for conduit_record in self._iter_conduit_records(frame_name=frame_name):
+            owned_spell_keys = descriptor.spell_keys_by_conduit_id.get(
+                conduit_record.conduit_id,
+                set(),
+            )
+            descriptions.append(
+                {
+                    "frame_name": frame_name,
+                    "conduit_id": conduit_record.conduit_id,
+                    "root_conduit_id": conduit_record.root_conduit_id,
+                    "origin_spellbook_id": conduit_record.origin_spellbook_id,
+                    "nexus_label": conduit_record.nexus_label,
+                    "nexus_version": conduit_record.nexus_version,
+                    "is_root_conduit": (
+                        conduit_record.conduit_id == conduit_record.root_conduit_id
+                    ),
+                    "owned_spell_record_count": len(owned_spell_keys),
+                }
+            )
+        return descriptions
+
+    def describe_spell_records(self, frame_name: str) -> List[Dict[str, object]]:
+        """
+        Return descriptor-only spell record descriptions for one frame.
+
+        Purpose:
+            Surface spell record identities and provenance directly from
+            `SpellRecord` without crossing into spell payload bodies.
+
+        Args:
+            frame_name:
+                Hosted frame name whose spell records should be described.
+
+        Returns:
+            List[Dict[str, object]]: Spell record descriptions.
+        """
+        self.check_cleaned()
+        return [
+            self.describe_spell_record(
+                self._build_spell_source_id(spell_record),
+                frame_name=frame_name,
+            )
+            for spell_record in self._iter_spell_records(frame_name=frame_name)
+        ]
+
+    def describe_spell_record(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return one descriptor-only spell record description.
+
+        Purpose:
+            Give the operator one exact spell-record view built strictly from
+            record identity and provenance fields.
+
+        Contract:
+            - Uses only `SpellRecord` fields and normalized spellframe values.
+            - Does not expose payload body content.
+            - When `frame_name` is omitted, searches the hosted frames for a
+              unique matching spell source id.
+
+        Args:
+            spell_source_id:
+                Published spell source id in `spellbook_id:spell_id` form.
+            frame_name:
+                Optional hosted frame name to constrain the lookup.
+
+        Returns:
+            Dict[str, object]: Descriptor-only spell record description.
+        """
+        self.check_cleaned()
+        resolved_frame_name, spell_record = self._get_required_spell_record(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+        return {
+            "frame_name": resolved_frame_name,
+            "source_id": spell_source_id,
+            "record_key": spell_record.record_key,
+            "spell_id": spell_record.spell_id,
+            "lineage_id": spell_record.lineage_id,
+            "origin_spellbook_id": spell_record.origin_spellbook_id,
+            "owner_conduit_id": spell_record.owner_conduit_id,
+            "spell_name": spell_record.spell_name,
+            "binding_name": spell_record.binding_name,
+            "spellframe": self._normalize_spellframe_value(spell_record.spellframe),
+            "permissions": spell_record.permissions.name,
+            "existence": spell_record.existence.name,
+            "nexus_label": spell_record.nexus_label,
+            "nexus_version": spell_record.nexus_version,
+        }
+
+    def list_spells_by_owner_conduit(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return spell source ids owned by one conduit.
+
+        Purpose:
+            Expose spell ownership at the descriptor host level without
+            requiring a payload-aware helper path.
+
+        Args:
+            conduit_id:
+                Required owner conduit id.
+            frame_name:
+                Optional hosted frame name. When omitted, scans all hosted
+                frames.
+
+        Returns:
+            List[str]: Matching spell source ids in deterministic order.
+        """
+        self.check_cleaned()
+        if not conduit_id:
+            raise ValueError("conduit_id cannot be empty.")
+        matching_source_ids: List[str] = []
+        for spell_record in self._iter_spell_records(frame_name=frame_name):
+            if spell_record.owner_conduit_id == conduit_id:
+                matching_source_ids.append(self._build_spell_source_id(spell_record))
+        return matching_source_ids
+
+    def list_spells_by_spellbook_id(
+            self,
+            spellbook_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return spell source ids published by one origin spellbook.
+
+        Args:
+            spellbook_id:
+                Required origin spellbook id.
+            frame_name:
+                Optional hosted frame name. When omitted, scans all hosted
+                frames.
+
+        Returns:
+            List[str]: Matching spell source ids in deterministic order.
+        """
+        self.check_cleaned()
+        if not spellbook_id:
+            raise ValueError("spellbook_id cannot be empty.")
+        matching_source_ids: List[str] = []
+        for spell_record in self._iter_spell_records(frame_name=frame_name):
+            if spell_record.origin_spellbook_id == spellbook_id:
+                matching_source_ids.append(self._build_spell_source_id(spell_record))
+        return matching_source_ids
+
+    def list_spells_by_permission(
+            self,
+            permission: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return spell source ids with one permission posture.
+
+        Args:
+            permission:
+                Required permission name.
+            frame_name:
+                Optional hosted frame name. When omitted, scans all hosted
+                frames.
+
+        Returns:
+            List[str]: Matching spell source ids in deterministic order.
+        """
+        self.check_cleaned()
+        if not permission:
+            raise ValueError("permission cannot be empty.")
+        normalized_permission = permission.lower()
+        matching_source_ids: List[str] = []
+        for spell_record in self._iter_spell_records(frame_name=frame_name):
+            if spell_record.permissions.name.lower() == normalized_permission:
+                matching_source_ids.append(self._build_spell_source_id(spell_record))
+        return matching_source_ids
+
+    def list_spells_by_existence(
+            self,
+            existence: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return spell source ids with one existence posture.
+
+        Args:
+            existence:
+                Required existence-kind name.
+            frame_name:
+                Optional hosted frame name. When omitted, scans all hosted
+                frames.
+
+        Returns:
+            List[str]: Matching spell source ids in deterministic order.
+        """
+        self.check_cleaned()
+        if not existence:
+            raise ValueError("existence cannot be empty.")
+        normalized_existence = existence.lower()
+        matching_source_ids: List[str] = []
+        for spell_record in self._iter_spell_records(frame_name=frame_name):
+            if spell_record.existence.name.lower() == normalized_existence:
+                matching_source_ids.append(self._build_spell_source_id(spell_record))
+        return matching_source_ids
+
+    def list_spells_by_spellframe(
+            self,
+            spellframe_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return spell source ids with one normalized spellframe value.
+
+        Args:
+            spellframe_name:
+                Required normalized spellframe name.
+            frame_name:
+                Optional hosted frame name. When omitted, scans all hosted
+                frames.
+
+        Returns:
+            List[str]: Matching spell source ids in deterministic order.
+        """
+        self.check_cleaned()
+        if not spellframe_name:
+            raise ValueError("spellframe_name cannot be empty.")
+        matching_source_ids: List[str] = []
+        for spell_record in self._iter_spell_records(frame_name=frame_name):
+            normalized_spellframe = self._normalize_spellframe_value(
+                spell_record.spellframe
+            )
+            if normalized_spellframe == spellframe_name:
+                matching_source_ids.append(self._build_spell_source_id(spell_record))
+        return matching_source_ids
+
     def list_view_profile_names(self) -> List[str]:
         self.check_cleaned()
         return self.list_active_profile_names()
@@ -872,6 +1662,192 @@ class FrameViewer(Cleanable):
                     frame_name
                 )
             ) from exc
+
+    def _get_frame_names_for_query(
+            self,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return the hosted frame names participating in one host query.
+
+        Purpose:
+            Normalize one optional frame filter into the deterministic set of
+            frame names a multi-descriptor host query should inspect.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When provided, only that frame is
+                returned after validation.
+
+        Returns:
+            Tuple[str, ...]: Deterministic hosted frame names for the query.
+        """
+        self.check_cleaned()
+        if frame_name is not None:
+            if not frame_name:
+                raise ValueError("frame_name cannot be empty.")
+            self._get_required_frame_descriptor(frame_name)
+            return (frame_name,)
+        return tuple(self.list_frame_names())
+
+    def _iter_conduit_records(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Iterator[object]:
+        """
+        Yield conduit records in deterministic hosted order.
+
+        Purpose:
+            Provide one internal iteration path for descriptor-host conduit
+            queries without duplicating record traversal logic.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, yields conduit
+                records across all hosted frames.
+
+        Yields:
+            ConduitRecord-like objects in deterministic order.
+        """
+        for current_frame_name in self._get_frame_names_for_query(frame_name):
+            descriptor = self._get_required_frame_descriptor(current_frame_name)
+            for conduit_id in sorted(descriptor.conduit_records_by_id.keys()):
+                yield descriptor.conduit_records_by_id[conduit_id]
+
+    def _iter_spell_records(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Iterator[object]:
+        """
+        Yield spell records in deterministic hosted order.
+
+        Purpose:
+            Provide one internal iteration path for descriptor-host spell
+            queries without duplicating record traversal logic.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, yields spell records
+                across all hosted frames.
+
+        Yields:
+            SpellRecord-like objects in deterministic order.
+        """
+        for current_frame_name in self._get_frame_names_for_query(frame_name):
+            descriptor = self._get_required_frame_descriptor(current_frame_name)
+            for record_key in sorted(descriptor.spell_records_by_key.keys()):
+                yield descriptor.spell_records_by_key[record_key]
+
+    @staticmethod
+    def _build_spell_source_id(spell_record: object) -> str:
+        """
+        Build the published spell source id for one spell record.
+
+        Args:
+            spell_record:
+                Spell record whose published source id should be derived.
+
+        Returns:
+            str: Published spell source id in `spellbook_id:spell_id` form.
+        """
+        return "{0}:{1}".format(
+            spell_record.origin_spellbook_id,
+            spell_record.spell_id,
+        )
+
+    @staticmethod
+    def _normalize_spellframe_value(spellframe: object) -> Optional[str]:
+        """
+        Return one stable string view of a spellframe value.
+
+        Purpose:
+            Normalize the loose `SpellRecord.spellframe` field into a host-safe
+            string representation suitable for descriptor-only summaries and
+            filters.
+
+        Args:
+            spellframe:
+                Raw spellframe value from a spell record.
+
+        Returns:
+            Optional[str]: Normalized spellframe string when present.
+        """
+        if spellframe is None:
+            return None
+        if isinstance(spellframe, str):
+            return spellframe
+        if isinstance(spellframe, type):
+            return spellframe.__name__
+        return str(spellframe)
+
+    def _get_required_spell_record(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, object]:
+        """
+        Return one spell record plus its frame name or raise.
+
+        Purpose:
+            Resolve one published spell source id against the hosted
+            descriptors while keeping the lookup behavior explicit and
+            deterministic.
+
+        Args:
+            spell_source_id:
+                Published spell source id in `spellbook_id:spell_id` form.
+            frame_name:
+                Optional hosted frame name to constrain the lookup.
+
+        Returns:
+            Tuple[str, object]: `(frame_name, spell_record)` for the resolved
+            record.
+        """
+        if not spell_source_id:
+            raise ValueError("spell_source_id cannot be empty.")
+        spellbook_id, spell_id = self._parse_spell_source_id(spell_source_id)
+        matching_records: List[Tuple[str, object]] = []
+        for current_frame_name in self._get_frame_names_for_query(frame_name):
+            descriptor = self._get_required_frame_descriptor(current_frame_name)
+            record = descriptor.spell_records_by_key.get((spellbook_id, spell_id))
+            if record is None:
+                continue
+            matching_records.append((current_frame_name, record))
+        if len(matching_records) == 0:
+            raise ValueError(
+                "Spell source id '{0}' was not found.".format(spell_source_id)
+            )
+        if len(matching_records) > 1:
+            raise ValueError(
+                "Spell source id '{0}' is ambiguous across hosted frames.".format(
+                    spell_source_id
+                )
+            )
+        return matching_records[0]
+
+    @staticmethod
+    def _parse_spell_source_id(spell_source_id: str) -> Tuple[str, str]:
+        """
+        Parse one published spell source id into its canonical record key.
+
+        Args:
+            spell_source_id:
+                Published spell source id in `spellbook_id:spell_id` form.
+
+        Returns:
+            Tuple[str, str]: `(spellbook_id, spell_id)` key.
+        """
+        parts = spell_source_id.split(":", 1)
+        if len(parts) != 2:
+            raise ValueError(
+                "spell_source_id '{0}' must be in 'spellbook_id:spell_id' form.".format(
+                    spell_source_id
+                )
+            )
+        return parts[0], parts[1]
 
     def _create_bound_profile_for_frame(
             self,

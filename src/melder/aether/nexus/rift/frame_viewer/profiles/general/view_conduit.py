@@ -238,6 +238,488 @@ class GeneralViewConduit(Cleanable):
             ),
         }
 
+    def describe_conduit_inventory(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return a compact inventory summary for one conduit.
+
+        Purpose:
+            Give the operator one quick conduit-local inventory view covering
+            owned spells, peer links, and visible payload sections.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            Dict[str, object]: Compact conduit inventory summary.
+        """
+        self.check_cleaned()
+        conduit_description = self.describe_conduit(
+            conduit_id,
+            frame_name=frame_name,
+        )
+        spell_links = self.list_conduit_spells(
+            conduit_id,
+            frame_name=frame_name,
+        )
+        peer_conduit_ids = tuple(
+            conduit_description["payload"].get("peer_conduit_ids", tuple())
+        )
+        return {
+            "conduit_id": conduit_id,
+            "is_root_conduit": self.is_root_conduit(
+                conduit_id,
+                frame_name=frame_name,
+            ),
+            "root_conduit_id": self.get_root_conduit_id(
+                conduit_id,
+                frame_name=frame_name,
+            ),
+            "visible_sections": conduit_description["visible_sections"],
+            "peer_conduit_ids": peer_conduit_ids,
+            "peer_count": len(peer_conduit_ids),
+            "spell_count": len(spell_links),
+            "spell_source_ids": tuple(
+                spell_link.source_id
+                for spell_link in spell_links
+            ),
+        }
+
+    def describe_conduit_relationships(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the visible relationship posture for one conduit.
+
+        Purpose:
+            Make the conduit's root grouping, peer links, and owned visible
+            spells explicit in one relationship-oriented view.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            Dict[str, object]: Visible conduit relationship summary.
+        """
+        self.check_cleaned()
+        self.get_required_conduit(conduit_id, frame_name=frame_name)
+        return {
+            "conduit_id": conduit_id,
+            "is_root_conduit": self.is_root_conduit(
+                conduit_id,
+                frame_name=frame_name,
+            ),
+            "root_conduit_id": self.get_root_conduit_id(
+                conduit_id,
+                frame_name=frame_name,
+            ),
+            "peer_conduit_ids": self.list_peer_conduit_ids(
+                conduit_id,
+                frame_name=frame_name,
+            ),
+            "peer_conduits": tuple(
+                peer_link.source_id
+                for peer_link in self.list_peer_conduits(
+                    conduit_id,
+                    frame_name=frame_name,
+                )
+            ),
+            "spell_source_ids": self.list_spell_source_ids_for_conduit(
+                conduit_id,
+                frame_name=frame_name,
+            ),
+        }
+
+    def list_root_conduits(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[FrameLink]:
+        """
+        Return visible conduit links that are root conduits.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            List[FrameLink]: Visible root conduit links.
+        """
+        self.check_cleaned()
+        frame_view = self._get_required_frame_view()
+        return frame_view.list_visible_root_conduits(frame_name=frame_name)
+
+    def is_root_conduit(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> bool:
+        """
+        Return whether one visible conduit is its own root.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            bool: True when the conduit is a root conduit.
+        """
+        self.check_cleaned()
+        conduit_record = self._get_required_conduit_record(
+            conduit_id,
+            frame_name=frame_name,
+        )
+        return conduit_record.conduit_id == conduit_record.root_conduit_id
+
+    def get_root_conduit_id(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> str:
+        """
+        Return the root conduit id for one visible conduit.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            str: Root conduit id for the conduit.
+        """
+        self.check_cleaned()
+        conduit_record = self._get_required_conduit_record(
+            conduit_id,
+            frame_name=frame_name,
+        )
+        return conduit_record.root_conduit_id
+
+    def list_conduits_by_root_id(
+            self,
+            root_conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[FrameLink]:
+        """
+        Return visible conduits grouped under one root conduit id.
+
+        Args:
+            root_conduit_id:
+                Required root conduit id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            List[FrameLink]: Visible conduits whose root lineage matches.
+        """
+        self.check_cleaned()
+        if not root_conduit_id:
+            raise ValueError("root_conduit_id cannot be empty.")
+        matching_conduits: List[FrameLink] = []
+        for conduit_link in self.list_conduits(frame_name=frame_name):
+            conduit_record = self._get_required_conduit_record(
+                conduit_link.source_id,
+                frame_name=frame_name,
+            )
+            if conduit_record.root_conduit_id == root_conduit_id:
+                matching_conduits.append(conduit_link)
+        return matching_conduits
+
+    def list_conduits_by_policy(
+            self,
+            policy_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[FrameLink]:
+        """
+        Return visible conduits with one conduit policy value.
+
+        Args:
+            policy_name:
+                Required conduit policy name.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            List[FrameLink]: Visible conduits whose payload policy matches.
+        """
+        self.check_cleaned()
+        if not policy_name:
+            raise ValueError("policy_name cannot be empty.")
+        normalized_policy_name = policy_name.lower()
+        matching_conduits: List[FrameLink] = []
+        for conduit_link in self.list_conduits(frame_name=frame_name):
+            conduit_record = self._get_required_conduit_record(
+                conduit_link.source_id,
+                frame_name=frame_name,
+            )
+            current_policy_name = self._normalize_policy_name(
+                conduit_record.payload.policy
+            )
+            if current_policy_name is None:
+                continue
+            if current_policy_name.lower() == normalized_policy_name:
+                matching_conduits.append(conduit_link)
+        return matching_conduits
+
+    def list_conduits_by_state(
+            self,
+            state_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[FrameLink]:
+        """
+        Return visible conduits with one conduit-state value.
+
+        Args:
+            state_name:
+                Required conduit-state name.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            List[FrameLink]: Visible conduits whose payload state matches.
+        """
+        self.check_cleaned()
+        if not state_name:
+            raise ValueError("state_name cannot be empty.")
+        normalized_state_name = state_name.lower()
+        matching_conduits: List[FrameLink] = []
+        for conduit_link in self.list_conduits(frame_name=frame_name):
+            conduit_record = self._get_required_conduit_record(
+                conduit_link.source_id,
+                frame_name=frame_name,
+            )
+            current_state_name = conduit_record.payload.conduit_state.name
+            if current_state_name.lower() == normalized_state_name:
+                matching_conduits.append(conduit_link)
+        return matching_conduits
+
+    def list_peer_conduits(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[FrameLink]:
+        """
+        Return visible peer conduit links for one conduit.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            List[FrameLink]: Visible peer conduit links.
+        """
+        self.check_cleaned()
+        peer_conduit_ids = set(
+            self.list_peer_conduit_ids(
+                conduit_id,
+                frame_name=frame_name,
+            )
+        )
+        return [
+            conduit_link
+            for conduit_link in self.list_conduits(frame_name=frame_name)
+            if conduit_link.source_id in peer_conduit_ids
+        ]
+
+    def list_peer_conduit_ids(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return visible peer conduit ids for one conduit.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            Tuple[str, ...]: Visible peer conduit ids in deterministic order.
+        """
+        self.check_cleaned()
+        conduit_record = self._get_required_conduit_record(
+            conduit_id,
+            frame_name=frame_name,
+        )
+        visible_conduit_ids = set(
+            conduit_link.source_id
+            for conduit_link in self.list_conduits(frame_name=frame_name)
+        )
+        return tuple(
+            peer_conduit_id
+            for peer_conduit_id in conduit_record.payload.peer_conduit_ids
+            if peer_conduit_id in visible_conduit_ids
+        )
+
+    def list_spell_source_ids_for_conduit(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return visible spell source ids owned by one conduit.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            Tuple[str, ...]: Visible spell source ids owned by the conduit.
+        """
+        self.check_cleaned()
+        return tuple(
+            spell_link.source_id
+            for spell_link in self.list_conduit_spells(
+                conduit_id,
+                frame_name=frame_name,
+            )
+        )
+
+    def list_binding_names_for_conduit(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return visible spell binding names owned by one conduit.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            Tuple[str, ...]: Visible binding names owned by the conduit.
+        """
+        self.check_cleaned()
+        frame_view = self._get_required_frame_view()
+        descriptor = frame_view._get_required_frame_descriptor()
+        binding_names: List[str] = []
+        for spell_link in self.list_conduit_spells(
+                conduit_id,
+                frame_name=frame_name,
+        ):
+            record_key = spell_link.metadata["record_key"]
+            binding_name = descriptor.spell_records_by_key[record_key].binding_name
+            if binding_name is None:
+                continue
+            binding_names.append(binding_name)
+        return tuple(binding_names)
+
+    def list_spell_names_for_conduit(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return visible spell names owned by one conduit.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            Tuple[str, ...]: Visible spell names owned by the conduit.
+        """
+        self.check_cleaned()
+        frame_view = self._get_required_frame_view()
+        descriptor = frame_view._get_required_frame_descriptor()
+        return tuple(
+            descriptor.spell_records_by_key[spell_link.metadata["record_key"]].spell_name
+            for spell_link in self.list_conduit_spells(
+                conduit_id,
+                frame_name=frame_name,
+            )
+        )
+
+    def describe_conduit_access_summary(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return one compact access/inventory summary for a conduit.
+
+        Purpose:
+            Combine the conduit access explanation, relationship view, and
+            compact inventory so the operator can decide quickly whether to go
+            deeper on that conduit.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            Dict[str, object]: Compact conduit access summary.
+        """
+        self.check_cleaned()
+        return {
+            "conduit_id": conduit_id,
+            "access": self.explain_conduit_access(
+                conduit_id,
+                frame_name=frame_name,
+            ),
+            "inventory": self.describe_conduit_inventory(
+                conduit_id,
+                frame_name=frame_name,
+            ),
+            "relationships": self.describe_conduit_relationships(
+                conduit_id,
+                frame_name=frame_name,
+            ),
+        }
+
     def find_conduit_by_name(
             self,
             conduit_name: str,
@@ -379,6 +861,45 @@ class GeneralViewConduit(Cleanable):
         if self._frame_view is None:
             raise ValueError("GeneralViewConduit is not bound to a frame view.")
         return self._frame_view
+
+    def _get_required_conduit_record(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one descriptor-owned conduit record or raise.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            object: Descriptor-owned conduit record.
+        """
+        self.get_required_conduit(conduit_id, frame_name=frame_name)
+        descriptor = self._get_required_frame_view()._get_required_frame_descriptor()
+        return descriptor.conduit_records_by_id[conduit_id]
+
+    @staticmethod
+    def _normalize_policy_name(policy: object) -> Optional[str]:
+        """
+        Return one stable string view of a conduit policy value.
+
+        Args:
+            policy:
+                Raw conduit policy value.
+
+        Returns:
+            Optional[str]: Normalized conduit policy name when present.
+        """
+        if policy is None:
+            return None
+        return policy.name
 
     @staticmethod
     def _filter_conduit_payload(

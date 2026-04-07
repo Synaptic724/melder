@@ -1,4 +1,5 @@
 import json
+import threading
 
 import pytest
 
@@ -131,6 +132,8 @@ def test_chain_starts_with_one_default_head_and_current() -> None:
     current = chain.get_current_configuration()
 
     assert head is current
+    assert chain.frame_name == "ops"
+    assert chain.history_limit == 30
     assert chain.head_configuration_id == head.configuration_id
     assert chain.current_configuration_id == current.configuration_id
     assert chain.count_configurations() == 1
@@ -225,6 +228,9 @@ def test_chain_insert_head_rejects_unlocked_wrong_frame_and_duplicates() -> None
     existing = chain.get_head_configuration()
     with pytest.raises(ValueError, match="already exists in the chain"):
         chain.insert_head_configuration(existing, select_as_current=True)
+
+    with pytest.raises(TypeError, match="configuration must be a FrameACLConfiguration"):
+        chain.insert_head_configuration(None, select_as_current=True)
 
 
 def test_chain_has_get_and_missing_config_behavior() -> None:
@@ -415,4 +421,81 @@ def test_chain_list_limit_and_cleanup_work() -> None:
     assert chain.cleaned is True
     assert chain._lock is None
     assert chain._configurations_by_id is None
+
+
+def test_chain_list_configurations_rejects_invalid_limit() -> None:
+    """
+    Verify list_configurations validates the optional limit argument.
+
+    Returns:
+        None.
+    """
+    chain = FrameACLConfigurationChain("ops")
+
+    with pytest.raises(ValueError, match="limit must be an integer >= 1 when provided"):
+        chain.list_configurations(limit=0)
+
+
+def test_chain_cleanup_is_idempotent() -> None:
+    """
+    Verify cleanup can be called repeatedly.
+
+    Returns:
+        None.
+    """
+    chain = FrameACLConfigurationChain("ops")
+
+    chain.cleanup()
+    chain.cleanup()
+
+    assert chain.cleaned is True
+
+
+def test_chain_cleanup_rechecks_cleaned_inside_lock() -> None:
+    """
+    Verify cleanup returns early when another thread cleans under the lock.
+
+    Returns:
+        None.
+    """
+
+    class _CoordinatedLock:
+        def __init__(self) -> None:
+            self._entered_first = threading.Event()
+            self._second_attempted = threading.Event()
+            self._lock = threading.RLock()
+
+        def __enter__(self):
+            if self._entered_first.is_set():
+                self._second_attempted.set()
+            self._lock.acquire()
+            if not self._entered_first.is_set():
+                self._entered_first.set()
+                assert self._second_attempted.wait(timeout=1.0)
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self._lock.release()
+
+    chain = FrameACLConfigurationChain("ops")
+    coordinated_lock = _CoordinatedLock()
+    chain._lock = coordinated_lock
+
+    thread_results = []
+
+    def _run_cleanup() -> None:
+        chain.cleanup()
+        thread_results.append(True)
+
+    first = threading.Thread(target=_run_cleanup)
+    second = threading.Thread(target=_run_cleanup)
+    first.start()
+    coordinated_lock._entered_first.wait(timeout=1.0)
+    second.start()
+    first.join(timeout=1.0)
+    second.join(timeout=1.0)
+
+    assert thread_results == [True, True]
+    assert chain.cleaned is True
+    assert chain._lock is None
 

@@ -1,41 +1,44 @@
 from threading import RLock
 from typing import Dict, List, Optional, Any, Iterable
 # Melder imports
-from melder.aether.dev_ops.incident_manager.incident_severity import IncidentSeverity
+from melder.aether.dev_ops.incident_manager.incident_severity import (
+    IncidentSeverity,
+)
 from melder.aether.dev_ops.incident_manager.incident_status import IncidentStatus
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.__melder_registration_guard__ import (
+    __melder_registration_guard__ as _mrg,
+)
+
 
 class Incident(Cleanable):
     """
-    Lightweight DevOps incident.
+    Mutable incident record with controlled status transitions.
 
-    This is intentionally generic: it carries identifiers and metadata but
-    does not prescribe how incidents are consumed. It is a tool surface
-    for AI, operators, and tests.
+    `Incident` is the concrete object stored by `IncidentManager`. It carries
+    the descriptive payload for one operational problem or noteworthy runtime
+    condition, plus a small mutable status field so tooling and operators can
+    mark the incident as acknowledged, resolved, or suppressed over time.
 
-    Identity / scope
-    ----------------
-    - id:
-        Stable incident id (ULID or similar).
-    - kind:
-        Free-form incident kind code (e.g. "validation_failed",
-        "graph_dirty", "mutation_stalled").
-    - severity:
-        Structured severity enum (info / warning / error / critical).
-    - spell_index_id:
-        Optional SpellIndex.id (lineage id) this incident is primarily
-        associated with.
-    - root_ids:
-        Optional list of root spell ids impacted by this incident.
+    Identity and scope:
+    - `id`: stable incident identifier allocated by the manager
+    - `kind`: free-form incident kind code such as `"validation_failed"`
+    - `severity`: structured severity level
+    - `spell_index_id`: optional lineage id primarily associated with the
+      incident
+    - `root_ids`: optional impacted root spell ids
 
-    Content
-    -------
-    - summary:
-        Short, human/AI-readable summary.
-    - details:
-        Free-form structured metadata for diagnostics and tooling.
+    Content:
+    - `summary`: short human/AI-readable description
+    - `details`: structured diagnostic payload for tooling
+
+    Contract:
+    - Read-only properties expose snapshots or scalar values under the lock.
+    - Status transitions are explicit methods rather than direct field writes.
+    - Cleanup releases internal references and invalidates the record for
+      future use.
     """
+
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
@@ -50,16 +53,32 @@ class Incident(Cleanable):
     ]
 
     def __init__(
-            self,
-            incident_id: str,
-            kind: str,
-            severity: IncidentSeverity,
-            summary: str,
-            *,
-            spell_index_id: Optional[str] = None,
-            root_ids: Optional[Iterable[str]] = None,
-            details: Optional[Dict[str, Any]] = None,
+        self,
+        incident_id: str,
+        kind: str,
+        severity: IncidentSeverity,
+        summary: str,
+        *,
+        spell_index_id: Optional[str] = None,
+        root_ids: Optional[Iterable[str]] = None,
+        details: Optional[Dict[str, Any]] = None,
     ) -> None:
+        """
+        Create one incident record.
+
+        Args:
+            incident_id: Stable incident identifier allocated by the manager.
+            kind: Free-form incident kind code.
+            severity: Severity classification for the incident.
+            summary: Short human/AI-readable description.
+            spell_index_id: Optional lineage id primarily associated with the
+                incident.
+            root_ids: Optional impacted root spell ids.
+            details: Optional structured diagnostic payload.
+
+        Raises:
+            ValueError: If `incident_id`, `kind`, or `summary` is empty.
+        """
         if not incident_id:
             raise ValueError("incident_id cannot be empty")
         if not kind:
@@ -71,7 +90,6 @@ class Incident(Cleanable):
 
         self._lock: RLock = RLock()
 
-        # scalar identity / status
         self._id: str = incident_id
         self._kind: str = kind
         self._severity: IncidentSeverity = severity
@@ -83,13 +101,13 @@ class Incident(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Idempotent cleanup.
+        Finalize the incident record and release its payload.
 
-        Marks this incident as cleaned and releases internal collections
-        and references so it can be safely discarded.
-
-        After cleanup():
-        - All public methods / properties will raise via check_cleaned().
+        Contract:
+        - Idempotent and lock-guarded.
+        - Clears root-id and details containers before dropping scalar fields.
+        - After cleanup, public properties and state-transition methods fail
+          through `check_cleaned()`.
         """
         if self._cleaned:
             return
@@ -116,68 +134,84 @@ class Incident(Cleanable):
 
         self._lock = None
 
-    # ---------------------------------------------------------------------
-    # Read-only views (all under lock)
-    # ---------------------------------------------------------------------
     @property
     def id(self) -> str:
+        """
+        Return the stable incident identifier.
+        """
         self.check_cleaned()
         with self._lock:
             return self._id
 
     @property
     def kind(self) -> str:
+        """
+        Return the incident kind code.
+        """
         self.check_cleaned()
         with self._lock:
             return self._kind
 
     @property
     def severity(self) -> IncidentSeverity:
+        """
+        Return the incident severity classification.
+        """
         self.check_cleaned()
         with self._lock:
             return self._severity
 
     @property
     def status(self) -> IncidentStatus:
+        """
+        Return the current lifecycle status of the incident.
+        """
         self.check_cleaned()
         with self._lock:
             return self._status
 
     @property
     def spell_index_id(self) -> Optional[str]:
+        """
+        Return the lineage id primarily associated with the incident, if any.
+        """
         self.check_cleaned()
         with self._lock:
             return self._spell_index_id
 
     @property
     def root_ids(self) -> List[str]:
-        # Return a snapshot; callers can’t mutate internal list.
+        """
+        Return a snapshot of impacted root spell ids.
+        """
         self.check_cleaned()
         with self._lock:
             return list(self._root_ids)
 
     @property
     def summary(self) -> str:
+        """
+        Return the short descriptive summary for the incident.
+        """
         self.check_cleaned()
         with self._lock:
             return self._summary
 
     @property
     def details(self) -> Dict[str, Any]:
-        # Return a snapshot; callers can’t mutate internal dict.
+        """
+        Return a snapshot of the structured diagnostic payload.
+        """
         self.check_cleaned()
         with self._lock:
             return dict(self._details)
 
-    # ---------------------------------------------------------------------
-    # State transitions (all under lock)
-    # ---------------------------------------------------------------------
     def acknowledge(self) -> None:
         """
-        Mark this incident as acknowledged (seen / triaged).
+        Mark the incident as acknowledged.
 
-        Does not resolve it; it just records that someone/thing has
-        looked at it.
+        This records that a tool or operator has seen and triaged the incident.
+        It does not resolve or suppress the underlying condition.
         """
         self.check_cleaned()
         with self._lock:
@@ -185,10 +219,10 @@ class Incident(Cleanable):
 
     def resolve(self) -> None:
         """
-        Mark this incident as resolved.
+        Mark the incident as resolved.
 
-        Higher-level tooling is responsible for deciding what "resolved"
-        means (e.g., underlying validation fixed, graph revalidated, etc.).
+        Higher-level tooling remains responsible for deciding what "resolved"
+        means operationally; this method only updates the incident status field.
         """
         self.check_cleaned()
         with self._lock:
@@ -196,11 +230,11 @@ class Incident(Cleanable):
 
     def suppress(self) -> None:
         """
-        Mark this incident as suppressed.
+        Mark the incident as suppressed.
 
-        This is typically used when the underlying condition is accepted
-        (e.g., known limitation, intentionally dirty graph) and we do not
-        want further noise from it.
+        This is the status used when the underlying condition is accepted or
+        intentionally tolerated and the caller does not want further noise from
+        the incident.
         """
         self.check_cleaned()
         with self._lock:

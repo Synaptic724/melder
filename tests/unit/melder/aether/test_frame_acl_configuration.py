@@ -163,6 +163,16 @@ def test_frame_acl_configuration_from_json_rejects_invalid_payloads() -> None:
             locked=False,
         )
 
+    with pytest.raises(ValueError, match="must decode to a JSON object"):
+        FrameACLConfiguration.from_json_configuration_string(
+            frame_name="ops",
+            json_configuration_string="[]",
+            source_configuration_id=None,
+            previous_configuration_id=None,
+            reason="invalid",
+            locked=False,
+        )
+
 
 def test_frame_acl_configuration_create_new_from_acl_configuration_copies_children() -> None:
     """
@@ -185,6 +195,20 @@ def test_frame_acl_configuration_create_new_from_acl_configuration_copies_childr
     assert copied.view_configuration is not source.view_configuration
     assert copied.codegen_configuration is not source.codegen_configuration
     assert copied.to_json_string() == source.to_json_string()
+
+
+def test_frame_acl_configuration_create_new_rejects_invalid_source() -> None:
+    """
+    Verify create_new_from_acl_configuration rejects non-configuration inputs.
+
+    Returns:
+        None.
+    """
+    with pytest.raises(TypeError, match="must be a FrameACLConfiguration"):
+        FrameACLConfiguration.create_new_from_acl_configuration(
+            None,
+            reason="copy",
+        )
 
 
 def test_frame_acl_configuration_finalize_and_previous_pointer_rules() -> None:
@@ -294,6 +318,51 @@ def test_frame_acl_configuration_set_typed_children_requires_mutable_state() -> 
         )
 
 
+def test_frame_acl_configuration_set_typed_children_reject_invalid_types() -> None:
+    """
+    Verify mutable child replacement still enforces the typed child contract.
+
+    Returns:
+        None.
+    """
+    configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        FrameACLConfiguration.create_default("ops"),
+        reason="draft",
+    )
+
+    with pytest.raises(TypeError, match="view_configuration must be a FrameACLViewConfiguration"):
+        configuration.set_view_configuration(None)
+
+    with pytest.raises(TypeError, match="codegen_configuration must be a FrameACLCodegenConfiguration"):
+        configuration.set_codegen_configuration(None)
+
+
+def test_frame_acl_configuration_normalized_json_and_created_at_are_exposed() -> None:
+    """
+    Verify public metadata/accessor properties expose the node snapshot cleanly.
+
+    Returns:
+        None.
+    """
+    configuration = FrameACLConfiguration.create_default("ops")
+
+    assert configuration.created_at.endswith("Z")
+    assert configuration.normalized_json_configuration_string == configuration.to_json_string()
+
+
+def test_frame_acl_configuration_set_json_requires_mutable_state() -> None:
+    """
+    Verify JSON payload replacement is blocked once the config is locked.
+
+    Returns:
+        None.
+    """
+    configuration = FrameACLConfiguration.create_default("ops")
+
+    with pytest.raises(RuntimeError, match="Cannot change JSON payload on a locked configuration"):
+        configuration.set_json_configuration_string("{}")
+
+
 def test_frame_acl_configuration_child_config_objects_are_serializable() -> None:
     """
     Verify typed child configs serialize their profile identity and overrides.
@@ -339,4 +408,60 @@ def test_frame_acl_configuration_cleanup_clears_fields() -> None:
     assert configuration._locked is None
     assert configuration._view_configuration is None
     assert configuration._codegen_configuration is None
+
+
+def test_frame_acl_configuration_cleanup_is_idempotent() -> None:
+    """
+    Verify cleanup can be called repeatedly.
+
+    Returns:
+        None.
+    """
+    configuration = FrameACLConfiguration.create_default("ops")
+
+    configuration.cleanup()
+    configuration.cleanup()
+
+    assert configuration.cleaned is True
+
+
+def test_frame_acl_configuration_init_rejects_empty_reason_and_non_bool_locked() -> None:
+    """
+    Verify node construction enforces reason and locked type requirements.
+
+    Returns:
+        None.
+    """
+    view_configuration = FrameACLViewConfiguration.from_profile(
+        FrameACLViewProfile.create_default()
+    )
+    codegen_configuration = FrameACLCodegenConfiguration.from_profile(
+        FrameACLCodegenProfile.create_default()
+    )
+
+    with pytest.raises(ValueError, match="reason cannot be empty"):
+        FrameACLConfiguration(
+            frame_name="ops",
+            view_configuration=view_configuration,
+            codegen_configuration=codegen_configuration,
+            source_configuration_id=None,
+            previous_configuration_id=None,
+            reason="",
+            locked=True,
+        )
+
+    with pytest.raises(TypeError, match="locked must be a bool"):
+        FrameACLConfiguration(
+            frame_name="ops",
+            view_configuration=FrameACLViewConfiguration.from_profile(
+                FrameACLViewProfile.create_default()
+            ),
+            codegen_configuration=FrameACLCodegenConfiguration.from_profile(
+                FrameACLCodegenProfile.create_default()
+            ),
+            source_configuration_id=None,
+            previous_configuration_id=None,
+            reason="invalid",
+            locked=None,
+        )
 
