@@ -540,6 +540,72 @@ class GeneralViewFrame(Cleanable):
             "hidden_spell_sections_by_source_id": hidden_spell_sections_by_source_id,
         }
 
+    def describe_visible_collisions(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return visible identity collisions for the bound frame.
+
+        Purpose:
+            Make visible ambiguity explicit at the frame-local surface so the
+            operator can see where multiple visible spells share the same
+            binding name, spell name, lineage, or spellframe.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            Dict[str, object]: Visible collision and grouping summary.
+        """
+        self.check_cleaned()
+        self._assert_optional_frame_name(frame_name)
+        grouped_source_ids_by_binding_name: Dict[str, List[str]] = {}
+        grouped_source_ids_by_spell_name: Dict[str, List[str]] = {}
+        grouped_source_ids_by_lineage_id: Dict[str, List[str]] = {}
+        grouped_source_ids_by_spellframe: Dict[str, List[str]] = {}
+        for spell_link, spell_record in self._iter_visible_spell_links_and_records(
+                frame_name=frame_name
+        ):
+            if spell_record.binding_name is not None:
+                grouped_source_ids_by_binding_name.setdefault(
+                    spell_record.binding_name,
+                    [],
+                ).append(spell_link.source_id)
+            grouped_source_ids_by_spell_name.setdefault(
+                spell_record.spell_name,
+                [],
+            ).append(spell_link.source_id)
+            grouped_source_ids_by_lineage_id.setdefault(
+                spell_record.lineage_id,
+                [],
+            ).append(spell_link.source_id)
+            normalized_spellframe = self._normalize_spellframe_value(
+                spell_record.spellframe
+            )
+            if normalized_spellframe is not None:
+                grouped_source_ids_by_spellframe.setdefault(
+                    normalized_spellframe,
+                    [],
+                ).append(spell_link.source_id)
+        return {
+            "binding_name_collisions": self._filter_grouped_collisions(
+                grouped_source_ids_by_binding_name
+            ),
+            "spell_name_collisions": self._filter_grouped_collisions(
+                grouped_source_ids_by_spell_name
+            ),
+            "lineage_groups": self._normalize_grouped_source_ids(
+                grouped_source_ids_by_lineage_id
+            ),
+            "spellframe_groups": self._normalize_grouped_source_ids(
+                grouped_source_ids_by_spellframe
+            ),
+        }
+
     def describe_visible_surface(
             self,
             *,
@@ -1747,3 +1813,71 @@ class GeneralViewFrame(Cleanable):
                     frame_name,
                 )
             )
+
+    def _iter_visible_spell_links_and_records(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[Tuple[FrameLink, object]]:
+        """
+        Return visible spell links paired with their descriptor-owned records.
+
+        Args:
+            frame_name:
+                Optional frame-name assertion. When supplied, it must match the
+                bound frame.
+
+        Returns:
+            List[Tuple[FrameLink, object]]: Visible spell links paired with
+            spell records.
+        """
+        descriptor = self._get_required_frame_descriptor()
+        return [
+            (
+                spell_link,
+                descriptor.spell_records_by_key[spell_link.metadata["record_key"]],
+            )
+            for spell_link in self.list_targets(
+                frame_name=frame_name,
+                source_kind="spell",
+            )
+        ]
+
+    @staticmethod
+    def _filter_grouped_collisions(
+            grouped_source_ids_by_value: Dict[str, List[str]],
+    ) -> Dict[str, Tuple[str, ...]]:
+        """
+        Return only the grouped values that collide.
+
+        Args:
+            grouped_source_ids_by_value:
+                Grouped source ids by normalized value.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Collision-only grouped source ids.
+        """
+        return {
+            current_value: tuple(sorted(source_ids))
+            for current_value, source_ids in grouped_source_ids_by_value.items()
+            if len(source_ids) > 1
+        }
+
+    @staticmethod
+    def _normalize_grouped_source_ids(
+            grouped_source_ids_by_value: Dict[str, List[str]],
+    ) -> Dict[str, Tuple[str, ...]]:
+        """
+        Return grouped source ids in deterministic tuple form.
+
+        Args:
+            grouped_source_ids_by_value:
+                Grouped source ids by normalized value.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Deterministically normalized groups.
+        """
+        return {
+            current_value: tuple(sorted(source_ids))
+            for current_value, source_ids in grouped_source_ids_by_value.items()
+        }

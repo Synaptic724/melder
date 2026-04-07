@@ -3,11 +3,22 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class Existence(Enum):
     """
-    Enum representing the lifecycle pattern (existence mode) of a spell within the Melder framework.
+    Lifecycle mode for a spell binding.
 
-    This defines how and where instances of a spell are managed across the system. Lifecycle scopes
-    range from per-frame uniqueness to fully dynamic instancing, allowing for precise memory and
-    control flow behavior across Aetheric Frames and conduit networks.
+    `Existence` answers the core runtime question for a spell binding:
+    "where does instance reuse stop and where does fresh construction begin?"
+    The selected member determines which ownership boundary holds created
+    instances, how widely they may be shared, and which control-plane features
+    participate in that sharing.
+
+    Contract:
+    - The enum does not perform caching by itself; it is a declarative mode
+      interpreted by `Meld`, `Creations`, conduit sharing, and spellspace
+      control flow.
+    - Member docstrings describe the reuse boundary and operational semantics
+      for each mode.
+    - The same spell may behave very differently under different `Existence`
+      values even when every other binding detail is unchanged.
     """
     __melder_internal__ = _mrg.sentinel
     unique = auto()
@@ -69,4 +80,10 @@ class Existence(Enum):
     """
 
     def __str__(self):
+        """
+        Return the enum member name.
+
+        This keeps logging and configuration surfaces readable without
+        requiring callers to reach through `.name` directly.
+        """
         return self.name

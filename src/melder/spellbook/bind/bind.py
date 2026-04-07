@@ -27,16 +27,26 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile impo
 #region Bind
 class Bind(Cleanable, IBind):
     """
-    The Bind class is responsible for the core registration of classes, methods, and
-    objects as formal **Spells** within the Melder system.
+    Spellbook registration gateway for classes, callables, and concrete objects.
 
-    It acts as the single entry point for declaring a component's lifecycle (`Existence`),
-    access control (`Permissions`), and structural identity. The process involves:
+    `Bind` is the public control-plane surface that turns an arbitrary binding
+    target into a canonical `Spell`. It is where lifecycle scope
+    (`Existence`), access policy (`Permissions`), spellframe grouping, and
+    structural fingerprinting first come together.
+
+    The registration pipeline involves:
     1.  **Reflection:** Examining the object using `SpellExaminer` to create a binding profile.
     2.  **Fingerprinting:** Generating a deterministic SHA256 unique ID (`spell_id`) based on the profile.
     3.  **Validation:** Enforcing rules regarding naming conventions, existence, and spell type.
     4.  **Registration:** Creating the final `Spell` object, which encapsulates the component
         and its metadata for resolution and dependency injection.
+
+    Contract:
+    - `Bind` does not resolve spells; it registers them into one owning
+      `Spellbook`.
+    - Successful registration always flows through canonical profile
+      examination and deterministic fingerprinting rather than ad hoc ids.
+    - Decorator-style and direct-call usage share the same binding pipeline.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -45,6 +55,18 @@ class Bind(Cleanable, IBind):
         "_spell_examiner",
     ]
     def __init__(self, spellbook: ISpellbook):
+        """
+        Initialize the spell registration gateway for one spellbook.
+
+        Args:
+            spellbook: Owning spellbook that will receive newly registered
+                `Spell` instances.
+        Contract:
+            - Owns one `SpellExaminer` helper for profile creation.
+            - Serializes registration work behind an internal lock.
+            - Treats the supplied spellbook as the destination authority for
+              all created spell bindings.
+        """
         super().__init__()
         self._spellbook: ISpellbook = spellbook
         self._lock = threading.RLock()
@@ -57,6 +79,11 @@ class Bind(Cleanable, IBind):
         Bind itself does not own heavy resources beyond its lock, but we keep the
         cleanup pattern consistent with the rest of Melder. Once cleaned, the
         instance becomes inert and should not be reused.
+
+        Contract:
+        - Idempotent and lock-guarded.
+        - Cleans the owned `SpellExaminer` before dropping references.
+        - Leaves future callers to fail through `check_cleaned()`.
         """
         if self._cleaned:
             return
@@ -82,16 +109,15 @@ class Bind(Cleanable, IBind):
             profile: str = "general",
     ) -> Union[ISpell, Any]:
         """
-        Public API
-
-        Registers a class, function, or existing object as a Spell within the Melder system.
+        Register a class, function, or existing object as a `Spell`.
 
         This method supports two usage patterns:
         1. **Direct Call:** `bind(permissions, spell=MyClass, ...)`
         2. **Decorator:** `@Bind.bind(permissions, ...)` applied to a class or function.
 
-        The binding process creates a canonical `Spell` object, assigns it a unique ID based on its
-        structure, and applies lifecycle (`existence`) and access control (`permissions`) policies.
+        In both modes, the same binding pipeline is used: examine the target,
+        fingerprint the binding profile, validate spellframe / existence rules,
+        and register the canonical `Spell` into the owning spellbook.
 
         Args:
             permissions (Permissions): The access level for this spell (e.g., read, create, block).
@@ -101,6 +127,13 @@ class Bind(Cleanable, IBind):
             binding_name (Optional[str]): A specific key used to distinguish this spell among others in its frame.
             profile (str): Spell profile family to attach to the final Spell.
             existence (Existence): The lifecycle scope for this spell (default is `Existence.unique`).
+        Contract:
+            - When `spell` is omitted, returns a decorator that will bind the
+              later target with the supplied policy and lifecycle settings.
+            - When `spell` is supplied directly, runs the full binding pipeline
+              immediately and returns the created `Spell`.
+            - Decorator and direct-call modes are semantically equivalent once
+              the target object is known.
 
         Returns:
             Union[Spell, Any]:

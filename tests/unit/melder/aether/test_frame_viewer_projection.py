@@ -28,6 +28,11 @@ from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile import 
 )
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
+from tests._nexus_viewer_matrix_support import (
+    build_multi_frame_viewer,
+    build_spell_record_key,
+    build_viewer,
+)
 
 
 def _build_descriptor(frame_name: str) -> FrameDescriptor:
@@ -193,6 +198,103 @@ def _build_viewer(frame_names: tuple[str, ...]) -> FrameViewer:
         compiled_access_surfaces_by_frame_name=surfaces,
         default_view_frame_name=frame_names[0] if len(frame_names) > 0 else None,
     )
+
+
+def _build_collision_viewer() -> FrameViewer:
+    viewer = build_multi_frame_viewer(
+        ("ops", "finance"),
+        descriptor_kwargs_by_frame_name={
+            "ops": {
+                "spell_payload_types": ("general", "general"),
+                "conduit_count": 1,
+                "spellbook_ids": ("shared-book", "ops-book"),
+                "spellframe_values": ("LogicFrame", "OpsFrame"),
+                "permission_values": (Permissions.create, Permissions.read),
+                "existence_values": (Existence.unique, Existence.many),
+            },
+            "finance": {
+                "spell_payload_types": ("general", "general"),
+                "conduit_count": 1,
+                "spellbook_ids": ("shared-book", "shared-book"),
+                "spellframe_values": ("LogicFrame", "FinanceFrame"),
+                "permission_values": (Permissions.block, Permissions.create),
+                "existence_values": (Existence.unique_per_conduit, Existence.unique),
+            },
+        },
+    )
+    for frame_name, spell_record_key in (
+            ("ops", ("shared-book", "ops-spell-1")),
+            ("finance", ("shared-book", "finance-spell-1")),
+    ):
+        descriptor = viewer.frame_descriptors_by_name[frame_name]
+        spell_record = descriptor.spell_records_by_key[spell_record_key]
+        spell_record.binding_name = "shared_binding"
+        spell_record.spell_name = "SharedSpell"
+        spell_record.lineage_id = "shared-lineage"
+    return viewer
+
+
+def _build_visible_collision_viewer() -> FrameViewer:
+    viewer = build_viewer(
+        "ops",
+        spell_payload_types=("general", "detailed"),
+        conduit_count=2,
+        visible_conduit_ids=("ops-conduit-1", "ops-conduit-2"),
+        visible_spell_keys=(
+            build_spell_record_key("ops", 1),
+            build_spell_record_key("ops", 2),
+        ),
+        conduit_sections_by_id={
+            "ops-conduit-1": (
+                "conduit_name",
+                "conduit_state",
+                "policy",
+                "peer_conduit_ids",
+            ),
+            "ops-conduit-2": (
+                "conduit_name",
+                "conduit_state",
+                "policy",
+                "peer_conduit_ids",
+            ),
+        },
+        spell_sections_by_key={
+            build_spell_record_key("ops", 1): (
+                "binding_payload",
+                "resolution_payload",
+                "metadata",
+            ),
+            build_spell_record_key("ops", 2): (
+                "binding_payload",
+                "resolution_payload",
+                "metadata",
+                "class_profile",
+                "callable_profile",
+                "instance_members",
+                "dynamic_access",
+            ),
+        },
+        frame_payload_fields=(
+            "system_state",
+            "rift_enabled",
+            "ai_native_enabled",
+            "root_conduit_count",
+            "conduit_cloud_entry_count",
+        ),
+        include_detail_dunders=True,
+    )
+    descriptor = viewer.frame_descriptors_by_name["ops"]
+    first_spell = descriptor.spell_records_by_key[("ops-spellbook", "ops-spell-1")]
+    second_spell = descriptor.spell_records_by_key[("ops-spellbook", "ops-spell-2")]
+    first_spell.binding_name = "shared_binding"
+    second_spell.binding_name = "shared_binding"
+    first_spell.spell_name = "SharedSpell"
+    second_spell.spell_name = "SharedSpell"
+    first_spell.lineage_id = "shared-lineage"
+    second_spell.lineage_id = "shared-lineage"
+    first_spell.spellframe = "SharedFrame"
+    second_spell.spellframe = "SharedFrame"
+    return viewer
 
 
 def test_frame_viewer_lists_hosted_frame_names() -> None:
@@ -1300,6 +1402,227 @@ def test_execute_method_routes_new_brief_and_compare_methods() -> None:
         "instance_members",
         "dynamic_access",
     )
+
+
+def test_frame_viewer_host_collision_methods_report_expected_groups() -> None:
+    viewer = _build_collision_viewer()
+
+    assert viewer.describe_binding_name_collisions() == {
+        "shared_binding": (
+            "shared-book:finance-spell-1",
+            "shared-book:ops-spell-1",
+        )
+    }
+    assert viewer.describe_spell_name_collisions() == {
+        "SharedSpell": (
+            "shared-book:finance-spell-1",
+            "shared-book:ops-spell-1",
+        )
+    }
+    assert viewer.describe_lineage_groups()["shared-lineage"] == (
+        "shared-book:finance-spell-1",
+        "shared-book:ops-spell-1",
+    )
+    assert viewer.describe_spellframe_groups()["LogicFrame"] == (
+        "shared-book:finance-spell-1",
+        "shared-book:ops-spell-1",
+    )
+    assert viewer.describe_spellbook_permission_mismatches() == {
+        "shared-book": {
+            "source_ids": (
+                "shared-book:finance-spell-1",
+                "shared-book:finance-spell-2",
+                "shared-book:ops-spell-1",
+            ),
+            "values": ("block", "create"),
+        }
+    }
+    assert viewer.describe_spellbook_existence_mismatches() == {
+        "shared-book": {
+            "source_ids": (
+                "shared-book:finance-spell-1",
+                "shared-book:finance-spell-2",
+                "shared-book:ops-spell-1",
+            ),
+            "values": ("unique", "unique_per_conduit"),
+        }
+    }
+
+
+def test_frame_viewer_host_record_compare_methods_work() -> None:
+    viewer = _build_collision_viewer()
+
+    spell_comparison = viewer.compare_spell_records(
+        "shared-book:ops-spell-1",
+        "shared-book:finance-spell-1",
+    )
+    conduit_comparison = viewer.compare_conduit_records(
+        "ops-conduit-1",
+        "finance-conduit-1",
+        left_frame_name="ops",
+        right_frame_name="finance",
+    )
+
+    assert spell_comparison == {
+        "left_source_id": "shared-book:ops-spell-1",
+        "right_source_id": "shared-book:finance-spell-1",
+        "same_frame": False,
+        "same_origin_spellbook": True,
+        "same_owner_conduit": False,
+        "same_lineage_id": True,
+        "same_spell_name": True,
+        "same_binding_name": True,
+        "same_spellframe": True,
+        "same_permissions": False,
+        "same_existence": False,
+        "same_payload_type": True,
+        "same_nexus_contract": True,
+    }
+    assert conduit_comparison["same_frame"] is False
+    assert conduit_comparison["same_policy"] is True
+    assert conduit_comparison["same_conduit_state"] is True
+
+
+def test_view_frame_visible_collision_method_reports_expected_groups() -> None:
+    viewer = _build_visible_collision_viewer()
+    view_frame = viewer.get_selected_profile_for_frame("ops").view_frame
+
+    assert view_frame.describe_visible_collisions() == {
+        "binding_name_collisions": {
+            "shared_binding": (
+                "ops-spellbook:ops-spell-1",
+                "ops-spellbook:ops-spell-2",
+            )
+        },
+        "spell_name_collisions": {
+            "SharedSpell": (
+                "ops-spellbook:ops-spell-1",
+                "ops-spellbook:ops-spell-2",
+            )
+        },
+        "lineage_groups": {
+            "shared-lineage": (
+                "ops-spellbook:ops-spell-1",
+                "ops-spellbook:ops-spell-2",
+            )
+        },
+        "spellframe_groups": {
+            "SharedFrame": (
+                "ops-spellbook:ops-spell-1",
+                "ops-spellbook:ops-spell-2",
+            )
+        },
+    }
+
+
+def test_view_conduit_crosswalk_and_compare_methods_work() -> None:
+    viewer = _build_visible_collision_viewer()
+    view_conduit = viewer.get_selected_profile_for_frame("ops").view_conduit
+
+    crosswalk = view_conduit.describe_conduit_crosswalk("ops-conduit-1")
+    comparison = view_conduit.compare_conduits(
+        "ops-conduit-1",
+        "ops-conduit-2",
+    )
+
+    assert crosswalk == {
+        "frame_name": "ops",
+        "conduit_id": "ops-conduit-1",
+        "root_conduit_id": "ops-conduit-1",
+        "peer_conduit_ids": ("ops-conduit-2",),
+        "peer_conduits": ("ops-conduit-2",),
+        "spell_source_ids": ("ops-spellbook:ops-spell-1",),
+        "binding_names": ("shared_binding",),
+        "spell_names": ("SharedSpell",),
+    }
+    assert comparison["same_root_conduit_id"] is False
+    assert comparison["same_policy"] is True
+    assert comparison["peer_conduit_ids"]["shared"] == tuple()
+
+
+def test_view_spell_crosswalk_and_compare_methods_work() -> None:
+    viewer = _build_visible_collision_viewer()
+    view_spell = viewer.get_selected_profile_for_frame("ops").view_spell
+
+    crosswalk = view_spell.describe_spell_crosswalk("ops-spellbook:ops-spell-1")
+    comparison = view_spell.compare_spells(
+        "ops-spellbook:ops-spell-1",
+        "ops-spellbook:ops-spell-2",
+    )
+
+    assert crosswalk == {
+        "frame_name": "ops",
+        "source_id": "ops-spellbook:ops-spell-1",
+        "origin_spellbook_id": "ops-spellbook",
+        "owner_conduit_id": "ops-conduit-1",
+        "root_conduit_id": "ops-conduit-1",
+        "peer_conduit_ids": ("ops-conduit-2",),
+        "lineage_id": "shared-lineage",
+        "related_visible_source_ids": (
+            "ops-spellbook:ops-spell-1",
+            "ops-spellbook:ops-spell-2",
+        ),
+        "permissions": "create",
+        "existence": "unique",
+        "payload_type": "general",
+    }
+    assert comparison == {
+        "left_source_id": "ops-spellbook:ops-spell-1",
+        "right_source_id": "ops-spellbook:ops-spell-2",
+        "same_owner_conduit": False,
+        "same_origin_spellbook": True,
+        "same_lineage_id": True,
+        "same_spell_name": True,
+        "same_binding_name": True,
+        "same_spellframe": True,
+        "same_permissions": True,
+        "same_existence": True,
+        "same_payload_type": False,
+        "visible_sections": {
+            "shared": (
+                "binding_payload",
+                "metadata",
+                "resolution_payload",
+            ),
+            "left_only": tuple(),
+            "right_only": (
+                "callable_profile",
+                "class_profile",
+                "dynamic_access",
+                "instance_members",
+            ),
+        },
+    }
+
+
+def test_execute_method_routes_crosswalk_and_collision_methods() -> None:
+    viewer = _build_visible_collision_viewer()
+
+    visible_collisions = viewer.execute_method(
+        "describe_visible_collisions",
+        frame_name="ops",
+    )
+    conduit_crosswalk = viewer.execute_method(
+        "describe_conduit_crosswalk",
+        frame_name="ops",
+        conduit_id="ops-conduit-1",
+    )
+    spell_crosswalk = viewer.execute_method(
+        "describe_spell_crosswalk",
+        frame_name="ops",
+        spell_source_id="ops-spellbook:ops-spell-1",
+    )
+    spell_compare = viewer.execute_method(
+        "compare_spells",
+        frame_name="ops",
+        left_spell_source_id="ops-spellbook:ops-spell-1",
+        right_spell_source_id="ops-spellbook:ops-spell-2",
+    )
+
+    assert "binding_name_collisions" in visible_collisions
+    assert conduit_crosswalk["conduit_id"] == "ops-conduit-1"
+    assert spell_crosswalk["source_id"] == "ops-spellbook:ops-spell-1"
+    assert spell_compare["same_lineage_id"] is True
 
 
 def test_view_spell_detailed_methods_surface_profile_sections_and_dunders() -> None:

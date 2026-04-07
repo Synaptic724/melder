@@ -1264,6 +1264,142 @@ class GeneralViewSpell(Cleanable):
             ),
         }
 
+    def describe_spell_crosswalk(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the related visible objects around one spell.
+
+        Purpose:
+            Give the operator one direct spell crosswalk from the spell to its
+            conduit, root conduit, peer conduits, spellbook, lineage, and
+            visible sibling spells.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            Dict[str, object]: Spell crosswalk summary.
+        """
+        self.check_cleaned()
+        spell_record = self._get_required_spell_record(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+        frame_view = self._get_required_frame_view()
+        descriptor = frame_view._get_required_frame_descriptor()
+        owner_conduit_id = spell_record.owner_conduit_id
+        root_conduit_id = None
+        peer_conduit_ids = tuple()
+        if owner_conduit_id is not None:
+            conduit_record = descriptor.conduit_records_by_id[owner_conduit_id]
+            root_conduit_id = conduit_record.root_conduit_id
+            peer_conduit_ids = tuple(conduit_record.payload.peer_conduit_ids)
+        return {
+            "frame_name": spell_record.frame_name,
+            "source_id": spell_source_id,
+            "origin_spellbook_id": spell_record.origin_spellbook_id,
+            "owner_conduit_id": owner_conduit_id,
+            "root_conduit_id": root_conduit_id,
+            "peer_conduit_ids": peer_conduit_ids,
+            "lineage_id": spell_record.lineage_id,
+            "related_visible_source_ids": self.describe_spell_lineage(
+                spell_source_id,
+                frame_name=frame_name,
+            )["visible_related_source_ids"],
+            "permissions": spell_record.permissions.name,
+            "existence": spell_record.existence.name,
+            "payload_type": spell_record.payload.payload_type,
+        }
+
+    def compare_spells(
+            self,
+            left_spell_source_id: str,
+            right_spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Compare two visible spells inside the bound frame.
+
+        Args:
+            left_spell_source_id:
+                Left visible spell source id.
+            right_spell_source_id:
+                Right visible spell source id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            Dict[str, object]: Visible spell comparison summary.
+        """
+        self.check_cleaned()
+        left_spell_record = self._get_required_spell_record(
+            left_spell_source_id,
+            frame_name=frame_name,
+        )
+        right_spell_record = self._get_required_spell_record(
+            right_spell_source_id,
+            frame_name=frame_name,
+        )
+        left_spell_description = self.describe_spell(
+            left_spell_source_id,
+            frame_name=frame_name,
+        )
+        right_spell_description = self.describe_spell(
+            right_spell_source_id,
+            frame_name=frame_name,
+        )
+        return {
+            "left_source_id": left_spell_source_id,
+            "right_source_id": right_spell_source_id,
+            "same_owner_conduit": (
+                left_spell_record.owner_conduit_id
+                == right_spell_record.owner_conduit_id
+            ),
+            "same_origin_spellbook": (
+                left_spell_record.origin_spellbook_id
+                == right_spell_record.origin_spellbook_id
+            ),
+            "same_lineage_id": (
+                left_spell_record.lineage_id == right_spell_record.lineage_id
+            ),
+            "same_spell_name": (
+                left_spell_record.spell_name == right_spell_record.spell_name
+            ),
+            "same_binding_name": (
+                left_spell_record.binding_name == right_spell_record.binding_name
+            ),
+            "same_spellframe": (
+                self._normalize_spellframe_value(left_spell_record.spellframe)
+                == self._normalize_spellframe_value(right_spell_record.spellframe)
+            ),
+            "same_permissions": (
+                left_spell_record.permissions.name
+                == right_spell_record.permissions.name
+            ),
+            "same_existence": (
+                left_spell_record.existence.name
+                == right_spell_record.existence.name
+            ),
+            "same_payload_type": (
+                left_spell_record.payload.payload_type
+                == right_spell_record.payload.payload_type
+            ),
+            "visible_sections": self._compare_sorted_value_sets(
+                tuple(left_spell_description["visible_sections"]),
+                tuple(right_spell_description["visible_sections"]),
+            ),
+        }
+
     def get_spell_payload_section(
             self,
             spell_source_id: str,
@@ -1750,6 +1886,31 @@ class GeneralViewSpell(Cleanable):
         if isinstance(spellframe, type):
             return spellframe.__name__
         return str(spellframe)
+
+    @staticmethod
+    def _compare_sorted_value_sets(
+            left_values: Tuple[str, ...],
+            right_values: Tuple[str, ...],
+    ) -> Dict[str, Tuple[str, ...]]:
+        """
+        Return one deterministic shared/left-only/right-only value diff.
+
+        Args:
+            left_values:
+                Left normalized value tuple.
+            right_values:
+                Right normalized value tuple.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Shared and directional set deltas.
+        """
+        left_set = set(left_values)
+        right_set = set(right_values)
+        return {
+            "shared": tuple(sorted(left_set & right_set)),
+            "left_only": tuple(sorted(left_set - right_set)),
+            "right_only": tuple(sorted(right_set - left_set)),
+        }
 
     @staticmethod
     def _filter_spell_payload(

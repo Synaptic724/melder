@@ -328,6 +328,63 @@ class GeneralViewConduit(Cleanable):
             ),
         }
 
+    def describe_conduit_crosswalk(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the related visible objects around one conduit.
+
+        Purpose:
+            Give the operator one direct conduit crosswalk from the conduit to
+            its root, peers, owned spells, and frame context.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            Dict[str, object]: Conduit crosswalk summary.
+        """
+        self.check_cleaned()
+        conduit_record = self._get_required_conduit_record(
+            conduit_id,
+            frame_name=frame_name,
+        )
+        return {
+            "frame_name": self._get_required_frame_view()._get_required_frame_name(),
+            "conduit_id": conduit_id,
+            "root_conduit_id": conduit_record.root_conduit_id,
+            "peer_conduit_ids": self.list_peer_conduit_ids(
+                conduit_id,
+                frame_name=frame_name,
+            ),
+            "peer_conduits": tuple(
+                peer_link.source_id
+                for peer_link in self.list_peer_conduits(
+                    conduit_id,
+                    frame_name=frame_name,
+                )
+            ),
+            "spell_source_ids": self.list_spell_source_ids_for_conduit(
+                conduit_id,
+                frame_name=frame_name,
+            ),
+            "binding_names": self.list_binding_names_for_conduit(
+                conduit_id,
+                frame_name=frame_name,
+            ),
+            "spell_names": self.list_spell_names_for_conduit(
+                conduit_id,
+                frame_name=frame_name,
+            ),
+        }
+
     def describe_conduit_inventory(
             self,
             conduit_id: str,
@@ -432,6 +489,70 @@ class GeneralViewConduit(Cleanable):
             "spell_source_ids": self.list_spell_source_ids_for_conduit(
                 conduit_id,
                 frame_name=frame_name,
+            ),
+        }
+
+    def compare_conduits(
+            self,
+            left_conduit_id: str,
+            right_conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Compare two visible conduits inside the bound frame.
+
+        Args:
+            left_conduit_id:
+                Left visible conduit id.
+            right_conduit_id:
+                Right visible conduit id.
+            frame_name:
+                Optional frame-name assertion passed through to the shared frame
+                helper.
+
+        Returns:
+            Dict[str, object]: Visible conduit comparison summary.
+        """
+        self.check_cleaned()
+        left_conduit_record = self._get_required_conduit_record(
+            left_conduit_id,
+            frame_name=frame_name,
+        )
+        right_conduit_record = self._get_required_conduit_record(
+            right_conduit_id,
+            frame_name=frame_name,
+        )
+        left_spell_source_ids = self.list_spell_source_ids_for_conduit(
+            left_conduit_id,
+            frame_name=frame_name,
+        )
+        right_spell_source_ids = self.list_spell_source_ids_for_conduit(
+            right_conduit_id,
+            frame_name=frame_name,
+        )
+        return {
+            "left_conduit_id": left_conduit_id,
+            "right_conduit_id": right_conduit_id,
+            "same_root_conduit_id": (
+                left_conduit_record.root_conduit_id
+                == right_conduit_record.root_conduit_id
+            ),
+            "same_policy": (
+                self._normalize_policy_name(left_conduit_record.payload.policy)
+                == self._normalize_policy_name(right_conduit_record.payload.policy)
+            ),
+            "same_conduit_state": (
+                left_conduit_record.payload.conduit_state.name
+                == right_conduit_record.payload.conduit_state.name
+            ),
+            "peer_conduit_ids": self._compare_sorted_value_sets(
+                tuple(left_conduit_record.payload.peer_conduit_ids),
+                tuple(right_conduit_record.payload.peer_conduit_ids),
+            ),
+            "visible_spell_source_ids": self._compare_sorted_value_sets(
+                left_spell_source_ids,
+                right_spell_source_ids,
             ),
         }
 
@@ -990,6 +1111,31 @@ class GeneralViewConduit(Cleanable):
         if policy is None:
             return None
         return policy.name
+
+    @staticmethod
+    def _compare_sorted_value_sets(
+            left_values: Tuple[str, ...],
+            right_values: Tuple[str, ...],
+    ) -> Dict[str, Tuple[str, ...]]:
+        """
+        Return one deterministic shared/left-only/right-only value diff.
+
+        Args:
+            left_values:
+                Left normalized value tuple.
+            right_values:
+                Right normalized value tuple.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Shared and directional set deltas.
+        """
+        left_set = set(left_values)
+        right_set = set(right_values)
+        return {
+            "shared": tuple(sorted(left_set & right_set)),
+            "left_only": tuple(sorted(left_set - right_set)),
+            "right_only": tuple(sorted(right_set - left_set)),
+        }
 
     @staticmethod
     def _filter_conduit_payload(

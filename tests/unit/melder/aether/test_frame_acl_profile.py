@@ -1,3 +1,5 @@
+import threading
+
 import pytest
 
 from melder.aether.nexus.acl.profiles.frame_acl_codegen_profile import (
@@ -256,6 +258,14 @@ def test_frame_acl_profile_requires_typed_profiles() -> None:
             codegen_profile=object(),
         )
 
+    with pytest.raises(ValueError, match="version cannot be empty"):
+        FrameACLProfile(
+            "support",
+            view_profile=FrameACLViewProfile.create_default(),
+            codegen_profile=FrameACLCodegenProfile.create_default(),
+            version="",
+        )
+
 
 def test_frame_acl_profile_cleanup_cleans_only_owned_overrides() -> None:
     """
@@ -283,6 +293,94 @@ def test_frame_acl_profile_cleanup_cleans_only_owned_overrides() -> None:
     assert codegen_override_ruleset.cleaned is True
     assert view_profile.cleaned is False
     assert codegen_profile.cleaned is False
+
+
+def test_frame_acl_profile_exposes_stable_id() -> None:
+    """
+    Verify the composed profile exposes its stable id.
+
+    Returns:
+        None.
+    """
+    profile = FrameACLProfile(
+        "support",
+        view_profile=FrameACLViewProfile.create_default(),
+        codegen_profile=FrameACLCodegenProfile.create_default(),
+    )
+
+    assert profile.id is not None
+
+
+def test_frame_acl_profile_cleanup_is_idempotent() -> None:
+    """
+    Verify cleanup can be called repeatedly.
+
+    Returns:
+        None.
+    """
+    profile = FrameACLProfile(
+        "support",
+        view_profile=FrameACLViewProfile.create_default(),
+        codegen_profile=FrameACLCodegenProfile.create_default(),
+    )
+
+    profile.cleanup()
+    profile.cleanup()
+
+    assert profile.cleaned is True
+
+
+def test_frame_acl_profile_cleanup_rechecks_cleaned_inside_lock() -> None:
+    """
+    Verify cleanup returns early when another thread already cleaned the profile.
+
+    Returns:
+        None.
+    """
+
+    class _CoordinatedLock:
+        def __init__(self) -> None:
+            self._entered_first = threading.Event()
+            self._second_attempted = threading.Event()
+            self._lock = threading.RLock()
+
+        def __enter__(self):
+            if self._entered_first.is_set():
+                self._second_attempted.set()
+            self._lock.acquire()
+            if not self._entered_first.is_set():
+                self._entered_first.set()
+                assert self._second_attempted.wait(timeout=1.0)
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self._lock.release()
+
+    profile = FrameACLProfile(
+        "support",
+        view_profile=FrameACLViewProfile.create_default(),
+        codegen_profile=FrameACLCodegenProfile.create_default(),
+    )
+    coordinated_lock = _CoordinatedLock()
+    profile._lock = coordinated_lock
+
+    thread_results = []
+
+    def _run_cleanup() -> None:
+        profile.cleanup()
+        thread_results.append(True)
+
+    first = threading.Thread(target=_run_cleanup)
+    second = threading.Thread(target=_run_cleanup)
+    first.start()
+    coordinated_lock._entered_first.wait(timeout=1.0)
+    second.start()
+    first.join(timeout=1.0)
+    second.join(timeout=1.0)
+
+    assert thread_results == [True, True]
+    assert profile.cleaned is True
+    assert profile._lock is None
 
 
 def test_frame_acl_manager_exposes_profile_builder_and_profile_registry_surface() -> None:

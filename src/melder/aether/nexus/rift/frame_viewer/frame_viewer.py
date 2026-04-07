@@ -3,7 +3,7 @@ Internal descriptor-driven FrameViewer surface.
 """
 
 import threading
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
@@ -770,6 +770,302 @@ class FrameViewer(Cleanable):
             "binding_names": self._compare_sorted_value_sets(
                 left_binding_names,
                 right_binding_names,
+            ),
+        }
+
+    def describe_binding_name_collisions(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, Tuple[str, ...]]:
+        """
+        Return binding-name collisions in the selected descriptor scope.
+
+        Purpose:
+            Surface visible ambiguity at the record-identity level when the
+            same binding name is attached to multiple published spell records.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, scans all hosted
+                frames.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Binding names mapped to the colliding
+            spell source ids.
+        """
+        self.check_cleaned()
+        return self._describe_spell_value_collisions(
+            frame_name=frame_name,
+            value_getter=lambda spell_record: spell_record.binding_name,
+        )
+
+    def describe_spell_name_collisions(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, Tuple[str, ...]]:
+        """
+        Return spell-name collisions in the selected descriptor scope.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, scans all hosted
+                frames.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Spell names mapped to the colliding
+            spell source ids.
+        """
+        self.check_cleaned()
+        return self._describe_spell_value_collisions(
+            frame_name=frame_name,
+            value_getter=lambda spell_record: spell_record.spell_name,
+        )
+
+    def describe_lineage_groups(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, Tuple[str, ...]]:
+        """
+        Return lineage groups in the selected descriptor scope.
+
+        Purpose:
+            Surface all published spell source ids grouped by lineage id, even
+            when a lineage currently has only one visible member.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, scans all hosted
+                frames.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Lineage ids mapped to published spell
+            source ids.
+        """
+        self.check_cleaned()
+        return self._describe_spell_value_groups(
+            frame_name=frame_name,
+            value_getter=lambda spell_record: spell_record.lineage_id,
+        )
+
+    def describe_spellframe_groups(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, Tuple[str, ...]]:
+        """
+        Return spellframe groups in the selected descriptor scope.
+
+        Purpose:
+            Group published spells by normalized spellframe value so frame-wide
+            spellframe overlaps are obvious.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, scans all hosted
+                frames.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Spellframe values mapped to published
+            spell source ids.
+        """
+        self.check_cleaned()
+        return self._describe_spell_value_groups(
+            frame_name=frame_name,
+            value_getter=lambda spell_record: self._normalize_spellframe_value(
+                spell_record.spellframe
+            ),
+        )
+
+    def describe_spellbook_permission_mismatches(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, Dict[str, object]]:
+        """
+        Return spellbook groups whose permission posture is not uniform.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, scans all hosted
+                frames.
+
+        Returns:
+            Dict[str, Dict[str, object]]: Spellbook ids mapped to permission
+            mismatch summaries.
+        """
+        self.check_cleaned()
+        return self._describe_spellbook_mismatches(
+            frame_name=frame_name,
+            value_getter=lambda spell_record: spell_record.permissions.name,
+        )
+
+    def describe_spellbook_existence_mismatches(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, Dict[str, object]]:
+        """
+        Return spellbook groups whose existence posture is not uniform.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, scans all hosted
+                frames.
+
+        Returns:
+            Dict[str, Dict[str, object]]: Spellbook ids mapped to existence
+            mismatch summaries.
+        """
+        self.check_cleaned()
+        return self._describe_spellbook_mismatches(
+            frame_name=frame_name,
+            value_getter=lambda spell_record: spell_record.existence.name,
+        )
+
+    def compare_spell_records(
+            self,
+            left_spell_source_id: str,
+            right_spell_source_id: str,
+            *,
+            left_frame_name: Optional[str] = None,
+            right_frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Compare two published spell records.
+
+        Purpose:
+            Give the operator one record-level spell diff without requiring them
+            to manually compare multiple identity, provenance, and posture
+            methods.
+
+        Args:
+            left_spell_source_id:
+                Left published spell source id.
+            right_spell_source_id:
+                Right published spell source id.
+            left_frame_name:
+                Optional hosted frame constraint for the left spell.
+            right_frame_name:
+                Optional hosted frame constraint for the right spell.
+
+        Returns:
+            Dict[str, object]: Record-level spell comparison summary.
+        """
+        self.check_cleaned()
+        resolved_left_frame_name, left_spell_record = self._get_required_spell_record(
+            left_spell_source_id,
+            frame_name=left_frame_name,
+        )
+        resolved_right_frame_name, right_spell_record = self._get_required_spell_record(
+            right_spell_source_id,
+            frame_name=right_frame_name,
+        )
+        return {
+            "left_source_id": left_spell_source_id,
+            "right_source_id": right_spell_source_id,
+            "same_frame": resolved_left_frame_name == resolved_right_frame_name,
+            "same_origin_spellbook": (
+                left_spell_record.origin_spellbook_id
+                == right_spell_record.origin_spellbook_id
+            ),
+            "same_owner_conduit": (
+                left_spell_record.owner_conduit_id
+                == right_spell_record.owner_conduit_id
+            ),
+            "same_lineage_id": (
+                left_spell_record.lineage_id == right_spell_record.lineage_id
+            ),
+            "same_spell_name": (
+                left_spell_record.spell_name == right_spell_record.spell_name
+            ),
+            "same_binding_name": (
+                left_spell_record.binding_name == right_spell_record.binding_name
+            ),
+            "same_spellframe": (
+                self._normalize_spellframe_value(left_spell_record.spellframe)
+                == self._normalize_spellframe_value(right_spell_record.spellframe)
+            ),
+            "same_permissions": (
+                left_spell_record.permissions.name
+                == right_spell_record.permissions.name
+            ),
+            "same_existence": (
+                left_spell_record.existence.name
+                == right_spell_record.existence.name
+            ),
+            "same_payload_type": (
+                left_spell_record.payload.payload_type
+                == right_spell_record.payload.payload_type
+            ),
+            "same_nexus_contract": (
+                left_spell_record.nexus_label == right_spell_record.nexus_label
+                and left_spell_record.nexus_version == right_spell_record.nexus_version
+            ),
+        }
+
+    def compare_conduit_records(
+            self,
+            left_conduit_id: str,
+            right_conduit_id: str,
+            *,
+            left_frame_name: Optional[str] = None,
+            right_frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Compare two published conduit records.
+
+        Args:
+            left_conduit_id:
+                Left published conduit id.
+            right_conduit_id:
+                Right published conduit id.
+            left_frame_name:
+                Optional hosted frame constraint for the left conduit.
+            right_frame_name:
+                Optional hosted frame constraint for the right conduit.
+
+        Returns:
+            Dict[str, object]: Record-level conduit comparison summary.
+        """
+        self.check_cleaned()
+        resolved_left_frame_name, left_conduit_record = self._get_required_conduit_record(
+            left_conduit_id,
+            frame_name=left_frame_name,
+        )
+        resolved_right_frame_name, right_conduit_record = self._get_required_conduit_record(
+            right_conduit_id,
+            frame_name=right_frame_name,
+        )
+        return {
+            "left_conduit_id": left_conduit_id,
+            "right_conduit_id": right_conduit_id,
+            "same_frame": resolved_left_frame_name == resolved_right_frame_name,
+            "same_root_conduit_id": (
+                left_conduit_record.root_conduit_id
+                == right_conduit_record.root_conduit_id
+            ),
+            "same_origin_spellbook": (
+                left_conduit_record.origin_spellbook_id
+                == right_conduit_record.origin_spellbook_id
+            ),
+            "same_policy": (
+                self._normalize_policy_name(left_conduit_record.payload.policy)
+                == self._normalize_policy_name(right_conduit_record.payload.policy)
+            ),
+            "same_conduit_state": (
+                left_conduit_record.payload.conduit_state.name
+                == right_conduit_record.payload.conduit_state.name
+            ),
+            "same_peer_conduit_ids": (
+                tuple(left_conduit_record.payload.peer_conduit_ids)
+                == tuple(right_conduit_record.payload.peer_conduit_ids)
+            ),
+            "same_nexus_contract": (
+                left_conduit_record.nexus_label == right_conduit_record.nexus_label
+                and left_conduit_record.nexus_version == right_conduit_record.nexus_version
             ),
         }
 
@@ -2229,6 +2525,46 @@ class FrameViewer(Cleanable):
             )
         return matching_records[0]
 
+    def _get_required_conduit_record(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, object]:
+        """
+        Return one conduit record plus its frame name or raise.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional hosted frame name to constrain the lookup.
+
+        Returns:
+            Tuple[str, object]: `(frame_name, conduit_record)` for the resolved
+            record.
+        """
+        if not conduit_id:
+            raise ValueError("conduit_id cannot be empty.")
+        matching_records: List[Tuple[str, object]] = []
+        for current_frame_name in self._get_frame_names_for_query(frame_name):
+            descriptor = self._get_required_frame_descriptor(current_frame_name)
+            record = descriptor.conduit_records_by_id.get(conduit_id)
+            if record is None:
+                continue
+            matching_records.append((current_frame_name, record))
+        if len(matching_records) == 0:
+            raise ValueError(
+                "Conduit id '{0}' was not found.".format(conduit_id)
+            )
+        if len(matching_records) > 1:
+            raise ValueError(
+                "Conduit id '{0}' is ambiguous across hosted frames.".format(
+                    conduit_id
+                )
+            )
+        return matching_records[0]
+
     @staticmethod
     def _parse_spell_source_id(spell_source_id: str) -> Tuple[str, str]:
         """
@@ -2274,6 +2610,129 @@ class FrameViewer(Cleanable):
             "left_only": tuple(sorted(left_set - right_set)),
             "right_only": tuple(sorted(right_set - left_set)),
         }
+
+    def _describe_spell_value_groups(
+            self,
+            *,
+            frame_name: Optional[str],
+            value_getter: Callable[[object], Optional[object]],
+    ) -> Dict[str, Tuple[str, ...]]:
+        """
+        Group spell source ids by one normalized spell-record value.
+
+        Args:
+            frame_name:
+                Optional hosted frame name filter.
+            value_getter:
+                Callable that extracts the grouping value from one spell
+                record.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Grouping value mapped to spell source
+            ids.
+        """
+        grouped_source_ids_by_value: Dict[str, List[str]] = {}
+        for spell_record in self._iter_spell_records(frame_name=frame_name):
+            current_value = value_getter(spell_record)
+            if current_value is None:
+                continue
+            grouped_source_ids_by_value.setdefault(
+                str(current_value),
+                [],
+            ).append(self._build_spell_source_id(spell_record))
+        return {
+            current_value: tuple(sorted(source_ids))
+            for current_value, source_ids in grouped_source_ids_by_value.items()
+        }
+
+    def _describe_spell_value_collisions(
+            self,
+            *,
+            frame_name: Optional[str],
+            value_getter: Callable[[object], Optional[object]],
+    ) -> Dict[str, Tuple[str, ...]]:
+        """
+        Return spell value groups that have more than one published member.
+
+        Args:
+            frame_name:
+                Optional hosted frame name filter.
+            value_getter:
+                Callable that extracts the grouping value from one spell
+                record.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Colliding value groups only.
+        """
+        grouped_source_ids_by_value = self._describe_spell_value_groups(
+            frame_name=frame_name,
+            value_getter=value_getter,
+        )
+        return {
+            current_value: source_ids
+            for current_value, source_ids in grouped_source_ids_by_value.items()
+            if len(source_ids) > 1
+        }
+
+    def _describe_spellbook_mismatches(
+            self,
+            *,
+            frame_name: Optional[str],
+            value_getter: Callable[[object], Optional[object]],
+    ) -> Dict[str, Dict[str, object]]:
+        """
+        Return spellbook groups whose selected value is not uniform.
+
+        Args:
+            frame_name:
+                Optional hosted frame name filter.
+            value_getter:
+                Callable that extracts the compared value from one spell record.
+
+        Returns:
+            Dict[str, Dict[str, object]]: Spellbook mismatch summaries.
+        """
+        grouped_records_by_spellbook_id: Dict[str, List[object]] = {}
+        for spell_record in self._iter_spell_records(frame_name=frame_name):
+            grouped_records_by_spellbook_id.setdefault(
+                spell_record.origin_spellbook_id,
+                [],
+            ).append(spell_record)
+        mismatches_by_spellbook_id: Dict[str, Dict[str, object]] = {}
+        for spellbook_id, spell_records in grouped_records_by_spellbook_id.items():
+            current_values = {
+                str(value_getter(spell_record))
+                for spell_record in spell_records
+                if value_getter(spell_record) is not None
+            }
+            if len(current_values) <= 1:
+                continue
+            mismatches_by_spellbook_id[spellbook_id] = {
+                "source_ids": tuple(
+                    sorted(
+                        self._build_spell_source_id(spell_record)
+                        for spell_record in spell_records
+                    )
+                ),
+                "values": tuple(sorted(current_values)),
+            }
+        return mismatches_by_spellbook_id
+
+    @staticmethod
+    def _normalize_policy_name(policy: object) -> Optional[str]:
+        """
+        Return one stable string view of a conduit policy value.
+
+        Args:
+            policy:
+                Raw conduit policy value.
+
+        Returns:
+            Optional[str]: Normalized conduit policy name when present.
+        """
+        if policy is None:
+            return None
+        return policy.name
 
     def _create_bound_profile_for_frame(
             self,
