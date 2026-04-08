@@ -2,6 +2,7 @@
 Internal descriptor-driven FrameViewer surface.
 """
 
+import json
 import threading
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
@@ -18,6 +19,9 @@ from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile_builder
     FrameViewerProfileBuilder,
 )
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.class_surface_ast_describer import (
+    ClassSurfaceAstDescriber,
+)
 from melder.utilities.helpers.id_builder import IDBuilder
 
 
@@ -52,6 +56,13 @@ class FrameViewer(Cleanable):
     """
 
     __melder_internal__ = _mrg.sentinel
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Multi-frame descriptor host and selected-profile "
+        "router for the Rift viewer surface. Use this object to inspect hosted "
+        "frames, compare descriptor records, and reach the selected profile "
+        "surface for frame-local methods."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_viewer_id",
         "_lock",
@@ -1995,6 +2006,282 @@ class FrameViewer(Cleanable):
         with self._lock:
             return list(sorted(self._active_profiles_by_name.keys()))
 
+    def list_viewer_method_names_ast_json(
+            self,
+            *,
+            include_private: bool = False,
+            include_dunder: bool = False,
+    ) -> str:
+        """
+        Return a minified JSON list of `FrameViewer` class method names.
+
+        Purpose:
+            Give the agent a source-defined list of host methods available on
+            the viewer itself without inspecting method bodies or runtime
+            internals.
+
+        Args:
+            include_private:
+                Whether `_private` methods should be included.
+            include_dunder:
+                Whether `__dunder__` methods should be included.
+
+        Returns:
+            str: Minified JSON list of source-defined `FrameViewer` methods.
+        """
+        self.check_cleaned()
+        return ClassSurfaceAstDescriber.list_class_method_names_ast_json(
+            self,
+            include_private=include_private,
+            include_dunder=include_dunder,
+        )
+
+    def describe_agent_onboarding_json(self) -> str:
+        """
+        Return the shared first-time onboarding hint for Melder agents.
+
+        Returns:
+            str: Minified JSON onboarding hint for Melder agents.
+        """
+        self.check_cleaned()
+        return ClassSurfaceAstDescriber.describe_agent_onboarding_json()
+
+    def describe_viewer_agent_purpose_json(self) -> str:
+        """
+        Return the minified JSON agent-purpose surface for the viewer host.
+
+        Returns:
+            str: Minified JSON agent-purpose surface for this viewer.
+        """
+        self.check_cleaned()
+        return ClassSurfaceAstDescriber.describe_agent_purpose_json(self)
+
+    def describe_viewer_class_surface_ast_json(
+            self,
+            *,
+            include_private: bool = False,
+            include_dunder: bool = False,
+    ) -> str:
+        """
+        Return a minified JSON description of the `FrameViewer` class surface.
+
+        Purpose:
+            Expose the source-defined `FrameViewer` class surface, including
+            method signatures, properties, and docstrings, for direct agent
+            consumption.
+
+        Args:
+            include_private:
+                Whether `_private` members should be included.
+            include_dunder:
+                Whether `__dunder__` members should be included.
+
+        Returns:
+            str: Minified JSON description of the `FrameViewer` class surface.
+        """
+        self.check_cleaned()
+        return ClassSurfaceAstDescriber.describe_class_surface_ast_json(
+            self,
+            include_private=include_private,
+            include_dunder=include_dunder,
+        )
+
+    def list_selected_profile_method_names_ast_json(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+            include_private: bool = False,
+            include_dunder: bool = False,
+    ) -> str:
+        """
+        Return a minified JSON list of selected-profile class method names.
+
+        Args:
+            frame_name:
+                Optional hosted frame name whose selected profile should be
+                described. When omitted, uses the default frame.
+            include_private:
+                Whether `_private` methods should be included.
+            include_dunder:
+                Whether `__dunder__` methods should be included.
+
+        Returns:
+            str: Minified JSON list of selected-profile class method names.
+        """
+        self.check_cleaned()
+        selected_profile = self._get_required_selected_profile(frame_name=frame_name)
+        return selected_profile.list_class_method_names_ast_json(
+            include_private=include_private,
+            include_dunder=include_dunder,
+        )
+
+    def describe_selected_profile_class_surface_ast_json(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+            include_private: bool = False,
+            include_dunder: bool = False,
+    ) -> str:
+        """
+        Return a minified JSON description of the selected profile class.
+
+        Args:
+            frame_name:
+                Optional hosted frame name whose selected profile should be
+                described. When omitted, uses the default frame.
+            include_private:
+                Whether `_private` members should be included.
+            include_dunder:
+                Whether `__dunder__` members should be included.
+
+        Returns:
+            str: Minified JSON description of the selected profile class
+            surface.
+        """
+        self.check_cleaned()
+        selected_profile = self._get_required_selected_profile(frame_name=frame_name)
+        return selected_profile.describe_class_surface_ast_json(
+            include_private=include_private,
+            include_dunder=include_dunder,
+        )
+
+    def describe_selected_profile_agent_purpose_json(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> str:
+        """
+        Return the minified JSON agent-purpose surface for the selected profile.
+
+        Args:
+            frame_name:
+                Optional hosted frame name whose selected profile should be
+                described. When omitted, uses the default frame.
+
+        Returns:
+            str: Minified JSON agent-purpose surface for the selected profile.
+        """
+        self.check_cleaned()
+        selected_profile = self._get_required_selected_profile(frame_name=frame_name)
+        return selected_profile.describe_agent_purpose_json()
+
+    def describe_selected_profile_helper_class_surfaces_ast_json(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+            include_private: bool = False,
+            include_dunder: bool = False,
+    ) -> str:
+        """
+        Return minified JSON descriptions for the selected profile's helpers.
+
+        Args:
+            frame_name:
+                Optional hosted frame name whose selected profile helpers
+                should be described. When omitted, uses the default frame.
+            include_private:
+                Whether `_private` helper members should be included.
+            include_dunder:
+                Whether `__dunder__` helper members should be included.
+
+        Returns:
+            str: Minified JSON mapping of helper names to class-surface
+            descriptions.
+        """
+        self.check_cleaned()
+        selected_profile = self._get_required_selected_profile(frame_name=frame_name)
+        return selected_profile.describe_helper_class_surfaces_ast_json(
+            include_private=include_private,
+            include_dunder=include_dunder,
+        )
+
+    def describe_selected_profile_helper_agent_purposes_json(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> str:
+        """
+        Return minified JSON agent-purpose surfaces for the selected helpers.
+
+        Args:
+            frame_name:
+                Optional hosted frame name whose selected profile helpers
+                should be described. When omitted, uses the default frame.
+
+        Returns:
+            str: Minified JSON mapping of helper names to agent-purpose
+            surfaces.
+        """
+        self.check_cleaned()
+        selected_profile = self._get_required_selected_profile(frame_name=frame_name)
+        helper_purposes = {
+            helper_object_name: json.loads(
+                ClassSurfaceAstDescriber.describe_agent_purpose_json(
+                    getattr(selected_profile, helper_object_name)
+                )
+            )
+            for helper_object_name in selected_profile.list_helper_object_names()
+        }
+        return json.dumps(helper_purposes, separators=(",", ":"))
+
+    def describe_selected_ast_surface_json(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+            include_private: bool = False,
+            include_dunder: bool = False,
+    ) -> str:
+        """
+        Return one minified JSON bundle describing the active AST surfaces.
+
+        Purpose:
+            Give the agent one compact JSON payload containing the active
+            viewer, selected profile, and helper class surfaces plus the basic
+            runtime asset identity for the current frame context.
+
+        Args:
+            frame_name:
+                Optional hosted frame name whose selected profile should be
+                described. When omitted, uses the default frame.
+            include_private:
+                Whether `_private` class members should be included.
+            include_dunder:
+                Whether `__dunder__` class members should be included.
+
+        Returns:
+            str: Minified JSON bundle for the active AST-described surfaces.
+        """
+        self.check_cleaned()
+        selected_frame_name = self._get_required_selected_frame_name(frame_name)
+        selected_profile = self.get_selected_profile_for_frame(selected_frame_name)
+        return json.dumps(
+            {
+                "frame_name": selected_frame_name,
+                "profile_name": selected_profile.name,
+                "profile_version": selected_profile.version,
+                "helper_names": selected_profile.list_helper_object_names(),
+                "viewer": json.loads(
+                    self.describe_viewer_class_surface_ast_json(
+                        include_private=include_private,
+                        include_dunder=include_dunder,
+                    )
+                ),
+                "profile": json.loads(
+                    selected_profile.describe_class_surface_ast_json(
+                        include_private=include_private,
+                        include_dunder=include_dunder,
+                    )
+                ),
+                "helpers": json.loads(
+                    selected_profile.describe_helper_class_surfaces_ast_json(
+                        include_private=include_private,
+                        include_dunder=include_dunder,
+                    )
+                ),
+            },
+            separators=(",", ":"),
+        )
+
     def register_active_profile(self, profile: FrameViewerProfile) -> None:
         """
         Register or replace one reusable viewer profile template.
@@ -2325,6 +2612,45 @@ class FrameViewer(Cleanable):
         if self._default_view_frame_name is None:
             raise ValueError("FrameViewer has no default selected frame.")
         return self._default_view_frame_name
+
+    def _get_required_selected_frame_name(
+            self,
+            frame_name: Optional[str] = None,
+    ) -> str:
+        """
+        Return the requested or default selected frame name.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            str: Selected hosted frame name.
+        """
+        if frame_name is not None:
+            if not frame_name:
+                raise ValueError("frame_name cannot be empty.")
+            self._get_required_frame_descriptor(frame_name)
+            return frame_name
+        return self._get_required_default_frame_name()
+
+    def _get_required_selected_profile(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> FrameViewerProfile:
+        """
+        Return the selected bound profile for the requested frame context.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            FrameViewerProfile: Selected bound profile for the frame.
+        """
+        selected_frame_name = self._get_required_selected_frame_name(frame_name)
+        return self.get_selected_profile_for_frame(selected_frame_name)
 
     def _get_required_frame_descriptor(self, frame_name: str) -> FrameDescriptor:
         try:

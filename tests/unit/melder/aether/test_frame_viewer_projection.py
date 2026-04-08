@@ -1,7 +1,9 @@
+import json
 from typing import Optional
 
 import pytest
 
+import melder
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
@@ -26,6 +28,10 @@ from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile import (
     FrameViewerProfile,
 )
+from melder.utilities.helpers.class_surface_ast_describer import (
+    ClassSurfaceAstDescriber,
+)
+from melder.utilities.general_base.cleanable import Cleanable
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 from tests._nexus_viewer_matrix_support import (
@@ -1623,6 +1629,259 @@ def test_execute_method_routes_crosswalk_and_collision_methods() -> None:
     assert conduit_crosswalk["conduit_id"] == "ops-conduit-1"
     assert spell_crosswalk["source_id"] == "ops-spellbook:ops-spell-1"
     assert spell_compare["same_lineage_id"] is True
+
+
+def test_frame_viewer_ast_surface_methods_return_minified_json() -> None:
+    viewer = _build_viewer(("ops",))
+
+    method_names_json = viewer.list_viewer_method_names_ast_json()
+    class_surface_json = viewer.describe_viewer_class_surface_ast_json()
+    profile_method_names_json = viewer.list_selected_profile_method_names_ast_json(
+        frame_name="ops"
+    )
+    profile_surface_json = viewer.describe_selected_profile_class_surface_ast_json(
+        frame_name="ops"
+    )
+    helper_surfaces_json = viewer.describe_selected_profile_helper_class_surfaces_ast_json(
+        frame_name="ops"
+    )
+    selected_surface_json = viewer.describe_selected_ast_surface_json(
+        frame_name="ops"
+    )
+
+    assert "\n" not in method_names_json
+    assert "\n" not in class_surface_json
+    assert "\n" not in profile_method_names_json
+    assert "\n" not in profile_surface_json
+    assert "\n" not in helper_surfaces_json
+    assert "\n" not in selected_surface_json
+
+    method_names = json.loads(method_names_json)
+    class_surface = json.loads(class_surface_json)
+    profile_method_names = json.loads(profile_method_names_json)
+    profile_surface = json.loads(profile_surface_json)
+    helper_surfaces = json.loads(helper_surfaces_json)
+    selected_surface = json.loads(selected_surface_json)
+
+    assert method_names["class_name"] == "FrameViewer"
+    assert "describe_frame" in method_names["method_names"]
+    assert "__init__" not in method_names["method_names"]
+    assert "_get_required_frame_descriptor" not in method_names["method_names"]
+
+    assert class_surface["class_name"] == "FrameViewer"
+    assert any(
+        current_method["method_name"] == "describe_frame"
+        for current_method in class_surface["methods"]
+    )
+    assert any(
+        current_property["method_name"] == "profile"
+        for current_property in class_surface["properties"]
+    )
+
+    assert profile_method_names["class_name"] == "GeneralFrameViewerProfile"
+    assert "bind_to_frame" in profile_method_names["method_names"]
+    assert "view_frame" not in profile_method_names["method_names"]
+
+    assert profile_surface["class_name"] == "GeneralFrameViewerProfile"
+    assert any(
+        current_property["method_name"] == "view_frame"
+        for current_property in profile_surface["properties"]
+    )
+    assert any(
+        current_property["method_name"] == "view_conduit"
+        for current_property in profile_surface["properties"]
+    )
+    assert any(
+        current_property["method_name"] == "view_spell"
+        for current_property in profile_surface["properties"]
+    )
+
+    assert set(helper_surfaces.keys()) == {"view_frame", "view_conduit", "view_spell"}
+    assert helper_surfaces["view_frame"]["class_name"] == "GeneralViewFrame"
+    assert any(
+        current_method["method_name"] == "describe_frame"
+        for current_method in helper_surfaces["view_frame"]["methods"]
+    )
+    assert helper_surfaces["view_conduit"]["class_name"] == "GeneralViewConduit"
+    assert any(
+        current_method["method_name"] == "describe_conduit"
+        for current_method in helper_surfaces["view_conduit"]["methods"]
+    )
+    assert helper_surfaces["view_spell"]["class_name"] == "GeneralViewSpell"
+    assert any(
+        current_method["method_name"] == "describe_spell"
+        for current_method in helper_surfaces["view_spell"]["methods"]
+    )
+
+    assert selected_surface["frame_name"] == "ops"
+    assert selected_surface["profile_name"] == "general"
+    assert selected_surface["helper_names"] == ["view_conduit", "view_frame", "view_spell"]
+    assert selected_surface["viewer"]["class_name"] == "FrameViewer"
+    assert selected_surface["profile"]["class_name"] == "GeneralFrameViewerProfile"
+    assert set(selected_surface["helpers"].keys()) == {"view_frame", "view_conduit", "view_spell"}
+
+
+def test_frame_viewer_ast_surface_methods_can_include_dunders() -> None:
+    viewer = _build_viewer(("ops",))
+
+    method_names = json.loads(
+        viewer.list_viewer_method_names_ast_json(include_dunder=True)
+    )
+
+    assert "__init__" in method_names["method_names"]
+
+
+def test_ast_describer_onboarding_and_agent_purpose_json_are_minified() -> None:
+    viewer = _build_viewer(("ops",))
+
+    onboarding = json.loads(viewer.describe_agent_onboarding_json())
+    viewer_purpose = json.loads(viewer.describe_viewer_agent_purpose_json())
+    profile_purpose = json.loads(
+        viewer.describe_selected_profile_agent_purpose_json(frame_name="ops")
+    )
+    helper_purposes = json.loads(
+        viewer.describe_selected_profile_helper_agent_purposes_json(
+            frame_name="ops"
+        )
+    )
+
+    assert onboarding["recommended_system_objects"] == [
+        "__architecture__",
+        "__components__",
+        "__graph_network__",
+        "__graph_details__",
+    ]
+    assert viewer_purpose["access"] == "public"
+    assert "access: public" in viewer_purpose["agent_purpose"]
+    assert profile_purpose["access"] == "public"
+    assert set(helper_purposes.keys()) == {"view_frame", "view_conduit", "view_spell"}
+    assert helper_purposes["view_frame"]["access"] == "public"
+
+
+class _PrivateAstTarget:
+    _ast_helper_access = "private"
+    __agent_purpose__ = "access: private. Private target used for AST helper tests."
+
+    def visible(self) -> None:
+        raise AssertionError("Should never be described through the private AST path.")
+
+
+class _MissingAstAccessTarget:
+    __agent_purpose__ = "access: public. Missing access marker for AST helper tests."
+
+    def visible(self) -> None:
+        raise AssertionError("Should never be described when access metadata is missing.")
+
+
+class _AstPurposeBase:
+    __agent_purpose__ = "access: public. Parent AST purpose."
+
+
+class _ExplicitAstChild(_AstPurposeBase):
+    _ast_helper_access = "public"
+    __agent_purpose__ = "access: public. Child AST purpose."
+
+    def visible(self) -> None:
+        raise AssertionError("Only class-surface metadata should be described.")
+
+
+class _InheritedOnlyAstChild(_AstPurposeBase):
+    _ast_helper_access = "public"
+
+    def visible(self) -> None:
+        raise AssertionError("Only class-surface metadata should be described.")
+
+
+def test_ast_describer_private_and_missing_access_guards_work() -> None:
+    private_target = _PrivateAstTarget()
+    missing_access_target = _MissingAstAccessTarget()
+
+    assert json.loads(
+        ClassSurfaceAstDescriber.describe_agent_purpose_json(private_target)
+    ) == {
+        "class_name": "_PrivateAstTarget",
+        "access": "private",
+        "agent_purpose": "access: private. Private target used for AST helper tests.",
+        "inherited_agent_purposes": [],
+        "recommended_system_objects": [
+            "__architecture__",
+            "__components__",
+            "__graph_network__",
+            "__graph_details__",
+        ],
+    }
+    with pytest.raises(ValueError, match="private class and cannot show any data"):
+        ClassSurfaceAstDescriber.describe_class_surface_ast_json(private_target)
+    with pytest.raises(ValueError, match="AST helper access is missing"):
+        ClassSurfaceAstDescriber.describe_class_surface_ast_json(missing_access_target)
+
+
+def test_ast_describer_reports_inherited_purposes_without_using_them_as_direct_purpose() -> None:
+    explicit_child = _ExplicitAstChild()
+    inherited_only_child = _InheritedOnlyAstChild()
+
+    explicit_child_surface = json.loads(
+        ClassSurfaceAstDescriber.describe_agent_purpose_json(explicit_child)
+    )
+    inherited_only_surface = json.loads(
+        ClassSurfaceAstDescriber.describe_agent_purpose_json(inherited_only_child)
+    )
+
+    assert explicit_child_surface == {
+        "class_name": "_ExplicitAstChild",
+        "access": "public",
+        "agent_purpose": "access: public. Child AST purpose.",
+        "inherited_agent_purposes": [
+            {
+                "class_name": "_AstPurposeBase",
+                "agent_purpose": "access: public. Parent AST purpose.",
+            }
+        ],
+        "recommended_system_objects": [
+            "__architecture__",
+            "__components__",
+            "__graph_network__",
+            "__graph_details__",
+        ],
+    }
+    assert inherited_only_surface == {
+        "class_name": "_InheritedOnlyAstChild",
+        "access": "public",
+        "agent_purpose": (
+            "access: public. Generic Melder object. Use the class surface and "
+            "top-level system-doc objects for deeper orientation."
+        ),
+        "inherited_agent_purposes": [
+            {
+                "class_name": "_AstPurposeBase",
+                "agent_purpose": "access: public. Parent AST purpose.",
+            }
+        ],
+        "recommended_system_objects": [
+            "__architecture__",
+            "__components__",
+            "__graph_network__",
+            "__graph_details__",
+        ],
+    }
+
+
+def test_top_level_system_document_objects_exist_and_render_placeholder_content() -> None:
+    assert melder.__architecture__.render_json() == (
+        '{"m":"placeholder: packaged Melder architecture hardcopy"}'
+    )
+    assert melder.__components__.render_json() == (
+        '{"m":"placeholder: packaged Melder components hardcopy"}'
+    )
+    assert melder.__graph_network__.render_json() == (
+        '{"m":"placeholder: packaged Melder graph network hardcopy"}'
+    )
+    assert melder.__graph_details__.render_json() == (
+        '{"m":"placeholder: packaged Melder graph details hardcopy"}'
+    )
+    assert melder.__architecture__.render_markdown() == (
+        "placeholder: packaged Melder architecture hardcopy"
+    )
 
 
 def test_view_spell_detailed_methods_surface_profile_sections_and_dunders() -> None:

@@ -7,6 +7,9 @@ from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.helpers.class_surface_ast_describer import (
+    ClassSurfaceAstDescriber,
+)
 from melder.utilities.helpers.id_builder import IDBuilder
 
 
@@ -27,6 +30,12 @@ class FrameViewerProfile(Cleanable):
     """
 
     __melder_internal__ = _mrg.sentinel
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Reusable viewer profile template that defines the "
+        "agent-facing method surface and binds that surface to one frame's "
+        "descriptor and ACL state."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_profile_id",
         "_name",
@@ -333,6 +342,140 @@ class FrameViewerProfile(Cleanable):
         """
         self.check_cleaned()
         return self.enabled_helpers
+
+    def list_class_method_names_ast_json(
+            self,
+            *,
+            include_private: bool = False,
+            include_dunder: bool = False,
+    ) -> str:
+        """
+        Return a minified JSON list of this profile class's method names.
+
+        Purpose:
+            Expose the profile's own source-defined public method surface for
+            agent consumption without walking runtime state or method bodies.
+
+        Args:
+            include_private:
+                Whether `_private` methods should be included.
+            include_dunder:
+                Whether `__dunder__` methods should be included.
+
+        Returns:
+            str: Minified JSON list of source-defined profile method names.
+        """
+        self.check_cleaned()
+        return ClassSurfaceAstDescriber.list_class_method_names_ast_json(
+            self,
+            include_private=include_private,
+            include_dunder=include_dunder,
+        )
+
+    def describe_agent_purpose_json(self) -> str:
+        """
+        Return the minified JSON agent-purpose surface for this profile.
+
+        Returns:
+            str: Minified JSON agent-purpose surface for the profile.
+        """
+        self.check_cleaned()
+        return ClassSurfaceAstDescriber.describe_agent_purpose_json(self)
+
+    def describe_class_surface_ast_json(
+            self,
+            *,
+            include_private: bool = False,
+            include_dunder: bool = False,
+    ) -> str:
+        """
+        Return a minified JSON description of this profile class surface.
+
+        Purpose:
+            Expose the profile's source-defined class surface, including method
+            signatures, properties, and docstrings, for direct agent use.
+
+        Args:
+            include_private:
+                Whether `_private` members should be included.
+            include_dunder:
+                Whether `__dunder__` members should be included.
+
+        Returns:
+            str: Minified JSON description of the profile class surface.
+        """
+        self.check_cleaned()
+        return ClassSurfaceAstDescriber.describe_class_surface_ast_json(
+            self,
+            include_private=include_private,
+            include_dunder=include_dunder,
+        )
+
+    def list_helper_object_names(self) -> Tuple[str, ...]:
+        """
+        Return the dynamic helper-object names exposed by this profile.
+
+        Purpose:
+            Provide one dynamic discovery seam for any composed helper objects
+            whose public property names follow the `view_*` convention.
+
+        Contract:
+            - Uses runtime only to discover helper-object property values.
+            - Includes only public names that start with `view_`.
+            - Includes only bound non-None values that satisfy `Cleanable`.
+
+        Returns:
+            Tuple[str, ...]: Sorted helper-object property names.
+        """
+        self.check_cleaned()
+        helper_object_names = []
+        for current_name in dir(type(self)):
+            if not current_name.startswith("view_"):
+                continue
+            current_value = getattr(self, current_name, None)
+            if current_value is None:
+                continue
+            if not isinstance(current_value, Cleanable):
+                continue
+            helper_object_names.append(current_name)
+        return tuple(sorted(helper_object_names))
+
+    def describe_helper_class_surfaces_ast_json(
+            self,
+            *,
+            include_private: bool = False,
+            include_dunder: bool = False,
+    ) -> str:
+        """
+        Return minified JSON descriptions for each composed helper class.
+
+        Purpose:
+            Expose the AST-described helper-object class surfaces for any
+            `view_*` helper objects currently composed into the profile.
+
+        Args:
+            include_private:
+                Whether `_private` helper members should be included.
+            include_dunder:
+                Whether `__dunder__` helper members should be included.
+
+        Returns:
+            str: Minified JSON mapping of helper-object names to class-surface
+            descriptions.
+        """
+        self.check_cleaned()
+        helper_surfaces = {
+            helper_object_name: ClassSurfaceAstDescriber.describe_class_surface_ast_json(
+                getattr(self, helper_object_name),
+                include_private=include_private,
+                include_dunder=include_dunder,
+            )
+            for helper_object_name in self.list_helper_object_names()
+        }
+        return "{" + ",".join(
+            "\"{0}\":{1}".format(helper_object_name, helper_surface_json)
+            for helper_object_name, helper_surface_json in helper_surfaces.items()
+        ) + "}"
 
     def has_tool(self, tool_name: str) -> bool:
         """

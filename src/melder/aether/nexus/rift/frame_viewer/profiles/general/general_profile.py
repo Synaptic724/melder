@@ -37,6 +37,11 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
     """
 
     __melder_internal__ = _mrg.sentinel
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Standard bound viewer profile that composes the "
+        "frame, conduit, and spell helper surfaces for one frame."
+    )
     __slots__ = FrameViewerProfile.__slots__ + [
         "_view_frame",
         "_view_conduit",
@@ -205,6 +210,16 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
             "list_nexus_contracts": "list_nexus_contracts",
             "describe_frame_brief": "describe_frame_brief",
             "describe_host_inventory": "describe_host_inventory",
+            "describe_agent_onboarding_json": "describe_agent_onboarding_json",
+            "describe_viewer_agent_purpose_json": "describe_viewer_agent_purpose_json",
+            "list_viewer_method_names_ast_json": "list_viewer_method_names_ast_json",
+            "describe_viewer_class_surface_ast_json": "describe_viewer_class_surface_ast_json",
+            "list_selected_profile_method_names_ast_json": "list_selected_profile_method_names_ast_json",
+            "describe_selected_profile_class_surface_ast_json": "describe_selected_profile_class_surface_ast_json",
+            "describe_selected_profile_agent_purpose_json": "describe_selected_profile_agent_purpose_json",
+            "describe_selected_profile_helper_class_surfaces_ast_json": "describe_selected_profile_helper_class_surfaces_ast_json",
+            "describe_selected_profile_helper_agent_purposes_json": "describe_selected_profile_helper_agent_purposes_json",
+            "describe_selected_ast_surface_json": "describe_selected_ast_surface_json",
             "describe_frame": "describe_frame",
             "describe_frames": "describe_frames",
             "count_frames": "count_frames",

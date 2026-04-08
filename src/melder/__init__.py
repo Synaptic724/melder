@@ -12,6 +12,10 @@ from melder.__version__ import __version__ as base_version
 from melder.__author__ import CREATOR as __author__
 from melder.__license__ import __license__
 from melder.__description__ import __description__
+from melder.__architecture__ import __architecture__
+from melder.__components__ import __components__
+from melder.__graph_network__ import __graph_network__
+from melder.__graph_details__ import __graph_details__
 from melder.__melder_registration_guard__ import MelderRegistrationGuard
 # Eagerly instantiate the registration guard at package import time (internal use).
 __melder_registration_guard__ = MelderRegistrationGuard()
@@ -60,5 +64,9 @@ __all__ = [
     "__author__",
     "__license__",
     "__description__",
+    "__architecture__",
+    "__components__",
+    "__graph_network__",
+    "__graph_details__",
 ]
 

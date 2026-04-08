@@ -26,6 +26,12 @@ class GeneralViewFrame(Cleanable):
     """
 
     __melder_internal__ = _mrg.sentinel
+    _ast_helper_access: str = "public"
+    __agent_purpose__: str = (
+        "access: public. Frame-local helper surface for visible targets, "
+        "frame summaries, inventory, search, collision detection, and "
+        "frame-local access explanations."
+    )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_frame_name",
