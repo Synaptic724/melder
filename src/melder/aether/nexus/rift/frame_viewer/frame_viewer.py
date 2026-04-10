@@ -610,6 +610,145 @@ class FrameViewer(Cleanable):
             "existence_kinds": tuple(self.list_existence_kinds()),
         }
 
+    def describe_viewer(self) -> Dict[str, object]:
+        """
+        Return one compact summary of the `FrameViewer` host itself.
+
+        Purpose:
+            Give the operator one host-level summary of what this viewer is
+            currently carrying without walking frame-local helper surfaces.
+
+        Contract:
+            - Returns host identity, default routing state, and descriptor-only
+              inventory posture.
+            - Does not expose payload bodies, ACL-shaped data, or frame-local
+              helper output.
+
+        Returns:
+            Dict[str, object]: Compact host summary for this viewer.
+        """
+        self.check_cleaned()
+        return {
+            "viewer_id": self.viewer_id,
+            "frame_count": self.count_frames(),
+            "default_view_frame_name": self._default_view_frame_name,
+            "default_profile_name": self.profile_name,
+            "default_profile_version": self.profile_version,
+            "frame_names": tuple(self.list_frame_names()),
+            "host_boundary": "descriptor_only",
+        }
+
+    def describe_current_frame(self) -> Dict[str, object]:
+        """
+        Return the descriptor-level summary for the current default frame.
+
+        Purpose:
+            Save the operator one extra lookup when the current default frame
+            is already the intended host target.
+
+        Contract:
+            - Resolves only the current default hosted frame.
+            - Uses the same descriptor-only summary contract as
+              `describe_frame(...)`.
+
+        Returns:
+            Dict[str, object]: Descriptor-level summary for the current frame.
+        """
+        self.check_cleaned()
+        return self.describe_frame(self._get_required_default_frame_name())
+
+    def describe_frames_inventory(self) -> Dict[str, Dict[str, object]]:
+        """
+        Return one compact per-frame descriptor inventory summary.
+
+        Purpose:
+            Give the operator a small inventory table across hosted frames
+            without exposing anything deeper than descriptor-owned counts and
+            stable record identity.
+
+        Contract:
+            - Multi-frame output stays shallow and descriptor-only.
+            - Does not expose payload bodies or ACL-shaped visibility detail.
+            - Includes only per-frame counts and stable host identity fields.
+
+        Returns:
+            Dict[str, Dict[str, object]]: Per-frame compact inventories keyed
+            by frame name.
+        """
+        self.check_cleaned()
+        return {
+            current_frame_name: {
+                "frame_id": self.describe_frame(current_frame_name)["frame_id"],
+                "nexus_contract": "{0}:{1}".format(
+                    self.describe_frame(current_frame_name)["nexus_label"],
+                    self.describe_frame(current_frame_name)["nexus_version"],
+                ),
+                "conduit_record_count": self.describe_frame(current_frame_name)[
+                    "conduit_record_count"
+                ],
+                "root_conduit_count": self.describe_frame(current_frame_name)[
+                    "root_conduit_count"
+                ],
+                "spell_record_count": self.describe_frame(current_frame_name)[
+                    "spell_record_count"
+                ],
+                "origin_spellbook_count": len(
+                    self.list_origin_spellbook_ids(frame_name=current_frame_name)
+                ),
+                "lineage_count": len(
+                    self.list_lineage_ids(frame_name=current_frame_name)
+                ),
+                "is_default": current_frame_name == self._default_view_frame_name,
+            }
+            for current_frame_name in self.list_frame_names()
+        }
+
+    def describe_viewer_method_surface(self) -> Dict[str, object]:
+        """
+        Return one curated summary of the host-side viewer method surface.
+
+        Purpose:
+            Explain how to use the `FrameViewer` host without forcing the
+            operator to read the raw AST-described class surface first.
+
+        Contract:
+            - Describes only the curated host-side method groups.
+            - Keeps the host boundary explicit: descriptor-only on the viewer,
+              frame-local detail through `execute_method(...)`.
+
+        Returns:
+            Dict[str, object]: Curated host method-surface summary.
+        """
+        self.check_cleaned()
+        return {
+            "host_boundary": "descriptor_only",
+            "default_entrypoints": (
+                "describe_viewer",
+                "describe_host_inventory",
+                "describe_current_frame",
+                "describe_frames_inventory",
+            ),
+            "frame_summary_methods": (
+                "list_frame_names",
+                "describe_frame",
+                "describe_frames",
+                "describe_frame_brief",
+                "describe_current_frame",
+            ),
+            "comparison_methods": (
+                "compare_frames",
+                "compare_frames_brief",
+                "compare_frame_conduits",
+                "compare_frame_spells",
+            ),
+            "record_methods": (
+                "describe_conduit_records",
+                "describe_spell_records",
+                "describe_spell_record",
+            ),
+            "frame_local_method_entrypoint": "execute_method",
+        }
+
     def compare_frames(
             self,
             left_frame_name: str,
@@ -683,6 +822,57 @@ class FrameViewer(Cleanable):
             "spellframes": self._compare_sorted_value_sets(
                 tuple(self.list_spellframes(frame_name=left_frame_name)),
                 tuple(self.list_spellframes(frame_name=right_frame_name)),
+            ),
+        }
+
+    def compare_frames_brief(
+            self,
+            left_frame_name: str,
+            right_frame_name: str,
+    ) -> Dict[str, object]:
+        """
+        Return one compact descriptor-only comparison summary for two frames.
+
+        Purpose:
+            Provide a smaller "what materially differs?" answer than the full
+            `compare_frames(...)` payload.
+
+        Contract:
+            - Uses only descriptor-level comparison data derived from the full
+              frame comparison.
+            - Keeps multi-frame output shallow and count-focused.
+
+        Args:
+            left_frame_name:
+                Left hosted frame name.
+            right_frame_name:
+                Right hosted frame name.
+
+        Returns:
+            Dict[str, object]: Compact descriptor-level frame comparison.
+        """
+        self.check_cleaned()
+        full_comparison = self.compare_frames(left_frame_name, right_frame_name)
+        return {
+            "left_frame_name": left_frame_name,
+            "right_frame_name": right_frame_name,
+            "same_frame_id": full_comparison["same_frame_id"],
+            "same_nexus_contract": full_comparison["same_nexus_contract"],
+            "left_only_conduit_count": len(
+                full_comparison["conduits"]["conduit_ids"]["left_only"]
+            ),
+            "right_only_conduit_count": len(
+                full_comparison["conduits"]["conduit_ids"]["right_only"]
+            ),
+            "left_only_spell_count": len(
+                full_comparison["spells"]["spell_source_ids"]["left_only"]
+            ),
+            "right_only_spell_count": len(
+                full_comparison["spells"]["spell_source_ids"]["right_only"]
+            ),
+            "shared_permission_count": len(full_comparison["permissions"]["shared"]),
+            "shared_existence_kind_count": len(
+                full_comparison["existence_kinds"]["shared"]
             ),
         }
 

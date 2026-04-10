@@ -656,6 +656,63 @@ def test_meld_delegates_to_meld_instance(conduit_lesser: Conduit) -> None:
     assert result == "result"
 
 
+def test_has_live_creation_delegates_to_meld_instance(conduit_lesser: Conduit) -> None:
+    """
+    Verify the live-creation probe delegates directly to the Meld component.
+
+    Contract:
+        - Conduit does not own the probe logic.
+        - Arguments are forwarded unchanged.
+        - The bool result is passed through.
+    """
+    conduit_lesser._meld = MagicMock()
+    conduit_lesser._meld.has_live_creation.return_value = True
+
+    result = conduit_lesser.has_live_creation(
+        spell_name="Spell",
+        spell="sha-1",
+        spellframe="frame",
+        binding_name="bind",
+    )
+
+    assert result is True
+    conduit_lesser._meld.has_live_creation.assert_called_once_with(
+        spell_name="Spell",
+        spell="sha-1",
+        spellframe="frame",
+        binding_name="bind",
+    )
+
+
+def test_describe_live_creation_status_delegates_to_meld_instance(conduit_lesser: Conduit) -> None:
+    """
+    Verify the richer live-creation status facade delegates to the Meld component.
+    """
+    conduit_lesser._meld = MagicMock()
+    conduit_lesser._meld.describe_live_creation_status.return_value = {
+        "is_live": True,
+        "spell_id": "sha-1",
+    }
+
+    result = conduit_lesser.describe_live_creation_status(
+        spell_name="Spell",
+        spell="sha-1",
+        spellframe="frame",
+        binding_name="bind",
+    )
+
+    assert result == {
+        "is_live": True,
+        "spell_id": "sha-1",
+    }
+    conduit_lesser._meld.describe_live_creation_status.assert_called_once_with(
+        spell_name="Spell",
+        spell="sha-1",
+        spellframe="frame",
+        binding_name="bind",
+    )
+
+
 def test_meld_does_not_fire_conduit_level_meld_hooks(
     conduit_lesser: Conduit,
 ) -> None:

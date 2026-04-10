@@ -21,6 +21,7 @@ from melder.aether.dev_ops.spell_system_states.spell_state_change_reason import 
     SpellStateChangeReason,
 )
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
+from melder.spellbook.existence.existence import Existence
 
 
 class Meld(Cleanable, IMeld):
@@ -402,6 +403,119 @@ class Meld(Cleanable, IMeld):
             # 3) Return the resolved instance.
             return instance
 
+    def has_live_creation(
+            self,
+            spell_name: str | None = None,
+            *,
+            spell: str | object | None = None,
+            spellframe: str | object | None = None,
+            binding_name: str | None = None,
+    ) -> bool:
+        """
+        Report whether a resolved spell already has a live creation.
+
+        Purpose:
+            Provide one no-create probe that mirrors the identity-resolution
+            behavior of `meld(...)` while stopping before any creation path is
+            entered.
+
+        Contract:
+            - Uses the same root identity inputs as `meld(...)`.
+            - Reuses the same spell-resolution helpers used by the meld path.
+            - Inspects current live runtime storage only.
+            - Never creates, registers, or mutates runtime objects.
+            - Returns `False` when the spell resolves correctly but has no live
+              creation in the relevant runtime scope.
+
+        Args:
+            spell_name:
+                Optional logical spell name for name-based resolution.
+            spell:
+                Optional spell id string or spell object used for resolution.
+            spellframe:
+                Optional spellframe / protocol / frame key used for
+                resolution.
+            binding_name:
+                Optional binding name used for lookup-key resolution.
+
+        Returns:
+            bool: True when the resolved spell already has a live creation in
+            the relevant runtime scope.
+
+        Raises:
+            ValueError:
+                If none of `spell_name`, `spell`, or `spellframe` are
+                provided.
+            KeyError:
+                If the spell cannot be resolved by the provided inputs.
+            RuntimeError:
+                If the probe encounters an unsupported or inconsistent runtime
+                storage state.
+        """
+        return self.describe_live_creation_status(
+            spell_name=spell_name,
+            spell=spell,
+            spellframe=spellframe,
+            binding_name=binding_name,
+        )["is_live"]
+
+    def describe_live_creation_status(
+            self,
+            spell_name: str | None = None,
+            *,
+            spell: str | object | None = None,
+            spellframe: str | object | None = None,
+            binding_name: str | None = None,
+    ) -> Dict[str, object]:
+        """
+        Return structured live-creation status for one resolved spell.
+
+        Purpose:
+            Provide a richer no-create status payload over the same lookup path
+            used by `has_live_creation(...)` and `meld(...)`.
+
+        Contract:
+            - Uses the same root identity inputs as `meld(...)`.
+            - Reuses the same spell-resolution helpers used by the meld path.
+            - Inspects current live runtime storage only.
+            - Never creates, registers, or mutates runtime objects.
+            - Reports the query conduit context explicitly so callers know the
+              result is scoped to the current conduit and, where relevant, its
+              active spellspace or shared owner-creation path.
+
+        Args:
+            spell_name:
+                Optional logical spell name for name-based resolution.
+            spell:
+                Optional spell id string or spell object used for resolution.
+            spellframe:
+                Optional spellframe / protocol / frame key used for
+                resolution.
+            binding_name:
+                Optional binding name used for lookup-key resolution.
+
+        Returns:
+            Dict[str, object]: Structured live-creation status payload.
+
+        Raises:
+            ValueError:
+                If none of `spell_name`, `spell`, or `spellframe` are
+                provided.
+            KeyError:
+                If the spell cannot be resolved by the provided inputs.
+            RuntimeError:
+                If the probe encounters an unsupported or inconsistent runtime
+                storage state.
+        """
+        self.check_cleaned()
+        target_spell = self._resolve_spell_for_live_creation_probe(
+            spell_name=spell_name,
+            spell=spell,
+            spellframe=spellframe,
+            binding_name=binding_name,
+        )
+        return self._describe_spell_live_creation_status(target_spell)
+
     def _ensure_lineage_resolvable(self, spell: ISpell) -> None:
         """
         Ensure the spell is structurally valid enough to continue toward
@@ -447,6 +561,220 @@ class Meld(Cleanable, IMeld):
         # Resolution gating (per-conduit)
         if not spell.resolution_required:
             self._ensure_resolution_resolvable(spell)
+
+    def _resolve_spell_for_live_creation_probe(
+            self,
+            *,
+            spell_name: str | None,
+            spell: str | object | None,
+            spellframe: str | object | None,
+            binding_name: str | None,
+    ) -> ISpell:
+        """
+        Resolve one spell for the live-creation probe using meld semantics.
+
+        Purpose:
+            Keep the probe on the same identity-resolution spine as `meld(...)`
+            without changing the main meld method itself.
+
+        Args:
+            spell_name:
+                Optional logical spell name for name-based resolution.
+            spell:
+                Optional spell id string or spell object.
+            spellframe:
+                Optional spellframe / protocol / frame key.
+            binding_name:
+                Optional binding name used for lookup-key resolution.
+
+        Returns:
+            ISpell: Resolved spell object for the probe.
+        """
+        target_spell: Optional[ISpell] = None
+        if isinstance(spell, str):
+            spell_id_resolution_cache = self._spell_id_resolution_cache
+            target_spell = spell_id_resolution_cache.get(spell)
+            if target_spell is None:
+                target_spell = self._resolve_spell_by_id(spell)
+                if len(spell_id_resolution_cache) >= self._max_resolution_cache_size:
+                    spell_id_resolution_cache.pop(
+                        next(iter(spell_id_resolution_cache)),
+                        None,
+                    )
+                spell_id_resolution_cache[spell] = target_spell
+            return target_spell
+
+        input_resolution_cache = self._input_resolution_cache
+        cache_key = (spell_name, spell, spellframe, binding_name)
+        try:
+            target_spell = input_resolution_cache.get(cache_key)
+        except TypeError:
+            cache_key = (
+                spell_name,
+                id(spell),
+                id(spellframe),
+                binding_name,
+            )
+            target_spell = input_resolution_cache.get(cache_key)
+        if target_spell is None:
+            target_spell = self._resolve_spell(
+                spell=spell,
+                spell_name=spell_name,
+                spellframe=spellframe,
+                binding_name=binding_name,
+            )
+            if len(input_resolution_cache) >= self._max_resolution_cache_size:
+                input_resolution_cache.pop(
+                    next(iter(input_resolution_cache)),
+                    None,
+                )
+            input_resolution_cache[cache_key] = target_spell
+        return target_spell
+
+    def _describe_spell_live_creation_status(self, spell: ISpell) -> Dict[str, object]:
+        """
+        Return structured live-creation status for one resolved spell.
+
+        Purpose:
+            Interpret the resolved spell's existence semantics against the
+            current runtime storage state without creating anything.
+
+        Args:
+            spell:
+                Resolved spell object whose live creation state should be
+                checked.
+
+        Returns:
+            Dict[str, object]: Structured status payload for the resolved
+            spell.
+
+        Raises:
+            RuntimeError:
+                If the spell advertises an unsupported or inconsistent
+                existence/storage relationship.
+        """
+        query_conduit_id = self._conduit_id
+        if spell.is_existing_creation:
+            return {
+                "is_live": spell.user_created_object is not None,
+                "spell_id": spell.spell_id,
+                "spell_name": spell.spell_name,
+                "existence": spell.existence.name,
+                "query_conduit_id": query_conduit_id,
+                "storage_scope_kind": "existing_creation",
+                "storage_owner_conduit_id": None,
+                "active_spellspace_id": None,
+                "creation_count": 1 if spell.user_created_object is not None else 0,
+            }
+
+        existence = spell.existence
+        spell_id = spell.spell_id
+        caller_creations = self._creations
+
+        if existence is Existence.many:
+            with caller_creations._lock:
+                creation_bucket = caller_creations._creations.get(spell_id)
+                creation_count = (
+                    len(creation_bucket)
+                    if isinstance(creation_bucket, list)
+                    else 0
+                )
+                return {
+                    "is_live": creation_count > 0,
+                    "spell_id": spell_id,
+                    "spell_name": spell.spell_name,
+                    "existence": existence.name,
+                    "query_conduit_id": query_conduit_id,
+                    "storage_scope_kind": "caller_conduit_many",
+                    "storage_owner_conduit_id": query_conduit_id,
+                    "active_spellspace_id": None,
+                    "creation_count": creation_count,
+                }
+
+        if existence is Existence.unique_per_conduit:
+            with caller_creations._lock:
+                creation = caller_creations._creations.get(spell_id)
+                return {
+                    "is_live": creation is not None,
+                    "spell_id": spell_id,
+                    "spell_name": spell.spell_name,
+                    "existence": existence.name,
+                    "query_conduit_id": query_conduit_id,
+                    "storage_scope_kind": "caller_conduit",
+                    "storage_owner_conduit_id": query_conduit_id,
+                    "active_spellspace_id": None,
+                    "creation_count": 1 if creation is not None else 0,
+                }
+
+        if existence is Existence.unique_per_spell_space:
+            spellspace = caller_creations._conduit.get_active_spellspace()
+            if spellspace is None:
+                return {
+                    "is_live": False,
+                    "spell_id": spell_id,
+                    "spell_name": spell.spell_name,
+                    "existence": existence.name,
+                    "query_conduit_id": query_conduit_id,
+                    "storage_scope_kind": "active_spellspace",
+                    "storage_owner_conduit_id": query_conduit_id,
+                    "active_spellspace_id": None,
+                    "creation_count": 0,
+                }
+            with caller_creations._lock:
+                creation = caller_creations.get_spellspace_creation(
+                    spellspace.id,
+                    spell_id,
+                )
+                return {
+                    "is_live": creation is not None,
+                    "spell_id": spell_id,
+                    "spell_name": spell.spell_name,
+                    "existence": existence.name,
+                    "query_conduit_id": query_conduit_id,
+                    "storage_scope_kind": "active_spellspace",
+                    "storage_owner_conduit_id": query_conduit_id,
+                    "active_spellspace_id": spellspace.id,
+                    "creation_count": 1 if creation is not None else 0,
+                }
+
+        if existence in {
+                Existence.unique,
+                Existence.unique_per_conduit_cluster,
+                Existence.unique_per_conduit_lineage,
+        }:
+            owner_creations = spell._owner_creations
+            if owner_creations is None:
+                return {
+                    "is_live": False,
+                    "spell_id": spell_id,
+                    "spell_name": spell.spell_name,
+                    "existence": existence.name,
+                    "query_conduit_id": query_conduit_id,
+                    "storage_scope_kind": "owner_creations",
+                    "storage_owner_conduit_id": spell._owner_conduit_id,
+                    "active_spellspace_id": None,
+                    "creation_count": 0,
+                }
+            with spell._lock:
+                with owner_creations._lock:
+                    creation = owner_creations._creations.get(spell_id)
+                    return {
+                        "is_live": creation is not None,
+                        "spell_id": spell_id,
+                        "spell_name": spell.spell_name,
+                        "existence": existence.name,
+                        "query_conduit_id": query_conduit_id,
+                        "storage_scope_kind": "owner_creations",
+                        "storage_owner_conduit_id": spell._owner_conduit_id,
+                        "active_spellspace_id": None,
+                        "creation_count": 1 if creation is not None else 0,
+                    }
+
+        raise RuntimeError(
+            "Unsupported existence '{0}' for live creation probe.".format(
+                existence,
+            )
+        )
 
     def _ensure_runtime_resolution_ready(self, spell: ISpell) -> None:
         """

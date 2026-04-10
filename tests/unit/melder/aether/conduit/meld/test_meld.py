@@ -2179,3 +2179,209 @@ def test_resolve_spell_by_id_raises_when_maps_missing() -> None:
     meld._contracted_spells = None
     with pytest.raises(KeyError, match="No spell found with spell_id"):
         meld._resolve_spell_by_id("missing")
+
+
+def test_has_live_creation_returns_true_for_unique_per_conduit_creation() -> None:
+    """
+    Verify the probe returns True for an existing unique-per-conduit creation.
+
+    Contract:
+        - Reuses spell-id resolution.
+        - Does not attempt creation-context build.
+    """
+    creations, _ = _make_creations()
+    live_instance = object()
+    creations.add_creation("spell-1", live_instance)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.unique_per_conduit,
+    )
+    spell._get_or_build_creation_context = MagicMock()
+    spellbook = _SpellbookStub(spells={spell.spell_index: spell})
+    meld = _make_meld(creations=creations, spellbook=spellbook)
+
+    assert meld.has_live_creation(spell="spell-1") is True
+    spell._get_or_build_creation_context.assert_not_called()
+
+
+def test_has_live_creation_returns_false_when_unique_per_conduit_missing() -> None:
+    """
+    Verify the probe returns False when no unique-per-conduit creation exists.
+    """
+    creations, _ = _make_creations()
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.unique_per_conduit,
+    )
+    spellbook = _SpellbookStub(spells={spell.spell_index: spell})
+    meld = _make_meld(creations=creations, spellbook=spellbook)
+
+    assert meld.has_live_creation(spell="spell-1") is False
+
+
+def test_has_live_creation_returns_true_when_many_bucket_is_non_empty() -> None:
+    """
+    Verify the probe treats any live `many` entries as available.
+    """
+    creations, _ = _make_creations()
+    creations.add_many_creations("spell-1", object())
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.many,
+    )
+    spellbook = _SpellbookStub(spells={spell.spell_index: spell})
+    meld = _make_meld(creations=creations, spellbook=spellbook)
+
+    assert meld.has_live_creation(spell="spell-1") is True
+
+
+def test_has_live_creation_uses_active_spellspace_bucket() -> None:
+    """
+    Verify the probe checks the active spellspace bucket for spellspace scope.
+    """
+    conduit = _ConduitStub(
+        conduit_id="conduit-1",
+        conduit_state=ConduitState.normal,
+    )
+    spellspace = _SpellSpaceStub(spellspace_id="space-1", owner_conduit=conduit)
+    conduit._active_spellspace = spellspace
+    creations = Creations(conduit)
+    creations.register_spellspace_creation("space-1", "spell-1", object())
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.unique_per_spell_space,
+    )
+    spellbook = _SpellbookStub(spells={spell.spell_index: spell})
+    meld = _make_meld(creations=creations, spellbook=spellbook)
+
+    assert meld.has_live_creation(spell="spell-1") is True
+
+
+def test_has_live_creation_returns_false_for_spellspace_without_active_scope() -> None:
+    """
+    Verify the probe returns False for spellspace scope when no scope is active.
+    """
+    creations, _ = _make_creations(active_spellspace=None)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.unique_per_spell_space,
+    )
+    spellbook = _SpellbookStub(spells={spell.spell_index: spell})
+    meld = _make_meld(creations=creations, spellbook=spellbook)
+
+    assert meld.has_live_creation(spell="spell-1") is False
+
+
+def test_has_live_creation_uses_owner_creations_for_shared_routes() -> None:
+    """
+    Verify shared existence routes inspect the owner creations container.
+    """
+    caller_creations, _ = _make_creations(conduit_id="caller")
+    owner_creations, _ = _make_creations(conduit_id="owner")
+    owner_creations.add_creation("spell-1", object())
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.unique,
+        owner_creations=owner_creations,
+    )
+    spellbook = _SpellbookStub(spells={spell.spell_index: spell})
+    meld = _make_meld(creations=caller_creations, spellbook=spellbook)
+
+    assert meld.has_live_creation(spell="spell-1") is True
+
+
+def test_has_live_creation_returns_existing_creation_state() -> None:
+    """
+    Verify existing-creation spells report live state from the user object.
+    """
+    creations, _ = _make_creations()
+    live_object = object()
+    spell = _SpellStub(
+        spell_id="spell-1",
+        is_existing_creation=True,
+        user_created_object=live_object,
+    )
+    spellbook = _SpellbookStub(spells={spell.spell_index: spell})
+    meld = _make_meld(creations=creations, spellbook=spellbook)
+
+    assert meld.has_live_creation(spell="spell-1") is True
+
+
+def test_describe_live_creation_status_reports_query_conduit_scope() -> None:
+    """
+    Verify the richer status payload reports the caller-conduit scope.
+    """
+    creations, _ = _make_creations(conduit_id="conduit-1")
+    creations.add_creation("spell-1", object())
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.unique_per_conduit,
+    )
+    spellbook = _SpellbookStub(spells={spell.spell_index: spell})
+    meld = _make_meld(creations=creations, spellbook=spellbook)
+
+    assert meld.describe_live_creation_status(spell="spell-1") == {
+        "is_live": True,
+        "spell_id": "spell-1",
+        "spell_name": "Spell",
+        "existence": "unique_per_conduit",
+        "query_conduit_id": "conduit-1",
+        "storage_scope_kind": "caller_conduit",
+        "storage_owner_conduit_id": "conduit-1",
+        "active_spellspace_id": None,
+        "creation_count": 1,
+    }
+
+
+def test_describe_live_creation_status_reports_owner_scope_for_shared_routes() -> None:
+    """
+    Verify the richer status payload reports owner-scope storage for shared routes.
+    """
+    caller_creations, _ = _make_creations(conduit_id="caller")
+    owner_creations, _ = _make_creations(conduit_id="owner")
+    owner_creations.add_creation("spell-1", object())
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.unique,
+        owner_creations=owner_creations,
+        owner_conduit_id="owner",
+    )
+    spellbook = _SpellbookStub(spells={spell.spell_index: spell})
+    meld = _make_meld(creations=caller_creations, spellbook=spellbook)
+
+    assert meld.describe_live_creation_status(spell="spell-1") == {
+        "is_live": True,
+        "spell_id": "spell-1",
+        "spell_name": "Spell",
+        "existence": "unique",
+        "query_conduit_id": "caller",
+        "storage_scope_kind": "owner_creations",
+        "storage_owner_conduit_id": "owner",
+        "active_spellspace_id": None,
+        "creation_count": 1,
+    }
+
+
+def test_describe_live_creation_status_reports_spellspace_gap_without_scope() -> None:
+    """
+    Verify the richer status payload reports missing active spellspace cleanly.
+    """
+    creations, _ = _make_creations(active_spellspace=None)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.unique_per_spell_space,
+    )
+    spellbook = _SpellbookStub(spells={spell.spell_index: spell})
+    meld = _make_meld(creations=creations, spellbook=spellbook)
+
+    assert meld.describe_live_creation_status(spell="spell-1") == {
+        "is_live": False,
+        "spell_id": "spell-1",
+        "spell_name": "Spell",
+        "existence": "unique_per_spell_space",
+        "query_conduit_id": "conduit-1",
+        "storage_scope_kind": "active_spellspace",
+        "storage_owner_conduit_id": "conduit-1",
+        "active_spellspace_id": None,
+        "creation_count": 0,
+    }

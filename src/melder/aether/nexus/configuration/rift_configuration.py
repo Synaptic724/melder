@@ -55,11 +55,9 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
         self._consumed: bool = False
         self._properties: Dict[str, object] = {}
         self.available_properties: Dict[str, Union[Type, Tuple[Type, ...]]] = {
-            "target_frame_name": str,
             "space_type": RiftSpaceType,
             "space_name": (str, type(None)),
             "auto_activate_on_program": bool,
-            "auto_create_space": bool,
             "validation_mode": RiftValidationMode,
             "event_configuration": (IRiftEventConfiguration, type(None)),
         }
@@ -203,19 +201,19 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
         Load the standard default property set for one Rift.
 
         Contract:
-            - Sets default target frame, room type, activation posture, and
-              validation mode used when Nexus builds a Rift without overrides.
+            - Sets default room type, room naming posture, activation posture,
+              validation mode, and room-event configuration defaults used when
+              Nexus builds a Rift without overrides.
+            - Does not select or bind any target frames.
 
         Returns:
             None.
         """
         self.check_cleaned()
         defaults = {
-            "target_frame_name": "default",
             "space_type": RiftSpaceType.static,
             "space_name": None,
             "auto_activate_on_program": True,
-            "auto_create_space": False,
             "validation_mode": RiftValidationMode.strict,
             "event_configuration": None,
         }
@@ -331,22 +329,6 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
         self.load_default_dictionary()
         return self
 
-    def with_target_frame_name(self, frame_name: str) -> "IRiftConfiguration":
-        """
-        Fluent
-
-        Set the target frame name for this Rift.
-
-        Args:
-            frame_name:
-                Target `AethericFrame` name to expose through the Rift.
-
-        Returns:
-            IRiftConfiguration: This configuration instance.
-        """
-        self.set_property("target_frame_name", frame_name)
-        return self
-
     def with_space_type(
             self,
             space_type: Union[RiftSpaceType, str],
@@ -358,7 +340,8 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
 
         Args:
             space_type:
-                Room-kind enum or string (`static` or `dynamic`).
+                Room-kind enum or string (`static` or `dynamic`) used to
+                instantiate the primary space during Rift creation.
 
         Returns:
             IRiftConfiguration: This configuration instance.
@@ -402,25 +385,6 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
             IRiftConfiguration: This configuration instance.
         """
         self.set_property("auto_activate_on_program", enabled)
-        return self
-
-    def with_auto_create_space(
-            self,
-            enabled: bool = True,
-    ) -> "IRiftConfiguration":
-        """
-        Fluent
-
-        Set whether a room should be created automatically for the Rift.
-
-        Args:
-            enabled:
-                True to auto-create the initial room.
-
-        Returns:
-            IRiftConfiguration: This configuration instance.
-        """
-        self.set_property("auto_create_space", enabled)
         return self
 
     def with_validation_mode(

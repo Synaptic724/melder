@@ -3,8 +3,13 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aether import Aether
+from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.rift.frame_link.frame_link_contract import FrameLinkContract
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.aether.nexus.rift.rift_space.capability_rift_space import CapabilityRiftSpace
+from melder.aether.nexus.rift.rift_space.dynamic_rift_space import DynamicRiftSpace
+from melder.aether.nexus.rift.rift_space.rift_event_configuration import RiftEventConfiguration
+from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
@@ -35,6 +40,9 @@ class Rift(Cleanable, IRift):
           local room registry state.
         - Owns only live Rift runtime state, not global registry or Nexus-wide
           configuration.
+        - Programs one primary concrete space from the chosen Rift
+          `space_type` during creation.
+        - Defers target-frame selection to a later explicit action.
         - Treats `Aether` as hidden substrate reached later by lower runtime
           layers such as workstation/workspace logic.
 
@@ -80,7 +88,7 @@ class Rift(Cleanable, IRift):
             nexus_frame_names: Sequence[str],
             default_nexus_frame_name: str,
             target_frame_names: Sequence[str],
-            default_target_frame_name: str,
+            default_target_frame_name: Optional[str],
             rift_name: Optional[str] = None,
             rift_id: Optional[str] = None,
             local_conduit_id: Optional[str] = None,
@@ -103,9 +111,9 @@ class Rift(Cleanable, IRift):
             default_nexus_frame_name:
                 Default internal Nexus frame name for this Rift.
             target_frame_names:
-                Assigned target/userland frame names for this Rift.
+                Optional assigned target/userland frame names for this Rift.
             default_target_frame_name:
-                Default target/userland frame name for this Rift.
+                Optional default target/userland frame name for this Rift.
             rift_name:
                 Optional stable Rift name.
             rift_id:
@@ -128,6 +136,8 @@ class Rift(Cleanable, IRift):
             - Copies incoming metadata into a Rift-owned mutable dict.
             - Builds and owns the initial `FrameLinkContract` for assigned
               target-frame access.
+            - Programs one primary concrete space from the configuration's
+              `space_type` and room/event settings.
             - Defers logger resolution to `_initialize_logging(...)`.
         """
         if nexus is None:
@@ -145,9 +155,11 @@ class Rift(Cleanable, IRift):
             raise ValueError("nexus_frame_names cannot be empty.")
         if default_nexus_frame_name not in nexus_frame_names:
             raise ValueError("default_nexus_frame_name must be present in nexus_frame_names.")
-        if not target_frame_names:
-            raise ValueError("target_frame_names cannot be empty.")
-        if default_target_frame_name not in target_frame_names:
+        normalized_target_frame_names = tuple(target_frame_names)
+        if (
+                default_target_frame_name is not None
+                and default_target_frame_name not in normalized_target_frame_names
+        ):
             raise ValueError("default_target_frame_name must be present in target_frame_names.")
 
         super().__init__()
@@ -160,8 +172,8 @@ class Rift(Cleanable, IRift):
         self._configuration: IRiftConfiguration = configuration
         self._nexus_frame_names: Tuple[str, ...] = tuple(nexus_frame_names)
         self._default_nexus_frame_name: str = default_nexus_frame_name
-        self._target_frame_names: Tuple[str, ...] = tuple(target_frame_names)
-        self._default_target_frame_name: str = default_target_frame_name
+        self._target_frame_names: Tuple[str, ...] = normalized_target_frame_names
+        self._default_target_frame_name: Optional[str] = default_target_frame_name
         self._frame_link_contract: FrameLinkContract = FrameLinkContract(
             rift_id=self._id,
             assigned_frame_names=self._target_frame_names,
@@ -179,6 +191,7 @@ class Rift(Cleanable, IRift):
         self._spaces_by_id: Dict[str, IRiftSpace] = {}
         self._space_ids_by_name: Dict[str, str] = {}
         self._initialize_logging(logger)
+        self._create_primary_space_from_configuration(space_id=active_space_id)
 
     def _initialize_logging(self, logger: Optional[Any]) -> None:
         """
@@ -343,13 +356,13 @@ class Rift(Cleanable, IRift):
         return self._target_frame_names
 
     @property
-    def default_target_frame_name(self) -> str:
+    def default_target_frame_name(self) -> Optional[str]:
         """
         Purpose:
             Return the default target/userland frame name for this Rift.
 
         Returns:
-            str: Default target frame name.
+            Optional[str]: Default target frame name when one exists.
         """
         self.check_cleaned()
         return self._default_target_frame_name
@@ -390,7 +403,7 @@ class Rift(Cleanable, IRift):
         self.check_cleaned()
         return self._frame_link_contract.assigned_frame_names
 
-    def engage_frame(
+    def target_frame(
             self,
             frame_name: str,
             *,
@@ -399,7 +412,7 @@ class Rift(Cleanable, IRift):
         """
         Internal
 
-        Engage one target frame on this Rift's frame contract.
+        Validate and engage one target frame on this Rift's frame contract.
 
         Args:
             frame_name:
@@ -407,6 +420,12 @@ class Rift(Cleanable, IRift):
             set_as_default:
                 When True, the engaged frame also becomes the default target
                 frame for this Rift.
+
+        Contract:
+            - Validates target-frame policy and runtime posture through Nexus.
+            - Registers the frame on the Rift-local frame contract.
+            - Refreshes the active-space viewer when descriptor truth is
+              available for the currently assigned frame set.
 
         Returns:
             None.
@@ -421,6 +440,14 @@ class Rift(Cleanable, IRift):
             frame_name,
             requested_space_type,
         )
+        try:
+            self._nexus._get_required_frame_descriptor(frame_name)
+        except KeyError as exc:
+            raise ValueError(
+                "Target frame '{0}' has no descriptor and cannot be targeted yet.".format(
+                    frame_name
+                )
+            ) from exc
         if is_new_frame:
             self._nexus._validate_target_frame_budget((frame_name,))
         self._frame_link_contract.register_frame(
@@ -435,6 +462,33 @@ class Rift(Cleanable, IRift):
             self._target_frame_names = self._frame_link_contract.assigned_frame_names
         if set_as_default:
             self._default_target_frame_name = frame_name
+        self.attach_frame_viewer_to_space(space_id=self._active_space_id)
+
+    def engage_frame(
+            self,
+            frame_name: str,
+            *,
+            set_as_default: bool = False,
+    ) -> None:
+        """
+        Internal
+
+        Backward-compatible alias for `target_frame(...)`.
+
+        Args:
+            frame_name:
+                Target frame name to engage.
+            set_as_default:
+                When True, the engaged frame also becomes the default target
+                frame for this Rift.
+
+        Returns:
+            None.
+        """
+        self.target_frame(
+            frame_name,
+            set_as_default=set_as_default,
+        )
 
     def create_frame_viewer(
             self,
@@ -747,6 +801,89 @@ class Rift(Cleanable, IRift):
                 "Registered RiftSpace '{0}' (id={1}).".format(space.space_name, space.space_id),
                 "register_space",
             )
+
+    def _create_primary_space_from_configuration(
+            self,
+            *,
+            space_id: Optional[str] = None,
+    ) -> None:
+        """
+        Internal
+
+        Create and register the primary concrete space declared by the Rift
+        configuration.
+
+        Contract:
+            - Instantiates exactly one primary room from the configured
+              `space_type`.
+            - Uses the configured space name and a cloned event configuration.
+            - Registers the resulting room immediately so the Rift always has
+              a working primary-space anchor after creation.
+
+        Args:
+            space_id:
+                Optional explicit primary-space id.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        configured_space_type = self._configuration.get_property("space_type")
+        configured_space_name = self._configuration.get_property("space_name")
+        configured_event_configuration = self._configuration.get_property(
+            "event_configuration"
+        )
+        cloned_event_configuration = self._clone_rift_event_configuration(
+            configured_event_configuration
+        )
+        if configured_space_type == RiftSpaceType.dynamic:
+            primary_space = DynamicRiftSpace(
+                owner_rift_id=self._id,
+                space_name=configured_space_name,
+                event_configuration=cloned_event_configuration,
+                space_id=space_id,
+            )
+        elif configured_space_type == RiftSpaceType.capability:
+            primary_space = CapabilityRiftSpace(
+                owner_rift_id=self._id,
+                space_name=configured_space_name,
+                event_configuration=cloned_event_configuration,
+                space_id=space_id,
+            )
+        else:
+            primary_space = StaticRiftSpace(
+                owner_rift_id=self._id,
+                space_name=configured_space_name,
+                event_configuration=cloned_event_configuration,
+                space_id=space_id,
+            )
+        self.register_space(primary_space)
+
+    @staticmethod
+    def _clone_rift_event_configuration(
+            event_configuration: Optional[object],
+    ) -> RiftEventConfiguration:
+        """
+        Internal
+
+        Clone the configured primary-space event configuration.
+
+        Args:
+            event_configuration:
+                Optional source room-event configuration.
+
+        Returns:
+            RiftEventConfiguration: Detached room-event configuration.
+        """
+        if event_configuration is None:
+            return RiftEventConfiguration()
+        return RiftEventConfiguration(
+            action_enrichers=list(event_configuration._action_enrichers),
+            memory_enrichers=list(event_configuration._memory_enrichers),
+            action_observers=list(event_configuration._action_observers),
+            memory_observers=list(event_configuration._memory_observers),
+        )
+
 
     def get_space(self, space_id: str) -> IRiftSpace:
         """

@@ -2507,6 +2507,129 @@ class Conduit(Cleanable, IConduit):
             spell_override=spell_override,
         )
 
+    def has_live_creation(
+            self,
+            spell_name: str | None = None,
+            *,
+            spell: str | object | None = None,
+            spellframe: str | object | None = None,
+            binding_name: str | None = None,
+    ) -> bool:
+        """
+        Public API
+
+        Resolve a spell through the same identity path as `meld(...)`, but
+        only report whether a live creation already exists.
+
+        Purpose:
+            Provide one no-create runtime probe that later static-access code
+            can use to decide whether an object is already available without
+            entering the meld creation path.
+
+        Contract:
+            - Mirrors the root identity inputs accepted by `meld(...)`.
+            - Delegates all lookup and existence semantics to the owned
+              `Meld` instance.
+            - Never creates, registers, links, or mutates objects.
+            - Does not interact with the dynamic creation gate, because the
+              method is observational only.
+
+        Args:
+            spell_name:
+                Optional logical spell name for name-based resolution.
+            spell:
+                Optional spell id string or spell object used for resolution.
+            spellframe:
+                Optional spellframe / protocol / frame key used for
+                resolution.
+            binding_name:
+                Optional binding name used for lookup-key resolution.
+
+        Returns:
+            bool: True when the resolved spell already has a live creation in
+            the relevant runtime scope.
+
+        Raises:
+            RuntimeError:
+                If the Conduit has been cleaned or the underlying `Meld`
+                instance is unavailable.
+            ValueError:
+                If none of `spell_name`, `spell`, or `spellframe` are
+                provided.
+            KeyError:
+                Propagated from `Meld` when a spell cannot be resolved.
+        """
+        self.check_cleaned()
+        meld_component = self._meld
+        if meld_component is None:
+            raise RuntimeError("Meld component is unavailable.")
+        return meld_component.has_live_creation(
+            spell_name=spell_name,
+            spell=spell,
+            spellframe=spellframe,
+            binding_name=binding_name,
+        )
+
+    def describe_live_creation_status(
+            self,
+            spell_name: str | None = None,
+            *,
+            spell: str | object | None = None,
+            spellframe: str | object | None = None,
+            binding_name: str | None = None,
+    ) -> Dict[str, Any]:
+        """
+        Public API
+
+        Resolve a spell through the same identity path as `meld(...)`, but
+        return structured live-creation status for this conduit context.
+
+        Purpose:
+            Provide a richer diagnostic/runtime query surface over the same
+            no-create probe used by `has_live_creation(...)`.
+
+        Contract:
+            - Mirrors the root identity inputs accepted by `meld(...)`.
+            - Delegates all lookup and existence semantics to the owned
+              `Meld` instance.
+            - Never creates, registers, links, or mutates objects.
+            - Reports the query as scoped to this conduit context.
+
+        Args:
+            spell_name:
+                Optional logical spell name for name-based resolution.
+            spell:
+                Optional spell id string or spell object used for resolution.
+            spellframe:
+                Optional spellframe / protocol / frame key used for
+                resolution.
+            binding_name:
+                Optional binding name used for lookup-key resolution.
+
+        Returns:
+            Dict[str, Any]: Structured live-creation status payload.
+
+        Raises:
+            RuntimeError:
+                If the Conduit has been cleaned or the underlying `Meld`
+                instance is unavailable.
+            ValueError:
+                If none of `spell_name`, `spell`, or `spellframe` are
+                provided.
+            KeyError:
+                Propagated from `Meld` when a spell cannot be resolved.
+        """
+        self.check_cleaned()
+        meld_component = self._meld
+        if meld_component is None:
+            raise RuntimeError("Meld component is unavailable.")
+        return meld_component.describe_live_creation_status(
+            spell_name=spell_name,
+            spell=spell,
+            spellframe=spellframe,
+            binding_name=binding_name,
+        )
+
 
 
     #endregion Meld

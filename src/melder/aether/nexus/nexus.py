@@ -538,6 +538,8 @@ class Nexus(Cleanable, INexus):
               template instead of returning it directly.
             - When `profile_name` is omitted, seeds a fresh configuration from
               installed Nexus defaults.
+            - Produces a bare Rift configuration: room identity/mode and
+              validation posture only. It does not select a target frame.
 
         Args:
             profile_name:
@@ -563,10 +565,8 @@ class Nexus(Cleanable, INexus):
             return self._clone_rift_configuration(template)
 
         configuration = RiftConfiguration().with_defaults()
-        configuration.with_target_frame_name(self._configuration.get_property("default_target_frame_name"))
         configuration.with_space_type(self._configuration.get_property("default_space_type"))
         configuration.with_auto_activate_on_program(self._configuration.get_property("default_auto_activate_on_program"))
-        configuration.with_auto_create_space(self._configuration.get_property("default_auto_create_space"))
         configuration.with_validation_mode(self._configuration.get_property("default_validation_mode"))
         return configuration
 
@@ -632,6 +632,10 @@ class Nexus(Cleanable, INexus):
               consumed after successful registration.
             - Allocates default Rift and Nexus-frame names when callers do not
               supply them.
+            - Creates the primary concrete space from the configured
+              `space_type`.
+            - Does not select or validate a target frame during bare Rift
+              creation.
             - Registers the created Rift through `add_rift(...)` before
               returning it.
 
@@ -667,9 +671,6 @@ class Nexus(Cleanable, INexus):
         if not bound_configuration.frozen:
             bound_configuration.finalize()
 
-        self._validate_target_frame_configuration(bound_configuration)
-        target_frame_name = bound_configuration.get_property("target_frame_name")
-
         with self._lock:
             canonical_rift_name = rift_name or self._allocate_default_rift_name()
             nexus_frame_name = self._determine_nexus_frame_name(canonical_rift_id)
@@ -678,8 +679,8 @@ class Nexus(Cleanable, INexus):
                 configuration=bound_configuration,
                 nexus_frame_names=(nexus_frame_name,),
                 default_nexus_frame_name=nexus_frame_name,
-                target_frame_names=(target_frame_name,),
-                default_target_frame_name=target_frame_name,
+                target_frame_names=tuple(),
+                default_target_frame_name=None,
                 rift_name=canonical_rift_name,
                 rift_id=canonical_rift_id,
                 local_conduit_id=local_conduit_id,
@@ -2202,39 +2203,6 @@ class Nexus(Cleanable, INexus):
         if self._configuration.get_property("rift_access_token_required"):
             if access_token != self._configuration.get_property("rift_access_token_value"):
                 raise ValueError("Valid Rift access token is required.")
-
-    def _validate_target_frame_configuration(
-            self,
-            configuration: IRiftConfiguration,
-    ) -> None:
-        """
-        Internal
-
-        Validate one per-Rift target-frame configuration against Nexus policy.
-
-        Args:
-            configuration:
-                Per-Rift configuration being applied.
-
-        Contract:
-            - Enforces target-frame override policy before runtime validation.
-            - Validates both target-frame naming policy and frame runtime
-              posture requirements for the requested space type.
-
-        Returns:
-            None.
-        """
-        requested_target_frame_name = configuration.get_property("target_frame_name")
-        default_target_frame_name = self._configuration.get_property("default_target_frame_name")
-        requested_space_type = configuration.get_property("space_type")
-        if not self._configuration.get_property("allow_target_frame_override"):
-            if requested_target_frame_name != default_target_frame_name:
-                raise ValueError("Target frame override is disabled.")
-        self._validate_target_frame_names((requested_target_frame_name,))
-        self._validate_target_frame_runtime_requirements(
-            requested_target_frame_name,
-            requested_space_type,
-        )
 
     def _validate_target_frame_runtime_requirements(
             self,

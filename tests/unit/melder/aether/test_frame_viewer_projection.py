@@ -956,6 +956,80 @@ def test_frame_viewer_descriptor_host_descriptions_report_topology_and_records()
 def test_frame_viewer_brief_and_compare_methods_report_expected_shapes() -> None:
     viewer = _build_viewer(("ops", "finance"))
 
+    viewer_summary = viewer.describe_viewer()
+    current_frame = viewer.describe_current_frame()
+    frames_inventory = viewer.describe_frames_inventory()
+    method_surface = viewer.describe_viewer_method_surface()
+
+    assert viewer_summary == {
+        "viewer_id": viewer.viewer_id,
+        "frame_count": 2,
+        "default_view_frame_name": "ops",
+        "default_profile_name": "general",
+        "default_profile_version": "0.0.1",
+        "frame_names": ("finance", "ops"),
+        "host_boundary": "descriptor_only",
+    }
+    assert current_frame == {
+        "frame_name": "ops",
+        "frame_id": "ops-frame",
+        "nexus_label": "default",
+        "nexus_version": "0.0.1",
+        "conduit_record_count": 1,
+        "root_conduit_count": 1,
+        "spell_record_count": 1,
+        "is_default": True,
+    }
+    assert frames_inventory == {
+        "finance": {
+            "frame_id": "finance-frame",
+            "nexus_contract": "default:0.0.1",
+            "conduit_record_count": 1,
+            "root_conduit_count": 1,
+            "spell_record_count": 1,
+            "origin_spellbook_count": 1,
+            "lineage_count": 1,
+            "is_default": False,
+        },
+        "ops": {
+            "frame_id": "ops-frame",
+            "nexus_contract": "default:0.0.1",
+            "conduit_record_count": 1,
+            "root_conduit_count": 1,
+            "spell_record_count": 1,
+            "origin_spellbook_count": 1,
+            "lineage_count": 1,
+            "is_default": True,
+        },
+    }
+    assert method_surface == {
+        "host_boundary": "descriptor_only",
+        "default_entrypoints": (
+            "describe_viewer",
+            "describe_host_inventory",
+            "describe_current_frame",
+            "describe_frames_inventory",
+        ),
+        "frame_summary_methods": (
+            "list_frame_names",
+            "describe_frame",
+            "describe_frames",
+            "describe_frame_brief",
+            "describe_current_frame",
+        ),
+        "comparison_methods": (
+            "compare_frames",
+            "compare_frames_brief",
+            "compare_frame_conduits",
+            "compare_frame_spells",
+        ),
+        "record_methods": (
+            "describe_conduit_records",
+            "describe_spell_records",
+            "describe_spell_record",
+        ),
+        "frame_local_method_entrypoint": "execute_method",
+    }
     assert viewer.describe_frame_brief("ops") == {
         "frame_name": "ops",
         "frame_id": "ops-frame",
@@ -1019,6 +1093,18 @@ def test_frame_viewer_brief_and_compare_methods_report_expected_shapes() -> None
     assert comparison["right_frame_name"] == "finance"
     assert comparison["same_frame_id"] is False
     assert comparison["same_nexus_contract"] is True
+    assert viewer.compare_frames_brief("ops", "finance") == {
+        "left_frame_name": "ops",
+        "right_frame_name": "finance",
+        "same_frame_id": False,
+        "same_nexus_contract": True,
+        "left_only_conduit_count": 1,
+        "right_only_conduit_count": 1,
+        "left_only_spell_count": 1,
+        "right_only_spell_count": 1,
+        "shared_permission_count": 1,
+        "shared_existence_kind_count": 1,
+    }
 
 
 def test_view_frame_visible_surface_methods_report_inventory_and_topology() -> None:
@@ -1358,6 +1444,9 @@ def test_view_spell_brief_and_missing_section_methods_work() -> None:
 def test_execute_method_routes_new_brief_and_compare_methods() -> None:
     viewer = _build_viewer(("ops", "finance"))
 
+    viewer_summary = viewer.execute_method("describe_viewer")
+    current_frame = viewer.execute_method("describe_current_frame")
+    frames_inventory = viewer.execute_method("describe_frames_inventory")
     frame_brief = viewer.execute_method("describe_frame_brief", frame_name="ops")
     host_inventory = viewer.execute_method("describe_host_inventory")
     frame_compare = viewer.execute_method(
@@ -1365,6 +1454,12 @@ def test_execute_method_routes_new_brief_and_compare_methods() -> None:
         left_frame_name="ops",
         right_frame_name="finance",
     )
+    frame_compare_brief = viewer.execute_method(
+        "compare_frames_brief",
+        left_frame_name="ops",
+        right_frame_name="finance",
+    )
+    method_surface = viewer.execute_method("describe_viewer_method_surface")
     frame_view_brief = viewer.execute_method(
         "describe_frame_brief_local",
         frame_name="ops",
@@ -1394,9 +1489,14 @@ def test_execute_method_routes_new_brief_and_compare_methods() -> None:
         spell_source_id="ops-spellbook:ops-spell",
     )
 
+    assert viewer_summary["frame_count"] == 2
+    assert current_frame["frame_name"] == "ops"
+    assert frames_inventory["ops"]["spell_record_count"] == 1
     assert frame_brief["frame_name"] == "ops"
     assert host_inventory["frame_count"] == 2
     assert frame_compare["left_frame_name"] == "ops"
+    assert frame_compare_brief["left_only_spell_count"] == 1
+    assert method_surface["frame_local_method_entrypoint"] == "execute_method"
     assert frame_view_brief["visible_target_count"] == 3
     assert "hidden_frame_payload_fields" in missing_surface
     assert conduit_brief["conduit_id"] == "ops-conduit"

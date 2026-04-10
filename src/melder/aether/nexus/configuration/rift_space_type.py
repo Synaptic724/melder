@@ -12,6 +12,10 @@ class RiftSpaceType(Enum):
     Members:
         static:
             The Rift exposes a stable room surface with fixed local structure.
+        capability:
+            The Rift exposes a restrictive pre-published execution surface
+            without implying that full capability semantics are implemented
+            yet.
         dynamic:
             The Rift exposes a room surface intended for mutable or evolving
             local state/layout.
@@ -19,4 +23,5 @@ class RiftSpaceType(Enum):
 
     __melder_internal__ = _mrg.sentinel
     static = "static"
+    capability = "capability"
     dynamic = "dynamic"

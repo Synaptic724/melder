@@ -3040,6 +3040,34 @@ class IConduitWard(ICleanable, Protocol):
         """
         ...
 
+    def has_live_creation(
+            self,
+            spell_name: str | None = None,
+            *,
+            spell: str | object | None = None,
+            spellframe: str | object | None = None,
+            binding_name: str | None = None,
+    ) -> bool:
+        """
+        Resolve a spell the same way as `meld(...)`, but report only whether a
+        live creation already exists without creating anything new.
+        """
+        ...
+
+    def describe_live_creation_status(
+            self,
+            spell_name: str | None = None,
+            *,
+            spell: str | object | None = None,
+            spellframe: str | object | None = None,
+            binding_name: str | None = None,
+    ) -> Dict[str, object]:
+        """
+        Resolve a spell the same way as `meld(...)`, but return structured
+        live-creation status without creating anything new.
+        """
+        ...
+
     def _clean_up_lesser_conduits_links(self) -> None:
         """
         Internal
@@ -4063,6 +4091,41 @@ class IConduit(ICleanable, Protocol):
 
         Prevents further operation, releases internal references,
         and unregisters from the Aether.
+        """
+        ...
+
+    def has_live_creation(
+            self,
+            spell_name: str | None = None,
+            *,
+            spell: str | object | None = None,
+            spellframe: str | object | None = None,
+            binding_name: str | None = None,
+    ) -> bool:
+        """
+        Public API
+
+        Resolve a spell through the same identity path as `meld(...)`, but
+        only report whether a live creation already exists.
+
+        This method must not create or register new objects.
+        """
+        ...
+
+    def describe_live_creation_status(
+            self,
+            spell_name: str | None = None,
+            *,
+            spell: str | object | None = None,
+            spellframe: str | object | None = None,
+            binding_name: str | None = None,
+    ) -> Dict[str, object]:
+        """
+        Public API
+
+        Resolve a spell through the same identity path as `meld(...)`, but
+        return structured live-creation status for this conduit's query
+        context without creating anything new.
         """
         ...
 
@@ -5941,6 +6004,39 @@ class IRiftConfiguration(ICleanable, Protocol):
         """
         ...
 
+    def with_space_type(self, space_type: object) -> "IRiftConfiguration":
+        """
+        Set the top-level RiftSpace type for this Rift configuration.
+        """
+        ...
+
+    def with_space_name(self, space_name: Optional[str]) -> "IRiftConfiguration":
+        """
+        Set the primary space name for this Rift configuration.
+        """
+        ...
+
+    def with_auto_activate_on_program(self, enabled: bool = True) -> "IRiftConfiguration":
+        """
+        Set whether the Rift should be marked active during programming.
+        """
+        ...
+
+    def with_validation_mode(self, mode: object) -> "IRiftConfiguration":
+        """
+        Set the validation posture for this Rift configuration.
+        """
+        ...
+
+    def with_event_configuration(
+            self,
+            event_configuration: Optional["IRiftEventConfiguration"],
+    ) -> "IRiftConfiguration":
+        """
+        Set the primary-space event configuration for this Rift configuration.
+        """
+        ...
+
     def mark_consumed(self) -> None:
         """
         Mark this configuration as consumed so it is not reused for another Rift build.
@@ -6099,6 +6195,13 @@ class IDynamicRiftSpace(IRiftSpace, Protocol):
 
 
 @runtime_checkable
+class ICapabilityRiftSpace(IRiftSpace, Protocol):
+    """
+    Interface for CapabilityRiftSpace.
+    """
+
+
+@runtime_checkable
 class IRift(ICleanable, Protocol):
     """
     Interface for the public live Rift runtime object.
@@ -6142,14 +6245,15 @@ class IRift(ICleanable, Protocol):
     @property
     def target_frame_names(self) -> Tuple[str, ...]:
         """
-        Return the target frame names this Rift is currently configured to use.
+        Return the target frame names this Rift is currently engaged with.
         """
         ...
 
     @property
-    def default_target_frame_name(self) -> str:
+    def default_target_frame_name(self) -> Optional[str]:
         """
-        Return the default target frame name used for Rift-scoped operations.
+        Return the default target frame name used for Rift-scoped operations,
+        if one has been selected.
         """
         ...
 
@@ -6248,6 +6352,20 @@ class IRift(ICleanable, Protocol):
     def list_space_ids(self) -> List[str]:
         """
         Return the identifiers of all spaces currently registered with this Rift.
+        """
+        ...
+
+    def target_frame(
+            self,
+            frame_name: str,
+            *,
+            set_as_default: bool = False,
+    ) -> None:
+        """
+        Validate and engage one target frame for this Rift.
+
+        A successful target operation updates the Rift-local frame contract and
+        may refresh the attached viewer for the active space.
         """
         ...
 
