@@ -22,6 +22,17 @@ class SpellValidationStrategy(Cleanable):
     ]
 
     def __init__(self, name: str, description: str = "") -> None:
+        """
+        Initialize one validation strategy base object.
+
+        Args:
+            name: Stable machine-readable strategy identifier.
+            description: Optional human-readable strategy description.
+        Contract:
+            - Strategy names must be non-empty.
+            - Stores only lightweight identifier/description metadata on the
+              base object.
+        """
         super().__init__()
         if not name:
             raise ValueError("strategy name cannot be empty.")

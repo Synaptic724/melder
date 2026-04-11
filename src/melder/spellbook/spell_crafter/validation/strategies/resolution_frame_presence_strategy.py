@@ -8,17 +8,39 @@ class ResolutionFramePresenceStrategy(SpellValidationStrategy):
 
     This is the most basic structural check: if you somehow skip Phase 3 or
     fail to attach a dependency graph, the spell is not resolvable.
+
+    Contract:
+    - Verifies that Phase 3 produced the minimum runtime artifacts needed for
+      downstream resolution.
+    - Emits validation issues into the supplied context; it does not attempt to
+      rebuild missing graph artifacts.
     """
 
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:
+        """
+        Initialize the resolution-frame-presence strategy.
+
+        Contract:
+            Seeds the stable strategy name/description published through the
+            validation pipeline.
+        """
         super().__init__(
             name="resolution_frame_presence",
             description="Verifies that Phase 3 produced a resolution frame and DAG.",
         )
 
     def validate(self, context: 'SpellValidationContext') -> None:
+        """
+        Validate that Phase 3 artifacts exist for the current spell.
+
+        Contract:
+        - Stops early if the validation context has been cancelled.
+        - Emits `MISSING_RESOLUTION_FRAME` when no resolution frame exists.
+        - Emits `MISSING_DEPENDENCY_GRAPH` when the frame exists but the spell
+          still has no attached dependency graph.
+        """
         self.check_cleaned()
 
         cancel_event = context.cancel_event

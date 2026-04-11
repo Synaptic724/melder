@@ -15,6 +15,10 @@ def test_frame_link_defaults_display_name_to_source_id() -> None:
     )
 
     assert link.display_name == "spell-1"
+    assert link.link_id == "ops:spell:spell-1"
+    assert link.frame_name == "ops"
+    assert link.source_kind == "spell"
+    assert link.source_id == "spell-1"
 
 
 def test_frame_link_preserves_explicit_display_name_and_metadata_copy() -> None:
@@ -79,3 +83,53 @@ def test_frame_link_cleanup_clears_owned_state() -> None:
     assert link._source_id is None
     assert link._display_name is None
     assert link._metadata is None
+
+
+def test_frame_link_rejects_empty_identity_fields() -> None:
+    """
+    Verify frame links reject empty identity inputs.
+
+    Returns:
+        None.
+    """
+    try:
+        FrameLink(frame_name="", source_kind="frame", source_id="ops-frame")
+        raise AssertionError("Expected empty frame_name to fail.")
+    except ValueError as exc:
+        assert "frame_name cannot be empty" in str(exc)
+
+    try:
+        FrameLink(frame_name="ops", source_kind="", source_id="ops-frame")
+        raise AssertionError("Expected empty source_kind to fail.")
+    except ValueError as exc:
+        assert "source_kind cannot be empty" in str(exc)
+
+    try:
+        FrameLink(frame_name="ops", source_kind="frame", source_id="")
+        raise AssertionError("Expected empty source_id to fail.")
+    except ValueError as exc:
+        assert "source_id cannot be empty" in str(exc)
+
+
+def test_frame_link_metadata_property_and_clone_detach_state() -> None:
+    """
+    Verify metadata snapshots and cloned links detach owned state.
+
+    Returns:
+        None.
+    """
+    link = FrameLink(
+        frame_name="ops",
+        source_kind="conduit",
+        source_id="conduit-1",
+        metadata={"policy": "default"},
+    )
+
+    metadata_snapshot = link.metadata
+    cloned = link.clone()
+    metadata_snapshot.clear()
+
+    assert link.metadata == {"policy": "default"}
+    assert cloned is not link
+    assert cloned.link_id == link.link_id
+    assert cloned.metadata == {"policy": "default"}

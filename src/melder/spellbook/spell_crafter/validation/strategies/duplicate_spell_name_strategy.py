@@ -17,11 +17,24 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
 
     This strategy treats such overlaps as **errors** and instructs the user to
     disambiguate via spellframe and/or binding_name.
+
+    Contract:
+    - Uses the visible spellbook spell pool as the source of truth.
+    - Treats duplicate visible `spell_name` values as a hard ambiguity for
+      name-based resolution.
+    - Emits validation issues only; it does not rename or partition spells.
     """
 
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:
+        """
+        Initialize the duplicate-spell-name strategy.
+
+        Contract:
+            Seeds the stable strategy name/description published through the
+            validation pipeline.
+        """
         super().__init__(
             name="duplicate_spell_name",
             description=(
@@ -32,6 +45,15 @@ class DuplicateSpellNameStrategy(SpellValidationStrategy):
         )
 
     def validate(self, context: "SpellValidationContext") -> None:
+        """
+        Detect ambiguous visible spell-name collisions.
+
+        Contract:
+        - Stops early if the validation context has been cancelled.
+        - Uses the spellbook's visible spell pool to collect collisions.
+        - Emits one `DUPLICATE_SPELL_NAME` issue when more than one visible
+          spell shares the same name.
+        """
         self.check_cleaned()
 
         cancel_event = context.cancel_event

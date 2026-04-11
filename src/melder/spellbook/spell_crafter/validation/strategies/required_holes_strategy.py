@@ -12,17 +12,39 @@ class RequiredHolesStrategy(SpellValidationStrategy):
         * Have **no default value**.
         * Therefore must be satisfied by the caller (e.g. via spell overrides,
           manual composition, or root-level parameters in meld()).
+
+    Contract:
+    - Reports caller-required parameters that Melder DI will never satisfy.
+    - Emits warnings rather than hard errors because the caller may still
+      provide these values at invocation time.
     """
 
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:
+        """
+        Initialize the required-holes strategy.
+
+        Contract:
+            Seeds the stable strategy name/description published through the
+            validation pipeline.
+        """
         super().__init__(
             name="required_holes",
             description="Flags parameters that DI will never satisfy and that lack defaults.",
         )
 
     def validate(self, context: 'SpellValidationContext') -> None:
+        """
+        Emit warnings for required holes discovered in the requirements model.
+
+        Contract:
+        - Stops early if the validation context has been cancelled.
+        - Emits one `REQUIRED_HOLE` warning per parameter that must be supplied
+          by the caller.
+        - Performs reporting only; it does not attempt to synthesize defaults
+          or convert the hole into a DI target.
+        """
         self.check_cleaned()
 
         cancel_event = context.cancel_event

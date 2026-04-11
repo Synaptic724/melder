@@ -11,17 +11,41 @@ class DanglingDependenciesStrategy(SpellValidationStrategy):
     This runs at the **Spellbook** level using the Spellbook's live
     spell_id_pool map and ensures that every id in ``spell.dependencies``
     resolves to a visible spell in the owning Spellbook.
+
+    Contract:
+    - Validates dependency existence against the owning spellbook's current
+      visible spell-id pool.
+    - Emits validation issues into the supplied context; it does not attempt
+      to repair or prune dependency lists.
+    - Distinguishes between "cannot check because no spellbook exists" and
+      "dependency is definitely dangling."
     """
 
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:
+        """
+        Initialize the dangling-dependency strategy.
+
+        Contract:
+            Seeds the stable strategy name/description published through the
+            validation pipeline.
+        """
         super().__init__(
             name="dangling_dependencies",
             description="Checks that all dependency spell_ids resolve to spells.",
         )
 
     def validate(self, context: 'SpellValidationContext') -> None:
+        """
+        Validate that every declared dependency id resolves to a visible spell.
+
+        Contract:
+        - Stops early if the validation context has been cancelled.
+        - Emits `NO_SPELLBOOK_FOR_DEPENDENCY_CHECK` when dependency existence
+          cannot be checked because no spellbook is attached.
+        - Emits one `DANGLING_DEPENDENCY` issue per missing dependency id.
+        """
         self.check_cleaned()
 
         cancel_event = context.cancel_event

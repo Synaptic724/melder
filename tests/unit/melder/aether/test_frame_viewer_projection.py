@@ -1211,7 +1211,12 @@ def test_view_frame_brief_and_missing_surface_methods_work() -> None:
         "hidden_conduit_ids": tuple(),
         "hidden_spell_source_ids": tuple(),
         "hidden_conduit_sections_by_id": {
-            "ops-conduit": ("policy", "peer_conduit_ids"),
+            "ops-conduit": (
+                "policy",
+                "peer_conduit_ids",
+                "parent_conduit_id",
+                "lineage_depth",
+            ),
         },
         "hidden_spell_sections_by_source_id": {
             "ops-spellbook:ops-spell": (
@@ -1323,7 +1328,12 @@ def test_view_conduit_brief_and_missing_section_methods_work() -> None:
     assert view_conduit.describe_conduit_missing_sections("ops-conduit") == {
         "conduit_id": "ops-conduit",
         "visible_sections": ("conduit_name", "conduit_state"),
-        "hidden_sections": ("policy", "peer_conduit_ids"),
+        "hidden_sections": (
+            "policy",
+            "peer_conduit_ids",
+            "parent_conduit_id",
+            "lineage_depth",
+        ),
     }
 
 
@@ -1500,7 +1510,12 @@ def test_execute_method_routes_new_brief_and_compare_methods() -> None:
     assert frame_view_brief["visible_target_count"] == 3
     assert "hidden_frame_payload_fields" in missing_surface
     assert conduit_brief["conduit_id"] == "ops-conduit"
-    assert conduit_missing["hidden_sections"] == ("policy", "peer_conduit_ids")
+    assert conduit_missing["hidden_sections"] == (
+        "policy",
+        "peer_conduit_ids",
+        "parent_conduit_id",
+        "lineage_depth",
+    )
     assert spell_brief["source_id"] == "ops-spellbook:ops-spell"
     assert spell_missing["hidden_sections"] == (
         "class_profile",
