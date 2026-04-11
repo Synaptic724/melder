@@ -14,17 +14,42 @@ class CircularDependencyStrategy(SpellValidationStrategy):
         spell_id -> spell.dependencies (spell_id list)
 
     and looks for cycles reachable from the spell being validated.
+
+    Contract:
+    - Traverses the spellbook-wide dependency graph by spell/version id.
+    - Reports only cycles reachable from the spell currently under validation.
+    - Emits validation issues into the supplied context; it does not mutate the
+      graph or try to break cycles automatically.
     """
 
     __slots__ = SpellValidationStrategy.__slots__
 
     def __init__(self) -> None:
+        """
+        Initialize the circular dependency strategy.
+
+        Contract:
+            Seeds the stable strategy name/description published through the
+            validation pipeline.
+        """
         super().__init__(
             name="circular_dependency",
             description="Detects cycles in the spell dependency graph.",
         )
 
     def validate(self, context: SpellValidationContext) -> None:
+        """
+        Detect circular dependency paths reachable from the current spell.
+
+        Contract:
+        - Stops early if the validation context has been cancelled.
+        - Uses the spellbook-wide adjacency map as the source of dependency
+          truth for this strategy.
+        - Emits one `CIRCULAR_DEPENDENCY` issue when a reachable cycle is
+          found.
+        - Ignores dangling dependency ids here so the dedicated dangling
+          dependency strategy can report them separately.
+        """
         self.check_cleaned()
 
         cancel_event = context.cancel_event
