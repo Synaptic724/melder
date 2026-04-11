@@ -15,7 +15,7 @@ from melder.aether.nexus.acl.validator.compatibility.frame_acl_set_compatibility
 from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
-from melder.aether.nexus.acl.configurations.profiles import FrameACLRuleSet
+from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import IFrameACLProfileBuilder

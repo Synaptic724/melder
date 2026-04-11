@@ -9,7 +9,7 @@ from melder.aether.nexus.acl.configurations.frame_acl_command_configuration impo
 from melder.aether.nexus.acl.configurations.frame_acl_codegen_configuration import (
     FrameACLCodegenConfiguration,
 )
-from melder.aether.nexus.acl.configurations.profiles import (
+from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
 from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (

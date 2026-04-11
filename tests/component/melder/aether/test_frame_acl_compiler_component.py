@@ -9,12 +9,12 @@ from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguratio
 from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
-from melder.aether.nexus.acl.configurations.profiles import (
+from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
-from melder.aether.nexus.acl.configurations.profiles import FrameACLProfile
-from melder.aether.nexus.acl.configurations.profiles import FrameACLRule
-from melder.aether.nexus.acl.configurations.profiles import FrameACLRuleSet
+from melder.aether.nexus.acl.configurations.profiles.frame_acl_profile import FrameACLProfile
+from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule
+from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )

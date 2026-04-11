@@ -6,10 +6,10 @@ import pytest
 from melder.aether.nexus.acl.builder.frame_acl_builder import FrameACLBuilder
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.frame_acl_container import FrameACLContainer
-from melder.aether.nexus.acl.configurations.profiles import (
+from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
-from melder.aether.nexus.acl.configurations.profiles import (
+from melder.aether.nexus.acl.configurations.profiles.frame_acl_profile import (
     FrameACLProfile,
 )
 from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (

@@ -13,7 +13,7 @@ from melder.aether.nexus.acl.frame_acl_configuration import (
 from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
-from melder.aether.nexus.acl.configurations.profiles import (
+from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
 from melder.aether.nexus.acl.configurations.profiles import (

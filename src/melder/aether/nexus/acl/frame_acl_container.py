@@ -5,7 +5,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator import (
     FrameACLSetCompatibilityValidator,
 )
-from melder.aether.nexus.acl.configurations.profiles import (
+from melder.aether.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder import (
     FrameACLProfileBuilder,
 )
 from melder.utilities.general_base.cleanable import Cleanable
