@@ -240,7 +240,7 @@ class FrameACLRuleSet(Cleanable):
         """
         if not isinstance(payload, dict):
             raise TypeError("payload must be a dict.")
-        rules_payload = payload.get("")
+        rules_payload = payload.get("rules")
         if rules_payload is None:
             rules_payload = []
         if not isinstance(rules_payload, list):

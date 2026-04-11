@@ -3,6 +3,10 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
+from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
+    FrameDescriptorPayload,
+)
+from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.aether.nexus.nexus import Nexus
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.configuration.system_state import SystemState
@@ -111,8 +115,33 @@ def test_nexus_runtime_posture_accepts_bound_frame_configuration() -> None:
     configuration.with_default_target_frame_name("ops")
     configuration.with_allowed_target_frame_names(("ops",))
     nexus.enable(configuration)
+    descriptor = nexus._get_or_create_frame_descriptor("ops")
+    descriptor.set_frame_overview(
+        FrameRecord(
+            frame_name="ops",
+            frame_id="ops-frame",
+            config_origin_spellbook_id="spellbook-alpha",
+            payload=FrameDescriptorPayload(
+                system_state=SystemState.automatic,
+                ai_native_enabled=False,
+                rift_enabled=True,
+                root_conduit_count=0,
+                root_conduit_ids=tuple(),
+                named_root_conduits=tuple(),
+                conduit_cloud_entry_count=0,
+                conduit_cloud_names=tuple(),
+                cluster_count=0,
+                cluster_names=tuple(),
+            ),
+        )
+    )
 
     rift = nexus.create_rift()
+
+    assert rift.default_target_frame_name is None
+    assert rift.target_frame_names == tuple()
+
+    rift.target_frame("ops", set_as_default=True)
 
     assert rift.default_target_frame_name == "ops"
     assert rift.target_frame_names == ("ops",)

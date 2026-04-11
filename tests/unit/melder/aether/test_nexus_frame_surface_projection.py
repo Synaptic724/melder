@@ -18,6 +18,7 @@ from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
 )
 from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
+from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.nexus import Nexus
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.spellbook.configuration.system_state import SystemState
@@ -240,9 +241,8 @@ def test_nexus_cached_frame_viewer_invalidates_on_acl_change() -> None:
     _populate_descriptor(nexus, "ops")
     nexus.create_cached_frame_viewer(["ops"])
     original = nexus.get_current_frame_acl_configuration("ops")
-    draft = nexus.create_new_from_acl_configuration(
-        "ops",
-        original.configuration_id,
+    draft = FrameACLConfiguration.create_new_from_acl_configuration(
+        original,
         reason="viewer_cache_invalidation",
     )
     draft.set_json_configuration_string(

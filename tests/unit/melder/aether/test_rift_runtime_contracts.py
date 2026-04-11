@@ -297,7 +297,7 @@ def test_rift_target_frame_rejects_empty_inputs() -> None:
     with pytest.raises(ValueError, match="frame_name cannot be empty"):
         rift.target_frame("")
 
-    with pytest.raises(ValueError, match="contract_name cannot be empty"):
+    with pytest.raises(ValueError, match="must be a non-empty string"):
         rift.target_frame("ops", contract_name="")
 
 

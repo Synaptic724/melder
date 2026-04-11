@@ -109,7 +109,7 @@ def _build_descriptor(
             frame_name="ops",
             owner_conduit_id="ops-conduit",
             spell_id="ops-spell",
-            lineage_id="ops-lineage",
+                spell_index_id="ops-lineage",
             spell_name="OpsSpell",
             spellframe=None,
             binding_name="ops_spell",
@@ -714,4 +714,3 @@ def test_frame_acl_validator_rejects_unsupported_descriptor_spell_payload_type()
             configuration,
             descriptor,
         )
-

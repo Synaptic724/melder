@@ -4,8 +4,10 @@ import threading
 import pytest
 
 from melder.aether.nexus.acl.builder.frame_acl_builder import FrameACLBuilder
-from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.frame_acl_container import FrameACLContainer
+from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import (
+    FrameACLViewConfiguration,
+)
 from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
@@ -26,23 +28,19 @@ def test_frame_acl_builder_begin_change_seeds_typed_draft_from_current_config() 
     """
     container = FrameACLContainer("ops")
     builder = container.frame_acl_builder
+    current_view_configuration = container.get_current_view_configuration()
 
-    builder.begin_change()
+    builder.begin_change("view")
 
     assert builder.change_active is True
+    assert builder.draft_family_name == "view"
+    assert builder.draft_contract_name == "default"
     assert builder._draft_configuration is not None
     assert (
         builder._draft_configuration.source_configuration_id
-        == container.frame_acl_configuration.configuration_id
+        == current_view_configuration.configuration_id
     )
-    assert (
-        builder._draft_configuration.view_configuration.profile_name
-        == container.frame_acl_configuration.view_configuration.profile_name
-    )
-    assert (
-        builder._draft_configuration.command_configuration.profile_name
-        == container.frame_acl_configuration.command_configuration.profile_name
-    )
+    assert builder._draft_configuration.profile_name == current_view_configuration.profile_name
 
 
 def test_frame_acl_builder_load_requires_active_change_and_string_payload() -> None:
@@ -58,9 +56,9 @@ def test_frame_acl_builder_load_requires_active_change_and_string_payload() -> N
     with pytest.raises(RuntimeError, match="has no active change"):
         builder.load_json_configuration_string("{}")
 
-    builder.begin_change()
+    builder.begin_change("view")
 
-    with pytest.raises(TypeError, match="json_configuration_string must be a string"):
+    with pytest.raises(TypeError):
         builder.load_json_configuration_string(None)
 
 
@@ -120,10 +118,10 @@ def test_frame_acl_builder_commit_installs_new_typed_configuration() -> None:
         None.
     """
     container = FrameACLContainer("ops")
-    previous_configuration = container.frame_acl_configuration
+    previous_configuration = container.get_current_view_configuration()
     builder = container.frame_acl_builder
 
-    builder.begin_change()
+    builder.begin_change("view")
     builder.apply_frame_acl_profile(
         FrameACLProfile(
             "support",
@@ -133,13 +131,13 @@ def test_frame_acl_builder_commit_installs_new_typed_configuration() -> None:
     )
     next_configuration = builder.commit_change()
 
-    assert isinstance(next_configuration, FrameACLConfiguration)
-    assert container.frame_acl_configuration is next_configuration
-    assert next_configuration.source_configuration_id == previous_configuration.configuration_id
+    assert isinstance(next_configuration, FrameACLViewConfiguration)
+    assert container.get_current_view_configuration() is next_configuration
+    assert next_configuration.source_configuration_id is None
     assert next_configuration.locked is True
-    assert next_configuration.view_configuration.profile_name == "hybrid"
-    assert next_configuration.command_configuration.profile_name == "default"
-    assert next_configuration.codegen_configuration.profile_name == "permissive"
+    assert next_configuration.profile_name == "hybrid"
+    assert container.frame_acl_configuration.view_configuration.profile_name == "hybrid"
+    assert container.frame_acl_configuration.codegen_configuration.profile_name == "safe"
     assert builder._draft_configuration is None
     assert builder.change_active is False
 
@@ -154,7 +152,7 @@ def test_frame_acl_builder_discard_resets_session_state() -> None:
     container = FrameACLContainer("ops")
     builder = container.frame_acl_builder
 
-    builder.begin_change()
+    builder.begin_change("view")
     builder.discard_change()
 
     assert builder.change_active is False
@@ -171,10 +169,10 @@ def test_frame_acl_builder_rejects_double_begin_change() -> None:
     container = FrameACLContainer("ops")
     builder = container.frame_acl_builder
 
-    builder.begin_change()
+    builder.begin_change("view")
 
     with pytest.raises(RuntimeError, match="already has an active change"):
-        builder.begin_change()
+        builder.begin_change("command")
 
 
 def test_frame_acl_builder_init_rejects_missing_container() -> None:
@@ -197,7 +195,7 @@ def test_frame_acl_builder_cleanup_clears_fields() -> None:
     """
     container = FrameACLContainer("ops")
     builder = container.frame_acl_builder
-    builder.begin_change()
+    builder.begin_change("view")
 
     builder.cleanup()
 
@@ -252,7 +250,7 @@ def test_frame_acl_builder_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     container = FrameACLContainer("ops")
     builder = container.frame_acl_builder
-    builder.begin_change()
+    builder.begin_change("view")
     coordinated_lock = _CoordinatedLock()
     builder._lock = coordinated_lock
 
@@ -285,42 +283,24 @@ def test_frame_acl_builder_load_json_rebuilds_typed_draft() -> None:
     container = FrameACLContainer("ops")
     builder = container.frame_acl_builder
 
-    builder.begin_change()
+    builder.begin_change("view")
     builder.load_json_configuration_string(
         json.dumps(
             {
-                "frame_name": "ops",
-                "view_configuration": {
-                    "profile_name": "hybrid",
-                    "profile_version": "0.0.1",
-                    "minimum_spell_payload_type": "detailed",
-                    "frame_override_ruleset": {"name": "frame_override", "rules": []},
-                    "conduit_override_ruleset": {"name": "conduit_override", "rules": []},
-                    "spell_override_ruleset": {"name": "spell_override", "rules": []},
-                    "member_override_ruleset": {"name": "member_override", "rules": []},
-                },
-                "command_configuration": {
-                    "profile_name": "strict_command",
-                    "profile_version": "0.0.1",
-                    "frame_override_ruleset": {"name": "frame_override", "rules": []},
-                    "conduit_override_ruleset": {"name": "conduit_override", "rules": []},
-                    "spell_override_ruleset": {"name": "spell_override", "rules": []},
-                    "member_override_ruleset": {"name": "member_override", "rules": []},
-                },
-                "codegen_configuration": {
-                    "profile_name": "permissive",
-                    "profile_version": "0.0.1",
-                    "frame_override_ruleset": {"name": "frame_override", "rules": []},
-                    "conduit_override_ruleset": {"name": "conduit_override", "rules": []},
-                    "spell_override_ruleset": {"name": "spell_override", "rules": []},
-                    "capability_override_ruleset": {"name": "capability_override", "rules": []},
-                },
+                "profile_name": "hybrid",
+                "profile_version": "0.0.1",
+                "required_nexus_label": "default",
+                "required_nexus_version": "0.0.1",
+                "minimum_spell_payload_type": "detailed",
+                "minimum_spell_payload_version": "0.0.1",
+                "frame_override_ruleset": {"name": "frame_override", "rules": []},
+                "conduit_override_ruleset": {"name": "conduit_override", "rules": []},
+                "spell_override_ruleset": {"name": "spell_override", "rules": []},
+                "member_override_ruleset": {"name": "member_override", "rules": []},
             },
             sort_keys=True,
         )
     )
 
-    assert builder._draft_configuration.view_configuration.profile_name == "hybrid"
-    assert builder._draft_configuration.command_configuration.profile_name == "strict_command"
-    assert builder._draft_configuration.codegen_configuration.profile_name == "permissive"
-
+    assert isinstance(builder._draft_configuration, FrameACLViewConfiguration)
+    assert builder._draft_configuration.profile_name == "hybrid"

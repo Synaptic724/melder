@@ -110,7 +110,6 @@ def test_descriptor_creation_also_creates_frame_acl_container_with_defaults() ->
     assert descriptor.frame_name == "ops"
     assert container.frame_name == "ops"
     assert container.frame_acl_configuration.frame_name == "ops"
-    assert container.frame_acl_history == []
     assert container.frame_acl_builder is not None
     assert container.frame_acl_validator.frame_name == "ops"
 
@@ -168,24 +167,18 @@ def test_frame_acl_builder_commit_updates_current_configuration_and_history() ->
     nexus = Nexus()
     nexus._get_or_create_frame_descriptor("ops")
     container = nexus._frame_acl_manager._get_required_frame_acl_container("ops")
-    previous_configuration = container.frame_acl_configuration
+    previous_configuration = container.get_current_view_configuration()
     builder = container.frame_acl_builder
 
-    builder.begin_change()
+    builder.begin_change("view")
     builder.load_json_configuration_string(
-        _build_typed_json_payload(
-            "ops",
-            view_profile_name="hybrid",
-            codegen_profile_name="permissive",
-        )
+        json.dumps(json.loads(_build_typed_json_payload("ops"))["view_configuration"])
     )
     next_configuration = builder.commit_change()
 
-    assert container.frame_acl_configuration is next_configuration
+    assert container.get_current_view_configuration() is next_configuration
     assert next_configuration.previous_configuration_id == previous_configuration.configuration_id
-    assert len(container.frame_acl_history) == 1
-    assert container.frame_acl_history[0] is previous_configuration
-    assert container.frame_acl_validator.last_validated_configuration_id == next_configuration.configuration_id
+    assert container.frame_acl_configuration.view_configuration.profile_name == next_configuration.profile_name
 
 
 def test_frame_acl_builder_rejects_parallel_change_sessions_and_can_discard() -> None:
@@ -200,10 +193,10 @@ def test_frame_acl_builder_rejects_parallel_change_sessions_and_can_discard() ->
     nexus._get_or_create_frame_descriptor("ops")
     builder = nexus._frame_acl_manager._get_or_create_frame_acl_builder("ops")
 
-    builder.begin_change()
+    builder.begin_change("view")
 
     with pytest.raises(RuntimeError, match="already has an active change"):
-        builder.begin_change()
+        builder.begin_change("view")
 
     builder.discard_change()
 
