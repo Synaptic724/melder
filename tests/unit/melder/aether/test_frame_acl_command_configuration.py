@@ -3,7 +3,7 @@ import pytest
 from melder.aether.nexus.acl.configurations.frame_acl_command_configuration import (
     FrameACLCommandConfiguration,
 )
-from melder.aether.nexus.acl.configurations.profiles import FrameACLRule
+from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule
 from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 
 

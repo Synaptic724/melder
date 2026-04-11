@@ -10,10 +10,10 @@ from melder.aether.nexus.acl.validator.compatibility.frame_acl_set_compatibility
 from melder.aether.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator import (
     FrameACLSetCompatibilityValidator,
 )
-from melder.aether.nexus.acl.configurations.profiles import (
+from melder.aether.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder import (
     FrameACLProfileBuilder,
 )
-from melder.aether.nexus.acl.configurations.profiles import FrameACLRule
+from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule
 from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,

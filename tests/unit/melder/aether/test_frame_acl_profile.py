@@ -8,7 +8,7 @@ from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_p
 from melder.aether.nexus.acl.configurations.profiles.frame_acl_profile import (
     FrameACLProfile,
 )
-from melder.aether.nexus.acl.configurations.profiles import (
+from melder.aether.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder import (
     FrameACLProfileBuilder,
 )
 from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import (
