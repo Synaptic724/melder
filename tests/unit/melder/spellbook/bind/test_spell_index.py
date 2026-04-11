@@ -501,3 +501,38 @@ def test_cleanup_clears_attachment_references() -> None:
     assert idx._owner_spell is None
     assert idx._owner_conduit_id is None
     assert idx._contracted_spellbooks is None
+
+
+def test_update_same_id_is_noop() -> None:
+    idx = SpellIndex("v1")
+    owner_book = _SpellbookStub()
+    owner_spell = _SpellStub("owned")
+
+    idx._attach_owner(owner_book, owner_spell)
+    idx.update("v1")
+
+    assert idx.current == "v1"
+    assert owner_book.update_calls == []
+
+
+def test_cleanup_rechecks_cleaned_state_under_lock() -> None:
+    class _FlipCleanedOnEnter:
+        def __init__(self, owner):
+            self._owner = owner
+
+        def __enter__(self):
+            self._owner._cleaned = True
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    idx = SpellIndex("v1")
+    original_lock = idx._lock
+    idx._lock = _FlipCleanedOnEnter(idx)
+    try:
+        idx.cleanup()
+    finally:
+        idx._lock = original_lock
+
+    assert idx._cleaned is True

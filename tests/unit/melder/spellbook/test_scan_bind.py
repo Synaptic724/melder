@@ -6,6 +6,7 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.bind.scan import scan_bind
+from melder.spellbook.bind.scan import Scan
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
 
@@ -154,6 +155,55 @@ def test_scan_bind_preserves_explicit_profile_override() -> None:
     assert metadata.profile == "detailed"
 
 
+def test_scan_bind_rejects_invalid_hook_shapes() -> None:
+    with pytest.raises(TypeError, match="pre_hooks must be a list or tuple of callables."):
+        scan_bind(existence=Existence.unique, permissions="create", pre_hooks="bad")
+
+    with pytest.raises(TypeError, match="activation_hooks must contain only callables."):
+        scan_bind(
+            existence=Existence.unique,
+            permissions="create",
+            activation_hooks=[object()],
+        )
+
+    with pytest.raises(TypeError, match="post_hooks must contain only callables."):
+        scan_bind(
+            existence=Existence.unique,
+            permissions="create",
+            post_hooks=[object()],
+        )
+
+
+def test_scan_bind_metadata_to_bind_kwargs_copies_hook_lists() -> None:
+    pre_hook = lambda: None
+    activation_hook = lambda instance: None
+    post_hook = lambda: None
+
+    @scan_bind(
+        existence=Existence.unique,
+        permissions="create",
+        pre_hooks=[pre_hook],
+        activation_hooks=[activation_hook],
+        post_hooks=[post_hook],
+        profile="detailed",
+    )
+    class Target:
+        pass
+
+    metadata = getattr(Target, "__melder_scan_bind__")
+    bind_kwargs = metadata.to_bind_kwargs()
+
+    assert bind_kwargs == {
+        "pre_hooks": [pre_hook],
+        "activation_hooks": [activation_hook],
+        "post_hooks": [post_hook],
+        "profile": "detailed",
+    }
+    assert bind_kwargs["pre_hooks"] is not metadata.pre_hooks
+    assert bind_kwargs["activation_hooks"] is not metadata.activation_hooks
+    assert bind_kwargs["post_hooks"] is not metadata.post_hooks
+
+
 def test_scan_duplicate_binding_raises() -> None:
     """
     Purpose:
@@ -214,3 +264,27 @@ def test_conduit_scan_after_conjure() -> None:
 
     assert len(spell_ids) == 1
     assert len(spellbook.spells) == 1
+
+
+def test_scan_requires_spellbook_and_module_and_valid_metadata() -> None:
+    with pytest.raises(ValueError, match="Scan requires a valid Spellbook instance."):
+        Scan(None)
+
+    spellbook = _make_spellbook()
+    scanner = Scan(spellbook)
+
+    with pytest.raises(TypeError, match="scan_module requires a Python module object."):
+        scanner.scan_module(object())
+
+    module = _make_module("scan_bind_mod_invalid")
+
+    @scan_bind(existence=Existence.unique, permissions="create")
+    class Target:
+        pass
+
+    Target.__module__ = module.__name__
+    module.Target = Target
+    setattr(Target, "__melder_scan_bind__", object())
+
+    with pytest.raises(TypeError, match="invalid or corrupted"):
+        scanner.scan_module(module)
