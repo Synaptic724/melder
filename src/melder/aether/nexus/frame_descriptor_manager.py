@@ -508,7 +508,7 @@ class FrameDescriptorManager(Cleanable):
                 frame_name=frame_name,
                 owner_conduit_id=owner_conduit_id,
                 spell_id=spell.spell_id,
-                lineage_id=spell.spell_index.id,
+                spell_index_id=spell.spell_index.id,
                 spell_name=spell.spell_name,
                 spellframe=spell.spellframe,
                 binding_name=spell.binding_name,

@@ -373,9 +373,9 @@ class Research(Cleanable):
                 raise RuntimeError("Research has been cleaned and no longer has a target index.")
 
             # 1) Update SpellIndex
+            updated = False
             if update_index:
                 index = self._target_index
-                updated = False
 
                 if hasattr(index, "update"):
                     try:
@@ -391,17 +391,18 @@ class Research(Cleanable):
                     except Exception:
                         updated = False
 
-                # Track outcome for debugging/agents.
-                promotions = self._metadata.setdefault("promotions", [])
-                promotions.append(
-                    {
-                        "new_spell_id": new_spell_id,
-                        "update_index": update_index,
-                        "propagate_to_runtime": propagate_to_runtime,
-                        "drop_legacy_creations": drop_legacy_creations,
-                        "index_update_success": updated,
-                    }
-                )
+            # Track outcome for debugging/agents even when the index update was
+            # intentionally skipped.
+            promotions = self._metadata.setdefault("promotions", [])
+            promotions.append(
+                {
+                    "new_spell_id": new_spell_id,
+                    "update_index": update_index,
+                    "propagate_to_runtime": propagate_to_runtime,
+                    "drop_legacy_creations": drop_legacy_creations,
+                    "index_update_success": updated,
+                }
+            )
 
             # Update local root_version snapshot
             self._root_version = new_spell_id

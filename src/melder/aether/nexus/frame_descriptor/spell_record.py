@@ -35,7 +35,7 @@ class SpellRecord(Cleanable):
         "frame_name",
         "owner_conduit_id",
         "spell_id",
-        "lineage_id",
+        "spell_index_id",
         "spell_name",
         "spellframe",
         "binding_name",
@@ -53,7 +53,7 @@ class SpellRecord(Cleanable):
             frame_name: str,
             owner_conduit_id: Optional[str],
             spell_id: str,
-            lineage_id: str,
+            spell_index_id: str,
             spell_name: str,
             spellframe: Any,
             binding_name: Optional[str],
@@ -77,7 +77,7 @@ class SpellRecord(Cleanable):
                 Owning conduit id when known.
             spell_id:
                 Current spell/version id.
-            lineage_id:
+            spell_index_id:
                 Stable SpellIndex lineage id.
             spell_name:
                 Human-readable spell name.
@@ -121,7 +121,7 @@ class SpellRecord(Cleanable):
         self.frame_name = frame_name
         self.owner_conduit_id = owner_conduit_id
         self.spell_id = spell_id
-        self.lineage_id = lineage_id
+        self.spell_index_id = spell_index_id
         self.spell_name = spell_name
         self.spellframe = spellframe
         self.binding_name = binding_name
@@ -164,7 +164,7 @@ class SpellRecord(Cleanable):
         self.frame_name = None
         self.owner_conduit_id = None
         self.spell_id = None
-        self.lineage_id = None
+        self.spell_index_id = None
         self.spell_name = None
         self.spellframe = None
         self.binding_name = None

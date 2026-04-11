@@ -178,7 +178,7 @@ class GeneralViewSpell(Cleanable):
             "nexus_label": spell_record.nexus_label,
             "nexus_version": spell_record.nexus_version,
             "spell_id": spell_record.spell_id,
-            "lineage_id": spell_record.lineage_id,
+            "spell_index_id": spell_record.spell_index_id,
             "owner_conduit_id": spell_record.owner_conduit_id,
             "payload_type": spell_record.payload.payload_type,
             "payload_version": spell_record.payload.payload_version,
@@ -435,7 +435,7 @@ class GeneralViewSpell(Cleanable):
             "source_id": spell_source_id,
             "record_key": spell_record.record_key,
             "spell_id": spell_record.spell_id,
-            "lineage_id": spell_record.lineage_id,
+            "spell_index_id": spell_record.spell_index_id,
             "spell_name": spell_record.spell_name,
             "binding_name": spell_record.binding_name,
             "spellframe": self._normalize_spellframe_value(spell_record.spellframe),
@@ -521,7 +521,7 @@ class GeneralViewSpell(Cleanable):
         related_source_ids: List[str] = []
         visible_related_source_ids: List[str] = []
         for current_spell_record in descriptor.spell_records_by_key.values():
-            if current_spell_record.lineage_id != spell_record.lineage_id:
+            if current_spell_record.spell_index_id != spell_record.spell_index_id:
                 continue
             current_source_id = self._build_spell_source_id(current_spell_record)
             related_source_ids.append(current_source_id)
@@ -529,7 +529,7 @@ class GeneralViewSpell(Cleanable):
                 visible_related_source_ids.append(current_source_id)
         return {
             "source_id": spell_source_id,
-            "lineage_id": spell_record.lineage_id,
+            "spell_index_id": spell_record.spell_index_id,
             "related_source_ids": tuple(sorted(related_source_ids)),
             "visible_related_source_ids": tuple(sorted(visible_related_source_ids)),
         }
@@ -991,7 +991,7 @@ class GeneralViewSpell(Cleanable):
             for spell_link, spell_record in self._iter_visible_spell_links_and_records(
                 frame_name=frame_name
             )
-            if spell_record.lineage_id == lineage_id
+            if spell_record.spell_index_id == lineage_id
         ]
 
     def list_spells_by_permission(
@@ -1331,7 +1331,7 @@ class GeneralViewSpell(Cleanable):
             "owner_conduit_id": owner_conduit_id,
             "root_conduit_id": root_conduit_id,
             "peer_conduit_ids": peer_conduit_ids,
-            "lineage_id": spell_record.lineage_id,
+            "spell_index_id": spell_record.spell_index_id,
             "related_visible_source_ids": self.describe_spell_lineage(
                 spell_source_id,
                 frame_name=frame_name,
@@ -1391,8 +1391,8 @@ class GeneralViewSpell(Cleanable):
                 left_spell_record.origin_spellbook_id
                 == right_spell_record.origin_spellbook_id
             ),
-            "same_lineage_id": (
-                left_spell_record.lineage_id == right_spell_record.lineage_id
+            "same_spell_index_id": (
+                left_spell_record.spell_index_id == right_spell_record.spell_index_id
             ),
             "same_spell_name": (
                 left_spell_record.spell_name == right_spell_record.spell_name

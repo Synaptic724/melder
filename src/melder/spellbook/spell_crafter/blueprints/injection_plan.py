@@ -70,6 +70,8 @@ class ParamSource:
             ValueError:
                 If kind is None.
         """
+        if kind is None:
+            raise ValueError("kind must not be None.")
         self._kind = kind
         self._dependency_keys = dependency_keys
         self._override_key = override_key
@@ -187,6 +189,8 @@ class InjectionSpec:
             ValueError:
                 If param_sources is None.
         """
+        if param_sources is None:
+            raise ValueError("param_sources must not be None.")
         self._param_sources = param_sources
         self._allow_list_aggregation = allow_list_aggregation
         self._uses_positional_override = uses_positional_override
@@ -292,6 +296,16 @@ def build_kwargs_from_injection_spec(
             continue
         values: List[Any] = []
         for dependency_key in dependency_keys:
+            if dependency_key not in instance_results:
+                raise MeldExecutionError(
+                    spell_id=spell_id,
+                    spell_name=spell_id,
+                    node_id=spell_id,
+                    message=(
+                        "Missing dependency instance for "
+                        f"{dependency_key!r} while building injection kwargs."
+                    ),
+                )
             values.append(instance_results[dependency_key])
         if not values:
             continue
@@ -371,6 +385,10 @@ class InjectionPlan(Cleanable):
                 If any required input is None.
         """
         super().__init__()
+        if root_spell_id is None:
+            raise ValueError("root_spell_id must not be None.")
+        if instance_injections is None:
+            raise ValueError("instance_injections must not be None.")
         self._root_spell_id = root_spell_id
         self._instance_injections = instance_injections
 
@@ -444,7 +462,11 @@ class InjectionPlan(Cleanable):
         Returns:
             Optional[Dict[InstanceKey, InjectionSpec]]: Injection specs when usable.
         """
-        return self.instance_injections
+        if self._cleaned:
+            return None
+        if root_spell_id != self._root_spell_id:
+            return None
+        return self._instance_injections
 
 
 class InjectionPlanBuilder(object):
@@ -511,6 +533,8 @@ class InjectionPlanBuilder(object):
             ValueError:
                 If occurrence_plan is None.
         """
+        if occurrence_plan is None:
+            raise ValueError("occurrence_plan must not be None.")
         self._occurrence_plan = occurrence_plan
 
     def build(self) -> InjectionPlan:

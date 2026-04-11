@@ -1206,3 +1206,289 @@ def test_construct_spell_instance_accepts_tuple_positional_payload() -> None:
     assert captured["args"] == tuple_payload
     assert captured["kwargs"] == {}
     assert plan_step.contract_positional_override == tuple_payload
+
+
+def test_resolve_native_transient_dispatcher_respects_env_gate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Env-gated native dispatcher stays disabled unless explicitly enabled."""
+    dispatcher = lambda target, call_mode, args: (target, call_mode, args)
+    monkeypatch.setattr(phase12_module, "_NATIVE_TRANSIENT_DISPATCHER", dispatcher)
+    monkeypatch.delenv(phase12_module._NATIVE_TRANSIENT_DISPATCH_ENV, raising=False)
+
+    assert phase12_module._resolve_native_transient_dispatcher() is None
+
+    monkeypatch.setenv(phase12_module._NATIVE_TRANSIENT_DISPATCH_ENV, "1")
+    assert phase12_module._resolve_native_transient_dispatcher() is dispatcher
+
+
+def test_dispatch_transient_call_uses_native_dispatch_and_python_fallback() -> None:
+    """Transient dispatcher helper prefers native dispatch but falls back to direct calls."""
+    calls: list[tuple[int, tuple[Any, ...]]] = []
+
+    def _native_dispatch(target: Any, call_mode: int, args: tuple[Any, ...]) -> str:
+        calls.append((call_mode, args))
+        return "native"
+
+    def _target(*args: Any) -> tuple[Any, ...]:
+        return args
+
+    assert phase12_module._dispatch_transient_call(
+        native_dispatch=_native_dispatch,
+        target=_target,
+        call_mode=ExecutionPlanCallMode.CALL2,
+        args=("a", "b"),
+    ) == "native"
+    assert calls == [(ExecutionPlanCallMode.CALL2, ("a", "b"))]
+
+    assert phase12_module._dispatch_transient_call(
+        native_dispatch=None,
+        target=_target,
+        call_mode=ExecutionPlanCallMode.CALL2,
+        args=("a", "b"),
+    ) == ("a", "b")
+
+
+def test_normalize_transient_schema_normalizes_and_validates() -> None:
+    """Transient schema normalization returns tuples and rejects malformed payloads."""
+    normalized = phase12_module._normalize_transient_schema(
+        transient_schema=_make_transient_schema(),
+    )
+
+    assert normalized["step_count"] == 1
+    assert normalized["root_step_index"] == 0
+    assert isinstance(normalized["call_modes"], tuple)
+    assert isinstance(normalized["dep1"], tuple)
+
+    bad_schema = _make_transient_schema()
+    del bad_schema["dep1"]
+    with pytest.raises(RuntimeError, match="missing required field 'dep1'"):
+        phase12_module._normalize_transient_schema(transient_schema=bad_schema)
+
+    bad_length_schema = _make_transient_schema()
+    bad_length_schema["dep1"] = ()
+    with pytest.raises(RuntimeError, match="length must equal step_count"):
+        phase12_module._normalize_transient_schema(transient_schema=bad_length_schema)
+
+
+def test_supports_transient_unrolled_plan_requires_many_and_no_registration() -> None:
+    """Transient unrolled plans require many-existence and no registration."""
+    assert phase12_module._supports_transient_unrolled_plan(
+        (
+            SimpleNamespace(existence=Existence.many, must_register=False),
+            SimpleNamespace(existence=Existence.many, must_register=False),
+        )
+    ) is True
+    assert phase12_module._supports_transient_unrolled_plan(
+        (
+            SimpleNamespace(existence=Existence.unique, must_register=False),
+        )
+    ) is False
+    assert phase12_module._supports_transient_unrolled_plan(
+        (
+            SimpleNamespace(existence=Existence.many, must_register=True),
+        )
+    ) is False
+
+
+def test_unrolled_call_helpers_cover_supported_and_unsupported_modes() -> None:
+    """Unrolled transient call helpers handle trivial modes and reject unsupported ones."""
+    arg_refs = phase12_module._build_unrolled_call_arg_refs(
+        step_index=0,
+        call_mode=ExecutionPlanCallMode.CALL2,
+        transient_dep1=(-1,),
+        transient_dep2a=(1,),
+        transient_dep2b=(2,),
+        transient_dep3a=(-1,),
+        transient_dep3b=(-1,),
+        transient_dep3c=(-1,),
+        transient_dep4a=(-1,),
+        transient_dep4b=(-1,),
+        transient_dep4c=(-1,),
+        transient_dep4d=(-1,),
+        transient_dep5a=(-1,),
+        transient_dep5b=(-1,),
+        transient_dep5c=(-1,),
+        transient_dep5d=(-1,),
+        transient_dep5e=(-1,),
+        transient_dep6a=(-1,),
+        transient_dep6b=(-1,),
+        transient_dep6c=(-1,),
+        transient_dep6d=(-1,),
+        transient_dep6e=(-1,),
+        transient_dep6f=(-1,),
+        transient_dep7a=(-1,),
+        transient_dep7b=(-1,),
+        transient_dep7c=(-1,),
+        transient_dep7d=(-1,),
+        transient_dep7e=(-1,),
+        transient_dep7f=(-1,),
+        transient_dep7g=(-1,),
+        transient_dep8a=(-1,),
+        transient_dep8b=(-1,),
+        transient_dep8c=(-1,),
+        transient_dep8d=(-1,),
+        transient_dep8e=(-1,),
+        transient_dep8f=(-1,),
+        transient_dep8g=(-1,),
+        transient_dep8h=(-1,),
+    )
+
+    assert arg_refs == ("v1", "v2")
+    assert phase12_module._build_unrolled_call_expression(
+        step_index=0,
+        call_mode=ExecutionPlanCallMode.CALL0,
+        transient_dep1=(-1,),
+        transient_dep2a=(1,),
+        transient_dep2b=(2,),
+        transient_dep3a=(-1,),
+        transient_dep3b=(-1,),
+        transient_dep3c=(-1,),
+        transient_dep4a=(-1,),
+        transient_dep4b=(-1,),
+        transient_dep4c=(-1,),
+        transient_dep4d=(-1,),
+        transient_dep5a=(-1,),
+        transient_dep5b=(-1,),
+        transient_dep5c=(-1,),
+        transient_dep5d=(-1,),
+        transient_dep5e=(-1,),
+        transient_dep6a=(-1,),
+        transient_dep6b=(-1,),
+        transient_dep6c=(-1,),
+        transient_dep6d=(-1,),
+        transient_dep6e=(-1,),
+        transient_dep6f=(-1,),
+        transient_dep7a=(-1,),
+        transient_dep7b=(-1,),
+        transient_dep7c=(-1,),
+        transient_dep7d=(-1,),
+        transient_dep7e=(-1,),
+        transient_dep7f=(-1,),
+        transient_dep7g=(-1,),
+        transient_dep8a=(-1,),
+        transient_dep8b=(-1,),
+        transient_dep8c=(-1,),
+        transient_dep8d=(-1,),
+        transient_dep8e=(-1,),
+        transient_dep8f=(-1,),
+        transient_dep8g=(-1,),
+        transient_dep8h=(-1,),
+    ) == "t0()"
+    assert phase12_module._build_unrolled_call_args_expression(
+        step_index=0,
+        call_mode=ExecutionPlanCallMode.CALL2,
+        transient_dep1=(-1,),
+        transient_dep2a=(1,),
+        transient_dep2b=(2,),
+        transient_dep3a=(-1,),
+        transient_dep3b=(-1,),
+        transient_dep3c=(-1,),
+        transient_dep4a=(-1,),
+        transient_dep4b=(-1,),
+        transient_dep4c=(-1,),
+        transient_dep4d=(-1,),
+        transient_dep5a=(-1,),
+        transient_dep5b=(-1,),
+        transient_dep5c=(-1,),
+        transient_dep5d=(-1,),
+        transient_dep5e=(-1,),
+        transient_dep6a=(-1,),
+        transient_dep6b=(-1,),
+        transient_dep6c=(-1,),
+        transient_dep6d=(-1,),
+        transient_dep6e=(-1,),
+        transient_dep6f=(-1,),
+        transient_dep7a=(-1,),
+        transient_dep7b=(-1,),
+        transient_dep7c=(-1,),
+        transient_dep7d=(-1,),
+        transient_dep7e=(-1,),
+        transient_dep7f=(-1,),
+        transient_dep7g=(-1,),
+        transient_dep8a=(-1,),
+        transient_dep8b=(-1,),
+        transient_dep8c=(-1,),
+        transient_dep8d=(-1,),
+        transient_dep8e=(-1,),
+        transient_dep8f=(-1,),
+        transient_dep8g=(-1,),
+        transient_dep8h=(-1,),
+    ) == "(v1, v2)"
+    assert phase12_module._build_unrolled_call_arg_refs(
+        step_index=0,
+        call_mode=ExecutionPlanCallMode.CALLN,
+        transient_dep1=(-1,),
+        transient_dep2a=(1,),
+        transient_dep2b=(2,),
+        transient_dep3a=(-1,),
+        transient_dep3b=(-1,),
+        transient_dep3c=(-1,),
+        transient_dep4a=(-1,),
+        transient_dep4b=(-1,),
+        transient_dep4c=(-1,),
+        transient_dep4d=(-1,),
+        transient_dep5a=(-1,),
+        transient_dep5b=(-1,),
+        transient_dep5c=(-1,),
+        transient_dep5d=(-1,),
+        transient_dep5e=(-1,),
+        transient_dep6a=(-1,),
+        transient_dep6b=(-1,),
+        transient_dep6c=(-1,),
+        transient_dep6d=(-1,),
+        transient_dep6e=(-1,),
+        transient_dep6f=(-1,),
+        transient_dep7a=(-1,),
+        transient_dep7b=(-1,),
+        transient_dep7c=(-1,),
+        transient_dep7d=(-1,),
+        transient_dep7e=(-1,),
+        transient_dep7f=(-1,),
+        transient_dep7g=(-1,),
+        transient_dep8a=(-1,),
+        transient_dep8b=(-1,),
+        transient_dep8c=(-1,),
+        transient_dep8d=(-1,),
+        transient_dep8e=(-1,),
+        transient_dep8f=(-1,),
+        transient_dep8g=(-1,),
+        transient_dep8h=(-1,),
+    ) is None
+
+
+def test_resolve_transient_targets_validates_step_count_and_callable_steps() -> None:
+    """Transient target resolution enforces step-count and callable-step contracts."""
+    callable_step = SimpleNamespace(
+        spell=SimpleNamespace(
+            is_class_spell=True,
+            is_method_spell=False,
+            is_lambda_spell=False,
+            spell=lambda: "ok",
+        )
+    )
+
+    assert phase12_module._resolve_transient_targets(
+        steps=(callable_step,),
+        transient_step_count=1,
+    ) == (callable_step.spell.spell,)
+
+    with pytest.raises(RuntimeError, match="step_count does not match hydrated steps"):
+        phase12_module._resolve_transient_targets(
+            steps=(callable_step,),
+            transient_step_count=2,
+        )
+
+    non_callable_step = SimpleNamespace(
+        spell=SimpleNamespace(
+            is_class_spell=False,
+            is_method_spell=False,
+            is_lambda_spell=False,
+            spell="not-callable",
+        )
+    )
+    with pytest.raises(RuntimeError, match="requires callable steps"):
+        phase12_module._resolve_transient_targets(
+            steps=(non_callable_step,),
+            transient_step_count=1,
+        )

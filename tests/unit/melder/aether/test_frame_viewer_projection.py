@@ -82,7 +82,7 @@ def _build_descriptor(frame_name: str) -> FrameDescriptor:
             frame_name=frame_name,
             owner_conduit_id="{0}-conduit".format(frame_name),
             spell_id="{0}-spell".format(frame_name),
-            lineage_id="{0}-lineage".format(frame_name),
+            spell_index_id="{0}-lineage".format(frame_name),
             spell_name="{0}Spell".format(frame_name.title()),
             spellframe=None,
             binding_name="{0}_spell".format(frame_name),
@@ -134,7 +134,7 @@ def _build_detailed_descriptor(
             frame_name=frame_name,
             owner_conduit_id="{0}-conduit".format(frame_name),
             spell_id="{0}-spell".format(frame_name),
-            lineage_id="{0}-lineage".format(frame_name),
+            spell_index_id="{0}-lineage".format(frame_name),
             spell_name="{0}Spell".format(frame_name.title()),
             spellframe=None,
             binding_name="{0}_spell".format(frame_name),
@@ -236,7 +236,7 @@ def _build_collision_viewer() -> FrameViewer:
         spell_record = descriptor.spell_records_by_key[spell_record_key]
         spell_record.binding_name = "shared_binding"
         spell_record.spell_name = "SharedSpell"
-        spell_record.lineage_id = "shared-lineage"
+        spell_record.spell_index_id = "shared-lineage"
     return viewer
 
 
@@ -296,8 +296,8 @@ def _build_visible_collision_viewer() -> FrameViewer:
     second_spell.binding_name = "shared_binding"
     first_spell.spell_name = "SharedSpell"
     second_spell.spell_name = "SharedSpell"
-    first_spell.lineage_id = "shared-lineage"
-    second_spell.lineage_id = "shared-lineage"
+    first_spell.spell_index_id = "shared-lineage"
+    second_spell.spell_index_id = "shared-lineage"
     first_spell.spellframe = "SharedFrame"
     second_spell.spellframe = "SharedFrame"
     return viewer
@@ -934,7 +934,7 @@ def test_frame_viewer_descriptor_host_descriptions_report_topology_and_records()
         "source_id": "ops-spellbook:ops-spell",
         "record_key": ("ops-spellbook", "ops-spell"),
         "spell_id": "ops-spell",
-        "lineage_id": "ops-lineage",
+        "spell_index_id": "ops-lineage",
         "origin_spellbook_id": "ops-spellbook",
         "owner_conduit_id": "ops-conduit",
         "spell_name": "OpsSpell",
@@ -1251,7 +1251,7 @@ def test_view_frame_search_and_identity_helpers_work() -> None:
         "source_id": "ops-spellbook:ops-spell",
         "display_name": "ops_spell",
         "spell_id": "ops-spell",
-        "lineage_id": "ops-lineage",
+        "spell_index_id": "ops-lineage",
         "owner_conduit_id": "ops-conduit",
         "origin_spellbook_id": "ops-spellbook",
         "spell_name": "OpsSpell",
@@ -1345,7 +1345,7 @@ def test_view_spell_extended_identity_origin_and_filter_methods_work() -> None:
         "source_id": "ops-spellbook:ops-spell",
         "record_key": ("ops-spellbook", "ops-spell"),
         "spell_id": "ops-spell",
-        "lineage_id": "ops-lineage",
+        "spell_index_id": "ops-lineage",
         "spell_name": "OpsSpell",
         "binding_name": "ops_spell",
         "spellframe": None,
@@ -1365,7 +1365,7 @@ def test_view_spell_extended_identity_origin_and_filter_methods_work() -> None:
     }
     assert view_spell.describe_spell_lineage("ops-spellbook:ops-spell") == {
         "source_id": "ops-spellbook:ops-spell",
-        "lineage_id": "ops-lineage",
+        "spell_index_id": "ops-lineage",
         "related_source_ids": ("ops-spellbook:ops-spell",),
         "visible_related_source_ids": ("ops-spellbook:ops-spell",),
     }
@@ -1590,7 +1590,7 @@ def test_frame_viewer_host_record_compare_methods_work() -> None:
         "same_frame": False,
         "same_origin_spellbook": True,
         "same_owner_conduit": False,
-        "same_lineage_id": True,
+        "same_spell_index_id": True,
         "same_spell_name": True,
         "same_binding_name": True,
         "same_spellframe": True,
@@ -1678,7 +1678,7 @@ def test_view_spell_crosswalk_and_compare_methods_work() -> None:
         "owner_conduit_id": "ops-conduit-1",
         "root_conduit_id": "ops-conduit-1",
         "peer_conduit_ids": ("ops-conduit-2",),
-        "lineage_id": "shared-lineage",
+        "spell_index_id": "shared-lineage",
         "related_visible_source_ids": (
             "ops-spellbook:ops-spell-1",
             "ops-spellbook:ops-spell-2",
@@ -1692,7 +1692,7 @@ def test_view_spell_crosswalk_and_compare_methods_work() -> None:
         "right_source_id": "ops-spellbook:ops-spell-2",
         "same_owner_conduit": False,
         "same_origin_spellbook": True,
-        "same_lineage_id": True,
+        "same_spell_index_id": True,
         "same_spell_name": True,
         "same_binding_name": True,
         "same_spellframe": True,
@@ -1743,7 +1743,7 @@ def test_execute_method_routes_crosswalk_and_collision_methods() -> None:
     assert "binding_name_collisions" in visible_collisions
     assert conduit_crosswalk["conduit_id"] == "ops-conduit-1"
     assert spell_crosswalk["source_id"] == "ops-spellbook:ops-spell-1"
-    assert spell_compare["same_lineage_id"] is True
+    assert spell_compare["same_spell_index_id"] is True
 
 
 def test_frame_viewer_ast_surface_methods_return_minified_json() -> None:

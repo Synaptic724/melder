@@ -85,6 +85,8 @@ def select_occurrence_plan(
         Optional[OccurrencePlanSelection]:
             Runtime-ready selection payload for the supplied plan.
     """
+    if plan is None:
+        return None
     return OccurrencePlanSelection(
         occurrence_graph=plan.occurrence_graph,
         execution_order=plan.execution_order,
@@ -190,6 +192,28 @@ class OccurrencePlan(Cleanable):
                 If any required input is None.
         """
         super().__init__()
+        if root_spell_id is None:
+            raise ValueError("root_spell_id must not be None.")
+        if occurrence_graph is None:
+            raise ValueError("occurrence_graph must not be None.")
+        if execution_order is None:
+            raise ValueError("execution_order must not be None.")
+        if instance_keys_by_spell_id is None:
+            raise ValueError("instance_keys_by_spell_id must not be None.")
+        if canonical_occurrences_by_spell_id is None:
+            raise ValueError("canonical_occurrences_by_spell_id must not be None.")
+        if root_instance_key is None:
+            raise ValueError("root_instance_key must not be None.")
+        if shared_spell_ids is None:
+            raise ValueError("shared_spell_ids must not be None.")
+        if contract_overrides_by_occurrence is None:
+            raise ValueError("contract_overrides_by_occurrence must not be None.")
+        if contract_overrides_by_spell_id is None:
+            raise ValueError("contract_overrides_by_spell_id must not be None.")
+        if contract_dependencies_complete is None:
+            raise ValueError("contract_dependencies_complete must not be None.")
+        if path_registry is None:
+            raise ValueError("path_registry must not be None.")
 
         self._root_spell_id = root_spell_id
         self._occurrence_graph = occurrence_graph
@@ -425,6 +449,10 @@ class OccurrencePlanBuilder(object):
             ValueError:
                 If root_spell or blueprint is None.
         """
+        if root_spell is None:
+            raise ValueError("root_spell must not be None.")
+        if blueprint is None:
+            raise ValueError("blueprint must not be None.")
         self._root_spell = root_spell
         self._blueprint = blueprint
         self._spell_lookup = spell_lookup

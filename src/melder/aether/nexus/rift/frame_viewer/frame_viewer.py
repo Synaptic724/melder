@@ -1048,7 +1048,7 @@ class FrameViewer(Cleanable):
         self.check_cleaned()
         return self._describe_spell_value_groups(
             frame_name=frame_name,
-            value_getter=lambda spell_record: spell_record.lineage_id,
+            value_getter=lambda spell_record: spell_record.spell_index_id,
         )
 
     def describe_spellframe_groups(
@@ -1176,8 +1176,8 @@ class FrameViewer(Cleanable):
                 left_spell_record.owner_conduit_id
                 == right_spell_record.owner_conduit_id
             ),
-            "same_lineage_id": (
-                left_spell_record.lineage_id == right_spell_record.lineage_id
+            "same_spell_index_id": (
+                left_spell_record.spell_index_id == right_spell_record.spell_index_id
             ),
             "same_spell_name": (
                 left_spell_record.spell_name == right_spell_record.spell_name
@@ -1623,7 +1623,7 @@ class FrameViewer(Cleanable):
         self.check_cleaned()
         lineage_ids: List[str] = []
         for spell_record in self._iter_spell_records(frame_name=frame_name):
-            lineage_ids.append(spell_record.lineage_id)
+            lineage_ids.append(spell_record.spell_index_id)
         return lineage_ids
 
     def list_spellframes(
@@ -1921,7 +1921,7 @@ class FrameViewer(Cleanable):
             "source_id": spell_source_id,
             "record_key": spell_record.record_key,
             "spell_id": spell_record.spell_id,
-            "lineage_id": spell_record.lineage_id,
+            "spell_index_id": spell_record.spell_index_id,
             "origin_spellbook_id": spell_record.origin_spellbook_id,
             "owner_conduit_id": spell_record.owner_conduit_id,
             "spell_name": spell_record.spell_name,

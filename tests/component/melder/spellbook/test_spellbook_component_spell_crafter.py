@@ -7,6 +7,9 @@ from melder.aether.conduit.meld.contracts.mutation_contract import MutationContr
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.spellbook.existence.existence import Existence
+from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
+    select_occurrence_plan,
+)
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
@@ -980,5 +983,323 @@ def test_component_spell_crafter_updates_system_states_for_dependencies() -> Non
         sockets = topology.get_sockets_for_param("service")
         assert len(sockets) == 1
         assert set(sockets[0].target_spell_ids) == {service_id}
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spell_crafter_builds_real_execution_plan_for_dependency_chain() -> None:
+    """
+    Purpose:
+        Validate Phase 11 produces a real execution plan for a live dependency chain.
+    Contract:
+        - A root spell with one dependency builds a no-overrides execution plan.
+        - The produced plan carries both root and dependency spell ids.
+        - The fast-plan payload is available on the no-overrides variant.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the live execution plan is missing or structurally wrong.
+    """
+    spellbook = _make_spellbook()
+
+    class Consumer:
+        """
+        Purpose:
+            Provide a root spell with one runtime dependency.
+        Contract:
+            - Declares one BasicService dependency.
+        """
+
+        def __init__(self, service: BasicService) -> None:
+            self.service = service
+
+    service_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    consumer_id = spellbook.bind(
+        spell=Consumer,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit_id = "component-execution-plan"
+
+    try:
+        local_spells = list(spellbook._spells.values())
+        for spell in local_spells:
+            spell.run_phase_requirements()
+            spell.run_phase_symbolic_graph()
+            spell.run_phase_local_frame()
+            spell.run_phase_validation()
+
+        local_spells[0].run_phase_root_blueprints(conduit_id)
+
+        for spell in local_spells:
+            spell.run_phase_occurrence_plan(conduit_id)
+            spell.run_phase_injection_plan(conduit_id)
+            spell.run_phase_patch_maps(conduit_id)
+            spell.run_phase_execution_plan(conduit_id)
+
+        consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+        assert consumer_spell is not None
+
+        crafter = consumer_spell._ensure_crafter()
+        plan = crafter._execution_plan_phase11_no_overrides
+
+        assert plan is not None
+        assert plan.root_spell_id == consumer_id
+        assert plan.root_instance_key[0] == consumer_id
+        assert len(plan.steps) == 2
+        assert set(plan.spell_id_step_index.keys()) == {consumer_id, service_id}
+        assert any(step.spell.spell_id == consumer_id for step in plan.steps)
+        assert any(step.spell.spell_id == service_id for step in plan.steps)
+        assert plan.fast_plan is not None
+        assert consumer_spell.execution_plan_step_count == 2
+        assert consumer_spell.execution_plan_unique_spell_count == 2
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spell_crafter_builds_real_injection_plan_for_dependency_chain() -> None:
+    """
+    Purpose:
+        Validate Phase 9 materializes a live injection plan for a real dependency chain.
+    Contract:
+        - The built plan is rooted on the target spell id.
+        - The target spell gets an injection spec that points at the dependency spell.
+        - Runtime selection honors the matching root spell id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the live injection plan is missing or malformed.
+    """
+    spellbook = _make_spellbook()
+
+    class Consumer:
+        """
+        Purpose:
+            Provide a root spell with one runtime dependency.
+        Contract:
+            - Declares one BasicService dependency.
+        """
+
+        def __init__(self, service: BasicService) -> None:
+            self.service = service
+
+    service_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    consumer_id = spellbook.bind(
+        spell=Consumer,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_id = "component-injection-plan"
+
+    try:
+        local_spells = list(spellbook._spells.values())
+        for spell in local_spells:
+            spell.run_phase_requirements()
+            spell.run_phase_symbolic_graph()
+            spell.run_phase_local_frame()
+            spell.run_phase_validation()
+
+        local_spells[0].run_phase_root_blueprints(conduit_id)
+
+        for spell in local_spells:
+            spell.run_phase_occurrence_plan(conduit_id)
+            spell.run_phase_injection_plan(conduit_id)
+
+        consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+        assert consumer_spell is not None
+
+        plan = consumer_spell._ensure_crafter()._injection_plan_phase9
+
+        assert plan is not None
+        assert plan.root_spell_id == consumer_id
+        assert plan.select_for_runtime(root_spell_id=consumer_id) is plan.instance_injections
+        assert plan.select_for_runtime(root_spell_id="other-root") is None
+
+        consumer_specs = [
+            spec
+            for instance_key, spec in plan.instance_injections.items()
+            if instance_key[0] == consumer_id
+        ]
+        assert len(consumer_specs) >= 1
+
+        service_keys = []
+        for spec in consumer_specs:
+            if "service" in spec.param_sources:
+                service_keys.extend(spec.param_sources["service"].dependency_keys or [])
+
+        assert service_keys
+        assert any(dependency_key[0] == service_id for dependency_key in service_keys)
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spell_crafter_builds_real_occurrence_plan_for_dependency_chain() -> None:
+    """
+    Purpose:
+        Validate Phase 8 materializes a live occurrence plan for a real dependency chain.
+    Contract:
+        - The built plan is rooted on the target spell id.
+        - The execution order carries both dependency and root spell ids.
+        - Instance planning and runtime selection are available on the real plan.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the live occurrence plan is missing or malformed.
+    """
+    spellbook = _make_spellbook()
+
+    class Consumer:
+        """
+        Purpose:
+            Provide a root spell with one runtime dependency.
+        Contract:
+            - Declares one BasicService dependency.
+        """
+
+        def __init__(self, service: BasicService) -> None:
+            self.service = service
+
+    service_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    consumer_id = spellbook.bind(
+        spell=Consumer,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_id = "component-occurrence-plan"
+
+    try:
+        local_spells = list(spellbook._spells.values())
+        for spell in local_spells:
+            spell.run_phase_requirements()
+            spell.run_phase_symbolic_graph()
+            spell.run_phase_local_frame()
+            spell.run_phase_validation()
+
+        local_spells[0].run_phase_root_blueprints(conduit_id)
+
+        for spell in local_spells:
+            spell.run_phase_occurrence_plan(conduit_id)
+
+        consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+        assert consumer_spell is not None
+
+        plan = consumer_spell._ensure_crafter()._occurrence_plan_phase8
+
+        assert plan is not None
+        assert plan.root_spell_id == consumer_id
+        assert set(plan.execution_order) == {service_id, consumer_id}
+        assert plan.root_instance_key[0] == consumer_id
+        assert consumer_id in plan.instance_keys_by_spell_id
+        assert service_id in plan.instance_keys_by_spell_id
+
+        selection = select_occurrence_plan(plan, root_spell_id=consumer_id)
+        assert selection is not None
+        assert selection.root_instance_key == plan.root_instance_key
+        assert set(selection.execution_order) == {service_id, consumer_id}
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spell_crafter_builds_real_patch_maps_for_dependency_and_mutation_sockets() -> None:
+    """
+    Purpose:
+        Validate Phase 10 materializes live override and mutation patch maps.
+    Contract:
+        - A normal dependency produces an override patch target.
+        - A mutation contract socket produces a mutation patch target.
+        - The live phase10 artifacts can apply runtime payloads directly.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If live patch maps are missing or unusable.
+    """
+    spellbook = _make_spellbook()
+
+    class Consumer:
+        """
+        Purpose:
+            Provide one normal dependency and one mutation socket.
+        Contract:
+            - `service` is a normal runtime dependency.
+            - `mutation` is a mutation-contract socket.
+        """
+
+        def __init__(
+            self,
+            service: BasicService,
+            mutation: MutationContract = MutationContract(
+                spellframe=IService,
+                binding_name="primary",
+            ),
+        ) -> None:
+            self.service = service
+            self.mutation = mutation
+
+    service_id = spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+        spellframe=IService,
+        binding_name="primary",
+    )
+    consumer_id = spellbook.bind(
+        spell=Consumer,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit_id = "component-patch-maps"
+
+    try:
+        local_spells = list(spellbook._spells.values())
+        for spell in local_spells:
+            spell.run_phase_requirements()
+            spell.run_phase_symbolic_graph()
+            spell.run_phase_local_frame()
+            spell.run_phase_validation()
+
+        local_spells[0].run_phase_root_blueprints(conduit_id)
+
+        for spell in local_spells:
+            spell.run_phase_occurrence_plan(conduit_id)
+            spell.run_phase_injection_plan(conduit_id)
+            spell.run_phase_patch_maps(conduit_id)
+
+        consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+        assert consumer_spell is not None
+
+        crafter = consumer_spell._ensure_crafter()
+        override_patch_map = crafter._override_patch_map_phase10
+        mutation_patch_map = crafter._mutation_patch_map_phase10
+
+        assert override_patch_map is not None
+        assert mutation_patch_map is not None
+        assert override_patch_map.root_spell_id == consumer_id
+        assert mutation_patch_map.root_spell_id == consumer_id
+
+        override_socket_map = override_patch_map.apply({"*service": "override"})
+        assert len(override_socket_map) == 1
+        override_socket = next(iter(override_socket_map))
+        assert override_socket.param_name == "service"
+        assert override_socket.node_id == consumer_id
+        assert override_socket_map[override_socket] == "override"
+
+        mutation_patches = mutation_patch_map.apply({"*mutation": service_id})
+        assert len(mutation_patches) == 1
+        assert mutation_patches[0].child_spell_id == consumer_id
+        assert mutation_patches[0].param_name == "mutation"
+        assert mutation_patches[0].new_parent_id == service_id
     finally:
         spellbook.cleanup()

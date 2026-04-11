@@ -1,3 +1,4 @@
+import threading
 from typing import Dict, Optional, Set, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -40,6 +41,7 @@ class FrameACLValidator(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
+        "_lock",
         "_frame_name",
         "_last_validated_configuration_id",
     ]
@@ -165,6 +167,7 @@ class FrameACLValidator(Cleanable):
         if not frame_name:
             raise ValueError("frame_name cannot be empty.")
         self._id: str = IDBuilder.create_id()
+        self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
         self._last_validated_configuration_id: Optional[str] = None
 
@@ -183,9 +186,14 @@ class FrameACLValidator(Cleanable):
         """
         if self._cleaned:
             return
-        self._cleaned = True
-        self._frame_name = None
-        self._last_validated_configuration_id = None
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._frame_name = None
+            self._last_validated_configuration_id = None
+            self._id = None
+        self._lock = None
 
     @property
     def frame_name(self) -> str:
@@ -199,7 +207,8 @@ class FrameACLValidator(Cleanable):
             str: Owning frame name.
         """
         self.check_cleaned()
-        return self._frame_name
+        with self._lock:
+            return self._frame_name
 
     @property
     def last_validated_configuration_id(self) -> Optional[str]:
@@ -213,7 +222,8 @@ class FrameACLValidator(Cleanable):
             Optional[str]: Last validated configuration id.
         """
         self.check_cleaned()
-        return self._last_validated_configuration_id
+        with self._lock:
+            return self._last_validated_configuration_id
 
     def validate_configuration(
             self,
@@ -248,20 +258,21 @@ class FrameACLValidator(Cleanable):
                 configuration violates its ruleset contract.
         """
         self.check_cleaned()
-        if not isinstance(configuration, FrameACLConfiguration):
-            raise TypeError("configuration must be a FrameACLConfiguration.")
-        if configuration.frame_name != self._frame_name:
-            raise ValueError(
-                "FrameACLConfiguration targets frame '{0}', expected '{1}'.".format(
-                    configuration.frame_name,
-                    self._frame_name,
+        with self._lock:
+            if not isinstance(configuration, FrameACLConfiguration):
+                raise TypeError("configuration must be a FrameACLConfiguration.")
+            if configuration.frame_name != self._frame_name:
+                raise ValueError(
+                    "FrameACLConfiguration targets frame '{0}', expected '{1}'.".format(
+                        configuration.frame_name,
+                        self._frame_name,
+                    )
                 )
-            )
-        self._validate_view_configuration(configuration.view_configuration)
-        self._validate_command_configuration(configuration.command_configuration)
-        self._validate_codegen_configuration(configuration.codegen_configuration)
-        self._last_validated_configuration_id = configuration.configuration_id
-        return True
+            self._validate_view_configuration(configuration.view_configuration)
+            self._validate_command_configuration(configuration.command_configuration)
+            self._validate_codegen_configuration(configuration.codegen_configuration)
+            self._last_validated_configuration_id = configuration.configuration_id
+            return True
 
     def validate_configuration_against_descriptor(
             self,

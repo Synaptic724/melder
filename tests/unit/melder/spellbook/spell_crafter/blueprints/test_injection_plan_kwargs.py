@@ -84,7 +84,7 @@ def test_build_kwargs_from_injection_spec_missing_dependency_raises() -> None:
     spec = _make_spec(
         param_sources={"dep": ParamSource(kind="dependency", dependency_keys=[("dep", None)])}
     )
-    with pytest.raises(KeyError):
+    with pytest.raises(MeldExecutionError, match="Missing dependency instance"):
         build_kwargs_from_injection_spec(
             instance_key=("root", None),
             occurrence=("root", 0),

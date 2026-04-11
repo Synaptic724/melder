@@ -612,7 +612,7 @@ class GeneralViewFrame(Cleanable):
                 [],
             ).append(spell_link.source_id)
             grouped_source_ids_by_lineage_id.setdefault(
-                spell_record.lineage_id,
+                spell_record.spell_index_id,
                 [],
             ).append(spell_link.source_id)
             normalized_spellframe = self._normalize_spellframe_value(
@@ -1034,7 +1034,7 @@ class GeneralViewFrame(Cleanable):
         self._assert_optional_frame_name(frame_name)
         descriptor = self._get_required_frame_descriptor()
         return [
-            descriptor.spell_records_by_key[spell_link.metadata["record_key"]].lineage_id
+            descriptor.spell_records_by_key[spell_link.metadata["record_key"]].spell_index_id
             for spell_link in self.list_targets(
                 frame_name=frame_name,
                 source_kind="spell",
@@ -1290,7 +1290,7 @@ class GeneralViewFrame(Cleanable):
             "source_id": source_id,
             "display_name": frame_link.display_name,
             "spell_id": spell_record.spell_id,
-            "lineage_id": spell_record.lineage_id,
+            "spell_index_id": spell_record.spell_index_id,
             "owner_conduit_id": spell_record.owner_conduit_id,
             "origin_spellbook_id": spell_record.origin_spellbook_id,
             "spell_name": spell_record.spell_name,
@@ -1625,7 +1625,7 @@ class GeneralViewFrame(Cleanable):
                         metadata={
                             "record_key": record_key,
                             "spell_id": spell_record.spell_id,
-                            "lineage_id": spell_record.lineage_id,
+                            "spell_index_id": spell_record.spell_index_id,
                             "owner_conduit_id": spell_record.owner_conduit_id,
                             "payload_sections": spell_sections_by_key.get(
                                 record_key,

@@ -1,3 +1,4 @@
+import threading
 from typing import Any, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -35,6 +36,7 @@ class CommandSystem(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_command_system_id",
         "_owner_space_id",
+        "_lock",
         "_space",
         "_workstation",
     ]
@@ -66,6 +68,7 @@ class CommandSystem(Cleanable):
             raise TypeError("workstation cannot be None.")
         self._command_system_id: str = IDBuilder.create_id()
         self._owner_space_id: str = space.space_id
+        self._lock: threading.RLock = threading.RLock()
         self._space: Any = space
         self._workstation: Any = workstation
 
@@ -86,11 +89,15 @@ class CommandSystem(Cleanable):
         """
         if self._cleaned:
             return
-        self._cleaned = True
-        self._owner_space_id = None
-        self._space = None
-        self._workstation = None
-        self._command_system_id = None
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._owner_space_id = None
+            self._space = None
+            self._workstation = None
+            self._command_system_id = None
+        self._lock = None
 
     @property
     def command_system_id(self) -> str:
@@ -101,7 +108,8 @@ class CommandSystem(Cleanable):
             str: Stable command-system id.
         """
         self.check_cleaned()
-        return self._command_system_id
+        with self._lock:
+            return self._command_system_id
 
     @property
     def owner_space_id(self) -> str:
@@ -112,7 +120,8 @@ class CommandSystem(Cleanable):
             str: Owning `RiftSpace` id.
         """
         self.check_cleaned()
-        return self._owner_space_id
+        with self._lock:
+            return self._owner_space_id
 
     def get_selected_target_link(
             self,
@@ -141,34 +150,35 @@ class CommandSystem(Cleanable):
                 If no selected target exists or the selected set is ambiguous.
         """
         self.check_cleaned()
-        selected_frame_name, selected_target_ids = self._resolve_selected_target_ids(
-            frame_name=frame_name
-        )
-        if len(selected_target_ids) == 0:
+        with self._lock:
+            selected_frame_name, selected_target_ids = self._resolve_selected_target_ids(
+                frame_name=frame_name
+            )
+            if len(selected_target_ids) == 0:
+                raise ValueError(
+                    "RiftSpace has no selected target in frame '{0}'.".format(
+                        selected_frame_name
+                    )
+                )
+            if len(selected_target_ids) > 1:
+                raise ValueError(
+                    "RiftSpace selected target set is ambiguous in frame '{0}'.".format(
+                        selected_frame_name
+                    )
+                )
+            viewer = self._space.get_required_frame_viewer()
+            for frame_link in viewer.execute_method(
+                    "list_targets",
+                    frame_name=selected_frame_name,
+            ):
+                if frame_link.link_id == selected_target_ids[0]:
+                    return frame_link
             raise ValueError(
-                "RiftSpace has no selected target in frame '{0}'.".format(
-                    selected_frame_name
+                "Selected target '{0}' was not found in frame '{1}'.".format(
+                    selected_target_ids[0],
+                    selected_frame_name,
                 )
             )
-        if len(selected_target_ids) > 1:
-            raise ValueError(
-                "RiftSpace selected target set is ambiguous in frame '{0}'.".format(
-                    selected_frame_name
-                )
-            )
-        viewer = self._space.get_required_frame_viewer()
-        for frame_link in viewer.execute_method(
-                "list_targets",
-                frame_name=selected_frame_name,
-        ):
-            if frame_link.link_id == selected_target_ids[0]:
-                return frame_link
-        raise ValueError(
-            "Selected target '{0}' was not found in frame '{1}'.".format(
-                selected_target_ids[0],
-                selected_frame_name,
-            )
-        )
 
     def get_selected_target_record(
             self,
@@ -199,36 +209,37 @@ class CommandSystem(Cleanable):
                 supported.
         """
         self.check_cleaned()
-        selected_target = self.get_selected_target_link(frame_name=frame_name)
-        viewer = self._space.get_required_frame_viewer()
-        if selected_target.source_kind == "frame":
-            descriptor = viewer._get_required_frame_descriptor(
-                selected_target.frame_name
-            )
-            if descriptor.frame_overview is None:
-                raise ValueError(
-                    "Frame '{0}' has no published frame overview.".format(
-                        selected_target.frame_name
-                    )
+        with self._lock:
+            selected_target = self.get_selected_target_link(frame_name=frame_name)
+            viewer = self._space.get_required_frame_viewer()
+            if selected_target.source_kind == "frame":
+                descriptor = viewer._get_required_frame_descriptor(
+                    selected_target.frame_name
                 )
-            return descriptor.frame_overview
-        if selected_target.source_kind == "conduit":
-            _, conduit_record = viewer._get_required_conduit_record(
-                selected_target.source_id,
-                frame_name=selected_target.frame_name,
+                if descriptor.frame_overview is None:
+                    raise ValueError(
+                        "Frame '{0}' has no published frame overview.".format(
+                            selected_target.frame_name
+                        )
+                    )
+                return descriptor.frame_overview
+            if selected_target.source_kind == "conduit":
+                _, conduit_record = viewer._get_required_conduit_record(
+                    selected_target.source_id,
+                    frame_name=selected_target.frame_name,
+                )
+                return conduit_record
+            if selected_target.source_kind == "spell":
+                _, spell_record = viewer._get_required_spell_record(
+                    selected_target.source_id,
+                    frame_name=selected_target.frame_name,
+                )
+                return spell_record
+            raise ValueError(
+                "Unsupported selected target kind '{0}'.".format(
+                    selected_target.source_kind
+                )
             )
-            return conduit_record
-        if selected_target.source_kind == "spell":
-            _, spell_record = viewer._get_required_spell_record(
-                selected_target.source_id,
-                frame_name=selected_target.frame_name,
-            )
-            return spell_record
-        raise ValueError(
-            "Unsupported selected target kind '{0}'.".format(
-                selected_target.source_kind
-            )
-        )
 
     def get_selected_target_runtime_object(
             self,
@@ -247,33 +258,34 @@ class CommandSystem(Cleanable):
             object: Live frame handle, conduit object, or spell object.
         """
         self.check_cleaned()
-        selected_target = self.get_selected_target_link(frame_name=frame_name)
-        if selected_target.source_kind == "frame":
-            descriptor = self._space.get_required_frame_viewer()._get_required_frame_descriptor(
-                selected_target.frame_name
-            )
-            if descriptor.frame_handle is None:
-                raise ValueError(
-                    "Frame '{0}' has no live frame handle.".format(
-                        selected_target.frame_name
-                    )
+        with self._lock:
+            selected_target = self.get_selected_target_link(frame_name=frame_name)
+            if selected_target.source_kind == "frame":
+                descriptor = self._space.get_required_frame_viewer()._get_required_frame_descriptor(
+                    selected_target.frame_name
                 )
-            return descriptor.frame_handle
-        if selected_target.source_kind == "conduit":
-            return self.get_conduit_object_by_id(
-                selected_target.source_id,
-                frame_name=selected_target.frame_name,
+                if descriptor.frame_handle is None:
+                    raise ValueError(
+                        "Frame '{0}' has no live frame handle.".format(
+                            selected_target.frame_name
+                        )
+                    )
+                return descriptor.frame_handle
+            if selected_target.source_kind == "conduit":
+                return self.get_conduit_object_by_id(
+                    selected_target.source_id,
+                    frame_name=selected_target.frame_name,
+                )
+            if selected_target.source_kind == "spell":
+                return self.get_spell_object_by_source_id(
+                    selected_target.source_id,
+                    frame_name=selected_target.frame_name,
+                )
+            raise ValueError(
+                "Unsupported selected target kind '{0}'.".format(
+                    selected_target.source_kind
+                )
             )
-        if selected_target.source_kind == "spell":
-            return self.get_spell_object_by_source_id(
-                selected_target.source_id,
-                frame_name=selected_target.frame_name,
-            )
-        raise ValueError(
-            "Unsupported selected target kind '{0}'.".format(
-                selected_target.source_kind
-            )
-        )
 
     def get_conduit_object_by_id(
             self,
@@ -295,27 +307,28 @@ class CommandSystem(Cleanable):
             object: Live conduit object.
         """
         self.check_cleaned()
-        resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-        try:
-            return self._aether._get_conduit_by_id(
-                conduit_id,
-                resolved_frame_name,
-            )
-        except ValueError:
-            frame = self._get_required_runtime_frame(resolved_frame_name)
-            for root_conduit in frame._conduits.values():
-                conduit_ward = root_conduit._conduit_ward
-                if conduit_ward is None:
-                    continue
-                lesser_conduit = conduit_ward._get_lesser_conduit(conduit_id)
-                if lesser_conduit is not None:
-                    return lesser_conduit
-            raise ValueError(
-                "Conduit id '{0}' was not found in frame '{1}'.".format(
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            try:
+                return self._aether._get_conduit_by_id(
                     conduit_id,
                     resolved_frame_name,
                 )
-            )
+            except ValueError:
+                frame = self._get_required_runtime_frame(resolved_frame_name)
+                for root_conduit in frame._conduits.values():
+                    conduit_ward = root_conduit._conduit_ward
+                    if conduit_ward is None:
+                        continue
+                    lesser_conduit = conduit_ward._get_lesser_conduit(conduit_id)
+                    if lesser_conduit is not None:
+                        return lesser_conduit
+                raise ValueError(
+                    "Conduit id '{0}' was not found in frame '{1}'.".format(
+                        conduit_id,
+                        resolved_frame_name,
+                    )
+                )
 
     def get_conduit_object_by_name(
             self,
@@ -337,11 +350,12 @@ class CommandSystem(Cleanable):
             object: Live conduit object.
         """
         self.check_cleaned()
-        resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-        return self._aether._get_conduit_by_name(
-            conduit_name,
-            resolved_frame_name,
-        )
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            return self._aether._get_conduit_by_name(
+                conduit_name,
+                resolved_frame_name,
+            )
 
     def get_spell_object_by_source_id(
             self,
@@ -363,15 +377,16 @@ class CommandSystem(Cleanable):
             object: Live spell object.
         """
         self.check_cleaned()
-        viewer = self._space.get_required_frame_viewer()
-        resolved_frame_name, spell_record = viewer._get_required_spell_record(
-            spell_source_id,
-            frame_name=frame_name,
-        )
-        return self.get_spell_object_by_id(
-            spell_record.spell_id,
-            frame_name=resolved_frame_name,
-        )
+        with self._lock:
+            viewer = self._space.get_required_frame_viewer()
+            resolved_frame_name, spell_record = viewer._get_required_spell_record(
+                spell_source_id,
+                frame_name=frame_name,
+            )
+            return self.get_spell_object_by_id(
+                spell_record.spell_id,
+                frame_name=resolved_frame_name,
+            )
 
     def get_spell_object_by_id(
             self,
@@ -393,22 +408,23 @@ class CommandSystem(Cleanable):
             object: Live spell object.
         """
         self.check_cleaned()
-        resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-        owner_conduit = self._aether._get_conduit_by_spell_id(
-            spell_id,
-            resolved_frame_name,
-        )
-        spellbook = owner_conduit._spellbook
-        if spellbook is None:
-            raise ValueError(
-                "Owner conduit for spell '{0}' has no spellbook.".format(spell_id)
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            owner_conduit = self._aether._get_conduit_by_spell_id(
+                spell_id,
+                resolved_frame_name,
             )
-        for spell_index, spell in spellbook._spells.items():
-            if spell_index.has_version(spell_id):
-                return spell
-        raise ValueError(
-            "Spell id '{0}' was not found in the owner spellbook.".format(spell_id)
-        )
+            spellbook = owner_conduit._spellbook
+            if spellbook is None:
+                raise ValueError(
+                    "Owner conduit for spell '{0}' has no spellbook.".format(spell_id)
+                )
+            for spell_index, spell in spellbook._spells.items():
+                if spell_index.has_version(spell_id):
+                    return spell
+            raise ValueError(
+                "Spell id '{0}' was not found in the owner spellbook.".format(spell_id)
+            )
 
     def get_target_attribute(self, attribute_name: str) -> object:
         """
@@ -428,10 +444,11 @@ class CommandSystem(Cleanable):
                 If the target does not expose the requested attribute.
         """
         self.check_cleaned()
-        if not attribute_name:
-            raise ValueError("attribute_name cannot be empty.")
-        target = self._workstation.get_target()
-        return getattr(target, attribute_name)
+        with self._lock:
+            if not attribute_name:
+                raise ValueError("attribute_name cannot be empty.")
+            target = self._workstation.get_target()
+            return getattr(target, attribute_name)
 
     def get_target_method(self, method_name: str) -> object:
         """
@@ -453,15 +470,16 @@ class CommandSystem(Cleanable):
                 If the resolved attribute is not callable.
         """
         self.check_cleaned()
-        if not method_name:
-            raise ValueError("method_name cannot be empty.")
-        target = self._workstation.get_target()
-        method = getattr(target, method_name)
-        if not callable(method):
-            raise RuntimeError(
-                "Target attribute '{0}' is not callable.".format(method_name)
-            )
-        return method
+        with self._lock:
+            if not method_name:
+                raise ValueError("method_name cannot be empty.")
+            target = self._workstation.get_target()
+            method = getattr(target, method_name)
+            if not callable(method):
+                raise RuntimeError(
+                    "Target attribute '{0}' is not callable.".format(method_name)
+                )
+            return method
 
     def execute_target_method(
             self,
@@ -490,15 +508,16 @@ class CommandSystem(Cleanable):
             object: Method return value.
         """
         self.check_cleaned()
-        method = self.get_target_method(method_name)
-        result = method(*args, **kwargs)
-        if bind_as_name is not None:
-            self._bind_result(
-                bind_as_name=bind_as_name,
-                bind_as_store=bind_as_store,
-                value=result,
-            )
-        return result
+        with self._lock:
+            method = self.get_target_method(method_name)
+            result = method(*args, **kwargs)
+            if bind_as_name is not None:
+                self._bind_result(
+                    bind_as_name=bind_as_name,
+                    bind_as_store=bind_as_store,
+                    value=result,
+                )
+            return result
 
     def _resolve_selected_target_ids(
             self,

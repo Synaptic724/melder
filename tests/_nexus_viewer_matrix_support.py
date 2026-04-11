@@ -212,7 +212,7 @@ def build_descriptor(
                 frame_name=frame_name,
                 owner_conduit_id=root_conduit_ids[(spell_index - 1) % conduit_count],
                 spell_id=record_key[1],
-                lineage_id="{0}-lineage-{1}".format(frame_name, spell_index),
+                    spell_index_id="{0}-lineage-{1}".format(frame_name, spell_index),
                 spell_name="{0}Spell{1}".format(frame_name.title(), spell_index),
                 spellframe=spellframe_value,
                 binding_name="{0}_spell_{1}".format(frame_name, spell_index),

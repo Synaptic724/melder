@@ -46,6 +46,7 @@ class RiftSpace(Cleanable, IRiftSpace):
         "_space_id",
         "_space_name",
         "_owner_rift_id",
+        "_lock",
         "_space_kind",
         "_metadata",
         "_frame_viewer",
@@ -109,6 +110,7 @@ class RiftSpace(Cleanable, IRiftSpace):
         self._space_id: str = space_id or IDBuilder.create_id()
         self._space_name: Optional[str] = space_name
         self._owner_rift_id: str = owner_rift_id
+        self._lock: threading.RLock = threading.RLock()
         self._space_kind: str = space_kind
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
         if frame_viewer is not None and not isinstance(frame_viewer, FrameViewer):
@@ -150,30 +152,33 @@ class RiftSpace(Cleanable, IRiftSpace):
         """
         if self._cleaned:
             return
-
-        self._cleaned = True
-        if self._frame_viewer is not None:
-            self._frame_viewer.cleanup()
-        self.stop_managing_event_queue()
-        self._command_system.cleanup()
-        self._workstation.cleanup()
-        self._event_configuration.cleanup()
-        self._space_name = None
-        self._owner_rift_id = None
-        self._space_kind = None
-        self._metadata.clear()
-        self._metadata = None
-        self._frame_viewer = None
-        self._selected_target_ids_by_frame_name.clear()
-        self._selected_target_ids_by_frame_name = None
-        self._event_queue.clear()
-        self._event_queue = None
-        self._event_queue_thread = None
-        self._event_queue_stop_event = None
-        self._workstation = None
-        self._command_system = None
-        self._event_configuration = None
-        self._space_id = None
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            if self._frame_viewer is not None:
+                self._frame_viewer.cleanup()
+            self.stop_managing_event_queue()
+            self._command_system.cleanup()
+            self._workstation.cleanup()
+            self._event_configuration.cleanup()
+            self._space_name = None
+            self._owner_rift_id = None
+            self._space_kind = None
+            self._metadata.clear()
+            self._metadata = None
+            self._frame_viewer = None
+            self._selected_target_ids_by_frame_name.clear()
+            self._selected_target_ids_by_frame_name = None
+            self._event_queue.clear()
+            self._event_queue = None
+            self._event_queue_thread = None
+            self._event_queue_stop_event = None
+            self._workstation = None
+            self._command_system = None
+            self._event_configuration = None
+            self._space_id = None
+        self._lock = None
 
     @property
     def space_id(self) -> str:
@@ -185,7 +190,8 @@ class RiftSpace(Cleanable, IRiftSpace):
             str: The room id.
         """
         self.check_cleaned()
-        return self._space_id
+        with self._lock:
+            return self._space_id
 
     @property
     def space_name(self) -> Optional[str]:
@@ -197,7 +203,8 @@ class RiftSpace(Cleanable, IRiftSpace):
             Optional[str]: Room name, if one exists.
         """
         self.check_cleaned()
-        return self._space_name
+        with self._lock:
+            return self._space_name
 
     @property
     def owner_rift_id(self) -> str:
@@ -209,7 +216,8 @@ class RiftSpace(Cleanable, IRiftSpace):
             str: Owning Rift id.
         """
         self.check_cleaned()
-        return self._owner_rift_id
+        with self._lock:
+            return self._owner_rift_id
 
     @property
     def space_kind(self) -> str:
@@ -221,7 +229,8 @@ class RiftSpace(Cleanable, IRiftSpace):
             str: Room kind label.
         """
         self.check_cleaned()
-        return self._space_kind
+        with self._lock:
+            return self._space_kind
 
     @property
     def metadata(self) -> Dict[str, object]:
@@ -237,7 +246,8 @@ class RiftSpace(Cleanable, IRiftSpace):
             Dict[str, object]: Extensible room metadata.
         """
         self.check_cleaned()
-        return self._metadata
+        with self._lock:
+            return self._metadata
 
     @property
     def frame_viewer(self) -> Optional[FrameViewer]:
@@ -249,7 +259,8 @@ class RiftSpace(Cleanable, IRiftSpace):
             Optional[FrameViewer]: Attached frame viewer when one exists.
         """
         self.check_cleaned()
-        return self._frame_viewer
+        with self._lock:
+            return self._frame_viewer
 
     @property
     def workstation(self) -> Workstation:
@@ -266,7 +277,8 @@ class RiftSpace(Cleanable, IRiftSpace):
             Workstation: Room-local workstation canvas.
         """
         self.check_cleaned()
-        return self._workstation
+        with self._lock:
+            return self._workstation
 
     @property
     def command_system(self) -> CommandSystem:
@@ -283,7 +295,8 @@ class RiftSpace(Cleanable, IRiftSpace):
             CommandSystem: Room-local command system.
         """
         self.check_cleaned()
-        return self._command_system
+        with self._lock:
+            return self._command_system
 
     def attach_frame_viewer(self, frame_viewer: FrameViewer) -> None:
         """
@@ -299,11 +312,12 @@ class RiftSpace(Cleanable, IRiftSpace):
             None.
         """
         self.check_cleaned()
-        if not isinstance(frame_viewer, FrameViewer):
-            raise TypeError("frame_viewer must be a FrameViewer.")
-        if self._frame_viewer is not None and self._frame_viewer is not frame_viewer:
-            self._frame_viewer.cleanup()
-        self._frame_viewer = frame_viewer
+        with self._lock:
+            if not isinstance(frame_viewer, FrameViewer):
+                raise TypeError("frame_viewer must be a FrameViewer.")
+            if self._frame_viewer is not None and self._frame_viewer is not frame_viewer:
+                self._frame_viewer.cleanup()
+            self._frame_viewer = frame_viewer
 
     def detach_frame_viewer(self) -> None:
         """
@@ -315,10 +329,11 @@ class RiftSpace(Cleanable, IRiftSpace):
             None.
         """
         self.check_cleaned()
-        if self._frame_viewer is None:
-            return
-        self._frame_viewer.cleanup()
-        self._frame_viewer = None
+        with self._lock:
+            if self._frame_viewer is None:
+                return
+            self._frame_viewer.cleanup()
+            self._frame_viewer = None
 
     def list_frame_names(self) -> List[str]:
         """
@@ -330,7 +345,8 @@ class RiftSpace(Cleanable, IRiftSpace):
             List[str]: Assigned frame names.
         """
         self.check_cleaned()
-        return self.get_required_frame_viewer().list_frame_names()
+        with self._lock:
+            return self.get_required_frame_viewer().list_frame_names()
 
     def list_available_targets(
             self,
@@ -357,12 +373,13 @@ class RiftSpace(Cleanable, IRiftSpace):
             List[object]: Available targets from the attached viewer.
         """
         self.check_cleaned()
-        return self.get_required_frame_viewer().execute_method(
-            "list_targets",
-            frame_name=frame_name,
-            profile_name=profile_name,
-            source_kind=source_kind,
-        )
+        with self._lock:
+            return self.get_required_frame_viewer().execute_method(
+                "list_targets",
+                frame_name=frame_name,
+                profile_name=profile_name,
+                source_kind=source_kind,
+            )
 
     def describe_available_targets(
             self,
@@ -389,12 +406,13 @@ class RiftSpace(Cleanable, IRiftSpace):
             List[Dict[str, object]]: Available target descriptions.
         """
         self.check_cleaned()
-        return self.get_required_frame_viewer().execute_method(
-            "describe_targets",
-            frame_name=frame_name,
-            profile_name=profile_name,
-            source_kind=source_kind,
-        )
+        with self._lock:
+            return self.get_required_frame_viewer().execute_method(
+                "describe_targets",
+                frame_name=frame_name,
+                profile_name=profile_name,
+                source_kind=source_kind,
+            )
 
     def get_required_frame_viewer(self) -> FrameViewer:
         """
@@ -406,11 +424,12 @@ class RiftSpace(Cleanable, IRiftSpace):
             FrameViewer: Attached frame viewer.
         """
         self.check_cleaned()
-        if self._frame_viewer is None:
-            raise ValueError(
-                "RiftSpace '{0}' has no attached frame viewer.".format(self._space_id)
-            )
-        return self._frame_viewer
+        with self._lock:
+            if self._frame_viewer is None:
+                raise ValueError(
+                    "RiftSpace '{0}' has no attached frame viewer.".format(self._space_id)
+                )
+            return self._frame_viewer
 
     def list_selected_target_ids(
             self,
@@ -431,14 +450,15 @@ class RiftSpace(Cleanable, IRiftSpace):
             List[str]: Selected target ids.
         """
         self.check_cleaned()
-        selected_frame_name = (
-            frame_name
-            if frame_name is not None
-            else self.get_required_frame_viewer().default_view_frame_name
-        )
-        if selected_frame_name is None:
-            raise ValueError("RiftSpace has no default selected frame.")
-        return list(self._selected_target_ids_by_frame_name.get(selected_frame_name, []))
+        with self._lock:
+            selected_frame_name = (
+                frame_name
+                if frame_name is not None
+                else self.get_required_frame_viewer().default_view_frame_name
+            )
+            if selected_frame_name is None:
+                raise ValueError("RiftSpace has no default selected frame.")
+            return list(self._selected_target_ids_by_frame_name.get(selected_frame_name, []))
 
     def select_target(
             self,
@@ -462,33 +482,34 @@ class RiftSpace(Cleanable, IRiftSpace):
             None.
         """
         self.check_cleaned()
-        if not target_id:
-            raise ValueError("target_id cannot be empty.")
-        viewer = self.get_required_frame_viewer()
-        selected_frame_name = frame_name or viewer.default_view_frame_name
-        if selected_frame_name is None:
-            raise ValueError("RiftSpace has no default selected frame.")
-        target_ids = [
-            frame_link.link_id
-            for frame_link in viewer.execute_method(
-                "list_targets",
-                frame_name=selected_frame_name
-            )
-        ]
-        if target_id not in target_ids:
-            raise ValueError(
-                "Target '{0}' was not found in frame '{1}'.".format(
-                    target_id,
-                    selected_frame_name,
+        with self._lock:
+            if not target_id:
+                raise ValueError("target_id cannot be empty.")
+            viewer = self.get_required_frame_viewer()
+            selected_frame_name = frame_name or viewer.default_view_frame_name
+            if selected_frame_name is None:
+                raise ValueError("RiftSpace has no default selected frame.")
+            target_ids = [
+                frame_link.link_id
+                for frame_link in viewer.execute_method(
+                    "list_targets",
+                    frame_name=selected_frame_name
                 )
+            ]
+            if target_id not in target_ids:
+                raise ValueError(
+                    "Target '{0}' was not found in frame '{1}'.".format(
+                        target_id,
+                        selected_frame_name,
+                    )
+                )
+            selected_target_ids = self._selected_target_ids_by_frame_name.setdefault(
+                selected_frame_name,
+                [],
             )
-        selected_target_ids = self._selected_target_ids_by_frame_name.setdefault(
-            selected_frame_name,
-            [],
-        )
-        if target_id in selected_target_ids:
-            return
-        selected_target_ids.append(target_id)
+            if target_id in selected_target_ids:
+                return
+            selected_target_ids.append(target_id)
 
     def clear_selected_targets(
             self,
@@ -509,10 +530,11 @@ class RiftSpace(Cleanable, IRiftSpace):
             None.
         """
         self.check_cleaned()
-        if frame_name is None:
-            self._selected_target_ids_by_frame_name.clear()
-            return
-        self._selected_target_ids_by_frame_name.pop(frame_name, None)
+        with self._lock:
+            if frame_name is None:
+                self._selected_target_ids_by_frame_name.clear()
+                return
+            self._selected_target_ids_by_frame_name.pop(frame_name, None)
 
     def describe_selected_targets(
             self,
@@ -533,38 +555,39 @@ class RiftSpace(Cleanable, IRiftSpace):
             List[Dict[str, object]]: Selected target descriptions.
         """
         self.check_cleaned()
-        viewer = self.get_required_frame_viewer()
-        selected_frame_name = frame_name or viewer.default_view_frame_name
-        if selected_frame_name is None:
-            raise ValueError("RiftSpace has no default selected frame.")
-        target_descriptions_by_id = {
-            description["target_id"]: description
-            for description in viewer.execute_method(
-                "describe_targets",
-                frame_name=selected_frame_name,
-            )
-        }
-        selected_descriptions: List[Dict[str, object]] = []
-        for target_id in self._selected_target_ids_by_frame_name.get(selected_frame_name, []):
-            try:
-                description = target_descriptions_by_id[target_id]
-            except KeyError as exc:
-                raise ValueError(
-                    "Target '{0}' was not found in frame '{1}'.".format(
-                        target_id,
-                        selected_frame_name,
-                    )
-                ) from exc
-            selected_descriptions.append(
-                {
-                    "frame_name": selected_frame_name,
-                    "target_id": description["target_id"],
-                    "source_kind": description["source_kind"],
-                    "source_id": description["source_id"],
-                    "display_name": description["display_name"],
-                }
-            )
-        return selected_descriptions
+        with self._lock:
+            viewer = self.get_required_frame_viewer()
+            selected_frame_name = frame_name or viewer.default_view_frame_name
+            if selected_frame_name is None:
+                raise ValueError("RiftSpace has no default selected frame.")
+            target_descriptions_by_id = {
+                description["target_id"]: description
+                for description in viewer.execute_method(
+                    "describe_targets",
+                    frame_name=selected_frame_name,
+                )
+            }
+            selected_descriptions: List[Dict[str, object]] = []
+            for target_id in self._selected_target_ids_by_frame_name.get(selected_frame_name, []):
+                try:
+                    description = target_descriptions_by_id[target_id]
+                except KeyError as exc:
+                    raise ValueError(
+                        "Target '{0}' was not found in frame '{1}'.".format(
+                            target_id,
+                            selected_frame_name,
+                        )
+                    ) from exc
+                selected_descriptions.append(
+                    {
+                        "frame_name": selected_frame_name,
+                        "target_id": description["target_id"],
+                        "source_kind": description["source_kind"],
+                        "source_id": description["source_id"],
+                        "display_name": description["display_name"],
+                    }
+                )
+            return selected_descriptions
 
     @property
     def event_configuration(self) -> IRiftEventConfiguration:
@@ -581,7 +604,8 @@ class RiftSpace(Cleanable, IRiftSpace):
             IRiftEventConfiguration: The room event configuration object.
         """
         self.check_cleaned()
-        return self._event_configuration
+        with self._lock:
+            return self._event_configuration
 
     def describe_event_queue(self) -> List[Dict[str, object]]:
         """
@@ -592,7 +616,8 @@ class RiftSpace(Cleanable, IRiftSpace):
             order.
         """
         self.check_cleaned()
-        return [dict(event) for event in self._event_queue]
+        with self._lock:
+            return [dict(event) for event in self._event_queue]
 
     def manage_event_queue(
             self,
@@ -629,16 +654,20 @@ class RiftSpace(Cleanable, IRiftSpace):
             raise ValueError("poll_interval_seconds cannot be negative.")
         if drain_batch_size < 1:
             raise ValueError("drain_batch_size must be >= 1.")
-        if self._event_queue_thread is not None and self._event_queue_thread.is_alive():
-            return
-        self._event_queue_stop_event.clear()
-        self._event_queue_thread = threading.Thread(
-            target=self._manage_event_queue_loop,
-            args=(handler, poll_interval_seconds, drain_batch_size),
-            name="RiftSpaceEventQueue-{0}".format(self._space_id),
-            daemon=True,
-        )
-        self._event_queue_thread.start()
+        with self._lock:
+            if (
+                    self._event_queue_thread is not None
+                    and self._event_queue_thread.is_alive()
+            ):
+                return
+            self._event_queue_stop_event.clear()
+            self._event_queue_thread = threading.Thread(
+                target=self._manage_event_queue_loop,
+                args=(handler, poll_interval_seconds, drain_batch_size),
+                name="RiftSpaceEventQueue-{0}".format(self._space_id),
+                daemon=True,
+            )
+            self._event_queue_thread.start()
 
     def stop_managing_event_queue(
             self,
@@ -663,14 +692,16 @@ class RiftSpace(Cleanable, IRiftSpace):
             return
         if join_timeout_seconds < 0:
             raise ValueError("join_timeout_seconds cannot be negative.")
-        self._event_queue_stop_event.set()
+        with self._lock:
+            self._event_queue_stop_event.set()
+            queue_thread = self._event_queue_thread
+            self._event_queue_thread = None
         if (
-                self._event_queue_thread is not None
-                and self._event_queue_thread.is_alive()
-                and threading.current_thread() is not self._event_queue_thread
+                queue_thread is not None
+                and queue_thread.is_alive()
+                and threading.current_thread() is not queue_thread
         ):
-            self._event_queue_thread.join(join_timeout_seconds)
-        self._event_queue_thread = None
+            queue_thread.join(join_timeout_seconds)
 
     def _publish_runtime_event(self, event_payload: Dict[str, object]) -> None:
         """
@@ -692,7 +723,8 @@ class RiftSpace(Cleanable, IRiftSpace):
         queued_payload["queued_at"] = datetime.now(timezone.utc).strftime(
             "%Y-%m-%dT%H:%M:%SZ"
         )
-        self._event_queue.append(queued_payload)
+        with self._lock:
+            self._event_queue.append(queued_payload)
 
     def _manage_event_queue_loop(
             self,
@@ -749,11 +781,12 @@ class RiftSpace(Cleanable, IRiftSpace):
         if max_items is not None and max_items < 1:
             raise ValueError("max_items must be >= 1 when provided.")
         drained_events: List[Dict[str, object]] = []
-        remaining = max_items
-        while len(self._event_queue) > 0:
-            if remaining is not None and remaining == 0:
-                break
-            drained_events.append(dict(self._event_queue.popleft()))
-            if remaining is not None:
-                remaining -= 1
+        with self._lock:
+            remaining = max_items
+            while len(self._event_queue) > 0:
+                if remaining is not None and remaining == 0:
+                    break
+                drained_events.append(dict(self._event_queue.popleft()))
+                if remaining is not None:
+                    remaining -= 1
         return drained_events

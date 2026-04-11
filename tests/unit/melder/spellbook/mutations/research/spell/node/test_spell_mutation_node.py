@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from melder.spellbook.mutations.research.spell.node.spell_mutation_node import SpellMutationNode
 
 
@@ -24,6 +26,67 @@ def test_spell_mutation_node_cleanup_clears_payloads() -> None:
         metadata={"message": "seed"},
         structure={"field": "value"},
     )
+
+    node.cleanup()
+
+
+def test_spell_mutation_node_properties_and_metadata_detach() -> None:
+    """
+    Purpose:
+        Validate the stable property surface before cleanup.
+    Contract:
+        - id is a non-empty string.
+        - spell_id and parent_id round-trip constructor values.
+        - metadata returns a detached shallow copy.
+        - structure exposes the stored payload.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the property surface is incorrect.
+    """
+    structure = {"field": "value"}
+    node = SpellMutationNode(
+        spell_id="spell-id",
+        parent_id="parent-id",
+        metadata={"message": "seed"},
+        structure=structure,
+    )
+
+    meta = node.metadata
+    meta["message"] = "mutated"
+
+    assert isinstance(node.id, str)
+    assert node.id != ""
+    assert node.spell_id == "spell-id"
+    assert node.parent_id == "parent-id"
+    assert node.metadata == {"message": "seed"}
+    assert node.structure is structure
+
+    node.cleanup()
+
+
+def test_spell_mutation_node_placeholder_methods_raise() -> None:
+    """
+    Purpose:
+        Validate the explicit placeholder contract.
+    Contract:
+        - snapshot_from_spell raises until implemented.
+        - apply_to_blueprint raises until implemented.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If placeholder methods stop raising.
+    """
+    node = SpellMutationNode(spell_id="spell-id")
+
+    with pytest.raises(NotImplementedError):
+        SpellMutationNode.snapshot_from_spell(
+            object(),
+            spell_id="spell-id",
+        )
+
+    with pytest.raises(NotImplementedError):
+        node.apply_to_blueprint(object())
 
     node.cleanup()
 

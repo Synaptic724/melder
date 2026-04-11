@@ -96,7 +96,7 @@ def _populate_descriptor(nexus: Nexus, frame_name: str) -> None:
             frame_name=frame_name,
             owner_conduit_id="{0}-conduit".format(frame_name),
             spell_id="{0}-spell".format(frame_name),
-            lineage_id="{0}-lineage".format(frame_name),
+        spell_index_id="{0}-lineage".format(frame_name),
             spell_name="{0}Spell".format(frame_name.title()),
             spellframe=None,
             binding_name="{0}_spell".format(frame_name),

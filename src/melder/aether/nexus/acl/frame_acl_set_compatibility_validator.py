@@ -1,3 +1,4 @@
+import threading
 from typing import Optional, Set, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -46,6 +47,7 @@ class FrameACLSetCompatibilityValidator(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
+        "_lock",
         "_frame_name",
         "_profile_builder",
         "_last_report",
@@ -81,6 +83,7 @@ class FrameACLSetCompatibilityValidator(Cleanable):
         if profile_builder is None:
             raise TypeError("profile_builder cannot be None.")
         self._id: str = IDBuilder.create_id()
+        self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
         self._profile_builder: IFrameACLProfileBuilder = profile_builder
         self._last_report: Optional[FrameACLSetCompatibilityReport] = None
@@ -94,13 +97,17 @@ class FrameACLSetCompatibilityValidator(Cleanable):
         """
         if self._cleaned:
             return
-        self._cleaned = True
-        if self._last_report is not None:
-            self._last_report.cleanup()
-        self._last_report = None
-        self._profile_builder = None
-        self._frame_name = None
-        self._id = None
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            if self._last_report is not None:
+                self._last_report.cleanup()
+            self._last_report = None
+            self._profile_builder = None
+            self._frame_name = None
+            self._id = None
+        self._lock = None
 
     @property
     def frame_name(self) -> str:
@@ -111,7 +118,8 @@ class FrameACLSetCompatibilityValidator(Cleanable):
             str: Owning frame name.
         """
         self.check_cleaned()
-        return self._frame_name
+        with self._lock:
+            return self._frame_name
 
     @property
     def last_report(self) -> Optional[FrameACLSetCompatibilityReport]:
@@ -122,7 +130,8 @@ class FrameACLSetCompatibilityValidator(Cleanable):
             Optional[FrameACLSetCompatibilityReport]: Last report snapshot.
         """
         self.check_cleaned()
-        return self._last_report
+        with self._lock:
+            return self._last_report
 
     def validate_configuration(
             self,
@@ -152,42 +161,43 @@ class FrameACLSetCompatibilityValidator(Cleanable):
                 detected.
         """
         self.check_cleaned()
-        if not isinstance(configuration, FrameACLConfiguration):
-            raise TypeError("configuration must be a FrameACLConfiguration.")
-        if configuration.frame_name != self._frame_name:
-            raise ValueError(
-                "FrameACLConfiguration targets frame '{0}', expected '{1}'.".format(
-                    configuration.frame_name,
-                    self._frame_name,
+        with self._lock:
+            if not isinstance(configuration, FrameACLConfiguration):
+                raise TypeError("configuration must be a FrameACLConfiguration.")
+            if configuration.frame_name != self._frame_name:
+                raise ValueError(
+                    "FrameACLConfiguration targets frame '{0}', expected '{1}'.".format(
+                        configuration.frame_name,
+                        self._frame_name,
+                    )
                 )
+            report = FrameACLSetCompatibilityReport(
+                frame_name=configuration.frame_name,
+                configuration_id=configuration.configuration_id,
             )
-        report = FrameACLSetCompatibilityReport(
-            frame_name=configuration.frame_name,
-            configuration_id=configuration.configuration_id,
-        )
-        if self._last_report is not None:
-            self._last_report.cleanup()
-        self._last_report = report
+            if self._last_report is not None:
+                self._last_report.cleanup()
+            self._last_report = report
 
-        self._validate_view_and_command(
-            report,
-            configuration.view_configuration,
-            configuration.command_configuration,
-        )
-        self._validate_command_and_codegen(
-            report,
-            configuration.command_configuration,
-            configuration.codegen_configuration,
-        )
+            self._validate_view_and_command(
+                report,
+                configuration.view_configuration,
+                configuration.command_configuration,
+            )
+            self._validate_command_and_codegen(
+                report,
+                configuration.command_configuration,
+                configuration.codegen_configuration,
+            )
 
-        if report.has_errors:
-            raise ValueError(
-                "Frame ACL bundle compatibility validation failed for frame '{0}': {1}".format(
-                    configuration.frame_name,
-                    "; ".join(report.errors),
+            if report.has_errors:
+                raise ValueError(
+                    "Frame ACL bundle compatibility validation failed for frame '{0}': {1}".format(
+                        configuration.frame_name,
+                        "; ".join(report.errors),
+                    )
                 )
-            )
-        return report
+            return report
 
     def _validate_view_and_command(
             self,

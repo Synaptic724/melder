@@ -382,7 +382,7 @@ def test_run_phase_occurrence_plan_requires_phase5() -> None:
     Purpose:
         Ensure Phase 8 compilation fails when Phase 5 artifacts are missing.
     Contract:
-        - Raises RuntimeError when Phase 5 has not completed.
+        - Raises a deterministic ValueError when Phase 5 has not completed.
     """
     root_spell = _StubSpell(
         spell_id="root",
@@ -393,7 +393,7 @@ def test_run_phase_occurrence_plan_requires_phase5() -> None:
     )
     crafter = SpellCrafter(root_spell)
 
-    with pytest.raises(AttributeError):
+    with pytest.raises(ValueError, match="blueprint must not be None"):
         crafter.run_phase_occurrence_plan(conduit_id="conduit")
 
 

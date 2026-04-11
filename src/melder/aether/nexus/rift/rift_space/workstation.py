@@ -1,3 +1,4 @@
+import threading
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -48,6 +49,7 @@ class Workstation(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_workstation_id",
         "_owner_space_id",
+        "_lock",
         "_default_weak_ref_bindings",
         "_event_publisher",
         "_strong_objects_by_name",
@@ -96,6 +98,7 @@ class Workstation(Cleanable):
             raise ValueError("owner_space_id cannot be empty.")
         self._workstation_id: str = IDBuilder.create_id()
         self._owner_space_id: str = owner_space_id
+        self._lock: threading.RLock = threading.RLock()
         self._default_weak_ref_bindings: bool = bool(default_weak_ref_bindings)
         self._event_publisher: Optional[Callable[[Dict[str, object]], None]] = (
             event_publisher
@@ -133,25 +136,29 @@ class Workstation(Cleanable):
         """
         if self._cleaned:
             return
-        self._cleaned = True
-        self._strong_objects_by_name.clear()
-        self._strong_attributes_by_name.clear()
-        self._strong_methods_by_name.clear()
-        self._weak_objects_by_name.cleanup()
-        self._weak_attributes_by_name.cleanup()
-        self._weak_methods_by_name.cleanup()
-        self._strong_objects_by_name = None
-        self._strong_attributes_by_name = None
-        self._strong_methods_by_name = None
-        self._weak_objects_by_name = None
-        self._weak_attributes_by_name = None
-        self._weak_methods_by_name = None
-        self._default_weak_ref_bindings = None
-        self._event_publisher = None
-        self._target_name = None
-        self._target_store = None
-        self._owner_space_id = None
-        self._workstation_id = None
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._strong_objects_by_name.clear()
+            self._strong_attributes_by_name.clear()
+            self._strong_methods_by_name.clear()
+            self._weak_objects_by_name.cleanup()
+            self._weak_attributes_by_name.cleanup()
+            self._weak_methods_by_name.cleanup()
+            self._strong_objects_by_name = None
+            self._strong_attributes_by_name = None
+            self._strong_methods_by_name = None
+            self._weak_objects_by_name = None
+            self._weak_attributes_by_name = None
+            self._weak_methods_by_name = None
+            self._default_weak_ref_bindings = None
+            self._event_publisher = None
+            self._target_name = None
+            self._target_store = None
+            self._owner_space_id = None
+            self._workstation_id = None
+        self._lock = None
 
     @property
     def workstation_id(self) -> str:
@@ -162,7 +169,8 @@ class Workstation(Cleanable):
             str: Stable workstation id.
         """
         self.check_cleaned()
-        return self._workstation_id
+        with self._lock:
+            return self._workstation_id
 
     @property
     def owner_space_id(self) -> str:
@@ -173,7 +181,8 @@ class Workstation(Cleanable):
             str: Owning `RiftSpace` id.
         """
         self.check_cleaned()
-        return self._owner_space_id
+        with self._lock:
+            return self._owner_space_id
 
     def bind_object(
             self,
@@ -304,8 +313,9 @@ class Workstation(Cleanable):
                 ambiguous across the logical stores.
         """
         self.check_cleaned()
-        _, _, value = self._resolve_binding(name, store=store)
-        return value
+        with self._lock:
+            _, _, value = self._resolve_binding(name, store=store)
+            return value
 
     def release(self, name: str, *, store: Optional[str] = None) -> object:
         """
@@ -326,18 +336,19 @@ class Workstation(Cleanable):
                 If the binding cannot be resolved.
         """
         self.check_cleaned()
-        resolved_store, resolved_weak_ref, value = self._resolve_binding(
-            name,
-            store=store,
-        )
-        self._remove_resolved_binding(
-            resolved_store,
-            name,
-            resolved_weak_ref,
-        )
-        if self._target_name == name and self._target_store == resolved_store:
-            self.clear_target()
-        return value
+        with self._lock:
+            resolved_store, resolved_weak_ref, value = self._resolve_binding(
+                name,
+                store=store,
+            )
+            self._remove_resolved_binding(
+                resolved_store,
+                name,
+                resolved_weak_ref,
+            )
+            if self._target_name == name and self._target_store == resolved_store:
+                self._clear_target_locked()
+            return value
 
     def describe_bindings(self) -> Dict[str, List[str]]:
         """
@@ -347,13 +358,14 @@ class Workstation(Cleanable):
             Dict[str, List[str]]: Binding names grouped by logical store.
         """
         self.check_cleaned()
-        return {
-            "objects": self._describe_store_names("objects"),
-            "attributes": self._describe_store_names("attributes"),
-            "methods": self._describe_store_names("methods"),
-            "target_name": [] if self._target_name is None else [self._target_name],
-            "target_store": [] if self._target_store is None else [self._target_store],
-        }
+        with self._lock:
+            return {
+                "objects": self._describe_store_names("objects"),
+                "attributes": self._describe_store_names("attributes"),
+                "methods": self._describe_store_names("methods"),
+                "target_name": [] if self._target_name is None else [self._target_name],
+                "target_store": [] if self._target_store is None else [self._target_store],
+            }
 
     def set_target(self, name: str, *, store: Optional[str] = None) -> None:
         """
@@ -374,9 +386,10 @@ class Workstation(Cleanable):
                 If the binding cannot be resolved.
         """
         self.check_cleaned()
-        resolved_store, _, _ = self._resolve_binding(name, store=store)
-        self._target_name = name
-        self._target_store = resolved_store
+        with self._lock:
+            resolved_store, _, _ = self._resolve_binding(name, store=store)
+            self._target_name = name
+            self._target_store = resolved_store
 
     def get_target(self) -> object:
         """
@@ -390,9 +403,14 @@ class Workstation(Cleanable):
                 If no target is selected.
         """
         self.check_cleaned()
-        if self._target_name is None or self._target_store is None:
-            raise ValueError("Workstation has no active target.")
-        return self.get(self._target_name, store=self._target_store)
+        with self._lock:
+            if self._target_name is None or self._target_store is None:
+                raise ValueError("Workstation has no active target.")
+            _, _, value = self._resolve_binding(
+                self._target_name,
+                store=self._target_store,
+            )
+            return value
 
     def clear_target(self) -> None:
         """
@@ -406,8 +424,8 @@ class Workstation(Cleanable):
             None.
         """
         self.check_cleaned()
-        self._target_name = None
-        self._target_store = None
+        with self._lock:
+            self._clear_target_locked()
 
     def cleanup_target(self, *method_names: str) -> None:
         """
@@ -430,26 +448,27 @@ class Workstation(Cleanable):
                 If one resolved cleanup method is not callable.
         """
         self.check_cleaned()
-        target = self.get_target()
-        cleanup_names = method_names or self._DEFAULT_CLEANUP_METHODS
-        resolved_any = False
-        for method_name in cleanup_names:
-            if not method_name:
-                raise ValueError("cleanup method names cannot be empty.")
-            method = getattr(target, method_name, None)
-            if method is None:
-                continue
-            if not callable(method):
-                raise RuntimeError(
-                    "Target cleanup attribute '{0}' is not callable.".format(
-                        method_name
+        with self._lock:
+            target = self.get_target()
+            cleanup_names = method_names or self._DEFAULT_CLEANUP_METHODS
+            resolved_any = False
+            for method_name in cleanup_names:
+                if not method_name:
+                    raise ValueError("cleanup method names cannot be empty.")
+                method = getattr(target, method_name, None)
+                if method is None:
+                    continue
+                if not callable(method):
+                    raise RuntimeError(
+                        "Target cleanup attribute '{0}' is not callable.".format(
+                            method_name
+                        )
                     )
-                )
-            method()
-            resolved_any = True
-        if not resolved_any:
-            raise ValueError("No cleanup method was found on the active target.")
-        self.clear_target()
+                method()
+                resolved_any = True
+            if not resolved_any:
+                raise ValueError("No cleanup method was found on the active target.")
+            self._clear_target_locked()
 
     def call_target(
             self,
@@ -488,18 +507,19 @@ class Workstation(Cleanable):
                 If the target is not callable.
         """
         self.check_cleaned()
-        target = self.get_target()
-        if not callable(target):
-            raise RuntimeError("Active target is not callable.")
-        result = target(*args, **kwargs)
-        if bind_as_name is not None:
-            self._bind(
-                bind_as_store,
-                bind_as_name,
-                result,
-                weak_ref=None,
-            )
-        return result
+        with self._lock:
+            target = self.get_target()
+            if not callable(target):
+                raise RuntimeError("Active target is not callable.")
+            result = target(*args, **kwargs)
+            if bind_as_name is not None:
+                self._bind(
+                    bind_as_store,
+                    bind_as_name,
+                    result,
+                    weak_ref=None,
+                )
+            return result
 
     def _bind(
             self,
@@ -536,20 +556,21 @@ class Workstation(Cleanable):
             None.
         """
         self.check_cleaned()
-        if not name:
-            raise ValueError("binding name cannot be empty.")
-        effective_weak_ref = self._resolve_weak_ref_mode(weak_ref)
-        self._clear_binding_name_from_store(store, name)
-        strong_store_map, weak_store_map = self._get_store_maps(store)
-        if effective_weak_ref:
-            weak_store_map[name] = value
-            self._register_weak_binding_callback(
-                store,
-                name,
-                weak_store_map,
-            )
-            return
-        strong_store_map[name] = value
+        with self._lock:
+            if not name:
+                raise ValueError("binding name cannot be empty.")
+            effective_weak_ref = self._resolve_weak_ref_mode(weak_ref)
+            self._clear_binding_name_from_store(store, name)
+            strong_store_map, weak_store_map = self._get_store_maps(store)
+            if effective_weak_ref:
+                weak_store_map[name] = value
+                self._register_weak_binding_callback(
+                    store,
+                    name,
+                    weak_store_map,
+                )
+                return
+            strong_store_map[name] = value
 
     def _resolve_binding(
             self,
@@ -797,6 +818,16 @@ class Workstation(Cleanable):
         if weak_ref is None:
             return self._default_weak_ref_bindings
         return bool(weak_ref)
+
+    def _clear_target_locked(self) -> None:
+        """
+        Clear the current target while the workstation lock is already held.
+
+        Returns:
+            None.
+        """
+        self._target_name = None
+        self._target_store = None
 
     def _get_store_maps(
             self,

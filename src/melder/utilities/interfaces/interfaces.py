@@ -2694,7 +2694,7 @@ class ISpellRecord(ICleanable, Protocol):
     frame_name: str
     owner_conduit_id: Optional[str]
     spell_id: str
-    lineage_id: str
+    spell_index_id: str
     spell_name: str
     spellframe: Any
     binding_name: Optional[str]
