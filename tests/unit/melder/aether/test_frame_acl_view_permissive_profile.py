@@ -1,7 +1,7 @@
-from melder.aether.nexus.acl.profiles.frame_acl_view_profile import (
+from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
-from melder.aether.nexus.acl.profiles.view.permissive_profile import (
+from melder.aether.nexus.acl.configurations.profiles.view.permissive_profile import (
     create_permissive_view_profile,
 )
 

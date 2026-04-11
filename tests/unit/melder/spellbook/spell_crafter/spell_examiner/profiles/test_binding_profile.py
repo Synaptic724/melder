@@ -66,6 +66,7 @@ def test_class_binding_profile_copies_mutable_inputs_and_cleanup():
     assert profile.method_names is None
     assert profile.name is None
     assert profile.cleaned is True
+    profile.cleanup()
 
 
 def test_callable_parameter_binding_summary_simple_storage():
@@ -114,6 +115,7 @@ def test_callable_binding_profile_copies_parameters_and_cleanup():
     assert profile.signature is None
     assert profile.repr_string is None
     assert profile.cleaned is True
+    profile.cleanup()
 
 
 def test_instance_binding_profile_stores_and_cleans():

@@ -1,4 +1,4 @@
-from melder.aether.nexus.acl.profiles.frame_acl_view_profile import (
+from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
 

@@ -5,28 +5,28 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
-from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
-from melder.aether.nexus.acl.frame_acl_command_configuration import (
+from melder.aether.nexus.acl.builder.frame_acl_builder import FrameACLBuilder
+from melder.aether.nexus.acl.configurations.frame_acl_command_configuration import (
     FrameACLCommandConfiguration,
 )
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.frame_acl_container import FrameACLContainer
-from melder.aether.nexus.acl.frame_acl_codegen_configuration import (
+from melder.aether.nexus.acl.configurations.frame_acl_codegen_configuration import (
     FrameACLCodegenConfiguration,
 )
-from melder.aether.nexus.acl.frame_acl_view_configuration import (
+from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
-from melder.aether.nexus.acl.profiles.frame_acl_codegen_profile import (
+from melder.aether.nexus.acl.configurations.profiles import (
     FrameACLCodegenProfile,
 )
-from melder.aether.nexus.acl.profiles.frame_acl_profile import (
+from melder.aether.nexus.acl.configurations.profiles import (
     FrameACLProfile,
 )
-from melder.aether.nexus.acl.profiles.frame_acl_profile_builder import (
+from melder.aether.nexus.acl.configurations.profiles import (
     FrameACLProfileBuilder,
 )
-from melder.aether.nexus.acl.profiles.frame_acl_view_profile import (
+from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor

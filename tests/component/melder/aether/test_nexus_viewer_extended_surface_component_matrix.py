@@ -2,17 +2,16 @@ import pytest
 
 from melder.aether.nexus.acl.frame_acl_compiler import FrameACLCompiler
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-from melder.aether.nexus.acl.frame_acl_view_configuration import (
+from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
-from melder.aether.nexus.acl.profiles.frame_acl_rule import FrameACLRule
-from melder.aether.nexus.acl.profiles.frame_acl_ruleset import FrameACLRuleSet
-from melder.aether.nexus.acl.profiles.frame_acl_view_profile import (
+from melder.aether.nexus.acl.configurations.profiles import FrameACLRuleSet
+from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
 from melder.aether.nexus.frame_acl_manager import FrameACLManager
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
-from tests._nexus_viewer_matrix_support import build_descriptor, build_spell_record_key
+from tests._nexus_viewer_matrix_support import build_descriptor
 
 
 def _profile_by_name(profile_name: str) -> FrameACLViewProfile:

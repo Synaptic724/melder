@@ -2,8 +2,8 @@ import threading
 from typing import List, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.nexus.acl.profiles.frame_acl_rule import FrameACLRule
-from melder.aether.nexus.acl.profiles.frame_acl_ruleset import FrameACLRuleSet
+from melder.aether.nexus.acl.configurations.profiles.frame_acl_rule import FrameACLRule
+from melder.aether.nexus.acl.configurations.profiles.frame_acl_ruleset import FrameACLRuleSet
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -173,7 +173,7 @@ class FrameACLViewProfile(Cleanable):
         Returns:
             FrameACLViewProfile: Default reusable view profile.
         """
-        from melder.aether.nexus.acl.profiles.view.safe_profile import (
+        from melder.aether.nexus.acl.configurations.profiles.view.safe_profile import (
             create_safe_view_profile,
         )
 
@@ -190,7 +190,7 @@ class FrameACLViewProfile(Cleanable):
         Returns:
             FrameACLViewProfile: Reusable `safe` view profile.
         """
-        from melder.aether.nexus.acl.profiles.view.safe_profile import (
+        from melder.aether.nexus.acl.configurations.profiles.view.safe_profile import (
             create_safe_view_profile,
         )
 
@@ -207,7 +207,7 @@ class FrameACLViewProfile(Cleanable):
         Returns:
             FrameACLViewProfile: Reusable `hybrid` view profile.
         """
-        from melder.aether.nexus.acl.profiles.view.hybrid_profile import (
+        from melder.aether.nexus.acl.configurations.profiles.view.hybrid_profile import (
             create_hybrid_view_profile,
         )
 
@@ -224,7 +224,7 @@ class FrameACLViewProfile(Cleanable):
         Returns:
             FrameACLViewProfile: Reusable `permissive` view profile.
         """
-        from melder.aether.nexus.acl.profiles.view.permissive_profile import (
+        from melder.aether.nexus.acl.configurations.profiles.view.permissive_profile import (
             create_permissive_view_profile,
         )
 

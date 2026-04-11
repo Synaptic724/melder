@@ -2,7 +2,6 @@ import json
 
 import pytest
 
-from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.frame_acl_configuration_chain import (
     FrameACLConfigurationChain,

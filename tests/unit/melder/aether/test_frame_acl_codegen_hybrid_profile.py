@@ -1,7 +1,7 @@
-from melder.aether.nexus.acl.profiles.codegen.hybrid_profile import (
+from melder.aether.nexus.acl.configurations.profiles.codegen.hybrid_profile import (
     create_hybrid_codegen_profile,
 )
-from melder.aether.nexus.acl.profiles.frame_acl_codegen_profile import (
+from melder.aether.nexus.acl.configurations.profiles import (
     FrameACLCodegenProfile,
 )
 

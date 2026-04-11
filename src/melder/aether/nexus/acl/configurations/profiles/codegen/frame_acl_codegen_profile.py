@@ -2,8 +2,8 @@ import threading
 from typing import Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.nexus.acl.profiles.frame_acl_ruleset import FrameACLRuleSet
-from melder.aether.nexus.acl.profiles.frame_acl_view_profile import FrameACLViewProfile
+from melder.aether.nexus.acl.configurations.profiles.frame_acl_ruleset import FrameACLRuleSet
+from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import FrameACLViewProfile
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -131,7 +131,7 @@ class FrameACLCodegenProfile(Cleanable):
         Returns:
             FrameACLCodegenProfile: Default reusable codegen profile.
         """
-        from melder.aether.nexus.acl.profiles.codegen.safe_profile import (
+        from melder.aether.nexus.acl.configurations.profiles.codegen.safe_profile import (
             create_safe_codegen_profile,
         )
 
@@ -148,7 +148,7 @@ class FrameACLCodegenProfile(Cleanable):
         Returns:
             FrameACLCodegenProfile: Reusable `safe` codegen profile.
         """
-        from melder.aether.nexus.acl.profiles.codegen.safe_profile import (
+        from melder.aether.nexus.acl.configurations.profiles.codegen.safe_profile import (
             create_safe_codegen_profile,
         )
 
@@ -166,7 +166,7 @@ class FrameACLCodegenProfile(Cleanable):
         Returns:
             FrameACLCodegenProfile: Reusable `hybrid` codegen profile.
         """
-        from melder.aether.nexus.acl.profiles.codegen.hybrid_profile import (
+        from melder.aether.nexus.acl.configurations.profiles.codegen.hybrid_profile import (
             create_hybrid_codegen_profile,
         )
 
@@ -183,7 +183,7 @@ class FrameACLCodegenProfile(Cleanable):
         Returns:
             FrameACLCodegenProfile: Reusable `permissive` codegen profile.
         """
-        from melder.aether.nexus.acl.profiles.codegen.permissive_profile import (
+        from melder.aether.nexus.acl.configurations.profiles.codegen.permissive_profile import (
             create_permissive_codegen_profile,
         )
 

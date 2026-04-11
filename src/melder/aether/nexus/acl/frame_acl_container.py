@@ -2,25 +2,25 @@ import threading
 from typing import Callable, Dict, List, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.nexus.acl.frame_acl_set_compatibility_validator import (
+from melder.aether.nexus.acl.validator.compatibility.frame_acl_set_compatibility_validator import (
     FrameACLSetCompatibilityValidator,
 )
-from melder.aether.nexus.acl.profiles.frame_acl_profile_builder import (
+from melder.aether.nexus.acl.configurations.profiles import (
     FrameACLProfileBuilder,
 )
 from melder.utilities.general_base.cleanable import Cleanable
 
-from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
-from melder.aether.nexus.acl.frame_acl_command_configuration import (
+from melder.aether.nexus.acl.builder.frame_acl_builder import FrameACLBuilder
+from melder.aether.nexus.acl.configurations.frame_acl_command_configuration import (
     FrameACLCommandConfiguration,
 )
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.frame_acl_configuration_chain import FrameACLConfigurationChain
-from melder.aether.nexus.acl.frame_acl_codegen_configuration import (
+from melder.aether.nexus.acl.configurations.frame_acl_codegen_configuration import (
     FrameACLCodegenConfiguration,
 )
-from melder.aether.nexus.acl.frame_acl_validator import FrameACLValidator
-from melder.aether.nexus.acl.frame_acl_view_configuration import (
+from melder.aether.nexus.acl.validator.frame_acl_validator import FrameACLValidator
+from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
 from melder.utilities.helpers.id_builder import IDBuilder

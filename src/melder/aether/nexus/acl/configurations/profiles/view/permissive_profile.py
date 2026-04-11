@@ -1,33 +1,32 @@
-from melder.aether.nexus.acl.profiles.frame_acl_view_profile import (
+from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
 
 
-def create_hybrid_view_profile() -> FrameACLViewProfile:
+def create_permissive_view_profile() -> FrameACLViewProfile:
     """
-    Build the reusable `hybrid` view profile.
+    Build the reusable `permissive` view profile.
 
     Contract:
-        This profile sits between the stricter `safe` posture and the fully
-        open `permissive` posture. It allows the main frame/conduit/spell
-        payloads and selected profile information while still denying the more
-        aggressive dynamic/instance-member surfaces.
+        This is the most open of the standard view profiles. It keeps the main
+        frame/conduit/spell surfaces visible and also allows instance-member
+        and dynamic-access visibility that the stricter profiles deny.
 
     Returns:
-        FrameACLViewProfile: Reusable `hybrid` view profile.
+        FrameACLViewProfile: Reusable `permissive` view profile.
     """
     return FrameACLViewProfile(
-        "hybrid",
+        "permissive",
         minimum_spell_payload_type="general",
         frame_ruleset=FrameACLViewProfile.build_ruleset(
-            "hybrid_frame",
+            "permissive_frame",
             [
                 FrameACLViewProfile.build_rule("frame_visible", "visible", "allow"),
                 FrameACLViewProfile.build_rule("frame_show_payload", "show_payload", "allow"),
             ],
         ),
         conduit_ruleset=FrameACLViewProfile.build_ruleset(
-            "hybrid_conduit",
+            "permissive_conduit",
             [
                 FrameACLViewProfile.build_rule("conduit_visible", "visible", "allow"),
                 FrameACLViewProfile.build_rule("conduit_show_payload", "show_payload", "allow"),
@@ -36,7 +35,7 @@ def create_hybrid_view_profile() -> FrameACLViewProfile:
             ],
         ),
         spell_ruleset=FrameACLViewProfile.build_ruleset(
-            "hybrid_spell",
+            "permissive_spell",
             [
                 FrameACLViewProfile.build_rule("spell_visible", "visible", "allow"),
                 FrameACLViewProfile.build_rule("spell_show_binding_payload", "show_binding_payload", "allow"),
@@ -44,16 +43,15 @@ def create_hybrid_view_profile() -> FrameACLViewProfile:
                 FrameACLViewProfile.build_rule("spell_show_metadata", "show_metadata", "allow"),
                 FrameACLViewProfile.build_rule("spell_show_class_profile", "show_class_profile", "allow"),
                 FrameACLViewProfile.build_rule("spell_show_callable_profile", "show_callable_profile", "allow"),
-                FrameACLViewProfile.build_rule("spell_hide_instance_members", "show_instance_members", "deny"),
-                FrameACLViewProfile.build_rule("spell_hide_dynamic_access", "show_dynamic_access", "deny"),
+                FrameACLViewProfile.build_rule("spell_show_instance_members", "show_instance_members", "allow"),
+                FrameACLViewProfile.build_rule("spell_show_dynamic_access", "show_dynamic_access", "allow"),
             ],
         ),
         member_ruleset=FrameACLViewProfile.build_ruleset(
-            "hybrid_member",
+            "permissive_member",
             [
                 FrameACLViewProfile.build_rule("member_hide_dunder_pattern", "show_member", "deny", {"pattern": "__*"}),
                 FrameACLViewProfile.build_rule("member_hide___dict__", "show_member", "deny", {"member_name": "__dict__"}),
-                FrameACLViewProfile.build_rule("member_hide___class__", "show_member", "deny", {"member_name": "__class__"}),
             ],
         ),
     )

@@ -1,12 +1,12 @@
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
-from melder.aether.nexus.acl.profiles.frame_acl_codegen_profile import (
+from melder.aether.nexus.acl.configurations.profiles import (
     FrameACLCodegenProfile,
 )
-from melder.aether.nexus.acl.profiles.frame_acl_profile import (
+from melder.aether.nexus.acl.configurations.profiles import (
     FrameACLProfile,
 )
-from melder.aether.nexus.acl.profiles.frame_acl_view_profile import (
+from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
 from melder.aether.nexus.nexus import Nexus

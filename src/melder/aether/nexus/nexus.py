@@ -7,18 +7,18 @@ from melder.aether.nexus.acl.frame_acl_compiler import FrameACLCompiler
 from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
     CompiledFrameACLAccessSurface,
 )
-from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
-from melder.aether.nexus.acl.frame_acl_command_configuration import (
+from melder.aether.nexus.acl.builder.frame_acl_builder import FrameACLBuilder
+from melder.aether.nexus.acl.configurations.frame_acl_command_configuration import (
     FrameACLCommandConfiguration,
 )
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
-from melder.aether.nexus.acl.frame_acl_codegen_configuration import (
+from melder.aether.nexus.acl.configurations.frame_acl_codegen_configuration import (
     FrameACLCodegenConfiguration,
 )
-from melder.aether.nexus.acl.frame_acl_view_configuration import (
+from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
-from melder.aether.nexus.acl.profiles.frame_acl_profile import FrameACLProfile
+from melder.aether.nexus.acl.configurations.profiles import FrameACLProfile
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.aether.nexus.frame_acl_manager import FrameACLManager
 from melder.aether.nexus.frame_descriptor_manager import FrameDescriptorManager
@@ -32,9 +32,6 @@ from melder.aether.nexus.configuration.nexus_frame_mode import (
 )
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
-from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile import (
-    FrameViewerProfile,
-)
 from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile_builder import (
     FrameViewerProfileBuilder,
 )

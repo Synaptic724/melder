@@ -60,6 +60,7 @@ def test_symbolic_edge_stores_and_cleans():
     edge.cleanup()
     assert edge.from_node is None
     assert edge.cleaned is True
+    edge.cleanup()
 
 
 def test_symbolic_graph_copies_inputs_and_cleans_children():
@@ -80,6 +81,7 @@ def test_symbolic_graph_cleanup_swallows_errors():
     graph = SpellSymbolicGraph("sid", nodes=[bad], edges=[bad])
     graph.cleanup()
     assert graph.cleaned is True
+    graph.cleanup()
 
 
 def test_resolution_frame_copies_and_cleans():
@@ -88,6 +90,7 @@ def test_resolution_frame_copies_and_cleans():
     frame.cleanup()
     assert frame.ordered_node_ids is None
     assert frame.spell_id is None
+    frame.cleanup()
 
 
 def test_validation_issue_cleanup():
@@ -96,6 +99,7 @@ def test_validation_issue_cleanup():
     issue.cleanup()
     assert issue.details is None
     assert issue.code is None
+    issue.cleanup()
 
 
 def test_validation_issue_detaches_details_input():
@@ -115,6 +119,21 @@ def test_validation_result_cleanup_cascades():
     assert (getattr(err, "cleaned", False) or err.cleaned_calls > 0)
     assert (getattr(warn, "cleaned", False) or warn.cleaned_calls > 0)
     assert result.errors is None and result.warnings is None
+    result.cleanup()
+
+
+def test_validation_result_cleanup_swallows_child_errors():
+    result = SpellValidationResult(
+        is_valid=False,
+        errors=[_Boom()],
+        warnings=[_Boom()],
+    )
+
+    result.cleanup()
+
+    assert result.cleaned is True
+    assert result.errors is None
+    assert result.warnings is None
 
 
 def test_resolution_profile_fields_and_cleanup():
@@ -143,6 +162,7 @@ def test_resolution_profile_fields_and_cleanup():
     assert profile.resolution_frame is None
     assert profile.validation is None
     assert profile.spell_id is None
+    profile.cleanup()
 
 
 def test_resolution_profile_cleanup_swallows_child_errors():
