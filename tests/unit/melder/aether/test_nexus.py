@@ -1,5 +1,9 @@
+import gc
 import logging
+import threading
+import weakref
 from types import SimpleNamespace
+from typing import Dict
 
 import pytest
 
@@ -790,6 +794,191 @@ def test_workstation_call_target_can_bind_return_value() -> None:
 
     assert result == {"value": "ops"}
     assert workstation.get("payload", store="attributes") == {"value": "ops"}
+
+
+def test_workstation_explicit_strong_binding_keeps_object_alive() -> None:
+    """
+    Verify explicit strong binding keeps one object alive even after local references are dropped.
+
+    Returns:
+        None.
+    """
+    class _Target:
+        pass
+
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main", space_kind="static")
+    workstation = space.workstation
+    target = _Target()
+    target_ref = weakref.ref(target)
+
+    workstation.bind_object("client", target, weak_ref=False)
+    del target
+    gc.collect()
+
+    assert target_ref() is not None
+    assert workstation.get("client", store="objects") is target_ref()
+
+
+def test_workstation_explicit_weak_binding_releases_object_after_collection() -> None:
+    """
+    Verify explicit weak binding does not keep one object alive after local references are dropped.
+
+    Returns:
+        None.
+    """
+    class _Target:
+        pass
+
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main", space_kind="capability")
+    workstation = space.workstation
+    target = _Target()
+    target_ref = weakref.ref(target)
+
+    workstation.bind_object("client", target, weak_ref=True)
+    del target
+    gc.collect()
+
+    assert target_ref() is None
+    with pytest.raises(ValueError, match="was not found"):
+        workstation.get("client", store="objects")
+
+
+def test_workstation_static_room_defaults_none_to_weak_binding() -> None:
+    """
+    Verify `weak_ref=None` resolves to weak binding in static rooms.
+
+    Returns:
+        None.
+    """
+    class _Target:
+        pass
+
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main", space_kind="static")
+    workstation = space.workstation
+    target = _Target()
+    target_ref = weakref.ref(target)
+
+    workstation.bind_object("client", target)
+    del target
+    gc.collect()
+
+    assert target_ref() is None
+    with pytest.raises(ValueError, match="was not found"):
+        workstation.get("client", store="objects")
+
+
+def test_workstation_capability_room_defaults_none_to_strong_binding() -> None:
+    """
+    Verify `weak_ref=None` resolves to strong binding in capability rooms.
+
+    Returns:
+        None.
+    """
+    class _Target:
+        pass
+
+    space = RiftSpace(
+        owner_rift_id="rift-1",
+        space_name="main",
+        space_kind="capability",
+    )
+    workstation = space.workstation
+    target = _Target()
+    target_ref = weakref.ref(target)
+
+    workstation.bind_object("client", target)
+    del target
+    gc.collect()
+
+    assert target_ref() is not None
+    assert workstation.get("client", store="objects") is target_ref()
+
+
+def test_workstation_weak_binding_raises_for_non_weakrefable_value() -> None:
+    """
+    Verify explicit weak binding fails fast for values that cannot be weak-referenced.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main", space_kind="static")
+
+    with pytest.raises(TypeError, match="support weak references"):
+        space.workstation.bind_attribute("count", 3, weak_ref=True)
+
+
+def test_rift_space_queues_weak_binding_collection_events() -> None:
+    """
+    Verify weak binding collection publishes one room-local queue event.
+
+    Returns:
+        None.
+    """
+    class _Target:
+        pass
+
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main", space_kind="static")
+    workstation = space.workstation
+    target = _Target()
+
+    workstation.bind_object("client", target, weak_ref=True)
+    del target
+    gc.collect()
+
+    queued_events = space.describe_event_queue()
+
+    assert len(queued_events) == 1
+    assert queued_events[0]["event_type"] == "binding_collected"
+    assert queued_events[0]["binding_name"] == "client"
+    assert queued_events[0]["binding_store"] == "objects"
+    assert queued_events[0]["space_id"] == space.space_id
+    assert queued_events[0]["space_kind"] == "static"
+
+
+def test_rift_space_can_manage_event_queue_with_optional_thread() -> None:
+    """
+    Verify the optional managed queue consumer drains published weak-binding events.
+
+    Returns:
+        None.
+    """
+    class _Target:
+        pass
+
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main", space_kind="static")
+    received_events = []
+    handled_event = threading.Event()
+
+    def _handler(event_payload: Dict[str, object]) -> None:
+        received_events.append(event_payload)
+        handled_event.set()
+
+    space.manage_event_queue(_handler, poll_interval_seconds=0.01, drain_batch_size=4)
+    target = _Target()
+    space.workstation.bind_object("client", target, weak_ref=True)
+    del target
+    gc.collect()
+
+    assert handled_event.wait(1.0) is True
+    space.stop_managing_event_queue()
+
+    assert len(received_events) == 1
+    assert received_events[0]["event_type"] == "binding_collected"
+
+
+def test_rift_space_stop_managing_event_queue_is_idempotent() -> None:
+    """
+    Verify stopping the managed queue thread is safe when no thread is active.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+
+    space.stop_managing_event_queue()
+    space.stop_managing_event_queue()
+
+    assert space.describe_event_queue() == []
 
 
 def test_workstation_cleanup_target_calls_methods_then_clears_target() -> None:

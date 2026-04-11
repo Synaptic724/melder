@@ -6170,19 +6170,37 @@ class IWorkstation(ICleanable, Protocol):
         """
         ...
 
-    def bind_object(self, name: str, value: object) -> None:
+    def bind_object(
+            self,
+            name: str,
+            value: object,
+            *,
+            weak_ref: Optional[bool] = None,
+    ) -> None:
         """
         Store one object binding by name.
         """
         ...
 
-    def bind_attribute(self, name: str, value: object) -> None:
+    def bind_attribute(
+            self,
+            name: str,
+            value: object,
+            *,
+            weak_ref: Optional[bool] = None,
+    ) -> None:
         """
         Store one attribute/value binding by name.
         """
         ...
 
-    def bind_method(self, name: str, value: object) -> None:
+    def bind_method(
+            self,
+            name: str,
+            value: object,
+            *,
+            weak_ref: Optional[bool] = None,
+    ) -> None:
         """
         Store one method/callable binding by name.
         """
@@ -6408,6 +6426,34 @@ class IRiftSpace(ICleanable, Protocol):
     def event_configuration(self) -> IRiftEventConfiguration:
         """
         Return the event configuration that governs this space's local event behavior.
+        """
+        ...
+
+    def describe_event_queue(self) -> List[Dict[str, object]]:
+        """
+        Return a detached snapshot of the room-local event queue.
+        """
+        ...
+
+    def manage_event_queue(
+            self,
+            handler: Callable[[Dict[str, object]], None],
+            *,
+            poll_interval_seconds: float = 0.1,
+            drain_batch_size: int = 16,
+    ) -> None:
+        """
+        Start one optional managed queue-consumer thread for this space.
+        """
+        ...
+
+    def stop_managing_event_queue(
+            self,
+            *,
+            join_timeout_seconds: float = 1.0,
+    ) -> None:
+        """
+        Stop the optional managed queue-consumer thread.
         """
         ...
 

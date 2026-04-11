@@ -1,6 +1,9 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict import (
+    WeakConcurrentDict,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -17,10 +20,17 @@ class Workstation(Cleanable):
         active target can be retained across steps.
 
     Contract:
-        - Stores only room-local bindings; it does not discover or resolve
-          new targets from Melder/Nexus.
+        - Stores only room-local bindings; it does not discover or resolve new
+          targets from Melder/Nexus.
         - Keeps object, attribute/value, and method/callable bindings in
-          separate stores.
+          separate logical stores.
+        - Each logical store supports both strong and weak backing storage.
+        - Bind calls accept `weak_ref=True`, `weak_ref=False`, or
+          `weak_ref=None`.
+        - `weak_ref=None` resolves through the room-local default captured when
+          this workstation is created.
+        - Explicit weak binding raises when the supplied value cannot be
+          weak-referenced; it never silently degrades to strong storage.
         - Tracks at most one active target binding at a time.
         - `cleanup_target(...)` acts only on the currently selected target and
           then clears target selection.
@@ -38,16 +48,27 @@ class Workstation(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_workstation_id",
         "_owner_space_id",
-        "_objects_by_name",
-        "_attributes_by_name",
-        "_methods_by_name",
+        "_default_weak_ref_bindings",
+        "_event_publisher",
+        "_strong_objects_by_name",
+        "_strong_attributes_by_name",
+        "_strong_methods_by_name",
+        "_weak_objects_by_name",
+        "_weak_attributes_by_name",
+        "_weak_methods_by_name",
         "_target_name",
         "_target_store",
     ]
     _VALID_STORES: Tuple[str, ...] = ("objects", "attributes", "methods")
     _DEFAULT_CLEANUP_METHODS: Tuple[str, ...] = ("cleanup", "close", "dispose")
 
-    def __init__(self, owner_space_id: str) -> None:
+    def __init__(
+            self,
+            owner_space_id: str,
+            *,
+            default_weak_ref_bindings: bool = False,
+            event_publisher: Optional[Callable[[Dict[str, object]], None]] = None,
+    ) -> None:
         """
         Internal
 
@@ -56,6 +77,12 @@ class Workstation(Cleanable):
         Args:
             owner_space_id:
                 Stable room identifier for the owning `RiftSpace`.
+            default_weak_ref_bindings:
+                Default weak-reference mode used when one bind call receives
+                `weak_ref=None`.
+            event_publisher:
+                Optional best-effort room-local event publisher used for weak
+                binding collection signals.
 
         Returns:
             None.
@@ -69,9 +96,22 @@ class Workstation(Cleanable):
             raise ValueError("owner_space_id cannot be empty.")
         self._workstation_id: str = IDBuilder.create_id()
         self._owner_space_id: str = owner_space_id
-        self._objects_by_name: Dict[str, object] = {}
-        self._attributes_by_name: Dict[str, object] = {}
-        self._methods_by_name: Dict[str, object] = {}
+        self._default_weak_ref_bindings: bool = bool(default_weak_ref_bindings)
+        self._event_publisher: Optional[Callable[[Dict[str, object]], None]] = (
+            event_publisher
+        )
+        self._strong_objects_by_name: Dict[str, object] = {}
+        self._strong_attributes_by_name: Dict[str, object] = {}
+        self._strong_methods_by_name: Dict[str, object] = {}
+        self._weak_objects_by_name: WeakConcurrentDict[str, object] = (
+            WeakConcurrentDict(auto_prune=True)
+        )
+        self._weak_attributes_by_name: WeakConcurrentDict[str, object] = (
+            WeakConcurrentDict(auto_prune=True)
+        )
+        self._weak_methods_by_name: WeakConcurrentDict[str, object] = (
+            WeakConcurrentDict(auto_prune=True)
+        )
         self._target_name: Optional[str] = None
         self._target_store: Optional[str] = None
 
@@ -83,7 +123,7 @@ class Workstation(Cleanable):
 
         Contract:
             - Safe to call more than once.
-            - Clears object/value/callable binding stores.
+            - Clears strong and weak binding stores.
             - Clears active-target state.
             - Does not attempt to cleanup every stored binding automatically;
               explicit target cleanup is a separate operation.
@@ -94,12 +134,20 @@ class Workstation(Cleanable):
         if self._cleaned:
             return
         self._cleaned = True
-        self._objects_by_name.clear()
-        self._attributes_by_name.clear()
-        self._methods_by_name.clear()
-        self._objects_by_name = None
-        self._attributes_by_name = None
-        self._methods_by_name = None
+        self._strong_objects_by_name.clear()
+        self._strong_attributes_by_name.clear()
+        self._strong_methods_by_name.clear()
+        self._weak_objects_by_name.cleanup()
+        self._weak_attributes_by_name.cleanup()
+        self._weak_methods_by_name.cleanup()
+        self._strong_objects_by_name = None
+        self._strong_attributes_by_name = None
+        self._strong_methods_by_name = None
+        self._weak_objects_by_name = None
+        self._weak_attributes_by_name = None
+        self._weak_methods_by_name = None
+        self._default_weak_ref_bindings = None
+        self._event_publisher = None
         self._target_name = None
         self._target_store = None
         self._owner_space_id = None
@@ -127,19 +175,29 @@ class Workstation(Cleanable):
         self.check_cleaned()
         return self._owner_space_id
 
-    def bind_object(self, name: str, value: object) -> None:
+    def bind_object(
+            self,
+            name: str,
+            value: object,
+            *,
+            weak_ref: Optional[bool] = None,
+    ) -> None:
         """
         Store one object binding by name.
 
         Contract:
             Delegates to the shared `_bind(...)` helper using the `objects`
-            store.
+            store and the requested reference mode.
 
         Args:
             name:
                 Binding name.
             value:
                 Bound object value.
+            weak_ref:
+                Explicit reference-mode override. `True` forces weak storage,
+                `False` forces strong storage, and `None` uses the room-local
+                workstation default.
 
         Returns:
             None.
@@ -147,22 +205,35 @@ class Workstation(Cleanable):
         Raises:
             ValueError:
                 If `name` is empty.
+            TypeError:
+                If weak storage is requested for a value that cannot be
+                weak-referenced.
         """
-        self._bind("objects", name, value)
+        self._bind("objects", name, value, weak_ref=weak_ref)
 
-    def bind_attribute(self, name: str, value: object) -> None:
+    def bind_attribute(
+            self,
+            name: str,
+            value: object,
+            *,
+            weak_ref: Optional[bool] = None,
+    ) -> None:
         """
         Store one attribute/value binding by name.
 
         Contract:
             Delegates to the shared `_bind(...)` helper using the `attributes`
-            store.
+            store and the requested reference mode.
 
         Args:
             name:
                 Binding name.
             value:
                 Bound attribute/value.
+            weak_ref:
+                Explicit reference-mode override. `True` forces weak storage,
+                `False` forces strong storage, and `None` uses the room-local
+                workstation default.
 
         Returns:
             None.
@@ -170,22 +241,35 @@ class Workstation(Cleanable):
         Raises:
             ValueError:
                 If `name` is empty.
+            TypeError:
+                If weak storage is requested for a value that cannot be
+                weak-referenced.
         """
-        self._bind("attributes", name, value)
+        self._bind("attributes", name, value, weak_ref=weak_ref)
 
-    def bind_method(self, name: str, value: object) -> None:
+    def bind_method(
+            self,
+            name: str,
+            value: object,
+            *,
+            weak_ref: Optional[bool] = None,
+    ) -> None:
         """
         Store one method/callable binding by name.
 
         Contract:
             Delegates to the shared `_bind(...)` helper using the `methods`
-            store.
+            store and the requested reference mode.
 
         Args:
             name:
                 Binding name.
             value:
                 Bound method/callable.
+            weak_ref:
+                Explicit reference-mode override. `True` forces weak storage,
+                `False` forces strong storage, and `None` uses the room-local
+                workstation default.
 
         Returns:
             None.
@@ -193,8 +277,11 @@ class Workstation(Cleanable):
         Raises:
             ValueError:
                 If `name` is empty.
+            TypeError:
+                If weak storage is requested for a value that cannot be
+                weak-referenced.
         """
-        self._bind("methods", name, value)
+        self._bind("methods", name, value, weak_ref=weak_ref)
 
     def get(self, name: str, *, store: Optional[str] = None) -> object:
         """
@@ -206,7 +293,7 @@ class Workstation(Cleanable):
             store:
                 Optional explicit store name (`objects`, `attributes`,
                 `methods`). When omitted, the binding must resolve uniquely
-                across the stores.
+                across the logical stores.
 
         Returns:
             object: Saved binding value.
@@ -214,10 +301,10 @@ class Workstation(Cleanable):
         Raises:
             ValueError:
                 If `name` is empty, the binding is missing, or the name is
-                ambiguous across stores.
+                ambiguous across the logical stores.
         """
         self.check_cleaned()
-        _, value = self._resolve_binding(name, store=store)
+        _, _, value = self._resolve_binding(name, store=store)
         return value
 
     def release(self, name: str, *, store: Optional[str] = None) -> object:
@@ -229,7 +316,7 @@ class Workstation(Cleanable):
                 Binding name to remove.
             store:
                 Optional explicit store name. When omitted, the binding must
-                resolve uniquely across the stores.
+                resolve uniquely across the logical stores.
 
         Returns:
             object: Removed binding value.
@@ -239,24 +326,31 @@ class Workstation(Cleanable):
                 If the binding cannot be resolved.
         """
         self.check_cleaned()
-        resolved_store, value = self._resolve_binding(name, store=store)
-        self._get_store_map(resolved_store).pop(name)
+        resolved_store, resolved_weak_ref, value = self._resolve_binding(
+            name,
+            store=store,
+        )
+        self._remove_resolved_binding(
+            resolved_store,
+            name,
+            resolved_weak_ref,
+        )
         if self._target_name == name and self._target_store == resolved_store:
             self.clear_target()
         return value
 
     def describe_bindings(self) -> Dict[str, List[str]]:
         """
-        Return a detached summary of saved binding names by store.
+        Return a detached summary of saved binding names by logical store.
 
         Returns:
-            Dict[str, List[str]]: Binding names grouped by store.
+            Dict[str, List[str]]: Binding names grouped by logical store.
         """
         self.check_cleaned()
         return {
-            "objects": sorted(self._objects_by_name.keys()),
-            "attributes": sorted(self._attributes_by_name.keys()),
-            "methods": sorted(self._methods_by_name.keys()),
+            "objects": self._describe_store_names("objects"),
+            "attributes": self._describe_store_names("attributes"),
+            "methods": self._describe_store_names("methods"),
             "target_name": [] if self._target_name is None else [self._target_name],
             "target_store": [] if self._target_store is None else [self._target_store],
         }
@@ -270,7 +364,7 @@ class Workstation(Cleanable):
                 Binding name to select.
             store:
                 Optional explicit store name. When omitted, the binding must
-                resolve uniquely across the stores.
+                resolve uniquely across the logical stores.
 
         Returns:
             None.
@@ -280,7 +374,7 @@ class Workstation(Cleanable):
                 If the binding cannot be resolved.
         """
         self.check_cleaned()
-        resolved_store, _ = self._resolve_binding(name, store=store)
+        resolved_store, _, _ = self._resolve_binding(name, store=store)
         self._target_name = name
         self._target_store = resolved_store
 
@@ -298,7 +392,7 @@ class Workstation(Cleanable):
         self.check_cleaned()
         if self._target_name is None or self._target_store is None:
             raise ValueError("Workstation has no active target.")
-        return self._get_store_map(self._target_store)[self._target_name]
+        return self.get(self._target_name, store=self._target_store)
 
     def clear_target(self) -> None:
         """
@@ -367,6 +461,12 @@ class Workstation(Cleanable):
         """
         Invoke the current target and optionally bind the return value.
 
+        Contract:
+            - Resolves the current target through the logical store layer.
+            - When `bind_as_name` is supplied, the return value is rebound
+              through the normal workstation bind path with `weak_ref=None`,
+              which means the room default applies.
+
         Args:
             *args:
                 Positional arguments passed to the target.
@@ -393,25 +493,44 @@ class Workstation(Cleanable):
             raise RuntimeError("Active target is not callable.")
         result = target(*args, **kwargs)
         if bind_as_name is not None:
-            self._bind(bind_as_store, bind_as_name, result)
+            self._bind(
+                bind_as_store,
+                bind_as_name,
+                result,
+                weak_ref=None,
+            )
         return result
 
-    def _bind(self, store: str, name: str, value: object) -> None:
+    def _bind(
+            self,
+            store: str,
+            name: str,
+            value: object,
+            *,
+            weak_ref: Optional[bool],
+    ) -> None:
         """
-        Store one binding in the requested store.
+        Store one binding in the requested logical store.
 
         Contract:
             - Validates that the binding name is non-empty.
-            - Resolves the target store through `_get_store_map(...)`.
-            - Replaces any older binding with the same name in that store.
+            - Resolves the requested reference mode through the workstation
+              default when `weak_ref` is `None`.
+            - Replaces any older binding with the same name in that logical
+              store, regardless of whether it previously lived in strong or
+              weak storage.
+            - Explicit weak binding raises when the supplied value cannot be
+              weak-referenced.
 
         Args:
             store:
-                Store name to mutate.
+                Logical store name to mutate.
             name:
                 Binding name.
             value:
                 Bound value.
+            weak_ref:
+                Explicit or deferred reference-mode selector.
 
         Returns:
             None.
@@ -419,51 +538,61 @@ class Workstation(Cleanable):
         self.check_cleaned()
         if not name:
             raise ValueError("binding name cannot be empty.")
-        store_map = self._get_store_map(store)
-        store_map[name] = value
+        effective_weak_ref = self._resolve_weak_ref_mode(weak_ref)
+        self._clear_binding_name_from_store(store, name)
+        strong_store_map, weak_store_map = self._get_store_maps(store)
+        if effective_weak_ref:
+            weak_store_map[name] = value
+            self._register_weak_binding_callback(
+                store,
+                name,
+                weak_store_map,
+            )
+            return
+        strong_store_map[name] = value
 
     def _resolve_binding(
             self,
             name: str,
             *,
             store: Optional[str] = None,
-    ) -> Tuple[str, object]:
+    ) -> Tuple[str, bool, object]:
         """
-        Resolve one binding to its store name and value.
+        Resolve one binding to its logical store, reference mode, and value.
 
         Contract:
-            - When `store` is supplied, lookup is restricted to that store.
+            - When `store` is supplied, lookup is restricted to that logical
+              store.
             - When `store` is omitted, the name must resolve uniquely across
-              the three workstation stores.
-            - Raises instead of returning ambiguous or missing bindings.
+              the logical stores.
+            - Strong and weak bindings within the same logical store are
+              treated as one namespace and must not both resolve for the same
+              name.
 
         Args:
             name:
                 Binding name to resolve.
             store:
-                Optional explicit store name.
+                Optional explicit logical store name.
 
         Returns:
-            Tuple[str, object]: Resolved store name and binding value.
+            Tuple[str, bool, object]: Resolved logical store name, weak flag,
+            and binding value.
+
+        Raises:
+            ValueError:
+                If the binding is missing or ambiguous.
         """
         if not name:
             raise ValueError("binding name cannot be empty.")
         if store is not None:
-            store_map = self._get_store_map(store)
-            try:
-                return store, store_map[name]
-            except KeyError as exc:
-                raise ValueError(
-                    "Binding '{0}' was not found in '{1}'.".format(
-                        name,
-                        store,
-                    )
-                ) from exc
-        matches: List[Tuple[str, object]] = []
+            return self._resolve_binding_in_store(store, name)
+        matches: List[Tuple[str, bool, object]] = []
         for store_name in self._VALID_STORES:
-            store_map = self._get_store_map(store_name)
-            if name in store_map:
-                matches.append((store_name, store_map[name]))
+            try:
+                matches.append(self._resolve_binding_in_store(store_name, name))
+            except ValueError:
+                continue
         if len(matches) == 0:
             raise ValueError("Binding '{0}' was not found.".format(name))
         if len(matches) > 1:
@@ -474,32 +603,230 @@ class Workstation(Cleanable):
             )
         return matches[0]
 
-    def _get_store_map(self, store: str) -> Dict[str, object]:
+    def _resolve_binding_in_store(
+            self,
+            store: str,
+            name: str,
+    ) -> Tuple[str, bool, object]:
         """
-        Return the binding map for one named store.
-
-        Contract:
-            - Supports exactly the three workstation stores: `objects`,
-              `attributes`, and `methods`.
-            - Returns the live internal mapping for the selected store.
+        Resolve one binding inside one logical store.
 
         Args:
             store:
-                Store name to resolve.
+                Logical store name to resolve.
+            name:
+                Binding name to resolve.
 
         Returns:
-            Dict[str, object]: Live binding map for the store.
+            Tuple[str, bool, object]: Resolved logical store name, weak flag,
+            and binding value.
 
         Raises:
             ValueError:
-                If the store name is not supported.
+                If the binding is missing or ambiguous within the logical
+                store.
+        """
+        strong_store_map, weak_store_map = self._get_store_maps(store)
+        matches: List[Tuple[str, bool, object]] = []
+        if name in strong_store_map:
+            matches.append((store, False, strong_store_map[name]))
+        if name in weak_store_map:
+            matches.append((store, True, weak_store_map[name]))
+        if len(matches) == 0:
+            raise ValueError(
+                "Binding '{0}' was not found in '{1}'.".format(
+                    name,
+                    store,
+                )
+            )
+        if len(matches) > 1:
+            raise ValueError(
+                "Binding '{0}' is ambiguous inside '{1}'.".format(
+                    name,
+                    store,
+                )
+            )
+        return matches[0]
+
+    def _clear_binding_name_from_store(self, store: str, name: str) -> None:
+        """
+        Remove one binding name from both backing stores for one logical store.
+
+        Args:
+            store:
+                Logical store name.
+            name:
+                Binding name to clear.
+
+        Returns:
+            None.
+        """
+        strong_store_map, weak_store_map = self._get_store_maps(store)
+        strong_store_map.pop(name, None)
+        weak_store_map.prune()
+        if name in weak_store_map:
+            try:
+                weak_store_map.pop(name)
+            except Exception:
+                pass
+
+    def _remove_resolved_binding(
+            self,
+            store: str,
+            name: str,
+            weak_ref: bool,
+    ) -> None:
+        """
+        Remove one already-resolved binding from its backing store.
+
+        Args:
+            store:
+                Logical store name.
+            name:
+                Binding name to remove.
+            weak_ref:
+                Backing-store selector returned by `_resolve_binding(...)`.
+
+        Returns:
+            None.
+        """
+        strong_store_map, weak_store_map = self._get_store_maps(store)
+        if weak_ref:
+            weak_store_map.pop(name)
+            return
+        strong_store_map.pop(name)
+
+    def _describe_store_names(self, store: str) -> List[str]:
+        """
+        Return one detached, sorted binding-name list for a logical store.
+
+        Args:
+            store:
+                Logical store name.
+
+        Returns:
+            List[str]: Sorted binding names from the strong and weak backing
+            stores.
+        """
+        strong_store_map, weak_store_map = self._get_store_maps(store)
+        names = set(strong_store_map.keys())
+        names.update(list(weak_store_map.keys()))
+        return sorted(names)
+
+    def _register_weak_binding_callback(
+            self,
+            store: str,
+            name: str,
+            weak_store_map: WeakConcurrentDict[str, object],
+    ) -> None:
+        """
+        Attach one best-effort room-local publication callback to a weak binding.
+
+        Args:
+            store:
+                Logical store that owns the binding.
+            name:
+                Binding name.
+            weak_store_map:
+                Weak backing store that now owns the binding.
+
+        Returns:
+            None.
+        """
+        if self._event_publisher is None:
+            return
+        node = weak_store_map._dict.get(name)
+        if node is None:
+            return
+        node.add_callback(
+            lambda collected_node: self._publish_weak_binding_event(
+                store,
+                name,
+                collected_node,
+            )
+        )
+
+    def _publish_weak_binding_event(
+            self,
+            store: str,
+            name: str,
+            node: object,
+    ) -> None:
+        """
+        Publish one room-local event when a weak binding dies on the GC path.
+
+        Args:
+            store:
+                Logical store that owned the binding.
+            name:
+                Binding name.
+            node:
+                Weak node that fired the callback.
+
+        Returns:
+            None.
+        """
+        if self._event_publisher is None:
+            return
+        if not getattr(node, "has_fired", False):
+            return
+        try:
+            self._event_publisher(
+                {
+                    "event_type": "binding_collected",
+                    "binding_name": name,
+                    "binding_store": store,
+                    "workstation_id": self._workstation_id,
+                    "owner_space_id": self._owner_space_id,
+                }
+            )
+        except Exception:
+            pass
+
+    def _resolve_weak_ref_mode(self, weak_ref: Optional[bool]) -> bool:
+        """
+        Resolve one bind call's effective weak-reference mode.
+
+        Args:
+            weak_ref:
+                Explicit or deferred weak-reference selector.
+
+        Returns:
+            bool: Effective weak-reference mode for the bind call.
+        """
+        if weak_ref is None:
+            return self._default_weak_ref_bindings
+        return bool(weak_ref)
+
+    def _get_store_maps(
+            self,
+            store: str,
+    ) -> Tuple[Dict[str, object], WeakConcurrentDict[str, object]]:
+        """
+        Return the strong and weak backing stores for one logical store.
+
+        Contract:
+            Supports exactly the three logical workstation stores: `objects`,
+            `attributes`, and `methods`.
+
+        Args:
+            store:
+                Logical store name to resolve.
+
+        Returns:
+            Tuple[Dict[str, object], WeakConcurrentDict[str, object]]: Strong
+            and weak backing stores for the requested logical store.
+
+        Raises:
+            ValueError:
+                If the logical store name is not supported.
         """
         if store == "objects":
-            return self._objects_by_name
+            return self._strong_objects_by_name, self._weak_objects_by_name
         if store == "attributes":
-            return self._attributes_by_name
+            return self._strong_attributes_by_name, self._weak_attributes_by_name
         if store == "methods":
-            return self._methods_by_name
+            return self._strong_methods_by_name, self._weak_methods_by_name
         raise ValueError(
             "Unsupported workstation store '{0}'.".format(store)
         )
