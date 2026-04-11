@@ -2,7 +2,7 @@ import threading
 from typing import Dict, List, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.nexus.acl.configurations.profiles.frame_acl_rule import FrameACLRule
+from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -240,7 +240,7 @@ class FrameACLRuleSet(Cleanable):
         """
         if not isinstance(payload, dict):
             raise TypeError("payload must be a dict.")
-        rules_payload = payload.get("rules")
+        rules_payload = payload.get("")
         if rules_payload is None:
             rules_payload = []
         if not isinstance(rules_payload, list):
