@@ -15,6 +15,13 @@ class SpellValidationResult(Cleanable):
         Human-readable spell name (usually the underlying callable's __name__).
     issues:
         All issues (errors + warnings) discovered by the validation strategies.
+
+    Contract:
+    - Represents the final aggregate output of one validation run for one
+      spell/version.
+    - Preserves both error and warning issues in one ordered list.
+    - Convenience properties expose whether any error/warning class is present
+      without forcing callers to rescan the issue list manually.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -29,6 +36,20 @@ class SpellValidationResult(Cleanable):
             spell_name: str,
             issues: Optional[List['SpellValidationIssue']] = None,
     ) -> None:
+        """
+        Initialize one aggregate spell validation result.
+
+        Args:
+            spell_id: Validated spell/version id.
+            spell_name: Human-readable validated spell name.
+            issues: Optional prebuilt list of validation issues.
+        Contract:
+            - `spell_id` and `spell_name` are required.
+            - Stores the supplied issue list as the owned result list when
+              provided; otherwise starts empty.
+        Raises:
+            ValueError: If `spell_id` or `spell_name` is empty.
+        """
         super().__init__()
 
         if not spell_id:
@@ -42,12 +63,24 @@ class SpellValidationResult(Cleanable):
 
     @property
     def has_errors(self) -> bool:
-        """Return True if any issue is an error."""
+        """
+        Return True if any issue is an error.
+
+        Contract:
+            Scans the current issue list and returns a boolean summary only; it
+            does not mutate or filter the issues.
+        """
         return any(issue.severity == "error" for issue in self.issues)
 
     @property
     def has_warnings(self) -> bool:
-        """Return True if any issue is a warning."""
+        """
+        Return True if any issue is a warning.
+
+        Contract:
+            Scans the current issue list and returns a boolean summary only; it
+            does not mutate or filter the issues.
+        """
         return any(issue.severity == "warning" for issue in self.issues)
 
     def cleanup(self) -> None:

@@ -77,13 +77,17 @@ class SpellSocketDescriptor:
 
 class SpellLocalTopology(Cleanable):
     """
-    Internal
-
     Local topology view for a single spell's constructor.
 
     This is intentionally small and immutable-ish. It is produced once
     during SpellCrafter Phase 3 and handed to :class:`SpellSystemStates`
     for aggregation, change-control, and eventual blueprint building.
+
+    Contract:
+    - Holds the per-spell socket view produced during local topology analysis.
+    - Owns the socket tuple and the parameter-name index derived from it.
+    - Is effectively immutable after construction; callers read from it but do
+      not mutate it in place.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -97,6 +101,18 @@ class SpellLocalTopology(Cleanable):
             spell_id: str,
             sockets: Sequence[SpellSocketDescriptor],
     ) -> None:
+        """
+        Initialize one local topology snapshot for a spell.
+
+        Args:
+            spell_id: Spell/version id this topology belongs to.
+            sockets: Socket descriptors discovered for the spell's constructor.
+        Contract:
+            - `spell_id` is required.
+            - Stores sockets as a tuple to keep the topology stable after
+              construction.
+            - Builds a parameter-name index for fast grouped lookup.
+        """
         super().__init__()
 
         if spell_id is None:
@@ -120,6 +136,11 @@ class SpellLocalTopology(Cleanable):
 
         This is primarily to keep the lifecycle consistent with other Melder
         artifacts and to assist GC in long-running systems.
+
+        Contract:
+            - Safe to call more than once.
+            - Clears the parameter-name index before dropping references.
+            - Leaves future callers to fail through `check_cleaned()`.
         """
         if self._cleaned:
             return
@@ -137,21 +158,43 @@ class SpellLocalTopology(Cleanable):
 
     @property
     def spell_id(self) -> str:
+        """
+        Return the spell/version id this topology belongs to.
+
+        Returns:
+            str: Owning spell id.
+        """
         return self._spell_id
 
     @property
     def sockets(self) -> Tuple[SpellSocketDescriptor, ...]:
+        """
+        Return the socket tuple for this topology.
+
+        Returns:
+            Tuple[SpellSocketDescriptor, ...]: Socket descriptors in stored
+            order.
+        """
         return self._sockets
 
     def iter_sockets(self) -> Tuple[SpellSocketDescriptor, ...]:
         """
-        Convenience accessor to iterate sockets without exposing internals.
+        Return the socket tuple for iteration.
+
+        Contract:
+            Returns the stored tuple directly; callers should treat it as
+            read-only.
         """
         return self._sockets
 
     def get_sockets_for_param(self, param_name: str) -> Tuple[SpellSocketDescriptor, ...]:
         """
         Return all sockets whose constructor parameter name matches `param_name`.
+
+        Contract:
+            - Returns an empty tuple when the parameter name is unknown.
+            - Returns a detached tuple even though the underlying index stores
+              lists.
         """
         sockets = self._by_param_name.get(param_name, ())
         return tuple(sockets)

@@ -74,6 +74,15 @@ class SpellValidationSystem(Cleanable):
     ]
 
     def __init__(self) -> None:
+        """
+        Initialize one ephemeral spell validation system.
+
+        Contract:
+            - Starts with an empty strategy registry.
+            - Immediately registers the built-in validation strategies in the
+              intended default order.
+            - Owns every registered strategy for later cleanup.
+        """
         super().__init__()
         self._lock: RLock = RLock()
         self._strategies: Dict[str, 'SpellValidationStrategy'] = {}
@@ -162,6 +171,11 @@ class SpellValidationSystem(Cleanable):
         Raises:
             ValueError:
                 If ``strategy`` is None or has an empty name.
+
+        Contract:
+            - Replaces any existing strategy with the same name.
+            - Ownership of the registered strategy transfers to the validation
+              system for later cleanup.
         """
         self.check_cleaned()
         if strategy is None:
@@ -179,6 +193,10 @@ class SpellValidationSystem(Cleanable):
         Unregister a strategy by name.
 
         Silently does nothing if the name is not currently registered.
+
+        Contract:
+            Best-effort cleans the removed strategy after it is detached from
+            the registry.
         """
         self.check_cleaned()
         if not name:
@@ -200,6 +218,9 @@ class SpellValidationSystem(Cleanable):
         Return a snapshot list of all registered strategies.
 
         The returned list is a copy; mutating it does not affect the registry.
+
+        Contract:
+            Returns the current registry order as a detached list.
         """
         self.check_cleaned()
         with self._lock:

@@ -26,6 +26,14 @@ class SpellValidationContext(Cleanable):
         Optional cancellation token for long-running validations.
     issues:
         Shared, mutable list that all strategies append issues into.
+
+    Contract:
+    - Holds one spell plus the validation artifacts already produced for that
+      spell in earlier phases.
+    - Strategies may read any field and append issues, but they do not own the
+      shared issues list.
+    - Optional artifact cleanup is controlled by `cleanup_artifacts`; the
+      caller decides whether the context owns those artifacts for teardown.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -50,6 +58,26 @@ class SpellValidationContext(Cleanable):
             issues: List['SpellValidationIssue'],
             cleanup_artifacts: bool = True,
     ) -> None:
+        """
+        Initialize one per-spell validation context.
+
+        Args:
+            spell: Spell currently being validated.
+            spellbook: Owning spellbook when available.
+            requirements: Phase 1 requirements artifact when available.
+            symbolic_graph: Phase 2 symbolic graph when available.
+            resolution_frame: Phase 3 resolution frame when available.
+            cancel_event: Optional cancellation signal for long-running
+                validation.
+            issues: Shared issue list that strategies append into.
+            cleanup_artifacts: True when context cleanup should also clean owned
+                artifact objects.
+        Contract:
+            - `spell` and `issues` are required.
+            - Holds references only; it does not clone the incoming artifacts.
+            - The shared `issues` list remains owned by the caller even when
+              this context is cleaned.
+        """
         super().__init__()
 
         if spell is None:
