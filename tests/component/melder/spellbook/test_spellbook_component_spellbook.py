@@ -2,6 +2,7 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.nexus.nexus import Nexus
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.spellbook import Spellbook
@@ -10,6 +11,7 @@ from melder.utilities.helpers.general_helpers import SpellInputUtils
 from tests.mocks.spellbook.core_classes import BasicConfig
 from tests.mocks.spellbook.core_classes import BasicService
 from tests.mocks.spellbook.protocols import IService
+from tests.mocks.spellbook import scan_bind_module_core
 
 
 @pytest.fixture(autouse=True)
@@ -656,6 +658,152 @@ def test_component_spellbook_link_contract_updates_live_transaction_manager_mirr
     finally:
         conduit.cleanup()
         spellbook.cleanup()
+
+
+def test_component_spellbook_describe_spells_runtime_dump_includes_owner_and_shape() -> None:
+    """
+    Purpose:
+        Validate the authoring dump surface against a live post-conjure Spellbook.
+    Contract:
+        - describe_spells_in_spellbook returns one detached dict per visible spell.
+        - owner_conduit_id reflects the live root conduit after post-conjure bind.
+        - binding_name defaults to "__default__" when omitted.
+        - spellframe values are rendered as user-facing strings.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the runtime dump shape is incorrect.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        with spellbook.binding_transaction():
+            spellbook.bind(
+                spell=BasicService,
+                existence=Existence.unique,
+                permissions="create",
+            )
+            spellbook.bind(
+                spell=BasicConfig,
+                existence=Existence.unique,
+                permissions="create",
+                spellframe=IService,
+                binding_name="secondary",
+            )
+
+        descriptions = spellbook.describe_spells_in_spellbook()
+
+        assert len(descriptions) == 2
+        assert all(
+            set(description.keys()) == {
+                "spell_id",
+                "spell_name",
+                "binding_name",
+                "spellframe",
+                "existence",
+                "owner_conduit_id",
+            }
+            for description in descriptions
+        )
+        assert [description["owner_conduit_id"] for description in descriptions] == [
+            conduit.id,
+            conduit.id,
+        ]
+        by_name = {description["spell_name"]: description for description in descriptions}
+        assert set(by_name.keys()) == {"BasicService", "BasicConfig"}
+        assert by_name["BasicService"]["binding_name"] == "__default__"
+        assert by_name["BasicService"]["spellframe"] is None
+        assert by_name["BasicConfig"]["binding_name"] == "secondary"
+        assert by_name["BasicConfig"]["spellframe"] == "IService"
+        assert all(description["existence"] == "unique" for description in descriptions)
+    finally:
+        conduit.cleanup()
+        spellbook.cleanup()
+
+
+def test_component_spellbook_post_conjure_bind_publishes_incremental_nexus_spell_record() -> None:
+    """
+    Purpose:
+        Validate late binds publish incremental spell records into passive Nexus.
+    Contract:
+        - A Rift-enabled frame publishes the initial conjure state.
+        - A post-conjure bind publishes the newly bound spell record.
+        - The late-bound spell record is removed again on conduit cleanup.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If incremental Nexus publication is missing.
+    """
+    Nexus._reset_singleton_for_tests()
+    Nexus(aether=Aether())
+    configuration = Configuration(aether_frame="ops")
+    configuration.automatic_defaults()
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    configuration.set_property("rift_enabled", True)
+    spellbook = Spellbook(aetheric_frame="ops", configuration=configuration)
+
+    conduit = spellbook.conjure(name="root")
+    late_spell_id = None
+    try:
+        with spellbook.binding_transaction():
+            late_spell_id = spellbook.bind(
+                spell=BasicService,
+                existence=Existence.unique,
+                permissions="create",
+                binding_name="late",
+            )
+
+        descriptor = Nexus()._get_required_frame_descriptor("ops")
+        assert (spellbook.id, late_spell_id) in descriptor.spell_records_by_key
+    finally:
+        conduit.cleanup()
+
+    descriptor = Nexus()._get_required_frame_descriptor("ops")
+    assert (spellbook.id, late_spell_id) not in descriptor.spell_records_by_key
+    Nexus._reset_singleton_for_tests()
+    spellbook.cleanup()
+
+
+def test_component_spellbook_post_conjure_scan_publishes_passive_nexus_spell_records() -> None:
+    """
+    Purpose:
+        Validate late scan bindings publish batched spell records into passive Nexus.
+    Contract:
+        - scan after conjure publishes one spell record per scanned spell id.
+        - conduit cleanup removes those scanned spell records again.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If passive Nexus does not reflect the scan lifecycle.
+    """
+    Nexus._reset_singleton_for_tests()
+    Nexus(aether=Aether())
+    configuration = Configuration(aether_frame="ops")
+    configuration.automatic_defaults()
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    configuration.set_property("rift_enabled", True)
+    spellbook = Spellbook(aetheric_frame="ops", configuration=configuration)
+
+    conduit = spellbook.conjure(name="root")
+    spell_ids = []
+    try:
+        with spellbook.binding_transaction():
+            spell_ids = spellbook.scan(scan_bind_module_core)
+
+        descriptor = Nexus()._get_required_frame_descriptor("ops")
+        for spell_id in spell_ids:
+            assert (spellbook.id, spell_id) in descriptor.spell_records_by_key
+    finally:
+        conduit.cleanup()
+
+    descriptor = Nexus()._get_required_frame_descriptor("ops")
+    for spell_id in spell_ids:
+        assert (spellbook.id, spell_id) not in descriptor.spell_records_by_key
+    Nexus._reset_singleton_for_tests()
+    spellbook.cleanup()
 
 
 def test_component_spellbook_cleanup_unregisters_lineages() -> None:

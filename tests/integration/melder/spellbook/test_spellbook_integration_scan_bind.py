@@ -5,6 +5,7 @@ import importlib
 import pytest
 
 from melder.aether.aether import Aether
+from melder.aether.nexus.nexus import Nexus
 from melder.aether.conduit.conduit import Conduit
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook import scan_bind_module_bad_metadata
@@ -478,3 +479,39 @@ def test_conduit_scan_after_conjure_registers_in_aether() -> None:
         assert found_id == spell_ids[1]
     finally:
         conduit.cleanup()
+
+
+def test_scan_bind_integration_post_conjure_scan_updates_passive_nexus_records() -> None:
+    """
+    Purpose:
+        Validate post-conjure scan publishes and later removes passive Nexus spell records.
+    Contract:
+        - A Rift-enabled Spellbook publishes one passive Nexus spell record per
+          scanned spell after conjure.
+        - conduit cleanup removes the scanned spell records from passive Nexus.
+    Returns:
+        None.
+    """
+    Nexus._reset_singleton_for_tests()
+    Nexus(aether=Aether())
+    spellbook = _make_spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("rift_enabled", True)
+    frame_name = spellbook._aetheric_frame
+
+    conduit = spellbook.conjure(name="scan_root_nexus")
+    spell_ids = []
+    try:
+        with spellbook.binding_transaction():
+            spell_ids = spellbook.scan(scan_bind_module_core)
+
+        descriptor = Nexus()._get_required_frame_descriptor(frame_name)
+        for spell_id in spell_ids:
+            assert (spellbook.id, spell_id) in descriptor.spell_records_by_key
+    finally:
+        conduit.cleanup()
+
+    descriptor = Nexus()._get_required_frame_descriptor(frame_name)
+    for spell_id in spell_ids:
+        assert (spellbook.id, spell_id) not in descriptor.spell_records_by_key
+    Nexus._reset_singleton_for_tests()

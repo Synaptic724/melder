@@ -192,3 +192,64 @@ def test_spellbook_public_api_inspect_spell_returns_none_when_unregistered() -> 
     """
     spellbook = Spellbook()
     assert spellbook.inspect_spell(BasicConfig) is None
+
+
+def test_spellbook_public_api_describe_spells_returns_detached_sorted_runtime_dump() -> None:
+    """
+    Purpose:
+        Validate describe_spells_in_spellbook through the public runtime surface.
+    Contract:
+        - Returned entries are sorted deterministically by spell_name, binding_name, spell_id.
+        - owner_conduit_id reflects the live conjured conduit for post-conjure binds.
+        - Mutating one returned payload does not affect later calls.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If ordering, ownership, or detachment is incorrect.
+    """
+    spellbook = Spellbook()
+    config = spellbook.get_configuration()
+    config.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    conduit = spellbook.conjure(name="root")
+    try:
+        with spellbook.binding_transaction():
+            spellbook.bind(
+                spell=BasicService,
+                existence=Existence.unique,
+                permissions="create",
+            )
+            spellbook.bind(
+                spell=BasicConfig,
+                existence=Existence.unique,
+                permissions="create",
+                spellframe=BasicConfig,
+                binding_name="secondary",
+            )
+
+        descriptions = spellbook.describe_spells_in_spellbook()
+        sort_view = [
+            (entry["spell_name"], entry["binding_name"], entry["spell_id"])
+            for entry in descriptions
+        ]
+
+        assert sort_view == sorted(sort_view)
+        assert [entry["owner_conduit_id"] for entry in descriptions] == [
+            conduit.id,
+            conduit.id,
+        ]
+        by_name = {entry["spell_name"]: entry for entry in descriptions}
+        assert by_name["BasicService"]["binding_name"] == "__default__"
+        assert by_name["BasicService"]["spellframe"] is None
+        assert by_name["BasicConfig"]["binding_name"] == "secondary"
+        assert by_name["BasicConfig"]["spellframe"] == "BasicConfig"
+
+        descriptions[0]["spell_name"] = "mutated"
+        descriptions.append({"spell_name": "junk"})
+
+        fresh = spellbook.describe_spells_in_spellbook()
+        assert len(fresh) == 2
+        fresh_names = {entry["spell_name"] for entry in fresh}
+        assert fresh_names == {"BasicService", "BasicConfig"}
+    finally:
+        conduit.cleanup()

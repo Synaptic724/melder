@@ -99,3 +99,41 @@ def test_integration_spellbook_conjure_populates_passive_nexus_records() -> None
         assert ("{0}".format(spellbook.id), spell_id) in descriptor.spell_records_by_key
     finally:
         conduit.cleanup()
+
+
+def test_integration_post_conjure_bind_updates_and_removes_passive_nexus_spell_record() -> None:
+    """
+    Purpose:
+        Verify post-conjure binds publish incremental spell records into passive
+        Nexus and cleanup removes them again.
+    Contract:
+        - Late binds on a Rift-enabled frame publish a new spell record without
+          requiring Nexus.enable().
+        - Conduit cleanup removes the late-bound spell record from the passive
+          descriptor store.
+    Returns:
+        None.
+    """
+    configuration = _make_rift_publishable_configuration(aether_frame="ops")
+    spellbook = Spellbook(aetheric_frame="ops", configuration=configuration)
+
+    conduit = spellbook.conjure(name="root")
+    late_spell_id = None
+    try:
+        with spellbook.binding_transaction():
+            late_spell_id = spellbook.bind(
+                spell=BasicService,
+                existence=Existence.unique,
+                permissions="create",
+                binding_name="late",
+            )
+
+        nexus = Nexus()
+        descriptor = nexus._get_required_frame_descriptor("ops")
+        assert (spellbook.id, late_spell_id) in descriptor.spell_records_by_key
+    finally:
+        conduit.cleanup()
+
+    nexus = Nexus()
+    descriptor = nexus._get_required_frame_descriptor("ops")
+    assert (spellbook.id, late_spell_id) not in descriptor.spell_records_by_key
