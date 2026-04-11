@@ -193,6 +193,32 @@ def test_nexus_is_singleton() -> None:
     assert first is second
 
 
+def test_nexus_cold_start_requires_aether_and_does_not_publish_singleton() -> None:
+    """
+    Verify a cold Nexus bootstrap fails without `Aether` and leaves no
+    half-published singleton behind.
+
+    Returns:
+        None.
+    """
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+
+    with pytest.raises(ValueError, match="Aether must be provided to initialize Nexus."):
+        Nexus()
+
+    assert Nexus._instance is None
+    assert Nexus._initialized is False
+
+    aether = Aether()
+    nexus = Nexus()
+
+    assert aether._nexus is nexus
+    assert Nexus._instance is nexus
+    assert Nexus._initialized is True
+
+
 def test_nexus_uses_registered_channel_logger_provider() -> None:
     """
     Verify Nexus resolves its default logger through the hosted provider.

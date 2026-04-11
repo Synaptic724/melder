@@ -1,4 +1,5 @@
 import pytest
+import threading
 
 from melder.aether.nexus.rift.frame_link.frame_link_contract import (
     FrameLinkContract,
@@ -45,6 +46,42 @@ def test_frame_link_contract_rejects_default_frame_outside_assignment() -> None:
             rift_id="rift-1",
             assigned_frame_names=("ops",),
             default_frame_name="finance",
+        )
+
+    with pytest.raises(ValueError, match="default_frame_name cannot be empty"):
+        FrameLinkContract(
+            rift_id="rift-1",
+            assigned_frame_names=("ops",),
+            default_frame_name="",
+        )
+
+
+def test_frame_link_contract_rejects_invalid_selected_contract_mapping_inputs() -> None:
+    """
+    Verify selected-contract mapping validation rejects bad shapes and values.
+
+    Returns:
+        None.
+    """
+    with pytest.raises(TypeError, match="must be a dict when provided"):
+        FrameLinkContract(
+            rift_id="rift-1",
+            assigned_frame_names=("ops",),
+            selected_contract_names_by_frame_name=[],
+        )
+
+    with pytest.raises(ValueError, match="must be present in assigned_frame_names"):
+        FrameLinkContract(
+            rift_id="rift-1",
+            assigned_frame_names=("ops",),
+            selected_contract_names_by_frame_name={"finance": "default"},
+        )
+
+    with pytest.raises(ValueError, match="must be non-empty strings"):
+        FrameLinkContract(
+            rift_id="rift-1",
+            assigned_frame_names=("ops",),
+            selected_contract_names_by_frame_name={"ops": ""},
         )
 
 
@@ -102,6 +139,9 @@ def test_frame_link_contract_register_frame_can_seed_and_replace_default() -> No
     assert contract.get_selected_contract_name("ops") == "default"
     assert contract.get_selected_contract_name("finance") == "ops_contract"
 
+    with pytest.raises(ValueError, match="contract_name cannot be empty"):
+        contract.register_frame("audit", contract_name="")
+
 
 def test_frame_link_contract_remove_frame_updates_default_and_ignores_missing() -> None:
     """
@@ -139,6 +179,21 @@ def test_frame_link_contract_can_update_selected_contract_name_for_assigned_fram
     contract.set_selected_contract_name("ops", "ops_contract")
 
     assert contract.get_selected_contract_name("ops") == "ops_contract"
+
+    with pytest.raises(ValueError, match="frame_name cannot be empty"):
+        contract.set_selected_contract_name("", "ops_contract")
+
+    with pytest.raises(ValueError, match="frame_name cannot be empty"):
+        contract.get_selected_contract_name("")
+
+    with pytest.raises(KeyError, match="not assigned on this Rift contract"):
+        contract.get_selected_contract_name("finance")
+
+    with pytest.raises(ValueError, match="contract_name cannot be empty"):
+        contract.set_selected_contract_name("ops", "")
+
+    with pytest.raises(KeyError, match="not assigned on this Rift contract"):
+        contract.set_selected_contract_name("finance", "ops_contract")
 
 
 def test_frame_link_contract_describe_and_clone_include_selected_contract_names() -> None:
@@ -250,3 +305,132 @@ def test_frame_link_contract_cleanup_clears_owned_state() -> None:
     assert contract._assigned_frame_names is None
     assert contract._default_frame_name is None
     assert contract._metadata is None
+
+
+def test_frame_link_contract_cleanup_rechecks_cleaned_inside_lock() -> None:
+    """
+    Verify cleanup returns early when another thread already cleaned the contract.
+
+    Returns:
+        None.
+    """
+
+    class _CoordinatedLock:
+        def __init__(self) -> None:
+            self._entered_first = threading.Event()
+            self._second_attempted = threading.Event()
+            self._lock = threading.RLock()
+
+        def __enter__(self):
+            if self._entered_first.is_set():
+                self._second_attempted.set()
+            self._lock.acquire()
+            if not self._entered_first.is_set():
+                self._entered_first.set()
+                assert self._second_attempted.wait(timeout=1.0)
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self._lock.release()
+
+    contract = FrameLinkContract(
+        rift_id="rift-1",
+        assigned_frame_names=("ops",),
+        default_frame_name="ops",
+    )
+    coordinated_lock = _CoordinatedLock()
+    contract._lock = coordinated_lock
+
+    thread_results = []
+
+    def _run_cleanup() -> None:
+        contract.cleanup()
+        thread_results.append(True)
+
+    first = threading.Thread(target=_run_cleanup)
+    second = threading.Thread(target=_run_cleanup)
+    first.start()
+    coordinated_lock._entered_first.wait(timeout=1.0)
+    second.start()
+    first.join(timeout=1.0)
+    second.join(timeout=1.0)
+
+    assert thread_results == [True, True]
+    assert contract.cleaned is True
+    assert contract._lock is None
+
+
+def test_frame_link_contract_exposes_identity_and_selected_contract_snapshot() -> None:
+    """
+    Verify contract identity and selected-contract snapshots are detached.
+
+    Returns:
+        None.
+    """
+    contract = FrameLinkContract(
+        rift_id="rift-1",
+        assigned_frame_names=("ops",),
+        default_frame_name="ops",
+        selected_contract_names_by_frame_name={"ops": "ops_contract"},
+    )
+
+    selected_snapshot = contract.selected_contract_names_by_frame_name
+    selected_snapshot["ops"] = "mutated"
+
+    assert contract.contract_id is not None
+    assert contract.rift_id == "rift-1"
+    assert contract.selected_contract_names_by_frame_name == {"ops": "ops_contract"}
+
+
+def test_frame_link_contract_cleanup_is_idempotent_inside_lock() -> None:
+    """
+    Verify cleanup returns early when another thread already cleaned the contract.
+
+    Returns:
+        None.
+    """
+    import threading
+
+    class _CoordinatedLock:
+        def __init__(self) -> None:
+            self._entered_first = threading.Event()
+            self._second_attempted = threading.Event()
+            self._lock = threading.RLock()
+
+        def __enter__(self):
+            if self._entered_first.is_set():
+                self._second_attempted.set()
+            self._lock.acquire()
+            if not self._entered_first.is_set():
+                self._entered_first.set()
+                assert self._second_attempted.wait(timeout=1.0)
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self._lock.release()
+
+    contract = FrameLinkContract(
+        rift_id="rift-1",
+        assigned_frame_names=("ops",),
+        default_frame_name="ops",
+    )
+    coordinated_lock = _CoordinatedLock()
+    contract._lock = coordinated_lock
+
+    thread_results = []
+
+    def _run_cleanup() -> None:
+        contract.cleanup()
+        thread_results.append(True)
+
+    first = threading.Thread(target=_run_cleanup)
+    second = threading.Thread(target=_run_cleanup)
+    first.start()
+    coordinated_lock._entered_first.wait(timeout=1.0)
+    second.start()
+    first.join(timeout=1.0)
+    second.join(timeout=1.0)
+
+    assert thread_results == [True, True]
+    assert contract.cleaned is True
+    assert contract._lock is None

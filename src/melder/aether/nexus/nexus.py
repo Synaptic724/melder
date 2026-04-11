@@ -169,33 +169,44 @@ class Nexus(Cleanable, INexus):
             return
 
         if aether is None:
+            with Nexus._singleton_lock:
+                if Nexus._instance is self and not Nexus._initialized:
+                    Nexus._instance = None
+                    Nexus._initialized = False
             raise ValueError("Aether must be provided to initialize Nexus.")
-        super().__init__()
-        self._id: str = IDBuilder.create_id()
-        self._lock: threading.RLock = threading.RLock()
-        self._logger: ISafeLogger = InitHelpers.resolve_safe_logger(None)
-        self._aether: IAether = aether
-        self._configuration: Optional[INexusConfiguration] = configuration
-        self._configured: bool = configuration is not None
-        self._enabled: bool = False
+        try:
+            super().__init__()
+            self._id: str = IDBuilder.create_id()
+            self._lock: threading.RLock = threading.RLock()
+            self._logger: ISafeLogger = InitHelpers.resolve_safe_logger(None)
+            self._aether: IAether = aether
+            self._configuration: Optional[INexusConfiguration] = configuration
+            self._configured: bool = configuration is not None
+            self._enabled: bool = False
 
-        self._rifts_by_id: Dict[str, IRift] = {}
-        self._rift_ids_by_name: Dict[str, str] = {}
-        self._next_default_rift_number: int = 1
-        self._next_indexed_nexus_frame_number: int = 1
-        self._rift_profiles_by_name: Dict[str, IRiftConfiguration] = {}
-        self._frame_acl_manager: Optional[FrameACLManager] = None
-        self._frame_descriptor_manager: Optional[FrameDescriptorManager] = None
-        self._frame_acl_manager: FrameACLManager = FrameACLManager()
-        self._projected_frame_viewers_by_cache_key: Dict[
-            Tuple[Tuple[str, ...], Tuple[str, ...], str],
-            FrameViewer,
-        ] = {}
-        self._target_frame_ref_counts: Dict[str, int] = {}
+            self._rifts_by_id: Dict[str, IRift] = {}
+            self._rift_ids_by_name: Dict[str, str] = {}
+            self._next_default_rift_number: int = 1
+            self._next_indexed_nexus_frame_number: int = 1
+            self._rift_profiles_by_name: Dict[str, IRiftConfiguration] = {}
+            self._frame_acl_manager: Optional[FrameACLManager] = None
+            self._frame_descriptor_manager: Optional[FrameDescriptorManager] = None
+            self._frame_acl_manager = FrameACLManager()
+            self._projected_frame_viewers_by_cache_key: Dict[
+                Tuple[Tuple[str, ...], Tuple[str, ...], str],
+                FrameViewer,
+            ] = {}
+            self._target_frame_ref_counts: Dict[str, int] = {}
 
-        self._frame_descriptor_manager: FrameDescriptorManager = FrameDescriptorManager(aether)
-        self._initialize_logging(logger)
-        Nexus._initialized = True
+            self._frame_descriptor_manager = FrameDescriptorManager(aether)
+            self._initialize_logging(logger)
+            Nexus._initialized = True
+        except Exception:
+            with Nexus._singleton_lock:
+                if Nexus._instance is self:
+                    Nexus._instance = None
+                Nexus._initialized = False
+            raise
 
     def cleanup(self) -> None:
         """

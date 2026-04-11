@@ -9,27 +9,29 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class ConduitCloud(Cleanable, IConduitCloud):
     """
-    An abstract factory for named conduits, active only in "dynamic" mode.
+    Frame-scoped registry of named conduits.
 
-    The ConduitCloud provides a central location to retrieve conduits by a
-    human-readable name, rather than by contract or instance. This behaves
-    like a service locator pattern, intended for top-level access in
-    highly dynamic systems where contracts are not always feasible.
+    `ConduitCloud` is the direct-name lookup surface used in dynamic runtime
+    posture when callers need to resolve a conduit by a human-readable name
+    instead of by contract or direct object reference.
 
-    This object is thread-safe.
-
-    Attributes:
-        _lock (Lock): A lock for registry modifications.
-        _name (str): The name of the frame this cloud belongs to.
-        _registry (Dict): A map of `conduit_name` to `IConduit` instance.
+    Contract:
+    - One cloud belongs to one frame name.
+    - Conduit names must be unique within the cloud.
+    - The cloud does not own conduit lifecycle; it only owns the registry
+      mapping.
+    - Thread-safe access is serialized with the instance `RLock`.
     """
     __melder_internal__ = _mrg.sentinel
     def __init__(self, name: str):
         """
-        Initializes the ConduitCloud.
+        Initialize the frame-scoped conduit-name registry.
 
         Args:
             name (str): The name of the AethericFrame this cloud serves.
+        Contract:
+            - Starts with an empty conduit registry.
+            - Stores the owning frame name for later diagnostics/identity.
         """
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
@@ -39,9 +41,12 @@ class ConduitCloud(Cleanable, IConduitCloud):
 
     def cleanup(self):
         """
-        Cleans up the ConduitCloud, clearing its registry.
+        Clear the conduit registry and finalize the cloud.
 
-        This operation is idempotent.
+        Contract:
+            - Idempotent and lock-guarded.
+            - Clears only the registry; it does not clean the conduit objects
+              themselves.
         """
         if self._cleaned:
             return
@@ -57,14 +62,14 @@ class ConduitCloud(Cleanable, IConduitCloud):
     #region Context Manager
     def __enter__(self):
         """
-        Enters the context manager for Aether.
+        Acquire the registry lock and return this cloud.
         """
         self._lock.acquire()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         """
-        Exits the context manager for Aether.
+        Release the registry lock acquired by `__enter__`.
         """
         self._lock.release()
 
@@ -73,10 +78,15 @@ class ConduitCloud(Cleanable, IConduitCloud):
 
     def get_conduit(self, name: str) -> IConduit:
         """
-        Retrieves a conduit by its registered name.
+        Return a registered conduit by name.
 
         Args:
             name (str): The unique name of the conduit.
+
+        Contract:
+            - Returns the live registered conduit object.
+            - Raises instead of silently returning None when the name is
+              missing.
 
         Returns:
             IConduit: The conduit instance.
@@ -92,10 +102,15 @@ class ConduitCloud(Cleanable, IConduitCloud):
 
     def _register_conduit(self, conduit: IConduit):
         """
-        Registers a named conduit into the cloud. (Internal use)
+        Register one named conduit in the cloud.
 
         Args:
             conduit (IConduit): The conduit instance to register.
+
+        Contract:
+            - Conduit names must be present and unique.
+            - The cloud stores the live conduit object without taking ownership
+              of its lifecycle.
 
         Raises:
             ValueError: If the conduit's name is None or already exists
@@ -111,10 +126,14 @@ class ConduitCloud(Cleanable, IConduitCloud):
 
     def _unregister_conduit(self, conduit: IConduit):
         """
-        Removes a named conduit from the cloud. (Internal use)
+        Remove one named conduit from the cloud.
 
         Args:
             conduit (IConduit): The conduit instance to unregister.
+
+        Contract:
+            - Requires the conduit name to be present.
+            - Raises when the named conduit is not currently registered.
 
         Raises:
             ValueError: If the conduit has no name or is not registered.

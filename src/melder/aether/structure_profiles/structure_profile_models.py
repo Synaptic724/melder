@@ -47,6 +47,11 @@ class StructureHint(Cleanable):
             confidence: Confidence score in [0.0, 1.0].
             provenance: Optional provenance payload describing source/method.
             scope: Optional scope tag (frame/conduit/spellbook/spell).
+        Contract:
+            - Stores only derived metadata, never truth data.
+            - Copies provenance mappings so callers cannot retain live aliases.
+        Raises:
+            ValueError: If `confidence` is outside `[0.0, 1.0]`.
         """
         super().__init__()
         self._id: str = IDBuilder.create_id()
@@ -61,6 +66,9 @@ class StructureHint(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently clear hint fields.
+
+        Contract:
+            Safe to call more than once.
         """
         if self._cleaned:
             return
@@ -131,6 +139,11 @@ class SpellStructureRecord(Cleanable):
             sockets: List of socket dictionaries from SpellLocalTopology.
             spellmap_defaults: Optional list of SpellMap default payloads.
             derived_hints: Optional list of derived StructureHint entries.
+        Contract:
+            - Copies all mutable list/dict inputs so the record becomes a
+              stable snapshot.
+            - Treats `dependencies` and `sockets` as truth data and
+              `derived_hints` as derived observations.
         """
         super().__init__()
         self._id: str = IDBuilder.create_id()
@@ -149,6 +162,11 @@ class SpellStructureRecord(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently clear record fields and nested hints.
+
+        Contract:
+            - Best-effort cleans nested hints first.
+            - Clears copied dependency/socket/default collections before
+              dropping references.
         """
         if self._cleaned:
             return
@@ -225,6 +243,9 @@ class ConduitStructureProfile(Cleanable):
             aetheric_frame: Frame name the conduit belongs to.
             spell_records: Mapping of spell_id to SpellStructureRecord.
             derived_hints: Optional list of derived StructureHint entries.
+        Contract:
+            - Copies the spell-record mapping so the profile is snapshot-shaped.
+            - Stores derived hints separately from truth data.
         """
         super().__init__()
         self._id: str = IDBuilder.create_id()
@@ -239,6 +260,10 @@ class ConduitStructureProfile(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently clear conduit profile fields and nested records.
+
+        Contract:
+            - Best-effort cleans nested spell records and hints first.
+            - Clears copied record mappings before dropping references.
         """
         if self._cleaned:
             return

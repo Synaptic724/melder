@@ -11,6 +11,12 @@ from melder.utilities.general_base.cleanable import Cleanable
 
 
 class _Specificity(IntEnum):
+    """
+    Precedence tiers for spell-override target specs.
+
+    Contract:
+        Higher values win when multiple override specs target the same socket.
+    """
     __melder_internal__ = _mrg.sentinel
     PATH = 3
     UNIQUE = 2
@@ -31,6 +37,17 @@ class SpellOverrider(Cleanable):
     __slots__ = Cleanable.__slots__ + ["_blueprint", "_engine"]
 
     def __init__(self, blueprint: RootResolutionBlueprint) -> None:
+        """
+        Initialize the spell-override resolver for one root blueprint.
+
+        Args:
+            blueprint: Root blueprint whose DAG/index provide the override
+                targeting surface.
+        Contract:
+            - Requires a prebuilt root blueprint.
+            - Builds one targeting engine over the blueprint's DAG index.
+            - Does not mutate the source blueprint during construction.
+        """
         super().__init__()
         if blueprint is None:
             raise ValueError("blueprint must not be None.")
@@ -39,6 +56,15 @@ class SpellOverrider(Cleanable):
         self._engine: DagTargetingEngine = DagTargetingEngine(blueprint.dag_index)
 
     def cleanup(self) -> None:
+        """
+        Idempotently clear the overrider and its targeting engine.
+
+        Contract:
+            - Safe to call more than once.
+            - Best-effort cleans the owned targeting engine.
+            - Drops only overrider-owned references; it does not clean the
+              source blueprint.
+        """
         if self._cleaned:
             return
         self._cleaned = True
@@ -53,6 +79,14 @@ class SpellOverrider(Cleanable):
     def apply(self, spell_override: Dict[str, Any]) -> Dict[SocketRef, Any]:
         """
         Compute the final socket->value mapping with specificity precedence.
+
+        Contract:
+            - Returns an empty mapping when no overrides are supplied.
+            - Resolves raw target specs into concrete socket references using
+              the shared targeting semantics.
+            - Higher-specificity overrides win over lower-specificity ones.
+            - Equal-specificity conflicting overrides raise instead of being
+              resolved arbitrarily.
 
         Raises:
             RuntimeError on conflicting overrides or invalid targets.
@@ -88,6 +122,12 @@ class SpellOverrider(Cleanable):
 
     @staticmethod
     def _specificity_for_spec(spec: TargetSpec) -> _Specificity:
+        """
+        Map one parsed target spec to its override-specificity tier.
+
+        Contract:
+            PATH > UNIQUE > BROADCAST.
+        """
         if spec.kind is TargetSpecKind.PATH:
             return _Specificity.PATH
         if spec.kind is TargetSpecKind.UNIQUE:

@@ -32,6 +32,17 @@ class GraphMutator(Cleanable):
     __slots__ = Cleanable.__slots__ + ["_blueprint", "_engine"]
 
     def __init__(self, blueprint: RootResolutionBlueprint) -> None:
+        """
+        Initialize the mutation-override graph mutator.
+
+        Args:
+            blueprint: Root blueprint whose DAG/index provide the mutation
+                socket targeting surface.
+        Contract:
+            - Requires a prebuilt root blueprint.
+            - Builds one targeting engine over the blueprint's DAG index.
+            - Does not mutate the source blueprint during construction.
+        """
         super().__init__()
         if blueprint is None:
             raise ValueError("blueprint must not be None.")
@@ -40,6 +51,15 @@ class GraphMutator(Cleanable):
         self._engine: DagTargetingEngine = DagTargetingEngine(blueprint.dag_index)
 
     def cleanup(self) -> None:
+        """
+        Idempotently clear the mutator and its targeting engine.
+
+        Contract:
+            - Safe to call more than once.
+            - Best-effort cleans the owned targeting engine.
+            - Drops only mutator-owned references; it does not clean the source
+              blueprint.
+        """
         if self._cleaned:
             return
         self._cleaned = True
@@ -57,6 +77,16 @@ class GraphMutator(Cleanable):
 
         Mutation config (MVP):
             { override_key: new_provider_spell_id }
+
+        Contract:
+            - Returns the original blueprint unchanged when no overrides are
+              supplied.
+            - Rewires only mutation-contract sockets that match the override
+              targets.
+            - Preserves root identity and rebuilds the cloned DAG/index around
+              the new edges.
+            - Raises on malformed override payloads rather than silently
+              ignoring them.
         """
         self.check_cleaned()
         if not mutation_override:

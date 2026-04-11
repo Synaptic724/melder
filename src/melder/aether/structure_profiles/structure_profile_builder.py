@@ -46,6 +46,10 @@ class StructureProfileBuilder(Cleanable):
 
         Args:
             max_related: Default maximum related-spell count for tooling queries.
+        Contract:
+            - Stores only lightweight builder state.
+            - `max_related` becomes the default cap used by tooling queries
+              such as `find_related_spells(...)`.
         """
         super().__init__()
         self._id: str = IDBuilder.create_id()
@@ -186,6 +190,11 @@ class StructureProfileBuilder(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently clear builder state.
+
+        Contract:
+            - Safe to call more than once.
+            - Clears only builder-local state; generated profiles remain owned
+              by their callers.
         """
         if self._cleaned:
             return
@@ -198,6 +207,11 @@ class StructureProfileBuilder(Cleanable):
     ) -> Dict[str, SpellSystemState]:
         """
         Build a lineage-id index for SpellSystemState entries.
+
+        Contract:
+            - Returns an empty index when no spell-system-state registry is
+              available.
+            - Keys the index by `SpellSystemState.spell_index_id`.
         """
         if spell_system_states is None:
             return {}
@@ -206,6 +220,10 @@ class StructureProfileBuilder(Cleanable):
     def _extract_dependencies(self, spell_state: Optional[SpellSystemState]) -> Dict[str, List[str]]:
         """
         Extract dependency lists from a SpellSystemState.
+
+        Contract:
+            - Returns empty dependency lists when no spell state is available.
+            - Produces detached list copies for tooling consumption.
         """
         if spell_state is None:
             return {"direct_dependencies": [], "direct_dependents": []}
@@ -217,6 +235,11 @@ class StructureProfileBuilder(Cleanable):
     def _extract_sockets(self, topology: Optional[SpellLocalTopology]) -> List[Dict[str, Any]]:
         """
         Extract socket metadata from a SpellLocalTopology.
+
+        Contract:
+            - Returns an empty list when no topology is available.
+            - Converts socket descriptors into plain dictionaries suitable for
+              serialization/tooling.
         """
         if topology is None:
             return []
@@ -246,6 +269,11 @@ class StructureProfileBuilder(Cleanable):
     ) -> List[StructureHint]:
         """
         Derive basic hints about a spell's structure.
+
+        Contract:
+            - Produces only derived hints; it does not alter truth data.
+            - Hint confidence/provenance must explain that these are heuristic
+              observations, not canonical runtime facts.
         """
         hints: List[StructureHint] = []
         if topology is not None:
@@ -307,6 +335,9 @@ class StructureProfileTooling(Cleanable):
 
         Args:
             frame_profile: FrameStructureProfile snapshot to query.
+        Contract:
+            - Stores one frame-profile snapshot for read-only tooling queries.
+            - Does not take ownership of the frame profile lifecycle.
         """
         super().__init__()
         self._id: str = IDBuilder.create_id()
@@ -315,6 +346,10 @@ class StructureProfileTooling(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently clear tooling references.
+
+        Contract:
+            - Safe to call more than once.
+            - Drops only the tooling-held frame profile reference.
         """
         if self._cleaned:
             return
@@ -326,6 +361,11 @@ class StructureProfileTooling(Cleanable):
         Describe a spell structure using the frame snapshot.
 
         Accepts a spell id or lineage id.
+
+        Contract:
+            - Returns None when the spell/lineage cannot be resolved in the
+              snapshot.
+            - Produces a detached plain-data structure for tooling/UI use.
         """
         self.check_cleaned()
         lineage_index = self._lineage_index()
@@ -364,6 +404,11 @@ class StructureProfileTooling(Cleanable):
         Find related spells based on shared dependencies.
 
         Accepts a spell id or lineage id.
+
+        Contract:
+            - Scores relatedness by overlap in direct dependency ids.
+            - Excludes the target spell/lineage itself.
+            - Applies `k` or the builder default as the result cap.
         """
         self.check_cleaned()
         lineage_index = self._lineage_index()
@@ -389,6 +434,12 @@ class StructureProfileTooling(Cleanable):
         Explain a dependency path from root to target using direct dependencies.
 
         Accepts spell ids or lineage ids.
+
+        Contract:
+            - Resolves both spell ids and lineage ids through the frame
+              snapshot.
+            - Returns None when no path exists.
+            - Returns spell ids in path order when a path is found.
         """
         self.check_cleaned()
         lineage_index = self._lineage_index()
@@ -408,6 +459,10 @@ class StructureProfileTooling(Cleanable):
     def list_subsystems(self) -> List[Dict[str, Any]]:
         """
         List subsystem clusters captured in the frame profile.
+
+        Contract:
+            Returns detached cluster dictionaries so callers cannot mutate the
+            underlying frame profile.
         """
         self.check_cleaned()
         clusters: List[Dict[str, Any]] = []
@@ -430,6 +485,12 @@ class StructureProfileTooling(Cleanable):
         Recommend candidate spells for next inspection.
 
         Accepts a spell id or lineage id.
+
+        Contract:
+            - Uses both direct dependencies and dependents as candidate
+              neighbors.
+            - Returns spell ids where possible, falling back to lineage ids
+              when no spell id can be resolved.
         """
         self.check_cleaned()
         lineage_index = self._lineage_index()
@@ -447,6 +508,10 @@ class StructureProfileTooling(Cleanable):
     def _build_dependency_graph(self) -> Dict[str, List[str]]:
         """
         Build a dependency adjacency list from the frame snapshot.
+
+        Contract:
+            Keys the graph by lineage id and uses direct dependency lineage ids
+            as adjacency values.
         """
         graph: Dict[str, List[str]] = {}
         for record in self._frame_profile.spell_records.values():
@@ -463,6 +528,10 @@ class StructureProfileTooling(Cleanable):
     ) -> Optional[List[str]]:
         """
         Find the shortest dependency path using BFS.
+
+        Contract:
+            - Returns None when no path exists.
+            - Returns the first shortest path found by BFS.
         """
         visited = set()
         queue = deque([(root_id, [root_id])])
@@ -481,6 +550,10 @@ class StructureProfileTooling(Cleanable):
     def _hint_to_dict(self, hint: StructureHint) -> Dict[str, Any]:
         """
         Convert a StructureHint into a plain dictionary.
+
+        Contract:
+            Produces a detached dictionary representation suitable for
+            serialization/UI use.
         """
         provenance = (
             dict(hint.provenance)
@@ -498,6 +571,10 @@ class StructureProfileTooling(Cleanable):
     def _lineage_index(self) -> Dict[str, SpellStructureRecord]:
         """
         Build a lineage-id index from the frame snapshot.
+
+        Contract:
+            First record wins when duplicate lineage ids appear in the
+            snapshot.
         """
         index: Dict[str, SpellStructureRecord] = {}
         for record in self._frame_profile.spell_records.values():
@@ -509,6 +586,9 @@ class StructureProfileTooling(Cleanable):
     def _spell_index(self) -> Dict[str, SpellStructureRecord]:
         """
         Build a spell-id index from the frame snapshot.
+
+        Contract:
+            Returns a detached mapping keyed by spell id.
         """
         return dict(self._frame_profile.spell_records)
 
@@ -520,6 +600,10 @@ class StructureProfileTooling(Cleanable):
     ) -> Optional[SpellStructureRecord]:
         """
         Resolve a spell or lineage id to a SpellStructureRecord.
+
+        Contract:
+            Prefers spell-id lookup first, then falls back to lineage-id
+            lookup.
         """
         if record_id in spell_index:
             return spell_index[record_id]
@@ -532,6 +616,9 @@ class StructureProfileTooling(Cleanable):
     ) -> str:
         """
         Resolve a lineage id to a spell id when available.
+
+        Contract:
+            Falls back to the lineage id when no spell record is present.
         """
         record = lineage_index.get(lineage_id)
         return record.spell_id if record is not None else lineage_id
@@ -539,6 +626,10 @@ class StructureProfileTooling(Cleanable):
     def _default_related_limit(self) -> int:
         """
         Provide the default related-spell limit when k is omitted.
+
+        Contract:
+            Returns the positive profile-local default when available, otherwise
+            falls back to 10.
         """
         max_related = self._frame_profile.max_related
         return max_related if max_related is not None else 5

@@ -2075,6 +2075,93 @@ def test_frame_viewer_clone_detaches_owned_surfaces_and_metadata() -> None:
     )
 
 
+def test_frame_viewer_constructor_rejects_invalid_registry_and_default_inputs() -> None:
+    descriptor = _build_descriptor("ops")
+    configuration = FrameACLConfiguration.create_default("ops")
+    surface = _build_surface("ops", configuration)
+
+    with pytest.raises(TypeError, match="profile_builder must be a FrameViewerProfileBuilder"):
+        FrameViewer(profile_builder=object())
+
+    with pytest.raises(ValueError, match="maps must have matching keys"):
+        FrameViewer(
+            frame_descriptors_by_name={"ops": descriptor},
+            frame_acl_configurations_by_frame_name={"ops": configuration},
+            compiled_access_surfaces_by_frame_name={},
+        )
+
+    with pytest.raises(ValueError, match="default_view_frame_name cannot be empty"):
+        FrameViewer(
+            frame_descriptors_by_name={"ops": descriptor},
+            frame_acl_configurations_by_frame_name={"ops": configuration},
+            compiled_access_surfaces_by_frame_name={"ops": surface},
+            default_view_frame_name="",
+        )
+
+    with pytest.raises(ValueError, match="default_view_frame_name must be present"):
+        FrameViewer(
+            frame_descriptors_by_name={"ops": descriptor},
+            frame_acl_configurations_by_frame_name={"ops": configuration},
+            compiled_access_surfaces_by_frame_name={"ops": surface},
+            default_view_frame_name="finance",
+        )
+
+    inspection_profile = FrameViewerProfile(
+        "inspection",
+        default_grouping="frame",
+        default_detail_level="detailed",
+        enabled_helpers=("list_frames",),
+    )
+
+    with pytest.raises(ValueError, match="default_profile_name cannot be empty"):
+        FrameViewer(
+            active_profiles_by_name={"inspection": inspection_profile},
+            frame_descriptors_by_name={"ops": descriptor},
+            frame_acl_configurations_by_frame_name={"ops": configuration},
+            compiled_access_surfaces_by_frame_name={"ops": surface},
+            default_profile_name="",
+        )
+
+    with pytest.raises(ValueError, match="default_profile_name must be present"):
+        FrameViewer(
+            active_profiles_by_name={"inspection": inspection_profile},
+            frame_descriptors_by_name={"ops": descriptor},
+            frame_acl_configurations_by_frame_name={"ops": configuration},
+            compiled_access_surfaces_by_frame_name={"ops": surface},
+            default_profile_name="general",
+        )
+
+
+def test_frame_viewer_empty_defaults_and_selected_profile_fallbacks_are_explicit() -> None:
+    empty_viewer = FrameViewer(
+        active_profiles_by_name={},
+        frame_descriptors_by_name={},
+        frame_acl_configurations_by_frame_name={},
+        compiled_access_surfaces_by_frame_name={},
+    )
+
+    assert empty_viewer.default_view_frame_name is None
+    assert empty_viewer.profile_name is None
+    assert empty_viewer.profile_version is None
+    assert empty_viewer.enabled_helpers == tuple()
+    assert empty_viewer.default_grouping is None
+    assert empty_viewer.default_detail_level is None
+    assert empty_viewer.profile is None
+
+    viewer = _build_viewer(("ops",))
+    detached_selection_viewer = FrameViewer(
+        frame_descriptors_by_name=viewer.frame_descriptors_by_name,
+        frame_acl_configurations_by_frame_name=viewer.frame_acl_configurations_by_frame_name,
+        compiled_access_surfaces_by_frame_name=viewer.compiled_access_surfaces_by_frame_name,
+        selected_profile_names_by_frame_name={"ops": None},
+        default_view_frame_name="ops",
+    )
+
+    assert detached_selection_viewer.profile_name == "general"
+    assert detached_selection_viewer.profile is None
+    assert detached_selection_viewer.selected_profile_names_by_frame_name == {}
+
+
 def test_frame_viewer_rejects_invalid_frame_and_profile_inputs() -> None:
     viewer = _build_viewer(("ops",))
 
@@ -2157,3 +2244,31 @@ def test_frame_viewer_profile_binding_rejects_acl_view_profile_requirement_misma
             match="requires ACL view profile 'hybrid:0.0.1', got 'safe:0.0.1'",
     ):
         viewer.set_selected_profile_for_frame("ops", "hybrid_only")
+
+
+def test_frame_viewer_cleanup_is_idempotent_and_rechecks_cleaned_state_under_lock() -> None:
+    class _FlipCleanedOnEnter:
+        def __init__(self, owner: FrameViewer) -> None:
+            self._owner = owner
+
+        def __enter__(self) -> "_FlipCleanedOnEnter":
+            self._owner._cleaned = True
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> bool:
+            return False
+
+    viewer = _build_viewer(("ops",))
+
+    viewer._cleaned = True
+    viewer.cleanup()
+
+    viewer = _build_viewer(("ops",))
+    original_lock = viewer._lock
+    viewer._lock = _FlipCleanedOnEnter(viewer)
+    try:
+        viewer.cleanup()
+    finally:
+        viewer._lock = original_lock
+
+    assert viewer.cleaned is True
