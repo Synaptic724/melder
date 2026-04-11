@@ -94,8 +94,8 @@ class Package(Cleanable, Generic[P, R]):
         self._is_async = inspect.iscoroutinefunction(normalized)
 
         self._func: Callable[..., R] = update_wrapper(lambda *a, **kw: normalized(*a, **kw), normalized)
-        self._args: List = args if args else []
-        self._kwargs: Dict = kwargs if kwargs else {}
+        self._args: List[Any] = list(args) if args else []
+        self._kwargs: Dict[str, Any] = dict(kwargs) if kwargs else {}
         self._signature_cache: SimpleNamespace | None = None
         self._frozen: bool = False
 
