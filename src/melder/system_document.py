@@ -44,6 +44,15 @@ class StaticSystemDocument:
         """
         Initialize one top-level hardcopy system document object.
 
+        Contract:
+            - Validates that the JSON hardcopy contains the markdown payload
+              key `m`.
+            - Stores only the stable document name, original minified JSON, and
+              extracted markdown string.
+            - Accepts `agent_purpose` for forward-compatibility with the
+              packaged document modules, but this first cut does not persist it
+              on the instance because agent-purpose stays class-level here.
+
         Args:
             document_name:
                 Stable runtime document-object name.
@@ -55,6 +64,11 @@ class StaticSystemDocument:
 
         Returns:
             None.
+
+        Raises:
+            ValueError:
+                If the name/json is empty or the JSON payload does not expose
+                string key `m`.
         """
         if not document_name:
             raise ValueError("document_name cannot be empty.")

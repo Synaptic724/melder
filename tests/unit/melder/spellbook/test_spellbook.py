@@ -1491,6 +1491,161 @@ def test_begin_transaction_enforces_dynamic_mode_and_admission_failures(monkeypa
         sb.begin_transaction(spellbook_module.ChangeTransactionType.LINK)
 
 
+def test_end_transaction_guard_and_abort_paths(monkeypatch):
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+
+    with pytest.raises(RuntimeError, match="No active change transaction to end."):
+        sb.end_transaction()
+
+    sb._active_change_request = types.SimpleNamespace(
+        request_id="req-1",
+        request_type=spellbook_module.ChangeTransactionType.LINK,
+    )
+    with pytest.raises(RuntimeError, match="does not match the requested type"):
+        sb.end_transaction(spellbook_module.ChangeTransactionType.BIND)
+
+    abort_calls = []
+    change_control = types.SimpleNamespace(
+        abort_request=lambda request_id: abort_calls.append(request_id),
+        commit_request=lambda request_id: None,
+    )
+    monkeypatch.setattr(
+        spellbook_module.Spellbook,
+        "_aether",
+        types.SimpleNamespace(
+            _get_change_control_manager=lambda frame: change_control,
+        ),
+    )
+
+    sb._active_change_request = types.SimpleNamespace(
+        request_id="req-bind",
+        request_type=spellbook_module.ChangeTransactionType.BIND,
+    )
+    sb._end_binding_transaction = lambda owner_label: (_ for _ in ()).throw(
+        RuntimeError("end bind boom")
+    )
+
+    with pytest.raises(RuntimeError, match="end bind boom"):
+        sb.end_transaction(spellbook_module.ChangeTransactionType.BIND)
+
+    assert abort_calls == ["req-bind"]
+    assert sb._active_change_request is None
+
+
+def test_end_transaction_commit_path_and_context_manager() -> None:
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+    commit_calls = []
+    change_control = types.SimpleNamespace(
+        abort_request=lambda request_id: None,
+        commit_request=lambda request_id: commit_calls.append(request_id),
+    )
+    spellbook_module.Spellbook._aether = types.SimpleNamespace(
+        _get_change_control_manager=lambda frame: change_control,
+    )
+
+    sb._active_change_request = types.SimpleNamespace(
+        request_id="req-link",
+        request_type=spellbook_module.ChangeTransactionType.LINK,
+    )
+    sb.end_transaction(spellbook_module.ChangeTransactionType.LINK)
+
+    assert commit_calls == ["req-link"]
+    assert sb._active_change_request is None
+
+    calls = []
+    sb.begin_transaction = lambda *args, **kwargs: calls.append(("begin", args[0]))
+    sb.end_transaction = lambda transaction_type=None: calls.append(("end", transaction_type))
+
+    with pytest.raises(RuntimeError, match="boom"):
+        with sb.transaction(spellbook_module.ChangeTransactionType.LINK):
+            raise RuntimeError("boom")
+
+    assert calls == [
+        ("begin", spellbook_module.ChangeTransactionType.LINK),
+        ("end", spellbook_module.ChangeTransactionType.LINK),
+    ]
+
+
+def test_binding_transaction_helpers_and_staged_binding_key_updates(monkeypatch):
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+
+    calls = []
+    sb.begin_transaction = lambda transaction_type, **kwargs: calls.append(
+        ("begin", transaction_type)
+    )
+    sb.end_transaction = lambda transaction_type=None: calls.append(
+        ("end", transaction_type)
+    )
+
+    sb.begin_binding_transaction()
+    assert calls == [("begin", spellbook_module.ChangeTransactionType.BIND)]
+
+    sb._active_change_request = types.SimpleNamespace(
+        request_type=spellbook_module.ChangeTransactionType.LINK,
+    )
+    with pytest.raises(RuntimeError, match="not a bind transaction"):
+        sb.end_binding_transaction()
+
+    sb._active_change_request = types.SimpleNamespace(
+        request_type=spellbook_module.ChangeTransactionType.BIND,
+    )
+    sb.end_binding_transaction()
+    assert calls[-1] == ("end", spellbook_module.ChangeTransactionType.BIND)
+
+    sb._binding_transaction_active = False
+    with pytest.raises(RuntimeError, match="Binding transaction is not active"):
+        sb._end_binding_transaction(owner_label="Spellbook")
+
+    dirty_calls = []
+    structural_calls = []
+    sb._binding_transaction_active = True
+    sb._conjured = True
+    sb._pending_binding_frame_keys = {"frame-a"}
+    sb._pending_structural_spells = ["spell-a"]
+    sb._mark_collection_dependents_dirty = lambda frame_keys: dirty_calls.append(frame_keys)
+    sb._run_post_conjure_structural_phases = lambda spells: structural_calls.append(spells)
+
+    sb._end_binding_transaction(owner_label="Spellbook")
+
+    assert dirty_calls == [{"frame-a"}]
+    assert structural_calls == [["spell-a"]]
+    assert sb._binding_transaction_active is False
+
+    sb._binding_transaction_active = False
+    with pytest.raises(RuntimeError, match="requires an active binding transaction"):
+        sb._ensure_binding_transaction_active(action="bind")
+
+    updated = []
+    change_control = types.SimpleNamespace(
+        update_staged_request=lambda request_id, binding_keys=None: updated.append(
+            (request_id, binding_keys)
+        )
+    )
+    spellbook_module.Spellbook._aether = types.SimpleNamespace(
+        _get_change_control_manager=lambda frame: change_control,
+    )
+    sb._active_change_request = types.SimpleNamespace(
+        request_id="req-bind",
+        request_type=spellbook_module.ChangeTransactionType.BIND,
+    )
+    spell_a = types.SimpleNamespace(key=("frame-a", "binding-a"))
+    spell_dup = types.SimpleNamespace(key=("frame-a", "binding-a"))
+    spell_b = types.SimpleNamespace(key=("frame-b", "binding-b"))
+    sb._pending_structural_spells = [spell_a, spell_dup, spell_b]
+
+    sb._try_update_staged_binding_keys()
+
+    assert updated == [
+        (
+            "req-bind",
+            [("frame-a", "binding-a"), ("frame-b", "binding-b")],
+        )
+    ]
+
+
 def test_bind_configuration_to_aether_and_frame_posture_reraise_failures(monkeypatch):
     sb = Spellbook()
     sb._logger = DummySafeLogger()
@@ -1538,6 +1693,107 @@ def test_derive_aetheric_frame_configuration_fallback_defaults() -> None:
     assert frame_configuration.system_state is SystemState.automatic
     assert frame_configuration.ai_native_enabled is False
     assert frame_configuration.rift_enabled is False
+
+
+def test_risk_manager_bridge_helpers_cover_success_none_and_error_paths(monkeypatch) -> None:
+    """
+    Purpose:
+        Validate Spellbook risk-manager bridge helpers across success, no-op,
+        and swallowed-error paths.
+    Contract:
+        - _get_risk_manager returns the live per-frame manager when DevOps exists.
+        - _set_spellbook_validation_required coerces truthy/falsy inputs to bool.
+        - register/unregister bridge helpers ignore missing inputs.
+        - register/unregister bridge helpers swallow manager exceptions.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If helper routing or no-op behavior is incorrect.
+    """
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+
+    calls = []
+
+    class _RiskManager:
+        def register_conduit(self, conduit_id, spellbook):
+            calls.append(("register_conduit", conduit_id, spellbook))
+
+        def unregister_conduit(self, conduit_id):
+            calls.append(("unregister_conduit", conduit_id))
+
+        def register_spell(self, conduit_id, spell):
+            calls.append(("register_spell", conduit_id, spell))
+
+        def unregister_spell(self, conduit_id, spell):
+            calls.append(("unregister_spell", conduit_id, spell))
+
+    risk_manager = _RiskManager()
+    monkeypatch.setattr(
+        spellbook_module.Spellbook,
+        "_aether",
+        types.SimpleNamespace(
+            _get_devops_manager=lambda frame: types.SimpleNamespace(risk_manager=risk_manager),
+        ),
+    )
+
+    assert sb._get_risk_manager() is risk_manager
+
+    sb._set_spellbook_validation_required("yes")
+    assert sb._spellbook_validation_required is True
+    sb._set_spellbook_validation_required(0)
+    assert sb._spellbook_validation_required is False
+
+    spell = DummySpell(spell_id="sid-risk")
+    conduit = types.SimpleNamespace(_id="conduit-risk")
+
+    sb._register_conduit_with_risk_manager(None)
+    sb._unregister_conduit_from_risk_manager("")
+    sb._register_spell_with_risk_manager("", spell)
+    sb._unregister_spell_with_risk_manager("conduit-risk", None)
+    assert calls == []
+
+    sb._register_conduit_with_risk_manager(conduit)
+    sb._unregister_conduit_from_risk_manager("conduit-risk")
+    sb._register_spell_with_risk_manager("conduit-risk", spell)
+    sb._unregister_spell_with_risk_manager("conduit-risk", spell)
+
+    assert calls == [
+        ("register_conduit", "conduit-risk", sb),
+        ("unregister_conduit", "conduit-risk"),
+        ("register_spell", "conduit-risk", spell),
+        ("unregister_spell", "conduit-risk", spell),
+    ]
+
+    monkeypatch.setattr(
+        sb,
+        "_get_risk_manager",
+        lambda: types.SimpleNamespace(
+            register_conduit=lambda conduit_id, spellbook: (_ for _ in ()).throw(RuntimeError("register boom")),
+            unregister_conduit=lambda conduit_id: (_ for _ in ()).throw(RuntimeError("unregister boom")),
+            register_spell=lambda conduit_id, live_spell: (_ for _ in ()).throw(RuntimeError("spell register boom")),
+            unregister_spell=lambda conduit_id, live_spell: (_ for _ in ()).throw(RuntimeError("spell unregister boom")),
+        ),
+    )
+
+    sb._register_conduit_with_risk_manager(conduit)
+    sb._unregister_conduit_from_risk_manager("conduit-risk")
+    sb._register_spell_with_risk_manager("conduit-risk", spell)
+    sb._unregister_spell_with_risk_manager("conduit-risk", spell)
+
+    monkeypatch.setattr(
+        spellbook_module.Spellbook,
+        "_aether",
+        types.SimpleNamespace(
+            _get_devops_manager=lambda frame: (_ for _ in ()).throw(RuntimeError("no devops")),
+        ),
+    )
+    monkeypatch.setattr(
+        sb,
+        "_get_risk_manager",
+        spellbook_module.Spellbook._get_risk_manager.__get__(sb, Spellbook),
+    )
+    assert sb._get_risk_manager() is None
 
 
 def test_add_contracted_spell_updates_maps_and_notifies_when_conjured() -> None:

@@ -1712,3 +1712,33 @@ def test_string_spellframe_allowed(monkeypatch):
     b = Bind(StubSpellbook())
     spell = b.bind(Permissions.read, Existence.unique, aetheric_frame="f", spell=lambda x: x, spellframe="frame-id")
     assert spell.kwargs["spellframe"] == "frame-id"
+
+
+def test_validate_binding_invalid_existence_raises_value_error() -> None:
+    profile = class_profile()
+
+    with pytest.raises(ValueError, match="Invalid existence type"):
+        Bind._validate_binding(profile, binding_name=None, existence="bad")
+
+
+def test_bind_cleanup_rechecks_cleaned_state_under_lock() -> None:
+    class _FlipCleanedOnEnter:
+        def __init__(self, owner) -> None:
+            self._owner = owner
+
+        def __enter__(self):
+            self._owner._cleaned = True
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    b = Bind(StubSpellbook())
+    original_lock = b._lock
+    b._lock = _FlipCleanedOnEnter(b)
+    try:
+        b.cleanup()
+    finally:
+        b._lock = original_lock
+
+    assert b._cleaned is True

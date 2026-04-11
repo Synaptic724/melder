@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 from typing import Any, Callable, Collection, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Type
 
 from melder.aether.conduit.conduit import Conduit

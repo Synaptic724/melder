@@ -1,4 +1,12 @@
-"""License metadata exposed by the top-level Melder package."""
+"""
+License metadata exposed by the top-level Melder package.
+
+Contract:
+- `__license__` is the short machine-friendly license label exported by the
+  package root.
+- The embedded Apache header is informational/legal context, not executable
+  runtime logic.
+"""
 
 #    Copyright [2025] [Mark Thomas Geleta]
 #

@@ -218,7 +218,7 @@ class SpellBinder(Cleanable):
         return existing
 
     # ------------------------------------------------------------------
-    # Fluent API – Starting a Registration
+    # Fluent API - Starting a Registration
     # ------------------------------------------------------------------
 
     def bind(
@@ -294,7 +294,7 @@ class SpellBinder(Cleanable):
         return self
 
     # ------------------------------------------------------------------
-    # Fluent Modifiers – Lifecycle / Scope
+    # Fluent Modifiers - Lifecycle / Scope
     # ------------------------------------------------------------------
 
     def with_existence(self, existence: Existence) -> "SpellBinder":
@@ -430,7 +430,7 @@ class SpellBinder(Cleanable):
         return self
 
     # ------------------------------------------------------------------
-    # Fluent Modifiers – Identity & Permissions
+    # Fluent Modifiers - Identity & Permissions
     # ------------------------------------------------------------------
 
     def with_permissions(self, permissions: str) -> "SpellBinder":
@@ -519,7 +519,7 @@ class SpellBinder(Cleanable):
         return self
 
     # ------------------------------------------------------------------
-    # Fluent Modifiers – Lifecycle Hooks
+    # Fluent Modifiers - Lifecycle Hooks
     # ------------------------------------------------------------------
 
     def with_pre_hook(self, hook: Callable[..., Any]) -> "SpellBinder":

@@ -585,6 +585,79 @@ def test_component_spellbook_bind_updates_spell_versions_cache() -> None:
         spellbook.cleanup()
 
 
+def test_component_spellbook_conjure_registers_and_cleanup_unregisters_risk_manager_state() -> None:
+    """
+    Purpose:
+        Validate conjure and cleanup wire live conduit state into RiskManager.
+    Contract:
+        - Conjure registers the root conduit in the per-frame RiskManager.
+        - Existing local spell lineages are seeded into the conduit risk state.
+        - Conduit cleanup removes the conduit bucket from the RiskManager.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If RiskManager runtime state is missing or stale.
+    """
+    spellbook = _make_spellbook()
+    try:
+        spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        lineage_id = next(iter(spellbook.spells.keys())).id
+
+        conduit = spellbook.conjure(name="root")
+        risk_manager = spellbook._aether._get_devops_manager(
+            spellbook._aetheric_frame
+        ).risk_manager
+        try:
+            state = risk_manager._conduit_states.get(conduit.id)
+            assert state is not None
+            assert state.spellbook is spellbook
+            assert lineage_id in state.lineages
+            assert spellbook._spellbook_validation_required is False
+        finally:
+            conduit.cleanup()
+
+        assert conduit.id not in risk_manager._conduit_states
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spellbook_link_contract_updates_live_transaction_manager_mirror() -> None:
+    """
+    Purpose:
+        Validate link-contract helpers update the live change-control mirror.
+    Contract:
+        - _create_link_contract registers borrower->provider in the real
+          transaction manager mirror.
+        - _sever_link_contract clears the live mirror entry again.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the runtime mirror is not updated.
+    """
+    spellbook = _make_spellbook()
+    conduit = spellbook.conjure(name="root")
+    transaction_manager = Aether()._get_change_control_manager(
+        spellbook._aetheric_frame
+    ).transaction_manager()
+    try:
+        assert transaction_manager.list_borrowers_for_provider("provider-1") == set()
+
+        spellbook._create_link_contract("provider-1")
+        assert transaction_manager.list_borrowers_for_provider("provider-1") == {
+            conduit.id
+        }
+
+        spellbook._sever_link_contract("provider-1")
+        assert transaction_manager.list_borrowers_for_provider("provider-1") == set()
+    finally:
+        conduit.cleanup()
+        spellbook.cleanup()
+
+
 def test_component_spellbook_cleanup_unregisters_lineages() -> None:
     """
     Purpose:

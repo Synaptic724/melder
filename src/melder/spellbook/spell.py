@@ -587,7 +587,7 @@ class Spell(Cleanable, ISpell):
                 except Exception:
                     pass
 
-            # Phase artifacts â€“ deterministically dropped via SpellCrafter.
+            # Phase artifacts - deterministically dropped via SpellCrafter.
             if self._crafter is not None:
                 try:
                     self._crafter.cleanup()

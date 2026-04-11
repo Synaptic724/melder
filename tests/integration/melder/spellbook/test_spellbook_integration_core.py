@@ -980,6 +980,118 @@ def test_spellbook_integration_contracted_spells_visible() -> None:
         owner.cleanup()
 
 
+def test_spellbook_integration_contract_updates_risk_manager_lineages() -> None:
+    """
+    Purpose:
+        Validate contracted spell add/remove flows update live RiskManager state.
+    Contract:
+        - Borrower conduit starts without the owner lineage in its risk bucket.
+        - add_spell_to_contract seeds the owner lineage into the borrower bucket.
+        - remove_spell_from_contract removes the borrower lineage membership.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If borrower RiskManager lineage state is stale.
+    """
+    configuration = Configuration()
+    configuration.dynamic_defaults()
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    owner_book = Spellbook(configuration=configuration)
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    lineage_id = next(iter(owner_book.spells.keys())).id
+    borrower_book = Spellbook(configuration=configuration)
+
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    risk_manager = owner_book._aether._get_devops_manager(
+        owner_book._aetheric_frame
+    ).risk_manager
+    try:
+        borrower_state = risk_manager._conduit_states[borrower.id]
+        assert lineage_id not in borrower_state.lineages
+
+        owner.link(borrower)
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
+
+        borrower_state = risk_manager._conduit_states[borrower.id]
+        assert lineage_id in borrower_state.lineages
+        assert borrower.id in risk_manager._lineage_conduits[lineage_id]
+
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            removed = borrower.remove_spell_from_contract(
+                spell_id=spell_id,
+                conduit=owner,
+            )
+
+        assert removed is True
+        borrower_state = risk_manager._conduit_states[borrower.id]
+        assert lineage_id not in borrower_state.lineages
+        assert borrower.id not in risk_manager._lineage_conduits.get(lineage_id, set())
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
+def test_spellbook_integration_sever_link_clears_transaction_manager_mirror() -> None:
+    """
+    Purpose:
+        Validate real contract flows populate and clear the live link mirror.
+    Contract:
+        - Adding a contracted spell registers borrower->provider in the
+          transaction manager mirror.
+        - sever_link clears that mirror entry.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the live mirror is stale.
+    """
+    configuration = Configuration()
+    configuration.dynamic_defaults()
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+
+    owner_book = Spellbook(configuration=configuration)
+    spell_id = owner_book.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    borrower_book = Spellbook(configuration=configuration)
+
+    owner = owner_book.conjure(automatic=False, name="owner")
+    borrower = borrower_book.conjure(automatic=False, name="borrower")
+    transaction_manager = borrower_book._aether._get_change_control_manager(
+        borrower_book._aetheric_frame
+    ).transaction_manager()
+    try:
+        owner.link(borrower)
+        with borrower.transaction("link", conduits=[borrower, owner]):
+            borrower.add_spell_to_contract(
+                spell_id=spell_id,
+                conduit=owner,
+                permissions="create",
+            )
+
+        assert transaction_manager.list_borrowers_for_provider(owner.id) == {
+            borrower.id
+        }
+
+        assert owner.sever_link(borrower) is True
+        assert transaction_manager.list_borrowers_for_provider(owner.id) == set()
+    finally:
+        borrower.cleanup()
+        owner.cleanup()
+
+
 def test_spellbook_integration_contract_removal_clears_access() -> None:
     """
     Purpose:
