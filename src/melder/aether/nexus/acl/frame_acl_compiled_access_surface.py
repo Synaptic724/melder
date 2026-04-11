@@ -91,9 +91,13 @@ class CompiledFrameACLAccessSurface(Cleanable):
                 Visible spell payload sections keyed by spell record key.
             metadata:
                 Optional consumer-facing metadata map.
-
-        Returns:
-            None.
+        Contract:
+            - Stores only derived ACL answers, never raw config or descriptor
+              objects.
+            - Normalizes sequence/dict inputs into owned tuples and dictionaries
+              so the surface remains value-oriented after compilation.
+            - Captures the exact profile/config identity used to produce the
+              compiled answers.
         """
         super().__init__()
         self._surface_id: str = IDBuilder.create_id()
@@ -128,8 +132,10 @@ class CompiledFrameACLAccessSurface(Cleanable):
         """
         Idempotently clear the compiled access surface.
 
-        Returns:
-            None.
+        Contract:
+            - Safe to call more than once.
+            - Clears owned derived dictionaries before dropping references.
+            - Leaves future callers to fail through `check_cleaned()`.
         """
         if self._cleaned:
             return

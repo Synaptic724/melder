@@ -18,6 +18,13 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
 
     This strategy focuses on catching mismatched or unsupported annotation
     shapes early (Phase 4), before resolution attempts fail at runtime.
+
+    Contract:
+    - Rejects collection-style DI annotations that Melder does not support.
+    - Treats `list[T]` as the only collection DI form worth deeper inspection
+      in this first cut.
+    - Emits validation issues into the supplied context; it does not mutate the
+      spell or attempt recovery.
     """
 
     __slots__ = SpellValidationStrategy.__slots__
@@ -25,6 +32,10 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
     def __init__(self) -> None:
         """
         Initialize the annotation shape guard strategy.
+
+        Contract:
+            Seeds the stable strategy name/description published through the
+            validation pipeline.
         """
         super().__init__(
             name="annotation_shape_guard",
@@ -34,6 +45,14 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
     def validate(self, context: "SpellValidationContext") -> None:
         """
         Validate the spell's parameter annotations for unsupported DI shapes.
+
+        Contract:
+            - Stops early if the validation context has been cancelled.
+            - Emits `UNSUPPORTED_COLLECTION_SHAPE`,
+              `UNRESOLVED_FORWARD_REF`, and `LIST_ELEMENT_NOT_DI_TARGET`
+              issues when the annotation shape violates the supported DI model.
+            - Performs validation only; it does not rewrite annotations or
+              normalize them.
         """
         self.check_cleaned()
 
@@ -134,6 +153,11 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
     def _collection_args_have_di_targets(self, args: Tuple[Any, ...]) -> bool:
         """
         Return True if any collection args look like DI targets.
+
+        Contract:
+            Ignores tuple-ellipsis markers and treats any remaining argument
+            that looks like a DI target as enough to trigger the unsupported
+            collection-shape path.
         """
         for arg in args:
             if arg is Ellipsis:
@@ -145,6 +169,11 @@ class AnnotationShapeGuardStrategy(SpellValidationStrategy):
     def _looks_like_di_target(self, annotation: Any) -> bool:
         """
         Best-effort check for whether an annotation looks like a DI target.
+
+        Contract:
+            Returns True for forward refs, string frame keys, and non-builtin
+            classes. This is intentionally heuristic rather than a full type
+            system.
         """
         if isinstance(annotation, typing.ForwardRef):
             return True

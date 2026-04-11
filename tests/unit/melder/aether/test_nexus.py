@@ -19,6 +19,9 @@ from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
 from melder.aether.nexus.nexus import Nexus
 from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.aether.nexus.rift.rift_space.rift_event_configuration import (
+    RiftEventConfiguration,
+)
 from melder.aether.nexus.rift.rift_space.capability_rift_space import CapabilityRiftSpace
 from melder.aether.nexus.rift.rift_space.dynamic_rift_space import DynamicRiftSpace
 from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace

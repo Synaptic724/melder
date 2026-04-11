@@ -108,10 +108,10 @@ def _build_real_rift_viewer() -> object:
 
     rift_configuration = (
         nexus.create_rift_configuration()
-        .with_target_frame_name("ops")
         .with_space_type(RiftSpaceType.static)
     )
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
+    rift.target_frame("ops", set_as_default=True)
     viewer = rift.create_new_frame_viewer("ops", viewer_profile_name="general")
     return spellbook, conduit, nexus, rift, viewer
 

@@ -202,6 +202,10 @@ class FrameACLConfigurationChain(Cleanable):
             configuration_id:
                 Configuration id to inspect.
 
+        Contract:
+            This is a pure existence check; it does not materialize or mutate
+            the configuration node.
+
         Returns:
             bool: True when the config exists.
         """
@@ -215,6 +219,10 @@ class FrameACLConfigurationChain(Cleanable):
 
         Purpose:
             Resolve the newest committed configuration node.
+
+        Contract:
+            Returns the node named by `head_configuration_id`; it does not
+            change selection state.
 
         Returns:
             FrameACLConfiguration: Head configuration node.
