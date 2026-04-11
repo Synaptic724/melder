@@ -10,6 +10,9 @@ from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spell_crafter.blueprints.occurrence_plan import (
     select_occurrence_plan,
 )
+from melder.spellbook.spell_crafter.blueprints.phase12_overrides_executor import (
+    compile_phase12_overrides_executor,
+)
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spellbook import Spellbook
 from tests.mocks.spellbook.core_classes import BasicService
@@ -1301,5 +1304,242 @@ def test_component_spell_crafter_builds_real_patch_maps_for_dependency_and_mutat
         assert mutation_patches[0].child_spell_id == consumer_id
         assert mutation_patches[0].param_name == "mutation"
         assert mutation_patches[0].new_parent_id == service_id
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spell_crafter_executes_real_overrides_executor_for_dependency_override() -> None:
+    """
+    Purpose:
+        Validate Phase 12 override execution against live phase8-11 artifacts.
+    Contract:
+        - The compiled overrides executor runs from the real plan and patch map.
+        - A targeted override value replaces the dependency for the root spell.
+        - Execution uses a real conduit creations container instead of synthetic stubs.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the live overrides executor does not honor the targeted override.
+    """
+    spellbook = _make_spellbook()
+
+    class Consumer:
+        """
+        Purpose:
+            Provide a root spell with one overrideable dependency.
+        Contract:
+            - Stores the injected service verbatim for assertions.
+        """
+
+        def __init__(self, service: BasicService) -> None:
+            self.service = service
+
+    spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    consumer_id = spellbook.bind(
+        spell=Consumer,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    conduit = spellbook.conjure(name="root")
+    conduit_id = conduit._id
+
+    try:
+        local_spells = list(spellbook._spells.values())
+        for spell in local_spells:
+            spell.run_phase_requirements()
+            spell.run_phase_symbolic_graph()
+            spell.run_phase_local_frame()
+            spell.run_phase_validation()
+
+        local_spells[0].run_phase_root_blueprints(conduit_id)
+
+        for spell in local_spells:
+            spell.run_phase_occurrence_plan(conduit_id)
+            spell.run_phase_injection_plan(conduit_id)
+            spell.run_phase_patch_maps(conduit_id)
+            spell.run_phase_execution_plan(conduit_id)
+
+        consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+        assert consumer_spell is not None
+
+        crafter = consumer_spell._ensure_crafter()
+        override_patch_map = crafter._override_patch_map_phase10
+        execution_plan = crafter._execution_plan_phase11_overrides
+
+        assert override_patch_map is not None
+        assert execution_plan is not None
+
+        targeted_sockets = tuple(override_patch_map._targets_by_spec["*service"])
+        executor = compile_phase12_overrides_executor(
+            execution_plan=execution_plan,
+            override_targets_by_spell_id={consumer_id: targeted_sockets},
+            any_overrides_present=True,
+            path_registry=crafter._root_blueprint_phase5.path_registry,
+        )
+
+        override_value = object()
+        result = executor(
+            conduit._creations,
+            {targeted_sockets[0]: override_value},
+            None,
+            owner_creations=conduit._creations,
+            caller_creations_lock_held=False,
+        )
+
+        assert isinstance(result, Consumer)
+        assert result.service is override_value
+    finally:
+        conduit.cleanup()
+        spellbook.cleanup()
+
+
+def test_component_spell_crafter_run_phase_root_blueprints_local_scopes_to_dependency_closure() -> None:
+    """
+    Purpose:
+        Validate local Phase 5 only attaches artifacts for the target spell and its dependencies.
+    Contract:
+        - The local root-blueprint map excludes unrelated visible spells.
+        - The local system index excludes unrelated visible spells.
+        - Scoped dependency spells receive local Phase 5 artifacts.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If local Phase 5 leaks unrelated spells into the scoped artifacts.
+    """
+    spellbook = _make_spellbook()
+
+    class Service:
+        pass
+
+    class Consumer:
+        def __init__(self, service: Service) -> None:
+            self.service = service
+
+    class Outside:
+        pass
+
+    service_id = spellbook.bind(
+        spell=Service,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    consumer_id = spellbook.bind(
+        spell=Consumer,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    outside_id = spellbook.bind(
+        spell=Outside,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    try:
+        local_spells = list(spellbook._spells.values())
+        for spell in local_spells:
+            spell.run_phase_requirements()
+            spell.run_phase_symbolic_graph()
+            spell.run_phase_local_frame()
+            spell.run_phase_validation()
+
+        consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+        service_spell = _get_spell_by_version_id(spellbook, service_id)
+        outside_spell = _get_spell_by_version_id(spellbook, outside_id)
+        assert consumer_spell is not None
+        assert service_spell is not None
+        assert outside_spell is not None
+
+        consumer_spell.run_phase_root_blueprints_local("cid")
+
+        consumer_crafter = consumer_spell._ensure_crafter()
+        service_crafter = service_spell._ensure_crafter()
+        outside_crafter = outside_spell._ensure_crafter()
+
+        assert consumer_crafter._entire_dag_blueprint_phase5 is not None
+        assert set(consumer_crafter._entire_dag_blueprint_phase5.keys()) == {consumer_id}
+        assert consumer_crafter.spell_system_index_phase5 is not None
+        assert consumer_crafter.spell_system_index_phase5.get_node(consumer_id) is not None
+        assert consumer_crafter.spell_system_index_phase5.get_node(service_id) is not None
+        assert consumer_crafter.spell_system_index_phase5.get_node(outside_id) is None
+
+        assert consumer_crafter.root_blueprint_phase5 is not None
+        assert service_crafter.root_blueprint_phase5 is not None
+        assert outside_crafter.root_blueprint_phase5 is None
+    finally:
+        spellbook.cleanup()
+
+
+def test_component_spell_crafter_run_phase_system_validation_local_scopes_results() -> None:
+    """
+    Purpose:
+        Validate local Phase 6 only publishes validation state to the scoped dependency closure.
+    Contract:
+        - The target spell and its dependencies receive the local Phase 6 result.
+        - Unrelated visible spells do not receive the local Phase 6 result.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If local Phase 6 leaks validation state to unrelated spells.
+    """
+    spellbook = _make_spellbook()
+
+    class Service:
+        pass
+
+    class Consumer:
+        def __init__(self, service: Service) -> None:
+            self.service = service
+
+    class Outside:
+        pass
+
+    service_id = spellbook.bind(
+        spell=Service,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    consumer_id = spellbook.bind(
+        spell=Consumer,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    outside_id = spellbook.bind(
+        spell=Outside,
+        existence=Existence.unique,
+        permissions="create",
+    )
+
+    try:
+        local_spells = list(spellbook._spells.values())
+        for spell in local_spells:
+            spell.run_phase_requirements()
+            spell.run_phase_symbolic_graph()
+            spell.run_phase_local_frame()
+            spell.run_phase_validation()
+
+        consumer_spell = _get_spell_by_version_id(spellbook, consumer_id)
+        service_spell = _get_spell_by_version_id(spellbook, service_id)
+        outside_spell = _get_spell_by_version_id(spellbook, outside_id)
+        assert consumer_spell is not None
+        assert service_spell is not None
+        assert outside_spell is not None
+
+        consumer_spell.run_phase_root_blueprints_local("cid")
+        consumer_spell.run_phase_system_validation_local("cid")
+
+        consumer_crafter = consumer_spell._ensure_crafter()
+        service_crafter = service_spell._ensure_crafter()
+        outside_crafter = outside_spell._ensure_crafter()
+
+        assert consumer_crafter.validation_result_phase6 is not None
+        assert consumer_crafter.validated is True
+        assert service_crafter.validation_result_phase6 is consumer_crafter.validation_result_phase6
+        assert service_crafter.validated is True
+        assert outside_crafter.validation_result_phase6 is None
     finally:
         spellbook.cleanup()

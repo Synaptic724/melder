@@ -5,6 +5,9 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.nexus.acl.frame_acl_view_configuration import (
+    FrameACLViewConfiguration,
+)
 from melder.aether.nexus.nexus import Nexus
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
@@ -130,7 +133,7 @@ def _build_typed_json_payload(
     )
 
 
-def test_integration_passive_publish_provisions_acl_container_and_default_chain() -> None:
+def test_integration_passive_publish_provisions_acl_container_and_default_chains() -> None:
     """
     Verify passive Nexus publish leaves the frame with a default ACL container
     and default chain state.
@@ -152,14 +155,16 @@ def test_integration_passive_publish_provisions_acl_container_and_default_chain(
         container = nexus._frame_acl_manager._get_required_frame_acl_container("ops")
 
         assert container.frame_name == "ops"
-        assert container.frame_acl_configuration_chain.count_configurations() == 1
-        assert nexus.get_current_frame_acl_configuration("ops") is container.frame_acl_configuration
+        assert container.view_chain_names == ["default"]
+        assert container.command_chain_names == ["default"]
+        assert container.codegen_chain_names == ["default"]
+        assert nexus.get_current_frame_acl_configuration("ops").frame_name == "ops"
         assert nexus.get_frame_acl_builder("ops") is container.frame_acl_builder
     finally:
         conduit.cleanup()
 
 
-def test_integration_nexus_facade_can_commit_and_rollback_chain_state_after_conjure() -> None:
+def test_integration_container_can_advance_and_rollback_view_chain_state_after_conjure() -> None:
     """
     Verify real runtime setup still allows the ACL chain to commit and roll
     back through the Nexus facade.
@@ -178,40 +183,42 @@ def test_integration_nexus_facade_can_commit_and_rollback_chain_state_after_conj
     conduit = spellbook.conjure(name="root")
     try:
         nexus = Nexus()
-        original = nexus.get_current_frame_acl_configuration("ops")
-        draft = nexus.create_new_from_acl_configuration(
-            "ops",
-            original.configuration_id,
+        container = nexus._frame_acl_manager._get_required_frame_acl_container("ops")
+        original = container.get_current_view_configuration()
+        draft = FrameACLViewConfiguration.create_new_from_configuration(
+            original,
             reason="integration-copy",
         )
-        draft.set_json_configuration_string(
-            _build_typed_json_payload(
-                "ops",
-                view_profile_name="hybrid",
-                codegen_profile_name="permissive",
-                marker="integration",
-            )
+        draft = FrameACLViewConfiguration.from_json_dict(
+            json.loads(
+                _build_typed_json_payload(
+                    "ops",
+                    view_profile_name="hybrid",
+                    codegen_profile_name="permissive",
+                    marker="integration",
+                )
+            )["view_configuration"],
+            reason="integration-copy",
+            locked=True,
         )
-        draft.finalize()
 
-        inserted = nexus.insert_head_frame_acl_configuration(
-            "ops",
+        inserted = container.insert_head_view_configuration(
             draft,
+            contract_name="default",
             select_as_current=True,
         )
-        selected = nexus.select_current_frame_acl_configuration(
-            "ops",
+        selected = container.select_current_view_configuration(
             original.configuration_id,
+            contract_name="default",
         )
-        rolled_back = nexus.rollback_frame_acl_configuration(
-            "ops",
+        rolled_back = container.rollback_view_configuration(
             inserted.configuration_id,
+            contract_name="default",
         )
 
         assert selected is original
         assert rolled_back is inserted
-        assert nexus.get_head_frame_acl_configuration("ops") is inserted
-        assert nexus.get_current_frame_acl_configuration("ops") is inserted
+        assert container.get_current_view_configuration() is inserted
     finally:
         conduit.cleanup()
 
@@ -238,22 +245,26 @@ def test_integration_frame_detach_removes_acl_container_after_chain_activity() -
     system_configuration.with_rift_creation_enabled(True)
     system_configuration.with_direct_rift_access(True)
     nexus.enable(system_configuration)
-    original = nexus.get_current_frame_acl_configuration("ops")
-    draft = nexus.create_new_from_acl_configuration(
-        "ops",
-        original.configuration_id,
+    container = nexus._frame_acl_manager._get_required_frame_acl_container("ops")
+    original = container.get_current_view_configuration()
+    draft = FrameACLViewConfiguration.from_json_dict(
+        json.loads(
+            _build_typed_json_payload(
+                "ops",
+                view_profile_name="hybrid",
+                codegen_profile_name="safe",
+                marker="detach",
+            )
+        )["view_configuration"],
+        source_configuration_id=original.configuration_id,
         reason="detach-copy",
+        locked=True,
     )
-    draft.set_json_configuration_string(
-        _build_typed_json_payload(
-            "ops",
-            view_profile_name="hybrid",
-            codegen_profile_name="safe",
-            marker="detach",
-        )
+    container.insert_head_view_configuration(
+        draft,
+        contract_name="default",
+        select_as_current=True,
     )
-    draft.finalize()
-    nexus.insert_head_frame_acl_configuration("ops", draft, select_as_current=True)
     container = nexus._frame_acl_manager._get_required_frame_acl_container("ops")
     frame = Aether()._ensure_frame("ops")
 

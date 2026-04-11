@@ -5,6 +5,7 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
+from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.frame_acl_compiler import FrameACLCompiler
 from melder.aether.nexus.nexus import Nexus
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
@@ -182,24 +183,22 @@ def test_integration_runtime_acl_commit_changes_compiled_command_surface() -> No
     conduit = spellbook.conjure(name="root")
     try:
         nexus = Nexus()
-        original = nexus.get_current_frame_acl_configuration("ops")
-        draft = nexus.create_new_from_acl_configuration(
-            "ops",
-            original.configuration_id,
-            reason="integration-permissive",
-        )
-        draft.set_json_configuration_string(
-            _build_typed_json_payload(
+        bundle = FrameACLConfiguration.from_json_configuration_string(
+            frame_name="ops",
+            json_configuration_string=_build_typed_json_payload(
                 "ops",
                 view_profile_name="hybrid",
                 codegen_profile_name="permissive",
                 marker="integration_permissive",
-            )
+            ),
+            source_configuration_id=None,
+            previous_configuration_id=None,
+            reason="integration-permissive",
+            locked=True,
         )
-        draft.finalize()
         nexus.insert_head_frame_acl_configuration(
             "ops",
-            draft,
+            bundle,
             select_as_current=True,
         )
 
@@ -258,4 +257,3 @@ def test_integration_runtime_compiled_surface_projects_directly_into_frame_viewe
         }
     finally:
         conduit.cleanup()
-

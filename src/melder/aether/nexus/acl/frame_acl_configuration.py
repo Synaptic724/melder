@@ -201,6 +201,63 @@ class FrameACLConfiguration(Cleanable):
         )
 
     @classmethod
+    def create_from_selected_configurations(
+            cls,
+            *,
+            frame_name: str,
+            view_configuration: FrameACLViewConfiguration,
+            command_configuration: FrameACLCommandConfiguration,
+            codegen_configuration: FrameACLCodegenConfiguration,
+            reason: str,
+            locked: bool = True,
+            configuration_id: Optional[str] = None,
+    ) -> "FrameACLConfiguration":
+        """
+        Assemble one full ACL bundle snapshot from selected child configs.
+
+        Contract:
+            - Clones the supplied child configurations so the returned bundle
+              is detached from live chain-owned family revisions.
+            - Supports an explicit `configuration_id` override so callers can
+              bind the assembled bundle identity to the selected child revision
+              tuple instead of generating a fresh random id every time.
+            - Does not imply chain ownership; this is an assembled snapshot for
+              compilation, validation, or export.
+
+        Args:
+            frame_name:
+                Owning frame name for the assembled bundle.
+            view_configuration:
+                Selected view configuration revision.
+            command_configuration:
+                Selected command configuration revision.
+            codegen_configuration:
+                Selected codegen configuration revision.
+            reason:
+                Human-readable creation reason.
+            locked:
+                True when the assembled bundle should start finalized.
+            configuration_id:
+                Optional explicit configuration id for the assembled bundle.
+
+        Returns:
+            FrameACLConfiguration: Detached assembled ACL bundle snapshot.
+        """
+        configuration = cls(
+            frame_name=frame_name,
+            view_configuration=view_configuration.clone(),
+            command_configuration=command_configuration.clone(),
+            codegen_configuration=codegen_configuration.clone(),
+            source_configuration_id=None,
+            previous_configuration_id=None,
+            reason=reason,
+            locked=locked,
+        )
+        if configuration_id is not None:
+            configuration._configuration_id = configuration_id
+        return configuration
+
+    @classmethod
     def from_json_configuration_string(
             cls,
             *,

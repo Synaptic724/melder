@@ -4,7 +4,13 @@ import pytest
 
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.nexus.acl.frame_acl_view_configuration import (
+    FrameACLViewConfiguration,
+)
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.aether.nexus.acl.profiles.frame_acl_view_profile import (
+    FrameACLViewProfile,
+)
 from melder.aether.nexus.nexus import Nexus
 
 
@@ -59,6 +65,53 @@ def _make_locked_configuration(
     )
     configuration.finalize()
     return configuration
+
+
+def _make_locked_view_configuration(
+        *,
+        marker: str,
+        reason: str,
+) -> FrameACLViewConfiguration:
+    """
+    Build one locked view configuration revision for component tests.
+
+    Args:
+        marker:
+            Small marker used to vary the payload.
+        reason:
+            Creation reason.
+
+    Returns:
+        FrameACLViewConfiguration: Locked view configuration revision.
+    """
+    return FrameACLViewConfiguration.from_json_dict(
+        {
+            "profile_name": "safe",
+            "profile_version": "0.0.1",
+            "required_nexus_label": "default",
+            "required_nexus_version": "0.0.1",
+            "minimum_spell_payload_type": "detailed",
+            "minimum_spell_payload_version": "0.0.1",
+            "frame_override_ruleset": {
+                "name": "frame_override_{0}".format(marker),
+                "rules": [],
+            },
+            "conduit_override_ruleset": {
+                "name": "conduit_override",
+                "rules": [],
+            },
+            "spell_override_ruleset": {
+                "name": "spell_override",
+                "rules": [],
+            },
+            "member_override_ruleset": {
+                "name": "member_override",
+                "rules": [],
+            },
+        },
+        reason=reason,
+        locked=True,
+    )
 
 
 def _build_typed_json_payload(
@@ -149,11 +202,13 @@ def test_component_descriptor_creation_provisions_container_for_frame(
     nexus = Nexus(aether=aether)
 
     descriptor = nexus._get_or_create_frame_descriptor(frame_name)
-    container = nexus._frame_acl_manager._get_required_frame_acl_container(frame_name)
+    container = nexus._frame_acl_manager._ensure_frame_acl_container(frame_name)
 
     assert descriptor.frame_name == frame_name
     assert container.frame_name == frame_name
-    assert container.frame_acl_configuration_chain.count_configurations() == 1
+    assert container.view_chain_names == ["default"]
+    assert container.command_chain_names == ["default"]
+    assert container.codegen_chain_names == ["default"]
 
 
 @pytest.mark.parametrize(
@@ -186,11 +241,11 @@ def test_component_nexus_returns_same_builder_for_repeated_frame_requests(
     "marker",
     ["alpha", "beta", "gamma", "delta"],
 )
-def test_component_nexus_chain_round_trip_insert_select_and_rollback(
+def test_component_view_chain_round_trip_insert_select_and_rollback(
         marker: str,
 ) -> None:
     """
-    Verify Nexus facades can drive the full insert/select/rollback loop.
+    Verify a frame container can drive one view-chain insert/select/rollback loop.
 
     Args:
         marker:
@@ -202,30 +257,30 @@ def test_component_nexus_chain_round_trip_insert_select_and_rollback(
     aether = Aether()
     nexus = Nexus(aether=aether)
     frame_name = "ops-{0}".format(marker)
-    original = nexus.get_current_frame_acl_configuration(frame_name)
-    inserted = _make_locked_configuration(
-        frame_name,
+    container = nexus._frame_acl_manager._ensure_frame_acl_container(frame_name)
+    original = container.get_current_view_configuration()
+    inserted = _make_locked_view_configuration(
         reason="insert-{0}".format(marker),
         marker=marker,
     )
 
-    inserted = nexus.insert_head_frame_acl_configuration(
-        frame_name,
+    inserted = container.insert_head_view_configuration(
         inserted,
+        contract_name="default",
         select_as_current=True,
     )
-    selected = nexus.select_current_frame_acl_configuration(
-        frame_name,
+    selected = container.select_current_view_configuration(
         original.configuration_id,
+        contract_name="default",
     )
-    rolled_back = nexus.rollback_frame_acl_configuration(
-        frame_name,
+    rolled_back = container.rollback_view_configuration(
         inserted.configuration_id,
+        contract_name="default",
     )
 
     assert selected is original
     assert rolled_back is inserted
-    assert nexus.get_current_frame_acl_configuration(frame_name) is inserted
+    assert container.get_current_view_configuration() is inserted
 
 
 @pytest.mark.parametrize(
@@ -253,20 +308,22 @@ def test_component_frame_detach_cleans_container_after_chain_growth(
     nexus.enable(configuration)
     frame = aether._ensure_frame(frame_name)
     nexus._get_or_create_frame_descriptor(frame_name)
-    original = nexus.get_current_frame_acl_configuration(frame_name)
-    inserted = _make_locked_configuration(
-        frame_name,
+    container = nexus._frame_acl_manager._get_required_frame_acl_container(frame_name)
+    original = container.get_current_view_configuration()
+    inserted = _make_locked_view_configuration(
         reason="growth",
         marker="grown",
     )
-    container = nexus._frame_acl_manager._get_required_frame_acl_container(frame_name)
 
-    nexus.insert_head_frame_acl_configuration(
-        frame_name,
+    container.insert_head_view_configuration(
         inserted,
+        contract_name="default",
         select_as_current=True,
     )
-    nexus.select_current_frame_acl_configuration(frame_name, original.configuration_id)
+    container.select_current_view_configuration(
+        original.configuration_id,
+        contract_name="default",
+    )
     frame.cleanup()
 
     assert container.cleaned is True
@@ -301,32 +358,36 @@ def test_component_frame_isolation_keeps_chains_separate(
     aether = Aether()
     nexus = Nexus(aether=aether)
 
-    left_current = nexus.get_current_frame_acl_configuration(left_frame_name)
-    right_current = nexus.get_current_frame_acl_configuration(right_frame_name)
-    left_next = _make_locked_configuration(
-        left_frame_name,
+    left_container = nexus._frame_acl_manager._ensure_frame_acl_container(
+        left_frame_name
+    )
+    right_container = nexus._frame_acl_manager._ensure_frame_acl_container(
+        right_frame_name
+    )
+    left_current = left_container.get_current_view_configuration()
+    right_current = right_container.get_current_view_configuration()
+    left_next = _make_locked_view_configuration(
         reason="left",
         marker="left",
     )
-    right_next = _make_locked_configuration(
-        right_frame_name,
+    right_next = _make_locked_view_configuration(
         reason="right",
         marker="right",
     )
 
-    nexus.insert_head_frame_acl_configuration(
-        left_frame_name,
+    left_container.insert_head_view_configuration(
         left_next,
+        contract_name="default",
         select_as_current=True,
     )
-    nexus.insert_head_frame_acl_configuration(
-        right_frame_name,
+    right_container.insert_head_view_configuration(
         right_next,
+        contract_name="default",
         select_as_current=True,
     )
 
-    assert nexus.get_current_frame_acl_configuration(left_frame_name) is left_next
-    assert nexus.get_current_frame_acl_configuration(right_frame_name) is right_next
+    assert left_container.get_current_view_configuration() is left_next
+    assert right_container.get_current_view_configuration() is right_next
     assert left_current.configuration_id != right_current.configuration_id
     assert left_next.configuration_id != right_next.configuration_id
 

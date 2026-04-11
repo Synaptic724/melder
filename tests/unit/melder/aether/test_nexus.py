@@ -1432,10 +1432,11 @@ def test_nexus_can_register_and_list_named_frame_acl_configurations() -> None:
         contract_name="ops_contract",
     )
 
-    assert registered is named_configuration
-    assert nexus.get_named_frame_acl_configuration("default", "ops_contract") is (
-        named_configuration
-    )
+    assert registered.frame_name == "default"
+    assert nexus.get_named_frame_acl_configuration(
+        "default",
+        "ops_contract",
+    ).to_json_dict() == named_configuration.to_json_dict()
     assert nexus.list_named_frame_acl_configuration_names("default") == [
         "default",
         "ops_contract",
@@ -1483,9 +1484,15 @@ def test_rift_target_frame_uses_selected_named_acl_contract_for_viewer_projectio
     viewer = rift.get_space_frame_viewer()
 
     assert rift.frame_link_contract.get_selected_contract_name("ops") == "ops_contract"
-    assert viewer.frame_acl_configurations_by_frame_name["ops"] is named_configuration
+    assert viewer.frame_acl_configurations_by_frame_name["ops"].to_json_dict() == (
+        named_configuration.to_json_dict()
+    )
     assert viewer.metadata["contract_names_by_frame_name"] == {
-        "ops": "ops_contract",
+        "ops": {
+            "view": "ops_contract",
+            "command": "ops_contract",
+            "codegen": "ops_contract",
+        }
     }
 
 

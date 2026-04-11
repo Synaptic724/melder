@@ -8,7 +8,16 @@ from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
     CompiledFrameACLAccessSurface,
 )
 from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
+from melder.aether.nexus.acl.frame_acl_command_configuration import (
+    FrameACLCommandConfiguration,
+)
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.aether.nexus.acl.frame_acl_codegen_configuration import (
+    FrameACLCodegenConfiguration,
+)
+from melder.aether.nexus.acl.frame_acl_view_configuration import (
+    FrameACLViewConfiguration,
+)
 from melder.aether.nexus.acl.profiles.frame_acl_profile import FrameACLProfile
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.aether.nexus.frame_acl_manager import FrameACLManager
@@ -191,7 +200,9 @@ class Nexus(Cleanable, INexus):
             self._rift_profiles_by_name: Dict[str, IRiftConfiguration] = {}
             self._frame_acl_manager: Optional[FrameACLManager] = None
             self._frame_descriptor_manager: Optional[FrameDescriptorManager] = None
-            self._frame_acl_manager = FrameACLManager()
+            self._frame_acl_manager = FrameACLManager(
+                change_callback=self._on_frame_acl_changed,
+            )
             self._projected_frame_viewers_by_cache_key: Dict[
                 Tuple[Tuple[str, ...], Tuple[str, ...], str],
                 FrameViewer,
@@ -1190,6 +1201,10 @@ class Nexus(Cleanable, INexus):
     def get_current_frame_acl_configuration(
             self,
             frame_name: str,
+            *,
+            view_contract_name: str = "default",
+            command_contract_name: str = "default",
+            codegen_contract_name: str = "default",
     ) -> FrameACLConfiguration:
         """
         Return the current selected frame ACL configuration for one frame.
@@ -1201,6 +1216,12 @@ class Nexus(Cleanable, INexus):
         Args:
             frame_name:
                 Stable frame name whose current ACL configuration is requested.
+            view_contract_name:
+                Selected view ACL contract name.
+            command_contract_name:
+                Selected command ACL contract name.
+            codegen_contract_name:
+                Selected codegen ACL contract name.
 
         Returns:
             FrameACLConfiguration:
@@ -1209,7 +1230,67 @@ class Nexus(Cleanable, INexus):
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)
         return self._frame_acl_manager._get_current_frame_acl_configuration(
-            frame_name
+            frame_name,
+            view_contract_name=view_contract_name,
+            command_contract_name=command_contract_name,
+            codegen_contract_name=codegen_contract_name,
+        )
+
+    def get_current_view_frame_acl_configuration(
+            self,
+            frame_name: str,
+            *,
+            contract_name: str = "default",
+    ) -> FrameACLViewConfiguration:
+        """
+        Return the current selected view ACL configuration for one frame/contract.
+
+        Returns:
+            FrameACLViewConfiguration: Current view configuration.
+        """
+        self.check_cleaned()
+        self._ensure_frame_acl_container(frame_name)
+        return self._frame_acl_manager._get_current_view_frame_acl_configuration(
+            frame_name,
+            contract_name=contract_name,
+        )
+
+    def get_current_command_frame_acl_configuration(
+            self,
+            frame_name: str,
+            *,
+            contract_name: str = "default",
+    ) -> FrameACLCommandConfiguration:
+        """
+        Return the current selected command ACL configuration for one frame/contract.
+
+        Returns:
+            FrameACLCommandConfiguration: Current command configuration.
+        """
+        self.check_cleaned()
+        self._ensure_frame_acl_container(frame_name)
+        return self._frame_acl_manager._get_current_command_frame_acl_configuration(
+            frame_name,
+            contract_name=contract_name,
+        )
+
+    def get_current_codegen_frame_acl_configuration(
+            self,
+            frame_name: str,
+            *,
+            contract_name: str = "default",
+    ) -> FrameACLCodegenConfiguration:
+        """
+        Return the current selected codegen ACL configuration for one frame/contract.
+
+        Returns:
+            FrameACLCodegenConfiguration: Current codegen configuration.
+        """
+        self.check_cleaned()
+        self._ensure_frame_acl_container(frame_name)
+        return self._frame_acl_manager._get_current_codegen_frame_acl_configuration(
+            frame_name,
+            contract_name=contract_name,
         )
 
     def get_named_frame_acl_configuration(
@@ -1293,127 +1374,12 @@ class Nexus(Cleanable, INexus):
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)
-        return self._frame_acl_manager._register_named_frame_acl_configuration(
+        registered_configuration = self._frame_acl_manager._register_named_frame_acl_configuration(
             frame_name,
             configuration,
             contract_name=contract_name,
         )
-
-    def get_head_frame_acl_configuration(
-            self,
-            frame_name: str,
-    ) -> FrameACLConfiguration:
-        """
-        Return the head frame ACL configuration for one frame.
-
-        Purpose:
-            Expose the newest committed ACL configuration for a frame through
-            the Nexus facade.
-
-        Args:
-            frame_name:
-                Stable frame name whose head ACL configuration is requested.
-
-        Returns:
-            FrameACLConfiguration:
-                The head ACL configuration node for the frame.
-        """
-        self.check_cleaned()
-        self._ensure_frame_acl_container(frame_name)
-        return self._frame_acl_manager._get_head_frame_acl_configuration(
-            frame_name
-        )
-
-    def get_frame_acl_configuration(
-            self,
-            frame_name: str,
-            configuration_id: str,
-    ) -> FrameACLConfiguration:
-        """
-        Return one specific ACL configuration for a frame.
-
-        Purpose:
-            Resolve one historical or current ACL configuration node for a
-            frame-scoped chain through the Nexus facade.
-
-        Args:
-            frame_name:
-                Stable frame name that owns the ACL chain.
-            configuration_id:
-                Target configuration id within the frame chain.
-
-        Returns:
-            FrameACLConfiguration:
-                Requested configuration node.
-
-        Raises:
-            KeyError:
-                If the configuration id is not present for the frame.
-        """
-        self.check_cleaned()
-        self._ensure_frame_acl_container(frame_name)
-        return self._frame_acl_manager._get_frame_acl_configuration(
-            frame_name,
-            configuration_id,
-        )
-
-    def list_frame_acl_configurations(
-            self,
-            frame_name: str,
-            limit: Optional[int] = None,
-    ) -> List[FrameACLConfiguration]:
-        """
-        Return frame ACL configs newest-first for one frame.
-
-        Purpose:
-            Provide a root-level ordered history view over a frame's ACL
-            configuration chain.
-
-        Args:
-            frame_name:
-                Stable frame name that owns the ACL chain.
-            limit:
-                Optional maximum number of returned configuration nodes.
-
-        Returns:
-            List[FrameACLConfiguration]:
-                Ordered configuration-node list from newest to oldest.
-        """
-        self.check_cleaned()
-        self._ensure_frame_acl_container(frame_name)
-        return self._frame_acl_manager._list_frame_acl_configurations(
-            frame_name,
-            limit=limit,
-        )
-
-    def list_frame_acl_configuration_ids(
-            self,
-            frame_name: str,
-            limit: Optional[int] = None,
-    ) -> List[str]:
-        """
-        Return frame ACL config ids newest-first for one frame.
-
-        Purpose:
-            Provide a lightweight ordered history view without materializing the
-            full configuration nodes.
-
-        Args:
-            frame_name:
-                Stable frame name that owns the ACL chain.
-            limit:
-                Optional maximum number of returned ids.
-
-        Returns:
-            List[str]:
-                Ordered configuration id list from newest to oldest.
-        """
-        self.check_cleaned()
-        self._ensure_frame_acl_container(frame_name)
-        return self._frame_acl_manager._list_frame_acl_configuration_ids(
-            frame_name,
-            limit=limit,
-        )
+        return registered_configuration
 
     def insert_head_frame_acl_configuration(
             self,
@@ -1423,134 +1389,38 @@ class Nexus(Cleanable, INexus):
             select_as_current: bool = True,
     ) -> FrameACLConfiguration:
         """
-        Insert one locked ACL configuration at the head of a frame chain.
+        Install one same-name ACL bundle revision across the three families.
 
         Purpose:
-            Commit a locked ACL configuration node into a frame chain through
-            the Nexus facade.
+            Install a locked ACL bundle into the same named view, command, and
+            codegen chains through the Nexus facade.
 
         Args:
             frame_name:
-                Stable frame name that owns the ACL chain.
+                Stable frame name that owns the ACL registry.
             configuration:
-                Locked configuration node to insert.
+                Locked configuration node to install.
             select_as_current:
-                True when the inserted head should also become the current
-                selected configuration.
+                Ignored. Bundle-chain current/head separation no longer exists
+                as a primary storage model.
 
         Returns:
             FrameACLConfiguration:
-                Inserted configuration node.
+                Installed assembled configuration snapshot.
 
         Raises:
             TypeError, ValueError:
-                Propagated when validation fails or the chain rejects the node.
+                Propagated when validation fails or family-chain install rejects
+                the bundle.
         """
         self.check_cleaned()
         self._ensure_frame_acl_container(frame_name)
-        inserted_configuration = self._frame_acl_manager._insert_head_frame_acl_configuration(
+        inserted_configuration = self._frame_acl_manager._install_named_frame_acl_configuration(
             frame_name,
             configuration,
-            select_as_current=select_as_current,
+            contract_name="default",
         )
-        self._invalidate_projected_frame_viewers(frame_name)
         return inserted_configuration
-
-    def select_current_frame_acl_configuration(
-            self,
-            frame_name: str,
-            configuration_id: str,
-    ) -> FrameACLConfiguration:
-        """
-        Select one existing frame ACL config as current.
-
-        Purpose:
-            Move a frame chain's current-selection pointer through the Nexus
-            facade.
-
-        Args:
-            frame_name:
-                Stable frame name that owns the ACL chain.
-            configuration_id:
-                Existing configuration id to make current.
-
-        Returns:
-            FrameACLConfiguration:
-                Newly selected current configuration.
-        """
-        self.check_cleaned()
-        self._ensure_frame_acl_container(frame_name)
-        selected_configuration = self._frame_acl_manager._select_current_frame_acl_configuration(
-            frame_name,
-            configuration_id,
-        )
-        self._invalidate_projected_frame_viewers(frame_name)
-        return selected_configuration
-
-    def rollback_frame_acl_configuration(
-            self,
-            frame_name: str,
-            configuration_id: str,
-    ) -> FrameACLConfiguration:
-        """
-        Roll current selection back to one historical frame ACL config.
-
-        Purpose:
-            Provide a semantic rollback entrypoint over frame ACL
-            current-selection state.
-
-        Args:
-            frame_name:
-                Stable frame name that owns the ACL chain.
-            configuration_id:
-                Historical configuration id to restore as current.
-
-        Returns:
-            FrameACLConfiguration:
-                Newly selected current configuration.
-        """
-        self.check_cleaned()
-        self._ensure_frame_acl_container(frame_name)
-        rolled_back_configuration = self._frame_acl_manager._rollback_frame_acl_configuration(
-            frame_name,
-            configuration_id,
-        )
-        self._invalidate_projected_frame_viewers(frame_name)
-        return rolled_back_configuration
-
-    def create_new_from_acl_configuration(
-            self,
-            frame_name: str,
-            configuration_id: str,
-            *,
-            reason: str,
-    ) -> FrameACLConfiguration:
-        """
-        Create one new draft ACL config copied from an existing frame config.
-
-        Purpose:
-            Seed a new unlocked ACL configuration node from an existing frame
-            configuration through the Nexus facade.
-
-        Args:
-            frame_name:
-                Stable frame name that owns the ACL chain.
-            configuration_id:
-                Source configuration id to copy from.
-            reason:
-                Human-readable reason recorded on the new draft node.
-
-        Returns:
-            FrameACLConfiguration:
-                New unlocked configuration copied from the source node.
-        """
-        self.check_cleaned()
-        self._ensure_frame_acl_container(frame_name)
-        return self._frame_acl_manager._create_new_from_acl_configuration(
-            frame_name,
-            configuration_id,
-            reason=reason,
-        )
 
     def create_frame_viewer(
             self,
@@ -1576,8 +1446,9 @@ class Nexus(Cleanable, INexus):
             frame_names:
                 Frame names to project into the viewer.
             contract_names_by_frame_name:
-                Optional per-frame selected ACL contract names. When omitted,
-                each frame uses `"default"`.
+                Optional per-frame selected ACL contract names. Each frame may
+                provide either one same-name string or a dict keyed by `view`,
+                `command`, and `codegen`.
             view_profile_name:
                 View profile name applied to each projected view.
             viewer_profile_name:
@@ -1593,9 +1464,13 @@ class Nexus(Cleanable, INexus):
         for frame_name in frame_names:
             if not isinstance(frame_name, str) or not frame_name:
                 raise ValueError("frame_names must contain non-empty strings.")
-        normalized_contract_names_by_frame_name: Dict[str, str] = {}
+        normalized_contract_names_by_frame_name: Dict[str, Dict[str, str]] = {}
         for frame_name in frame_names:
-            normalized_contract_names_by_frame_name[frame_name] = "default"
+            normalized_contract_names_by_frame_name[frame_name] = {
+                "view": "default",
+                "command": "default",
+                "codegen": "default",
+            }
         if contract_names_by_frame_name is not None:
             if not isinstance(contract_names_by_frame_name, dict):
                 raise TypeError(
@@ -1608,11 +1483,9 @@ class Nexus(Cleanable, INexus):
                             frame_name
                         )
                     )
-                if not isinstance(contract_name, str) or not contract_name:
-                    raise ValueError(
-                        "contract_names_by_frame_name must contain non-empty strings."
-                    )
-                normalized_contract_names_by_frame_name[frame_name] = contract_name
+                normalized_contract_names_by_frame_name[frame_name] = (
+                    self._normalize_acl_selection_input(contract_name)
+                )
         viewer_profile_builder = FrameViewerProfileBuilder()
         viewer_profile = viewer_profile_builder.get_required_profile(
             viewer_profile_name
@@ -1631,10 +1504,12 @@ class Nexus(Cleanable, INexus):
         try:
             for frame_name in frame_names:
                 descriptor = self._get_required_frame_descriptor(frame_name)
-                contract_name = normalized_contract_names_by_frame_name[frame_name]
-                configuration = self.get_named_frame_acl_configuration(
+                contract_selection = normalized_contract_names_by_frame_name[frame_name]
+                configuration = self._frame_acl_manager._get_current_frame_acl_configuration(
                     frame_name,
-                    contract_name=contract_name,
+                    view_contract_name=contract_selection["view"],
+                    command_contract_name=contract_selection["command"],
+                    codegen_contract_name=contract_selection["codegen"],
                 )
                 self._frame_acl_manager._validate_frame_acl_configuration_against_descriptor(
                     frame_name,
@@ -1668,9 +1543,18 @@ class Nexus(Cleanable, INexus):
                     "frame_count": len(frame_descriptors_by_name),
                     "available_view_count": len(frame_descriptors_by_name),
                     "assigned_frame_names": tuple(frame_names),
-                    "contract_names_by_frame_name": dict(
-                        normalized_contract_names_by_frame_name
-                    ),
+                    "acl_selection_by_frame_name": {
+                        frame_name: dict(contract_selection)
+                        for frame_name, contract_selection in (
+                            normalized_contract_names_by_frame_name.items()
+                        )
+                    },
+                    "contract_names_by_frame_name": {
+                        frame_name: dict(contract_selection)
+                        for frame_name, contract_selection in (
+                            normalized_contract_names_by_frame_name.items()
+                        )
+                    },
                     "view_profile_name": view_profile_name,
                     "viewer_profile_name": viewer_profile.name,
                     "viewer_profile_version": viewer_profile.version,
@@ -1793,7 +1677,7 @@ class Nexus(Cleanable, INexus):
         frame_viewer = self.create_frame_viewer(
             [frame_name],
             contract_names_by_frame_name={
-                frame_name: rift.frame_link_contract.get_selected_contract_name(
+                frame_name: rift.frame_link_contract.get_selected_contract_names(
                     frame_name
                 )
             },
@@ -1805,7 +1689,7 @@ class Nexus(Cleanable, INexus):
         current_metadata["assigned_frame_names"] = (frame_name,)
         current_metadata["default_target_frame_name"] = frame_name
         current_metadata["selected_contract_names_by_frame_name"] = {
-            frame_name: rift.frame_link_contract.get_selected_contract_name(
+            frame_name: rift.frame_link_contract.get_selected_contract_names(
                 frame_name
             )
         }
@@ -1849,8 +1733,9 @@ class Nexus(Cleanable, INexus):
             frame_names:
                 Frame names to project into the viewer.
             contract_names_by_frame_name:
-                Optional per-frame selected ACL contract names. When omitted,
-                each frame uses `"default"`.
+                Optional per-frame selected ACL contract names. Each frame may
+                provide either one same-name string or a dict keyed by `view`,
+                `command`, and `codegen`.
             view_profile_name:
                 View profile name applied to each projected view.
             viewer_profile_name:
@@ -1864,12 +1749,16 @@ class Nexus(Cleanable, INexus):
             raise TypeError("frame_names must be a sequence.")
         normalized_frame_names: List[str] = []
         frame_configuration_ids: List[str] = []
-        normalized_contract_names_by_frame_name: Dict[str, str] = {}
+        normalized_contract_names_by_frame_name: Dict[str, Dict[str, str]] = {}
         for frame_name in frame_names:
             if not isinstance(frame_name, str) or not frame_name:
                 raise ValueError("frame_names must contain non-empty strings.")
             normalized_frame_names.append(frame_name)
-            normalized_contract_names_by_frame_name[frame_name] = "default"
+            normalized_contract_names_by_frame_name[frame_name] = {
+                "view": "default",
+                "command": "default",
+                "codegen": "default",
+            }
         if contract_names_by_frame_name is not None:
             if not isinstance(contract_names_by_frame_name, dict):
                 raise TypeError(
@@ -1882,16 +1771,17 @@ class Nexus(Cleanable, INexus):
                             frame_name
                         )
                     )
-                if not isinstance(contract_name, str) or not contract_name:
-                    raise ValueError(
-                        "contract_names_by_frame_name must contain non-empty strings."
-                    )
-                normalized_contract_names_by_frame_name[frame_name] = contract_name
+                normalized_contract_names_by_frame_name[frame_name] = (
+                    self._normalize_acl_selection_input(contract_name)
+                )
         for frame_name in normalized_frame_names:
+            contract_selection = normalized_contract_names_by_frame_name[frame_name]
             frame_configuration_ids.append(
-                self.get_named_frame_acl_configuration(
+                self._frame_acl_manager._get_current_frame_acl_configuration(
                     frame_name,
-                    contract_name=normalized_contract_names_by_frame_name[frame_name],
+                    view_contract_name=contract_selection["view"],
+                    command_contract_name=contract_selection["command"],
+                    codegen_contract_name=contract_selection["codegen"],
                 ).configuration_id
             )
         cache_key = self._make_projected_frame_viewer_cache_key(
@@ -2030,6 +1920,49 @@ class Nexus(Cleanable, INexus):
             "{0}:{1}".format(view_profile_name, viewer_profile_name),
         )
 
+    @staticmethod
+    def _normalize_acl_selection_input(
+            contract_selection: object,
+    ) -> Dict[str, str]:
+        """
+        Normalize one frame ACL selection payload into family-name form.
+
+        Args:
+            contract_selection:
+                Either one same-name contract string or a dict keyed by
+                `view`, `command`, and `codegen`.
+
+        Returns:
+            Dict[str, str]: Normalized selection map.
+        """
+        if isinstance(contract_selection, str):
+            if not contract_selection:
+                raise ValueError(
+                    "contract_names_by_frame_name must contain non-empty strings."
+                )
+            return {
+                "view": contract_selection,
+                "command": contract_selection,
+                "codegen": contract_selection,
+            }
+        if not isinstance(contract_selection, dict):
+            raise ValueError(
+                "contract_names_by_frame_name values must be strings or dicts."
+            )
+        normalized_selection = {
+            "view": contract_selection.get("view", "default"),
+            "command": contract_selection.get("command", "default"),
+            "codegen": contract_selection.get("codegen", "default"),
+        }
+        for family_name, selected_contract_name in normalized_selection.items():
+            if not isinstance(selected_contract_name, str) or not selected_contract_name:
+                raise ValueError(
+                    "contract selection field '{0}' must be a non-empty string.".format(
+                        family_name
+                    )
+                )
+        return normalized_selection
+
     def _invalidate_projected_frame_viewers(
             self,
             frame_name: Optional[str] = None,
@@ -2064,6 +1997,52 @@ class Nexus(Cleanable, INexus):
                 )
                 if projected_frame_viewer is not None:
                     projected_frame_viewer.cleanup()
+
+    def _refresh_attached_rift_viewers_for_frame(self, frame_name: str) -> None:
+        """
+        Reattach live Rift-space viewers affected by one frame ACL change.
+
+        Args:
+            frame_name:
+                Frame name whose selected ACL family revision changed.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if not frame_name:
+            raise ValueError("frame_name cannot be empty.")
+        with self._lock:
+            rifts = list(self._rifts_by_id.values())
+        for rift in rifts:
+            if frame_name not in rift.frame_link_contract.list_frame_names():
+                continue
+            for space_id in rift.list_space_ids():
+                space = rift.get_space(space_id)
+                current_viewer = space.frame_viewer
+                if current_viewer is None:
+                    continue
+                current_profile_name = current_viewer.profile_name or "general"
+                rift.attach_frame_viewer_to_space(
+                    space_id=space_id,
+                    cached=False,
+                    view_profile_name=current_profile_name,
+                    viewer_profile_name=current_profile_name,
+                )
+
+    def _on_frame_acl_changed(self, frame_name: str) -> None:
+        """
+        Handle one frame ACL registry change.
+
+        Args:
+            frame_name:
+                Frame name whose ACL state changed.
+
+        Returns:
+            None.
+        """
+        self._invalidate_projected_frame_viewers(frame_name)
+        self._refresh_attached_rift_viewers_for_frame(frame_name)
 
     def get_nexus_frame_for_rift(
             self,

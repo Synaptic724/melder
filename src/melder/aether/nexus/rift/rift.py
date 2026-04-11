@@ -408,6 +408,9 @@ class Rift(Cleanable, IRift):
             frame_name: str,
             *,
             contract_name: str = "default",
+            view_contract_name: Optional[str] = None,
+            command_contract_name: Optional[str] = None,
+            codegen_contract_name: Optional[str] = None,
             set_as_default: bool = False,
     ) -> None:
         """
@@ -419,7 +422,14 @@ class Rift(Cleanable, IRift):
             frame_name:
                 Target frame name to engage.
             contract_name:
-                Selected ACL contract name for the target frame.
+                Same-name ACL contract convenience selector for the target
+                frame.
+            view_contract_name:
+                Optional explicit selected view ACL contract name.
+            command_contract_name:
+                Optional explicit selected command ACL contract name.
+            codegen_contract_name:
+                Optional explicit selected codegen ACL contract name.
             set_as_default:
                 When True, the engaged frame also becomes the default target
                 frame for this Rift.
@@ -438,8 +448,13 @@ class Rift(Cleanable, IRift):
         self.check_cleaned()
         if not frame_name:
             raise ValueError("frame_name cannot be empty.")
-        if not contract_name:
-            raise ValueError("contract_name cannot be empty.")
+        normalized_acl_selection = self._nexus._normalize_acl_selection_input(
+            {
+                "view": view_contract_name or contract_name,
+                "command": command_contract_name or contract_name,
+                "codegen": codegen_contract_name or contract_name,
+            }
+        )
         is_new_frame = not self._frame_link_contract.has_frame(frame_name)
         self._nexus._validate_target_frame_names((frame_name,))
         requested_space_type = self._configuration.get_property("space_type")
@@ -455,9 +470,11 @@ class Rift(Cleanable, IRift):
                     frame_name
                 )
             ) from exc
-        configuration = self._nexus.get_named_frame_acl_configuration(
+        configuration = self._nexus._frame_acl_manager._get_current_frame_acl_configuration(
             frame_name,
-            contract_name=contract_name,
+            view_contract_name=normalized_acl_selection["view"],
+            command_contract_name=normalized_acl_selection["command"],
+            codegen_contract_name=normalized_acl_selection["codegen"],
         )
         self._nexus._frame_acl_manager._validate_frame_acl_configuration_against_descriptor(
             frame_name,
@@ -470,6 +487,9 @@ class Rift(Cleanable, IRift):
             frame_name,
             set_as_default=set_as_default,
             contract_name=contract_name,
+            view_contract_name=normalized_acl_selection["view"],
+            command_contract_name=normalized_acl_selection["command"],
+            codegen_contract_name=normalized_acl_selection["codegen"],
         )
         if is_new_frame:
             self._nexus._increment_ref_count(
@@ -486,6 +506,9 @@ class Rift(Cleanable, IRift):
             frame_name: str,
             *,
             contract_name: str = "default",
+            view_contract_name: Optional[str] = None,
+            command_contract_name: Optional[str] = None,
+            codegen_contract_name: Optional[str] = None,
             set_as_default: bool = False,
     ) -> None:
         """
@@ -497,7 +520,14 @@ class Rift(Cleanable, IRift):
             frame_name:
                 Target frame name to engage.
             contract_name:
-                Selected ACL contract name for the target frame.
+                Same-name ACL contract convenience selector for the target
+                frame.
+            view_contract_name:
+                Optional explicit selected view ACL contract name.
+            command_contract_name:
+                Optional explicit selected command ACL contract name.
+            codegen_contract_name:
+                Optional explicit selected codegen ACL contract name.
             set_as_default:
                 When True, the engaged frame also becomes the default target
                 frame for this Rift.
@@ -508,6 +538,9 @@ class Rift(Cleanable, IRift):
         self.target_frame(
             frame_name,
             contract_name=contract_name,
+            view_contract_name=view_contract_name,
+            command_contract_name=command_contract_name,
+            codegen_contract_name=codegen_contract_name,
             set_as_default=set_as_default,
         )
 

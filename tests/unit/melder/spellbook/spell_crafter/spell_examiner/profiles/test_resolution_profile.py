@@ -45,6 +45,15 @@ def test_symbolic_node_stores_and_cleans():
     node.cleanup()  # idempotent
 
 
+def test_symbolic_node_detaches_metadata_input():
+    metadata = {"a": 1}
+    node = SpellSymbolicNode("id", "kind", metadata)
+
+    metadata["a"] = 2
+
+    assert node.metadata == {"a": 1}
+
+
 def test_symbolic_edge_stores_and_cleans():
     edge = SpellSymbolicEdge("from", "to", "param")
     assert edge.from_node == "from"
@@ -87,6 +96,15 @@ def test_validation_issue_cleanup():
     issue.cleanup()
     assert issue.details is None
     assert issue.code is None
+
+
+def test_validation_issue_detaches_details_input():
+    details = {"d": 1}
+    issue = SpellValidationIssue("code", "msg", details)
+
+    details["d"] = 2
+
+    assert issue.details == {"d": 1}
 
 
 def test_validation_result_cleanup_cascades():

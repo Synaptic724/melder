@@ -176,3 +176,55 @@ def test_component_spell_examiner_callable_profile_records_parameters() -> None:
             ai_profile.cleanup()
         spellbook.cleanup()
 
+
+def test_component_spell_examiner_general_profile_builds_live_resolution_payload() -> None:
+    """
+    Purpose:
+        Validate the general profile completes against a live spell and can
+        publish a descriptor payload.
+    Contract:
+        - Binding and resolution payloads are present for a real bound spell.
+        - Descriptor payload provenance matches the general profile contract.
+    Returns:
+        None.
+    """
+    spellbook = _make_spellbook()
+    profile = None
+    payload = None
+
+    def build_service() -> BasicService:
+        """
+        Purpose:
+            Provide a callable spell for general-profile component coverage.
+        Contract:
+            Returns a BasicService instance.
+        Returns:
+            BasicService: Newly created service instance.
+        """
+        return BasicService(marker="general")
+
+    try:
+        spell_id = spellbook.bind(
+            spell=build_service,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+
+        examiner = SpellExaminer()
+        profile = examiner.create_profile(spell, "general")
+        payload = profile.to_descriptor_payload()
+
+        assert profile.binding_profile is not None
+        assert profile.resolution_profile is not None
+        assert payload.payload_type == "general"
+        assert payload.source_profile_name == "general"
+        assert payload.binding_payload["kind"] is not None
+    finally:
+        if payload is not None:
+            payload.cleanup()
+        if profile is not None:
+            profile.cleanup()
+        spellbook.cleanup()
+

@@ -37,7 +37,7 @@ class SpellSymbolicNode(Cleanable):
         super().__init__()
         self.node_id = node_id
         self.kind = kind
-        self.metadata = metadata or {}
+        self.metadata = dict(metadata) if metadata is not None else {}
 
     def cleanup(self) -> None:
         """
@@ -232,7 +232,7 @@ class SpellValidationIssue(Cleanable):
         super().__init__()
         self.code = code
         self.message = message
-        self.details = details or {}
+        self.details = dict(details) if details is not None else {}
 
     def cleanup(self) -> None:
         """

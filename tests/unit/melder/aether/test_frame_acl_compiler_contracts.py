@@ -91,7 +91,7 @@ def _build_frame_descriptor() -> FrameDescriptor:
             frame_name="ops",
             owner_conduit_id="conduit-1",
             spell_id="spell-1",
-            lineage_id="lineage-1",
+            spell_index_id="lineage-1",
             spell_name="SpellOne",
             spellframe=None,
             binding_name="spell_one",

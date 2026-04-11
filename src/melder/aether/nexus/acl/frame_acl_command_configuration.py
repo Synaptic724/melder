@@ -1,5 +1,6 @@
 import json
 import threading
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -11,36 +12,27 @@ from melder.utilities.helpers.id_builder import IDBuilder
 class FrameACLCommandConfiguration(Cleanable):
     """
     Purpose:
-        Represent the applied command-side ACL configuration for one frame.
+        Represent one applied command-side ACL configuration revision.
 
     Contract:
-        - Carries stable profile identity/version for the command layer.
-        - Owns detached override rulesets for frame, conduit, spell, and
-          member command policy.
-        - Remains serializable for persistence and cloning.
-        - Uses an instance lock because cleanup and grouped replacement mutate
-          multiple owned fields together in a nogil runtime.
-        - Is policy data only. It does not resolve targets, execute commands,
-          or validate descriptor/runtime truth by itself.
-
-    Lifecycle:
-        Cleanup is idempotent and cascades into all owned rulesets before
-        dropping references.
-
-    Threading / Concurrency:
-        - Uses an instance `RLock` to serialize grouped cleanup and future
-          grouped mutation safely in a nogil runtime.
-
-    Notes:
-        - This object is the command-policy sibling to
-          `FrameACLViewConfiguration` and `FrameACLCodegenConfiguration`.
-        - The bundle selection seam still lives one level up in
-          `FrameACLConfiguration`.
+        - Carries stable command-profile identity/version plus detached frame,
+          conduit, spell, and member override rulesets.
+        - Carries revision metadata so container-owned chains can version these
+          objects directly.
+        - Remains serializable for persistence and detached cloning.
+        - Uses an instance lock because cleanup and grouped metadata/ruleset
+          mutation touch multiple owned fields in a nogil runtime.
     """
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
+        "_configuration_id",
+        "_source_configuration_id",
+        "_previous_configuration_id",
+        "_created_at",
+        "_reason",
+        "_locked",
         "_lock",
         "_profile_name",
         "_profile_version",
@@ -59,15 +51,19 @@ class FrameACLCommandConfiguration(Cleanable):
             conduit_override_ruleset: Optional[FrameACLRuleSet] = None,
             spell_override_ruleset: Optional[FrameACLRuleSet] = None,
             member_override_ruleset: Optional[FrameACLRuleSet] = None,
+            source_configuration_id: Optional[str] = None,
+            previous_configuration_id: Optional[str] = None,
+            reason: str = "direct",
+            locked: bool = True,
     ) -> None:
         """
-        Initialize one applied command-side ACL configuration object.
+        Initialize one applied command-side ACL configuration revision.
 
         Args:
             profile_name:
-                Stable command-profile name carried by this configuration.
+                Stable command-profile name.
             profile_version:
-                Stable command-profile version carried by this configuration.
+                Stable command-profile version.
             frame_override_ruleset:
                 Optional frame-level command ruleset override.
             conduit_override_ruleset:
@@ -76,22 +72,32 @@ class FrameACLCommandConfiguration(Cleanable):
                 Optional spell-level command ruleset override.
             member_override_ruleset:
                 Optional member-level command ruleset override.
-
-        Returns:
-            None.
-
-        Raises:
-            ValueError:
-                If one required profile identity field is empty.
-            TypeError:
-                If one override ruleset has the wrong type.
+            source_configuration_id:
+                Source configuration id when copied from another revision.
+            previous_configuration_id:
+                Previous chain node id when already known.
+            reason:
+                Human-readable creation reason.
+            locked:
+                True when this revision starts finalized for chain ownership.
         """
         super().__init__()
         if not profile_name:
             raise ValueError("profile_name cannot be empty.")
         if not profile_version:
             raise ValueError("profile_version cannot be empty.")
+        if not isinstance(reason, str) or not reason:
+            raise ValueError("reason cannot be empty.")
+
         self._id: str = IDBuilder.create_id()
+        self._configuration_id: str = IDBuilder.create_id()
+        self._source_configuration_id: Optional[str] = source_configuration_id
+        self._previous_configuration_id: Optional[str] = previous_configuration_id
+        self._created_at: str = datetime.now(timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        )
+        self._reason: str = reason
+        self._locked: bool = locked
         self._lock: threading.RLock = threading.RLock()
         self._profile_name: str = profile_name
         self._profile_version: str = profile_version
@@ -113,15 +119,16 @@ class FrameACLCommandConfiguration(Cleanable):
         )
 
     @classmethod
-    def create_default(cls) -> "FrameACLCommandConfiguration":
+    def create_default(
+            cls,
+            *,
+            source_configuration_id: Optional[str] = None,
+            previous_configuration_id: Optional[str] = None,
+            reason: str = "default",
+            locked: bool = True,
+    ) -> "FrameACLCommandConfiguration":
         """
-        Create the default command configuration.
-
-        Contract:
-            - Produces a stable baseline command configuration with the
-              reserved default profile identity.
-            - Seeds empty detached rulesets for all command-policy families.
-            - Returns a new configuration object on every call.
+        Create the default command configuration revision.
 
         Returns:
             FrameACLCommandConfiguration: Default command configuration.
@@ -129,34 +136,27 @@ class FrameACLCommandConfiguration(Cleanable):
         return cls(
             profile_name="default",
             profile_version="0.0.1",
+            source_configuration_id=source_configuration_id,
+            previous_configuration_id=previous_configuration_id,
+            reason=reason,
+            locked=locked,
         )
 
     @classmethod
     def from_json_dict(
             cls,
             payload: Dict[str, Any],
+            *,
+            source_configuration_id: Optional[str] = None,
+            previous_configuration_id: Optional[str] = None,
+            reason: str = "from_json",
+            locked: bool = True,
     ) -> "FrameACLCommandConfiguration":
         """
         Build one applied command configuration from a JSON-compatible payload.
 
-        Contract:
-            - Reconstructs one detached command configuration from a
-              JSON-compatible dictionary.
-            - Missing profile identity fields fall back to the default command
-              profile in this first implementation cut.
-            - Missing ruleset payloads normalize to empty detached rulesets for
-              the corresponding family.
-
-        Args:
-            payload:
-                JSON-compatible command configuration payload.
-
         Returns:
             FrameACLCommandConfiguration: Reconstructed command configuration.
-
-        Raises:
-            TypeError:
-                If `payload` is not a dictionary.
         """
         if not isinstance(payload, dict):
             raise TypeError("payload must be a dict.")
@@ -187,16 +187,40 @@ class FrameACLCommandConfiguration(Cleanable):
                     {"name": "member_override", "rules": []},
                 )
             ),
+            source_configuration_id=source_configuration_id,
+            previous_configuration_id=previous_configuration_id,
+            reason=reason,
+            locked=locked,
+        )
+
+    @classmethod
+    def create_new_from_configuration(
+            cls,
+            source_configuration: "FrameACLCommandConfiguration",
+            *,
+            reason: str,
+    ) -> "FrameACLCommandConfiguration":
+        """
+        Create one new unlocked configuration copied from an existing config.
+
+        Returns:
+            FrameACLCommandConfiguration: New unlocked detached configuration copy.
+        """
+        if not isinstance(source_configuration, FrameACLCommandConfiguration):
+            raise TypeError(
+                "source_configuration must be a FrameACLCommandConfiguration."
+            )
+        return cls.from_json_dict(
+            source_configuration.to_json_dict(),
+            source_configuration_id=source_configuration.configuration_id,
+            previous_configuration_id=None,
+            reason=reason,
+            locked=False,
         )
 
     def cleanup(self) -> None:
         """
         Idempotently clear the applied command configuration and overrides.
-
-        Contract:
-            - Safe to call more than once.
-            - Cleans all owned rulesets before dropping references.
-            - Leaves the object unusable after cleanup completes.
 
         Returns:
             None.
@@ -215,19 +239,93 @@ class FrameACLCommandConfiguration(Cleanable):
             self._conduit_override_ruleset = None
             self._spell_override_ruleset = None
             self._member_override_ruleset = None
+            self._configuration_id = None
+            self._source_configuration_id = None
+            self._previous_configuration_id = None
+            self._created_at = None
+            self._reason = None
+            self._locked = None
             self._profile_version = None
             self._profile_name = None
             self._id = None
         self._lock = None
 
     @property
+    def configuration_id(self) -> str:
+        """
+        Return the stable configuration-node id.
+
+        Returns:
+            str: Unique configuration id.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._configuration_id
+
+    @property
+    def source_configuration_id(self) -> Optional[str]:
+        """
+        Return the source configuration id when this node was copied.
+
+        Returns:
+            Optional[str]: Source configuration id.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._source_configuration_id
+
+    @property
+    def previous_configuration_id(self) -> Optional[str]:
+        """
+        Return the previous chain node id when known.
+
+        Returns:
+            Optional[str]: Previous configuration id.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._previous_configuration_id
+
+    @property
+    def created_at(self) -> str:
+        """
+        Return the UTC creation timestamp string.
+
+        Returns:
+            str: ISO-8601 UTC creation timestamp.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._created_at
+
+    @property
+    def reason(self) -> str:
+        """
+        Return the recorded creation reason.
+
+        Returns:
+            str: Human-readable creation reason.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._reason
+
+    @property
+    def locked(self) -> bool:
+        """
+        Return whether this configuration node is finalized.
+
+        Returns:
+            bool: True when the node is locked for chain ownership.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._locked
+
+    @property
     def profile_name(self) -> str:
         """
         Return the command profile name that seeded this configuration.
-
-        Contract:
-            Read-only identity accessor. The returned value is stable for the
-            lifetime of a live configuration object.
 
         Returns:
             str: Command profile name.
@@ -241,10 +339,6 @@ class FrameACLCommandConfiguration(Cleanable):
         """
         Return the command profile version that seeded this configuration.
 
-        Contract:
-            Read-only identity accessor. The returned value is stable for the
-            lifetime of a live configuration object.
-
         Returns:
             str: Command profile version.
         """
@@ -256,10 +350,6 @@ class FrameACLCommandConfiguration(Cleanable):
     def frame_override_ruleset(self) -> FrameACLRuleSet:
         """
         Return the frame-level command override ruleset.
-
-        Contract:
-            Returns the owned ruleset object, not a clone. Callers must treat it
-            as container-owned policy state.
 
         Returns:
             FrameACLRuleSet: Frame-level command override ruleset.
@@ -273,10 +363,6 @@ class FrameACLCommandConfiguration(Cleanable):
         """
         Return the conduit-level command override ruleset.
 
-        Contract:
-            Returns the owned ruleset object, not a clone. Callers must treat it
-            as container-owned policy state.
-
         Returns:
             FrameACLRuleSet: Conduit-level command override ruleset.
         """
@@ -288,10 +374,6 @@ class FrameACLCommandConfiguration(Cleanable):
     def spell_override_ruleset(self) -> FrameACLRuleSet:
         """
         Return the spell-level command override ruleset.
-
-        Contract:
-            Returns the owned ruleset object, not a clone. Callers must treat it
-            as container-owned policy state.
 
         Returns:
             FrameACLRuleSet: Spell-level command override ruleset.
@@ -305,10 +387,6 @@ class FrameACLCommandConfiguration(Cleanable):
         """
         Return the member-level command override ruleset.
 
-        Contract:
-            Returns the owned ruleset object, not a clone. Callers must treat it
-            as container-owned policy state.
-
         Returns:
             FrameACLRuleSet: Member-level command override ruleset.
         """
@@ -320,10 +398,6 @@ class FrameACLCommandConfiguration(Cleanable):
         """
         Return the applied command configuration as a JSON-compatible dict.
 
-        Contract:
-            - Returns a detached JSON-ready payload.
-            - Does not expose live internal dictionaries directly.
-
         Returns:
             Dict[str, Any]: JSON-compatible command configuration payload.
         """
@@ -332,28 +406,17 @@ class FrameACLCommandConfiguration(Cleanable):
             return {
                 "profile_name": self._profile_name,
                 "profile_version": self._profile_version,
-                "frame_override_ruleset": (
-                    self._frame_override_ruleset.to_json_dict()
-                ),
+                "frame_override_ruleset": self._frame_override_ruleset.to_json_dict(),
                 "conduit_override_ruleset": (
                     self._conduit_override_ruleset.to_json_dict()
                 ),
-                "spell_override_ruleset": (
-                    self._spell_override_ruleset.to_json_dict()
-                ),
-                "member_override_ruleset": (
-                    self._member_override_ruleset.to_json_dict()
-                ),
+                "spell_override_ruleset": self._spell_override_ruleset.to_json_dict(),
+                "member_override_ruleset": self._member_override_ruleset.to_json_dict(),
             }
 
     def to_json_string(self) -> str:
         """
         Return the applied command configuration as a normalized JSON string.
-
-        Contract:
-            - Serializes through `to_json_dict()`.
-            - Produces a stable key-sorted representation suitable for
-              persistence, comparison, or cloning workflows.
 
         Returns:
             str: Normalized JSON payload string.
@@ -365,16 +428,50 @@ class FrameACLCommandConfiguration(Cleanable):
         """
         Return a detached copy of the applied command configuration.
 
-        Contract:
-            - Returns a deep detached copy through the JSON round-trip path.
-            - The clone owns its own ruleset objects and can be mutated or
-              cleaned independently of the source object.
-
         Returns:
             FrameACLCommandConfiguration: Detached configuration copy.
         """
         self.check_cleaned()
-        return FrameACLCommandConfiguration.from_json_dict(self.to_json_dict())
+        return FrameACLCommandConfiguration.from_json_dict(
+            self.to_json_dict(),
+            source_configuration_id=self._source_configuration_id,
+            previous_configuration_id=self._previous_configuration_id,
+            reason=self._reason,
+            locked=self._locked,
+        )
+
+    def set_previous_configuration_id(
+            self,
+            previous_configuration_id: Optional[str],
+    ) -> None:
+        """
+        Update the previous-node pointer while the config is mutable.
+
+        Args:
+            previous_configuration_id:
+                Previous configuration id or None.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._locked:
+                raise RuntimeError(
+                    "Cannot change previous_configuration_id on a locked configuration."
+                )
+            self._previous_configuration_id = previous_configuration_id
+
+    def finalize(self) -> None:
+        """
+        Lock this configuration node against further chain metadata mutation.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._locked = True
 
     @staticmethod
     def _coerce_ruleset(
@@ -384,24 +481,8 @@ class FrameACLCommandConfiguration(Cleanable):
         """
         Normalize one optional override ruleset input.
 
-        Contract:
-            - Missing rulesets normalize to a new empty ruleset with the
-              provided default name.
-            - Existing rulesets are cloned so the configuration owns detached
-              policy state.
-
-        Args:
-            ruleset:
-                Optional incoming override ruleset.
-            default_name:
-                Ruleset name used when a default ruleset must be created.
-
         Returns:
             FrameACLRuleSet: Detached existing ruleset clone or a new default.
-
-        Raises:
-            TypeError:
-                If `ruleset` is provided but is not a `FrameACLRuleSet`.
         """
         if ruleset is None:
             return FrameACLRuleSet(default_name)

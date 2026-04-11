@@ -4,6 +4,8 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile impo
     CallableBindingProfile,
     CallableParameterBindingSummary,
     ClassBindingProfile,
+    InstanceBindingProfile,
+    OtherBindingProfile,
     SpellBindingKind,
     SpellBindingProfile,
 )
@@ -112,3 +114,53 @@ def test_callable_binding_profile_copies_parameters_and_cleanup():
     assert profile.signature is None
     assert profile.repr_string is None
     assert profile.cleaned is True
+
+
+def test_instance_binding_profile_stores_and_cleans():
+    profile = InstanceBindingProfile(
+        kind=SpellBindingKind.INSTANCE,
+        original_object=object(),
+        type_name="Service",
+        module="pkg.mod",
+        repr_string="<Service>",
+    )
+
+    assert profile.kind is SpellBindingKind.INSTANCE
+    assert profile.type_name == "Service"
+    assert profile.module == "pkg.mod"
+    assert profile.repr_string == "<Service>"
+
+    profile.cleanup()
+
+    assert profile.type_name is None
+    assert profile.module is None
+    assert profile.repr_string is None
+    assert profile.kind is None
+    assert profile.original_object is None
+    assert profile.cleaned is True
+    profile.cleanup()
+
+
+def test_other_binding_profile_stores_and_cleans():
+    profile = OtherBindingProfile(
+        kind=SpellBindingKind.OTHER,
+        original_object=object(),
+        type_name="OddThing",
+        module="pkg.weird",
+        repr_string="<OddThing>",
+    )
+
+    assert profile.kind is SpellBindingKind.OTHER
+    assert profile.type_name == "OddThing"
+    assert profile.module == "pkg.weird"
+    assert profile.repr_string == "<OddThing>"
+
+    profile.cleanup()
+
+    assert profile.type_name is None
+    assert profile.module is None
+    assert profile.repr_string is None
+    assert profile.kind is None
+    assert profile.original_object is None
+    assert profile.cleaned is True
+    profile.cleanup()

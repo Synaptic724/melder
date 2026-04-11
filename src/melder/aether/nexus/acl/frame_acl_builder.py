@@ -1,8 +1,11 @@
+import json
 import threading
 from typing import Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.aether.nexus.acl.frame_acl_command_configuration import (
+    FrameACLCommandConfiguration,
+)
 from melder.aether.nexus.acl.frame_acl_codegen_configuration import (
     FrameACLCodegenConfiguration,
 )
@@ -24,23 +27,11 @@ class FrameACLBuilder(Cleanable):
     Contract:
         - One builder object exists per container.
         - At most one draft change session may be active at a time.
-        - Draft state is represented as a typed `FrameACLConfiguration` seeded
-          from the current configuration.
-        - Draft bundles preserve view, command, and codegen child
-          configurations together.
+        - Draft state targets one ACL family and one contract name.
         - Final installation and validation are delegated to the owning
           container.
         - Uses an instance lock because draft lifecycle transitions and cleanup
           mutate multiple fields together in a nogil runtime.
-
-    Notes:
-        - The builder still applies reusable view/codegen profiles only.
-        - The command child remains draft state owned by the bundle until a
-          dedicated reusable command-profile layer exists.
-
-    Lifecycle:
-        Cleanup is idempotent and clears draft state plus the container
-        reference.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -49,6 +40,8 @@ class FrameACLBuilder(Cleanable):
         "_lock",
         "_container",
         "_change_active",
+        "_draft_family_name",
+        "_draft_contract_name",
         "_draft_configuration",
     ]
 
@@ -62,10 +55,6 @@ class FrameACLBuilder(Cleanable):
 
         Returns:
             None.
-
-        Raises:
-            TypeError:
-                If `container` is None.
         """
         super().__init__()
         if container is None:
@@ -74,16 +63,13 @@ class FrameACLBuilder(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._container: IFrameACLContainer = container
         self._change_active: bool = False
-        self._draft_configuration: Optional[FrameACLConfiguration] = None
+        self._draft_family_name: Optional[str] = None
+        self._draft_contract_name: Optional[str] = None
+        self._draft_configuration: Optional[object] = None
 
     def cleanup(self) -> None:
         """
         Idempotently clear builder state.
-
-        Contract:
-            - Safe to call more than once.
-            - Cleans the current draft configuration when one exists.
-            - Leaves the builder unusable after completion.
 
         Returns:
             None.
@@ -97,6 +83,8 @@ class FrameACLBuilder(Cleanable):
             if self._draft_configuration is not None:
                 self._draft_configuration.cleanup()
             self._draft_configuration = None
+            self._draft_family_name = None
+            self._draft_contract_name = None
             self._container = None
             self._change_active = None
         self._lock = None
@@ -106,10 +94,6 @@ class FrameACLBuilder(Cleanable):
         """
         Return whether the builder currently owns one open change session.
 
-        Contract:
-            Reflects draft-session ownership only; it does not imply the draft
-            has been committed.
-
         Returns:
             bool: True when a change session is active.
         """
@@ -117,34 +101,91 @@ class FrameACLBuilder(Cleanable):
         with self._lock:
             return self._change_active
 
-    def begin_change(self) -> None:
+    @property
+    def draft_family_name(self) -> Optional[str]:
         """
-        Start one builder-owned change session.
+        Return the ACL family currently targeted by the draft session.
 
-        Contract:
-            - Creates one detached draft bundle cloned from the current
-              container-selected configuration.
-            - Preserves view, command, and codegen child state from the current
-              bundle.
+        Returns:
+            Optional[str]: Draft family name when one exists.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._draft_family_name
+
+    @property
+    def draft_contract_name(self) -> Optional[str]:
+        """
+        Return the contract name currently targeted by the draft session.
+
+        Returns:
+            Optional[str]: Draft contract name when one exists.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._draft_contract_name
+
+    def begin_change(
+            self,
+            family_name: str,
+            *,
+            contract_name: str = "default",
+            reason: str = "builder_draft",
+    ) -> None:
+        """
+        Start one builder-owned family draft session.
+
+        Args:
+            family_name:
+                ACL family to edit: `view`, `command`, or `codegen`.
+            contract_name:
+                Named contract inside that family.
+            reason:
+                Human-readable reason recorded on the new draft node.
 
         Returns:
             None.
-
-        Raises:
-            RuntimeError:
-                If another change session is already active.
         """
         self.check_cleaned()
         with self._lock:
             if self._change_active:
                 raise RuntimeError("FrameACLBuilder already has an active change.")
-            current_configuration = self._container.frame_acl_configuration
-            self._draft_configuration = (
-                FrameACLConfiguration.create_new_from_acl_configuration(
-                    current_configuration,
-                    reason="builder_draft",
+            if family_name == "view":
+                self._draft_configuration = (
+                    self._container.create_new_from_view_configuration(
+                        self._container.get_current_view_configuration(
+                            contract_name
+                        ).configuration_id,
+                        contract_name=contract_name,
+                        reason=reason,
+                    )
                 )
-            )
+            elif family_name == "command":
+                self._draft_configuration = (
+                    self._container.create_new_from_command_configuration(
+                        self._container.get_current_command_configuration(
+                            contract_name
+                        ).configuration_id,
+                        contract_name=contract_name,
+                        reason=reason,
+                    )
+                )
+            elif family_name == "codegen":
+                self._draft_configuration = (
+                    self._container.create_new_from_codegen_configuration(
+                        self._container.get_current_codegen_configuration(
+                            contract_name
+                        ).configuration_id,
+                        contract_name=contract_name,
+                        reason=reason,
+                    )
+                )
+            else:
+                raise ValueError(
+                    "family_name must be 'view', 'command', or 'codegen'."
+                )
+            self._draft_family_name = family_name
+            self._draft_contract_name = contract_name
             self._change_active = True
 
     def apply_frame_acl_profile(
@@ -152,27 +193,14 @@ class FrameACLBuilder(Cleanable):
             frame_acl_profile: FrameACLProfile,
     ) -> None:
         """
-        Apply one composed reusable ACL profile into the active typed draft.
-
-        Contract:
-            - Replaces the draft view and codegen configurations from the
-              reusable profile input.
-            - Preserves the current draft command configuration because the
-              reusable profile layer does not yet expose a typed command
-              profile in this first cut.
+        Apply one reusable ACL profile into an active view or codegen draft.
 
         Args:
             frame_acl_profile:
-                Composed ACL profile to apply into the active draft.
+                Composed ACL profile to apply.
 
         Returns:
             None.
-
-        Raises:
-            TypeError:
-                If `frame_acl_profile` is not a `FrameACLProfile`.
-            RuntimeError:
-                If no draft change session is active.
         """
         self.check_cleaned()
         if not isinstance(frame_acl_profile, FrameACLProfile):
@@ -180,21 +208,32 @@ class FrameACLBuilder(Cleanable):
         with self._lock:
             if not self._change_active or self._draft_configuration is None:
                 raise RuntimeError("FrameACLBuilder has no active change.")
-            self._draft_configuration.set_view_configuration(
-                FrameACLViewConfiguration.from_profile(
+            if self._draft_family_name == "view":
+                self._draft_configuration.cleanup()
+                self._draft_configuration = FrameACLViewConfiguration.from_profile(
                     frame_acl_profile.view_profile,
                     frame_override_ruleset=(
                         frame_acl_profile.view_override_ruleset.clone()
                     ),
+                    reason="builder_profile_apply",
+                    locked=False,
                 )
-            )
-            self._draft_configuration.set_codegen_configuration(
-                FrameACLCodegenConfiguration.from_profile(
-                    frame_acl_profile.codegen_profile,
-                    capability_override_ruleset=(
-                        frame_acl_profile.codegen_override_ruleset.clone()
-                    ),
+                return
+            if self._draft_family_name == "codegen":
+                self._draft_configuration.cleanup()
+                self._draft_configuration = (
+                    FrameACLCodegenConfiguration.from_profile(
+                        frame_acl_profile.codegen_profile,
+                        capability_override_ruleset=(
+                            frame_acl_profile.codegen_override_ruleset.clone()
+                        ),
+                        reason="builder_profile_apply",
+                        locked=False,
+                    )
                 )
+                return
+            raise RuntimeError(
+                "FrameACLBuilder profile application only supports view or codegen drafts."
             )
 
     def load_json_configuration_string(
@@ -202,72 +241,86 @@ class FrameACLBuilder(Cleanable):
             json_configuration_string: str,
     ) -> None:
         """
-        Replace the active typed draft from a JSON payload string.
-
-        Contract:
-            - Allowed only while a draft change session is active.
-            - Rebuilds the draft's typed child configuration objects from the
-              provided JSON payload.
-            - Preserves the draft node's identity/history metadata while
-              replacing only the typed child configuration state.
+        Replace the active family draft from a JSON payload string.
 
         Args:
             json_configuration_string:
-                JSON payload string for the next configuration revision.
+                JSON payload string for the current draft family.
 
         Returns:
             None.
-
-        Raises:
-            RuntimeError:
-                If no draft change session is active.
-            TypeError:
-                Propagates when the payload is not a string.
         """
         self.check_cleaned()
         with self._lock:
             if not self._change_active or self._draft_configuration is None:
                 raise RuntimeError("FrameACLBuilder has no active change.")
-            self._draft_configuration.set_json_configuration_string(
-                json_configuration_string
-            )
+            self._draft_configuration.cleanup()
+            if self._draft_family_name == "view":
+                self._draft_configuration = FrameACLViewConfiguration.from_json_dict(
+                    json.loads(json_configuration_string),
+                    reason="builder_json_load",
+                    locked=False,
+                )
+            elif self._draft_family_name == "command":
+                self._draft_configuration = (
+                    FrameACLCommandConfiguration.from_json_dict(
+                        json.loads(json_configuration_string),
+                        reason="builder_json_load",
+                        locked=False,
+                    )
+                )
+            elif self._draft_family_name == "codegen":
+                self._draft_configuration = (
+                    FrameACLCodegenConfiguration.from_json_dict(
+                        json.loads(json_configuration_string),
+                        reason="builder_json_load",
+                        locked=False,
+                    )
+                )
+            else:
+                raise RuntimeError("FrameACLBuilder has no draft family.")
 
-    def commit_change(self) -> FrameACLConfiguration:
+    def commit_change(self) -> object:
         """
-        Finalize and install the next frame ACL configuration revision.
-
-        Contract:
-            - Finalizes the current draft bundle before installation.
-            - Delegates validation and current-selection update to the owning
-              container.
-            - Clears builder-owned draft state after a successful install.
+        Finalize and install the next family configuration revision.
 
         Returns:
-            FrameACLConfiguration: Newly installed configuration.
-
-        Raises:
-            RuntimeError:
-                If no draft change session is active.
+            object: Newly installed family configuration revision.
         """
         self.check_cleaned()
         with self._lock:
             if not self._change_active or self._draft_configuration is None:
                 raise RuntimeError("FrameACLBuilder has no active change.")
             self._draft_configuration.finalize()
-            self._container.install_configuration(self._draft_configuration)
-            next_configuration = self._draft_configuration
+            if self._draft_family_name == "view":
+                next_configuration = self._container.insert_head_view_configuration(
+                    self._draft_configuration,
+                    contract_name=self._draft_contract_name,
+                    select_as_current=True,
+                )
+            elif self._draft_family_name == "command":
+                next_configuration = self._container.insert_head_command_configuration(
+                    self._draft_configuration,
+                    contract_name=self._draft_contract_name,
+                    select_as_current=True,
+                )
+            elif self._draft_family_name == "codegen":
+                next_configuration = self._container.insert_head_codegen_configuration(
+                    self._draft_configuration,
+                    contract_name=self._draft_contract_name,
+                    select_as_current=True,
+                )
+            else:
+                raise RuntimeError("FrameACLBuilder has no draft family.")
             self._draft_configuration = None
+            self._draft_family_name = None
+            self._draft_contract_name = None
             self._change_active = False
             return next_configuration
 
     def discard_change(self) -> None:
         """
         Discard the current builder-owned change session.
-
-        Contract:
-            - Best-effort cleanup of the current draft when present.
-            - Leaves the builder with no active change session.
-            - Safe to call even when no draft exists.
 
         Returns:
             None.
@@ -277,4 +330,6 @@ class FrameACLBuilder(Cleanable):
             if self._draft_configuration is not None:
                 self._draft_configuration.cleanup()
             self._draft_configuration = None
+            self._draft_family_name = None
+            self._draft_contract_name = None
             self._change_active = False

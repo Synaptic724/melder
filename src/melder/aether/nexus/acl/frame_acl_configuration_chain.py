@@ -1,43 +1,38 @@
 import threading
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
-
-from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.utilities.helpers.id_builder import IDBuilder
 
 
 class FrameACLConfigurationChain(Cleanable):
     """
     Purpose:
-        Own the complete ACL configuration history for one frame.
+        Own one named revision chain for one ACL configuration family.
 
     Contract:
-        - The chain is the only owner of configuration nodes once they are
-          committed.
-        - Construction seeds one default locked configuration as both the head
-          and current node.
+        - The chain owns one family/name lineage, not the whole frame ACL
+          bundle.
+        - Construction requires one default locked configuration node that
+          becomes both head and current.
         - New committed nodes insert at the head.
         - Current selection may diverge from head during rollback or staged
           activation flows.
-        - Tail trimming is the only delete path; arbitrary deletion is not
-          part of the chain contract.
+        - Tail trimming is the only delete path; arbitrary deletion is not part
+          of the chain contract.
 
     Threading:
         Uses one instance `threading.RLock` to serialize head/current/history
         mutation and ordered traversal.
-
-    Lifecycle:
-        Cleanup is idempotent and cascades into every owned configuration node
-        before the chain drops its indexes and lock.
     """
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",
-        "_frame_name",
+        "_family_name",
+        "_contract_name",
         "_history_limit",
         "_head_configuration_id",
         "_current_configuration_id",
@@ -46,50 +41,46 @@ class FrameACLConfigurationChain(Cleanable):
 
     def __init__(
             self,
-            frame_name: str,
             *,
+            family_name: str,
+            contract_name: str,
+            default_configuration: Any,
             history_limit: int = 30,
     ) -> None:
         """
-        Initialize one configuration chain with one default head/current config.
-
-        Purpose:
-            Create the per-frame configuration-history owner and seed it with
-            the required default configuration node.
-
-        Contract:
-            - `frame_name` must be non-empty.
-            - `history_limit` must allow at least one retained node.
-            - The default node is immediately owned by the chain and is both
-              head and current.
+        Initialize one family/name configuration chain.
 
         Args:
-            frame_name:
-                Stable frame name that owns this chain.
+            family_name:
+                ACL family name such as `view`, `command`, or `codegen`.
+            contract_name:
+                Named contract within that family.
+            default_configuration:
+                Initial locked configuration node to seed the chain.
             history_limit:
-                Maximum number of configuration nodes retained by the chain.
+                Maximum number of retained revisions.
 
         Returns:
             None.
-
-        Raises:
-            ValueError:
-                If `frame_name` is empty or `history_limit` is less than 1.
-            TypeError:
-                If `history_limit` is not an integer.
         """
         super().__init__()
-        if not frame_name:
-            raise ValueError("frame_name cannot be empty.")
+        if not family_name:
+            raise ValueError("family_name cannot be empty.")
+        if not contract_name:
+            raise ValueError("contract_name cannot be empty.")
         if not isinstance(history_limit, int) or history_limit < 1:
             raise ValueError("history_limit must be an integer >= 1.")
+        self._validate_revision_payload(default_configuration)
+        if not default_configuration.locked:
+            raise ValueError("default_configuration must be locked.")
+
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._frame_name: str = frame_name
+        self._family_name: str = family_name
+        self._contract_name: str = contract_name
         self._history_limit: int = history_limit
-        self._configurations_by_id: Dict[str, FrameACLConfiguration] = {}
+        self._configurations_by_id: Dict[str, Any] = {}
 
-        default_configuration = FrameACLConfiguration.create_default(frame_name)
         default_configuration_id = default_configuration.configuration_id
         self._configurations_by_id[default_configuration_id] = default_configuration
         self._head_configuration_id: str = default_configuration_id
@@ -98,19 +89,6 @@ class FrameACLConfigurationChain(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently clear the chain and all owned configuration nodes.
-
-        Purpose:
-            Tear down the configuration-history owner and each committed node it
-            owns.
-
-        Contract:
-            - Safe to call more than once.
-            - Cleans every owned configuration before clearing indexes.
-            - Leaves the chain unusable after completion.
-
-        Threading:
-            Acquires the chain lock so teardown does not race with list/select/
-            insert operations.
 
         Returns:
             None.
@@ -125,33 +103,39 @@ class FrameACLConfigurationChain(Cleanable):
                 configuration.cleanup()
             self._configurations_by_id.clear()
             self._configurations_by_id = None
-            self._frame_name = None
+            self._family_name = None
+            self._contract_name = None
             self._history_limit = None
             self._head_configuration_id = None
             self._current_configuration_id = None
         self._lock = None
 
     @property
-    def frame_name(self) -> str:
+    def family_name(self) -> str:
         """
-        Return the owning frame name.
-
-        Purpose:
-            Expose the stable frame identity that anchors this chain.
+        Return the owning ACL family name.
 
         Returns:
-            str: Owning frame name.
+            str: ACL family name.
         """
         self.check_cleaned()
-        return self._frame_name
+        return self._family_name
+
+    @property
+    def contract_name(self) -> str:
+        """
+        Return the owning contract name.
+
+        Returns:
+            str: Named contract name.
+        """
+        self.check_cleaned()
+        return self._contract_name
 
     @property
     def history_limit(self) -> int:
         """
         Return the configured history limit.
-
-        Purpose:
-            Expose the maximum retained node count enforced by tail trimming.
 
         Returns:
             int: Maximum retained chain length.
@@ -163,9 +147,6 @@ class FrameACLConfigurationChain(Cleanable):
     def head_configuration_id(self) -> str:
         """
         Return the current head configuration id.
-
-        Purpose:
-            Expose the newest committed configuration id in the chain.
 
         Returns:
             str: Head configuration id.
@@ -179,10 +160,6 @@ class FrameACLConfigurationChain(Cleanable):
         """
         Return the current selected configuration id.
 
-        Purpose:
-            Expose the configuration id currently treated as active by the
-            frame-local ACL subsystem.
-
         Returns:
             str: Current selected configuration id.
         """
@@ -194,17 +171,9 @@ class FrameACLConfigurationChain(Cleanable):
         """
         Return whether the chain currently owns the given config id.
 
-        Purpose:
-            Provide a lightweight existence check without materializing the
-            configuration node.
-
         Args:
             configuration_id:
                 Configuration id to inspect.
-
-        Contract:
-            This is a pure existence check; it does not materialize or mutate
-            the configuration node.
 
         Returns:
             bool: True when the config exists.
@@ -213,59 +182,38 @@ class FrameACLConfigurationChain(Cleanable):
         with self._lock:
             return configuration_id in self._configurations_by_id
 
-    def get_head_configuration(self) -> FrameACLConfiguration:
+    def get_head_configuration(self) -> Any:
         """
         Return the current head configuration node.
 
-        Purpose:
-            Resolve the newest committed configuration node.
-
-        Contract:
-            Returns the node named by `head_configuration_id`; it does not
-            change selection state.
-
         Returns:
-            FrameACLConfiguration: Head configuration node.
+            Any: Head configuration node.
         """
         self.check_cleaned()
         with self._lock:
             return self._configurations_by_id[self._head_configuration_id]
 
-    def get_current_configuration(self) -> FrameACLConfiguration:
+    def get_current_configuration(self) -> Any:
         """
         Return the currently selected configuration node.
 
-        Purpose:
-            Resolve the configuration node currently selected as active.
-
-        Contract:
-            Returns the node named by `current_configuration_id`; it does not
-            change head order or selection state.
-
         Returns:
-            FrameACLConfiguration: Current configuration node.
+            Any: Current configuration node.
         """
         self.check_cleaned()
         with self._lock:
             return self._configurations_by_id[self._current_configuration_id]
 
-    def get_configuration(self, configuration_id: str) -> FrameACLConfiguration:
+    def get_configuration(self, configuration_id: str) -> Any:
         """
         Return one specific configuration node or raise.
-
-        Purpose:
-            Resolve one owned configuration node by id.
 
         Args:
             configuration_id:
                 Target configuration id.
 
         Returns:
-            FrameACLConfiguration: Owned config node.
-
-        Raises:
-            KeyError:
-                If the configuration id is not present in the chain.
+            Any: Owned configuration node.
         """
         self.check_cleaned()
         with self._lock:
@@ -277,31 +225,22 @@ class FrameACLConfigurationChain(Cleanable):
     def list_configurations(
             self,
             limit: Optional[int] = None,
-    ) -> List[FrameACLConfiguration]:
+    ) -> List[Any]:
         """
         Return the owned config nodes from newest to oldest.
-
-        Purpose:
-            Walk the chain in chronological head-to-tail order for history
-            inspection.
-
-        Contract:
-            - Traversal follows `previous_configuration_id`, not dictionary
-              insertion order.
-            - Returned nodes remain chain-owned.
 
         Args:
             limit:
                 Optional maximum number of returned configuration nodes.
 
         Returns:
-            List[FrameACLConfiguration]: Ordered config-node list.
+            List[Any]: Ordered configuration-node list.
         """
         self.check_cleaned()
         if limit is not None and (not isinstance(limit, int) or limit < 1):
             raise ValueError("limit must be an integer >= 1 when provided.")
         with self._lock:
-            ordered_configurations: List[FrameACLConfiguration] = []
+            ordered_configurations: List[Any] = []
             next_configuration_id: Optional[str] = self._head_configuration_id
             while next_configuration_id is not None:
                 configuration = self._configurations_by_id[next_configuration_id]
@@ -317,14 +256,6 @@ class FrameACLConfigurationChain(Cleanable):
     ) -> List[str]:
         """
         Return owned config ids from newest to oldest.
-
-        Purpose:
-            Provide a lightweight ordered chain view without exposing node
-            objects.
-
-        Contract:
-            Preserves the same newest-to-oldest ordering produced by
-            `list_configurations(...)`.
 
         Args:
             limit:
@@ -343,12 +274,6 @@ class FrameACLConfigurationChain(Cleanable):
         """
         Return the number of owned config nodes.
 
-        Purpose:
-            Expose the current chain size for validation and history control.
-
-        Contract:
-            Counts only currently retained nodes after any tail trimming.
-
         Returns:
             int: Number of owned config nodes.
         """
@@ -358,52 +283,24 @@ class FrameACLConfigurationChain(Cleanable):
 
     def insert_head_configuration(
             self,
-            configuration: FrameACLConfiguration,
+            configuration: Any,
             *,
             select_as_current: bool,
-    ) -> FrameACLConfiguration:
+    ) -> Any:
         """
         Insert a locked configuration node at the head of the chain.
-
-        Purpose:
-            Commit a new configuration node into the chain as the newest known
-            state.
-
-        Contract:
-            - Rejects non-configuration inputs.
-            - Rejects nodes for another frame.
-            - Rejects unlocked nodes and duplicate ids.
-            - Rewrites the new node's previous pointer to the old head.
-            - Trims the tail after insertion when the history limit is
-              exceeded.
 
         Args:
             configuration:
                 Locked configuration node to insert.
             select_as_current:
-                True when the new head should also become the current selected
-                node.
+                True when the new head should also become the current node.
 
         Returns:
-            FrameACLConfiguration: Inserted configuration node.
-
-        Raises:
-            TypeError:
-                If `configuration` is not a `FrameACLConfiguration`.
-            ValueError:
-                If the configuration targets another frame, is unlocked, or is
-                already present in the chain.
+            Any: Inserted configuration node.
         """
         self.check_cleaned()
-        if not isinstance(configuration, FrameACLConfiguration):
-            raise TypeError("configuration must be a FrameACLConfiguration.")
-        if configuration.frame_name != self._frame_name:
-            raise ValueError(
-                "FrameACLConfiguration targets frame '{0}', expected '{1}'.".format(
-                    configuration.frame_name,
-                    self._frame_name,
-                )
-            )
+        self._validate_revision_payload(configuration)
         if not configuration.locked:
             raise ValueError("Configuration must be locked before insertion.")
 
@@ -417,6 +314,7 @@ class FrameACLConfigurationChain(Cleanable):
                 )
             previous_head_configuration_id = self._head_configuration_id
             configuration._previous_configuration_id = previous_head_configuration_id
+            configuration.finalize()
             self._configurations_by_id[configuration_id] = configuration
             self._head_configuration_id = configuration_id
             if select_as_current:
@@ -424,24 +322,16 @@ class FrameACLConfigurationChain(Cleanable):
             self.trim_tail()
             return configuration
 
-    def select_current_configuration(self, configuration_id: str) -> FrameACLConfiguration:
+    def select_current_configuration(self, configuration_id: str) -> Any:
         """
         Select one existing configuration as current.
-
-        Purpose:
-            Move the chain's current pointer without changing head order.
-
-        Contract:
-            - Requires the target id to already exist in the chain.
-            - Changes only current selection; it does not reorder history or
-              move head.
 
         Args:
             configuration_id:
                 Existing configuration id to select as current.
 
         Returns:
-            FrameACLConfiguration: Newly selected current configuration.
+            Any: Newly selected current configuration.
         """
         self.check_cleaned()
         with self._lock:
@@ -449,24 +339,16 @@ class FrameACLConfigurationChain(Cleanable):
             self._current_configuration_id = configuration_id
             return configuration
 
-    def rollback_to_configuration(self, configuration_id: str) -> FrameACLConfiguration:
+    def rollback_to_configuration(self, configuration_id: str) -> Any:
         """
         Roll current selection back to one historical configuration.
-
-        Purpose:
-            Provide a semantic rollback entrypoint over current-pointer
-            selection.
-
-        Contract:
-            This is a history-oriented wrapper over
-            `select_current_configuration(...)`; it does not delete newer nodes.
 
         Args:
             configuration_id:
                 Historical configuration id to restore as current.
 
         Returns:
-            FrameACLConfiguration: Newly selected current configuration.
+            Any: Newly selected current configuration.
         """
         self.check_cleaned()
         return self.select_current_configuration(configuration_id)
@@ -476,18 +358,9 @@ class FrameACLConfigurationChain(Cleanable):
             configuration_id: str,
             *,
             reason: str,
-    ) -> FrameACLConfiguration:
+    ) -> Any:
         """
         Create a new draft config copied from an existing config in the chain.
-
-        Purpose:
-            Seed a new unlocked configuration node from a known chain state
-            without inserting it yet.
-
-        Contract:
-            - Leaves the chain unchanged.
-            - Returns an unlocked detached draft derived from the selected
-              source node.
 
         Args:
             configuration_id:
@@ -496,15 +369,11 @@ class FrameACLConfigurationChain(Cleanable):
                 Human-readable reason recorded on the new draft node.
 
         Returns:
-            FrameACLConfiguration: New unlocked config copied from the source.
-
-        Raises:
-            KeyError:
-                If the source configuration id is not present in the chain.
+            Any: New unlocked configuration copied from the source.
         """
         self.check_cleaned()
         source_configuration = self.get_configuration(configuration_id)
-        return FrameACLConfiguration.create_new_from_acl_configuration(
+        return type(source_configuration).create_new_from_configuration(
             source_configuration,
             reason=reason,
         )
@@ -512,16 +381,6 @@ class FrameACLConfigurationChain(Cleanable):
     def trim_tail(self) -> None:
         """
         Trim oldest tail nodes until the chain fits the history limit.
-
-        Purpose:
-            Enforce bounded history retention without disturbing head order.
-
-        Contract:
-            - Removes only oldest tail nodes.
-            - Never trims the current node.
-            - Stops early when trimming would require deleting the current node.
-            - Updates the parent link above the removed tail so the retained
-              chain stays well-formed.
 
         Returns:
             None.
@@ -551,3 +410,31 @@ class FrameACLConfigurationChain(Cleanable):
                 if parent_configuration_id is not None:
                     parent_configuration = self._configurations_by_id[parent_configuration_id]
                     parent_configuration._previous_configuration_id = None
+
+    @staticmethod
+    def _validate_revision_payload(configuration: Any) -> None:
+        """
+        Validate that the incoming config object supports chain semantics.
+
+        Args:
+            configuration:
+                Candidate configuration node.
+
+        Returns:
+            None.
+        """
+        required_attributes = (
+            "configuration_id",
+            "previous_configuration_id",
+            "locked",
+            "set_previous_configuration_id",
+            "finalize",
+            "cleanup",
+        )
+        for attribute_name in required_attributes:
+            if not hasattr(configuration, attribute_name):
+                raise TypeError(
+                    "configuration must support '{0}' for chain ownership.".format(
+                        attribute_name
+                    )
+                )

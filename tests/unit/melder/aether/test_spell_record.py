@@ -34,7 +34,7 @@ def test_spell_record_exposes_stable_public_fields_and_record_key() -> None:
         frame_name="ops",
         owner_conduit_id="conduit-1",
         spell_id="spell-1",
-        lineage_id="lineage-1",
+        spell_index_id="lineage-1",
         spell_name="SpellOne",
         spellframe="LogicFrame",
         binding_name="spell_one",
@@ -49,7 +49,7 @@ def test_spell_record_exposes_stable_public_fields_and_record_key() -> None:
     assert record.frame_name == "ops"
     assert record.owner_conduit_id == "conduit-1"
     assert record.spell_id == "spell-1"
-    assert record.lineage_id == "lineage-1"
+    assert record.spell_index_id == "lineage-1"
     assert record.spell_name == "SpellOne"
     assert record.spellframe == "LogicFrame"
     assert record.binding_name == "spell_one"
@@ -73,7 +73,7 @@ def test_spell_record_rejects_invalid_constructor_inputs() -> None:
             frame_name="ops",
             owner_conduit_id=None,
             spell_id="spell-1",
-            lineage_id="lineage-1",
+            spell_index_id="lineage-1",
             spell_name="SpellOne",
             spellframe=None,
             binding_name="spell_one",
@@ -92,7 +92,7 @@ def test_spell_record_rejects_invalid_constructor_inputs() -> None:
             frame_name="ops",
             owner_conduit_id=None,
             spell_id="spell-1",
-            lineage_id="lineage-1",
+            spell_index_id="lineage-1",
             spell_name="SpellOne",
             spellframe=None,
             binding_name="spell_one",
@@ -110,7 +110,7 @@ def test_spell_record_rejects_invalid_constructor_inputs() -> None:
             frame_name="ops",
             owner_conduit_id=None,
             spell_id="spell-1",
-            lineage_id="lineage-1",
+            spell_index_id="lineage-1",
             spell_name="SpellOne",
             spellframe=None,
             binding_name="spell_one",
@@ -128,7 +128,7 @@ def test_spell_record_rejects_invalid_constructor_inputs() -> None:
             frame_name="ops",
             owner_conduit_id=None,
             spell_id="spell-1",
-            lineage_id="lineage-1",
+            spell_index_id="lineage-1",
             spell_name="SpellOne",
             spellframe=None,
             binding_name="spell_one",
@@ -154,7 +154,7 @@ def test_spell_record_cleanup_is_idempotent_and_cleans_owned_payload() -> None:
         frame_name="ops",
         owner_conduit_id="conduit-1",
         spell_id="spell-1",
-        lineage_id="lineage-1",
+        spell_index_id="lineage-1",
         spell_name="SpellOne",
         spellframe=None,
         binding_name="spell_one",

@@ -1542,3 +1542,69 @@ def test_invoke_spell_with_kwargs_rejects_invalid_args_payload_type() -> None:
             spell=spell,
             kwargs={"__args__": None},
         )
+
+
+def test_resolve_root_instance_key_prefers_canonical_root_and_falls_back_to_first_match() -> None:
+    """Root-instance helper prefers `(root, None)` and falls back to the first root match."""
+    steps = (
+        SimpleNamespace(instance_key=("root", 7)),
+        SimpleNamespace(instance_key=("root", None)),
+        SimpleNamespace(instance_key=("dep", 1)),
+    )
+
+    assert phase12_module._resolve_root_instance_key(
+        steps=steps,
+        root_spell_id="root",
+    ) == ("root", None)
+
+    assert phase12_module._resolve_root_instance_key(
+        steps=(SimpleNamespace(instance_key=("root", 7)), SimpleNamespace(instance_key=("dep", 1))),
+        root_spell_id="root",
+    ) == ("root", 7)
+
+    assert phase12_module._resolve_root_instance_key(
+        steps=steps,
+        root_spell_id=None,
+    ) is None
+
+
+def test_build_phase12_overrides_executor_namespace_prebinds_root_and_target_metadata() -> None:
+    """Namespace builder prebinds root/target metadata needed by emitted override source."""
+    root_spell = _make_spell("root")
+    dep_spell = _make_spell("dep")
+    steps = (
+        SimpleNamespace(
+            instance_key=("root", None),
+            spell=root_spell,
+            existence=Existence.unique,
+            creations_target_kind=ExecutionPlanTargetKind.OWNER,
+            use_spell_lock_hint=True,
+            must_register=True,
+        ),
+        SimpleNamespace(
+            instance_key=("dep", 1),
+            spell=dep_spell,
+            existence=Existence.many,
+            creations_target_kind=ExecutionPlanTargetKind.CALLER,
+            use_spell_lock_hint=False,
+            must_register=False,
+        ),
+    )
+    socket_ref = _SocketRef("root", "value", 7, "normal")
+
+    namespace = phase12_module._build_phase12_overrides_executor_namespace(
+        steps=steps,
+        step_override_targets=((socket_ref,), ()),
+        root_instance_key=("root", None),
+        root_spell_id="root",
+        any_overrides_present=True,
+    )
+
+    assert namespace["step_spell_ids"] == ("root", "dep")
+    assert namespace["step_is_root"] == (True, False)
+    assert namespace["step_has_targeted_overrides"] == (True, False)
+    assert namespace["step_override_target_counts"] == (1, 0)
+    assert namespace["step_use_spell_lock_hints"] == (True, False)
+    assert namespace["step_must_register_flags"] == (True, False)
+    assert namespace["root_instance_key"] == ("root", None)
+    assert namespace["any_overrides_present"] is True

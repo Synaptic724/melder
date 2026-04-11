@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import types
+import typing
 from typing import Any, Iterable, Sequence
 from threading import RLock
 
@@ -202,6 +203,7 @@ class _ChangeControlManagerStub:
         """
         self._revalidate_fn_by_conduit: dict[str, object] = {}
         self.rebuild_calls: list[dict[str, object]] = []
+        self.upsert_calls: list[dict[str, object]] = []
         self.set_calls = 0
 
     def rebuild_component_of(self, conduit_id: str, root_blueprints: object) -> None:
@@ -237,6 +239,25 @@ class _ChangeControlManagerStub:
         """
         self._revalidate_fn_by_conduit[conduit_id] = fn
         self.set_calls += 1
+
+    def upsert_component_of(self, conduit_id: str, root_blueprints: object) -> None:
+        """
+        Purpose:
+            Record upsert_component_of calls.
+        Contract:
+            Appends conduit and blueprint payload to upsert_calls.
+        Args:
+            conduit_id: Conduit identifier used for the upsert.
+            root_blueprints: Root blueprint mapping passed in.
+        Returns:
+            None.
+        """
+        self.upsert_calls.append(
+            {
+                "conduit_id": conduit_id,
+                "root_blueprints": root_blueprints,
+            }
+        )
 
 
 class _AetherStub:
@@ -469,6 +490,9 @@ class _SpellSystemStatesStub:
         self.update_calls: list[tuple[object, list[str]]] = []
         self.topology_calls: list[tuple[object, object]] = []
         self.unregistered_lineages: list[object] = []
+        self.bulk_spell_validity_calls: list[tuple[str, dict[str, object], object]] = []
+        self.bulk_root_validity_calls: list[tuple[str, dict[str, object], object]] = []
+        self.recorded_conduit_diagnostics: list[tuple[str, list[object]]] = []
 
     def update_dependencies(self, spell_index: object, dependency_ids: list[str]) -> None:
         """
@@ -605,6 +629,48 @@ class _SpellSystemStatesStub:
             state = _ConduitResolutionStateStub(has_errors=False)
             self._resolution_state_by_conduit[conduit_id] = state
         return state
+
+    def bulk_set_conduit_spell_validity(
+        self,
+        conduit_id: str,
+        validity_by_spell_id: dict[str, object],
+        *,
+        change_reason: object,
+    ) -> None:
+        self.bulk_spell_validity_calls.append(
+            (
+                conduit_id,
+                dict(validity_by_spell_id),
+                change_reason,
+            )
+        )
+
+    def bulk_set_conduit_root_validity(
+        self,
+        conduit_id: str,
+        validity_by_root_id: dict[str, object],
+        *,
+        change_reason: object,
+    ) -> None:
+        self.bulk_root_validity_calls.append(
+            (
+                conduit_id,
+                dict(validity_by_root_id),
+                change_reason,
+            )
+        )
+
+    def record_conduit_diagnostics(
+        self,
+        conduit_id: str,
+        diagnostics: list[object],
+    ) -> None:
+        self.recorded_conduit_diagnostics.append(
+            (
+                conduit_id,
+                list(diagnostics),
+            )
+        )
 
 
 class _SpellStub:
@@ -2109,6 +2175,83 @@ def test_matches_annotation_rejects_binding_mismatch_on_frame() -> None:
     )
 
     assert result is False
+
+
+def test_normalize_annotation_for_matching_handles_forward_refs_and_optional_union() -> None:
+    """
+    Purpose:
+        Validate DI annotation normalization for ForwardRef and Optional/Union forms.
+    Contract:
+        - ForwardRef normalizes to its string target.
+        - Optional/Union-with-None unwraps to the single non-None member.
+        - Multiple non-None Union members remain unchanged.
+    """
+    crafter = _make_crafter()
+
+    assert crafter._normalize_annotation_for_matching(typing.ForwardRef("Service")) == "Service"
+    assert crafter._normalize_annotation_for_matching(str | None) is str
+    assert crafter._normalize_annotation_for_matching(
+        typing.Union[typing.ForwardRef("Repo"), None]
+    ) == "Repo"
+
+    union_value = typing.Union[int, str]
+    assert crafter._normalize_annotation_for_matching(union_value) is union_value
+
+
+def test_matches_annotation_supports_forward_ref_strings_and_frame_class_names() -> None:
+    """
+    Purpose:
+        Validate name-based matching branches used by normalized annotations.
+    Contract:
+        - ForwardRef string targets match spell names.
+        - String targets also match string spellframes and class-name spellframes.
+    """
+
+    class FrameToken:
+        pass
+
+    crafter = _make_crafter()
+
+    by_name = _SpellStub(
+        spell_id="candidate-name",
+        spell_name="Service",
+        spell_type=SpellType.SPELL,
+        spellbook=crafter.spell._spellbook,
+    )
+    assert crafter._matches_annotation(
+        typing.ForwardRef("Service"),
+        None,
+        by_name,
+        require_class_spell=True,
+    ) is True
+
+    by_string_frame = _SpellStub(
+        spell_id="candidate-frame",
+        spell_name="Other",
+        spell_type=SpellType.SPELL,
+        spellbook=crafter.spell._spellbook,
+        spellframe="FrameToken",
+    )
+    assert crafter._matches_annotation(
+        "FrameToken",
+        None,
+        by_string_frame,
+        require_class_spell=True,
+    ) is True
+
+    by_class_name = _SpellStub(
+        spell_id="candidate-class-frame",
+        spell_name="Other",
+        spell_type=SpellType.SPELL,
+        spellbook=crafter.spell._spellbook,
+        spellframe=FrameToken,
+    )
+    assert crafter._matches_annotation(
+        "FrameToken",
+        None,
+        by_class_name,
+        require_class_spell=True,
+    ) is True
 
 
 @pytest.mark.parametrize(
@@ -3863,6 +4006,631 @@ def test_run_phase_root_blueprints_cancellation() -> None:
     assert cancel.throw_calls == 0
 
 
+def test_collect_local_scope_spell_ids_returns_dependency_closure() -> None:
+    """
+    Purpose:
+        Validate local Phase 5 scope collection follows dependency closure.
+    Contract:
+        - Starts from the target spell id.
+        - Includes only ids present in snapshot.all_spell_ids.
+        - Ignores missing roots cleanly.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_system_states=_SpellSystemStatesStub())
+    snapshot = types.SimpleNamespace(
+        all_spell_ids={"root", "dep1", "dep2", "leaf"},
+        dependencies={
+            "root": {"dep1", "dep2"},
+            "dep1": {"leaf"},
+            "dep2": {"outside"},
+            "leaf": set(),
+        },
+    )
+
+    assert crafter._collect_local_scope_spell_ids(
+        root_spell_id="root",
+        snapshot=snapshot,
+    ) == {"root", "dep1", "dep2", "leaf"}
+    assert crafter._collect_local_scope_spell_ids(
+        root_spell_id="missing",
+        snapshot=snapshot,
+    ) == set()
+
+
+def test_filter_snapshot_to_visible_spells_recomputes_roots_and_topologies() -> None:
+    """
+    Purpose:
+        Validate snapshot filtering for local Phase 5 visibility.
+    Contract:
+        - Dependencies are trimmed to visible ids.
+        - Reverse edges and root ids are recomputed from the filtered graph.
+        - Topologies are retained only for visible spell ids.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_system_states=_SpellSystemStatesStub())
+    snapshot = types.SimpleNamespace(
+        dependencies={
+            "root": {"dep", "hidden"},
+            "dep": set(),
+            "hidden": {"dep"},
+        },
+        topologies={
+            "root": "top-root",
+            "dep": "top-dep",
+            "hidden": "top-hidden",
+        },
+    )
+
+    filtered = crafter._filter_snapshot_to_visible_spells(
+        snapshot=snapshot,
+        visible_spell_ids={"root", "dep"},
+    )
+
+    assert filtered.dependencies == {
+        "root": {"dep"},
+        "dep": set(),
+    }
+    assert filtered.reverse_dependencies == {
+        "dep": {"root"},
+    }
+    assert filtered.root_spell_ids == {"root"}
+    assert filtered.topologies == {
+        "root": "top-root",
+        "dep": "top-dep",
+    }
+    assert filtered.all_spell_ids == {"root", "dep"}
+
+
+def test_build_system_index_for_snapshot_populates_spell_metadata() -> None:
+    """
+    Purpose:
+        Validate local Phase 5 system-index construction.
+    Contract:
+        - Each snapshot spell becomes a SpellSystemNode.
+        - Node lineage, dependencies, existence, type, and root flag are preserved.
+    """
+    states = _SpellSystemStatesStub(
+        states=[
+            _SpellSystemStateStub(current_spell_id="root", spell_index_id="lineage-root"),
+            _SpellSystemStateStub(current_spell_id="dep", spell_index_id="lineage-dep"),
+        ]
+    )
+    crafter, root_spell, _ = _build_spell_and_crafter(
+        spell_system_states=states,
+    )
+    root_spell._owner_conduit_id = "conduit-root"
+    spellbook = root_spell._spellbook
+    dep_spell = _SpellStub(
+        spell_id="dep",
+        spell_name="dep-spell",
+        spell_type=SpellType.SPELL,
+        spellbook=spellbook,
+        spell_system_states=states,
+        owner_conduit_id="conduit-dep",
+    )
+    spellbook._spells[dep_spell.spell_index] = dep_spell
+    spellbook._spells_by_id[dep_spell.spell_index.current] = dep_spell
+    spellbook._spell_id_pool[dep_spell.spell_index.current] = dep_spell
+
+    snapshot = types.SimpleNamespace(
+        dependencies={
+            "root": {"dep"},
+            "dep": set(),
+        },
+        root_spell_ids={"root"},
+    )
+
+    system_index = crafter._build_system_index_for_snapshot(
+        snapshot=snapshot,
+        spell_lookup=spellbook._spell_id_pool,
+    )
+
+    root_node = system_index.get_node("root")
+    dep_node = system_index.get_node("dep")
+    assert root_node is not None
+    assert dep_node is not None
+    assert root_node.lineage_id == "lineage-root"
+    assert dep_node.lineage_id == "lineage-dep"
+    assert root_node.dependencies == {"dep"}
+    assert dep_node.dependencies == set()
+    assert root_node.is_root is True
+    assert dep_node.is_root is False
+    assert root_node.conduit_id == "conduit-root"
+    assert dep_node.conduit_id == "conduit-dep"
+
+
+def test_attach_phase5_artifacts_for_snapshot_scopes_spell_updates() -> None:
+    """
+    Purpose:
+        Validate local Phase 5 artifact attachment.
+    Contract:
+        - Only scoped spells receive Phase 5 artifacts.
+        - Existing-creation spells receive the system index but skip blueprints.
+        - Missing roots use the fallback builder path.
+    """
+    states = _SpellSystemStatesStub()
+    crafter, root_spell, _ = _build_spell_and_crafter(spell_system_states=states)
+    spellbook = root_spell._spellbook
+
+    dep_spell = _SpellStub(
+        spell_id="dep",
+        spell_name="dep-spell",
+        spell_type=SpellType.SPELL,
+        spellbook=spellbook,
+        spell_system_states=states,
+    )
+    existing_spell = _SpellStub(
+        spell_id="existing",
+        spell_name="existing-spell",
+        spell_type=SpellType.SPELL,
+        spellbook=spellbook,
+        spell_system_states=states,
+    )
+    existing_spell.is_existing_creation = True
+    outside_spell = _SpellStub(
+        spell_id="outside",
+        spell_name="outside-spell",
+        spell_type=SpellType.SPELL,
+        spellbook=spellbook,
+        spell_system_states=states,
+    )
+    for spell_instance in (dep_spell, existing_spell, outside_spell):
+        spellbook._spells[spell_instance.spell_index] = spell_instance
+        spellbook._spells_by_id[spell_instance.spell_index.current] = spell_instance
+        spellbook._spell_id_pool[spell_instance.spell_index.current] = spell_instance
+
+    system_index = spell_crafter_module.SpellSystemIndex()
+    root_blueprint = _RootBlueprintStub("root")
+    dep_blueprint = _RootBlueprintStub("dep")
+    _RootBlueprintBuilderStub.next_blueprints = {
+        "root": root_blueprint,
+        "dep": dep_blueprint,
+        "existing": _RootBlueprintStub("existing"),
+    }
+    root_builder = _RootBlueprintBuilderStub()
+    snapshot = types.SimpleNamespace(all_spell_ids={"root", "dep", "existing"})
+
+    crafter._attach_phase5_artifacts_for_snapshot(
+        snapshot=snapshot,
+        root_blueprints={"root": root_blueprint},
+        system_index=system_index,
+        spell_lookup=spellbook._spell_id_pool,
+        root_builder=root_builder,
+    )
+
+    assert root_spell._ensure_crafter().spell_system_index_phase5 is system_index
+    assert dep_spell._ensure_crafter().spell_system_index_phase5 is system_index
+    assert existing_spell._ensure_crafter().spell_system_index_phase5 is system_index
+    assert root_spell._ensure_crafter().root_blueprint_phase5 is root_blueprint
+    assert dep_spell._ensure_crafter().root_blueprint_phase5 is dep_blueprint
+    assert existing_spell._ensure_crafter().root_blueprint_phase5 is None
+    assert outside_spell._crafter is None
+    assert ("dep", snapshot) in root_builder.calls
+
+
+def test_run_phase_root_blueprints_local_scopes_to_dependency_closure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Validate local Phase 5 builds only the target spell dependency closure.
+    Contract:
+        - Local snapshots are filtered to the target spell and its dependencies.
+        - Only scoped spells receive attached Phase 5 artifacts.
+        - The crafter stores the scoped root-blueprint map and system index.
+    """
+    states = _SpellSystemStatesStub(
+        states=[
+            _SpellSystemStateStub(current_spell_id="root", spell_index_id="lineage-root"),
+            _SpellSystemStateStub(current_spell_id="dep", spell_index_id="lineage-dep"),
+            _SpellSystemStateStub(current_spell_id="outside", spell_index_id="lineage-outside"),
+        ]
+    )
+    crafter, root_spell, _ = _build_spell_and_crafter(spell_system_states=states)
+    spellbook = root_spell._spellbook
+
+    dep_spell = _SpellStub(
+        spell_id="dep",
+        spell_name="dep-spell",
+        spell_type=SpellType.SPELL,
+        spellbook=spellbook,
+        spell_system_states=states,
+    )
+    outside_spell = _SpellStub(
+        spell_id="outside",
+        spell_name="outside-spell",
+        spell_type=SpellType.SPELL,
+        spellbook=spellbook,
+        spell_system_states=states,
+    )
+    for spell_instance in (dep_spell, outside_spell):
+        spellbook._spells[spell_instance.spell_index] = spell_instance
+        spellbook._spells_by_id[spell_instance.spell_index.current] = spell_instance
+        spellbook._spell_id_pool[spell_instance.spell_index.current] = spell_instance
+
+    full_snapshot = _AdjacencySnapshotStub(
+        dependencies={
+            "root": {"dep"},
+            "dep": set(),
+            "outside": set(),
+        },
+        root_spell_ids={"root", "outside"},
+        topologies={
+            "root": "top-root",
+            "dep": "top-dep",
+            "outside": "top-outside",
+        },
+    )
+    full_snapshot.all_spell_ids = {"root", "dep", "outside"}
+    full_snapshot.reverse_dependencies = {"dep": {"root"}}
+    _AdjacencyBuilderStub.next_snapshot = full_snapshot
+
+    _RootBlueprintBuilderStub.next_blueprints = {
+        "root": _RootBlueprintStub("root"),
+    }
+
+    monkeypatch.setattr(spell_crafter_module, "SpellSystemAdjacencyBuilder", _AdjacencyBuilderStub)
+    monkeypatch.setattr(spell_crafter_module, "SpellSystemRootBlueprintBuilder", _RootBlueprintBuilderStub)
+
+    crafter.run_phase_root_blueprints_local("cid", cancel_event=None)
+
+    scoped_blueprints = crafter._entire_dag_blueprint_phase5
+    assert scoped_blueprints is not None
+    assert set(scoped_blueprints.keys()) == {"root"}
+    assert crafter.spell_system_index_phase5 is not None
+    assert crafter.spell_system_index_phase5.get_node("root") is not None
+    assert crafter.spell_system_index_phase5.get_node("dep") is not None
+    assert crafter.spell_system_index_phase5.get_node("outside") is None
+    assert root_spell._ensure_crafter().root_blueprint_phase5 is not None
+    assert dep_spell._ensure_crafter().root_blueprint_phase5 is not None
+    assert outside_spell._crafter is None
+
+
+def test_collect_local_visibility_gap_diagnostics_emits_one_error_per_missing_edge() -> None:
+    """
+    Purpose:
+        Validate local Phase 6 visibility-gap diagnostics from local topologies.
+    Contract:
+        - Missing dependency spell ids produce ERROR diagnostics.
+        - Duplicate missing edges are deduplicated per (spell, param, dep) signature.
+    """
+    states = _SpellSystemStatesStub()
+    crafter, root_spell, _ = _build_spell_and_crafter(spell_system_states=states)
+
+    class _Socket:
+        def __init__(self, param_name: str, target_spell_ids: tuple[str, ...]) -> None:
+            self.param_name = param_name
+            self.target_spell_ids = target_spell_ids
+
+    class _Topology:
+        def __init__(self, sockets: list[_Socket]) -> None:
+            self._sockets = sockets
+
+        def iter_sockets(self) -> list[_Socket]:
+            return list(self._sockets)
+
+    states.set_local_topology_for_id(
+        "root",
+        _Topology(
+            [
+                _Socket("svc", ("missing-dep",)),
+                _Socket("svc", ("missing-dep",)),
+            ]
+        ),
+    )
+
+    diagnostics = crafter._collect_local_visibility_gap_diagnostics(
+        scoped_spell_ids={"root"},
+        spell_lookup={"root": root_spell},
+        root_ids={"root"},
+    )
+
+    assert len(diagnostics) == 1
+    diagnostic = diagnostics[0]
+    assert diagnostic.code == "visibility_gap_dependency_filtered"
+    assert diagnostic.spell_id == "root"
+    assert diagnostic.root_id == "root"
+    assert diagnostic.details["missing_dependency_id"] == "missing-dep"
+
+
+def test_collect_local_blueprint_visibility_gap_diagnostics_emits_missing_nodes() -> None:
+    """
+    Purpose:
+        Validate local Phase 6 visibility-gap diagnostics from root blueprints.
+    Contract:
+        - Hidden blueprint DAG nodes emit one ERROR diagnostic per missing spell id.
+    """
+    states = _SpellSystemStatesStub()
+    crafter, root_spell, _ = _build_spell_and_crafter(spell_system_states=states)
+    blueprint = types.SimpleNamespace(
+        dag=types.SimpleNamespace(
+            nodes={
+                "root": object(),
+                "missing-dep": object(),
+            }
+        )
+    )
+
+    diagnostics = crafter._collect_local_blueprint_visibility_gap_diagnostics(
+        blueprints={"root": blueprint},
+        spell_lookup={"root": root_spell},
+    )
+
+    assert len(diagnostics) == 1
+    diagnostic = diagnostics[0]
+    assert diagnostic.code == "visibility_gap_dependency_filtered"
+    assert diagnostic.spell_id == "missing-dep"
+    assert diagnostic.root_id == "root"
+    assert diagnostic.details["missing_dependency_id"] == "missing-dep"
+
+
+def test_run_phase_system_validation_local_marks_invalid_on_visibility_gap() -> None:
+    """
+    Purpose:
+        Validate local Phase 6 short-circuits on visibility gaps.
+    Contract:
+        - Scoped spell/root validity is marked invalid.
+        - Conduit diagnostics are recorded.
+        - Scoped spell crafters receive the same invalid validation state.
+    """
+    states = _SpellSystemStatesStub()
+    crafter, root_spell, _ = _build_spell_and_crafter(spell_system_states=states)
+
+    class _Socket:
+        def __init__(self, param_name: str, target_spell_ids: tuple[str, ...]) -> None:
+            self.param_name = param_name
+            self.target_spell_ids = target_spell_ids
+
+    class _Topology:
+        def __init__(self, sockets: list[_Socket]) -> None:
+            self._sockets = sockets
+
+        def iter_sockets(self) -> list[_Socket]:
+            return list(self._sockets)
+
+    states.set_local_topology_for_id(
+        "root",
+        _Topology([_Socket("svc", ("missing-dep",))]),
+    )
+
+    crafter._spell_system_index_phase5 = types.SimpleNamespace(nodes={"root": object()})
+    crafter._entire_dag_blueprint_phase5 = {
+        "root": types.SimpleNamespace(
+            dag=types.SimpleNamespace(nodes={"root": object()}),
+        )
+    }
+
+    crafter.run_phase_system_validation_local("cid", cancel_event=None)
+
+    assert crafter.validation_result_phase6 is not None
+    assert crafter.validation_result_phase6.is_valid is False
+    assert len(crafter.validation_result_phase6.errors) == 1
+    assert states.bulk_spell_validity_calls == [
+        (
+            "cid",
+            {"root": spell_crafter_module.SpellValidity.invalid},
+            spell_crafter_module.SpellStateChangeReason.validation_failed,
+        )
+    ]
+    assert states.bulk_root_validity_calls == [
+        (
+            "cid",
+            {"root": spell_crafter_module.SpellValidity.invalid},
+            spell_crafter_module.SpellStateChangeReason.validation_failed,
+        )
+    ]
+    assert states.recorded_conduit_diagnostics
+    assert root_spell._ensure_crafter().validation_result_phase6 is crafter.validation_result_phase6
+
+
+def test_ensure_change_control_ready_local_upserts_owned_roots_and_registers_revalidator(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Validate local Phase 7 wiring semantics.
+    Contract:
+        - Only owned roots are upserted into component-of state.
+        - A revalidator is registered when missing.
+        - The revalidator routes dirty roots back through run_all_phases.
+    """
+    states = _SpellSystemStatesStub()
+    manager = _ChangeControlManagerStub()
+    aether = _AetherStub(manager=manager)
+    crafter, root_spell, _ = _build_spell_and_crafter(
+        spell_system_states=states,
+        aether=aether,
+        frame_name="frame-local",
+    )
+    crafter._entire_dag_blueprint_phase5 = {
+        "root": _RootBlueprintStub("root"),
+        "contracted": _RootBlueprintStub("contracted"),
+    }
+
+    calls: list[dict[str, object]] = []
+
+    def _run_all_phases(
+        self: SpellCrafter,
+        conduit_id: str,
+        cancel_event: object | None = None,
+    ) -> None:
+        calls.append(
+            {
+                "crafter": self,
+                "conduit_id": conduit_id,
+                "cancel_event": cancel_event,
+            }
+        )
+
+    monkeypatch.setattr(SpellCrafter, "run_all_phases", _run_all_phases)
+
+    crafter._ensure_change_control_ready_local("cid")
+
+    assert manager.upsert_calls == [
+        {
+            "conduit_id": "cid",
+            "root_blueprints": {"root": crafter._entire_dag_blueprint_phase5["root"]},
+        }
+    ]
+    assert manager.set_calls == 1
+    revalidate_fn = manager._revalidate_fn_by_conduit["cid"]
+    cancel = _CancelStub(is_set=False)
+    validated = revalidate_fn({"root"}, cancel)
+
+    assert validated == {"root"}
+    assert calls == [
+        {
+            "crafter": crafter,
+            "conduit_id": "cid",
+            "cancel_event": cancel,
+        }
+    ]
+
+
+def test_run_phase_system_validation_local_requires_phase5_local_artifacts() -> None:
+    """
+    Purpose:
+        Validate local Phase 6 requires local Phase 5 artifacts.
+    Contract:
+        - Missing local index or local root blueprints raises RuntimeError.
+    """
+    crafter, _, _ = _build_spell_and_crafter(spell_system_states=_SpellSystemStatesStub())
+
+    with pytest.raises(RuntimeError, match="Phase 6 local requires Phase 5 local artifacts"):
+        crafter.run_phase_system_validation_local("cid", cancel_event=None)
+
+
+def test_collect_local_blueprint_visibility_gap_diagnostics_dedupes_duplicate_missing_nodes() -> None:
+    """
+    Purpose:
+        Validate blueprint visibility-gap diagnostics dedupe repeated missing nodes.
+    Contract:
+        - Duplicate missing dependency ids under the same root emit one diagnostic.
+    """
+    states = _SpellSystemStatesStub()
+    crafter, root_spell, _ = _build_spell_and_crafter(spell_system_states=states)
+    blueprint = types.SimpleNamespace(
+        dag=types.SimpleNamespace(
+            nodes={
+                "root": object(),
+                "missing-dep": object(),
+            }
+        )
+    )
+
+    diagnostics = crafter._collect_local_blueprint_visibility_gap_diagnostics(
+        blueprints={
+            "root": blueprint,
+            "root-duplicate": blueprint,
+        },
+        spell_lookup={"root": root_spell},
+    )
+
+    assert len(diagnostics) == 2
+    assert {(diag.root_id, diag.spell_id) for diag in diagnostics} == {
+        ("root", "missing-dep"),
+        ("root-duplicate", "missing-dep"),
+    }
+
+
+def test_run_phase_system_validation_local_uses_scoped_lookup_and_broken_ids(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Validate the successful local Phase 6 path.
+    Contract:
+        - Only scoped spells participate in local validation.
+        - Broken scoped spells are included in the broken-id set.
+        - The shared validation state is published only to scoped spell crafters.
+    """
+    states = _SpellSystemStatesStub(
+        states=[
+            _SpellSystemStateStub(current_spell_id="root", spell_index_id="lineage-root"),
+            _SpellSystemStateStub(current_spell_id="dep", spell_index_id="lineage-dep"),
+            _SpellSystemStateStub(current_spell_id="outside", spell_index_id="lineage-outside"),
+        ]
+    )
+    crafter, root_spell, _ = _build_spell_and_crafter(spell_system_states=states)
+    spellbook = root_spell._spellbook
+
+    dep_spell = _SpellStub(
+        spell_id="dep",
+        spell_name="dep-spell",
+        spell_type=SpellType.SPELL,
+        spellbook=spellbook,
+        spell_system_states=states,
+    )
+    dep_spell._ensure_crafter()._is_broken = True
+    outside_spell = _SpellStub(
+        spell_id="outside",
+        spell_name="outside-spell",
+        spell_type=SpellType.SPELL,
+        spellbook=spellbook,
+        spell_system_states=states,
+    )
+    for spell_instance in (dep_spell, outside_spell):
+        spellbook._spells[spell_instance.spell_index] = spell_instance
+        spellbook._spells_by_id[spell_instance.spell_index.current] = spell_instance
+        spellbook._spell_id_pool[spell_instance.spell_index.current] = spell_instance
+
+    crafter._spell_system_index_phase5 = types.SimpleNamespace(
+        nodes={
+            "root": object(),
+            "dep": object(),
+        }
+    )
+    crafter._entire_dag_blueprint_phase5 = {
+        "root": types.SimpleNamespace(
+            dag=types.SimpleNamespace(
+                nodes={
+                    "root": object(),
+                    "dep": object(),
+                }
+            )
+        ),
+    }
+
+    monkeypatch.setattr(
+        spell_crafter_module,
+        "SpellSystemValidationSystem",
+        _SpellSystemValidationSystemStub,
+    )
+
+    crafter.run_phase_system_validation_local("cid", cancel_event=None)
+
+    validator = _SpellSystemValidationSystemStub.last_instance
+    assert validator is not None
+    call = validator.validate_calls[0]
+    assert set(call["spell_lookup"].keys()) == {"root", "dep"}
+    assert call["broken_spell_ids"] == {"dep"}
+    assert crafter.validation_result_phase6 == {"state": "ok"}
+    assert root_spell._ensure_crafter().validation_result_phase6 == {"state": "ok"}
+    assert dep_spell._ensure_crafter().validation_result_phase6 == {"state": "ok"}
+    assert outside_spell._ensure_crafter().validation_result_phase6 is None
+
+
+def test_run_phase_change_control_local_delegates_to_local_helper(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Validate the local Phase 7 wrapper.
+    Contract:
+        - `run_phase_change_control_local(...)` delegates exactly once to
+          `_ensure_change_control_ready_local(...)`.
+    """
+    crafter, _, _ = _build_spell_and_crafter()
+    calls: list[str] = []
+
+    def _ensure(self: SpellCrafter, conduit_id: str) -> None:
+        calls.append(conduit_id)
+
+    monkeypatch.setattr(SpellCrafter, "_ensure_change_control_ready_local", _ensure)
+
+    crafter.run_phase_change_control_local("cid", cancel_event=None)
+
+    assert calls == ["cid"]
+
+
 @pytest.mark.parametrize(
     "missing_blueprints,missing_index",
     [
@@ -4363,6 +5131,192 @@ def test_run_all_phases_passes_cancel_event(monkeypatch: pytest.MonkeyPatch) -> 
     crafter.run_all_phases("cid", cancel_event=cancel)
 
     assert received == [cancel] * 11
+
+
+def test_build_phase10_patch_maps_input_signature_uses_blueprint_shape_and_handles_failures() -> None:
+    """
+    Purpose:
+        Validate the Phase 10 patch-map signature helper.
+    Contract:
+        - Signature is built from root id, path registry identity, socket count, and node count.
+        - Broken blueprint access returns None instead of raising.
+    """
+    crafter = _make_crafter()
+    path_registry = object()
+    blueprint = types.SimpleNamespace(
+        root_spell_id="root",
+        path_registry=path_registry,
+        socket_refs=[object(), object()],
+        ordered_node_ids=["a", "root"],
+    )
+
+    assert crafter._build_phase10_patch_maps_input_signature(blueprint) == (
+        "root",
+        id(path_registry),
+        2,
+        2,
+    )
+    assert crafter._build_phase10_patch_maps_input_signature(None) is None
+
+    class _BrokenBlueprint:
+        root_spell_id = "root"
+        path_registry = object()
+        ordered_node_ids = ["root"]
+
+        @property
+        def socket_refs(self) -> object:
+            raise RuntimeError("boom")
+
+    assert crafter._build_phase10_patch_maps_input_signature(_BrokenBlueprint()) is None
+
+
+def test_build_phase8_occurrence_plan_fast_key_serializes_visible_state_and_rejects_mutations() -> None:
+    """
+    Purpose:
+        Validate the lightweight Phase 8 fast-key helper.
+    Contract:
+        - Fast key includes blueprint shape, spell visibility state, topologies, and contracted rows.
+        - Any mutation override forces the helper to return None.
+    """
+    states = _SpellSystemStatesStub()
+    crafter, root_spell, _ = _build_spell_and_crafter(spell_system_states=states)
+    spellbook = root_spell._spellbook
+    dep_spell = _SpellStub(
+        spell_id="dep",
+        spell_name="dep",
+        spell_type=SpellType.SPELL,
+        spellbook=spellbook,
+        spell_system_states=states,
+    )
+    spellbook._spells[dep_spell.spell_index] = dep_spell
+    spellbook._spells_by_id[dep_spell.spell_index.current] = dep_spell
+    spellbook._spell_id_pool[dep_spell.spell_index.current] = dep_spell
+    spellbook._lookup_contracted_spells = {
+        "peer": {
+            ("frame", "binding"): dep_spell.spell_index,
+        }
+    }
+    spellbook._contracted_spells = {
+        "peer": {
+            dep_spell.spell_index: dep_spell,
+        }
+    }
+    states._local_topologies = {
+        "root": types.SimpleNamespace(
+            sockets=[
+                types.SimpleNamespace(param_name="svc", target_spell_ids=("dep",)),
+            ]
+        )
+    }
+    path_registry = object()
+    blueprint = types.SimpleNamespace(
+        root_spell_id="root",
+        ordered_node_ids=("dep", "root"),
+        path_registry=path_registry,
+        socket_refs=[
+            types.SimpleNamespace(
+                node_id="root",
+                param_name="svc",
+                param_path_id=7,
+                target_spell_ids=("dep",),
+            )
+        ],
+    )
+
+    fast_key = crafter._build_phase8_occurrence_plan_fast_key(
+        root_blueprint=blueprint,
+        spell_lookup=spellbook._spell_id_pool,
+    )
+
+    assert fast_key == (
+        "root",
+        ("dep", "root"),
+        id(path_registry),
+        (("root", "svc", 7, ("dep",)),),
+        (
+            ("dep", "dep", Existence.unique.name, False),
+            ("root", "root", Existence.unique.name, False),
+        ),
+        (("root", (("svc", ("dep",)),)),),
+        "dynamic",
+        (("peer", "frame", "binding", "dep"),),
+    )
+
+    dep_spell._mutation_override = {"svc": "mutated"}
+    assert crafter._build_phase8_occurrence_plan_fast_key(
+        root_blueprint=blueprint,
+        spell_lookup=spellbook._spell_id_pool,
+    ) is None
+
+
+def test_build_phase8_occurrence_plan_input_signature_hashes_mutation_semantics_and_phase9_reuses_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Validate the full Phase 8 signature helper and Phase 9 reuse helper.
+    Contract:
+        - Phase 8 signature includes frozen mutation payload semantics.
+        - Broken contracted lookup access returns None.
+        - Phase 9 reuses the cached Phase 8 signature when available.
+    """
+    states = _SpellSystemStatesStub()
+    crafter, root_spell, _ = _build_spell_and_crafter(spell_system_states=states)
+    spellbook = root_spell._spellbook
+    root_spell._mutation_override = {"svc": ["x", "y"]}
+    captured_parts: list[tuple[Any, ...]] = []
+
+    monkeypatch.setattr(
+        SpellCrafter,
+        "_hash_codegen_signature",
+        staticmethod(lambda *parts: captured_parts.append(parts) or "phase8-signature"),
+    )
+
+    blueprint = types.SimpleNamespace(
+        root_spell_id="root",
+        ordered_node_ids=("root",),
+        path_registry=object(),
+        socket_refs=[
+            types.SimpleNamespace(
+                node_id="root",
+                param_name="svc",
+                param_path_id=7,
+                target_spell_ids=("dep",),
+            )
+        ],
+    )
+
+    signature = crafter._build_phase8_occurrence_plan_input_signature(
+        root_blueprint=blueprint,
+        spell_lookup=spellbook._spell_id_pool,
+    )
+
+    assert signature == "phase8-signature"
+    assert captured_parts
+    spell_rows = captured_parts[0][4]
+    assert spell_rows == (
+        (
+            "root",
+            "root",
+            Existence.unique.name,
+            False,
+            crafter._freeze_phase11_schema_value(root_spell.mutation_override),
+        ),
+    )
+
+    spellbook._lookup_contracted_spells = object()
+    assert crafter._build_phase8_occurrence_plan_input_signature(
+        root_blueprint=blueprint,
+        spell_lookup=spellbook._spell_id_pool,
+    ) is None
+
+    crafter._phase8_occurrence_plan_input_signature = "phase8-signature"
+    assert crafter._build_phase9_injection_plan_input_signature(
+        occurrence_plan=object(),
+    ) == "phase8-signature"
+    assert crafter._build_phase9_injection_plan_input_signature(
+        occurrence_plan=None,
+    ) is None
 
 
 def _make_phase11_step_stub(
@@ -5385,6 +6339,328 @@ def test_capture_phase8_11_codegen_ir_signature_changes_on_enriched_payload_sema
     second_signature = crafter.codegen_ir["phase8_11"]["signature"]
 
     assert second_signature != first_signature
+
+
+@pytest.mark.parametrize(
+    "step_count,max_depth,max_dependency_count,dispatch_route",
+    [
+        (8, 3, 1, "FAST_TRANSIENT_TIER_0"),
+        (16, 6, 8, "FAST_TRANSIENT_TIER_1"),
+        (24, 8, 8, "FAST_TRANSIENT_TIER_2"),
+        (32, 9, 10, "FAST_TRANSIENT_TIER_3"),
+        (33, 9, 10, "ENGINE"),
+    ],
+)
+def test_cache_execution_plan_metrics_assigns_dispatch_route_tiers(
+    step_count: int,
+    max_depth: int,
+    max_dependency_count: int,
+    dispatch_route: str,
+) -> None:
+    """
+    Purpose:
+        Validate Phase 11 metric caching assigns the expected dispatch route tier.
+    Contract:
+        - fast transient plans use the tier thresholds based on depth, step count,
+          and max dependency count.
+        - Out-of-range plans fall back to ENGINE.
+    """
+    crafter, spell, _ = _build_spell_and_crafter()
+    depths = {index: max_depth for index in range(step_count)}
+    occurrence_plan = types.SimpleNamespace(
+        occurrence_graph={("spell-{0}".format(index), index): {} for index in range(step_count)},
+        path_registry=types.SimpleNamespace(depth=lambda path_id: depths[path_id]),
+    )
+
+    steps = []
+    for index in range(step_count):
+        dependency_keys = [
+            ("dep-{0}-{1}".format(index, dep_index), None)
+            for dep_index in range(max_dependency_count)
+        ]
+        steps.append(
+            _make_phase11_step_stub(
+                "spell-{0}".format(index),
+                dependency_keys=dependency_keys,
+                has_contract_payload=False,
+                spell=types.SimpleNamespace(
+                    spell_index=types.SimpleNamespace(current="spell-{0}".format(index)),
+                    is_existing_creation=False,
+                ),
+            )
+        )
+
+    plan = types.SimpleNamespace(
+        steps=tuple(steps),
+        spell_id_step_index={step.instance_key[0]: index for index, step in enumerate(steps)},
+        fast_plan=None,
+        fast_transient_plan=object(),
+    )
+
+    crafter._cache_execution_plan_metrics(
+        occurrence_plan=occurrence_plan,
+        plan=plan,
+    )
+
+    assert spell.execution_plan_step_count == step_count
+    assert spell.execution_plan_max_occurrence_depth == max_depth
+    assert spell.execution_plan_max_dependency_count == max_dependency_count
+    assert spell.execution_plan_dispatch_route == dispatch_route
+
+
+def test_cache_execution_plan_metrics_records_calln_payload_and_existing_creation_flags() -> None:
+    """
+    Purpose:
+        Validate Phase 11 metric caching records execution-plan feature flags.
+    Contract:
+        - CALLN is detected from fast-plan metadata.
+        - Contract payload and existing-creation flags are aggregated from steps.
+        - Existing creations force ENGINE even when a transient plan exists.
+    """
+    crafter, spell, _ = _build_spell_and_crafter()
+    occurrence_plan = types.SimpleNamespace(
+        occurrence_graph={("root", 1): {}},
+        path_registry=types.SimpleNamespace(depth=lambda path_id: 1),
+    )
+    steps = (
+        _make_phase11_step_stub(
+            "root",
+            has_contract_payload=True,
+            dependency_keys=[("dep", None)],
+            spell=types.SimpleNamespace(
+                spell_index=types.SimpleNamespace(current="root"),
+                is_existing_creation=True,
+            ),
+        ),
+    )
+    fast_plan = tuple([None] * 20 + [[spell_crafter_module.ExecutionPlanCallMode.CALLN]])
+    plan = types.SimpleNamespace(
+        steps=steps,
+        spell_id_step_index={"root": 0},
+        fast_plan=fast_plan,
+        fast_transient_plan=object(),
+    )
+
+    crafter._cache_execution_plan_metrics(
+        occurrence_plan=occurrence_plan,
+        plan=plan,
+    )
+
+    assert spell.execution_plan_has_calln is True
+    assert spell.execution_plan_has_contract_payloads is True
+    assert spell.execution_plan_has_existing_creations is True
+    assert spell.execution_plan_dispatch_route == "ENGINE"
+
+
+def test_try_build_execution_plan_variant_from_base_returns_fresh_copied_plan() -> None:
+    """
+    Purpose:
+        Validate Phase 11 sibling-variant derivation from a compatible base plan.
+    Contract:
+        - Returns a fresh ExecutionPlan with copied list/dict containers.
+        - Preserves root identity and structural metadata while swapping the variant label.
+        - Does not carry fast-path arrays into the derived plan.
+    """
+    crafter, _, _ = _build_spell_and_crafter()
+    base_steps = [types.SimpleNamespace(name="step")]
+    base_plan = types.SimpleNamespace(
+        root_spell_id="root",
+        root_instance_key=("root", None),
+        steps=base_steps,
+        spell_id_step_index={"root": 0},
+        optimistic_object_refs_by_spell_id={"root": "existing"},
+        available_param_by_spell_id={"root": 1},
+    )
+
+    derived = crafter._try_build_execution_plan_variant_from_base(
+        base_plan=base_plan,
+        plan_variant=spell_crafter_module.ExecutionPlanVariant.OVERRIDES,
+    )
+
+    assert derived is not None
+    assert derived.root_spell_id == "root"
+    assert derived.root_instance_key == ("root", None)
+    assert derived.plan_variant == spell_crafter_module.ExecutionPlanVariant.OVERRIDES
+    assert derived.steps == base_steps
+    assert derived.steps is not base_steps
+    assert derived.spell_id_step_index == {"root": 0}
+    assert derived.spell_id_step_index is not base_plan.spell_id_step_index
+    assert derived.optimistic_object_refs_by_spell_id == {"root": "existing"}
+    assert derived.available_param_by_spell_id == {"root": 1}
+    assert derived.fast_plan is None
+    derived.cleanup()
+
+
+@pytest.mark.parametrize(
+    "base_plan",
+    [
+        types.SimpleNamespace(),
+        types.SimpleNamespace(
+            root_spell_id=None,
+            root_instance_key=("root", None),
+            steps=[],
+            spell_id_step_index={},
+            optimistic_object_refs_by_spell_id={},
+            available_param_by_spell_id={},
+        ),
+        types.SimpleNamespace(
+            root_spell_id="root",
+            root_instance_key=("root", None),
+            steps=None,
+            spell_id_step_index={},
+            optimistic_object_refs_by_spell_id={},
+            available_param_by_spell_id={},
+        ),
+        types.SimpleNamespace(
+            root_spell_id="root",
+            root_instance_key=("root", None),
+            steps=object(),
+            spell_id_step_index={},
+            optimistic_object_refs_by_spell_id={},
+            available_param_by_spell_id={},
+        ),
+    ],
+)
+def test_try_build_execution_plan_variant_from_base_returns_none_for_incompatible_inputs(
+    base_plan: object,
+) -> None:
+    """
+    Purpose:
+        Validate Phase 11 sibling-variant derivation rejects incompatible base plans.
+    Contract:
+        - Missing attributes, missing identity, and uncopyable structures return None.
+    """
+    crafter, _, _ = _build_spell_and_crafter()
+
+    assert crafter._try_build_execution_plan_variant_from_base(
+        base_plan=base_plan,
+        plan_variant=spell_crafter_module.ExecutionPlanVariant.OVERRIDES,
+    ) is None
+
+
+def test_build_execution_plan_variant_delegates_to_builder(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Purpose:
+        Validate the direct Phase 11 builder wrapper.
+    Contract:
+        - `_build_execution_plan_variant(...)` instantiates ExecutionPlanBuilder with the supplied inputs.
+        - The built plan is returned unchanged to the caller.
+    """
+    crafter, _, _ = _build_spell_and_crafter()
+    captured: dict[str, object] = {}
+    expected_plan = object()
+
+    class _ExecutionPlanBuilderStub:
+        def __init__(
+            self,
+            *,
+            occurrence_plan: object,
+            injection_plan: object,
+            spell_lookup: object,
+            plan_variant: str,
+        ) -> None:
+            captured["occurrence_plan"] = occurrence_plan
+            captured["injection_plan"] = injection_plan
+            captured["spell_lookup"] = spell_lookup
+            captured["plan_variant"] = plan_variant
+
+        def build(self) -> object:
+            return expected_plan
+
+    monkeypatch.setattr(spell_crafter_module, "ExecutionPlanBuilder", _ExecutionPlanBuilderStub)
+
+    occurrence_plan = object()
+    injection_plan = object()
+    spell_lookup = {"root": object()}
+
+    result = crafter._build_execution_plan_variant(
+        occurrence_plan=occurrence_plan,
+        injection_plan=injection_plan,
+        spell_lookup=spell_lookup,
+        plan_variant=spell_crafter_module.ExecutionPlanVariant.OVERRIDES,
+    )
+
+    assert result is expected_plan
+    assert captured == {
+        "occurrence_plan": occurrence_plan,
+        "injection_plan": injection_plan,
+        "spell_lookup": spell_lookup,
+        "plan_variant": spell_crafter_module.ExecutionPlanVariant.OVERRIDES,
+    }
+
+
+def test_cleanup_execution_plans_phase11_cleans_variants_and_resets_ir(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Purpose:
+        Validate deterministic cleanup of all cached Phase 11 variants.
+    Contract:
+        - All existing variant plans are cleaned.
+        - Cleanup swallows per-plan cleanup failures.
+        - Phase 8/11 IR reset is invoked once.
+    """
+    crafter, _, _ = _build_spell_and_crafter()
+    cleaned: list[str] = []
+
+    class _Plan:
+        def __init__(self, label: str, *, raise_on_cleanup: bool = False) -> None:
+            self.label = label
+            self.raise_on_cleanup = raise_on_cleanup
+
+        def cleanup(self) -> None:
+            cleaned.append(self.label)
+            if self.raise_on_cleanup:
+                raise RuntimeError("boom")
+
+    crafter._execution_plan_phase11 = _Plan("main")
+    crafter._execution_plan_phase11_no_overrides = _Plan("fast", raise_on_cleanup=True)
+    crafter._execution_plan_phase11_overrides = _Plan("overrides")
+    reset_calls: list[str] = []
+
+    def _reset(self: SpellCrafter) -> None:
+        reset_calls.append("reset")
+
+    monkeypatch.setattr(SpellCrafter, "_reset_phase8_11_codegen_ir", _reset)
+
+    crafter._cleanup_execution_plans_phase11()
+
+    assert cleaned == ["main", "fast", "overrides"]
+    assert reset_calls == ["reset"]
+    assert crafter._execution_plan_phase11 is None
+    assert crafter._execution_plan_phase11_no_overrides is None
+    assert crafter._execution_plan_phase11_overrides is None
+
+
+def test_cleanup_execution_plans_phase11_swallows_main_and_overrides_cleanup_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Purpose:
+        Validate the exception-swallow branches in Phase 11 cleanup.
+    Contract:
+        - Main and overrides cleanup failures are swallowed.
+        - IR reset still runs and cached plan refs are cleared.
+    """
+    crafter, _, _ = _build_spell_and_crafter()
+
+    class _Plan:
+        def cleanup(self) -> None:
+            raise RuntimeError("boom")
+
+    crafter._execution_plan_phase11 = _Plan()
+    crafter._execution_plan_phase11_no_overrides = None
+    crafter._execution_plan_phase11_overrides = _Plan()
+    reset_calls: list[str] = []
+
+    def _reset(self: SpellCrafter) -> None:
+        reset_calls.append("reset")
+
+    monkeypatch.setattr(SpellCrafter, "_reset_phase8_11_codegen_ir", _reset)
+
+    crafter._cleanup_execution_plans_phase11()
+
+    assert reset_calls == ["reset"]
+    assert crafter._execution_plan_phase11 is None
+    assert crafter._execution_plan_phase11_overrides is None
 
 
 def test_compile_phase12_no_overrides_executor_recompiles_on_phase11_semantic_change(

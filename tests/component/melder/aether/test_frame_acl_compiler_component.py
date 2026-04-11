@@ -2,6 +2,9 @@ from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.aether.nexus.acl.frame_acl_compiler import FrameACLCompiler
+from melder.aether.nexus.acl.frame_acl_codegen_configuration import (
+    FrameACLCodegenConfiguration,
+)
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
@@ -82,7 +85,7 @@ def _build_frame_descriptor() -> FrameDescriptor:
             frame_name="ops",
             owner_conduit_id="conduit-1",
             spell_id="spell-1",
-            lineage_id="lineage-1",
+            spell_index_id="lineage-1",
             spell_name="SpellOne",
             spellframe=None,
             binding_name="spell_one",
@@ -193,7 +196,7 @@ def test_component_container_builder_commit_flows_into_compiler_output() -> None
     container = manager._ensure_frame_acl_container("ops")
     builder = container.frame_acl_builder
 
-    builder.begin_change()
+    builder.begin_change("view")
     builder.apply_frame_acl_profile(
         FrameACLProfile(
             "support",
@@ -201,7 +204,17 @@ def test_component_container_builder_commit_flows_into_compiler_output() -> None
             codegen_profile=FrameACLCodegenProfile.create_permissive(),
         )
     )
-    next_configuration = builder.commit_change()
+    builder.commit_change()
+    builder.begin_change("codegen")
+    builder.apply_frame_acl_profile(
+        FrameACLProfile(
+            "support",
+            view_profile=FrameACLViewProfile.create_hybrid(),
+            codegen_profile=FrameACLCodegenProfile.create_permissive(),
+        )
+    )
+    builder.commit_change()
+    next_configuration = container.frame_acl_configuration
 
     compiled_surface = FrameACLCompiler(
         manager.frame_acl_profile_builder
@@ -254,34 +267,42 @@ def test_component_rollback_restores_original_compiled_command_surface() -> None
     """
     manager = FrameACLManager()
     container = manager._ensure_frame_acl_container("ops")
-    original = container.frame_acl_configuration
-    draft = FrameACLConfiguration.create_new_from_acl_configuration(
+    original = container.get_current_codegen_configuration()
+    draft = FrameACLCodegenConfiguration.create_new_from_configuration(
         original,
         reason="rollback_test",
     )
-    draft.set_codegen_configuration(
-        draft.codegen_configuration.from_profile(
-            FrameACLCodegenProfile.create_permissive()
-        )
+    draft = draft.from_profile(
+        FrameACLCodegenProfile.create_permissive(),
+        reason="rollback_test",
+        locked=True,
     )
-    draft.finalize()
-    inserted = manager._insert_head_frame_acl_configuration(
-        "ops",
+    inserted = container.insert_head_codegen_configuration(
         draft,
+        contract_name="default",
         select_as_current=True,
     )
-    manager._rollback_frame_acl_configuration("ops", original.configuration_id)
+    container.rollback_codegen_configuration(
+        original.configuration_id,
+        contract_name="default",
+    )
 
     compiler = FrameACLCompiler(manager.frame_acl_profile_builder)
     rolled_back_surface = compiler.compile_frame_access_surface(
         _build_frame_descriptor(),
-        manager._get_current_frame_acl_configuration("ops"),
+        container.frame_acl_configuration,
     )
     inserted_surface = compiler.compile_frame_access_surface(
         _build_frame_descriptor(),
-        inserted,
+        FrameACLConfiguration.create_from_selected_configurations(
+            frame_name="ops",
+            view_configuration=container.get_current_view_configuration(),
+            command_configuration=container.get_current_command_configuration(),
+            codegen_configuration=inserted,
+            reason="inserted_surface",
+            locked=True,
+        ),
     )
 
     assert "write_attribute" not in rolled_back_surface.allowed_commands
     assert "write_attribute" in inserted_surface.allowed_commands
-

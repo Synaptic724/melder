@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.acl.frame_acl_set_compatibility_validator import (
@@ -11,9 +11,18 @@ from melder.aether.nexus.acl.profiles.frame_acl_profile_builder import (
 from melder.utilities.general_base.cleanable import Cleanable
 
 from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
+from melder.aether.nexus.acl.frame_acl_command_configuration import (
+    FrameACLCommandConfiguration,
+)
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.frame_acl_configuration_chain import FrameACLConfigurationChain
+from melder.aether.nexus.acl.frame_acl_codegen_configuration import (
+    FrameACLCodegenConfiguration,
+)
 from melder.aether.nexus.acl.frame_acl_validator import FrameACLValidator
+from melder.aether.nexus.acl.frame_acl_view_configuration import (
+    FrameACLViewConfiguration,
+)
 from melder.utilities.helpers.id_builder import IDBuilder
 
 
@@ -24,19 +33,13 @@ class FrameACLContainer(Cleanable):
 
     Contract:
         - One container exists per frame ACL registration.
-        - The container owns one configuration chain, one child/type validator,
-          one set-compatibility validator, and one builder for the frame.
+        - The container owns separate named version chains for view, command,
+          and codegen.
+        - Same-name bundle assembly is convenience only; the real storage model
+          is separate family chains.
         - The builder is a stable object-singleton inside the container.
-        - The container is the handoff point between manager-level frame
-          targeting and chain-level ACL history mechanics.
-
-    Threading:
-        Uses one instance `threading.RLock` to serialize cleanup against other
-        container-owned operations.
-
-    Lifecycle:
-        Cleanup is idempotent and cascades into the builder, both validators,
-        and the configuration chain before dropping references.
+        - The container owns validator services used to validate assembled
+          snapshots against descriptor truth and cross-child compatibility.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -44,10 +47,12 @@ class FrameACLContainer(Cleanable):
         "_id",
         "_lock",
         "_frame_name",
-        "_frame_acl_configuration_chain",
-        "_named_configurations_by_name",
+        "_view_configuration_chains_by_name",
+        "_command_configuration_chains_by_name",
+        "_codegen_configuration_chains_by_name",
         "_profile_builder",
         "_owns_profile_builder",
+        "_change_callback",
         "_frame_acl_validator",
         "_frame_acl_set_compatibility_validator",
         "_frame_acl_builder",
@@ -59,41 +64,25 @@ class FrameACLContainer(Cleanable):
             *,
             history_limit: int = 15,
             profile_builder: Optional[FrameACLProfileBuilder] = None,
+            change_callback: Optional[Callable[[str], None]] = None,
     ) -> None:
         """
         Initialize one frame ACL container.
-
-        Purpose:
-            Create the frame-local ACL subsystem objects and seed the
-            configuration chain with its default head/current configuration.
-
-        Contract:
-            - `frame_name` must be a non-empty stable frame identifier.
-            - `history_limit` must allow at least one retained configuration.
-            - Builder, validators, and chain are created eagerly and owned by
-              the container from construction onward.
-            - Compatibility validation uses the shared ACL profile builder when
-              provided; otherwise a local builder/library is created for
-              standalone container use.
 
         Args:
             frame_name:
                 Stable frame name that owns this ACL container.
             history_limit:
-                Maximum number of configuration nodes retained by the owned
-                chain.
+                Maximum number of retained configuration nodes per family chain.
             profile_builder:
                 Optional shared ACL profile builder used by the compatibility
                 validator.
+            change_callback:
+                Optional callback invoked after a committed family-chain change
+                for this frame.
 
         Returns:
             None.
-
-        Raises:
-            ValueError:
-                If `frame_name` is empty or `history_limit` is less than 1.
-            TypeError:
-                If `history_limit` is not an integer.
         """
         super().__init__()
         if not frame_name:
@@ -103,18 +92,15 @@ class FrameACLContainer(Cleanable):
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
-        self._frame_acl_configuration_chain: FrameACLConfigurationChain = (
-            FrameACLConfigurationChain(
-                frame_name,
-                history_limit=history_limit,
-            )
-        )
-        self._named_configurations_by_name: Dict[str, FrameACLConfiguration] = {}
+        self._view_configuration_chains_by_name: Dict[str, FrameACLConfigurationChain] = {}
+        self._command_configuration_chains_by_name: Dict[str, FrameACLConfigurationChain] = {}
+        self._codegen_configuration_chains_by_name: Dict[str, FrameACLConfigurationChain] = {}
         self._frame_acl_validator: FrameACLValidator = FrameACLValidator(frame_name)
         self._owns_profile_builder: bool = profile_builder is None
         if profile_builder is None:
             profile_builder = FrameACLProfileBuilder()
         self._profile_builder: FrameACLProfileBuilder = profile_builder
+        self._change_callback: Optional[Callable[[str], None]] = change_callback
         self._frame_acl_set_compatibility_validator = (
             FrameACLSetCompatibilityValidator(
                 frame_name,
@@ -122,24 +108,11 @@ class FrameACLContainer(Cleanable):
             )
         )
         self._frame_acl_builder: FrameACLBuilder = FrameACLBuilder(self)
-        self._sync_default_named_configuration_to_current()
+        self._seed_default_chains(history_limit=history_limit)
 
     def cleanup(self) -> None:
         """
         Idempotently cleanup the container and all owned ACL objects.
-
-        Purpose:
-            Tear down the frame-local ACL subsystem in dependency order.
-
-        Contract:
-            - Safe to call more than once.
-            - Cleans builder, validators, and configuration chain before
-              dropping references.
-            - Leaves the container unusable after completion.
-
-        Threading:
-            Acquires the container lock so teardown does not interleave with
-            other container-owned operations.
 
         Returns:
             None.
@@ -155,15 +128,24 @@ class FrameACLContainer(Cleanable):
             self._frame_acl_set_compatibility_validator.cleanup()
             if self._owns_profile_builder and self._profile_builder is not None:
                 self._profile_builder.cleanup()
-            self._frame_acl_configuration_chain.cleanup()
-            self._named_configurations_by_name.clear()
+            for chain in self._view_configuration_chains_by_name.values():
+                chain.cleanup()
+            for chain in self._command_configuration_chains_by_name.values():
+                chain.cleanup()
+            for chain in self._codegen_configuration_chains_by_name.values():
+                chain.cleanup()
+            self._view_configuration_chains_by_name.clear()
+            self._command_configuration_chains_by_name.clear()
+            self._codegen_configuration_chains_by_name.clear()
             self._frame_acl_builder = None
             self._frame_acl_validator = None
             self._frame_acl_set_compatibility_validator = None
             self._profile_builder = None
             self._owns_profile_builder = None
-            self._frame_acl_configuration_chain = None
-            self._named_configurations_by_name = None
+            self._change_callback = None
+            self._view_configuration_chains_by_name = None
+            self._command_configuration_chains_by_name = None
+            self._codegen_configuration_chains_by_name = None
             self._frame_name = None
         self._lock = None
 
@@ -171,9 +153,6 @@ class FrameACLContainer(Cleanable):
     def frame_name(self) -> str:
         """
         Return the owning frame name.
-
-        Purpose:
-            Expose the stable frame identity that anchors the container.
 
         Returns:
             str: Owning frame name.
@@ -186,12 +165,6 @@ class FrameACLContainer(Cleanable):
         """
         Return the unique builder object for this frame container.
 
-        Purpose:
-            Expose the one builder object owned by the container.
-
-        Contract:
-            Repeated reads return the same builder object until cleanup.
-
         Returns:
             FrameACLBuilder: Unique builder object.
         """
@@ -201,67 +174,38 @@ class FrameACLContainer(Cleanable):
     @property
     def frame_acl_configuration(self) -> FrameACLConfiguration:
         """
-        Return the current frame ACL configuration.
-
-        Purpose:
-            Expose the currently selected configuration node from the owned
-            configuration chain.
-
-        Contract:
-            This is the same node currently published under the reserved
-            `"default"` named configuration.
+        Return the assembled default ACL configuration snapshot.
 
         Returns:
-            FrameACLConfiguration: Current configuration.
+            FrameACLConfiguration: Assembled default ACL snapshot.
         """
         self.check_cleaned()
-        return self._frame_acl_configuration_chain.get_current_configuration()
+        return self.build_selected_configuration()
 
     @property
     def named_configurations_by_name(self) -> Dict[str, FrameACLConfiguration]:
         """
-        Return a detached snapshot of named ACL configurations for this frame.
-
-        Purpose:
-            Expose the per-frame named contract registry without returning the
-            live mutable dictionary.
-
-        Contract:
-            - Returns a shallow copy.
-            - `"default"` is always present and tracks the current selected
-              configuration from the chain.
+        Return assembled same-name ACL snapshots keyed by contract name.
 
         Returns:
-            Dict[str, FrameACLConfiguration]:
-                Detached snapshot of named configurations for this frame.
+            Dict[str, FrameACLConfiguration]: Assembled same-name ACL snapshots.
         """
         self.check_cleaned()
         with self._lock:
-            return dict(self._named_configurations_by_name)
-
-    @property
-    def frame_acl_configuration_chain(self) -> FrameACLConfigurationChain:
-        """
-        Return the frame-scoped ACL configuration chain.
-
-        Purpose:
-            Expose the owned history/current/head mechanics object for the
-            frame.
-
-        Returns:
-            FrameACLConfigurationChain: Frame-scoped configuration chain.
-        """
-        self.check_cleaned()
-        return self._frame_acl_configuration_chain
+            common_contract_names = (
+                set(self._view_configuration_chains_by_name.keys())
+                & set(self._command_configuration_chains_by_name.keys())
+                & set(self._codegen_configuration_chains_by_name.keys())
+            )
+        return {
+            contract_name: self.get_named_configuration(contract_name)
+            for contract_name in sorted(common_contract_names)
+        }
 
     @property
     def frame_acl_validator(self) -> FrameACLValidator:
         """
         Return the frame-scoped ACL validator.
-
-        Purpose:
-            Expose the owned validator object that checks configuration/frame
-            alignment.
 
         Returns:
             FrameACLValidator: Frame-scoped validator.
@@ -276,10 +220,6 @@ class FrameACLContainer(Cleanable):
         """
         Return the frame-scoped ACL set compatibility validator.
 
-        Purpose:
-            Expose the owned validator that checks one selected ACL bundle for
-            cross-set compatibility across view, command, and codegen policy.
-
         Returns:
             FrameACLSetCompatibilityValidator:
                 Frame-scoped set compatibility validator.
@@ -288,162 +228,118 @@ class FrameACLContainer(Cleanable):
         return self._frame_acl_set_compatibility_validator
 
     @property
-    def frame_acl_history(self) -> List[FrameACLConfiguration]:
+    def view_chain_names(self) -> List[str]:
         """
-        Return a snapshot of retained configuration history.
-
-        Purpose:
-            Provide the non-current retained configuration nodes for inspection
-            without exposing chain internals directly.
-
-        Contract:
-            - Excludes the current configuration node.
-            - Preserves newest-to-oldest ordering from the chain.
+        Return named view-chain registry keys.
 
         Returns:
-            List[FrameACLConfiguration]: Snapshot of prior configurations.
+            List[str]: Named view-chain keys.
         """
         self.check_cleaned()
-        current_configuration_id = (
-            self._frame_acl_configuration_chain.current_configuration_id
-        )
-        return [
-            configuration
-            for configuration in self._frame_acl_configuration_chain.list_configurations()
-            if configuration.configuration_id != current_configuration_id
-        ]
+        with self._lock:
+            return list(self._view_configuration_chains_by_name.keys())
 
-    def install_configuration(
+    @property
+    def command_chain_names(self) -> List[str]:
+        """
+        Return named command-chain registry keys.
+
+        Returns:
+            List[str]: Named command-chain keys.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return list(self._command_configuration_chains_by_name.keys())
+
+    @property
+    def codegen_chain_names(self) -> List[str]:
+        """
+        Return named codegen-chain registry keys.
+
+        Returns:
+            List[str]: Named codegen-chain keys.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return list(self._codegen_configuration_chains_by_name.keys())
+
+    def get_current_view_configuration(
             self,
-            configuration: FrameACLConfiguration,
-    ) -> None:
+            contract_name: str = "default",
+    ) -> FrameACLViewConfiguration:
         """
-        Validate and install the next frame ACL configuration revision.
-
-        Purpose:
-            Commit a validated configuration node into the owned chain as the
-            new head/current node.
-
-        Contract:
-            - Validation runs before insertion.
-            - Successful installation inserts at the head and selects the new
-              node as current.
-
-        Args:
-            configuration:
-                Locked configuration node to install.
+        Return the current selected view configuration for one contract.
 
         Returns:
-            None.
-
-        Raises:
-            TypeError, ValueError:
-                Propagated when validation fails or the chain rejects the node.
+            FrameACLViewConfiguration: Current view configuration.
         """
-        self.check_cleaned()
-        self._frame_acl_validator.validate_configuration(configuration)
-        self._frame_acl_set_compatibility_validator.validate_configuration(
-            configuration
-        )
-        self._frame_acl_configuration_chain.insert_head_configuration(
-            configuration,
-            select_as_current=True,
-        )
-        self._sync_default_named_configuration_to_current()
+        return self._get_required_family_chain(
+            "view",
+            contract_name,
+        ).get_current_configuration()
 
-    def select_current_configuration(
+    def get_current_command_configuration(
             self,
-            configuration_id: str,
-    ) -> FrameACLConfiguration:
+            contract_name: str = "default",
+    ) -> FrameACLCommandConfiguration:
         """
-        Select one existing configuration in the chain as current.
-
-        Purpose:
-            Move current selection to one already-owned configuration node.
-
-        Contract:
-            - Delegates the selection change to the owned configuration chain.
-            - Resynchronizes the reserved `"default"` named configuration after
-              selection changes.
-
-        Args:
-            configuration_id:
-                Existing configuration id to make current.
+        Return the current selected command configuration for one contract.
 
         Returns:
-            FrameACLConfiguration: Newly selected current configuration.
+            FrameACLCommandConfiguration: Current command configuration.
         """
-        self.check_cleaned()
-        selected_configuration = (
-            self._frame_acl_configuration_chain.select_current_configuration(
-                configuration_id
-            )
-        )
-        self._sync_default_named_configuration_to_current()
-        return selected_configuration
+        return self._get_required_family_chain(
+            "command",
+            contract_name,
+        ).get_current_configuration()
+
+    def get_current_codegen_configuration(
+            self,
+            contract_name: str = "default",
+    ) -> FrameACLCodegenConfiguration:
+        """
+        Return the current selected codegen configuration for one contract.
+
+        Returns:
+            FrameACLCodegenConfiguration: Current codegen configuration.
+        """
+        return self._get_required_family_chain(
+            "codegen",
+            contract_name,
+        ).get_current_configuration()
 
     def get_named_configuration(
             self,
             contract_name: str = "default",
     ) -> FrameACLConfiguration:
         """
-        Return one named ACL configuration for this frame.
-
-        Purpose:
-            Resolve one frame-local named ACL contract.
-
-        Contract:
-            - Names are local to this frame.
-            - `"default"` always resolves to the current selected chain
-              configuration.
-            - Fails fast when the requested name is not registered.
-
-        Args:
-            contract_name:
-                Frame-local contract name to resolve.
+        Return one assembled same-name ACL snapshot for this frame.
 
         Returns:
-            FrameACLConfiguration:
-                Registered named configuration for this frame.
-
-        Raises:
-            ValueError:
-                If `contract_name` is empty.
-            KeyError:
-                If the name is not registered.
+            FrameACLConfiguration: Assembled ACL snapshot for the selected name.
         """
         self.check_cleaned()
-        if not contract_name:
-            raise ValueError("contract_name cannot be empty.")
-        with self._lock:
-            try:
-                return self._named_configurations_by_name[contract_name]
-            except KeyError as exc:
-                raise KeyError(
-                    "No ACL contract named '{0}' is registered for frame '{1}'.".format(
-                        contract_name,
-                        self._frame_name,
-                    )
-                ) from exc
+        return self.build_selected_configuration(
+            view_contract_name=contract_name,
+            command_contract_name=contract_name,
+            codegen_contract_name=contract_name,
+            reason="named_selection",
+        )
 
     def list_named_configuration_names(self) -> List[str]:
         """
-        Return all registered ACL contract names for this frame.
-
-        Purpose:
-            Expose the frame-local named contract registry keys in insertion
-            order.
-
-        Contract:
-            Includes the reserved `"default"` contract name.
+        Return the contract names available across all three families.
 
         Returns:
-            List[str]:
-                Registered contract names for this frame.
+            List[str]: Same-name contract keys present in all three registries.
         """
         self.check_cleaned()
         with self._lock:
-            return list(self._named_configurations_by_name.keys())
+            return sorted(
+                set(self._view_configuration_chains_by_name.keys())
+                & set(self._command_configuration_chains_by_name.keys())
+                & set(self._codegen_configuration_chains_by_name.keys())
+            )
 
     def register_named_configuration(
             self,
@@ -452,109 +348,675 @@ class FrameACLContainer(Cleanable):
             contract_name: str = "default",
     ) -> FrameACLConfiguration:
         """
-        Register one additional named ACL configuration for this frame.
-
-        Purpose:
-            Add a new frame-local named contract without replacing the current
-            chain/history mechanics.
-
-        Contract:
-            - `contract_name` must be non-empty.
-            - Duplicate names are rejected.
-            - `"default"` is reserved by the container and is seeded
-              automatically from the current selected configuration.
-            - The configuration must target this frame and already be locked.
-
-        Args:
-            configuration:
-                Locked configuration node to register.
-            contract_name:
-                Frame-local contract name.
+        Register one same-name ACL bundle across all three families.
 
         Returns:
-            FrameACLConfiguration:
-                Registered configuration node.
-
-        Raises:
-            ValueError:
-                If the name is empty, already exists, or the configuration is
-                unlocked.
-            TypeError:
-                If `configuration` is not a `FrameACLConfiguration`.
+            FrameACLConfiguration: Registered assembled bundle snapshot.
         """
         self.check_cleaned()
-        if not contract_name:
-            raise ValueError("contract_name cannot be empty.")
         if not isinstance(configuration, FrameACLConfiguration):
             raise TypeError("configuration must be a FrameACLConfiguration.")
+        if configuration.frame_name != self._frame_name:
+            raise ValueError(
+                "FrameACLConfiguration targets frame '{0}', expected '{1}'.".format(
+                    configuration.frame_name,
+                    self._frame_name,
+                )
+            )
         if not configuration.locked:
             raise ValueError(
                 "Named ACL configuration must be locked before registration."
             )
-        self._frame_acl_validator.validate_configuration(configuration)
-        self._frame_acl_set_compatibility_validator.validate_configuration(
-            configuration
+        self._register_family_configuration(
+            "view",
+            configuration.view_configuration.clone(),
+            contract_name=contract_name,
         )
-        with self._lock:
-            if contract_name in self._named_configurations_by_name:
-                raise ValueError(
-                    "ACL contract '{0}' already exists for frame '{1}'.".format(
-                        contract_name,
-                        self._frame_name,
-                    )
-                )
-            self._named_configurations_by_name[contract_name] = configuration
-            return configuration
+        self._register_family_configuration(
+            "command",
+            configuration.command_configuration.clone(),
+            contract_name=contract_name,
+        )
+        self._register_family_configuration(
+            "codegen",
+            configuration.codegen_configuration.clone(),
+            contract_name=contract_name,
+        )
+        self._notify_acl_changed()
+        return self.get_named_configuration(contract_name)
 
-    def rollback_to_configuration(
+    def install_configuration(
             self,
-            configuration_id: str,
+            configuration: FrameACLConfiguration,
+            *,
+            contract_name: str = "default",
     ) -> FrameACLConfiguration:
         """
-        Roll current selection back to one historical config.
-
-        Purpose:
-            Provide a semantic rollback entrypoint over the underlying
-            current-selection mechanics.
-
-        Contract:
-            - Delegates rollback/current selection to the chain.
-            - Resynchronizes the reserved `"default"` named configuration after
-              rollback.
-
-        Args:
-            configuration_id:
-                Historical configuration id to restore as current.
+        Install one same-name ACL bundle revision across all three families.
 
         Returns:
-            FrameACLConfiguration: Newly selected current configuration.
+            FrameACLConfiguration: Newly assembled current ACL snapshot.
         """
         self.check_cleaned()
-        rolled_back_configuration = (
-            self._frame_acl_configuration_chain.rollback_to_configuration(
-                configuration_id
+        if not isinstance(configuration, FrameACLConfiguration):
+            raise TypeError("configuration must be a FrameACLConfiguration.")
+        if configuration.frame_name != self._frame_name:
+            raise ValueError(
+                "FrameACLConfiguration targets frame '{0}', expected '{1}'.".format(
+                    configuration.frame_name,
+                    self._frame_name,
+                )
             )
+        if not configuration.locked:
+            raise ValueError("Configuration must be locked before installation.")
+        self.insert_head_view_configuration(
+            configuration.view_configuration.clone(),
+            contract_name=contract_name,
+            select_as_current=True,
         )
-        self._sync_default_named_configuration_to_current()
-        return rolled_back_configuration
+        self.insert_head_command_configuration(
+            configuration.command_configuration.clone(),
+            contract_name=contract_name,
+            select_as_current=True,
+        )
+        self.insert_head_codegen_configuration(
+            configuration.codegen_configuration.clone(),
+            contract_name=contract_name,
+            select_as_current=True,
+        )
+        self._notify_acl_changed()
+        return self.get_named_configuration(contract_name)
 
-    def _sync_default_named_configuration_to_current(self) -> None:
+    def create_new_from_view_configuration(
+            self,
+            configuration_id: str,
+            *,
+            contract_name: str = "default",
+            reason: str,
+    ) -> FrameACLViewConfiguration:
         """
-        Sync the reserved `"default"` contract to the current chain selection.
+        Create a new view draft copied from one existing view revision.
 
-        Purpose:
-            Preserve backward-compatible behavior where the default named ACL
-            contract for a frame tracks the frame's currently selected
-            configuration.
+        Returns:
+            FrameACLViewConfiguration: New unlocked view configuration draft.
+        """
+        return self._get_required_family_chain(
+            "view",
+            contract_name,
+        ).create_new_from_acl_configuration(
+            configuration_id,
+            reason=reason,
+        )
 
-        Contract:
-            Overwrites the `"default"` named configuration with the chain's
-            current selection every time it runs.
+    def create_new_from_command_configuration(
+            self,
+            configuration_id: str,
+            *,
+            contract_name: str = "default",
+            reason: str,
+    ) -> FrameACLCommandConfiguration:
+        """
+        Create a new command draft copied from one existing command revision.
+
+        Returns:
+            FrameACLCommandConfiguration: New unlocked command configuration draft.
+        """
+        return self._get_required_family_chain(
+            "command",
+            contract_name,
+        ).create_new_from_acl_configuration(
+            configuration_id,
+            reason=reason,
+        )
+
+    def create_new_from_codegen_configuration(
+            self,
+            configuration_id: str,
+            *,
+            contract_name: str = "default",
+            reason: str,
+    ) -> FrameACLCodegenConfiguration:
+        """
+        Create a new codegen draft copied from one existing codegen revision.
+
+        Returns:
+            FrameACLCodegenConfiguration: New unlocked codegen configuration draft.
+        """
+        return self._get_required_family_chain(
+            "codegen",
+            contract_name,
+        ).create_new_from_acl_configuration(
+            configuration_id,
+            reason=reason,
+        )
+
+    def insert_head_view_configuration(
+            self,
+            configuration: FrameACLViewConfiguration,
+            *,
+            contract_name: str = "default",
+            select_as_current: bool,
+    ) -> FrameACLViewConfiguration:
+        """
+        Insert one view configuration revision at the head of a named chain.
+
+        Returns:
+            FrameACLViewConfiguration: Inserted view configuration revision.
+        """
+        self._validate_family_change(
+            family_name="view",
+            contract_name=contract_name,
+            next_view_configuration=configuration,
+        )
+        chain = self._get_required_family_chain("view", contract_name)
+        inserted = chain.insert_head_configuration(
+            configuration,
+            select_as_current=select_as_current,
+        )
+        self._notify_acl_changed()
+        return inserted
+
+    def insert_head_command_configuration(
+            self,
+            configuration: FrameACLCommandConfiguration,
+            *,
+            contract_name: str = "default",
+            select_as_current: bool,
+    ) -> FrameACLCommandConfiguration:
+        """
+        Insert one command configuration revision at the head of a named chain.
+
+        Returns:
+            FrameACLCommandConfiguration: Inserted command configuration revision.
+        """
+        self._validate_family_change(
+            family_name="command",
+            contract_name=contract_name,
+            next_command_configuration=configuration,
+        )
+        chain = self._get_required_family_chain("command", contract_name)
+        inserted = chain.insert_head_configuration(
+            configuration,
+            select_as_current=select_as_current,
+        )
+        self._notify_acl_changed()
+        return inserted
+
+    def insert_head_codegen_configuration(
+            self,
+            configuration: FrameACLCodegenConfiguration,
+            *,
+            contract_name: str = "default",
+            select_as_current: bool,
+    ) -> FrameACLCodegenConfiguration:
+        """
+        Insert one codegen configuration revision at the head of a named chain.
+
+        Returns:
+            FrameACLCodegenConfiguration: Inserted codegen configuration revision.
+        """
+        self._validate_family_change(
+            family_name="codegen",
+            contract_name=contract_name,
+            next_codegen_configuration=configuration,
+        )
+        chain = self._get_required_family_chain("codegen", contract_name)
+        inserted = chain.insert_head_configuration(
+            configuration,
+            select_as_current=select_as_current,
+        )
+        self._notify_acl_changed()
+        return inserted
+
+    def select_current_view_configuration(
+            self,
+            configuration_id: str,
+            *,
+            contract_name: str = "default",
+    ) -> FrameACLViewConfiguration:
+        """
+        Select one existing view configuration revision as current.
+
+        Returns:
+            FrameACLViewConfiguration: Newly selected current view revision.
+        """
+        selected = self._get_required_family_chain(
+            "view",
+            contract_name,
+        ).select_current_configuration(configuration_id)
+        self._notify_acl_changed()
+        return selected
+
+    def select_current_command_configuration(
+            self,
+            configuration_id: str,
+            *,
+            contract_name: str = "default",
+    ) -> FrameACLCommandConfiguration:
+        """
+        Select one existing command configuration revision as current.
+
+        Returns:
+            FrameACLCommandConfiguration: Newly selected current command revision.
+        """
+        selected = self._get_required_family_chain(
+            "command",
+            contract_name,
+        ).select_current_configuration(configuration_id)
+        self._notify_acl_changed()
+        return selected
+
+    def select_current_codegen_configuration(
+            self,
+            configuration_id: str,
+            *,
+            contract_name: str = "default",
+    ) -> FrameACLCodegenConfiguration:
+        """
+        Select one existing codegen configuration revision as current.
+
+        Returns:
+            FrameACLCodegenConfiguration: Newly selected current codegen revision.
+        """
+        selected = self._get_required_family_chain(
+            "codegen",
+            contract_name,
+        ).select_current_configuration(configuration_id)
+        self._notify_acl_changed()
+        return selected
+
+    def rollback_view_configuration(
+            self,
+            configuration_id: str,
+            *,
+            contract_name: str = "default",
+    ) -> FrameACLViewConfiguration:
+        """
+        Roll current view selection back to one historical revision.
+
+        Returns:
+            FrameACLViewConfiguration: Newly selected current view revision.
+        """
+        rolled_back = self._get_required_family_chain(
+            "view",
+            contract_name,
+        ).rollback_to_configuration(configuration_id)
+        self._notify_acl_changed()
+        return rolled_back
+
+    def rollback_command_configuration(
+            self,
+            configuration_id: str,
+            *,
+            contract_name: str = "default",
+    ) -> FrameACLCommandConfiguration:
+        """
+        Roll current command selection back to one historical revision.
+
+        Returns:
+            FrameACLCommandConfiguration: Newly selected current command revision.
+        """
+        rolled_back = self._get_required_family_chain(
+            "command",
+            contract_name,
+        ).rollback_to_configuration(configuration_id)
+        self._notify_acl_changed()
+        return rolled_back
+
+    def rollback_codegen_configuration(
+            self,
+            configuration_id: str,
+            *,
+            contract_name: str = "default",
+    ) -> FrameACLCodegenConfiguration:
+        """
+        Roll current codegen selection back to one historical revision.
+
+        Returns:
+            FrameACLCodegenConfiguration: Newly selected current codegen revision.
+        """
+        rolled_back = self._get_required_family_chain(
+            "codegen",
+            contract_name,
+        ).rollback_to_configuration(configuration_id)
+        self._notify_acl_changed()
+        return rolled_back
+
+    def list_view_configurations(
+            self,
+            *,
+            contract_name: str = "default",
+            limit: Optional[int] = None,
+    ) -> List[FrameACLViewConfiguration]:
+        """
+        Return view revisions for one named chain from newest to oldest.
+
+        Returns:
+            List[FrameACLViewConfiguration]: View configuration revisions.
+        """
+        return self._get_required_family_chain(
+            "view",
+            contract_name,
+        ).list_configurations(limit=limit)
+
+    def list_command_configurations(
+            self,
+            *,
+            contract_name: str = "default",
+            limit: Optional[int] = None,
+    ) -> List[FrameACLCommandConfiguration]:
+        """
+        Return command revisions for one named chain from newest to oldest.
+
+        Returns:
+            List[FrameACLCommandConfiguration]: Command configuration revisions.
+        """
+        return self._get_required_family_chain(
+            "command",
+            contract_name,
+        ).list_configurations(limit=limit)
+
+    def list_codegen_configurations(
+            self,
+            *,
+            contract_name: str = "default",
+            limit: Optional[int] = None,
+    ) -> List[FrameACLCodegenConfiguration]:
+        """
+        Return codegen revisions for one named chain from newest to oldest.
+
+        Returns:
+            List[FrameACLCodegenConfiguration]: Codegen configuration revisions.
+        """
+        return self._get_required_family_chain(
+            "codegen",
+            contract_name,
+        ).list_configurations(limit=limit)
+
+    def build_selected_configuration(
+            self,
+            *,
+            view_contract_name: str = "default",
+            command_contract_name: str = "default",
+            codegen_contract_name: str = "default",
+            reason: str = "assembled_selection",
+    ) -> FrameACLConfiguration:
+        """
+        Assemble one full ACL snapshot from selected family chains.
+
+        Returns:
+            FrameACLConfiguration: Detached assembled ACL snapshot.
+        """
+        self.check_cleaned()
+        view_configuration = self.get_current_view_configuration(view_contract_name)
+        command_configuration = self.get_current_command_configuration(
+            command_contract_name
+        )
+        codegen_configuration = self.get_current_codegen_configuration(
+            codegen_contract_name
+        )
+        configuration_id = self._make_assembled_configuration_id(
+            view_configuration.configuration_id,
+            command_configuration.configuration_id,
+            codegen_configuration.configuration_id,
+        )
+        return FrameACLConfiguration.create_from_selected_configurations(
+            frame_name=self._frame_name,
+            view_configuration=view_configuration,
+            command_configuration=command_configuration,
+            codegen_configuration=codegen_configuration,
+            reason=reason,
+            locked=True,
+            configuration_id=configuration_id,
+        )
+
+    def _seed_default_chains(self, *, history_limit: int) -> None:
+        """
+        Seed the reserved default chains for all three config families.
+
+        Args:
+            history_limit:
+                Maximum retained revision count per family chain.
 
         Returns:
             None.
         """
-        with self._lock:
-            self._named_configurations_by_name["default"] = (
-                self._frame_acl_configuration_chain.get_current_configuration()
+        self._view_configuration_chains_by_name["default"] = (
+            FrameACLConfigurationChain(
+                family_name="view",
+                contract_name="default",
+                default_configuration=FrameACLViewConfiguration.from_profile(
+                    self._profile_builder.get_required_view_profile("safe"),
+                    reason="default",
+                    locked=True,
+                ),
+                history_limit=history_limit,
             )
+        )
+        self._command_configuration_chains_by_name["default"] = (
+            FrameACLConfigurationChain(
+                family_name="command",
+                contract_name="default",
+                default_configuration=FrameACLCommandConfiguration.create_default(
+                    reason="default",
+                    locked=True,
+                ),
+                history_limit=history_limit,
+            )
+        )
+        self._codegen_configuration_chains_by_name["default"] = (
+            FrameACLConfigurationChain(
+                family_name="codegen",
+                contract_name="default",
+                default_configuration=FrameACLCodegenConfiguration.from_profile(
+                    self._profile_builder.get_required_codegen_profile("safe"),
+                    reason="default",
+                    locked=True,
+                ),
+                history_limit=history_limit,
+            )
+        )
+
+    def _validate_family_change(
+            self,
+            *,
+            family_name: str,
+            contract_name: str,
+            next_view_configuration: Optional[FrameACLViewConfiguration] = None,
+            next_command_configuration: Optional[FrameACLCommandConfiguration] = None,
+            next_codegen_configuration: Optional[FrameACLCodegenConfiguration] = None,
+    ) -> None:
+        """
+        Validate one family change by assembling a same-name snapshot.
+
+        Args:
+            family_name:
+                Target family being changed.
+            contract_name:
+                Target contract name.
+            next_view_configuration:
+                Optional replacement view configuration.
+            next_command_configuration:
+                Optional replacement command configuration.
+            next_codegen_configuration:
+                Optional replacement codegen configuration.
+
+        Returns:
+            None.
+        """
+        try:
+            current_view = (
+                next_view_configuration
+                if next_view_configuration is not None
+                else self.get_current_view_configuration(contract_name)
+            )
+        except KeyError:
+            current_view = self.get_current_view_configuration()
+        try:
+            current_command = (
+                next_command_configuration
+                if next_command_configuration is not None
+                else self.get_current_command_configuration(contract_name)
+            )
+        except KeyError:
+            current_command = self.get_current_command_configuration()
+        try:
+            current_codegen = (
+                next_codegen_configuration
+                if next_codegen_configuration is not None
+                else self.get_current_codegen_configuration(contract_name)
+            )
+        except KeyError:
+            current_codegen = self.get_current_codegen_configuration()
+
+        assembled_configuration = FrameACLConfiguration.create_from_selected_configurations(
+            frame_name=self._frame_name,
+            view_configuration=current_view,
+            command_configuration=current_command,
+            codegen_configuration=current_codegen,
+            reason="family_validation_{0}".format(family_name),
+            locked=True,
+        )
+        try:
+            self._frame_acl_validator.validate_configuration(assembled_configuration)
+            self._frame_acl_set_compatibility_validator.validate_configuration(
+                assembled_configuration
+            )
+        finally:
+            assembled_configuration.cleanup()
+
+    def _register_family_configuration(
+            self,
+            family_name: str,
+            configuration: object,
+            *,
+            contract_name: str,
+    ) -> object:
+        """
+        Register one new named chain seeded from a locked family configuration.
+
+        Args:
+            family_name:
+                ACL family name.
+            configuration:
+                Locked family configuration revision.
+            contract_name:
+                Named contract to seed.
+
+        Returns:
+            object: Registered configuration revision.
+        """
+        if not contract_name:
+            raise ValueError("contract_name cannot be empty.")
+        if not hasattr(configuration, "locked") or not configuration.locked:
+            raise ValueError(
+                "Named ACL family configuration must be locked before registration."
+            )
+        registry = self._get_family_registry(family_name)
+        with self._lock:
+            if contract_name in registry:
+                raise ValueError(
+                    "ACL {0} contract '{1}' already exists for frame '{2}'.".format(
+                        family_name,
+                        contract_name,
+                        self._frame_name,
+                    )
+                )
+            registry[contract_name] = FrameACLConfigurationChain(
+                family_name=family_name,
+                contract_name=contract_name,
+                default_configuration=configuration,
+                history_limit=registry["default"].history_limit,
+            )
+            return configuration
+
+    def _get_family_registry(
+            self,
+            family_name: str,
+    ) -> Dict[str, FrameACLConfigurationChain]:
+        """
+        Return the named-chain registry for one ACL family.
+
+        Args:
+            family_name:
+                ACL family name.
+
+        Returns:
+            Dict[str, FrameACLConfigurationChain]: Family chain registry.
+        """
+        self.check_cleaned()
+        if family_name == "view":
+            return self._view_configuration_chains_by_name
+        if family_name == "command":
+            return self._command_configuration_chains_by_name
+        if family_name == "codegen":
+            return self._codegen_configuration_chains_by_name
+        raise ValueError("Unknown ACL family '{0}'.".format(family_name))
+
+    def _get_required_family_chain(
+            self,
+            family_name: str,
+            contract_name: str,
+    ) -> FrameACLConfigurationChain:
+        """
+        Return one required family chain or raise.
+
+        Args:
+            family_name:
+                ACL family name.
+            contract_name:
+                Named contract inside that family.
+
+        Returns:
+            FrameACLConfigurationChain: Required family chain.
+        """
+        if not contract_name:
+            raise ValueError("contract_name cannot be empty.")
+        registry = self._get_family_registry(family_name)
+        with self._lock:
+            try:
+                return registry[contract_name]
+            except KeyError as exc:
+                raise KeyError(
+                    "No ACL {0} contract named '{1}' is registered for frame '{2}'.".format(
+                        family_name,
+                        contract_name,
+                        self._frame_name,
+                    )
+                ) from exc
+
+    @staticmethod
+    def _make_assembled_configuration_id(
+            view_configuration_id: str,
+            command_configuration_id: str,
+            codegen_configuration_id: str,
+    ) -> str:
+        """
+        Build the stable assembled bundle id from selected child revision ids.
+
+        Args:
+            view_configuration_id:
+                Selected view revision id.
+            command_configuration_id:
+                Selected command revision id.
+            codegen_configuration_id:
+                Selected codegen revision id.
+
+        Returns:
+            str: Stable assembled configuration id.
+        """
+        return "view:{0}|command:{1}|codegen:{2}".format(
+            view_configuration_id,
+            command_configuration_id,
+            codegen_configuration_id,
+        )
+
+    def _notify_acl_changed(self) -> None:
+        """
+        Notify the owning manager/Nexus that this frame ACL state changed.
+
+        Returns:
+            None.
+        """
+        if self._change_callback is not None:
+            self._change_callback(self._frame_name)

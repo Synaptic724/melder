@@ -2642,10 +2642,15 @@ class IFrameACLContainer(ICleanable, Protocol):
     frame_acl_configuration: IFrameACLConfiguration
     named_configurations_by_name: Dict[str, IFrameACLConfiguration]
     frame_acl_set_compatibility_validator: IFrameACLSetCompatibilityValidator
+    view_chain_names: List[str]
+    command_chain_names: List[str]
+    codegen_chain_names: List[str]
 
     def install_configuration(
             self,
             configuration: IFrameACLConfiguration,
+            *,
+            contract_name: str = "default",
     ) -> None:
         """
         Install one validated ACL configuration into the container.
@@ -2678,6 +2683,184 @@ class IFrameACLContainer(ICleanable, Protocol):
     ) -> IFrameACLConfiguration:
         """
         Register one additional named ACL configuration for this frame.
+        """
+        ...
+
+    def get_current_view_configuration(
+            self,
+            contract_name: str = "default",
+    ) -> object:
+        """
+        Return the current selected view configuration for one contract.
+        """
+        ...
+
+    def get_current_command_configuration(
+            self,
+            contract_name: str = "default",
+    ) -> object:
+        """
+        Return the current selected command configuration for one contract.
+        """
+        ...
+
+    def get_current_codegen_configuration(
+            self,
+            contract_name: str = "default",
+    ) -> object:
+        """
+        Return the current selected codegen configuration for one contract.
+        """
+        ...
+
+    def create_new_from_view_configuration(
+            self,
+            configuration_id: str,
+            *,
+            contract_name: str = "default",
+            reason: str,
+    ) -> object:
+        """
+        Create a new view draft copied from one existing view revision.
+        """
+        ...
+
+    def create_new_from_command_configuration(
+            self,
+            configuration_id: str,
+            *,
+            contract_name: str = "default",
+            reason: str,
+    ) -> object:
+        """
+        Create a new command draft copied from one existing command revision.
+        """
+        ...
+
+    def create_new_from_codegen_configuration(
+            self,
+            configuration_id: str,
+            *,
+            contract_name: str = "default",
+            reason: str,
+    ) -> object:
+        """
+        Create a new codegen draft copied from one existing codegen revision.
+        """
+        ...
+
+    def insert_head_view_configuration(
+            self,
+            configuration: object,
+            *,
+            contract_name: str = "default",
+            select_as_current: bool,
+    ) -> object:
+        """
+        Insert one view configuration revision at the head of a named chain.
+        """
+        ...
+
+    def insert_head_command_configuration(
+            self,
+            configuration: object,
+            *,
+            contract_name: str = "default",
+            select_as_current: bool,
+    ) -> object:
+        """
+        Insert one command configuration revision at the head of a named chain.
+        """
+        ...
+
+    def insert_head_codegen_configuration(
+            self,
+            configuration: object,
+            *,
+            contract_name: str = "default",
+            select_as_current: bool,
+    ) -> object:
+        """
+        Insert one codegen configuration revision at the head of a named chain.
+        """
+        ...
+
+    def build_selected_configuration(
+            self,
+            *,
+            view_contract_name: str = "default",
+            command_contract_name: str = "default",
+            codegen_contract_name: str = "default",
+            reason: str = "assembled_selection",
+    ) -> IFrameACLConfiguration:
+        """
+        Assemble one full ACL snapshot from selected family chains.
+        """
+        ...
+
+    def select_current_view_configuration(
+            self,
+            configuration_id: str,
+            *,
+            contract_name: str = "default",
+    ) -> object:
+        """
+        Select one existing view configuration revision as current.
+        """
+        ...
+
+    def select_current_command_configuration(
+            self,
+            configuration_id: str,
+            *,
+            contract_name: str = "default",
+    ) -> object:
+        """
+        Select one existing command configuration revision as current.
+        """
+        ...
+
+    def select_current_codegen_configuration(
+            self,
+            configuration_id: str,
+            *,
+            contract_name: str = "default",
+    ) -> object:
+        """
+        Select one existing codegen configuration revision as current.
+        """
+        ...
+
+    def rollback_view_configuration(
+            self,
+            configuration_id: str,
+            *,
+            contract_name: str = "default",
+    ) -> object:
+        """
+        Roll current view selection back to one historical revision.
+        """
+        ...
+
+    def rollback_command_configuration(
+            self,
+            configuration_id: str,
+            *,
+            contract_name: str = "default",
+    ) -> object:
+        """
+        Roll current command selection back to one historical revision.
+        """
+        ...
+
+    def rollback_codegen_configuration(
+            self,
+            configuration_id: str,
+            *,
+            contract_name: str = "default",
+    ) -> object:
+        """
+        Roll current codegen selection back to one historical revision.
         """
         ...
 
@@ -6983,6 +7166,85 @@ class INexus(ICleanable, Protocol):
     ) -> IFrameACLConfiguration:
         """
         Register one named ACL configuration for a frame.
+        """
+        ...
+
+    def get_current_view_frame_acl_configuration(
+            self,
+            frame_name: str,
+            *,
+            contract_name: str = "default",
+    ) -> object:
+        """
+        Return the current selected view ACL configuration for one frame/contract.
+        """
+        ...
+
+    def get_current_command_frame_acl_configuration(
+            self,
+            frame_name: str,
+            *,
+            contract_name: str = "default",
+    ) -> object:
+        """
+        Return the current selected command ACL configuration for one frame/contract.
+        """
+        ...
+
+    def get_current_codegen_frame_acl_configuration(
+            self,
+            frame_name: str,
+            *,
+            contract_name: str = "default",
+    ) -> object:
+        """
+        Return the current selected codegen ACL configuration for one frame/contract.
+        """
+        ...
+
+    def get_current_frame_acl_configuration(
+            self,
+            frame_name: str,
+            *,
+            view_contract_name: str = "default",
+            command_contract_name: str = "default",
+            codegen_contract_name: str = "default",
+    ) -> IFrameACLConfiguration:
+        """
+        Return one assembled ACL snapshot for the selected family contracts.
+        """
+        ...
+
+    def get_current_view_frame_acl_configuration(
+            self,
+            frame_name: str,
+            *,
+            contract_name: str = "default",
+    ) -> object:
+        """
+        Return the current selected view ACL configuration for one frame/contract.
+        """
+        ...
+
+    def get_current_command_frame_acl_configuration(
+            self,
+            frame_name: str,
+            *,
+            contract_name: str = "default",
+    ) -> object:
+        """
+        Return the current selected command ACL configuration for one frame/contract.
+        """
+        ...
+
+    def get_current_codegen_frame_acl_configuration(
+            self,
+            frame_name: str,
+            *,
+            contract_name: str = "default",
+    ) -> object:
+        """
+        Return the current selected codegen ACL configuration for one frame/contract.
         """
         ...
 
