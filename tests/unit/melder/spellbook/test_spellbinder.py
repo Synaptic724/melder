@@ -54,6 +54,11 @@ def test_bind_sets_core_fields_and_resets_prior_state():
     assert "pre_hooks" not in binder._kwargs  # prior state cleared
 
 
+def test_constructor_requires_spellbook() -> None:
+    with pytest.raises(ValueError, match="SpellBinder requires a valid ISpellbook instance."):
+        SpellBinder(None)
+
+
 @pytest.mark.parametrize(
     "method,expected",
     [
@@ -211,6 +216,21 @@ def test_cleanup_is_idempotent_and_nulls_slots():
     assert binder._existence is None
     assert binder._permissions is None
     assert binder._kwargs is None
+    assert binder._cleaned is True
+
+
+def test_cleanup_swallows_weakref_cleanup_failures() -> None:
+    binder = _binder()
+
+    class _FailingWeakRef:
+        def cleanup(self):
+            raise RuntimeError("weakref cleanup boom")
+
+    binder._weak_spellbook = _FailingWeakRef()
+
+    binder.cleanup()
+
+    assert binder._weak_spellbook is None
     assert binder._cleaned is True
 
 

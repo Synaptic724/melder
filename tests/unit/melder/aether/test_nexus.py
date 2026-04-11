@@ -1,4 +1,5 @@
 import logging
+from types import SimpleNamespace
 
 import pytest
 
@@ -117,6 +118,7 @@ def _seed_frame_descriptor(frame_name: str) -> None:
         None.
     """
     descriptor = Nexus()._get_or_create_frame_descriptor(frame_name)
+    descriptor.set_frame_handle(SimpleNamespace(name=frame_name))
     descriptor.set_frame_overview(
         FrameRecord(
             frame_name=frame_name,
@@ -708,6 +710,338 @@ def test_rift_space_can_attach_and_detach_frame_viewer() -> None:
 
     assert viewer.cleaned is True
     assert space.frame_viewer is None
+
+
+def test_rift_space_owns_workstation_canvas() -> None:
+    """
+    Verify a RiftSpace owns a live workstation canvas.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+
+    assert space.workstation.owner_space_id == space.space_id
+    assert space.workstation.describe_bindings() == {
+        "objects": [],
+        "attributes": [],
+        "methods": [],
+        "target_name": [],
+        "target_store": [],
+    }
+
+
+def test_workstation_can_bind_select_release_and_describe() -> None:
+    """
+    Verify the workstation stores bindings, tracks targets, and releases bindings.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    workstation = space.workstation
+    marker = object()
+
+    workstation.bind_object("client", marker)
+    workstation.bind_attribute("status", "ready")
+    workstation.bind_method("runner", lambda: "ok")
+    workstation.set_target("client", store="objects")
+
+    assert workstation.get("client", store="objects") is marker
+    assert workstation.get_target() is marker
+    assert workstation.describe_bindings() == {
+        "objects": ["client"],
+        "attributes": ["status"],
+        "methods": ["runner"],
+        "target_name": ["client"],
+        "target_store": ["objects"],
+    }
+
+    released = workstation.release("client", store="objects")
+
+    assert released is marker
+    assert workstation.describe_bindings() == {
+        "objects": [],
+        "attributes": ["status"],
+        "methods": ["runner"],
+        "target_name": [],
+        "target_store": [],
+    }
+
+
+def test_workstation_call_target_can_bind_return_value() -> None:
+    """
+    Verify the workstation can call the active target and bind the result.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    workstation = space.workstation
+
+    workstation.bind_method("builder", lambda prefix: {"value": prefix})
+    workstation.set_target("builder", store="methods")
+
+    result = workstation.call_target(
+        "ops",
+        bind_as_name="payload",
+        bind_as_store="attributes",
+    )
+
+    assert result == {"value": "ops"}
+    assert workstation.get("payload", store="attributes") == {"value": "ops"}
+
+
+def test_workstation_cleanup_target_calls_methods_then_clears_target() -> None:
+    """
+    Verify cleanup_target calls the requested cleanup methods then clears target selection.
+
+    Returns:
+        None.
+    """
+    class _Disposable:
+        def __init__(self) -> None:
+            self.calls = []
+
+        def stop(self) -> None:
+            self.calls.append("stop")
+
+        def cleanup(self) -> None:
+            self.calls.append("cleanup")
+
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    workstation = space.workstation
+    disposable = _Disposable()
+
+    workstation.bind_object("job", disposable)
+    workstation.set_target("job", store="objects")
+    workstation.cleanup_target("stop", "cleanup")
+
+    assert disposable.calls == ["stop", "cleanup"]
+    assert workstation.describe_bindings()["target_name"] == []
+
+
+def test_workstation_and_space_cleanup_are_integrated() -> None:
+    """
+    Verify RiftSpace cleanup cascades into the owned workstation.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    workstation = space.workstation
+    command_system = space.command_system
+    workstation.bind_attribute("status", "ready")
+
+    space.cleanup()
+
+    assert workstation.cleaned is True
+    assert command_system.cleaned is True
+
+
+def test_rift_space_owns_command_system() -> None:
+    """
+    Verify a RiftSpace owns a live command system.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+
+    assert space.command_system.owner_space_id == space.space_id
+
+
+def test_command_system_can_get_selected_target_link_and_record() -> None:
+    """
+    Verify the command system resolves the single selected viewer target link and record.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    space.attach_frame_viewer(viewer)
+    frame_link = viewer.execute_method("list_targets")[0]
+    space.select_target(frame_link.link_id)
+
+    selected_link = space.command_system.get_selected_target_link()
+    selected_record = space.command_system.get_selected_target_record()
+
+    assert selected_link.link_id == frame_link.link_id
+    assert selected_link.source_kind == frame_link.source_kind
+    assert selected_link.source_id == frame_link.source_id
+    assert selected_record.frame_name == "ops"
+    assert selected_record.frame_id == "ops-frame"
+
+
+def test_command_system_can_get_selected_target_runtime_object_for_frame() -> None:
+    """
+    Verify the command system can resolve the live frame object for a selected frame target.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    space.attach_frame_viewer(viewer)
+    frame_link = viewer.execute_method("list_targets")[0]
+    space.select_target(frame_link.link_id)
+
+    frame_handle = space.command_system.get_selected_target_runtime_object()
+
+    assert frame_handle.name == "ops"
+
+
+def test_command_system_selected_target_requires_one_selection() -> None:
+    """
+    Verify selected-target getters fail fast when no target is selected.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    space.attach_frame_viewer(viewer)
+
+    with pytest.raises(ValueError, match="has no selected target"):
+        space.command_system.get_selected_target_link()
+
+
+def test_command_system_can_get_target_attribute_and_method() -> None:
+    """
+    Verify the command system reads attributes and methods from the current workstation target.
+
+    Returns:
+        None.
+    """
+    class _Target:
+        def __init__(self) -> None:
+            self.status = "ready"
+
+        def run(self) -> str:
+            return "ok"
+
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    workstation = space.workstation
+    target = _Target()
+    workstation.bind_object("target", target)
+    workstation.set_target("target", store="objects")
+
+    method = space.command_system.get_target_method("run")
+
+    assert space.command_system.get_target_attribute("status") == "ready"
+    assert callable(method) is True
+    assert method() == "ok"
+
+
+def test_command_system_execute_target_method_can_bind_result() -> None:
+    """
+    Verify the command system can execute a method on the workstation target and bind the result.
+
+    Returns:
+        None.
+    """
+    class _Target:
+        def run(self, prefix: str) -> str:
+            return "{0}-done".format(prefix)
+
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    workstation = space.workstation
+    target = _Target()
+    workstation.bind_object("target", target)
+    workstation.set_target("target", store="objects")
+
+    result = space.command_system.execute_target_method(
+        "run",
+        "ops",
+        bind_as_name="status",
+        bind_as_store="attributes",
+    )
+
+    assert result == "ops-done"
+    assert workstation.get("status", store="attributes") == "ops-done"
+
+
+def test_command_system_can_get_conduit_object_by_id_with_lesser_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify conduit lookup falls back to lesser-conduit lineage traversal when root lookup misses.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    space.attach_frame_viewer(viewer)
+    sentinel = object()
+    root_conduit = SimpleNamespace(
+        _conduit_ward=SimpleNamespace(
+            _get_lesser_conduit=lambda conduit_id: sentinel,
+        )
+    )
+    aether_stub = SimpleNamespace(
+        _get_conduit_by_id=lambda conduit_id, frame_name: (_ for _ in ()).throw(
+            ValueError("missing")
+        ),
+        _aetheric_frames={
+            "ops": SimpleNamespace(
+                _conduits={"root-1": root_conduit},
+            )
+        },
+    )
+    monkeypatch.setattr(
+        type(space.command_system),
+        "_aether",
+        aether_stub,
+    )
+
+    result = space.command_system.get_conduit_object_by_id(
+        "lesser-1",
+        frame_name="ops",
+    )
+
+    assert result is sentinel
+
+
+def test_command_system_can_get_spell_object_by_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify spell lookup resolves through the owning conduit and spellbook.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    space.attach_frame_viewer(viewer)
+    spell = object()
+
+    class _SpellIndex:
+        def has_version(self, version_id: str) -> bool:
+            return version_id == "sha-1"
+
+    owner_conduit = SimpleNamespace(
+        _spellbook=SimpleNamespace(
+            _spells={_SpellIndex(): spell},
+        )
+    )
+    aether_stub = SimpleNamespace(
+        _get_conduit_by_spell_id=lambda spell_id, frame_name: owner_conduit,
+    )
+    monkeypatch.setattr(
+        type(space.command_system),
+        "_aether",
+        aether_stub,
+    )
+
+    result = space.command_system.get_spell_object_by_id(
+        "sha-1",
+        frame_name="ops",
+    )
+
+    assert result is spell
 
 
 def test_rift_space_can_delegate_frame_surface_calls_to_attached_viewer() -> None:

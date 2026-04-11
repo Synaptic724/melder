@@ -2272,3 +2272,89 @@ def test_frame_viewer_cleanup_is_idempotent_and_rechecks_cleaned_state_under_loc
         viewer._lock = original_lock
 
     assert viewer.cleaned is True
+
+
+def test_frame_viewer_profile_registration_replaces_templates_and_rebinds_frames() -> None:
+    viewer = _build_viewer(("ops",))
+    original_template = viewer.get_required_active_profile("general")
+    original_selected = viewer.get_selected_profile_for_frame("ops")
+    replacement = FrameViewerProfile(
+        "general",
+        default_grouping="frame",
+        default_detail_level="detailed",
+        enabled_helpers=("list_frames", "describe_frame"),
+    )
+
+    with pytest.raises(TypeError, match="profile must be a FrameViewerProfile"):
+        viewer.register_active_profile(None)
+
+    viewer.register_active_profile(replacement)
+
+    assert original_template.cleaned is True
+    assert original_selected.cleaned is True
+    assert viewer.get_required_active_profile("general") is replacement
+    assert viewer.get_selected_profile_for_frame("ops") is not original_selected
+    assert viewer.get_selected_profile_for_frame("ops").name == "general"
+
+
+def test_frame_viewer_profile_and_execute_guardrails_are_explicit() -> None:
+    viewer = _build_viewer(("ops",))
+    original_selected = viewer.get_selected_profile_for_frame("ops")
+
+    with pytest.raises(ValueError, match="frame_name cannot be empty"):
+        viewer.get_selected_profile_for_frame("")
+
+    viewer._selected_profiles_by_frame_name.clear()
+    with pytest.raises(ValueError, match="has no selected profile for frame 'ops'"):
+        viewer.get_selected_profile_for_frame("ops")
+
+    viewer._selected_profiles_by_frame_name["ops"] = original_selected
+
+    with pytest.raises(ValueError, match="frame_name cannot be empty"):
+        viewer.set_selected_profile_for_frame("", "general")
+
+    with pytest.raises(ValueError, match="profile_name cannot be empty"):
+        viewer.set_selected_profile_for_frame("ops", "")
+
+    viewer.set_selected_profile_for_frame("ops", "general")
+
+    assert original_selected.cleaned is True
+
+    with pytest.raises(ValueError, match="helper_name cannot be empty"):
+        viewer.has_enabled_helper("")
+
+    empty_profiles_viewer = FrameViewer(
+        active_profiles_by_name={},
+        frame_descriptors_by_name={},
+        frame_acl_configurations_by_frame_name={},
+        compiled_access_surfaces_by_frame_name={},
+    )
+
+    assert empty_profiles_viewer.has_enabled_helper("list_frames") is False
+
+    with pytest.raises(ValueError, match="FrameViewer has no active profiles"):
+        empty_profiles_viewer.execute_method("list_targets")
+
+    with pytest.raises(ValueError, match="profile_name cannot be empty"):
+        viewer.get_required_active_profile("")
+
+    with pytest.raises(ValueError, match="FrameViewer profile 'missing' was not found"):
+        viewer.get_required_active_profile("missing")
+
+    ghost_profile = FrameViewerProfile(
+        "ghost",
+        default_grouping="frame",
+        default_detail_level="detailed",
+        tool_handler_names_by_name={"ghost_tool": "missing.handler"},
+    )
+    viewer.register_active_profile(ghost_profile)
+
+    with pytest.raises(
+            ValueError,
+            match="targets missing handler 'missing.handler'",
+    ):
+        viewer.execute_method(
+            "ghost_tool",
+            frame_name="ops",
+            profile_name="ghost",
+        )

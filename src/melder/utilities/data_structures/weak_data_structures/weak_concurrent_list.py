@@ -811,6 +811,12 @@ class WeakConcurrentList(Generic[_T], Cleanable):
         return False
 
     def __ne__(self, other: object) -> bool:
+        """
+        Return the logical negation of `__eq__(other)` for convenience.
+
+        Returns:
+            bool: True when the other object is not equal to this list.
+        """
         return not self.__eq__(other)
 
     def to_list(self) -> List[_T]:

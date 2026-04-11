@@ -61,15 +61,19 @@ class _WeakDictKeysView(Collection[_K]):
         return set(iter(self))
 
     def __and__(self, other: Iterable[Any]) -> set[_K]:
+        """Return the set intersection between this dynamic keys view and `other`."""
         return self._as_set().__and__(set(other))
 
     def __or__(self, other: Iterable[Any]) -> set[_K]:
+        """Return the set union between this dynamic keys view and `other`."""
         return self._as_set().__or__(set(other))
 
     def __sub__(self, other: Iterable[Any]) -> set[_K]:
+        """Return keys visible here that are not present in `other`."""
         return self._as_set().__sub__(set(other))
 
     def __xor__(self, other: Iterable[Any]) -> set[_K]:
+        """Return the symmetric-difference between this dynamic keys view and `other`."""
         return self._as_set().__xor__(set(other))
 
     def __repr__(self) -> str:
@@ -101,6 +105,7 @@ class _WeakDictItemsView(Collection[Tuple[_K, _V]]):
         return len(self._parent)
 
     def __contains__(self, item: object) -> bool:
+        """Return whether `item` matches one currently visible live `(key, value)` pair."""
         if not isinstance(item, tuple) or len(item) != 2:
             return False
         key, val = item
@@ -116,15 +121,19 @@ class _WeakDictItemsView(Collection[Tuple[_K, _V]]):
         return set(iter(self))
 
     def __and__(self, other: Iterable[Any]) -> set[Tuple[_K, _V]]:
+        """Return the set intersection between this dynamic items view and `other`."""
         return self._as_set().__and__(set(other))
 
     def __or__(self, other: Iterable[Any]) -> set[Tuple[_K, _V]]:
+        """Return the set union between this dynamic items view and `other`."""
         return self._as_set().__or__(set(other))
 
     def __sub__(self, other: Iterable[Any]) -> set[Tuple[_K, _V]]:
+        """Return visible live items present here but absent from `other`."""
         return self._as_set().__sub__(set(other))
 
     def __xor__(self, other: Iterable[Any]) -> set[Tuple[_K, _V]]:
+        """Return the symmetric-difference between this dynamic items view and `other`."""
         return self._as_set().__xor__(set(other))
 
     def __repr__(self) -> str:
@@ -155,6 +164,7 @@ class _WeakDictValuesView(Collection[_V]):
         return len(self._parent)
 
     def __contains__(self, value: object) -> bool:
+        """Return whether one currently visible live value compares equal to `value`."""
         for v in self:
             if v == value:
                 return True
@@ -325,7 +335,7 @@ class WeakConcurrentDict(Generic[_K, _V], Cleanable):
             - The node has marked itself dead and fired its own callbacks.
 
         Behavior:
-            * If this dict is already cleaned or `auto_prune` is False → no-op.
+            * If this dict is already cleaned or `auto_prune` is False -> no-op.
             * Otherwise, best-effort:
               - Acquire the dict lock.
               - Scan for the key mapping to `node`.

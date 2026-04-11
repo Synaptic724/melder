@@ -42,11 +42,15 @@ class ChangeControlTransactionRequest:
 
     Purpose:
         Provide a stable, immutable record of a mutation request so admission,
-        conflict, and embargo checks can be performed deterministically.
+        conflict, embargo, and staging checks can be performed deterministically
+        before any request becomes in-flight.
     Contract:
         - Instances are immutable.
         - `request_id` and `initiator_conduit_id` must be non-empty strings.
-        - Scope keys and hashes must be normalized by the caller.
+        - Scope keys and hashes must already be normalized by the caller or by
+          the transaction-manager construction helpers.
+        - The payload is the canonical pre-admission record later consumed by
+          the orchestrator and transaction manager.
     Args:
         request_id:
             Unique identifier for the request.
@@ -99,10 +103,13 @@ class ChangeControlAdmissionResult:
     Admission decision for a change-control transaction request.
 
     Purpose:
-        Capture admission outcomes and conflict/embargo evidence for callers.
+        Capture the orchestrator's admission outcome together with the concrete
+        conflict and embargo evidence that explains a rejection.
     Contract:
         - `admitted=True` implies the request was accepted for execution.
         - `conflicts` and `embargoes` contain identifiers explaining rejection.
+        - `reasons` is a compact machine-readable explanation layer that callers
+          can inspect without parsing the identifier tuples.
     Args:
         admitted:
             True if the request was accepted for execution.

@@ -193,12 +193,35 @@ class SyncWeakRef(Cleanable, ISync, Generic[T]):
     # ------------------------------------------------------------------
     @classmethod
     def _coerce(cls, val):
+        """
+        Return the normalized scalar form expected by this wrapper type.
+
+        Contract:
+        - Base `SyncWeakRef` performs no coercion and returns the value
+          unchanged.
+        - Subclasses may override this when they need stricter normalization.
+        """
         return val
 
     def _unwrap_other(self, other):
+        """
+        Normalize `other` for comparison against this wrapper's referent.
+
+        Contract:
+        - If `other` is another sync wrapper, returns its current value through
+          `get()`.
+        - Otherwise returns the raw value unchanged.
+        """
         return other.get() if ISync._is_sync(other) else other
 
     def check_cleaned(self):
+        """
+        Raise when the wrapper has already been cleaned.
+
+        Contract:
+        - Overrides the base guard to provide a `SyncWeakRef`-specific error
+          message.
+        """
         if self._cleaned:
             raise RuntimeError("SyncWeakRef has been cleaned and cannot be used.")
 

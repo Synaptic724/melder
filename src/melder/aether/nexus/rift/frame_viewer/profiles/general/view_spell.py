@@ -43,6 +43,10 @@ class GeneralViewSpell(Cleanable):
         """
         Initialize one spell-scoped helper surface.
 
+        Contract:
+            - Holds only a borrowed reference to the shared frame helper.
+            - Reads descriptor and ACL state indirectly through that helper.
+
         Args:
             frame_view:
                 Shared frame helper used to source ACL-filtered links.
@@ -55,7 +59,7 @@ class GeneralViewSpell(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Idempotently clear the helper surface.
+        Idempotently drop the borrowed frame-helper reference.
 
         Returns:
             None.
@@ -67,7 +71,12 @@ class GeneralViewSpell(Cleanable):
 
     def list_spells(self, *, frame_name: Optional[str] = None) -> List[FrameLink]:
         """
-        Return ACL-filtered spell links for the bound frame.
+        Return the currently visible spell links for the bound frame.
+
+        Contract:
+            - Delegates visibility decisions to the shared frame helper and its
+              compiled ACL surface.
+            - Returns a fresh link snapshot for this call.
 
         Args:
             frame_name:
@@ -89,7 +98,13 @@ class GeneralViewSpell(Cleanable):
             frame_name: Optional[str] = None,
     ) -> List[Dict[str, object]]:
         """
-        Return spell descriptions for the bound frame.
+        Return record-aware descriptions for every visible spell.
+
+        Contract:
+            - Materializes one `describe_spell(...)` result per currently
+              visible spell link.
+            - Preserves the active ACL filtering and payload-type degradation
+              semantics of the spell helper.
 
         Args:
             frame_name:

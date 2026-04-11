@@ -53,6 +53,12 @@ class GeneralViewFrame(Cleanable):
         """
         Initialize one frame-scoped viewer helper surface.
 
+        Contract:
+            - Stores borrowed references to one frame's descriptor and compiled
+              ACL state when available.
+            - Allows unbound construction so the owning profile can create the
+              helper trio before a frame is selected.
+
         Args:
             frame_name:
                 Bound frame name when available.
@@ -84,7 +90,12 @@ class GeneralViewFrame(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Idempotently clear the helper surface.
+        Idempotently drop the borrowed frame-state references.
+
+        Contract:
+            - Clears only the helper's own references and lock.
+            - Never cleans the descriptor or ACL objects because they are
+              borrowed from the bound profile.
 
         Returns:
             None.
@@ -109,7 +120,12 @@ class GeneralViewFrame(Cleanable):
             source_kind: Optional[str] = None,
     ) -> List[FrameLink]:
         """
-        Return ACL-filtered frame targets for the bound frame.
+        Return the currently visible targets for the bound frame.
+
+        Contract:
+            - Builds links from the bound descriptor plus compiled ACL surface.
+            - Optionally filters that visible set down to one source kind.
+            - Returns a fresh snapshot for this call.
 
         Args:
             frame_name:
@@ -141,7 +157,12 @@ class GeneralViewFrame(Cleanable):
             source_kind: Optional[str] = None,
     ) -> List[Dict[str, object]]:
         """
-        Return target descriptions for the bound frame.
+        Return summary descriptions for the current visible target snapshot.
+
+        Contract:
+            - Preserves the same target visibility as `list_targets(...)`.
+            - Includes link metadata only when the helper is in `detailed`
+              posture.
 
         Args:
             frame_name:
@@ -174,7 +195,12 @@ class GeneralViewFrame(Cleanable):
             frame_name: Optional[str] = None,
     ) -> Dict[str, object]:
         """
-        Return a summary of the bound frame surface.
+        Return a compact summary of the visible frame surface.
+
+        Contract:
+            - Summarizes only currently visible target kinds and counts.
+            - Merges compiled ACL metadata with the frame's advertised Nexus
+              contract when frame overview data is present.
 
         Args:
             frame_name:

@@ -280,6 +280,14 @@ class _CleanableProfile(Cleanable):
         self._cleaned = True
 
 
+class _FailingCleanableProfile(Cleanable):
+    def __init__(self):
+        super().__init__()
+
+    def cleanup(self):
+        raise RuntimeError("profile cleanup boom")
+
+
 class _Disposable:
     def __init__(self, fail_on_cleanup: bool = False):
         self.cleaned = False
@@ -389,6 +397,21 @@ class _DummyCrafter:
         self.calls.append("root_blueprints")
         self.seen_cancel_events.append((conduit_id, cancel_event))
 
+    def run_phase_root_blueprints_local(self, conduit_id, cancel_event=None):
+        """
+        Purpose:
+            Record local Phase 5 invocation.
+        Contract:
+            Appends the phase name, stores conduit id, and stores the cancel event.
+        Args:
+            conduit_id: Conduit identifier passed by the caller.
+            cancel_event: Cancellation event passed by the caller.
+        Returns:
+            None.
+        """
+        self.calls.append("root_blueprints_local")
+        self.seen_cancel_events.append((conduit_id, cancel_event))
+
     def run_phase_occurrence_plan(self, conduit_id, cancel_event=None):
         """
         Purpose:
@@ -419,6 +442,21 @@ class _DummyCrafter:
         self.calls.append("system_validation")
         self.seen_cancel_events.append((conduit_id, cancel_event))
 
+    def run_phase_system_validation_local(self, conduit_id, cancel_event=None):
+        """
+        Purpose:
+            Record local Phase 6 invocation.
+        Contract:
+            Appends the phase name, stores conduit id, and stores the cancel event.
+        Args:
+            conduit_id: Conduit identifier passed by the caller.
+            cancel_event: Cancellation event passed by the caller.
+        Returns:
+            None.
+        """
+        self.calls.append("system_validation_local")
+        self.seen_cancel_events.append((conduit_id, cancel_event))
+
     def run_phase_change_control(self, conduit_id, cancel_event=None):
         """
         Purpose:
@@ -432,6 +470,21 @@ class _DummyCrafter:
             None.
         """
         self.calls.append("change_control")
+        self.seen_cancel_events.append((conduit_id, cancel_event))
+
+    def run_phase_change_control_local(self, conduit_id, cancel_event=None):
+        """
+        Purpose:
+            Record local Phase 7 invocation.
+        Contract:
+            Appends the phase name, stores conduit id, and stores the cancel event.
+        Args:
+            conduit_id: Conduit identifier passed by the caller.
+            cancel_event: Cancellation event passed by the caller.
+        Returns:
+            None.
+        """
+        self.calls.append("change_control_local")
         self.seen_cancel_events.append((conduit_id, cancel_event))
 
     def run_phase_injection_plan(self, conduit_id, cancel_event=None):
@@ -1018,6 +1071,75 @@ def test_cleanup_swallows_child_cleanup_errors():
     assert spell.profile is None
 
 
+def test_cleanup_rechecks_cleaned_state_under_lock() -> None:
+    class _FlipCleanedOnEnter:
+        def __init__(self, owner):
+            self._owner = owner
+
+        def __enter__(self):
+            self._owner._cleaned = True
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    spell = _make_spell()
+    original_lock = spell._lock
+    spell._lock = _FlipCleanedOnEnter(spell)
+    try:
+        spell.cleanup()
+    finally:
+        spell._lock = original_lock
+
+    assert spell._cleaned is True
+
+
+def test_cleanup_swallows_profile_spellindex_switch_and_tags_clear_failures() -> None:
+    cleanup_calls = []
+
+    class _FailingSpellIndex(SpellIndex):
+        __slots__ = ()
+
+        def cleanup(self):
+            cleanup_calls.append("spell_index")
+            raise RuntimeError("spell_index cleanup boom")
+
+    class _BadTags:
+        def clear(self):
+            raise RuntimeError("tags cleanup boom")
+
+    class _FailingSwitch:
+        def __init__(self):
+            self.state = 0
+
+        def cleanup(self):
+            raise RuntimeError("switch cleanup boom")
+
+    spell = Spell(
+        spell=lambda: None,
+        spell_index=_FailingSpellIndex("cleanup-id"),
+        spellframe=None,
+        binding_name=None,
+        spell_name="CleanupSpell",
+        existence=Existence.unique,
+        spell_type=SpellType.SPELL,
+        spell_id="cleanup-fingerprint",
+        permissions=Permissions.create,
+        aetheric_frame="default",
+        spellbook=_SpellbookStub(_RecordingStates()),
+    )
+    spell.profile = _FailingCleanableProfile()
+    spell._creation_context_switch = _FailingSwitch()
+    spell.tags = _BadTags()
+
+    spell.cleanup()
+
+    assert cleanup_calls == ["spell_index"]
+    assert spell._cleaned is True
+    assert spell.profile is None
+    assert spell._creation_context_switch is None
+
+
 def test_owned_conduit_marks_owned_spell_true():
     spell = _make_spell()
     spell._add_owned_conduit(
@@ -1086,3 +1208,90 @@ def test_ensure_crafter_lazy_creation_uses_imported_class(monkeypatch):
             sys.modules[module_name] = original
         else:
             sys.modules.pop(module_name, None)
+
+
+def test_cleanup_creation_context_and_factory_swallow_child_cleanup_errors() -> None:
+    spell = _make_spell()
+    spell._creation_context = _Disposable(fail_on_cleanup=True)
+    spell._creation_context_factory = _Disposable(fail_on_cleanup=True)
+    spell._creation_context_switch.advance(2)
+
+    spell._cleanup_creation_context()
+    spell._cleanup_creation_context_factory()
+
+    assert spell._creation_context is None
+    assert spell._creation_context_factory is None
+    assert spell._creation_context_switch.state == 0
+
+
+def test_configure_creation_context_factory_requires_gate_and_builds_factory() -> None:
+    spell = _make_spell()
+
+    with pytest.raises(ValueError, match="creation_gate_controller cannot be None."):
+        spell._configure_creation_context_factory(
+            dynamic_environment=True,
+            creation_gate_controller=None,
+        )
+
+    gate = CreationGateController()
+    spell._configure_creation_context_factory(
+        dynamic_environment=True,
+        creation_gate_controller=gate,
+    )
+
+    assert spell._dynamic_environment is True
+    assert spell._creation_context_factory is not None
+
+
+def test_get_or_build_creation_context_uses_switch_fast_path_and_factory() -> None:
+    spell = _make_spell()
+    cached_context = object()
+    spell._creation_context = cached_context
+    spell._creation_context_switch.advance(2)
+
+    assert spell._get_or_build_creation_context() is cached_context
+
+    spell._creation_context_switch.advance(-2)
+
+    class _Factory:
+        def __init__(self):
+            self.calls = []
+
+        def get_or_build_for_spell(self, owner):
+            self.calls.append(owner)
+            return "built-context"
+
+    factory = _Factory()
+    spell._creation_context_factory = factory
+
+    assert spell._get_or_build_creation_context() == "built-context"
+    assert factory.calls == [spell]
+
+
+def test_local_phase_facades_delegate_to_crafter() -> None:
+    spell = _make_spell()
+    crafter = _DummyCrafter()
+    spell._ensure_crafter = types.MethodType(lambda self: crafter, spell)
+    cancel_event = object()
+
+    spell.run_phase_root_blueprints_local("cid", cancel_event=cancel_event)
+    spell.run_phase_system_validation_local("cid", cancel_event=cancel_event)
+    spell.run_phase_change_control_local("cid", cancel_event=cancel_event)
+
+    assert crafter.calls == [
+        "root_blueprints_local",
+        "system_validation_local",
+        "change_control_local",
+    ]
+    assert crafter.seen_cancel_events == [
+        ("cid", cancel_event),
+        ("cid", cancel_event),
+        ("cid", cancel_event),
+    ]
+
+
+def test_system_state_returns_none_when_states_registry_missing() -> None:
+    spell = _make_spell(states=None)
+    spell._spell_system_states = None
+
+    assert spell.system_state is None

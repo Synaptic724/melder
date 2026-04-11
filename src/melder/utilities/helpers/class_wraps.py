@@ -6,6 +6,16 @@ def class_wraps(decorator_name: Optional[str] = None):
     """
     Return a :func:`functools.wraps`-style helper for class decorators.
 
+    Purpose:
+        Make class decorators preserve inspection metadata on the class they
+        return, not just on the decorator function itself.
+
+    Contract:
+        - Stamps the produced class with `__wrapped__` and `__is_wrapped__`.
+        - Optionally stamps `__decorator_name__` for later inspection.
+        - Preserves the original decorator function metadata on the wrapper via
+          `update_wrapper(...)`.
+
     Args:
         decorator_name (Optional[str]): Optional inspection label stored on the
             decorated class as ``__decorator_name__``.
@@ -31,10 +41,14 @@ def class_wraps(decorator_name: Optional[str] = None):
         - Optionally sets ``__decorator_name__`` for inspection.
     """
     def decorator_wrapper(deco: Callable[[Type], Type]) -> Callable[[Type], Type]:
-        """Wrap a class decorator so produced classes expose inspection metadata."""
+        """
+        Wrap one class decorator so the produced class exposes inspection metadata.
+        """
 
         def wrapped(cls: Type) -> Type:
-            """Apply ``deco`` to ``cls`` and stamp the returned class with wrapper metadata."""
+            """
+            Apply the decorator and stamp the returned class with wrapper metadata.
+            """
             new_cls = deco(cls)
             # Stamp the produced class, not the input class, so runtime
             # inspection sees the type that callers will actually instantiate.

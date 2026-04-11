@@ -66,6 +66,16 @@ class Incident(Cleanable):
         """
         Create one incident record.
 
+        Purpose:
+            Capture the descriptive payload and initial lifecycle state for one
+            manager-owned operational incident.
+
+        Contract:
+            - New incidents always start in `IncidentStatus.open`.
+            - `root_ids` and `details` are copied into incident-owned
+              containers so later callers cannot mutate construction inputs out
+              from under the record.
+
         Args:
             incident_id: Stable incident identifier allocated by the manager.
             kind: Free-form incident kind code.
@@ -137,7 +147,7 @@ class Incident(Cleanable):
     @property
     def id(self) -> str:
         """
-        Return the stable incident identifier.
+        Return the stable manager-assigned incident identifier.
         """
         self.check_cleaned()
         with self._lock:
@@ -146,7 +156,7 @@ class Incident(Cleanable):
     @property
     def kind(self) -> str:
         """
-        Return the incident kind code.
+        Return the free-form incident kind code used for grouping/filtering.
         """
         self.check_cleaned()
         with self._lock:
@@ -155,7 +165,7 @@ class Incident(Cleanable):
     @property
     def severity(self) -> IncidentSeverity:
         """
-        Return the incident severity classification.
+        Return the current severity classification for the incident.
         """
         self.check_cleaned()
         with self._lock:
@@ -164,7 +174,7 @@ class Incident(Cleanable):
     @property
     def status(self) -> IncidentStatus:
         """
-        Return the current lifecycle status of the incident.
+        Return the current operational lifecycle status of the incident.
         """
         self.check_cleaned()
         with self._lock:
@@ -174,6 +184,9 @@ class Incident(Cleanable):
     def spell_index_id(self) -> Optional[str]:
         """
         Return the lineage id primarily associated with the incident, if any.
+
+        This is the incident's main lineage anchor, not a derived search over
+        every impacted root.
         """
         self.check_cleaned()
         with self._lock:
@@ -183,6 +196,9 @@ class Incident(Cleanable):
     def root_ids(self) -> List[str]:
         """
         Return a snapshot of impacted root spell ids.
+
+        Contract:
+        - Returns a new list so callers cannot mutate incident-owned state.
         """
         self.check_cleaned()
         with self._lock:
@@ -191,7 +207,7 @@ class Incident(Cleanable):
     @property
     def summary(self) -> str:
         """
-        Return the short descriptive summary for the incident.
+        Return the short human/AI-readable summary for the incident.
         """
         self.check_cleaned()
         with self._lock:
@@ -201,6 +217,9 @@ class Incident(Cleanable):
     def details(self) -> Dict[str, Any]:
         """
         Return a snapshot of the structured diagnostic payload.
+
+        Contract:
+        - Returns a new dict so callers cannot mutate incident-owned state.
         """
         self.check_cleaned()
         with self._lock:
@@ -210,8 +229,10 @@ class Incident(Cleanable):
         """
         Mark the incident as acknowledged.
 
-        This records that a tool or operator has seen and triaged the incident.
-        It does not resolve or suppress the underlying condition.
+        Contract:
+        - Transitions the record to `IncidentStatus.acknowledged`.
+        - Records triage/visibility only; it does not imply the underlying
+          condition has been resolved or suppressed.
         """
         self.check_cleaned()
         with self._lock:
@@ -221,8 +242,11 @@ class Incident(Cleanable):
         """
         Mark the incident as resolved.
 
-        Higher-level tooling remains responsible for deciding what "resolved"
-        means operationally; this method only updates the incident status field.
+        Contract:
+        - Transitions the record to `IncidentStatus.resolved`.
+        - Higher-level tooling remains responsible for deciding what
+          "resolved" means operationally; this method only updates the status
+          field.
         """
         self.check_cleaned()
         with self._lock:
@@ -232,9 +256,10 @@ class Incident(Cleanable):
         """
         Mark the incident as suppressed.
 
-        This is the status used when the underlying condition is accepted or
-        intentionally tolerated and the caller does not want further noise from
-        the incident.
+        Contract:
+        - Transitions the record to `IncidentStatus.suppressed`.
+        - Uses the "accepted / intentionally muted" lifecycle state rather than
+          claiming the underlying condition disappeared.
         """
         self.check_cleaned()
         with self._lock:

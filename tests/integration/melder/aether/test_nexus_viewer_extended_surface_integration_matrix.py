@@ -27,6 +27,36 @@ class BasicExtendedService:
         return "ok"
 
 
+class SharedCollisionService:
+    """
+    Shared service used to create real cross-frame spell/binding collisions.
+    """
+
+    def run(self) -> str:
+        """
+        Return a stable string for integration assertions.
+
+        Returns:
+            str: Stable integration string.
+        """
+        return "shared"
+
+
+class OpsMismatchService:
+    """
+    Secondary service used to create one real spellbook mismatch posture.
+    """
+
+    def run(self) -> str:
+        """
+        Return a stable string for integration assertions.
+
+        Returns:
+            str: Stable integration string.
+        """
+        return "mismatch"
+
+
 @pytest.fixture(autouse=True)
 def fresh_singletons() -> None:
     """
@@ -114,6 +144,105 @@ def _build_real_rift_viewer() -> object:
     rift.target_frame("ops", set_as_default=True)
     viewer = rift.create_new_frame_viewer("ops", viewer_profile_name="general")
     return spellbook, conduit, nexus, rift, viewer
+
+
+def _build_real_multi_frame_nexus_viewer() -> object:
+    """
+    Build one real two-frame Nexus viewer with collision and mismatch state.
+
+    Returns:
+        object: Tuple of spellbooks, conduits, Nexus, and viewer.
+    """
+    ops_configuration = _make_rift_publishable_configuration(aetheric_frame="ops")
+    finance_configuration = _make_rift_publishable_configuration(
+        aetheric_frame="finance"
+    )
+
+    ops_spellbook = Spellbook(aetheric_frame="ops", configuration=ops_configuration)
+    finance_spellbook = Spellbook(
+        aetheric_frame="finance",
+        configuration=finance_configuration,
+    )
+
+    ops_spellbook.bind(
+        spell=SharedCollisionService,
+        existence=Existence.unique,
+        permissions="create",
+        binding_name="shared_binding",
+        spellframe="SharedFrame",
+    )
+    ops_spellbook.bind(
+        spell=OpsMismatchService,
+        existence=Existence.many,
+        permissions="read",
+        binding_name="ops_mismatch",
+        spellframe="OpsFrame",
+    )
+    finance_spellbook.bind(
+        spell=SharedCollisionService,
+        existence=Existence.unique,
+        permissions="create",
+        binding_name="shared_binding",
+        spellframe="SharedFrame",
+    )
+
+    ops_conduit = ops_spellbook.conjure(name="ops_root")
+    finance_conduit = finance_spellbook.conjure(name="finance_root")
+    nexus = Nexus()
+    viewer = nexus.create_frame_viewer(["ops", "finance"])
+    return (
+        ops_spellbook,
+        finance_spellbook,
+        ops_conduit,
+        finance_conduit,
+        nexus,
+        viewer,
+    )
+
+
+def _build_real_multi_frame_rift_viewer() -> object:
+    """
+    Build one real two-frame Rift-projected viewer with collision state.
+
+    Returns:
+        object: Tuple of spellbooks, conduits, Nexus, Rift, and viewer.
+    """
+    (
+        ops_spellbook,
+        finance_spellbook,
+        ops_conduit,
+        finance_conduit,
+        nexus,
+        _,
+    ) = _build_real_multi_frame_nexus_viewer()
+
+    system_configuration = nexus.create_system_configuration()
+    system_configuration.with_rift_creation_enabled(True)
+    system_configuration.with_direct_rift_access(True)
+    system_configuration.with_target_frame_override(True)
+    system_configuration.with_multiple_target_frames(True)
+    system_configuration.with_max_target_frame_count(3)
+    system_configuration.with_default_space_type(RiftSpaceType.dynamic)
+    system_configuration.with_allowed_target_frame_names(("default", "ops", "finance"))
+    nexus.enable(system_configuration)
+
+    rift_configuration = (
+        nexus.create_rift_configuration()
+        .with_space_type(RiftSpaceType.static)
+    )
+    rift = nexus.create_rift(configuration=rift_configuration, rift_name="dual_rift")
+    rift.target_frame("ops", set_as_default=True)
+    rift.target_frame("finance")
+    viewer = nexus.create_frame_viewer_for_rift(rift.id)
+    return (
+        ops_spellbook,
+        finance_spellbook,
+        ops_conduit,
+        finance_conduit,
+        nexus,
+        rift,
+        viewer,
+    )
 
 
 def _build_method_kwargs(viewer: object, method_name: str) -> dict[str, object]:
@@ -256,3 +385,138 @@ def test_real_rift_viewer_extended_method_matrix(
         rift.cleanup()
         conduit.cleanup()
         spellbook.cleanup()
+
+
+def test_real_nexus_viewer_multi_frame_compare_collision_and_filter_helpers() -> None:
+    (
+        ops_spellbook,
+        _finance_spellbook,
+        ops_conduit,
+        finance_conduit,
+        _,
+        viewer,
+    ) = _build_real_multi_frame_nexus_viewer()
+    try:
+        comparison = viewer.compare_frames_brief("ops", "finance")
+        binding_collisions = viewer.describe_binding_name_collisions()
+        spell_name_collisions = viewer.describe_spell_name_collisions()
+        spellframe_groups = viewer.describe_spellframe_groups()
+        permission_mismatches = viewer.describe_spellbook_permission_mismatches()
+        existence_mismatches = viewer.describe_spellbook_existence_mismatches()
+
+        assert comparison["same_frame_id"] is False
+        assert comparison["same_nexus_contract"] is True
+        assert comparison["left_only_spell_count"] >= 1
+        assert comparison["right_only_spell_count"] >= 1
+
+        assert binding_collisions["shared_binding"] == (
+            binding_collisions["shared_binding"][0],
+            binding_collisions["shared_binding"][1],
+        )
+        assert len(binding_collisions["shared_binding"]) == 2
+        assert any(len(source_ids) == 2 for source_ids in spell_name_collisions.values())
+        assert len(spellframe_groups["SharedFrame"]) == 2
+
+        assert len(viewer.list_spells_by_owner_conduit(ops_conduit.id, frame_name="ops")) == 2
+        assert len(viewer.list_spells_by_spellbook_id(ops_spellbook.id)) == 2
+        assert len(viewer.list_spells_by_permission("read")) == 1
+        assert len(viewer.list_spells_by_existence("many")) == 1
+        assert len(viewer.list_spells_by_spellframe("SharedFrame")) == 2
+
+        assert ops_spellbook.id in permission_mismatches
+        assert permission_mismatches[ops_spellbook.id]["values"] == ("create", "read")
+        assert ops_spellbook.id in existence_mismatches
+        assert existence_mismatches[ops_spellbook.id]["values"] == ("many", "unique")
+    finally:
+        ops_conduit.cleanup()
+        finance_conduit.cleanup()
+        ops_spellbook.cleanup()
+        _finance_spellbook.cleanup()
+
+
+def test_real_rift_viewer_multi_frame_compare_collision_and_filter_helpers() -> None:
+    (
+        ops_spellbook,
+        _finance_spellbook,
+        ops_conduit,
+        finance_conduit,
+        _,
+        rift,
+        viewer,
+    ) = _build_real_multi_frame_rift_viewer()
+    try:
+        comparison = viewer.compare_frames("ops", "finance")
+        binding_collisions = viewer.describe_binding_name_collisions()
+        spellframe_groups = viewer.describe_spellframe_groups()
+        permission_mismatches = viewer.describe_spellbook_permission_mismatches()
+
+        assert viewer.list_frame_names() == ["finance", "ops"]
+        assert comparison["same_frame_id"] is False
+        assert comparison["same_nexus_contract"] is True
+        assert len(binding_collisions["shared_binding"]) == 2
+        assert len(spellframe_groups["SharedFrame"]) == 2
+        assert len(viewer.list_spells_by_spellbook_id(ops_spellbook.id)) == 2
+        assert len(viewer.list_spells_by_permission("read")) == 1
+        assert len(viewer.list_spells_by_existence("many")) == 1
+        assert len(viewer.list_spells_by_spellframe("SharedFrame")) == 2
+        assert permission_mismatches[ops_spellbook.id]["values"] == ("create", "read")
+    finally:
+        rift.cleanup()
+        ops_conduit.cleanup()
+        finance_conduit.cleanup()
+        ops_spellbook.cleanup()
+        _finance_spellbook.cleanup()
+
+
+def test_real_nexus_viewer_multi_frame_default_view_routes_general_helpers() -> None:
+    (
+        ops_spellbook,
+        finance_spellbook,
+        ops_conduit,
+        finance_conduit,
+        _,
+        viewer,
+    ) = _build_real_multi_frame_nexus_viewer()
+    try:
+        viewer.set_default_view("finance")
+        inventory = viewer.execute_method("describe_frame_inventory")
+        spells = viewer.execute_method("describe_spells")
+        finance_spell_source_ids = viewer.list_spells_by_spellbook_id(finance_spellbook.id)
+
+        assert viewer.default_view_frame_name == "finance"
+        assert inventory["frame_name"] == "finance"
+        assert len(spells) == 1
+        assert [spell["source_id"] for spell in spells] == finance_spell_source_ids
+    finally:
+        ops_conduit.cleanup()
+        finance_conduit.cleanup()
+        ops_spellbook.cleanup()
+        finance_spellbook.cleanup()
+
+
+def test_real_rift_viewer_multi_frame_default_view_routes_general_helpers() -> None:
+    (
+        ops_spellbook,
+        finance_spellbook,
+        ops_conduit,
+        finance_conduit,
+        _,
+        rift,
+        viewer,
+    ) = _build_real_multi_frame_rift_viewer()
+    try:
+        viewer.set_default_view("finance")
+        inventory = viewer.execute_method("describe_frame_inventory")
+        spells = viewer.execute_method("describe_spells")
+        finance_spell_source_ids = viewer.list_spells_by_spellbook_id(finance_spellbook.id)
+
+        assert viewer.default_view_frame_name == "finance"
+        assert inventory["frame_name"] == "finance"
+        assert len(spells) == 1
+        assert [spell["source_id"] for spell in spells] == finance_spell_source_ids
+    finally:
+        rift.cleanup()
+        ops_conduit.cleanup()
+        finance_conduit.cleanup()
+        ops_spellbook.cleanup()
+        finance_spellbook.cleanup()

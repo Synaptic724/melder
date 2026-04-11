@@ -18,9 +18,17 @@ class ChangeControlEmbargoRecord:
     """
     Immutable record describing one embargoed scope key.
 
-    The record ties one scope key to the request that currently owns the
-    embargo, along with lightweight diagnostic metadata such as the reason tag
-    and creation time.
+    Purpose:
+        Capture one request-owned embargo entry in a form that admission,
+        diagnostics, and advisory tooling can share safely.
+
+    Contract:
+        - Each record ties one normalized scope key to the request that opened
+          the embargo.
+        - `reason_tag` carries the lightweight operational reason associated
+          with the embargo, such as the admitted transaction type.
+        - Records are immutable and may be copied freely across threads or
+          tooling boundaries.
     """
     __melder_internal__ = _mrg.sentinel
     scope_key: str
@@ -398,6 +406,8 @@ class ChangeControlEmbargoManager(Cleanable):
             Release implicit embargoes opened for the supplied request.
         Contract:
             - Closes all embargoes owned by the request id.
+            - Mutates the embargo registry through `close_embargo(...)`; this
+              is not a read-only diagnostic helper.
         Args:
             request:
                 Admitted request whose implicit embargoes should be released.
@@ -406,7 +416,8 @@ class ChangeControlEmbargoManager(Cleanable):
         Raises:
             RuntimeError: If the manager has been cleaned.
         Threading:
-            Safe for concurrent use; no internal state is mutated.
+            Delegates to `close_embargo(...)`, which mutates registry state
+            under the manager lock.
         """
         self.check_cleaned()
         self.close_embargo(request.request_id)

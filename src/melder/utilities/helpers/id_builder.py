@@ -2,7 +2,7 @@ import ulid
 
 class IDBuilder:
     """
-    Build dot-joined lineage identifiers from object identifiers and class names.
+    Build stable lineage-style identifiers for runtime-owned objects.
 
     Contract:
         - IDs are always joined with dots ('.').
@@ -14,7 +14,13 @@ class IDBuilder:
 
     @staticmethod
     def create_id() -> str:
-        """Return a new ULID string for a lineage segment."""
+        """
+        Return a new ULID string suitable for one runtime lineage segment.
+
+        Contract:
+        - Produces a fresh globally sortable ULID string on each call.
+        - Used for object identity, not for human-readable names.
+        """
         return str(ulid.ULID())
 
     # ---------------------------------------------------------------------
@@ -66,8 +72,10 @@ class IDBuilder:
         """
         Build the lineage ID for a conduit owned by a spellbook.
 
-        This is a thin alias over :meth:`compose` and preserves its identifier
-        lookup and `AttributeError` behavior.
+        Contract:
+        - Thin alias over `compose(...)`.
+        - Preserves the same identifier lookup and `AttributeError` behavior as
+          the underlying composition helper.
 
         Example:
             '01ABC...Spellbook.01DEF...Conduit'
@@ -79,8 +87,10 @@ class IDBuilder:
         """
         Build the lineage ID for a ward owned by a conduit.
 
-        This is a thin alias over :meth:`compose` and preserves its identifier
-        lookup and `AttributeError` behavior.
+        Contract:
+        - Thin alias over `compose(...)`.
+        - Preserves the same identifier lookup and `AttributeError` behavior as
+          the underlying composition helper.
 
         Example:
             '01ABC...Conduit.01XYZ...ConduitWard'

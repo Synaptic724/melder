@@ -23,7 +23,9 @@ class LineageVersionConflictStrategy(SpellSystemValidationStrategy):
     coherent runtime slice. If the same lineage appears multiple times under a
     single root as different version ids, the root is effectively depending on
     mutually conflicting revisions of the same logical spell family. This
-    strategy detects that drift and surfaces it as a root-scoped error.
+    strategy checks the blueprint DAG against the index lineage map and turns
+    that mismatch into a root-scoped error before later planning or execution
+    phases reason over an internally inconsistent dependency closure.
     """
     __slots__ = []
 
@@ -43,9 +45,17 @@ class LineageVersionConflictStrategy(SpellSystemValidationStrategy):
         Validate that each root DAG contains at most one version per lineage.
 
         Purpose:
-            Prevent mixed-version lineages inside a single root blueprint.
+            Prevent one root blueprint from resolving multiple concrete versions
+            of the same logical spell lineage.
         Contract:
-            - Missing index nodes are ignored (handled by other strategies).
+            - Uses blueprint DAG node ids as the candidate version set and the
+              system index as the source of lineage identity.
+            - Missing index nodes and lineage-less nodes are ignored here
+              because other strategies already report broken index coverage.
+            - Emits one ERROR diagnostic per conflicting lineage within a root,
+              with the concrete spell ids that collided.
+            - Blueprint, phase-4, and broken-spell inputs are accepted to match
+              the shared strategy interface but are not consulted by this check.
             - Cancellation is honored between roots.
         Args:
             index: Spell system index being validated.

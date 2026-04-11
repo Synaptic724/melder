@@ -335,8 +335,11 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Remove a request from the in-flight registry.
 
-        Missing request ids are ignored so commit/abort cleanup can call this
-        method without pre-checking for presence.
+        Contract:
+        - Missing request ids are ignored so commit/abort cleanup can call this
+          method without pre-checking for presence.
+        - Removal only affects the in-flight registry; it does not touch the
+          link mirror or any external embargo state.
         """
         self.check_cleaned()
         with self._lock:
@@ -397,8 +400,11 @@ class ChangeControlTransactionManager(Cleanable):
         """
         Remove a tracked link (borrower -> provider).
 
-        If a provider no longer has any tracked borrowers after removal, its
-        mirror entry is removed entirely.
+        Contract:
+        - Missing links are ignored so teardown paths can call this without
+          pre-checking membership.
+        - If a provider no longer has any tracked borrowers after removal, its
+          mirror entry is removed entirely.
         """
         self.check_cleaned()
         if not borrower_conduit_id or not provider_conduit_id:
@@ -418,6 +424,10 @@ class ChangeControlTransactionManager(Cleanable):
         This exposes the provider-to-borrower mirror as a detached set snapshot
         so diagnostics can inspect current fan-out without mutating manager
         state.
+
+        Contract:
+        - Returns an empty set for blank or unknown provider ids.
+        - The returned set is detached from manager state.
 
         Returns:
             Set[str]: New set snapshot of borrower conduit ids currently

@@ -22,7 +22,9 @@ class RootLineageConflictStrategy(SpellSystemValidationStrategy):
     A root blueprint is supposed to represent a distinct root spell version in
     the frame. If multiple root spell ids map back to the same lineage, the
     system is effectively declaring multiple root revisions of one logical spell
-    family at once. This strategy detects that root-lineage split.
+    family at once. This strategy detects that root-lineage split before the
+    planner treats those roots as separate entrypoints with independent
+    occurrence, validation, or execution semantics.
     """
     __slots__ = []
 
@@ -42,10 +44,16 @@ class RootLineageConflictStrategy(SpellSystemValidationStrategy):
         Validate that each lineage maps to at most one root spell id.
 
         Purpose:
-            Prevent multiple root spell versions for the same lineage across
-            the blueprint set.
+            Prevent the blueprint set from advertising multiple structural roots
+            for one logical spell lineage.
         Contract:
-            - Each lineage with multiple roots yields diagnostics.
+            - Uses blueprint keys as the root set and resolves lineage identity
+              from the system index.
+            - Missing index nodes and lineage-less roots are ignored here so
+              dedicated index/root coverage strategies can report those failures
+              without duplicate noise.
+            - Emits one ERROR diagnostic per conflicting root so every root id
+              participating in the split is directly visible to operators.
             - Cancellation is honored between roots.
         Args:
             index: Spell system index being validated.

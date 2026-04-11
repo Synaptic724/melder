@@ -12,14 +12,20 @@ from melder.utilities.helpers.id_builder import IDBuilder
 class FrameViewerProfileBuilder(Cleanable):
     """
     Purpose:
-        Own the reusable `FrameViewerProfile` registry.
+        Own the reusable `FrameViewerProfile` template registry for
+        `FrameViewer`.
 
     Contract:
-        - Seeds one `general` profile by default.
-        - Returns profiles by name for Nexus/viewer use.
+        - Seeds the canonical `general` profile by default.
+        - Stores long-lived reusable templates by stable profile name.
+        - Replaces older templates on name collision and cleans the displaced
+          profile before dropping the reference.
+        - Returns the live registered template; callers are expected to clone
+          and bind it when they need frame-local state.
 
     Lifecycle:
-        Cleanup is idempotent and cascades into owned profiles.
+        Cleanup is idempotent, lock-protected, and cascades into every owned
+        profile template.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -31,7 +37,12 @@ class FrameViewerProfileBuilder(Cleanable):
 
     def __init__(self) -> None:
         """
-        Initialize the frame-viewer profile builder.
+        Initialize the frame-viewer profile registry.
+
+        Contract:
+            - Creates an empty registry protected by an internal `RLock`.
+            - Immediately seeds the canonical `general` profile so callers can
+              resolve a usable viewer template without additional setup.
 
         Returns:
             None.
@@ -45,6 +56,13 @@ class FrameViewerProfileBuilder(Cleanable):
     def register_profile(self, profile: FrameViewerProfile) -> None:
         """
         Register or replace one frame-viewer profile.
+
+        Contract:
+            - Uses `profile.name` as the registry key.
+            - Cleans the displaced profile when a different instance already
+              owns that name.
+            - Keeps the incoming profile live in the registry after the lock is
+              released.
 
         Args:
             profile:
@@ -64,14 +82,14 @@ class FrameViewerProfileBuilder(Cleanable):
 
     def get_required_profile(self, profile_name: str) -> FrameViewerProfile:
         """
-        Return one registered frame-viewer profile or raise.
+        Return the live registered template for one profile name or raise.
 
         Args:
             profile_name:
                 Profile name to resolve.
 
         Returns:
-            FrameViewerProfile: Existing frame-viewer profile.
+            FrameViewerProfile: Registered reusable profile template.
         """
         self.check_cleaned()
         with self._lock:
@@ -82,10 +100,10 @@ class FrameViewerProfileBuilder(Cleanable):
 
     def list_profile_names(self) -> List[str]:
         """
-        Return current frame-viewer profile names.
+        Return a snapshot of the currently registered profile names.
 
         Returns:
-            List[str]: Current profile names.
+            List[str]: Current registry keys at the time of the call.
         """
         self.check_cleaned()
         with self._lock:
@@ -93,7 +111,7 @@ class FrameViewerProfileBuilder(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Idempotently clear the builder and its profiles.
+        Idempotently clear the registry and clean every owned profile template.
 
         Returns:
             None.

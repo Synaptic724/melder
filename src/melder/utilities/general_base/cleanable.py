@@ -21,6 +21,14 @@ class Cleanable(ABC):
     __slots__ = ['_cleaned']
 
     def __init__(self):
+        """
+        Initialize the live/cleaned lifecycle flag for a new cleanable object.
+
+        Contract:
+        - Every `Cleanable` starts live with `_cleaned=False`.
+        - Subclasses may extend initialization, but they inherit this one
+          canonical cleaned-state flag.
+        """
         self._cleaned = False
 
     @property
@@ -79,6 +87,8 @@ class Cleanable(ABC):
         - Release all resources.
         - Deregister or finalize any allocations.
         - Be idempotent (safe to call multiple times).
+        - Preserve the same lifecycle semantics as `cleanup()` once async
+          teardown completes.
         """
         raise NotImplementedError("Subclasses must implement async_cleanup().")
 
@@ -95,6 +105,14 @@ class Cleanable(ABC):
         __slots__ = ("_owner", "_cleaned", "_lock")
 
         def __init__(self, owner):
+            """
+            Bind the helper context to one cleanable owner.
+
+            Contract:
+            - Stores one strong owner reference until exit.
+            - Tracks whether cleanup has already been triggered so exit remains
+              idempotent.
+            """
             self._owner = owner
             self._cleaned = False
             self._lock: threading.RLock = threading.RLock()

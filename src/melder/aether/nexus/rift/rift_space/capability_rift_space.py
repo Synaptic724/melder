@@ -18,8 +18,11 @@ class CapabilityRiftSpace(RiftSpace, ICapabilityRiftSpace):
     Contract:
         - Inherits all base room behavior.
         - Fixes `space_kind` to `capability`.
-        - Exists as a placeholder room type only in this cut; actual capability
-          execution semantics are intentionally not implemented here.
+        - Exists as the restrictive middle posture between static and fully
+          dynamic room behavior.
+        - In this cut it is still mostly a typed placeholder; richer
+          capability-execution semantics are intentionally deferred to higher
+          room/workstation layers.
     """
 
     def __init__(
@@ -35,6 +38,10 @@ class CapabilityRiftSpace(RiftSpace, ICapabilityRiftSpace):
         Internal
 
         Initialize a capability room.
+
+        Purpose:
+            Materialize one `RiftSpace` instance whose room kind is fixed to
+            the capability posture.
 
         Args:
             owner_rift_id:
@@ -52,8 +59,10 @@ class CapabilityRiftSpace(RiftSpace, ICapabilityRiftSpace):
             None.
 
         Contract:
-            Delegates all storage and lifecycle behavior to `RiftSpace` while
-            fixing the room kind to `capability`.
+            - Delegates all storage and lifecycle behavior to `RiftSpace`.
+            - Fixes the persisted room kind to `capability` so later room
+              selection and serialization can distinguish it from `static` and
+              `dynamic` rooms.
         """
         super().__init__(
             owner_rift_id,

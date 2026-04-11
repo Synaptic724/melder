@@ -6151,6 +6151,219 @@ class IRiftConfiguration(ICleanable, Protocol):
 
 
 @runtime_checkable
+class IWorkstation(ICleanable, Protocol):
+    """
+    Interface for the room-local workstation canvas.
+    """
+
+    @property
+    def workstation_id(self) -> str:
+        """
+        Return the stable workstation identifier.
+        """
+        ...
+
+    @property
+    def owner_space_id(self) -> str:
+        """
+        Return the owning room identifier.
+        """
+        ...
+
+    def bind_object(self, name: str, value: object) -> None:
+        """
+        Store one object binding by name.
+        """
+        ...
+
+    def bind_attribute(self, name: str, value: object) -> None:
+        """
+        Store one attribute/value binding by name.
+        """
+        ...
+
+    def bind_method(self, name: str, value: object) -> None:
+        """
+        Store one method/callable binding by name.
+        """
+        ...
+
+    def get(self, name: str, *, store: Optional[str] = None) -> object:
+        """
+        Return one saved binding by name.
+        """
+        ...
+
+    def release(self, name: str, *, store: Optional[str] = None) -> object:
+        """
+        Remove one saved binding and return the removed value.
+        """
+        ...
+
+    def describe_bindings(self) -> Dict[str, List[str]]:
+        """
+        Return a detached summary of saved binding names by store.
+        """
+        ...
+
+    def set_target(self, name: str, *, store: Optional[str] = None) -> None:
+        """
+        Select one saved binding as the active target.
+        """
+        ...
+
+    def get_target(self) -> object:
+        """
+        Return the current active target value.
+        """
+        ...
+
+    def clear_target(self) -> None:
+        """
+        Clear the current active-target selection only.
+        """
+        ...
+
+    def cleanup_target(self, *method_names: str) -> None:
+        """
+        Call cleanup methods on the current target and then clear target selection.
+        """
+        ...
+
+    def call_target(
+            self,
+            *args: Any,
+            bind_as_name: Optional[str] = None,
+            bind_as_store: str = "objects",
+            **kwargs: Any
+    ) -> object:
+        """
+        Invoke the current target and optionally bind the return value.
+        """
+        ...
+
+
+@runtime_checkable
+class ICommandSystem(ICleanable, Protocol):
+    """
+    Interface for the room-local command system.
+    """
+
+    @property
+    def command_system_id(self) -> str:
+        """
+        Return the stable command-system identifier.
+        """
+        ...
+
+    @property
+    def owner_space_id(self) -> str:
+        """
+        Return the owning room identifier.
+        """
+        ...
+
+    def get_selected_target_link(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return the single selected viewer target link for one frame.
+        """
+        ...
+
+    def get_selected_target_record(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return the descriptor-backed record for the single selected viewer target.
+        """
+        ...
+
+    def get_selected_target_runtime_object(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return the live runtime object for the single selected viewer target.
+        """
+        ...
+
+    def get_conduit_object_by_id(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one live conduit object by id.
+        """
+        ...
+
+    def get_conduit_object_by_name(
+            self,
+            conduit_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one live conduit object by name.
+        """
+        ...
+
+    def get_spell_object_by_source_id(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one live spell object using a published spell source id.
+        """
+        ...
+
+    def get_spell_object_by_id(
+            self,
+            spell_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one live spell object by current spell id.
+        """
+        ...
+
+    def get_target_attribute(self, attribute_name: str) -> object:
+        """
+        Return one attribute value from the current workstation target.
+        """
+        ...
+
+    def get_target_method(self, method_name: str) -> object:
+        """
+        Return one method/callable from the current workstation target.
+        """
+        ...
+
+    def execute_target_method(
+            self,
+            method_name: str,
+            *args: Any,
+            bind_as_name: Optional[str] = None,
+            bind_as_store: str = "objects",
+            **kwargs: Any
+    ) -> object:
+        """
+        Execute one method on the current workstation target.
+        """
+        ...
+
+
+@runtime_checkable
 class IRiftSpace(ICleanable, Protocol):
     """
     Interface for the base RiftSpace room object.
@@ -6202,6 +6415,20 @@ class IRiftSpace(ICleanable, Protocol):
     def frame_viewer(self) -> Optional[object]:
         """
         Return the attached frame-surface viewer, if one exists.
+        """
+        ...
+
+    @property
+    def workstation(self) -> IWorkstation:
+        """
+        Return the room-local workstation canvas owned by this space.
+        """
+        ...
+
+    @property
+    def command_system(self) -> ICommandSystem:
+        """
+        Return the room-local command system owned by this space.
         """
         ...
 

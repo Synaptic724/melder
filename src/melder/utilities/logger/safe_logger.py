@@ -33,6 +33,16 @@ class SafeLogger(Cleanable, ISafeLogger):
         "critical": logging.CRITICAL,
     }
     def __init__(self, logger: logging.Logger | IChannelLogger | None, level_name: str = "INFO"):
+        """
+        Initialize the logger adapter around one concrete logger or null target.
+
+        Contract:
+        - Accepts either an `IChannelLogger`, stdlib `logging.Logger`, or
+          `None`.
+        - Normalizes the configured level name immediately.
+        - Pushes the resolved level onto the wrapped logger when a concrete
+          logger is present.
+        """
         super().__init__()
         self._id = IDBuilder.create_id()
         from melder.utilities.interfaces.interfaces import IChannelLogger as _IChannelLogger
@@ -59,6 +69,7 @@ class SafeLogger(Cleanable, ISafeLogger):
         - If the wrapped logger exposes `cleanup()`, this method attempts to
           call it once on teardown.
         - Always clears the local logger reference afterward.
+        - Does not assume stdlib loggers own a cleanup lifecycle.
         """
         # Allow external polymorphic cleanup; std loggers won't have it.
         if self._logger is not None and hasattr(self._logger, "cleanup"):
@@ -75,6 +86,7 @@ class SafeLogger(Cleanable, ISafeLogger):
         Contract:
         - Normalizes the supplied level name to lowercase.
         - Updates the wrapped logger immediately when one exists.
+        - Rejects unsupported symbolic names instead of silently coercing them.
         """
         normalized = level_name.lower()
         if normalized not in self._LEVELS:
@@ -91,6 +103,8 @@ class SafeLogger(Cleanable, ISafeLogger):
         Contract:
         - Rejects values that are not one of the known stdlib logging levels.
         - Updates the wrapped logger immediately when one exists.
+        - Keeps `_level_name` as the last symbolic value set; numeric updates
+          only adjust the active threshold.
         """
         if level not in self._LEVELS.values():
             raise ValueError(f"Invalid numeric log level: {level}")

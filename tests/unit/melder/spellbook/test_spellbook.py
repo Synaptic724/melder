@@ -1350,6 +1350,513 @@ def test_refresh_local_spell_versions_populates_versions():
     assert sb._spell_versions == {"a", "b", "c"}
 
 
+def test_snapshot_state_returns_detached_copies() -> None:
+    sb = Spellbook()
+    idx = DummySpellIndex(current="sid-1")
+    spell = DummySpell(spell_id="sid-1")
+    sb._spells = {idx: spell}
+    sb._lookup_spells = {("frame", "binding"): idx}
+    sb._spell_versions = {"sid-1"}
+    sb._contracted_spells = {"peer": {idx: spell}}
+    sb._lookup_contracted_spells = {"peer": {("frame", "binding"): idx}}
+    sb._contracted_versions = {"peer": {"sid-1"}}
+
+    snapshot = sb.snapshot_state()
+
+    snapshot["local_spells"].clear()
+    snapshot["lookup_spells"].clear()
+    snapshot["spell_versions"].clear()
+    snapshot["contracted_spells"]["peer"].clear()
+    snapshot["lookup_contracted_spells"]["peer"].clear()
+    snapshot["contracted_versions"]["peer"].clear()
+
+    assert sb._spells == {idx: spell}
+    assert sb._lookup_spells == {("frame", "binding"): idx}
+    assert sb._spell_versions == {"sid-1"}
+    assert sb._contracted_spells["peer"] == {idx: spell}
+    assert sb._lookup_contracted_spells["peer"] == {("frame", "binding"): idx}
+    assert sb._contracted_versions["peer"] == {"sid-1"}
+
+
+def test_mark_collection_dependents_dirty_noop_and_error_paths() -> None:
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+
+    sb._mark_collection_dependents_dirty(set())
+
+    sb._spell_system_states = None
+    with pytest.raises(RuntimeError, match="SpellSystemStates unavailable for revalidation."):
+        sb._mark_collection_dependents_dirty({"frame"})
+
+    class _StateSystem:
+        def mark_collection_dependents_dirty(self, **kwargs):
+            raise RuntimeError("boom")
+
+    sb._spell_system_states = _StateSystem()
+    with pytest.raises(RuntimeError, match="boom"):
+        sb._mark_collection_dependents_dirty({"frame"})
+
+
+def test_remove_link_contract_inconsistent_state_raises() -> None:
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+    sb._contracted_spells = {"peer": {}}
+    sb._lookup_contracted_spells = {}
+    sb._contracted_versions = {"peer": set()}
+    sb._contracted_spells_by_id = {"peer": {}}
+
+    with pytest.raises(RuntimeError, match="Inconsistent link contract state"):
+        sb._remove_link_contract("peer")
+
+
+def test_try_update_staged_contract_keys_rebuilds_peer_scope(monkeypatch):
+    sb = Spellbook()
+    sb._aetheric_frame = "default"
+    sb._active_change_request = types.SimpleNamespace(
+        request_id="req-1",
+        request_type=spellbook_module.ChangeTransactionType.LINK,
+        contract_keys=[("old-frame", "old-binding", "peer"), ("stay", "binding", "other")],
+    )
+    idx = DummySpellIndex()
+    sb._lookup_contracted_spells = {"peer": {("new-frame", "new-binding"): idx}}
+    updated = []
+
+    staged = types.SimpleNamespace(contract_keys=[("staged-frame", "staged-binding", "peer")])
+    change_control = types.SimpleNamespace(
+        orchestrator=lambda: types.SimpleNamespace(get_staged=lambda request_id: staged),
+        update_staged_request=lambda request_id, contract_keys=None: updated.append(
+            (request_id, contract_keys)
+        ),
+    )
+    monkeypatch.setattr(spellbook_module.Spellbook, "_aether", types.SimpleNamespace(
+        _get_change_control_manager=lambda frame: change_control
+    ))
+
+    sb._try_update_staged_contract_keys("peer")
+
+    assert updated == [
+        (
+            "req-1",
+            [
+                ("new-frame", "new-binding", "peer"),
+            ],
+        )
+    ]
+
+
+def test_begin_transaction_enforces_dynamic_mode_and_admission_failures(monkeypatch):
+    class _TxnConfig:
+        def __init__(self, system_state):
+            self._system_state = system_state
+
+        def has_property(self, name):
+            return name == "system_state"
+
+        def get_property(self, name):
+            if name != "system_state":
+                raise KeyError(name)
+            return self._system_state
+
+    sb = Spellbook(configuration=_TxnConfig(SystemState.automatic))
+    sb._logger = DummySafeLogger()
+
+    with pytest.raises(RuntimeError, match="dynamic mode"):
+        sb.begin_transaction(spellbook_module.ChangeTransactionType.LINK)
+
+    sb._configuration = _TxnConfig(SystemState.dynamic)
+    change_control = types.SimpleNamespace(
+        transaction_manager=lambda: types.SimpleNamespace(
+            make_scope_key_spellbook=lambda spellbook_id: f"scope:{spellbook_id}",
+            build_request=lambda **kwargs: types.SimpleNamespace(
+                request_id="req-1",
+                **kwargs,
+            ),
+        ),
+        admit_request=lambda request: types.SimpleNamespace(
+            admitted=False,
+            reasons=["embargo"],
+            conflicts=["c1"],
+            embargoes=["e1"],
+        ),
+    )
+    monkeypatch.setattr(
+        spellbook_module.Spellbook,
+        "_aether",
+        types.SimpleNamespace(
+            _get_change_control_manager=lambda frame: change_control,
+        ),
+    )
+
+    with pytest.raises(RuntimeError, match="admission denied"):
+        sb.begin_transaction(spellbook_module.ChangeTransactionType.LINK)
+
+
+def test_bind_configuration_to_aether_and_frame_posture_reraise_failures(monkeypatch):
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+    sb._configuration = DummyConfig()
+    sb._aetheric_frame = "ops"
+
+    aether_stub = types.SimpleNamespace(
+        _bind_configuration=lambda configuration, frame: (_ for _ in ()).throw(
+            RuntimeError("bind configuration boom")
+        ),
+        _bind_aetheric_frame_configuration=lambda configuration, frame: (_ for _ in ()).throw(
+            RuntimeError("bind posture boom")
+        ),
+    )
+    monkeypatch.setattr(spellbook_module.Spellbook, "_aether", aether_stub)
+
+    with pytest.raises(RuntimeError, match="bind configuration boom"):
+        sb._bind_configuration_to_aether()
+
+    with pytest.raises(RuntimeError, match="bind posture boom"):
+        sb._bind_aetheric_frame_configuration_to_aether()
+
+
+def test_bind_aetheric_frame_configuration_missing_config_raises() -> None:
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+    sb._configuration = None
+
+    with pytest.raises(RuntimeError, match="No configuration instance available to derive frame posture."):
+        sb._bind_aetheric_frame_configuration_to_aether()
+
+
+def test_derive_aetheric_frame_configuration_fallback_defaults() -> None:
+    class _Config:
+        def get_property(self, name):
+            return None
+
+    sb = Spellbook()
+    sb._configuration = _Config()
+    sb._id = "spellbook-id"
+
+    frame_configuration = sb._derive_aetheric_frame_configuration()
+
+    assert frame_configuration.origin_spellbook_id == "spellbook-id"
+    assert frame_configuration.system_state is SystemState.automatic
+    assert frame_configuration.ai_native_enabled is False
+    assert frame_configuration.rift_enabled is False
+
+
+def test_add_contracted_spell_updates_maps_and_notifies_when_conjured() -> None:
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+    sb._contracted_spells = {}
+    sb._lookup_contracted_spells = {}
+    sb._contracted_versions = {}
+    sb._contracted_spells_by_id = {}
+    sb._conjured = True
+    sb._conduit = DummyConduit("borrower", "borrower")
+    dirty_calls = []
+    staged_calls = []
+    risk_calls = []
+    sb._mark_collection_dependents_dirty = lambda frame_keys: dirty_calls.append(frame_keys)
+    sb._try_update_staged_contract_keys = lambda conduit_id: staged_calls.append(conduit_id)
+    sb._register_spell_with_risk_manager = (
+        lambda conduit_id, spell: risk_calls.append((conduit_id, spell))
+    )
+
+    idx = DummySpellIndex(versions={"sid-1", "sid-2"}, sid="lineage", current="sid-1")
+    idx._attach_contracted = lambda owner, conduit_id, spell: setattr(
+        idx,
+        "_contract_attachment",
+        (owner, conduit_id, spell),
+    )
+    spell = DummySpell(
+        spell_id="sid-1",
+        versions={"sid-1", "sid-2"},
+        spell_name="SpellName",
+        binding_name="binding",
+        spellframe="Frame",
+    )
+    spell.spell_index = idx
+    spell.key = ("frame", "binding")
+
+    sb._add_contracted_spell(spell, "peer")
+
+    assert sb._contracted_spells["peer"][idx] is spell
+    assert sb._lookup_contracted_spells["peer"] == {("frame", "binding"): idx}
+    assert sb._contracted_versions["peer"] == {"sid-1", "sid-2"}
+    assert dirty_calls == [{"frame"}]
+    assert staged_calls == ["peer"]
+    assert risk_calls == [("borrower", spell)]
+
+
+def test_remove_contracted_spell_updates_maps_and_notifies_when_conjured() -> None:
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+    sb._contracted_spells = {"peer": {}}
+    sb._lookup_contracted_spells = {"peer": {}}
+    sb._contracted_versions = {"peer": set()}
+    sb._contracted_spells_by_id = {}
+    sb._conjured = True
+    sb._conduit = DummyConduit("borrower", "borrower")
+    staged_calls = []
+    risk_calls = []
+    sb._try_update_staged_contract_keys = lambda conduit_id: staged_calls.append(conduit_id)
+    sb._unregister_spell_with_risk_manager = (
+        lambda conduit_id, spell: risk_calls.append((conduit_id, spell))
+    )
+
+    idx = DummySpellIndex(versions={"sid-1", "sid-2"}, sid="lineage", current="sid-1")
+    idx._detach_contracted = lambda owner, conduit_id: setattr(
+        idx,
+        "_contract_detached",
+        (owner, conduit_id),
+    )
+    spell = DummySpell(
+        spell_id="sid-1",
+        versions={"sid-1", "sid-2"},
+        spell_name="SpellName",
+        binding_name="binding",
+        spellframe="Frame",
+    )
+    spell.spell_index = idx
+    sb._contracted_spells["peer"][idx] = spell
+    sb._lookup_contracted_spells["peer"][("frame", "binding")] = idx
+    sb._contracted_versions["peer"].update({"sid-1", "sid-2"})
+
+    sb._remove_contracted_spell("sid-1", "peer")
+
+    assert sb._contracted_spells["peer"] == {}
+    assert sb._lookup_contracted_spells["peer"] == {}
+    assert sb._contracted_versions["peer"] == set()
+    assert staged_calls == ["peer"]
+    assert risk_calls == [("borrower", spell)]
+
+
+def test_remove_contracted_spell_missing_maps_and_missing_version_raise() -> None:
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+    sb._contracted_spells = {}
+    sb._lookup_contracted_spells = {}
+    sb._contracted_versions = {}
+
+    with pytest.raises(RuntimeError, match="No contracted spell maps found for conduit ID peer."):
+        sb._remove_contracted_spell("sid-1", "peer")
+
+    idx = DummySpellIndex(versions={"other"}, sid="lineage", current="other")
+    spell = DummySpell(
+        spell_id="other",
+        versions={"other"},
+        spell_name="SpellName",
+        binding_name="binding",
+        spellframe="Frame",
+    )
+    spell.spell_index = idx
+    sb._contracted_spells = {"peer": {idx: spell}}
+    sb._lookup_contracted_spells = {"peer": {("frame", "binding"): idx}}
+    sb._contracted_versions = {"peer": {"other"}}
+
+    with pytest.raises(RuntimeError, match="Spell version sid-1 not found for conduit ID peer."):
+        sb._remove_contracted_spell("sid-1", "peer")
+
+
+def test_cleanup_components_swallows_clear_and_cleanup_failures() -> None:
+    class _BadMap(dict):
+        def clear(self):
+            raise RuntimeError("clear boom")
+
+    class _BadConfig(DummyConfig):
+        def cleanup(self):
+            raise RuntimeError("config cleanup boom")
+
+    class _BadValidator(DummySpellValidationSystem):
+        def cleanup(self):
+            raise RuntimeError("validator cleanup boom")
+
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+    sb._cleanup_spells = lambda: None
+    sb._remove_spells_from_nexus = lambda: None
+    sb._spells = _BadMap()
+    sb._spells_by_id = _BadMap()
+    sb._spell_id_pool = _BadMap()
+    sb._lookup_spells = _BadMap()
+    sb._contracted_spells = _BadMap()
+    sb._contracted_spells_by_id = _BadMap()
+    sb._lookup_contracted_spells = _BadMap()
+    sb._configuration = _BadConfig()
+    sb._spell_versions = _BadMap()
+    sb._contracted_versions = _BadMap()
+    sb._spell_validator = _BadValidator()
+
+    sb._cleanup_components()
+
+    assert sb._spells is None
+    assert sb._spells_by_id is None
+    assert sb._spell_id_pool is None
+    assert sb._lookup_spells is None
+    assert sb._contracted_spells is None
+    assert sb._contracted_spells_by_id is None
+    assert sb._lookup_contracted_spells is None
+    assert sb._configuration is None
+    assert sb._spell_versions is None
+    assert sb._contracted_versions is None
+    assert sb._spell_validator is None
+    assert len(sb._logger.error_calls) >= 1
+
+
+def test_cleanup_rechecks_cleaned_state_under_lock() -> None:
+    class _FlipCleanedOnEnter:
+        def __init__(self, owner):
+            self._owner = owner
+
+        def __enter__(self):
+            self._owner._cleaned = True
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    sb = Spellbook()
+    original_lock = sb._lock
+    sb._lock = _FlipCleanedOnEnter(sb)
+    try:
+        sb.cleanup()
+    finally:
+        sb._lock = original_lock
+
+    assert sb._cleaned is True
+
+
+def test_refresh_nexus_publish_enabled_and_publish_helpers_cover_enabled_and_disabled_paths() -> None:
+    publish_calls = []
+    remove_calls = []
+
+    sb = Spellbook()
+    sb._id = "spellbook-id"
+    sb._aetheric_frame = "ops"
+    sb._nexus = types.SimpleNamespace(
+        _publish_frame_record=lambda spellbook: publish_calls.append(("frame", spellbook._id)),
+        _publish_conduit_record=lambda conduit: publish_calls.append(("conduit", conduit._id)),
+        _publish_spell_record=lambda spellbook, spell, owner_conduit_id: publish_calls.append(
+            ("spell", spell.spell_id, owner_conduit_id)
+        ),
+        _remove_spell_record=lambda spellbook_id, spell_id, frame: remove_calls.append(
+            (spellbook_id, spell_id, frame)
+        ),
+    )
+    spell = DummySpell(spell_id="sid-1", owner_conduit_id="owner-a")
+    sb._spells = {DummySpellIndex(current="sid-1"): spell}
+    conduit = DummyConduit("cid", "root")
+    sb._conduit = conduit
+    sb._conjured = True
+
+    spellbook_module.Spellbook._aether = types.SimpleNamespace(
+        _get_aetheric_frame_configuration=lambda frame: None
+    )
+
+    assert sb._refresh_nexus_publish_enabled() is False
+    sb._publish_nexus_state_for_conjure(conduit)
+    sb._publish_spell_record_to_nexus(spell)
+    sb._replace_spell_record_in_nexus("old-id", spell)
+    sb._remove_spells_from_nexus()
+
+    assert conduit._nexus_publish_enabled is False
+    assert publish_calls == []
+    assert remove_calls == []
+
+    spellbook_module.Spellbook._aether = types.SimpleNamespace(
+        _get_aetheric_frame_configuration=lambda frame: types.SimpleNamespace(rift_enabled=True)
+    )
+
+    assert sb._refresh_nexus_publish_enabled() is True
+    sb._publish_nexus_state_for_conjure(conduit)
+    sb._publish_spell_record_to_nexus(spell)
+    sb._replace_spell_record_in_nexus("old-id", spell)
+    sb._remove_spells_from_nexus()
+
+    assert conduit._nexus_publish_enabled is True
+    assert publish_calls == [
+        ("frame", "spellbook-id"),
+        ("conduit", "cid"),
+        ("spell", "sid-1", "cid"),
+        ("spell", "sid-1", "owner-a"),
+        ("spell", "sid-1", "owner-a"),
+    ]
+    assert remove_calls == [
+        ("spellbook-id", "old-id", "ops"),
+        ("spellbook-id", "sid-1", "ops"),
+    ]
+
+
+def test_register_contracted_spell_id_missing_map_and_collisions_raise() -> None:
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+    spell = DummySpell(spell_id="contracted-id")
+
+    sb._contracted_spells_by_id = None
+    with pytest.raises(RuntimeError, match="Contracted spell_id map is not available."):
+        sb._register_contracted_spell_id("peer", "contracted-id", spell)
+
+    sb._contracted_spells_by_id = {}
+    with pytest.raises(RuntimeError, match="Contracted spell_id map missing for conduit_id=peer"):
+        sb._register_contracted_spell_id("peer", "contracted-id", spell)
+
+    other = DummySpell(spell_id="contracted-id")
+    sb._contracted_spells_by_id = {"peer": {"contracted-id": other}}
+    with pytest.raises(RuntimeError, match="Contracted spell_id collision for conduit_id=peer, spell_id=contracted-id"):
+        sb._register_contracted_spell_id("peer", "contracted-id", spell)
+
+    sb._contracted_spells_by_id = {"peer": {}}
+    sb._spell_id_pool["contracted-id"] = other
+    with pytest.raises(RuntimeError, match="Contracted spell_id collision for spell_id_pool spell_id=contracted-id"):
+        sb._register_contracted_spell_id("peer", "contracted-id", spell)
+
+
+def test_update_contracted_spell_id_error_paths_raise() -> None:
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+    spell = DummySpell(spell_id="old-id")
+
+    sb._contracted_spells_by_id = None
+    with pytest.raises(RuntimeError, match="Contracted spell_id map is not available."):
+        sb._update_contracted_spell_id("peer", "old-id", "new-id", spell)
+
+    sb._contracted_spells_by_id = {}
+    with pytest.raises(RuntimeError, match="Contracted spell_id map missing for conduit_id=peer"):
+        sb._update_contracted_spell_id("peer", "old-id", "new-id", spell)
+
+    sb._contracted_spells_by_id = {"peer": {}}
+    with pytest.raises(RuntimeError, match="Contracted spell_id not found for update \\(old_id=old-id\\)."):
+        sb._update_contracted_spell_id("peer", "old-id", "new-id", spell)
+
+    other = DummySpell(spell_id="old-id")
+    sb._contracted_spells_by_id = {"peer": {"old-id": other}}
+    with pytest.raises(RuntimeError, match="Contracted spell_id mapped to a different spell \\(old_id=old-id\\)."):
+        sb._update_contracted_spell_id("peer", "old-id", "new-id", spell)
+
+    sb._contracted_spells_by_id = {"peer": {"old-id": spell, "new-id": other}}
+    with pytest.raises(RuntimeError, match="Contracted spell_id collision for new_id=new-id"):
+        sb._update_contracted_spell_id("peer", "old-id", "new-id", spell)
+
+
+def test_unregister_contracted_spell_id_error_paths_raise() -> None:
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+    spell = DummySpell(spell_id="contracted-id")
+
+    sb._contracted_spells_by_id = None
+    with pytest.raises(RuntimeError, match="Contracted spell_id map is not available."):
+        sb._unregister_contracted_spell_id("peer", "contracted-id", spell)
+
+    sb._contracted_spells_by_id = {}
+    with pytest.raises(RuntimeError, match="Contracted spell_id map missing for conduit_id=peer"):
+        sb._unregister_contracted_spell_id("peer", "contracted-id", spell)
+
+    sb._contracted_spells_by_id = {"peer": {}}
+    with pytest.raises(RuntimeError, match="Contracted spell_id not found for removal \\(spell_id=contracted-id\\)."):
+        sb._unregister_contracted_spell_id("peer", "contracted-id", spell)
+
+    other = DummySpell(spell_id="contracted-id")
+    sb._contracted_spells_by_id = {"peer": {"contracted-id": other}}
+    with pytest.raises(RuntimeError, match="Contracted spell_id mapped to a different spell \\(spell_id=contracted-id\\)."):
+        sb._unregister_contracted_spell_id("peer", "contracted-id", spell)
+
+
 def test_refresh_contracted_spell_versions_populates_per_conduit():
     """
     Purpose:

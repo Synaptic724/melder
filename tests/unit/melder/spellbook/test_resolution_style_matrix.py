@@ -1,3 +1,5 @@
+import pytest
+
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.resolution_style_matrix import ResolutionStyleMatrix
 from melder.spellbook.spell_types.spell_types import SpellType
@@ -90,3 +92,101 @@ def test_resolution_style_matrix_family_policy_clarifies_class_vs_unique_only() 
     assert set(class_policy["unsupported"]) == set()
     assert set(callable_policy["supported"]) == {"unique"}
     assert set(existing_policy["supported"]) == {"unique"}
+
+
+def test_resolution_style_matrix_accessor_helpers_return_expected_rows() -> None:
+    spell_entry = ResolutionStyleMatrix.get_entry(SpellType.SPELL)
+    method_family_from_enum = ResolutionStyleMatrix.get_family_for_spell_type(
+        SpellType.METHOD
+    )
+    method_family_from_name = ResolutionStyleMatrix.get_family_for_spell_type(
+        "METHOD"
+    )
+
+    assert spell_entry["supported"] == ResolutionStyleMatrix.ALL_EXISTENCE_NAMES
+    assert spell_entry["unsupported"] == tuple()
+    assert method_family_from_enum == "callable_based"
+    assert method_family_from_name == "callable_based"
+
+
+def test_resolution_style_matrix_validate_reports_count_and_mapping_drift(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        ResolutionStyleMatrix,
+        "EXPECTED_SPELL_TYPE_COUNT",
+        ResolutionStyleMatrix.EXPECTED_SPELL_TYPE_COUNT + 1,
+    )
+    monkeypatch.setattr(
+        ResolutionStyleMatrix,
+        "EXPECTED_EXISTENCE_COUNT",
+        ResolutionStyleMatrix.EXPECTED_EXISTENCE_COUNT + 1,
+    )
+    monkeypatch.setattr(
+        ResolutionStyleMatrix,
+        "EXPECTED_CONTRACT_ITEM_COUNT",
+        ResolutionStyleMatrix.EXPECTED_CONTRACT_ITEM_COUNT + 1,
+    )
+    monkeypatch.setattr(
+        ResolutionStyleMatrix,
+        "SPELL_TYPE_TO_BINDING_FAMILY",
+        {
+            "SPELL": "class_based",
+            "UNKNOWN_TYPE": "class_based",
+        },
+    )
+
+    errors = ResolutionStyleMatrix.validate()
+
+    assert any("SpellType enum count drift" in error for error in errors)
+    assert any("Existence enum count drift" in error for error in errors)
+    assert any("Resolution contract item count drift" in error for error in errors)
+    assert any("SpellType->family map missing SpellType entries" in error for error in errors)
+    assert any("SpellType->family map has unknown SpellType entries" in error for error in errors)
+    assert any("Matrix missing SpellType entries" in error for error in errors)
+    assert any("Matrix has unknown SpellType entries" in error for error in errors)
+
+
+def test_resolution_style_matrix_validate_reports_matrix_and_contract_row_drift(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    patched_policy = {
+        "class_based": {
+            "spell_types": ("SPELL", "UNKNOWN_TYPE"),
+            "supported": ("unique", "unknown_existence"),
+            "unsupported": ("unique",),
+        },
+        "callable_based": ResolutionStyleMatrix.BINDING_FAMILY_POLICY["callable_based"],
+        "existing_object_based": ResolutionStyleMatrix.BINDING_FAMILY_POLICY[
+            "existing_object_based"
+        ],
+    }
+    patched_contract_status = dict(ResolutionStyleMatrix.CONTRACT_ITEM_STATUS)
+    patched_contract_status.pop("A1")
+    patched_contract_status["ZZ"] = "wrong"
+
+    monkeypatch.setattr(
+        ResolutionStyleMatrix,
+        "BINDING_FAMILY_POLICY",
+        patched_policy,
+    )
+    monkeypatch.setattr(
+        ResolutionStyleMatrix,
+        "CONTRACT_ITEM_STATUS",
+        patched_contract_status,
+    )
+    monkeypatch.setattr(
+        ResolutionStyleMatrix,
+        "SPELL_TYPE_TO_BINDING_FAMILY",
+        dict(ResolutionStyleMatrix.SPELL_TYPE_TO_BINDING_FAMILY),
+    )
+
+    errors = ResolutionStyleMatrix.validate()
+
+    assert any("Matrix overlap for SPELL" in error for error in errors)
+    assert any("Matrix contains unknown existence names for SPELL" in error for error in errors)
+    assert any("Matrix does not fully classify existence names for SPELL" in error for error in errors)
+    assert any("Family policy references unknown spell type in class_based: UNKNOWN_TYPE." == error for error in errors)
+    assert any("Contract status map missing items: A1." == error for error in errors)
+    assert any("Contract status map contains unknown items: ZZ." == error for error in errors)
+    assert any("Contract status map has invalid status for ZZ: wrong." == error for error in errors)

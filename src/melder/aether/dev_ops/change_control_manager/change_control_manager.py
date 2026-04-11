@@ -37,11 +37,16 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
 
     Purpose:
         Provide DevOps-facing bookkeeping for spell lineages, dirty roots, and
-        change-control admission helpers. This is not a hot-path resolver.
+        change-control admission helpers. This is the frame-level control-plane
+        owner for admission, embargo, conflict, staging, and targeted
+        revalidation bookkeeping; it is not the hot-path resolver itself.
     Contract:
         - Tracks pending change metadata by SpellIndex id.
         - Tracks per-conduit component-of and dirty root state for targeted revalidation.
-        - Provides accessors for change-control scaffolding managers.
+        - Owns and coordinates the transaction/conflict/embargo/orchestrator
+          helper managers used by change-control flows.
+        - Exposes hook-registration seams for commit, abort, structural
+          validation, and dirty-marking behavior.
         - Does not own SpellSystemStates lifecycle.
     Args:
         spell_system_states:
@@ -283,6 +288,15 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         """
         Register an audit logger for admitted change-control requests.
 
+        Purpose:
+            Wire the frame-level change-control surface to the transaction
+            manager's observational audit stream.
+
+        Contract:
+            - Passing `None` disables audit logging.
+            - The callback is forwarded to the transaction manager, which later
+              invokes it outside the manager lock.
+
         Passing `None` disables audit logging. The callback itself is later run
         by the transaction manager, outside this manager's internal lock.
 
@@ -301,8 +315,14 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         """
         Register a commit validator hook for admitted requests.
 
-        This is the outer validator slot that runs after the structural
-        validator in `_dispatch_commit_validator`.
+        Purpose:
+            Install the outer commit-validation stage that runs after the
+            structural validator during commit dispatch.
+
+        Contract:
+            - Passing `None` disables this validation stage.
+            - The hook reference is snapshotted under the manager lock and later
+              invoked outside the lock through `_dispatch_commit_validator(...)`.
 
         Args:
             fn: Callable that validates a staged mutation, or `None` to disable
@@ -319,9 +339,14 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         """
         Register a structural validation hook for admitted requests.
 
-        This is the first validator slot in commit dispatch and is intended for
-        structural/runtime validation work that should run before the general
-        commit validator.
+        Purpose:
+            Install the first commit-validation stage for structural/runtime
+            checks that must run before the general commit validator.
+
+        Contract:
+            - Passing `None` disables the structural validation stage.
+            - The hook is invoked through `_dispatch_commit_validator(...)`
+              before the outer validator hook.
 
         Args:
             fn: Callable that validates a staged mutation, or `None` to disable
@@ -338,8 +363,13 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         """
         Register a commit hook for admitted requests.
 
-        This is the general commit-side-effect hook and runs after the dirty
-        marker in `_dispatch_commit_hook`.
+        Purpose:
+            Install the general post-validation commit side-effect hook.
+
+        Contract:
+            - Passing `None` disables the hook.
+            - The hook runs after the dirty marker inside
+              `_dispatch_commit_hook(...)`.
 
         Args:
             fn: Callable invoked with a staged mutation, or `None` to disable
@@ -356,8 +386,14 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         """
         Register a commit-time dirty-marking hook.
 
-        This hook exists for the "mark runtime state dirty after commit"
-        responsibility and runs before the general commit hook.
+        Purpose:
+            Install the commit-side hook responsible for marking runtime state
+            dirty after a successful mutation.
+
+        Contract:
+            - Passing `None` disables dirty marking.
+            - The hook runs before the general commit hook so later side effects
+              see already-dirtied runtime state.
 
         Args:
             fn: Callable invoked with a staged mutation, or `None` to disable
@@ -373,6 +409,16 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
     ) -> None:
         """
         Register an abort hook for admitted requests.
+
+        Purpose:
+            Install the staged-mutation cleanup hook that runs when an admitted
+            request aborts or a commit-side hook fails.
+
+        Contract:
+            - Passing `None` disables the hook.
+            - The hook reference is snapshotted under the manager lock and
+              invoked outside the lock through `_dispatch_abort_hook(...)` or
+              orchestrator cleanup.
 
         Args:
             fn: Callable invoked when an admitted staged mutation aborts, or
@@ -438,8 +484,13 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
         """
         Run the registered abort hook, if any.
 
-        The hook reference is snapshotted under the lock and then invoked
-        outside it so abort-side cleanup code cannot deadlock this manager.
+        Purpose:
+            Provide one lock-safe abort-hook dispatch path for the orchestrator.
+
+        Contract:
+            - Snapshots the hook reference under the manager lock.
+            - Invokes the hook outside the lock so abort-side cleanup code
+              cannot deadlock this manager.
 
         Args:
             staged:
@@ -469,6 +520,8 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             validators without introducing an Aether dependency.
         Contract:
             - Returns None if the frame reference is unavailable or cleaned.
+            - Does not acquire additional frame-level locks; callers own that
+              responsibility when they dereference frame internals.
         Returns:
             Optional[Any]:
                 The owning frame instance when available.
@@ -1356,9 +1409,12 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
 
         Purpose:
             Provide a tooling-friendly snapshot of change-control registries,
-            including conduit-scoped dirty/component-of maps.
+            including conduit-scoped dirty/component-of maps and the nested
+            transaction/embargo manager snapshots.
         Contract:
             - Returns a new mapping containing copies of internal state.
+            - Exposes diagnostic structure only; callers cannot mutate manager
+              state through the returned value.
         Returns:
             Dict[str, Any]:
                 Snapshot of change-control state for diagnostics.

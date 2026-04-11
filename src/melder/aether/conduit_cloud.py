@@ -27,6 +27,10 @@ class ConduitCloud(Cleanable, IConduitCloud):
         """
         Initialize the frame-scoped conduit-name registry.
 
+        Purpose:
+            Create the name-based conduit lookup surface owned by one
+            `AethericFrame`.
+
         Args:
             name (str): The name of the AethericFrame this cloud serves.
         Contract:
@@ -42,6 +46,10 @@ class ConduitCloud(Cleanable, IConduitCloud):
     def cleanup(self):
         """
         Clear the conduit registry and finalize the cloud.
+
+        Purpose:
+            Drop the frame-local name registry without touching the underlying
+            conduit objects.
 
         Contract:
             - Idempotent and lock-guarded.
@@ -63,6 +71,9 @@ class ConduitCloud(Cleanable, IConduitCloud):
     def __enter__(self):
         """
         Acquire the registry lock and return this cloud.
+
+        Contract:
+            - Holds the cloud lock until `__exit__` runs.
         """
         self._lock.acquire()
         return self
@@ -79,6 +90,9 @@ class ConduitCloud(Cleanable, IConduitCloud):
     def get_conduit(self, name: str) -> IConduit:
         """
         Return a registered conduit by name.
+
+        Purpose:
+            Provide the direct human-readable conduit lookup path for one frame.
 
         Args:
             name (str): The unique name of the conduit.
@@ -104,6 +118,10 @@ class ConduitCloud(Cleanable, IConduitCloud):
         """
         Register one named conduit in the cloud.
 
+        Purpose:
+            Insert a live conduit into the frame-local name registry after the
+            owning frame has already accepted the conduit.
+
         Args:
             conduit (IConduit): The conduit instance to register.
 
@@ -127,6 +145,10 @@ class ConduitCloud(Cleanable, IConduitCloud):
     def _unregister_conduit(self, conduit: IConduit):
         """
         Remove one named conduit from the cloud.
+
+        Purpose:
+            Keep the frame-local name registry in sync when a conduit leaves the
+            owning frame.
 
         Args:
             conduit (IConduit): The conduit instance to unregister.

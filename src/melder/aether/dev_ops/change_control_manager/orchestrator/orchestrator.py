@@ -23,26 +23,25 @@ from melder.aether.dev_ops.change_control_manager.embargo_manager.embargo_manage
 
 class ChangeControlOrchestrator(Cleanable):
     """
-    Serialized admission gate for change-control requests.
+    Serialized control-plane coordinator for change-control requests.
 
     Purpose:
-        Centralize admission decisions under a single lock to prevent race
-        conditions between concurrent mutation requests.
+        Centralize admission, staging, and commit/abort cleanup under one lock
+        so concurrent mutation requests cannot observe inconsistent in-flight or
+        embargo state.
     Contract:
-        - Admission is serialized under the orchestrator lock.
-        - Accepted requests are registered as in-flight.
-        - Rejected requests return evidence (conflict/embargo).
-        - Optional commit/abort hooks are invoked outside the lock.
-    Args:
-        None.
-    Returns:
-        None.
-    Raises:
-        None.
+        - Admission decisions are serialized under the orchestrator lock.
+        - Accepted requests are staged and registered as in-flight before the
+          lock is released.
+        - Rejected requests return explicit conflict/embargo evidence and do
+          not mutate in-flight state.
+        - Commit and abort both unwind the same admission-state resources, with
+          optional hooks running outside the lock.
     Threading:
         Uses an internal RLock to serialize admission/commit/abort paths.
     Lifecycle:
-        cleanup() is idempotent and nulls internal references.
+        cleanup() is idempotent and clears only orchestrator-owned staged state
+        and hook references.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -58,13 +57,11 @@ class ChangeControlOrchestrator(Cleanable):
         Initialize the orchestrator.
 
         Purpose:
-            Allocate the admission lock used for serialized decisions.
+            Allocate the lock and staged-request registry used for serialized
+            admission and cleanup.
         Contract:
-            - No mutable state beyond the lock.
-        Returns:
-            None.
-        Threading:
-            Safe to publish after initialization.
+            - Starts with no staged requests and no hooks.
+            - Safe to publish immediately after construction.
         """
         super().__init__()
         self._lock: RLock = RLock()
@@ -78,13 +75,13 @@ class ChangeControlOrchestrator(Cleanable):
         Idempotent cleanup for the orchestrator.
 
         Purpose:
-            Mark the orchestrator as cleaned and drop the lock reference.
+            Clear staged request bookkeeping and hook references owned by this
+            orchestrator.
         Contract:
             - Safe to call multiple times.
-        Returns:
-            None.
-        Threading:
-            Acquires the internal lock while mutating state.
+            - Does not attempt to finalize external transaction or embargo
+              state; callers must not use cleanup as a lifecycle substitute for
+              `commit_request(...)` or `abort_request(...)`.
         """
         if self._cleaned:
             return
@@ -336,11 +333,15 @@ class ChangeControlOrchestrator(Cleanable):
         Serialize admission and return a decision for the supplied request.
 
         Purpose:
-            Decide whether a request can proceed based on conflicts/embargoes.
+            Decide whether a request can enter execution based on current
+            conflicts and embargoes, then stage the accepted request for later
+            commit or abort.
         Contract:
             - Admission is serialized under the orchestrator lock.
-            - Successful admission registers the request as in-flight.
-            - Implicit embargo hooks are invoked on admission.
+            - Rejected requests return explicit rejection evidence and leave the
+              transaction manager untouched.
+            - Successful admission registers the request as in-flight, applies
+              implicit embargoes, and stages the request before returning.
         Args:
             request:
                 Transaction request to admit.
@@ -392,12 +393,17 @@ class ChangeControlOrchestrator(Cleanable):
             embargo_manager: ChangeControlEmbargoManager,
     ) -> None:
         """
-        Release implicit embargoes and remove request from in-flight registry.
+        Finalize a successfully executed admitted request.
 
         Purpose:
-            Finalize a request's admission lifecycle after successful execution.
+            Run commit-time validation/hooks, then release the admission state
+            created by `admit_request(...)`.
         Contract:
-            - No effect if request_id is not in-flight.
+            - No effect if `request_id` is not currently in flight.
+            - Commit validation and commit hooks run outside the lock.
+            - On hook failure, the abort hook is attempted and the same
+              in-flight/embargo cleanup still runs before the exception
+              propagates.
         Args:
             request_id:
                 Request id to finalize.
@@ -467,12 +473,17 @@ class ChangeControlOrchestrator(Cleanable):
             embargo_manager: ChangeControlEmbargoManager,
     ) -> None:
         """
-        Abort a request (same cleanup as commit for now).
+        Abort an admitted request and unwind its admission state.
 
         Purpose:
-            Ensure aborted requests release implicit embargoes and in-flight state.
+            Ensure aborted requests release staged, embargo, and in-flight state
+            even when the mutation never reaches successful commit.
         Contract:
-            - Uses the same cleanup path as commit for scaffolding.
+            - Attempts the abort hook outside the lock when staged data exists.
+            - Releases implicit embargoes and removes the request from the
+              in-flight registry.
+            - Uses the same resource-unwind path as commit, but without running
+              commit validation or commit hooks.
         Args:
             request_id:
                 Request id to abort.

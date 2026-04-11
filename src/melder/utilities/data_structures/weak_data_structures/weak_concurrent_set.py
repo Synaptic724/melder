@@ -148,7 +148,7 @@ class WeakConcurrentSet(Generic[_T], Cleanable):
             - The node has marked itself dead and fired its own callbacks.
 
         Behavior:
-            * If this set is already cleaned or auto_prune is False → no-op.
+            * If this set is already cleaned or auto_prune is False -> no-op.
             * Otherwise, best-effort:
               - Acquire the set lock.
               - If the node is still present, remove and cleanup it.

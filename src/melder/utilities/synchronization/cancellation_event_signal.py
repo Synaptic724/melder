@@ -60,7 +60,7 @@ class CancellationEvent(Cleanable):
         self._flag = flag
 
     # ------------------------------------------------------------
-    # Cleanup — deterministic, idempotent, zero contamination
+    # Cleanup - deterministic, idempotent, zero contamination
     # ------------------------------------------------------------
 
     def cleanup(self) -> None:
@@ -68,14 +68,14 @@ class CancellationEvent(Cleanable):
         Deterministically tear down this CancellationEvent.
 
         Behavior:
-            * Idempotent via Cleanable._cleaned flag.
+            * Idempotent via `Cleanable._cleaned`.
             * Drops the shared event reference owned by the parent signal.
-            * After cleanup, any access raises RuntimeError.
+            * After cleanup, any access raises `RuntimeError`.
         """
         if self._cleaned:
             return
 
-        # No lock needed — this class is read-only and the flag is just a reference.
+        # No lock needed - this class is read-only and the flag is just a reference.
         self._flag = None
         self._cleaned = True
 
@@ -122,7 +122,7 @@ class CancellationEventSignal(Cleanable):
     Design notes
     ------------
 
-    * Write path (cancel) is a single `event.set()` call – thread-safe and
+    * Write path (cancel) is a single `event.set()` call - thread-safe and
       cheap.
     * Read path (via :class:`CancellationEvent`) does **not** use any
       additional locks beyond what :class:`threading.Event` already does

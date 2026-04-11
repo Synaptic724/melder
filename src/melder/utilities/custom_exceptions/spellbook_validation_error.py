@@ -1,7 +1,7 @@
 class SpellbookValidationError(RuntimeError):
     """
-    Raised when the Spellbook resolution pipeline (requirements → symbolic graph
-    → local frame → validation) detects one or more **broken** spells.
+    Raised when the Spellbook resolution pipeline (requirements -> symbolic
+    graph -> local frame -> validation) detects one or more broken spells.
 
     This is thrown from `_run_resolution_phases` after all phases have executed
     and per-spell validation has run, but **before** any Conduit is constructed.
@@ -21,6 +21,8 @@ class SpellbookValidationError(RuntimeError):
         - Always includes a broken-spell summary when spells are supplied.
         - Includes Phase 4 issues and Phase 6 diagnostics when available.
         - Preserves the primary failure line for backward compatibility.
+        - Remains resilient when spell artifacts are partially unavailable or
+          cleaned while the error is being rendered.
     """
 
     def __init__(self, broken_spells: list["Spell"]) -> None:

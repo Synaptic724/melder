@@ -14,11 +14,16 @@ class ChangeControlStagedMutation:
     Immutable record describing a staged change-control mutation.
 
     Purpose:
-        Capture staged metadata for an admitted change-control request so
-        commit/abort hooks can reason about scope ownership deterministically.
+        Capture the post-admission state that commit, abort, dirty-marking, and
+        structural-validation hooks reason about after the original request has
+        already passed admission.
     Contract:
         - Instances are immutable.
-        - `request_id` and `initiator_conduit_id` must be non-empty strings.
+        - Preserves the admitted request identity plus the normalized scope,
+          binding, and contract metadata known at staging time.
+        - Serves as the canonical payload shared across commit/abort hook
+          boundaries so later lifecycle steps do not need to mutate or re-read
+          the original request object.
     Args:
         request_id:
             Unique identifier of the admitted request.
@@ -79,9 +84,12 @@ class ChangeControlStagedMutation:
         Build a staged mutation record from request metadata.
 
         Purpose:
-            Normalize staged metadata in a single constructor.
+            Normalize admission-time metadata into the immutable payload the
+            orchestrator stores for later commit/abort processing.
         Contract:
-            - `scope_keys` must already be normalized.
+            - `scope_keys` must already be normalized for staging/embargo use.
+            - Captures a new `staged_at` timestamp while preserving the request
+              identity fields supplied by the caller.
         Args:
             request_id:
                 Unique request identifier.
@@ -135,11 +143,13 @@ class ChangeControlStagedMutation:
 
         Purpose:
             Produce a new immutable staged record that preserves identity and
-            staging time while allowing metadata fields to be updated.
+            staging time while allowing later orchestration steps to refine the
+            discovered scope, binding, contract, or metadata fields.
         Contract:
             - `request_id`, `request_type`, and `staged_at` are preserved.
             - None values keep the existing field data.
-            - metadata merges into the existing metadata when provided.
+            - metadata merges into the existing metadata when provided instead
+              of replacing it wholesale.
         Args:
             scope_keys:
                 Optional replacement scope keys for the staged record.

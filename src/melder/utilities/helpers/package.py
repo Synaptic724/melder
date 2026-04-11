@@ -394,6 +394,14 @@ class Package(Cleanable, Generic[P, R]):
 
 
     def __eq__(self, other: object) -> bool:
+        """
+        Return whether two packages wrap the same callable and bound arguments.
+
+        Contract:
+            - Compares the unwrapped callable by identity.
+            - Compares bound positional and keyword arguments by value.
+            - Uses deterministic dual-lock ordering to reduce deadlock risk.
+        """
         if not isinstance(other, Package):
             return False
 
@@ -407,6 +415,13 @@ class Package(Cleanable, Generic[P, R]):
 
 
     def __hash__(self) -> int:
+        """
+        Return a stable hash derived from the wrapped callable and bound arguments.
+
+        Contract:
+            - Snapshots the current callable and bound args/kwargs under lock.
+            - Hashes the callable by identity and the bound arguments by value.
+        """
         # copy under lock, then compute hash lock-free
         with self._lock:
             f = self._func.__wrapped__
@@ -525,7 +540,7 @@ class Package(Cleanable, Generic[P, R]):
 
         Example:
             combo = Package.merge_many([p1, p2, p3])
-            result = combo(x)   # ≈ p3(p2(p1(x)))
+            result = combo(x)   # approximately p3(p2(p1(x)))
         """
         packs_iter = list(packs)
         if not packs_iter:

@@ -36,6 +36,10 @@ class GeneralViewConduit(Cleanable):
         """
         Initialize one conduit-scoped helper surface.
 
+        Contract:
+            - Holds only a borrowed reference to the shared frame helper.
+            - Does not own the bound descriptor or ACL state directly.
+
         Args:
             frame_view:
                 Shared frame helper used to source ACL-filtered links.
@@ -48,7 +52,7 @@ class GeneralViewConduit(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Idempotently clear the helper surface.
+        Idempotently drop the borrowed frame-helper reference.
 
         Returns:
             None.
@@ -60,7 +64,12 @@ class GeneralViewConduit(Cleanable):
 
     def list_conduits(self, *, frame_name: Optional[str] = None) -> List[FrameLink]:
         """
-        Return ACL-filtered conduit links for the bound frame.
+        Return the currently visible conduit links for the bound frame.
+
+        Contract:
+            - Delegates visibility decisions to the shared frame helper and its
+              compiled ACL surface.
+            - Returns a fresh link snapshot for this call.
 
         Args:
             frame_name:
@@ -82,7 +91,12 @@ class GeneralViewConduit(Cleanable):
             frame_name: Optional[str] = None,
     ) -> List[Dict[str, object]]:
         """
-        Return conduit descriptions for the bound frame.
+        Return record-aware descriptions for every visible conduit.
+
+        Contract:
+            - Materializes one `describe_conduit(...)` result per currently
+              visible conduit.
+            - Preserves the active ACL filtering on payload sections.
 
         Args:
             frame_name:

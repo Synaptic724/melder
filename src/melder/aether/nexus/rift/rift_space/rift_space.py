@@ -2,6 +2,8 @@ from typing import Dict, List, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.aether.nexus.rift.rift_space.command_system import CommandSystem
+from melder.aether.nexus.rift.rift_space.workstation import Workstation
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import IRiftEventConfiguration, IRiftSpace
@@ -21,6 +23,10 @@ class RiftSpace(Cleanable, IRiftSpace):
         - Owns stable room identity and room-local metadata.
         - Keeps a room name for paired lookup through the owning Rift.
         - Carries a room-kind marker (`base`, `static`, `dynamic`).
+        - Owns a room-local workstation canvas for saved bindings and active
+          target state.
+        - Owns a room-local command system for controlled getter/execute
+          operations above the viewer/workstation split.
         - Carries a room-level event configuration seam for future action and
           memory enrichment.
         - Does not yet implement full action history, memory points,
@@ -28,7 +34,7 @@ class RiftSpace(Cleanable, IRiftSpace):
 
     Lifecycle:
         Owned by a `Rift`. Cleanup clears room-local fields and cleans
-        the attached `RiftEventConfiguration`.
+        the attached `RiftEventConfiguration` plus the owned workstation.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -40,6 +46,8 @@ class RiftSpace(Cleanable, IRiftSpace):
         "_metadata",
         "_frame_viewer",
         "_selected_target_ids_by_frame_name",
+        "_workstation",
+        "_command_system",
         "_event_configuration",
     ]
 
@@ -100,6 +108,11 @@ class RiftSpace(Cleanable, IRiftSpace):
             raise TypeError("frame_viewer must be a FrameViewer when provided.")
         self._frame_viewer: Optional[FrameViewer] = frame_viewer
         self._selected_target_ids_by_frame_name: Dict[str, List[str]] = {}
+        self._workstation: Workstation = Workstation(self._space_id)
+        self._command_system: CommandSystem = CommandSystem(
+            space=self,
+            workstation=self._workstation,
+        )
         self._event_configuration: IRiftEventConfiguration = (
             event_configuration if event_configuration is not None else RiftEventConfiguration()
         )
@@ -125,6 +138,8 @@ class RiftSpace(Cleanable, IRiftSpace):
         self._cleaned = True
         if self._frame_viewer is not None:
             self._frame_viewer.cleanup()
+        self._command_system.cleanup()
+        self._workstation.cleanup()
         self._event_configuration.cleanup()
         self._space_name = None
         self._owner_rift_id = None
@@ -134,6 +149,8 @@ class RiftSpace(Cleanable, IRiftSpace):
         self._frame_viewer = None
         self._selected_target_ids_by_frame_name.clear()
         self._selected_target_ids_by_frame_name = None
+        self._workstation = None
+        self._command_system = None
         self._event_configuration = None
         self._space_id = None
 
@@ -212,6 +229,40 @@ class RiftSpace(Cleanable, IRiftSpace):
         """
         self.check_cleaned()
         return self._frame_viewer
+
+    @property
+    def workstation(self) -> Workstation:
+        """
+        Purpose:
+            Return the room-local workstation canvas.
+
+        Contract:
+            - Returns the live workstation object owned by this room.
+            - The returned workstation is cleaned with the room and is not a
+              detached copy.
+
+        Returns:
+            Workstation: Room-local workstation canvas.
+        """
+        self.check_cleaned()
+        return self._workstation
+
+    @property
+    def command_system(self) -> CommandSystem:
+        """
+        Purpose:
+            Return the room-local command system.
+
+        Contract:
+            - Returns the live command system object owned by this room.
+            - The returned command system is cleaned with the room and is not a
+              detached copy.
+
+        Returns:
+            CommandSystem: Room-local command system.
+        """
+        self.check_cleaned()
+        return self._command_system
 
     def attach_frame_viewer(self, frame_viewer: FrameViewer) -> None:
         """

@@ -27,7 +27,15 @@ class ISync:
     # ----------  helpers shared by ALL Sync* types  -----------------
     @staticmethod
     def _is_sync(obj) -> bool:
-        """Internal helper: True if *obj* is any ISync subclass."""
+        """
+        Return whether `obj` is any `ISync` subclass instance.
+
+        Contract:
+        - Uses the shared `ISync` marker type instead of concrete subclass
+          checks.
+        - Exists so binary-operation helpers can stay generic across sync
+          wrapper implementations.
+        """
         return isinstance(obj, ISync)
 
     # NOTE: self._coerce(val) is defined in each concrete subclass
@@ -36,11 +44,11 @@ class ISync:
         Convert `other` into the scalar type expected by this sync wrapper.
 
         Contract:
-        - If `other` is another `ISync` wrapper, its exposed value is coerced through
-          this concrete wrapper's `_coerce(...)`.
+        - If `other` is another `ISync` wrapper, its exposed value is coerced
+          through this concrete wrapper's `_coerce(...)`.
         - If `other` is a raw value, coercion is attempted directly.
-        - If coercion fails, the original value is returned so the caller's operation
-          can raise the real incompatibility error.
+        - If coercion fails, the original value is returned so the caller's
+          operation can raise the real incompatibility error.
 
         """
         if self._is_sync(other):          # another Sync value
@@ -58,6 +66,8 @@ class ISync:
         - Uses `_acquire_two(...)` when both operands are sync wrappers.
         - Preserves reflected-operation ordering when `r_operation=True`.
         - Falls back to `_unwrap_other(...)` for raw-value operands.
+        - Returns the raw `op(...)` result; it does not wrap the result back
+          into a sync type on its own.
         """
         if ISync._is_sync(other):
             first, second = ISync._acquire_two(self, other)

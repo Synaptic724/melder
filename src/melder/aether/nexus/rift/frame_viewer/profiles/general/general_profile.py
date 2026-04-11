@@ -50,7 +50,12 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
 
     def __init__(self) -> None:
         """
-        Initialize the standard `general` viewer profile template.
+        Initialize the canonical `general` viewer profile template.
+
+        Contract:
+            - Seeds the standard Nexus requirement and default routing map.
+            - Builds the three helper surfaces in an unbound state so the
+              profile can be cloned or bound later without extra factory work.
 
         Returns:
             None.
@@ -81,7 +86,7 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
     @property
     def view_frame(self) -> GeneralViewFrame:
         """
-        Return the frame-scoped helper surface.
+        Return the live frame-scoped helper currently composed into the profile.
 
         Returns:
             GeneralViewFrame: Frame helper surface.
@@ -92,7 +97,8 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
     @property
     def view_conduit(self) -> GeneralViewConduit:
         """
-        Return the conduit-scoped helper surface.
+        Return the live conduit-scoped helper currently composed into the
+        profile.
 
         Returns:
             GeneralViewConduit: Conduit helper surface.
@@ -103,7 +109,7 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
     @property
     def view_spell(self) -> GeneralViewSpell:
         """
-        Return the spell-scoped helper surface.
+        Return the live spell-scoped helper currently composed into the profile.
 
         Returns:
             GeneralViewSpell: Spell helper surface.
@@ -120,7 +126,12 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
             compiled_access_surface: CompiledFrameACLAccessSurface,
     ) -> None:
         """
-        Bind the profile and rebuild the helper surfaces.
+        Bind the profile and rebuild every helper surface against that frame.
+
+        Contract:
+            - Applies the base profile binding contract first.
+            - Replaces the helper trio so all helper methods read from the same
+              freshly bound descriptor + ACL state.
 
         Args:
             frame_name:
@@ -155,7 +166,7 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
 
     def cleanup(self) -> None:
         """
-        Idempotently clear the general profile and helper surfaces.
+        Idempotently clear the helper trio before base-profile cleanup runs.
 
         Returns:
             None.
@@ -175,7 +186,12 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
 
     def _rebuild_helper_surfaces(self) -> None:
         """
-        Rebuild helper surfaces against the currently bound frame state.
+        Rebuild the helper trio against the currently bound frame state.
+
+        Contract:
+            - Cleans the prior helper objects before replacing them.
+            - Recreates `view_frame`, `view_conduit`, and `view_spell` so they
+              all share the same freshly bound frame view.
 
         Returns:
             None.
@@ -364,7 +380,7 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
 
 def create_general_profile() -> GeneralFrameViewerProfile:
     """
-    Build the standard `general` viewer profile.
+    Return a fresh canonical `general` viewer profile template.
 
     Returns:
         GeneralFrameViewerProfile: Standard general viewer profile.

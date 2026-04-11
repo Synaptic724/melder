@@ -1,8 +1,18 @@
-from typing import Any, Callable, Dict, List, Optional, Sequence
+import types
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence
 
 import pytest
 
+from melder.utilities.custom_exceptions.phase_execution_error import PhaseExecutionError
+from melder.aether.dev_ops.spell_system_states.spell_validity import SpellValidity
 from melder.spellbook.spellbook_creation_system import SpellbookCreationSystem
+from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
+    ClassBindingProfile,
+    SpellBindingKind,
+)
+from melder.spellbook.spell_crafter.spell_examiner.profiles.general_profile import (
+    SpellGeneralProfile,
+)
 
 
 class _SchedulerProbe:
@@ -185,6 +195,37 @@ class _StubLogger:
             None.
         """
         self.error_calls.append(args + (kwargs,))
+
+
+class _HookConfiguration:
+    """
+    Minimal hook/configuration double for hook-map and AOT helper tests.
+    """
+
+    def __init__(
+            self,
+            *,
+            property_value: Any = True,
+            hook_map: Optional[Mapping[str, List[Callable]]] = None,
+            property_error: Optional[Exception] = None,
+            hooks_error: Optional[Exception] = None,
+    ) -> None:
+        self._property_value = property_value
+        self._hook_map = hook_map
+        self._property_error = property_error
+        self._hooks_error = hooks_error
+
+    def get_property(self, name: str) -> Any:
+        if self._property_error is not None:
+            raise self._property_error
+        if name != "full_ahead_of_time_compilation":
+            raise KeyError(name)
+        return self._property_value
+
+    def get_hooks(self, owner_id: str) -> Optional[Mapping[str, List[Callable]]]:
+        if self._hooks_error is not None:
+            raise self._hooks_error
+        return self._hook_map
 
 
 def _install_stub_phase_factories(
@@ -482,3 +523,974 @@ def test_run_resolution_phases_for_conduit_skips_plan_group_when_jit_mode_is_ena
         "patch_maps": 0,
         "execution_plan": 0,
     }
+
+
+def test_creation_system_cleanup_is_idempotent_and_clears_fields() -> None:
+    system = SpellbookCreationSystem(
+        spellbook=object(),
+        policy="default",
+        automatic=True,
+        name="root",
+        conduit_logger=object(),
+        conduit_cls=object,
+        phase_scheduler_cls=object,
+    )
+
+    system.cleanup()
+    system.cleanup()
+
+    assert system.cleaned is True
+    assert system._spellbook is None
+    assert system._policy is None
+    assert system._automatic is None
+    assert system._lock is None
+
+
+def test_creation_system_cleanup_rechecks_cleaned_state_under_lock() -> None:
+    class _FlipCleanedOnEnter:
+        def __init__(self, owner) -> None:
+            self._owner = owner
+
+        def __enter__(self):
+            self._owner._cleaned = True
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    system = SpellbookCreationSystem(
+        spellbook=object(),
+        policy="default",
+        automatic=True,
+        name="root",
+        conduit_logger=object(),
+        conduit_cls=object,
+        phase_scheduler_cls=object,
+    )
+    original_lock = system._lock
+    system._lock = _FlipCleanedOnEnter(system)
+    try:
+        system.cleanup()
+    finally:
+        system._lock = original_lock
+
+    assert system.cleaned is True
+
+
+def test_read_full_ahead_of_time_compilation_handles_none_keyerror_and_logging() -> None:
+    spellbook = _StubSpellbook()
+    spellbook._configuration = None
+    assert (
+        SpellbookCreationSystem._read_full_ahead_of_time_compilation(
+            spellbook=spellbook,
+            context_name="ctx",
+        )
+        is True
+    )
+
+    spellbook._configuration = _HookConfiguration(property_error=KeyError("missing"))
+    assert (
+        SpellbookCreationSystem._read_full_ahead_of_time_compilation(
+            spellbook=spellbook,
+            context_name="ctx",
+        )
+        is True
+    )
+
+    spellbook._configuration = _HookConfiguration(property_value=False)
+    assert (
+        SpellbookCreationSystem._read_full_ahead_of_time_compilation(
+            spellbook=spellbook,
+            context_name="ctx",
+        )
+        is False
+    )
+
+    spellbook._configuration = _HookConfiguration(property_value="bad")
+    assert (
+        SpellbookCreationSystem._read_full_ahead_of_time_compilation(
+            spellbook=spellbook,
+            context_name="ctx",
+        )
+        is True
+    )
+    assert len(spellbook._logger.error_calls) >= 1
+
+
+def test_get_conjure_hook_map_and_fire_conjure_hooks_cover_fallbacks() -> None:
+    spellbook = _StubSpellbook()
+    spellbook._id = "spellbook-id"
+
+    assert SpellbookCreationSystem.get_conjure_hook_map(spellbook) is None
+
+    spellbook._configuration = _HookConfiguration(hooks_error=RuntimeError("boom"))
+    assert SpellbookCreationSystem.get_conjure_hook_map(spellbook) is None
+    assert len(spellbook._logger.error_calls) >= 1
+
+    hook_calls: List[tuple[str, tuple[Any, ...]]] = []
+
+    def _ok_hook(*args: Any) -> None:
+        hook_calls.append(("ok", args))
+
+    def _bad_hook(*args: Any) -> None:
+        hook_calls.append(("bad", args))
+        raise RuntimeError("hook boom")
+
+    hook_map = {"on_conduit_pre_created": [_ok_hook, _bad_hook]}
+    spellbook._configuration = _HookConfiguration(hook_map=hook_map)
+
+    resolved = SpellbookCreationSystem.get_conjure_hook_map(spellbook)
+    assert resolved is hook_map
+
+    SpellbookCreationSystem.fire_conjure_hooks(
+        spellbook,
+        resolved,
+        "on_conduit_pre_created",
+        "arg1",
+    )
+    SpellbookCreationSystem.fire_conjure_hooks(spellbook, None, "missing")
+    SpellbookCreationSystem.fire_conjure_hooks(spellbook, resolved, "missing")
+
+    assert hook_calls == [
+        ("ok", ("arg1",)),
+        ("bad", ("arg1",)),
+    ]
+    assert len(spellbook._logger.error_calls) >= 2
+
+
+def test_extract_missing_dependency_ids_filters_non_keyerrors() -> None:
+    phase_error = PhaseExecutionError(
+        "phase failed",
+        errors=[KeyError("a"), RuntimeError("boom"), KeyError("b"), KeyError()],
+    )
+
+    assert SpellbookCreationSystem._extract_missing_dependency_ids(phase_error) == [
+        "a",
+        "b",
+    ]
+
+
+def test_cleanup_phase_artifacts_after_resolution_cleans_all_and_scoped_spells() -> None:
+    spellbook = _StubSpellbook()
+
+    class _Crafter:
+        def __init__(self, fail: bool = False) -> None:
+            self.calls = 0
+            self._fail = fail
+
+        def cleanup_phase_artifacts(self) -> None:
+            self.calls += 1
+            if self._fail:
+                raise RuntimeError("cleanup boom")
+
+    all_spell = types.SimpleNamespace(crafter=_Crafter())
+    failing_spell = types.SimpleNamespace(crafter=_Crafter(fail=True))
+    scoped_spell = types.SimpleNamespace(crafter=_Crafter())
+    scoped_failing_spell = types.SimpleNamespace(crafter=_Crafter(fail=True))
+    spellbook._spells = {"a": all_spell, "b": failing_spell}
+    spellbook._spell_id_pool = {"c": scoped_spell, "d": scoped_failing_spell}
+
+    SpellbookCreationSystem.cleanup_phase_artifacts_after_resolution(spellbook)
+    SpellbookCreationSystem.cleanup_phase_artifacts_after_resolution(
+        spellbook,
+        spell_ids=["c", "d", "missing"],
+    )
+
+    assert spellbook.check_cleaned_calls == 2
+    assert all_spell.crafter.calls == 1
+    assert failing_spell.crafter.calls == 1
+    assert scoped_spell.crafter.calls == 1
+    assert scoped_failing_spell.crafter.calls == 1
+
+
+def test_define_disposal_metadata_on_spells_matches_class_profile_methods() -> None:
+    spellbook = _StubSpellbook()
+    spellbook._configuration = types.SimpleNamespace(
+        get_property=lambda name: ["cleanup", "close"]
+    )
+    class_bound = types.SimpleNamespace(
+        profile=ClassBindingProfile(
+            kind=SpellBindingKind.CLASS,
+            original_object=object(),
+            name="Demo",
+            qualname="Demo",
+            module="tests",
+            method_names=["cleanup", "run"],
+        ),
+        disposal_method_names=[],
+        has_disposal_methods=False,
+    )
+    wrapped_profile = SpellGeneralProfile(
+        binding_profile=ClassBindingProfile(
+            kind=SpellBindingKind.CLASS,
+            original_object=object(),
+            name="Wrapped",
+            qualname="Wrapped",
+            module="tests",
+            method_names=["close"],
+        ),
+        resolution_profile=object(),
+    )
+    wrapped_bound = types.SimpleNamespace(
+        profile=wrapped_profile,
+        disposal_method_names=[],
+        has_disposal_methods=False,
+    )
+    non_class = types.SimpleNamespace(
+        profile=object(),
+        disposal_method_names=[],
+        has_disposal_methods=False,
+    )
+    spellbook._spells = {
+        "a": class_bound,
+        "b": wrapped_bound,
+        "c": non_class,
+    }
+
+    SpellbookCreationSystem.define_disposal_metadata_on_spells(spellbook)
+
+    assert class_bound.disposal_method_names == ["cleanup"]
+    assert class_bound.has_disposal_methods is True
+    assert wrapped_bound.disposal_method_names == ["close"]
+    assert wrapped_bound.has_disposal_methods is True
+    assert non_class.disposal_method_names == []
+    assert non_class.has_disposal_methods is False
+
+
+def test_read_full_ahead_of_time_compilation_returns_true_for_none_value() -> None:
+    spellbook = _StubSpellbook()
+    spellbook._configuration = _HookConfiguration(property_value=None)
+
+    assert (
+        SpellbookCreationSystem._read_full_ahead_of_time_compilation(
+            spellbook=spellbook,
+            context_name="ctx",
+        )
+        is True
+    )
+
+
+def test_run_resolution_phases_rejects_empty_conduit_id() -> None:
+    spellbook = _StubSpellbook()
+
+    with pytest.raises(ValueError, match="conduit_id must not be empty."):
+        SpellbookCreationSystem.run_resolution_phases(spellbook, conduit_id="")
+
+    with pytest.raises(ValueError, match="conduit_id must not be empty."):
+        SpellbookCreationSystem.run_resolution_phases_for_conduit(
+            spellbook=spellbook,
+            conduit_id="",
+        )
+
+
+def test_run_post_conjure_structural_phases_handles_empty_and_failure_cleanup(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spellbook = _StubSpellbook()
+    cleanup_calls = {"count": 0}
+    cancel_calls = {"count": 0}
+
+    class _Signal:
+        def __init__(self):
+            self.event = object()
+
+        def cancel(self):
+            cancel_calls["count"] += 1
+
+        def cleanup(self):
+            cleanup_calls["count"] += 1
+
+    monkeypatch.setattr(
+        "melder.spellbook.spellbook_creation_system.CancellationEventSignal",
+        _Signal,
+    )
+
+    SpellbookCreationSystem.run_post_conjure_structural_phases(spellbook, [])
+    assert spellbook.check_cleaned_calls == 1
+
+    failing_spell = types.SimpleNamespace(
+        run_structural_phases=lambda cancel_event=None: (_ for _ in ()).throw(
+            RuntimeError("boom")
+        ),
+    )
+
+    with pytest.raises(RuntimeError, match="boom"):
+        SpellbookCreationSystem.run_post_conjure_structural_phases(
+            spellbook,
+            [failing_spell],
+        )
+
+    assert cancel_calls["count"] == 1
+    assert cleanup_calls["count"] == 1
+    assert len(spellbook._logger.error_calls) >= 1
+
+
+def test_run_post_conjure_structural_phases_logs_broken_spell_cleanup_fallbacks(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spellbook = _StubSpellbook()
+    cancel_calls = {"count": 0}
+    cleanup_calls = {"count": 0}
+
+    class _Signal:
+        def __init__(self):
+            self.event = object()
+
+        def cancel(self):
+            cancel_calls["count"] += 1
+            raise RuntimeError("cancel boom")
+
+        def cleanup(self):
+            cleanup_calls["count"] += 1
+            raise RuntimeError("cleanup boom")
+
+    monkeypatch.setattr(
+        "melder.spellbook.spellbook_creation_system.CancellationEventSignal",
+        _Signal,
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_collect_broken_spells",
+        staticmethod(lambda spells: [object()]),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_raise_structural_validation_error",
+        staticmethod(
+            lambda **kwargs: (_ for _ in ()).throw(RuntimeError("validation boom"))
+        ),
+    )
+
+    healthy_spell = types.SimpleNamespace(
+        run_structural_phases=lambda cancel_event=None: None,
+    )
+
+    with pytest.raises(RuntimeError, match="validation boom"):
+        SpellbookCreationSystem.run_post_conjure_structural_phases(
+            spellbook,
+            [healthy_spell],
+        )
+
+    assert cancel_calls["count"] == 1
+    assert cleanup_calls["count"] == 1
+    assert len(spellbook._logger.error_calls) >= 2
+
+
+def test_collect_target_resolution_scope_uses_index_and_root_blueprint_fallbacks() -> None:
+    spellbook = _StubSpellbook()
+    target_spell = types.SimpleNamespace(
+        _ensure_crafter=lambda: types.SimpleNamespace(
+            spell_system_index_phase5=types.SimpleNamespace(
+                nodes={"extra": object()},
+            ),
+            _entire_dag_blueprint_phase5=None,
+        )
+    )
+
+    scoped_spell_ids, scoped_root_ids = (
+        SpellbookCreationSystem._collect_target_resolution_scope(
+            target_spell=target_spell,
+            target_spell_id="spell-1",
+        )
+    )
+
+    assert scoped_spell_ids == {"spell-1", "extra"}
+    assert scoped_root_ids == ("spell-1",)
+
+
+def test_collect_target_resolution_scope_uses_root_blueprint_keys_when_present() -> None:
+    target_spell = types.SimpleNamespace(
+        _ensure_crafter=lambda: types.SimpleNamespace(
+            spell_system_index_phase5=None,
+            _entire_dag_blueprint_phase5={"root-a": object(), "root-b": object()},
+        )
+    )
+
+    scoped_spell_ids, scoped_root_ids = (
+        SpellbookCreationSystem._collect_target_resolution_scope(
+            target_spell=target_spell,
+            target_spell_id="spell-1",
+        )
+    )
+
+    assert scoped_spell_ids == {"spell-1"}
+    assert tuple(scoped_root_ids) == ("root-a", "root-b")
+
+
+def test_register_target_single_phase_builds_local_scope_unit() -> None:
+    created_units = []
+
+    class _Scheduler:
+        cancel_event = "cancel"
+
+        def __init__(self):
+            self.factories = {}
+
+        def create_unit_of_work(self, **kwargs):
+            created_units.append(kwargs)
+            return kwargs
+
+        def register_phase(self, name, factory):
+            self.factories[name] = factory
+
+    scheduler = _Scheduler()
+    phase_calls = []
+
+    def _phase(conduit_id, cancel_event):
+        phase_calls.append((conduit_id, cancel_event))
+
+    SpellbookCreationSystem._register_target_single_phase(
+        scheduler=scheduler,
+        phase_name="local_phase",
+        target_spell_id="spell-1",
+        conduit_id="cid",
+        phase_func=_phase,
+    )
+
+    units = scheduler.factories["local_phase"]()
+
+    assert len(units) == 1
+    assert created_units[0]["func"] is _phase
+    assert created_units[0]["args"] == ("cid", "cancel")
+    assert created_units[0]["label"] == "local_phase:spell-1"
+    assert created_units[0]["metadata"] == {
+        "phase": "local_phase",
+        "spell_id": "spell-1",
+        "scope": "local",
+    }
+    assert phase_calls == []
+
+
+def test_run_resolution_phases_for_target_spell_foundational_error_short_circuits(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spellbook = _StubSpellbook()
+    cleanup_calls = []
+
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_run_target_foundational_resolution_phases",
+        staticmethod(lambda **kwargs: {"root_blueprints_local": ["rb"]}),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_conduit_resolution_has_errors",
+        staticmethod(lambda **kwargs: True),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "cleanup_phase_artifacts_after_resolution",
+        staticmethod(lambda *, spellbook, spell_ids=None: cleanup_calls.append(set(spell_ids))),
+    )
+
+    result = SpellbookCreationSystem.run_resolution_phases_for_target_spell(
+        spellbook=spellbook,
+        conduit_id="cid",
+        target_spell=types.SimpleNamespace(spell_id="spell-1"),
+    )
+
+    assert result == {"root_blueprints_local": ["rb"]}
+    assert cleanup_calls == [{"spell-1"}]
+
+
+def test_run_resolution_phases_for_target_spell_records_visibility_failures(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spellbook = _StubSpellbook()
+    recorded = []
+    cleanup_calls = []
+
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_run_target_foundational_resolution_phases",
+        staticmethod(lambda **kwargs: {"root_blueprints_local": ["rb"]}),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_conduit_resolution_has_errors",
+        staticmethod(lambda **kwargs: False),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_collect_target_resolution_scope",
+        staticmethod(lambda **kwargs: ({"spell-1", "dep-spell"}, ("root-1",))),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_run_target_plan_resolution_phases",
+        staticmethod(
+            lambda **kwargs: (_ for _ in ()).throw(
+                PhaseExecutionError("phase failed", errors=[KeyError("missing-dep")])
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "record_local_resolution_visibility_failure",
+        staticmethod(lambda **kwargs: recorded.append(kwargs)),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "cleanup_phase_artifacts_after_resolution",
+        staticmethod(lambda *, spellbook, spell_ids=None: cleanup_calls.append(set(spell_ids))),
+    )
+
+    result = SpellbookCreationSystem.run_resolution_phases_for_target_spell(
+        spellbook=spellbook,
+        conduit_id="cid",
+        target_spell=types.SimpleNamespace(spell_id="spell-1"),
+    )
+
+    assert result == {"root_blueprints_local": ["rb"]}
+    assert recorded[0]["missing_dependency_ids"] == ["missing-dep"]
+    assert recorded[0]["scoped_spell_ids"] == {"spell-1", "dep-spell"}
+    assert cleanup_calls == [{"spell-1", "dep-spell"}]
+
+
+def test_run_deferred_resolution_phases_for_target_spell_handles_missing_dependency_visibility(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spellbook = _StubSpellbook()
+    recorded = []
+    cleanup_calls = []
+
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_collect_target_resolution_scope",
+        staticmethod(lambda **kwargs: ({"spell-1"}, ("root-1",))),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_run_target_plan_resolution_phases",
+        staticmethod(
+            lambda **kwargs: (_ for _ in ()).throw(
+                PhaseExecutionError("phase failed", errors=[KeyError("missing-dep")])
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "record_local_resolution_visibility_failure",
+        staticmethod(lambda **kwargs: recorded.append(kwargs)),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "cleanup_phase_artifacts_after_resolution",
+        staticmethod(lambda *, spellbook, spell_ids=None: cleanup_calls.append(set(spell_ids))),
+    )
+
+    result = SpellbookCreationSystem.run_deferred_resolution_phases_for_target_spell(
+        spellbook=spellbook,
+        conduit_id="cid",
+        target_spell=types.SimpleNamespace(spell_id="spell-1"),
+    )
+
+    assert result == {}
+    assert recorded[0]["missing_dependency_ids"] == ["missing-dep"]
+    assert cleanup_calls == [{"spell-1"}]
+
+
+def test_record_local_resolution_visibility_failure_deduplicates_and_marks_invalid() -> None:
+    bulk_spell_calls = []
+    bulk_root_calls = []
+    diagnostic_calls = []
+    spellbook = _StubSpellbook()
+    spellbook._spell_system_states = types.SimpleNamespace(
+        bulk_set_conduit_spell_validity=lambda conduit_id, payload, change_reason=None: bulk_spell_calls.append(
+            (conduit_id, payload, change_reason)
+        ),
+        bulk_set_conduit_root_validity=lambda conduit_id, payload, change_reason=None: bulk_root_calls.append(
+            (conduit_id, payload, change_reason)
+        ),
+        record_conduit_diagnostics=lambda conduit_id, diagnostics: diagnostic_calls.append(
+            (conduit_id, diagnostics)
+        ),
+    )
+
+    SpellbookCreationSystem.record_local_resolution_visibility_failure(
+        spellbook,
+        "cid",
+        {"spell-1", "spell-2"},
+        ("root-1",),
+        ["dep-a", "dep-a", "dep-b"],
+    )
+
+    assert bulk_spell_calls[0][0] == "cid"
+    assert set(bulk_spell_calls[0][1].keys()) == {"spell-1", "spell-2"}
+    assert bulk_root_calls[0][1] == {"root-1": SpellValidity.invalid}
+    diagnostics = diagnostic_calls[0][1]
+    assert len(diagnostics) == 2
+    assert {diagnostic.spell_id for diagnostic in diagnostics} == {"dep-a", "dep-b"}
+
+
+def test_run_resolution_target_paths_reject_empty_conduit_and_none_target() -> None:
+    spellbook = _StubSpellbook()
+
+    with pytest.raises(ValueError, match="conduit_id must not be empty."):
+        SpellbookCreationSystem.run_resolution_phases_for_target_spell(
+            spellbook=spellbook,
+            conduit_id="",
+            target_spell=object(),
+        )
+    with pytest.raises(ValueError, match="target_spell must not be None."):
+        SpellbookCreationSystem.run_resolution_phases_for_target_spell(
+            spellbook=spellbook,
+            conduit_id="cid",
+            target_spell=None,
+        )
+    with pytest.raises(ValueError, match="conduit_id must not be empty."):
+        SpellbookCreationSystem.run_deferred_resolution_phases_for_target_spell(
+            spellbook=spellbook,
+            conduit_id="",
+            target_spell=object(),
+        )
+    with pytest.raises(ValueError, match="target_spell must not be None."):
+        SpellbookCreationSystem.run_deferred_resolution_phases_for_target_spell(
+            spellbook=spellbook,
+            conduit_id="cid",
+            target_spell=None,
+        )
+
+
+def test_run_target_foundational_and_plan_resolution_phase_wrappers_register_expected_phases(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    recorded_scheduler_runs = []
+
+    def _fake_run_scheduler_with_phases(
+            *,
+            spellbook: Any,
+            phase_scheduler_cls: Any,
+            context_name: str,
+            register_phases: Callable[[Any], None],
+    ) -> Dict[str, Sequence[Any]]:
+        scheduler = _SchedulerProbe()
+        scheduler.cancel_event = "cancel"
+        scheduler.create_unit_of_work = lambda **kwargs: kwargs
+        register_phases(scheduler)
+        recorded_scheduler_runs.append((context_name, list(scheduler._phase_factories)))
+        return scheduler.execute_registered_phases()
+
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_run_scheduler_with_phases",
+        staticmethod(_fake_run_scheduler_with_phases),
+    )
+
+    target_spell = types.SimpleNamespace(
+        run_phase_root_blueprints_local=lambda conduit_id, cancel_event: None,
+        run_phase_system_validation_local=lambda conduit_id, cancel_event: None,
+        run_phase_change_control_local=lambda conduit_id, cancel_event: None,
+        run_phase_occurrence_plan=lambda conduit_id, cancel_event: None,
+        run_phase_injection_plan=lambda conduit_id, cancel_event: None,
+        run_phase_patch_maps=lambda conduit_id, cancel_event: None,
+        run_phase_execution_plan=lambda conduit_id, cancel_event: None,
+    )
+
+    foundational = SpellbookCreationSystem._run_target_foundational_resolution_phases(
+        spellbook=_StubSpellbook(),
+        conduit_id="cid",
+        target_spell=target_spell,
+        target_spell_id="spell-1",
+        phase_scheduler_cls=object,
+    )
+    plan = SpellbookCreationSystem._run_target_plan_resolution_phases(
+        spellbook=_StubSpellbook(),
+        conduit_id="cid",
+        target_spell=target_spell,
+        target_spell_id="spell-1",
+        phase_scheduler_cls=object,
+    )
+
+    assert list(foundational.keys()) == [
+        "root_blueprints_local",
+        "system_validation_local",
+        "change_control_local",
+    ]
+    assert list(plan.keys()) == [
+        "occurrence_plan_local",
+        "injection_plan_local",
+        "patch_maps_local",
+        "execution_plan_local",
+    ]
+    assert recorded_scheduler_runs[0][0] == "_run_resolution_phases_for_target_spell"
+    assert recorded_scheduler_runs[1][0] == "_run_resolution_phases_for_target_spell"
+
+
+def test_run_conduit_foundational_and_plan_resolution_phase_wrappers_register_expected_phases(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    recorded_scheduler_runs = []
+
+    def _fake_run_scheduler_with_phases(
+            *,
+            spellbook: Any,
+            phase_scheduler_cls: Any,
+            context_name: str,
+            register_phases: Callable[[Any], None],
+    ) -> Dict[str, Sequence[Any]]:
+        scheduler = _SchedulerProbe()
+        register_phases(scheduler)
+        recorded_scheduler_runs.append((context_name, list(scheduler._phase_factories)))
+        return scheduler.execute_registered_phases()
+
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_run_scheduler_with_phases",
+        staticmethod(_fake_run_scheduler_with_phases),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "phase_root_blueprints_factory",
+        staticmethod(lambda spellbook, scheduler, conduit_id: ["root_blueprints"]),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "phase_system_validation_factory",
+        staticmethod(lambda spellbook, scheduler, conduit_id: ["system_validation"]),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "phase_change_control_factory",
+        staticmethod(lambda spellbook, scheduler, conduit_id: ["change_control"]),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "phase_occurrence_plan_factory",
+        staticmethod(lambda spellbook, scheduler, conduit_id: ["occurrence_plan"]),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "phase_injection_plan_factory",
+        staticmethod(lambda spellbook, scheduler, conduit_id: ["injection_plan"]),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "phase_patch_maps_factory",
+        staticmethod(lambda spellbook, scheduler, conduit_id: ["patch_maps"]),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "phase_execution_plan_factory",
+        staticmethod(lambda spellbook, scheduler, conduit_id: ["execution_plan"]),
+    )
+
+    foundational = SpellbookCreationSystem._run_conduit_foundational_resolution_phases(
+        spellbook=_StubSpellbook(),
+        conduit_id="cid",
+        phase_scheduler_cls=object,
+    )
+    plan = SpellbookCreationSystem._run_conduit_plan_resolution_phases(
+        spellbook=_StubSpellbook(),
+        conduit_id="cid",
+        phase_scheduler_cls=object,
+    )
+
+    assert list(foundational.keys()) == [
+        "root_blueprints",
+        "system_validation",
+        "change_control",
+    ]
+    assert list(plan.keys()) == [
+        "occurrence_plan",
+        "injection_plan",
+        "patch_maps",
+        "execution_plan",
+    ]
+    assert recorded_scheduler_runs[0][0] == "_run_resolution_phases_for_conduit"
+    assert recorded_scheduler_runs[1][0] == "_run_resolution_phases_for_conduit"
+
+
+def test_run_conduit_foundational_and_plan_resolution_phase_wrappers_register_expected_phases(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    recorded_scheduler_runs = []
+
+    def _fake_run_scheduler_with_phases(
+            *,
+            spellbook: Any,
+            phase_scheduler_cls: Any,
+            context_name: str,
+            register_phases: Callable[[Any], None],
+    ) -> Dict[str, Sequence[Any]]:
+        scheduler = _SchedulerProbe()
+        register_phases(scheduler)
+        recorded_scheduler_runs.append((context_name, list(scheduler._phase_factories)))
+        return scheduler.execute_registered_phases()
+
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_run_scheduler_with_phases",
+        staticmethod(_fake_run_scheduler_with_phases),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "phase_root_blueprints_factory",
+        staticmethod(lambda spellbook, scheduler, conduit_id: ["root_blueprints"]),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "phase_system_validation_factory",
+        staticmethod(lambda spellbook, scheduler, conduit_id: ["system_validation"]),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "phase_change_control_factory",
+        staticmethod(lambda spellbook, scheduler, conduit_id: ["change_control"]),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "phase_occurrence_plan_factory",
+        staticmethod(lambda spellbook, scheduler, conduit_id: ["occurrence_plan"]),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "phase_injection_plan_factory",
+        staticmethod(lambda spellbook, scheduler, conduit_id: ["injection_plan"]),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "phase_patch_maps_factory",
+        staticmethod(lambda spellbook, scheduler, conduit_id: ["patch_maps"]),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "phase_execution_plan_factory",
+        staticmethod(lambda spellbook, scheduler, conduit_id: ["execution_plan"]),
+    )
+
+    foundational = SpellbookCreationSystem._run_conduit_foundational_resolution_phases(
+        spellbook=_StubSpellbook(),
+        conduit_id="cid",
+        phase_scheduler_cls=object,
+    )
+    plan = SpellbookCreationSystem._run_conduit_plan_resolution_phases(
+        spellbook=_StubSpellbook(),
+        conduit_id="cid",
+        phase_scheduler_cls=object,
+    )
+
+    assert list(foundational.keys()) == [
+        "root_blueprints",
+        "system_validation",
+        "change_control",
+    ]
+    assert list(plan.keys()) == [
+        "occurrence_plan",
+        "injection_plan",
+        "patch_maps",
+        "execution_plan",
+    ]
+    assert recorded_scheduler_runs[0][0] == "_run_resolution_phases_for_conduit"
+    assert recorded_scheduler_runs[1][0] == "_run_resolution_phases_for_conduit"
+
+
+def test_run_resolution_phases_for_target_spell_success_and_non_visibility_reraise(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spellbook = _StubSpellbook()
+    cleanup_calls = []
+
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_run_target_foundational_resolution_phases",
+        staticmethod(lambda **kwargs: {"root_blueprints_local": ["rb"]}),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_conduit_resolution_has_errors",
+        staticmethod(lambda **kwargs: False),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_collect_target_resolution_scope",
+        staticmethod(lambda **kwargs: ({"spell-1", "dep-spell"}, ("root-1",))),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_run_target_plan_resolution_phases",
+        staticmethod(lambda **kwargs: {"occurrence_plan_local": ["op"]}),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "cleanup_phase_artifacts_after_resolution",
+        staticmethod(lambda *, spellbook, spell_ids=None: cleanup_calls.append(set(spell_ids))),
+    )
+
+    result = SpellbookCreationSystem.run_resolution_phases_for_target_spell(
+        spellbook=spellbook,
+        conduit_id="cid",
+        target_spell=types.SimpleNamespace(spell_id="spell-1"),
+    )
+
+    assert result == {
+        "root_blueprints_local": ["rb"],
+        "occurrence_plan_local": ["op"],
+    }
+    assert cleanup_calls == [{"spell-1", "dep-spell"}]
+
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_run_target_plan_resolution_phases",
+        staticmethod(
+            lambda **kwargs: (_ for _ in ()).throw(
+                PhaseExecutionError("phase failed", errors=[RuntimeError("boom")])
+            )
+        ),
+    )
+
+    with pytest.raises(PhaseExecutionError, match="phase failed"):
+        SpellbookCreationSystem.run_resolution_phases_for_target_spell(
+            spellbook=spellbook,
+            conduit_id="cid",
+            target_spell=types.SimpleNamespace(spell_id="spell-1"),
+        )
+
+
+def test_run_deferred_resolution_phases_for_target_spell_success_and_non_visibility_reraise(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    spellbook = _StubSpellbook()
+    cleanup_calls = []
+
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_collect_target_resolution_scope",
+        staticmethod(lambda **kwargs: ({"spell-1"}, ("root-1",))),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_run_target_plan_resolution_phases",
+        staticmethod(lambda **kwargs: {"occurrence_plan_local": ["op"]}),
+    )
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "cleanup_phase_artifacts_after_resolution",
+        staticmethod(lambda *, spellbook, spell_ids=None: cleanup_calls.append(set(spell_ids))),
+    )
+
+    result = SpellbookCreationSystem.run_deferred_resolution_phases_for_target_spell(
+        spellbook=spellbook,
+        conduit_id="cid",
+        target_spell=types.SimpleNamespace(spell_id="spell-1"),
+    )
+
+    assert result == {"occurrence_plan_local": ["op"]}
+    assert cleanup_calls == [{"spell-1"}]
+
+    monkeypatch.setattr(
+        SpellbookCreationSystem,
+        "_run_target_plan_resolution_phases",
+        staticmethod(
+            lambda **kwargs: (_ for _ in ()).throw(
+                PhaseExecutionError("phase failed", errors=[RuntimeError("boom")])
+            )
+        ),
+    )
+
+    with pytest.raises(PhaseExecutionError, match="phase failed"):
+        SpellbookCreationSystem.run_deferred_resolution_phases_for_target_spell(
+            spellbook=spellbook,
+            conduit_id="cid",
+            target_spell=types.SimpleNamespace(spell_id="spell-1"),
+        )

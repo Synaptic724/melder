@@ -47,7 +47,15 @@ class Aether(Cleanable, IAether):
     _initialized = False
 
     def __new__(cls, *args, **kwargs):
-        """Ensures that Aether is a singleton."""
+        """
+        Return the one process-wide `Aether` singleton instance.
+
+        Contract:
+            - Uses the class-level lock to serialize singleton construction.
+            - Creates the singleton lazily on first access.
+            - Returns the existing live instance on later calls until cleanup
+              resets singleton state.
+        """
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
@@ -117,6 +125,11 @@ class Aether(Cleanable, IAether):
     def cleanup(self):
         """
         Cleanup the entire Aether singleton and all owned frame/subsystem state.
+
+        Purpose:
+            Tear down the global runtime host, including every owned frame and
+            singleton-level subsystem, so a later clean bootstrap starts from a
+            truly empty root.
 
         Contract:
             - Idempotent.
@@ -201,7 +214,11 @@ class Aether(Cleanable, IAether):
 
     def _ensure_default_frame(self) -> None:
         """
-        Raise a clear error if the default frame is unavailable.
+        Ensure the singleton still has a live default frame.
+
+        Contract:
+            - Raises instead of silently recreating the default frame on a
+              cleaned or partially torn-down singleton.
         """
         if self._default_frame is None:
             raise RuntimeError("Default AethericFrame has been cleaned or is unavailable.")
@@ -268,7 +285,13 @@ class Aether(Cleanable, IAether):
 
     def cleanup_aetheric_frames(self):
         """
-        Signs all aetheric frames and their contents.
+        Cleanup every frame currently owned by the singleton.
+
+        Contract:
+            - Iterates over a snapshot of the frame registry.
+            - Attempts every frame cleanup even if one frame raises.
+            - Logs cleanup failures instead of stopping the full singleton
+              teardown on the first frame error.
         """
         if self._aetheric_frames is None:
             return
@@ -289,6 +312,10 @@ class Aether(Cleanable, IAether):
         """
         Enter the Aether lock context and return `self`.
 
+        Contract:
+            - Acquires the singleton instance lock.
+            - Returns the live singleton while the lock is held.
+
         Returns:
             Aether:
                 This singleton instance while the lock is held.
@@ -299,6 +326,9 @@ class Aether(Cleanable, IAether):
     def __exit__(self, exc_type, exc_value, traceback):
         """
         Exit the Aether lock context.
+
+        Contract:
+            - Releases the singleton instance lock acquired by `__enter__`.
 
         Returns:
             None.
@@ -315,8 +345,12 @@ class Aether(Cleanable, IAether):
     @property
     def logger(self) -> IChannelLogger | logging.Logger | None:
         """
-        Gets the raw logger instance (IChannelLogger, Logger, or Handler)
-        that is currently wrapped by the internal SafeLogger.
+        Return the raw logger currently wrapped by the internal `SafeLogger`.
+
+        Contract:
+            - Exposes the underlying logger object for diagnostics or
+              replacement.
+            - Returns `None` when the wrapper currently holds the null logger.
 
         Returns:
             The raw logger object, or None if no logger is set.
@@ -326,10 +360,12 @@ class Aether(Cleanable, IAether):
     @logger.setter
     def logger(self, value: IChannelLogger | logging.Logger | None):
         """
-        Sets or updates the logger for the Aether singleton.
+        Replace the logger wrapped by the singleton's internal `SafeLogger`.
 
-        The provided logger (or Handler) will be wrapped by the
-        internal SafeLogger for unified logging calls.
+        Contract:
+            - Accepts an explicit channel logger, stdlib logger, or `None`.
+            - Rewraps the supplied object through `InitHelpers.resolve_safe_logger(...)`
+              so later logging calls stay on the unified safe-logger path.
 
         Args:
             value: The IChannelLogger, Logger, Handler, or None to use.
@@ -392,7 +428,16 @@ class Aether(Cleanable, IAether):
 
     def _bind_configuration(self, configuration, aetheric_frame_name: str = "default") -> None:
         """
-        Binds a configuration object to a specific Aetheric Frame.
+        Bind the shared Spellbook configuration object to one frame.
+
+        Purpose:
+            Preserve the richer configuration object alongside the narrower
+            frame-level AR posture object.
+
+        Contract:
+            - Replaces the frame's `_configuration` reference directly.
+            - Does not validate or merge posture fields here; that is the job
+              of `_bind_aetheric_frame_configuration(...)`.
 
         Args:
             configuration: The configuration object to bind.
@@ -417,7 +462,7 @@ class Aether(Cleanable, IAether):
 
     def _get_configuration(self, aetheric_frame_name: str = "default") -> Optional[IConfiguration]:
         """
-        Retrieves the configuration object from a specific Aetheric Frame.
+        Return the shared Spellbook configuration object bound to one frame.
 
         Args:
             aetheric_frame_name: The name of the frame.
@@ -559,6 +604,10 @@ class Aether(Cleanable, IAether):
         """
         Register a conduit with the `ConduitCloud` for one frame.
 
+        Contract:
+            - Resolves the frame-specific cloud first.
+            - Delegates uniqueness and lifecycle rules to the cloud itself.
+
         Args:
             conduit:
                 Conduit instance to register.
@@ -589,6 +638,10 @@ class Aether(Cleanable, IAether):
         """
         Unregister a conduit from the `ConduitCloud` for one frame.
 
+        Contract:
+            - Resolves the frame-specific cloud first.
+            - Delegates missing-name and missing-entry behavior to the cloud.
+
         Args:
             conduit:
                 Conduit instance to unregister.
@@ -617,6 +670,9 @@ class Aether(Cleanable, IAether):
     def _get_conduit_cloud(self, aetheric_frame_name: str = "default") -> IConduitCloud:
         """
         Return the `ConduitCloud` owned by one frame.
+
+        Contract:
+            - Returns the live frame-owned cloud object, not a copy.
 
         Args:
             aetheric_frame_name:

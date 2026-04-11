@@ -23,7 +23,9 @@ class OwnershipConsistencyStrategy(SpellSystemValidationStrategy):
     contracted spells, transfer-of-ownership flows, and conduit-scoped
     validation. A lineage that points at multiple concrete conduit owners at
     once is a system-level inconsistency, so this strategy groups nodes by
-    lineage id and checks whether the non-None owner set stays singular.
+    lineage id and checks whether the non-None owner set stays singular before
+    later validation or change-control logic treats that lineage as belonging to
+    one authoritative conduit.
     """
     __slots__ = []
 
@@ -43,10 +45,18 @@ class OwnershipConsistencyStrategy(SpellSystemValidationStrategy):
         Validate ownership consistency across index nodes.
 
         Purpose:
-            Catch lineages that appear to be owned by multiple conduits.
+            Catch lineages whose visible versions disagree about which conduit
+            currently owns them.
         Contract:
-            - Uses lineage_id as the grouping key.
-            - Only non-None conduit ids are considered for conflicts.
+            - Operates entirely on the `SpellSystemIndex`; blueprint and
+              phase-4 inputs are accepted only because the validation pipeline
+              calls every strategy through the same signature.
+            - Uses `lineage_id` as the grouping key and compares only concrete
+              non-None conduit ids so unpublished or unresolved nodes do not
+              create false conflicts on their own.
+            - Emits one ERROR diagnostic per conflicting lineage and includes
+              both the participating conduit ids and the spell versions that
+              contributed to the conflict.
             - Cancellation is honored between nodes.
         Args:
             index: Spell system index being validated.

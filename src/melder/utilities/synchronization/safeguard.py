@@ -8,16 +8,36 @@ class SafeGuard(Cleanable):
     """
     Acquire an ordered, de-duplicated set of locks, then release in reverse order.
 
-    - Orders by id(lock) so all threads take the same global order.
-    - Works with threading.Lock/RLock or any lock exposing acquire()/release().
-    - Optional timeout: if provided, attempts to acquire each lock with the same timeout.
-      If any acquire fails, releases everything already acquired and raises TimeoutError.
-    - Re-entrant friendly (RLock is naturally fine).
+    Purpose:
+        Provide one small lock-orchestration helper for call sites that need to
+        acquire several external locks in a deterministic order without
+        rewriting the same deadlock-avoidance pattern by hand.
+
+    Contract:
+        - Filters out `None` locks, de-duplicates by object identity, and sorts
+          by `id(lock)` so all callers converge on the same acquisition order.
+        - Works with `threading.Lock` / `threading.RLock` or any lock-like
+          object exposing `acquire()` and `release()`.
+        - Optional timeout applies uniformly to each acquisition attempt.
+        - If any acquisition fails, already-acquired locks are released in
+          reverse order before `TimeoutError` or the original exception
+          propagates.
+        - Re-entrant usage remains valid when the underlying lock type supports
+          it, such as `RLock`.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + ["_locks", "_acquired", "_timeout", "_one_time_use", "_cleanup_lock"]
 
     def __init__(self, *locks: Any, timeout: Optional[float] = None, one_time_use: bool = True):
+        """
+        Build one ordered lock guard over the supplied lock objects.
+
+        Contract:
+            - Captures a deterministic acquisition order up front.
+            - Stores timeout and one-time-use policy as part of the guard's own
+              lifecycle.
+            - Does not acquire any external locks during construction.
+        """
         super().__init__()
         self._cleanup_lock: threading.RLock = threading.RLock()
         # Filter Nones, de-dupe by id, sort for global order
@@ -34,8 +54,10 @@ class SafeGuard(Cleanable):
         Contract:
             - Idempotent.
             - Clears the ordered lock list and acquired-lock list.
-            - Does not release external locks by itself; `__exit__()` is still
+            - Does not release external locks by itself; `__exit__()` remains
               responsible for releasing locks acquired during context use.
+            - Exists to invalidate the guard object, not to substitute for a
+              normal context-manager exit path.
         """
         if self._cleaned:
             return
@@ -56,6 +78,11 @@ class SafeGuard(Cleanable):
     def __enter__(self):
         """
         Acquire the ordered lock set and enter the guarded critical section.
+
+        Contract:
+            - Acquires every requested lock in deterministic order.
+            - Rolls back partial acquisition on failure.
+            - Returns this guard after all requested locks have been acquired.
 
         Returns:
             SafeGuard: This guard after all requested locks have been acquired.
@@ -96,7 +123,8 @@ class SafeGuard(Cleanable):
         Contract:
             - Always releases locks in reverse acquisition order.
             - Does not suppress exceptions from the with-body.
-            - Auto-cleans the guard after one-time-use contexts.
+            - Auto-cleans the guard after one-time-use contexts so it cannot be
+              reused accidentally.
         """
         # Release in strict reverse order
         for lk in reversed(self._acquired):

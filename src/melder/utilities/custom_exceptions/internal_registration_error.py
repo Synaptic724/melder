@@ -1,10 +1,17 @@
 class InternalRegistrationError(RuntimeError):
     """
-    Raised when code tries to register a Melder object that is intentionally protected.
+    Raised when code tries to register a Melder-owned object that is intentionally protected.
 
-    Typical source:
-        Internal registration guards raise this when user or plugin code tries
-        to register framework-owned sentinels, system objects, or otherwise
-        reserved Melder surfaces.
+    Purpose:
+        Provide one stable runtime error for "this object is reserved for the
+        framework and cannot be registered through the public path."
+
+    Contract:
+        - Used by internal registration guards rather than by normal user-level
+          validation paths.
+        - Signals misuse of framework-owned sentinels, system objects, or other
+          protected Melder surfaces.
+        - Remains a `RuntimeError` so callers may either catch this specific
+          guard failure or treat it as a broader runtime registration error.
     """
 

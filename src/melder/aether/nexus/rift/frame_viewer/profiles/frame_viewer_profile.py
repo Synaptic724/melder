@@ -16,17 +16,20 @@ from melder.utilities.helpers.id_builder import IDBuilder
 class FrameViewerProfile(Cleanable):
     """
     Purpose:
-        Represent one reusable posture profile for `FrameViewer`.
+        Represent one reusable agent-facing posture profile for `FrameViewer`.
 
     Contract:
-        - Owns the viewer tool surface exposed to the agent.
-        - Maps stable tool ids to host-side handler method names.
-        - Does not redefine permissions.
-        - Carries stable profile identity and version.
-        - May be bound by reference to one frame's descriptor + ACL state.
+        - Owns the stable tool-routing metadata exposed to the agent.
+        - Maps public tool ids to host-side handler method names without
+          redefining frame permissions or ACL policy.
+        - Starts life as an unbound reusable template and may later be bound by
+          reference to one frame's descriptor + ACL state.
+        - Carries stable profile identity, version, and compatibility
+          requirements across clone and bind operations.
 
     Lifecycle:
-        Cleanup is idempotent and clears owned metadata only.
+        Cleanup is idempotent, clears only owned profile metadata, and never
+        disposes bound descriptor or ACL objects because they are not owned here.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -68,7 +71,20 @@ class FrameViewerProfile(Cleanable):
             default_detail_level: str = "summary",
     ) -> None:
         """
-        Initialize one frame-viewer profile.
+        Initialize one reusable frame-viewer profile template.
+
+        Purpose:
+            Capture the stable tool-routing and compatibility contract for one
+            named viewer posture before it is cloned or bound to a specific
+            frame.
+
+        Contract:
+            - Construction always produces an unbound template; frame-specific
+              references are attached later through `bind_to_frame(...)`.
+            - Accepts either the `enabled_helpers` shorthand or an explicit
+              `tool_handler_names_by_name` mapping, but never both.
+            - Normalizes the tool map into profile-owned metadata that later
+              clones and bindings reuse.
 
         Args:
             name:
@@ -181,7 +197,12 @@ class FrameViewerProfile(Cleanable):
     @classmethod
     def create_general(cls) -> "FrameViewerProfile":
         """
-        Create the seeded `general` frame-viewer profile.
+        Return the canonical unbound `general` frame-viewer profile template.
+
+        Contract:
+            - Imports the `general` profile factory lazily so this base module
+              does not eagerly depend on the helper-profile implementation.
+            - Returns a fresh reusable template, not a frame-bound instance.
 
         Returns:
             FrameViewerProfile: Seeded `general` frame-viewer profile.
@@ -194,11 +215,23 @@ class FrameViewerProfile(Cleanable):
 
     @property
     def name(self) -> str:
+        """
+        Return the stable public name for this profile template.
+
+        Returns:
+            str: Profile name used for registry lookup and compatibility checks.
+        """
         self.check_cleaned()
         return self._name
 
     @property
     def version(self) -> str:
+        """
+        Return the profile version carried across clones and bindings.
+
+        Returns:
+            str: Stable profile version string.
+        """
         self.check_cleaned()
         return self._version
 
@@ -270,11 +303,23 @@ class FrameViewerProfile(Cleanable):
 
     @property
     def default_grouping(self) -> str:
+        """
+        Return the default grouping posture exposed to viewer callers.
+
+        Returns:
+            str: Default grouping mode suggested by this profile.
+        """
         self.check_cleaned()
         return self._default_grouping
 
     @property
     def default_detail_level(self) -> str:
+        """
+        Return the default detail posture exposed to viewer callers.
+
+        Returns:
+            str: Default detail level suggested by this profile.
+        """
         self.check_cleaned()
         return self._default_detail_level
 
@@ -335,10 +380,10 @@ class FrameViewerProfile(Cleanable):
 
     def list_tool_names(self) -> Tuple[str, ...]:
         """
-        Return the tool ids exposed by this profile.
+        Return a snapshot of the tool ids exposed by this profile.
 
         Returns:
-            Tuple[str, ...]: Exposed tool ids.
+            Tuple[str, ...]: Public tool ids in deterministic tuple form.
         """
         self.check_cleaned()
         return self.enabled_helpers
@@ -528,6 +573,18 @@ class FrameViewerProfile(Cleanable):
         """
         Bind this profile by reference to one frame's descriptor + ACL state.
 
+        Purpose:
+            Turn a reusable profile template into a frame-scoped viewer posture
+            after verifying that the descriptor, ACL configuration, compiled ACL
+            surface, and optional Nexus/profile requirements all agree.
+
+        Contract:
+            - Stores the bound objects by reference; it does not clone or own
+              them.
+            - Fails fast if the frame names, configuration ids, view-profile
+              versions, or required Nexus contract do not align.
+            - Leaves prior state untouched until all compatibility checks pass.
+
         Args:
             frame_name:
                 Target frame name this profile is being bound to.
@@ -650,7 +707,12 @@ class FrameViewerProfile(Cleanable):
             compiled_access_surface: CompiledFrameACLAccessSurface,
     ) -> "FrameViewerProfile":
         """
-        Return a detached copy of this profile bound to one frame by reference.
+        Return a detached profile copy already bound to one frame by reference.
+
+        Contract:
+            - Clones the reusable template first.
+            - Applies the normal `bind_to_frame(...)` contract to the clone.
+            - Leaves the source profile unmodified and still reusable.
 
         Args:
             frame_name:
@@ -676,10 +738,11 @@ class FrameViewerProfile(Cleanable):
 
     def clone(self) -> "FrameViewerProfile":
         """
-        Return a detached copy of this viewer profile.
+        Return a detached unbound copy of this viewer profile template.
 
         Returns:
-            FrameViewerProfile: Detached profile copy.
+            FrameViewerProfile: Unbound copy that preserves the same tool
+            routing and compatibility requirements.
         """
         self.check_cleaned()
         return FrameViewerProfile(
@@ -696,7 +759,12 @@ class FrameViewerProfile(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Idempotently clear the frame-viewer profile.
+        Idempotently clear the profile-owned template and binding metadata.
+
+        Contract:
+            - Clears only data owned by the profile.
+            - Never cleans the bound descriptor, ACL configuration, or compiled
+              access surface because those objects are borrowed references.
 
         Returns:
             None.
@@ -729,6 +797,12 @@ class FrameViewerProfile(Cleanable):
     ) -> None:
         """
         Validate that all bound descriptor records match one Nexus contract.
+
+        Contract:
+            - Uses the frame overview plus every conduit and spell record in the
+              descriptor.
+            - Raises as soon as one record advertises a different Nexus label or
+              version than the profile requires.
 
         Args:
             frame_descriptor:
