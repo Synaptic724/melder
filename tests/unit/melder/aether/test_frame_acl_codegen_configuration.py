@@ -9,7 +9,7 @@ from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_p
     FrameACLCodegenProfile,
 )
 from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule
-from melder.aether.nexus.acl.configurations.profiles import FrameACLRuleSet
+from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 
 
 def _build_ruleset(name: str, rule_name: str = "allow_read") -> FrameACLRuleSet:

@@ -3,8 +3,8 @@ import threading
 from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule import FrameACLRule
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule import FrameACLRuleSet
+from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule
+from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 
 
 def _build_ruleset(name: str) -> FrameACLRuleSet:

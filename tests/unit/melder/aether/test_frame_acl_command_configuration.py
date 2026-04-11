@@ -4,7 +4,7 @@ from melder.aether.nexus.acl.configurations.frame_acl_command_configuration impo
     FrameACLCommandConfiguration,
 )
 from melder.aether.nexus.acl.configurations.profiles import FrameACLRule
-from melder.aether.nexus.acl.configurations.profiles import FrameACLRuleSet
+from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 
 
 def test_frame_acl_command_configuration_create_default_sets_baseline() -> None:
