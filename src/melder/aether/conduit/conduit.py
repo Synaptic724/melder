@@ -2630,6 +2630,39 @@ class Conduit(Cleanable, IConduit):
             binding_name=binding_name,
         )
 
+    def describe_spells_in_conduit(self) -> list[dict[str, Any]]:
+        """
+        Public API
+
+        Return a user-facing dump of spell targeting details visible through
+        this conduit's Spellbook.
+
+        Purpose:
+            Expose the Spellbook-owned ACL-authoring dump on the conduit
+            surface so advanced Rift and conduit users can inspect the visible
+            spell set without reaching into the Spellbook directly.
+
+        Contract:
+            - Delegates to the owned `Spellbook`.
+            - Returns detached dictionaries only.
+            - Does not create, mutate, or resolve objects.
+
+        Returns:
+            list[dict[str, Any]]:
+                Spell targeting details currently visible through this
+                conduit's Spellbook.
+
+        Raises:
+            RuntimeError:
+                If the Conduit has been cleaned or the underlying Spellbook is
+                unavailable.
+        """
+        self.check_cleaned()
+        spellbook = self._spellbook
+        if spellbook is None:
+            raise RuntimeError("Spellbook is unavailable.")
+        return spellbook.describe_spells_in_spellbook()
+
 
 
     #endregion Meld

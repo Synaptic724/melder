@@ -407,6 +407,7 @@ class Rift(Cleanable, IRift):
             self,
             frame_name: str,
             *,
+            contract_name: str = "default",
             set_as_default: bool = False,
     ) -> None:
         """
@@ -417,12 +418,16 @@ class Rift(Cleanable, IRift):
         Args:
             frame_name:
                 Target frame name to engage.
+            contract_name:
+                Selected ACL contract name for the target frame.
             set_as_default:
                 When True, the engaged frame also becomes the default target
                 frame for this Rift.
 
         Contract:
             - Validates target-frame policy and runtime posture through Nexus.
+            - Resolves and validates the selected named ACL contract for the
+              frame against descriptor truth.
             - Registers the frame on the Rift-local frame contract.
             - Refreshes the active-space viewer when descriptor truth is
               available for the currently assigned frame set.
@@ -433,6 +438,8 @@ class Rift(Cleanable, IRift):
         self.check_cleaned()
         if not frame_name:
             raise ValueError("frame_name cannot be empty.")
+        if not contract_name:
+            raise ValueError("contract_name cannot be empty.")
         is_new_frame = not self._frame_link_contract.has_frame(frame_name)
         self._nexus._validate_target_frame_names((frame_name,))
         requested_space_type = self._configuration.get_property("space_type")
@@ -448,11 +455,21 @@ class Rift(Cleanable, IRift):
                     frame_name
                 )
             ) from exc
+        configuration = self._nexus.get_named_frame_acl_configuration(
+            frame_name,
+            contract_name=contract_name,
+        )
+        self._nexus._frame_acl_manager._validate_frame_acl_configuration_against_descriptor(
+            frame_name,
+            configuration,
+            self._nexus._get_required_frame_descriptor(frame_name),
+        )
         if is_new_frame:
             self._nexus._validate_target_frame_budget((frame_name,))
         self._frame_link_contract.register_frame(
             frame_name,
             set_as_default=set_as_default,
+            contract_name=contract_name,
         )
         if is_new_frame:
             self._nexus._increment_ref_count(
@@ -468,6 +485,7 @@ class Rift(Cleanable, IRift):
             self,
             frame_name: str,
             *,
+            contract_name: str = "default",
             set_as_default: bool = False,
     ) -> None:
         """
@@ -478,6 +496,8 @@ class Rift(Cleanable, IRift):
         Args:
             frame_name:
                 Target frame name to engage.
+            contract_name:
+                Selected ACL contract name for the target frame.
             set_as_default:
                 When True, the engaged frame also becomes the default target
                 frame for this Rift.
@@ -487,6 +507,7 @@ class Rift(Cleanable, IRift):
         """
         self.target_frame(
             frame_name,
+            contract_name=contract_name,
             set_as_default=set_as_default,
         )
 

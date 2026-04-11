@@ -34,7 +34,18 @@ class DummySpell:
     Contract:
         Exposes attributes and phase hooks that Spellbook depends on.
     """
-    def __init__(self, spell_id="sid", versions=None, existing_object=None):
+    def __init__(
+        self,
+        spell_id="sid",
+        versions=None,
+        existing_object=None,
+        *,
+        spell_name=None,
+        binding_name=None,
+        spellframe=None,
+        existence=Existence.unique,
+        owner_conduit_id=None,
+    ):
         """
         Purpose:
             Initialize the spell stub with identity and tracking data.
@@ -44,21 +55,29 @@ class DummySpell:
             spell_id: Identifier used for spell_id and spell_name.
             versions: Optional iterable of version ids associated with the spell.
             existing_object: Optional existing instance attached to the spell.
+            spell_name: Optional human-readable spell name override.
+            binding_name: Optional binding name override.
+            spellframe: Optional spellframe override.
+            existence: Existence enum for authoring dump tests.
+            owner_conduit_id: Optional owner conduit id for authoring dump tests.
         Returns:
             None.
         """
         self.spell_id = spell_id
-        self.spell_name = spell_id
+        self.spell_name = spell_name or spell_id
         self._versions = versions or {spell_id}
         self.user_created_object = existing_object
         self.cleaned = False
         self.cleanup_calls = 0
         self.permissions = Permissions.read
-        self.spellframe = None
-        self.binding_name = None
+        self.spellframe = spellframe
+        self.binding_name = binding_name
+        self.existence = existence
         self.profile = None
         self.resolution_required = False
         self.resolution_complete = False
+        self._owner_conduit_id = owner_conduit_id
+        self._owner_conduit_name = None
 
     def cleanup(self):
         """
@@ -71,6 +90,18 @@ class DummySpell:
         """
         self.cleaned = True
         self.cleanup_calls += 1
+
+    @property
+    def owner_conduit_info(self):
+        """
+        Purpose:
+            Return the current owner conduit tuple for authoring-dump tests.
+        Contract:
+            Returns `(owner_conduit_id, owner_conduit_name)`.
+        Returns:
+            tuple[object, object]: Current owner conduit tuple.
+        """
+        return self._owner_conduit_id, self._owner_conduit_name
 
     # Phase methods
     def run_phase_requirements(self, cancel_event):
@@ -3730,6 +3761,64 @@ def test_inspect_spell_returns_id_when_found(monkeypatch):
     sb._bind = types.SimpleNamespace(spell_id_inspector=lambda s: "id")
     monkeypatch.setattr(Spellbook._aether, "_check_for_spell", lambda *_: True)
     assert sb.inspect_spell(DummySpell()) == "id"
+
+
+def test_describe_spells_in_spellbook_returns_authoring_dump_in_stable_order():
+    """
+    Purpose:
+        Verify Spellbook exposes the smaller ACL-authoring dump for visible spells.
+    Contract:
+        - Uses the spell-id pool as the visible spell set.
+        - Returns the requested selector/ownership fields only.
+        - Sorts deterministically by spell name, binding name, and spell id.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the dump content or ordering is incorrect.
+    """
+    sb = Spellbook()
+    sb._logger = DummySafeLogger()
+    alpha_spell = DummySpell(
+        "sha-b",
+        spell_name="AlphaSpell",
+        binding_name="zeta",
+        spellframe="FrameB",
+        existence=Existence.many,
+        owner_conduit_id="conduit-2",
+    )
+    beta_spell = DummySpell(
+        "sha-a",
+        spell_name="AlphaSpell",
+        binding_name=None,
+        spellframe="FrameA",
+        existence=Existence.unique,
+        owner_conduit_id="conduit-1",
+    )
+    sb._spell_id_pool = {
+        alpha_spell.spell_id: alpha_spell,
+        beta_spell.spell_id: beta_spell,
+    }
+
+    result = sb.describe_spells_in_spellbook()
+
+    assert result == [
+        {
+            "spell_id": "sha-a",
+            "spell_name": "AlphaSpell",
+            "binding_name": "__default__",
+            "spellframe": "FrameA",
+            "existence": "unique",
+            "owner_conduit_id": "conduit-1",
+        },
+        {
+            "spell_id": "sha-b",
+            "spell_name": "AlphaSpell",
+            "binding_name": "zeta",
+            "spellframe": "FrameB",
+            "existence": "many",
+            "owner_conduit_id": "conduit-2",
+        },
+    ]
 
 
 def test_validate_and_freeze_configuration_happy_path():

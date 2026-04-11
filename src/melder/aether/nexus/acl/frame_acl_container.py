@@ -1,5 +1,5 @@
 import threading
-from typing import List
+from typing import Dict, List
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
@@ -39,6 +39,7 @@ class FrameACLContainer(Cleanable):
         "_lock",
         "_frame_name",
         "_frame_acl_configuration_chain",
+        "_named_configurations_by_name",
         "_frame_acl_validator",
         "_frame_acl_builder",
     ]
@@ -92,8 +93,10 @@ class FrameACLContainer(Cleanable):
                 history_limit=history_limit,
             )
         )
+        self._named_configurations_by_name: Dict[str, FrameACLConfiguration] = {}
         self._frame_acl_validator: FrameACLValidator = FrameACLValidator(frame_name)
         self._frame_acl_builder: FrameACLBuilder = FrameACLBuilder(self)
+        self._sync_default_named_configuration_to_current()
 
     def cleanup(self) -> None:
         """
@@ -124,9 +127,11 @@ class FrameACLContainer(Cleanable):
             self._frame_acl_builder.cleanup()
             self._frame_acl_validator.cleanup()
             self._frame_acl_configuration_chain.cleanup()
+            self._named_configurations_by_name.clear()
             self._frame_acl_builder = None
             self._frame_acl_validator = None
             self._frame_acl_configuration_chain = None
+            self._named_configurations_by_name = None
             self._frame_name = None
         self._lock = None
 
@@ -175,6 +180,28 @@ class FrameACLContainer(Cleanable):
         """
         self.check_cleaned()
         return self._frame_acl_configuration_chain.get_current_configuration()
+
+    @property
+    def named_configurations_by_name(self) -> Dict[str, FrameACLConfiguration]:
+        """
+        Return a detached snapshot of named ACL configurations for this frame.
+
+        Purpose:
+            Expose the per-frame named contract registry without returning the
+            live mutable dictionary.
+
+        Contract:
+            - Returns a shallow copy.
+            - `"default"` is always present and tracks the current selected
+              configuration from the chain.
+
+        Returns:
+            Dict[str, FrameACLConfiguration]:
+                Detached snapshot of named configurations for this frame.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._named_configurations_by_name)
 
     @property
     def frame_acl_configuration_chain(self) -> FrameACLConfigurationChain:
@@ -265,6 +292,7 @@ class FrameACLContainer(Cleanable):
             configuration,
             select_as_current=True,
         )
+        self._sync_default_named_configuration_to_current()
 
     def select_current_configuration(
             self,
@@ -284,9 +312,131 @@ class FrameACLContainer(Cleanable):
             FrameACLConfiguration: Newly selected current configuration.
         """
         self.check_cleaned()
-        return self._frame_acl_configuration_chain.select_current_configuration(
-            configuration_id
+        selected_configuration = (
+            self._frame_acl_configuration_chain.select_current_configuration(
+                configuration_id
+            )
         )
+        self._sync_default_named_configuration_to_current()
+        return selected_configuration
+
+    def get_named_configuration(
+            self,
+            contract_name: str = "default",
+    ) -> FrameACLConfiguration:
+        """
+        Return one named ACL configuration for this frame.
+
+        Purpose:
+            Resolve one frame-local named ACL contract.
+
+        Contract:
+            - Names are local to this frame.
+            - `"default"` always resolves to the current selected chain
+              configuration.
+            - Fails fast when the requested name is not registered.
+
+        Args:
+            contract_name:
+                Frame-local contract name to resolve.
+
+        Returns:
+            FrameACLConfiguration:
+                Registered named configuration for this frame.
+
+        Raises:
+            ValueError:
+                If `contract_name` is empty.
+            KeyError:
+                If the name is not registered.
+        """
+        self.check_cleaned()
+        if not contract_name:
+            raise ValueError("contract_name cannot be empty.")
+        with self._lock:
+            try:
+                return self._named_configurations_by_name[contract_name]
+            except KeyError as exc:
+                raise KeyError(
+                    "No ACL contract named '{0}' is registered for frame '{1}'.".format(
+                        contract_name,
+                        self._frame_name,
+                    )
+                ) from exc
+
+    def list_named_configuration_names(self) -> List[str]:
+        """
+        Return all registered ACL contract names for this frame.
+
+        Purpose:
+            Expose the frame-local named contract registry keys in insertion
+            order.
+
+        Returns:
+            List[str]:
+                Registered contract names for this frame.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return list(self._named_configurations_by_name.keys())
+
+    def register_named_configuration(
+            self,
+            configuration: FrameACLConfiguration,
+            *,
+            contract_name: str = "default",
+    ) -> FrameACLConfiguration:
+        """
+        Register one additional named ACL configuration for this frame.
+
+        Purpose:
+            Add a new frame-local named contract without replacing the current
+            chain/history mechanics.
+
+        Contract:
+            - `contract_name` must be non-empty.
+            - Duplicate names are rejected.
+            - `"default"` is reserved by the container and is seeded
+              automatically from the current selected configuration.
+            - The configuration must target this frame and already be locked.
+
+        Args:
+            configuration:
+                Locked configuration node to register.
+            contract_name:
+                Frame-local contract name.
+
+        Returns:
+            FrameACLConfiguration:
+                Registered configuration node.
+
+        Raises:
+            ValueError:
+                If the name is empty, already exists, or the configuration is
+                unlocked.
+            TypeError:
+                If `configuration` is not a `FrameACLConfiguration`.
+        """
+        self.check_cleaned()
+        if not contract_name:
+            raise ValueError("contract_name cannot be empty.")
+        if not isinstance(configuration, FrameACLConfiguration):
+            raise TypeError("configuration must be a FrameACLConfiguration.")
+        if not configuration.locked:
+            raise ValueError(
+                "Named ACL configuration must be locked before registration."
+            )
+        self._frame_acl_validator.validate_configuration(configuration)
+        with self._lock:
+            if contract_name in self._named_configurations_by_name:
+                raise ValueError(
+                    "ACL contract '{0}' already exists for frame '{1}'.".format(
+                        contract_name,
+                        self._frame_name,
+                    )
+                )
+            self._named_configurations_by_name[contract_name] = configuration
+            return configuration
 
     def rollback_to_configuration(
             self,
@@ -307,6 +457,27 @@ class FrameACLContainer(Cleanable):
             FrameACLConfiguration: Newly selected current configuration.
         """
         self.check_cleaned()
-        return self._frame_acl_configuration_chain.rollback_to_configuration(
-            configuration_id
+        rolled_back_configuration = (
+            self._frame_acl_configuration_chain.rollback_to_configuration(
+                configuration_id
+            )
         )
+        self._sync_default_named_configuration_to_current()
+        return rolled_back_configuration
+
+    def _sync_default_named_configuration_to_current(self) -> None:
+        """
+        Sync the reserved `"default"` contract to the current chain selection.
+
+        Purpose:
+            Preserve backward-compatible behavior where the default named ACL
+            contract for a frame tracks the frame's currently selected
+            configuration.
+
+        Returns:
+            None.
+        """
+        with self._lock:
+            self._named_configurations_by_name["default"] = (
+                self._frame_acl_configuration_chain.get_current_configuration()
+            )

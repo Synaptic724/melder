@@ -1,6 +1,7 @@
 import pytest
 
 from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
+from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.frame_acl_container import FrameACLContainer
 from melder.aether.nexus.acl.profiles.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
@@ -120,6 +121,8 @@ def test_frame_acl_manager_chain_facades_return_expected_configs() -> None:
     assert fetched is current
     assert manager._list_frame_acl_configurations("ops") == [current]
     assert manager._list_frame_acl_configuration_ids("ops") == [current.configuration_id]
+    assert manager._get_named_frame_acl_configuration("ops") is current
+    assert manager._list_named_frame_acl_configuration_names("ops") == ["default"]
 
 
 def test_frame_acl_manager_insert_select_rollback_and_create_from_facades() -> None:
@@ -158,6 +161,70 @@ def test_frame_acl_manager_insert_select_rollback_and_create_from_facades() -> N
     assert draft.previous_configuration_id == original.configuration_id
     assert selected is original
     assert rolled_back is inserted
+
+
+def test_frame_acl_manager_can_register_and_get_named_frame_acl_configuration() -> None:
+    """
+    Verify the manager can register and resolve a named ACL configuration.
+
+    Returns:
+        None.
+    """
+    manager = FrameACLManager()
+    named_configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        manager._get_current_frame_acl_configuration("ops"),
+        reason="named",
+    )
+    named_configuration.finalize()
+
+    registered = manager._register_named_frame_acl_configuration(
+        "ops",
+        named_configuration,
+        contract_name="ops_contract",
+    )
+
+    assert registered is named_configuration
+    assert (
+        manager._get_named_frame_acl_configuration("ops", "ops_contract")
+        is named_configuration
+    )
+    assert manager._list_named_frame_acl_configuration_names("ops") == [
+        "default",
+        "ops_contract",
+    ]
+
+
+def test_frame_acl_manager_rejects_duplicate_named_contract_name() -> None:
+    """
+    Verify the manager rejects duplicate contract names for one frame.
+
+    Returns:
+        None.
+    """
+    manager = FrameACLManager()
+    first_named_configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        manager._get_current_frame_acl_configuration("ops"),
+        reason="named-1",
+    )
+    first_named_configuration.finalize()
+    second_named_configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        manager._get_current_frame_acl_configuration("ops"),
+        reason="named-2",
+    )
+    second_named_configuration.finalize()
+
+    manager._register_named_frame_acl_configuration(
+        "ops",
+        first_named_configuration,
+        contract_name="ops_contract",
+    )
+
+    with pytest.raises(ValueError, match="already exists"):
+        manager._register_named_frame_acl_configuration(
+            "ops",
+            second_named_configuration,
+            contract_name="ops_contract",
+        )
 
 
 def test_frame_acl_manager_cleanup_cleans_all_owned_containers() -> None:

@@ -81,6 +81,8 @@ def test_frame_link_contract_list_and_has_frame_reflect_current_assignment() -> 
     assert contract.list_frame_names() == ["ops", "finance"]
     assert contract.has_frame("ops") is True
     assert contract.has_frame("audit") is False
+    assert contract.get_selected_contract_name("ops") == "default"
+    assert contract.get_selected_contract_name("finance") == "default"
 
 
 def test_frame_link_contract_register_frame_can_seed_and_replace_default() -> None:
@@ -93,10 +95,12 @@ def test_frame_link_contract_register_frame_can_seed_and_replace_default() -> No
     contract = FrameLinkContract(rift_id="rift-1")
 
     contract.register_frame("ops")
-    contract.register_frame("finance", set_as_default=True)
+    contract.register_frame("finance", set_as_default=True, contract_name="ops_contract")
 
     assert contract.assigned_frame_names == ("ops", "finance")
     assert contract.default_frame_name == "finance"
+    assert contract.get_selected_contract_name("ops") == "default"
+    assert contract.get_selected_contract_name("finance") == "ops_contract"
 
 
 def test_frame_link_contract_remove_frame_updates_default_and_ignores_missing() -> None:
@@ -117,6 +121,47 @@ def test_frame_link_contract_remove_frame_updates_default_and_ignores_missing() 
 
     assert contract.assigned_frame_names == ("finance",)
     assert contract.default_frame_name == "finance"
+
+
+def test_frame_link_contract_can_update_selected_contract_name_for_assigned_frame() -> None:
+    """
+    Verify the contract can change the selected ACL contract name per frame.
+
+    Returns:
+        None.
+    """
+    contract = FrameLinkContract(
+        rift_id="rift-1",
+        assigned_frame_names=("ops",),
+        default_frame_name="ops",
+    )
+
+    contract.set_selected_contract_name("ops", "ops_contract")
+
+    assert contract.get_selected_contract_name("ops") == "ops_contract"
+
+
+def test_frame_link_contract_describe_and_clone_include_selected_contract_names() -> None:
+    """
+    Verify describe and clone preserve the selected contract-name mapping.
+
+    Returns:
+        None.
+    """
+    contract = FrameLinkContract(
+        rift_id="rift-1",
+        assigned_frame_names=("ops",),
+        default_frame_name="ops",
+        selected_contract_names_by_frame_name={"ops": "ops_contract"},
+    )
+
+    description = contract.describe()
+    clone = contract.clone()
+
+    assert description["selected_contract_names_by_frame_name"] == {
+        "ops": "ops_contract",
+    }
+    assert clone.get_selected_contract_name("ops") == "ops_contract"
 
 
 def test_frame_link_contract_helper_methods_reject_empty_frame_name_inputs() -> None:
@@ -178,6 +223,10 @@ def test_frame_link_contract_describe_summarizes_availability() -> None:
         "rift_id": "rift-1",
         "assigned_frame_names": ("ops", "finance"),
         "default_frame_name": "ops",
+        "selected_contract_names_by_frame_name": {
+            "ops": "default",
+            "finance": "default",
+        },
         "assigned_frame_count": 2,
     }
 

@@ -39,6 +39,7 @@ class FrameLinkContract(Cleanable):
         "_rift_id",
         "_assigned_frame_names",
         "_default_frame_name",
+        "_selected_contract_names_by_frame_name",
         "_metadata",
     ]
 
@@ -48,6 +49,7 @@ class FrameLinkContract(Cleanable):
             rift_id: str,
             assigned_frame_names: Optional[Sequence[str]] = None,
             default_frame_name: Optional[str] = None,
+            selected_contract_names_by_frame_name: Optional[Dict[str, str]] = None,
             metadata: Optional[Dict[str, object]] = None,
     ) -> None:
         """
@@ -60,6 +62,8 @@ class FrameLinkContract(Cleanable):
                 Optional assigned/available frame names.
             default_frame_name:
                 Optional default assigned frame name.
+            selected_contract_names_by_frame_name:
+                Optional mapping of frame name to selected ACL contract name.
             metadata:
                 Optional contract-local metadata.
 
@@ -85,11 +89,38 @@ class FrameLinkContract(Cleanable):
                 raise ValueError(
                     "default_frame_name must be present in assigned_frame_names."
                 )
+        normalized_selected_contract_names_by_frame_name: Dict[str, str] = {}
+        for frame_name in normalized_assigned_frame_names:
+            normalized_selected_contract_names_by_frame_name[frame_name] = "default"
+        if selected_contract_names_by_frame_name is not None:
+            if not isinstance(selected_contract_names_by_frame_name, dict):
+                raise TypeError(
+                    "selected_contract_names_by_frame_name must be a dict when provided."
+                )
+            for frame_name, contract_name in (
+                    selected_contract_names_by_frame_name.items()
+            ):
+                if frame_name not in normalized_assigned_frame_names:
+                    raise ValueError(
+                        "selected contract frame '{0}' must be present in assigned_frame_names.".format(
+                            frame_name
+                        )
+                    )
+                if not isinstance(contract_name, str) or not contract_name:
+                    raise ValueError(
+                        "selected contract names must be non-empty strings."
+                    )
+                normalized_selected_contract_names_by_frame_name[frame_name] = (
+                    contract_name
+                )
         self._contract_id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._rift_id: str = rift_id
         self._assigned_frame_names: Tuple[str, ...] = tuple(normalized_assigned_frame_names)
         self._default_frame_name: Optional[str] = default_frame_name
+        self._selected_contract_names_by_frame_name: Dict[str, str] = (
+            normalized_selected_contract_names_by_frame_name
+        )
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
 
     @property
@@ -121,6 +152,19 @@ class FrameLinkContract(Cleanable):
         """Return a detached copy of the contract metadata map."""
         self.check_cleaned()
         return dict(self._metadata)
+
+    @property
+    def selected_contract_names_by_frame_name(self) -> Dict[str, str]:
+        """
+        Return a detached snapshot of selected contract names by frame.
+
+        Returns:
+            Dict[str, str]:
+                Frame-name keyed selected contract names.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._selected_contract_names_by_frame_name)
 
     def list_frame_names(self) -> List[str]:
         """
@@ -159,6 +203,7 @@ class FrameLinkContract(Cleanable):
             frame_name: str,
             *,
             set_as_default: bool = False,
+            contract_name: str = "default",
     ) -> None:
         """
         Register one assigned frame on this contract.
@@ -168,11 +213,14 @@ class FrameLinkContract(Cleanable):
                 Frame name to assign.
             set_as_default:
                 When True, the frame also becomes the default assigned frame.
+            contract_name:
+                Selected ACL contract name for the frame.
 
         Contract:
             - Deduplicates assigned frame names.
             - Sets the default frame when explicitly requested or when no
               default frame currently exists.
+            - Records the selected contract name for the frame.
 
         Returns:
             None.
@@ -180,11 +228,76 @@ class FrameLinkContract(Cleanable):
         self.check_cleaned()
         if not frame_name:
             raise ValueError("frame_name cannot be empty.")
+        if not contract_name:
+            raise ValueError("contract_name cannot be empty.")
         with self._lock:
             if frame_name not in self._assigned_frame_names:
                 self._assigned_frame_names = self._assigned_frame_names + (frame_name,)
+            self._selected_contract_names_by_frame_name[frame_name] = contract_name
             if set_as_default or self._default_frame_name is None:
                 self._default_frame_name = frame_name
+
+    def get_selected_contract_name(self, frame_name: str) -> str:
+        """
+        Return the selected ACL contract name for one assigned frame.
+
+        Args:
+            frame_name:
+                Assigned frame name whose selected contract should be returned.
+
+        Returns:
+            str:
+                Selected ACL contract name for the frame.
+
+        Raises:
+            ValueError:
+                If `frame_name` is empty.
+            KeyError:
+                If the frame is not assigned.
+        """
+        self.check_cleaned()
+        if not frame_name:
+            raise ValueError("frame_name cannot be empty.")
+        with self._lock:
+            try:
+                return self._selected_contract_names_by_frame_name[frame_name]
+            except KeyError as exc:
+                raise KeyError(
+                    "Frame '{0}' is not assigned on this Rift contract.".format(
+                        frame_name
+                    )
+                ) from exc
+
+    def set_selected_contract_name(
+            self,
+            frame_name: str,
+            contract_name: str,
+    ) -> None:
+        """
+        Update the selected ACL contract name for one assigned frame.
+
+        Args:
+            frame_name:
+                Assigned frame name to update.
+            contract_name:
+                Selected ACL contract name.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if not frame_name:
+            raise ValueError("frame_name cannot be empty.")
+        if not contract_name:
+            raise ValueError("contract_name cannot be empty.")
+        with self._lock:
+            if frame_name not in self._assigned_frame_names:
+                raise KeyError(
+                    "Frame '{0}' is not assigned on this Rift contract.".format(
+                        frame_name
+                    )
+                )
+            self._selected_contract_names_by_frame_name[frame_name] = contract_name
 
     def remove_frame(self, frame_name: str) -> None:
         """
@@ -213,6 +326,7 @@ class FrameLinkContract(Cleanable):
                 for assigned_frame_name in self._assigned_frame_names
                 if assigned_frame_name != frame_name
             )
+            self._selected_contract_names_by_frame_name.pop(frame_name, None)
             if self._default_frame_name == frame_name:
                 self._default_frame_name = (
                     self._assigned_frame_names[0]
@@ -232,12 +346,16 @@ class FrameLinkContract(Cleanable):
             Dict[str, object]: Detached contract summary.
         """
         self.check_cleaned()
-        return {
-            "rift_id": self._rift_id,
-            "assigned_frame_names": self._assigned_frame_names,
-            "default_frame_name": self._default_frame_name,
-            "assigned_frame_count": len(self._assigned_frame_names),
-        }
+        with self._lock:
+            return {
+                "rift_id": self._rift_id,
+                "assigned_frame_names": self._assigned_frame_names,
+                "default_frame_name": self._default_frame_name,
+                "selected_contract_names_by_frame_name": dict(
+                    self._selected_contract_names_by_frame_name
+                ),
+                "assigned_frame_count": len(self._assigned_frame_names),
+            }
 
     def cleanup(self) -> None:
         """
@@ -258,6 +376,8 @@ class FrameLinkContract(Cleanable):
             self._cleaned = True
             self._assigned_frame_names = None
             self._default_frame_name = None
+            self._selected_contract_names_by_frame_name.clear()
+            self._selected_contract_names_by_frame_name = None
             self._metadata.clear()
             self._metadata = None
             self._rift_id = None
@@ -276,5 +396,8 @@ class FrameLinkContract(Cleanable):
             rift_id=self._rift_id,
             assigned_frame_names=self._assigned_frame_names,
             default_frame_name=self._default_frame_name,
+            selected_contract_names_by_frame_name=dict(
+                self._selected_contract_names_by_frame_name
+            ),
             metadata=dict(self._metadata),
         )

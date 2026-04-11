@@ -320,6 +320,87 @@ class FrameACLManager(Cleanable):
         container = self._ensure_frame_acl_container(frame_name)
         return container.frame_acl_configuration_chain.get_current_configuration()
 
+    def _get_named_frame_acl_configuration(
+            self,
+            frame_name: str,
+            contract_name: str = "default",
+    ) -> FrameACLConfiguration:
+        """
+        Return one named ACL configuration for a frame.
+
+        Purpose:
+            Resolve one frame-local named ACL contract through the manager
+            boundary.
+
+        Args:
+            frame_name:
+                Stable frame name that owns the contract registry.
+            contract_name:
+                Frame-local contract name to resolve.
+
+        Returns:
+            FrameACLConfiguration:
+                Named ACL configuration for the frame.
+        """
+        self.check_cleaned()
+        container = self._ensure_frame_acl_container(frame_name)
+        return container.get_named_configuration(contract_name)
+
+    def _list_named_frame_acl_configuration_names(
+            self,
+            frame_name: str,
+    ) -> List[str]:
+        """
+        Return all named ACL contract names for one frame.
+
+        Purpose:
+            Expose the frame-local named contract registry keys through the
+            manager boundary.
+
+        Args:
+            frame_name:
+                Stable frame name that owns the contract registry.
+
+        Returns:
+            List[str]:
+                Named ACL contract names for the frame.
+        """
+        self.check_cleaned()
+        container = self._ensure_frame_acl_container(frame_name)
+        return container.list_named_configuration_names()
+
+    def _register_named_frame_acl_configuration(
+            self,
+            frame_name: str,
+            configuration: FrameACLConfiguration,
+            *,
+            contract_name: str = "default",
+    ) -> FrameACLConfiguration:
+        """
+        Register one named ACL configuration for a frame.
+
+        Purpose:
+            Add a new frame-local named contract through the manager boundary.
+
+        Args:
+            frame_name:
+                Stable frame name that owns the contract registry.
+            configuration:
+                Locked ACL configuration node to register.
+            contract_name:
+                Frame-local contract name.
+
+        Returns:
+            FrameACLConfiguration:
+                Registered named configuration node.
+        """
+        self.check_cleaned()
+        container = self._ensure_frame_acl_container(frame_name)
+        return container.register_named_configuration(
+            configuration,
+            contract_name=contract_name,
+        )
+
     def _get_head_frame_acl_configuration(
             self,
             frame_name: str,
@@ -465,10 +546,13 @@ class FrameACLManager(Cleanable):
         """
         self.check_cleaned()
         container = self._ensure_frame_acl_container(frame_name)
+        if select_as_current:
+            container.install_configuration(configuration)
+            return configuration
         container.frame_acl_validator.validate_configuration(configuration)
         return container.frame_acl_configuration_chain.insert_head_configuration(
             configuration,
-            select_as_current=select_as_current,
+            select_as_current=False,
         )
 
     def _validate_frame_acl_configuration_against_descriptor(

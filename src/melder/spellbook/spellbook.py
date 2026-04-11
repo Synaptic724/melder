@@ -1313,6 +1313,64 @@ class Spellbook(Cleanable, ISpellbook):
                 self._logger.error(f"Failed to inspect spell: {e}", "inspect_spell", exc_info=True)
                 return None
 
+    def describe_spells_in_spellbook(self) -> list[dict[str, Any]]:
+        """
+        Public API
+
+        Return a stable authoring dump of spell targeting details currently
+        visible through this Spellbook.
+
+        Purpose:
+            Provide an ACL-authoring/introspection surface that lets callers
+            inspect the exact `spell_id` values available in this Spellbook
+            alongside the logical targeting fields users may prefer when they
+            do not want to author by SHA256 alone.
+
+        Contract:
+            - Uses the Spellbook-owned spell-id pool as the visible spell set.
+            - Returns one detached dictionary per spell.
+            - Does not mutate local or contracted registries.
+            - Includes only the user-facing selector and ownership fields:
+              `spell_id`, `spell_name`, `binding_name`, `spellframe`,
+              `existence`, and `owner_conduit_id`.
+            - Sorts results deterministically by spell name, effective binding
+              name, and spell id.
+
+        Returns:
+            list[dict[str, Any]]:
+                Detached spell-target description payloads for all visible
+                spells in this Spellbook.
+        """
+        self.check_cleaned()
+        with self._lock:
+            spell_descriptions: list[dict[str, Any]] = []
+            for spell in self._spell_id_pool.values():
+                owner_conduit_id, _ = spell.owner_conduit_info
+                spellframe_value = spell.spellframe
+                spellframe_display = (
+                    getattr(spellframe_value, "__name__", str(spellframe_value))
+                    if spellframe_value is not None
+                    else None
+                )
+                spell_descriptions.append(
+                    {
+                        "spell_id": spell.spell_id,
+                        "spell_name": spell.spell_name,
+                        "binding_name": spell.binding_name or "__default__",
+                        "spellframe": spellframe_display,
+                        "existence": spell.existence.name,
+                        "owner_conduit_id": owner_conduit_id,
+                    }
+                )
+            return sorted(
+                spell_descriptions,
+                key=lambda description: (
+                    description["spell_name"],
+                    description["binding_name"],
+                    description["spell_id"],
+                ),
+            )
+
 
     def _check_all_spells(self) -> None:
         """

@@ -798,6 +798,83 @@ def test_rift_can_target_frame_through_contract_after_nexus_validation() -> None
     assert rift.default_target_frame_name == "ops"
 
 
+def test_nexus_can_register_and_list_named_frame_acl_configurations() -> None:
+    """
+    Verify Nexus can register and list named ACL configurations for one frame.
+
+    Returns:
+        None.
+    """
+    nexus = _create_enabled_nexus()
+    named_configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        nexus.get_current_frame_acl_configuration("default"),
+        reason="named",
+    )
+    named_configuration.finalize()
+
+    registered = nexus.register_named_frame_acl_configuration(
+        "default",
+        named_configuration,
+        contract_name="ops_contract",
+    )
+
+    assert registered is named_configuration
+    assert nexus.get_named_frame_acl_configuration("default", "ops_contract") is (
+        named_configuration
+    )
+    assert nexus.list_named_frame_acl_configuration_names("default") == [
+        "default",
+        "ops_contract",
+    ]
+
+
+def test_rift_target_frame_uses_selected_named_acl_contract_for_viewer_projection() -> None:
+    """
+    Verify Rift targeting selects the named ACL contract used for viewer projection.
+
+    Returns:
+        None.
+    """
+    _bind_target_frame_configuration(
+        "ops",
+        rift_enabled=True,
+        ai_native_enabled=False,
+        system_state=SystemState.automatic,
+    )
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_direct_rift_access(True)
+    configuration.with_target_frame_override(True)
+    configuration.with_multiple_target_frames(True)
+    configuration.with_max_target_frame_count(2)
+    configuration.with_allowed_target_frame_names(("default", "ops"))
+    nexus.enable(configuration)
+    _seed_frame_descriptor("ops")
+
+    named_configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        nexus.get_current_frame_acl_configuration("ops"),
+        reason="named",
+    )
+    named_configuration.finalize()
+    nexus.register_named_frame_acl_configuration(
+        "ops",
+        named_configuration,
+        contract_name="ops_contract",
+    )
+
+    rift = nexus.create_rift(rift_name="ops_rift")
+    rift.target_frame("ops", contract_name="ops_contract", set_as_default=True)
+
+    viewer = rift.get_space_frame_viewer()
+
+    assert rift.frame_link_contract.get_selected_contract_name("ops") == "ops_contract"
+    assert viewer.frame_acl_configurations_by_frame_name["ops"] is named_configuration
+    assert viewer.metadata["contract_names_by_frame_name"] == {
+        "ops": "ops_contract",
+    }
+
+
 def test_rift_can_create_new_frame_viewer_for_one_engaged_frame() -> None:
     """
     Verify Rift can create one frame-specific viewer transaction.

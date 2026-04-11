@@ -1614,6 +1614,20 @@ class ISpellbook(ICleanable, Protocol):
         """
         ...
 
+    def describe_spells_in_spellbook(self) -> list[dict[str, Any]]:
+        """
+        Return a user-facing dump of spell targeting details currently visible
+        through this Spellbook.
+        """
+        ...
+
+    def describe_spells_in_spellbook(self) -> list[dict[str, Any]]:
+        """
+        Return a user-facing dump of spell targeting details currently visible
+        through this Spellbook.
+        """
+        ...
+
     def find_spell_index(
             self,
             spellframe: str,
@@ -2579,6 +2593,7 @@ class IFrameACLContainer(ICleanable, Protocol):
 
     frame_name: str
     frame_acl_configuration: IFrameACLConfiguration
+    named_configurations_by_name: Dict[str, IFrameACLConfiguration]
 
     def install_configuration(
             self,
@@ -2589,6 +2604,32 @@ class IFrameACLContainer(ICleanable, Protocol):
 
         Returns:
             None.
+        """
+        ...
+
+    def get_named_configuration(
+            self,
+            contract_name: str = "default",
+    ) -> IFrameACLConfiguration:
+        """
+        Return one named ACL configuration for this frame.
+        """
+        ...
+
+    def list_named_configuration_names(self) -> List[str]:
+        """
+        Return all registered ACL contract names for this frame.
+        """
+        ...
+
+    def register_named_configuration(
+            self,
+            configuration: IFrameACLConfiguration,
+            *,
+            contract_name: str = "default",
+    ) -> IFrameACLConfiguration:
+        """
+        Register one additional named ACL configuration for this frame.
         """
         ...
 
@@ -4508,6 +4549,20 @@ class IConduit(ICleanable, Protocol):
         """
         ...
 
+    def describe_spells_in_conduit(self) -> list[dict[str, Any]]:
+        """
+        Return a user-facing dump of spell targeting details visible through
+        this conduit's Spellbook.
+        """
+        ...
+
+    def describe_spells_in_conduit(self) -> list[dict[str, Any]]:
+        """
+        Return a user-facing dump of spell targeting details visible through
+        this conduit's Spellbook.
+        """
+        ...
+
     def bind(
             self,
             *,
@@ -6359,6 +6414,7 @@ class IRift(ICleanable, Protocol):
             self,
             frame_name: str,
             *,
+            contract_name: str = "default",
             set_as_default: bool = False,
     ) -> None:
         """
@@ -6575,6 +6631,37 @@ class INexus(ICleanable, Protocol):
     def list_accessible_nexus_frame_names(self, rift_id: str) -> Tuple[str, ...]:
         """
         Return the Nexus frame names currently accessible to the specified Rift.
+        """
+        ...
+
+    def get_named_frame_acl_configuration(
+            self,
+            frame_name: str,
+            contract_name: str = "default",
+    ) -> IFrameACLConfiguration:
+        """
+        Return one named frame ACL configuration for a frame.
+        """
+        ...
+
+    def list_named_frame_acl_configuration_names(
+            self,
+            frame_name: str,
+    ) -> List[str]:
+        """
+        Return all named ACL contract names for a frame.
+        """
+        ...
+
+    def register_named_frame_acl_configuration(
+            self,
+            frame_name: str,
+            configuration: IFrameACLConfiguration,
+            *,
+            contract_name: str = "default",
+    ) -> IFrameACLConfiguration:
+        """
+        Register one named ACL configuration for a frame.
         """
         ...
 

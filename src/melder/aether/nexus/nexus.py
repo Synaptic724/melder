@@ -1201,6 +1201,93 @@ class Nexus(Cleanable, INexus):
             frame_name
         )
 
+    def get_named_frame_acl_configuration(
+            self,
+            frame_name: str,
+            contract_name: str = "default",
+    ) -> FrameACLConfiguration:
+        """
+        Return one named frame ACL configuration for a frame.
+
+        Purpose:
+            Expose the per-frame named ACL contract registry through the Nexus
+            facade.
+
+        Args:
+            frame_name:
+                Stable frame name whose named ACL contract is requested.
+            contract_name:
+                Frame-local contract name to resolve.
+
+        Returns:
+            FrameACLConfiguration:
+                Named ACL configuration for the frame.
+        """
+        self.check_cleaned()
+        self._ensure_frame_acl_container(frame_name)
+        return self._frame_acl_manager._get_named_frame_acl_configuration(
+            frame_name,
+            contract_name=contract_name,
+        )
+
+    def list_named_frame_acl_configuration_names(
+            self,
+            frame_name: str,
+    ) -> List[str]:
+        """
+        Return all named ACL contract names for a frame.
+
+        Purpose:
+            Expose the frame-local named ACL registry keys through the Nexus
+            facade.
+
+        Args:
+            frame_name:
+                Stable frame name whose contract names are requested.
+
+        Returns:
+            List[str]:
+                Registered ACL contract names for the frame.
+        """
+        self.check_cleaned()
+        self._ensure_frame_acl_container(frame_name)
+        return self._frame_acl_manager._list_named_frame_acl_configuration_names(
+            frame_name
+        )
+
+    def register_named_frame_acl_configuration(
+            self,
+            frame_name: str,
+            configuration: FrameACLConfiguration,
+            *,
+            contract_name: str = "default",
+    ) -> FrameACLConfiguration:
+        """
+        Register one named ACL configuration for a frame.
+
+        Purpose:
+            Add a new frame-local named ACL contract through the Nexus facade.
+
+        Args:
+            frame_name:
+                Stable frame name that owns the contract registry.
+            configuration:
+                Locked ACL configuration node to register.
+            contract_name:
+                Frame-local contract name.
+
+        Returns:
+            FrameACLConfiguration:
+                Registered named configuration node.
+        """
+        self.check_cleaned()
+        self._ensure_frame_acl_container(frame_name)
+        return self._frame_acl_manager._register_named_frame_acl_configuration(
+            frame_name,
+            configuration,
+            contract_name=contract_name,
+        )
+
     def get_head_frame_acl_configuration(
             self,
             frame_name: str,
@@ -1458,6 +1545,7 @@ class Nexus(Cleanable, INexus):
             self,
             frame_names: Sequence[str],
             *,
+            contract_names_by_frame_name: Optional[Dict[str, str]] = None,
             view_profile_name: str = "general",
             viewer_profile_name: str = "general",
     ) -> FrameViewer:
@@ -1476,6 +1564,9 @@ class Nexus(Cleanable, INexus):
         Args:
             frame_names:
                 Frame names to project into the viewer.
+            contract_names_by_frame_name:
+                Optional per-frame selected ACL contract names. When omitted,
+                each frame uses `"default"`.
             view_profile_name:
                 View profile name applied to each projected view.
             viewer_profile_name:
@@ -1491,6 +1582,26 @@ class Nexus(Cleanable, INexus):
         for frame_name in frame_names:
             if not isinstance(frame_name, str) or not frame_name:
                 raise ValueError("frame_names must contain non-empty strings.")
+        normalized_contract_names_by_frame_name: Dict[str, str] = {}
+        for frame_name in frame_names:
+            normalized_contract_names_by_frame_name[frame_name] = "default"
+        if contract_names_by_frame_name is not None:
+            if not isinstance(contract_names_by_frame_name, dict):
+                raise TypeError(
+                    "contract_names_by_frame_name must be a dict when provided."
+                )
+            for frame_name, contract_name in contract_names_by_frame_name.items():
+                if frame_name not in normalized_contract_names_by_frame_name:
+                    raise ValueError(
+                        "contract_names_by_frame_name contains unknown frame '{0}'.".format(
+                            frame_name
+                        )
+                    )
+                if not isinstance(contract_name, str) or not contract_name:
+                    raise ValueError(
+                        "contract_names_by_frame_name must contain non-empty strings."
+                    )
+                normalized_contract_names_by_frame_name[frame_name] = contract_name
         viewer_profile_builder = FrameViewerProfileBuilder()
         viewer_profile = viewer_profile_builder.get_required_profile(
             viewer_profile_name
@@ -1509,7 +1620,11 @@ class Nexus(Cleanable, INexus):
         try:
             for frame_name in frame_names:
                 descriptor = self._get_required_frame_descriptor(frame_name)
-                configuration = self.get_current_frame_acl_configuration(frame_name)
+                contract_name = normalized_contract_names_by_frame_name[frame_name]
+                configuration = self.get_named_frame_acl_configuration(
+                    frame_name,
+                    contract_name=contract_name,
+                )
                 self._frame_acl_manager._validate_frame_acl_configuration_against_descriptor(
                     frame_name,
                     configuration,
@@ -1542,6 +1657,9 @@ class Nexus(Cleanable, INexus):
                     "frame_count": len(frame_descriptors_by_name),
                     "available_view_count": len(frame_descriptors_by_name),
                     "assigned_frame_names": tuple(frame_names),
+                    "contract_names_by_frame_name": dict(
+                        normalized_contract_names_by_frame_name
+                    ),
                     "view_profile_name": view_profile_name,
                     "viewer_profile_name": viewer_profile.name,
                     "viewer_profile_version": viewer_profile.version,
@@ -1593,6 +1711,9 @@ class Nexus(Cleanable, INexus):
         rift = self._get_required_rift(rift_id)
         frame_viewer = self.create_frame_viewer(
             rift.frame_link_contract.list_frame_names(),
+            contract_names_by_frame_name=(
+                rift.frame_link_contract.selected_contract_names_by_frame_name
+            ),
             view_profile_name=view_profile_name,
             viewer_profile_name=viewer_profile_name,
         )
@@ -1601,6 +1722,9 @@ class Nexus(Cleanable, INexus):
         current_metadata["frame_link_contract_id"] = rift.frame_link_contract.contract_id
         current_metadata["assigned_frame_names"] = rift.frame_link_contract.assigned_frame_names
         current_metadata["default_target_frame_name"] = rift.default_target_frame_name
+        current_metadata["selected_contract_names_by_frame_name"] = (
+            rift.frame_link_contract.selected_contract_names_by_frame_name
+        )
         return FrameViewer(
             profile_builder=FrameViewerProfileBuilder(),
             active_profiles_by_name={
@@ -1657,6 +1781,11 @@ class Nexus(Cleanable, INexus):
             )
         frame_viewer = self.create_frame_viewer(
             [frame_name],
+            contract_names_by_frame_name={
+                frame_name: rift.frame_link_contract.get_selected_contract_name(
+                    frame_name
+                )
+            },
             viewer_profile_name=viewer_profile_name,
         )
         current_metadata = frame_viewer.metadata
@@ -1664,6 +1793,11 @@ class Nexus(Cleanable, INexus):
         current_metadata["frame_link_contract_id"] = rift.frame_link_contract.contract_id
         current_metadata["assigned_frame_names"] = (frame_name,)
         current_metadata["default_target_frame_name"] = frame_name
+        current_metadata["selected_contract_names_by_frame_name"] = {
+            frame_name: rift.frame_link_contract.get_selected_contract_name(
+                frame_name
+            )
+        }
         return FrameViewer(
             profile_builder=FrameViewerProfileBuilder(),
             active_profiles_by_name={
@@ -1689,6 +1823,7 @@ class Nexus(Cleanable, INexus):
             self,
             frame_names: Sequence[str],
             *,
+            contract_names_by_frame_name: Optional[Dict[str, str]] = None,
             view_profile_name: str = "general",
             viewer_profile_name: str = "general",
     ) -> FrameViewer:
@@ -1702,6 +1837,9 @@ class Nexus(Cleanable, INexus):
         Args:
             frame_names:
                 Frame names to project into the viewer.
+            contract_names_by_frame_name:
+                Optional per-frame selected ACL contract names. When omitted,
+                each frame uses `"default"`.
             view_profile_name:
                 View profile name applied to each projected view.
             viewer_profile_name:
@@ -1715,12 +1853,35 @@ class Nexus(Cleanable, INexus):
             raise TypeError("frame_names must be a sequence.")
         normalized_frame_names: List[str] = []
         frame_configuration_ids: List[str] = []
+        normalized_contract_names_by_frame_name: Dict[str, str] = {}
         for frame_name in frame_names:
             if not isinstance(frame_name, str) or not frame_name:
                 raise ValueError("frame_names must contain non-empty strings.")
             normalized_frame_names.append(frame_name)
+            normalized_contract_names_by_frame_name[frame_name] = "default"
+        if contract_names_by_frame_name is not None:
+            if not isinstance(contract_names_by_frame_name, dict):
+                raise TypeError(
+                    "contract_names_by_frame_name must be a dict when provided."
+                )
+            for frame_name, contract_name in contract_names_by_frame_name.items():
+                if frame_name not in normalized_contract_names_by_frame_name:
+                    raise ValueError(
+                        "contract_names_by_frame_name contains unknown frame '{0}'.".format(
+                            frame_name
+                        )
+                    )
+                if not isinstance(contract_name, str) or not contract_name:
+                    raise ValueError(
+                        "contract_names_by_frame_name must contain non-empty strings."
+                    )
+                normalized_contract_names_by_frame_name[frame_name] = contract_name
+        for frame_name in normalized_frame_names:
             frame_configuration_ids.append(
-                self.get_current_frame_acl_configuration(frame_name).configuration_id
+                self.get_named_frame_acl_configuration(
+                    frame_name,
+                    contract_name=normalized_contract_names_by_frame_name[frame_name],
+                ).configuration_id
             )
         cache_key = self._make_projected_frame_viewer_cache_key(
             tuple(sorted(normalized_frame_names)),
@@ -1741,6 +1902,7 @@ class Nexus(Cleanable, INexus):
             return cached_frame_viewer.clone()
         projected_frame_viewer = self.create_frame_viewer(
             normalized_frame_names,
+            contract_names_by_frame_name=normalized_contract_names_by_frame_name,
             view_profile_name=view_profile_name,
             viewer_profile_name=viewer_profile_name,
         )
@@ -1793,6 +1955,9 @@ class Nexus(Cleanable, INexus):
         rift = self._get_required_rift(rift_id)
         frame_viewer = self.create_cached_frame_viewer(
             rift.frame_link_contract.list_frame_names(),
+            contract_names_by_frame_name=(
+                rift.frame_link_contract.selected_contract_names_by_frame_name
+            ),
             view_profile_name=view_profile_name,
             viewer_profile_name=viewer_profile_name,
         )

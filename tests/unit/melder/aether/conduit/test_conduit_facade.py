@@ -212,6 +212,50 @@ def test_inspect_spell_delegates_to_spellbook(
     assert result == "spell-id"
 
 
+def test_describe_spells_in_conduit_delegates_to_spellbook(
+    conduit_lesser: Conduit,
+    spellbook_stub: MagicMock,
+) -> None:
+    """
+    Verify the conduit authoring dump delegates to Spellbook.
+
+    Contract:
+        - Conduit does not rebuild the payload itself.
+        - The Spellbook result is passed through unchanged.
+
+    Args:
+        conduit_lesser (Conduit): Lesser conduit instance.
+        spellbook_stub (MagicMock): Spellbook stub bound to the conduit.
+
+    Raises:
+        AssertionError: If delegation does not occur.
+    """
+    spellbook_stub.describe_spells_in_spellbook.return_value = [
+        {
+            "spell_id": "sha-1",
+            "spell_name": "SpellOne",
+            "binding_name": "__default__",
+            "spellframe": "FrameA",
+            "existence": "unique",
+            "owner_conduit_id": "conduit-1",
+        }
+    ]
+
+    result = conduit_lesser.describe_spells_in_conduit()
+
+    assert result == [
+        {
+            "spell_id": "sha-1",
+            "spell_name": "SpellOne",
+            "binding_name": "__default__",
+            "spellframe": "FrameA",
+            "existence": "unique",
+            "owner_conduit_id": "conduit-1",
+        }
+    ]
+    spellbook_stub.describe_spells_in_spellbook.assert_called_once_with()
+
+
 def test_find_spell_id_translates_missing_index_error(
     conduit_lesser: Conduit,
     spellbook_stub: MagicMock,

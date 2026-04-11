@@ -29,6 +29,11 @@ def test_frame_acl_container_builds_defaults() -> None:
     assert isinstance(container.frame_acl_configuration_chain, FrameACLConfigurationChain)
     assert isinstance(container.frame_acl_validator, FrameACLValidator)
     assert container.frame_acl_history == []
+    assert container.list_named_configuration_names() == ["default"]
+    assert (
+        container.get_named_configuration("default")
+        is container.frame_acl_configuration
+    )
 
 
 def test_frame_acl_container_rejects_invalid_init_inputs() -> None:
@@ -69,6 +74,62 @@ def test_frame_acl_container_install_configuration_appends_history() -> None:
     assert next_configuration.previous_configuration_id == previous_configuration.configuration_id
     assert container.frame_acl_history == [previous_configuration]
     assert container.frame_acl_validator.last_validated_configuration_id == next_configuration.configuration_id
+    assert container.get_named_configuration("default") is next_configuration
+
+
+def test_frame_acl_container_can_register_additional_named_configuration() -> None:
+    """
+    Verify the container can register one additional named ACL configuration.
+
+    Returns:
+        None.
+    """
+    container = FrameACLContainer("ops")
+    named_configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        container.frame_acl_configuration,
+        reason="named",
+    )
+    named_configuration.finalize()
+
+    registered = container.register_named_configuration(
+        named_configuration,
+        contract_name="ops_contract",
+    )
+
+    assert registered is named_configuration
+    assert container.get_named_configuration("ops_contract") is named_configuration
+    assert container.list_named_configuration_names() == ["default", "ops_contract"]
+
+
+def test_frame_acl_container_rejects_duplicate_named_configuration() -> None:
+    """
+    Verify the container rejects duplicate contract names for one frame.
+
+    Returns:
+        None.
+    """
+    container = FrameACLContainer("ops")
+    first_named_configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        container.frame_acl_configuration,
+        reason="named-1",
+    )
+    first_named_configuration.finalize()
+    second_named_configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        container.frame_acl_configuration,
+        reason="named-2",
+    )
+    second_named_configuration.finalize()
+
+    container.register_named_configuration(
+        first_named_configuration,
+        contract_name="ops_contract",
+    )
+
+    with pytest.raises(ValueError, match="already exists"):
+        container.register_named_configuration(
+            second_named_configuration,
+            contract_name="ops_contract",
+        )
 
 
 def test_frame_acl_container_history_is_capped_and_drops_oldest() -> None:
