@@ -282,6 +282,7 @@ class Conduit(Cleanable, IConduit):
 
         Cleans up a lesser Conduit.
         """
+        self._remove_conduit_record_from_nexus()
         # Lesser conduits share the parent Spellbook and are not root-registered
         # in Aether. We tear down local runtime and lineage links, but do not
         # touch the shared Spellbook/Aether registries.
@@ -418,7 +419,8 @@ class Conduit(Cleanable, IConduit):
         conduit is eligible for passive ingest.
 
         Contract:
-            - Only normal conduits publish in the current passive-ingest slice.
+            - Published conduit states in the current passive-ingest slice are
+              normal and lesser.
             - Publication is skipped when Nexus publication is disabled for this
               conduit.
             - Uses the conduit-owned Nexus reference directly.
@@ -428,7 +430,10 @@ class Conduit(Cleanable, IConduit):
         """
         if not self._nexus_publish_enabled:
             return
-        if self._conduit_state is not ConduitState.normal:
+        if self._conduit_state not in (
+                ConduitState.normal,
+                ConduitState.lesser,
+        ):
             return
 
         self._nexus._publish_conduit_record(self)
@@ -466,8 +471,8 @@ class Conduit(Cleanable, IConduit):
         eligible for passive ingest.
 
         Contract:
-            - Only normal conduits are tracked in the current passive-ingest
-              slice.
+            - Published conduit states in the current passive-ingest slice are
+              normal and lesser.
             - Removal is skipped when Nexus publication is disabled for this
               conduit.
             - Uses the conduit-owned Nexus reference directly.
@@ -477,7 +482,10 @@ class Conduit(Cleanable, IConduit):
         """
         if not self._nexus_publish_enabled:
             return
-        if self._conduit_state is not ConduitState.normal:
+        if self._conduit_state not in (
+                ConduitState.normal,
+                ConduitState.lesser,
+        ):
             return
 
         self._nexus._remove_conduit_record(self._id, self._aetheric_frame)
@@ -1503,6 +1511,7 @@ class Conduit(Cleanable, IConduit):
                 self,         # parent_conduit
                 new_conduit,  # child_conduit
             )
+            new_conduit._publish_conduit_record_to_nexus()
 
         return new_conduit
 

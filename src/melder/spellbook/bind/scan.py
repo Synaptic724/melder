@@ -15,14 +15,17 @@ def _normalize_hooks(
         hooks: Optional[Sequence[Callable[..., Any]]],
 ) -> Optional[tuple[Callable[..., Any], ...]]:
     """
-    Internal
+    Normalize hook sequences for `scan_bind` metadata storage.
 
     Purpose:
-        Normalize hook sequences for scan_bind metadata storage.
+        Convert user-facing hook inputs into the stable shape stored inside
+        `ScanBindMetadata`.
     Contract:
         - Accepts None, list, or tuple values.
-        - Ensures each element is callable.
-        - Returns hooks as an immutable tuple to prevent accidental mutation.
+        - Ensures each element is callable before metadata is attached.
+        - Returns hooks as an immutable tuple so decorator-time metadata cannot
+          be mutated accidentally after decoration.
+        - Preserves hook ordering exactly as supplied by the caller.
     Args:
         hook_name (str): The hook key being normalized (for error messaging).
         hooks (Optional[Sequence[Callable[..., Any]]]): Hook list/tuple or None.
@@ -45,14 +48,22 @@ def _normalize_hooks(
 @dataclass(frozen=True, slots=True)
 class ScanBindMetadata:
     """
-    Internal
+    Frozen payload describing how a decorated object should be bound later.
 
     Purpose:
-        Store explicit binding metadata for scan_bind-decorated objects.
+        Capture the exact bind-time policy, lifecycle, spellframe, and hook
+        configuration declared by `scan_bind(...)` without performing
+        registration immediately.
     Contract:
-        - Carries all inputs required to call Spellbook.bind.
-        - Hook lists are stored as tuples and materialized into lists when used.
-        - Metadata is immutable once created.
+        - Carries all inputs required to call `Spellbook.bind` during a later
+          module scan.
+        - Preserves `Existence | str` and `Permissions | str` values as
+          provided so later spellbook code can apply the same normalization path
+          used by direct binding.
+        - Hook collections are stored as tuples at rest and materialized into
+          fresh lists only when handed to `Spellbook.bind`.
+        - Metadata is immutable once created so decorated objects carry a
+          stable registration contract.
     """
     existence: Existence | str
     permissions: Permissions | str
@@ -65,13 +76,18 @@ class ScanBindMetadata:
 
     def to_bind_kwargs(self) -> dict[str, Any]:
         """
-        Internal
+        Build the keyword payload consumed by `Spellbook.bind`.
 
         Purpose:
-            Build hook kwargs for Spellbook.bind without emitting None values.
+            Translate frozen scan metadata into the mutable hook/profile kwargs
+            expected by the real binding pipeline.
         Contract:
-            - Returns a dict containing only hook keys that were provided.
-            - Hook tuples are copied into lists for Spellbook consumption.
+            - Returns a dict containing only hook keys that were explicitly
+              provided.
+            - Hook tuples are copied into new lists so later bind-time mutation
+              cannot alias back into stored metadata.
+            - Always includes `profile`, because that value is part of the
+              public scan-bind contract even when no hooks are supplied.
         Returns:
             dict[str, Any]: Keyword arguments for Spellbook.bind hooks.
         """
@@ -98,12 +114,24 @@ def scan_bind(
         post_hooks: Optional[Sequence[Callable[..., Any]]] = None,
 ) -> Callable[[Any], Any]:
     """
-    Public API
-
     Attaches explicit binding metadata to a class/function for module scanning.
 
     This decorator does **not** bind anything by itself. It only stores the
     metadata needed by `Scan.scan_module(...)` or `Spellbook.scan(...)`.
+
+    Runtime model:
+        - decoration time: capture binding intent only
+        - scan time: verify module ownership and re-export rules
+        - bind time: delegate to `Spellbook.bind` for actual registration
+
+    Contract:
+        - Returns a decorator that leaves the target object otherwise unchanged.
+        - Stores one immutable `ScanBindMetadata` payload on the decorated
+          object under the reserved scan-bind attribute.
+        - Does not register anything, allocate `Spell` objects, or talk to a
+          `Spellbook` directly.
+        - Hook values are validated immediately so invalid metadata does not sit
+          silently on the object until module scan time.
 
     Args:
         existence (Existence | str):
@@ -141,13 +169,12 @@ def scan_bind(
 
     def decorator(obj: Any) -> Any:
         """
-        Internal
+        Attach `ScanBindMetadata` to the decorated object.
 
-        Purpose:
-            Attach ScanBindMetadata to the decorated object.
         Contract:
-            - Stores metadata under a reserved attribute.
-            - Returns the original object unchanged otherwise.
+            - Stores metadata under the reserved scan-bind attribute.
+            - Returns the original object unchanged so the decorator is
+              transparent to normal import and runtime use.
         Args:
             obj (Any): The object being decorated.
         Returns:

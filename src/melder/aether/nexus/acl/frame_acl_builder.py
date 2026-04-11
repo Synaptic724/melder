@@ -26,10 +26,17 @@ class FrameACLBuilder(Cleanable):
         - At most one draft change session may be active at a time.
         - Draft state is represented as a typed `FrameACLConfiguration` seeded
           from the current configuration.
+        - Draft bundles preserve view, command, and codegen child
+          configurations together.
         - Final installation and validation are delegated to the owning
           container.
         - Uses an instance lock because draft lifecycle transitions and cleanup
           mutate multiple fields together in a nogil runtime.
+
+    Notes:
+        - The builder still applies reusable view/codegen profiles only.
+        - The command child remains draft state owned by the bundle until a
+          dedicated reusable command-profile layer exists.
 
     Lifecycle:
         Cleanup is idempotent and clears draft state plus the container
@@ -73,6 +80,11 @@ class FrameACLBuilder(Cleanable):
         """
         Idempotently clear builder state.
 
+        Contract:
+            - Safe to call more than once.
+            - Cleans the current draft configuration when one exists.
+            - Leaves the builder unusable after completion.
+
         Returns:
             None.
         """
@@ -94,6 +106,10 @@ class FrameACLBuilder(Cleanable):
         """
         Return whether the builder currently owns one open change session.
 
+        Contract:
+            Reflects draft-session ownership only; it does not imply the draft
+            has been committed.
+
         Returns:
             bool: True when a change session is active.
         """
@@ -104,6 +120,12 @@ class FrameACLBuilder(Cleanable):
     def begin_change(self) -> None:
         """
         Start one builder-owned change session.
+
+        Contract:
+            - Creates one detached draft bundle cloned from the current
+              container-selected configuration.
+            - Preserves view, command, and codegen child state from the current
+              bundle.
 
         Returns:
             None.
@@ -131,6 +153,13 @@ class FrameACLBuilder(Cleanable):
     ) -> None:
         """
         Apply one composed reusable ACL profile into the active typed draft.
+
+        Contract:
+            - Replaces the draft view and codegen configurations from the
+              reusable profile input.
+            - Preserves the current draft command configuration because the
+              reusable profile layer does not yet expose a typed command
+              profile in this first cut.
 
         Args:
             frame_acl_profile:
@@ -175,6 +204,13 @@ class FrameACLBuilder(Cleanable):
         """
         Replace the active typed draft from a JSON payload string.
 
+        Contract:
+            - Allowed only while a draft change session is active.
+            - Rebuilds the draft's typed child configuration objects from the
+              provided JSON payload.
+            - Preserves the draft node's identity/history metadata while
+              replacing only the typed child configuration state.
+
         Args:
             json_configuration_string:
                 JSON payload string for the next configuration revision.
@@ -185,6 +221,8 @@ class FrameACLBuilder(Cleanable):
         Raises:
             RuntimeError:
                 If no draft change session is active.
+            TypeError:
+                Propagates when the payload is not a string.
         """
         self.check_cleaned()
         with self._lock:
@@ -197,6 +235,12 @@ class FrameACLBuilder(Cleanable):
     def commit_change(self) -> FrameACLConfiguration:
         """
         Finalize and install the next frame ACL configuration revision.
+
+        Contract:
+            - Finalizes the current draft bundle before installation.
+            - Delegates validation and current-selection update to the owning
+              container.
+            - Clears builder-owned draft state after a successful install.
 
         Returns:
             FrameACLConfiguration: Newly installed configuration.
@@ -219,6 +263,11 @@ class FrameACLBuilder(Cleanable):
     def discard_change(self) -> None:
         """
         Discard the current builder-owned change session.
+
+        Contract:
+            - Best-effort cleanup of the current draft when present.
+            - Leaves the builder with no active change session.
+            - Safe to call even when no draft exists.
 
         Returns:
             None.

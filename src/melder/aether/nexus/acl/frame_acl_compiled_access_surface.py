@@ -159,70 +159,166 @@ class CompiledFrameACLAccessSurface(Cleanable):
 
     @property
     def frame_name(self) -> str:
+        """
+        Return the frame name this compiled surface applies to.
+
+        Returns:
+            str: Target frame name.
+        """
         self.check_cleaned()
         return self._frame_name
 
     @property
     def configuration_id(self) -> str:
+        """
+        Return the source ACL configuration id.
+
+        Returns:
+            str: Configuration id used to compile this surface.
+        """
         self.check_cleaned()
         return self._configuration_id
 
     @property
     def view_profile_name(self) -> str:
+        """
+        Return the effective view profile name used during compilation.
+
+        Returns:
+            str: Effective view profile name.
+        """
         self.check_cleaned()
         return self._view_profile_name
 
     @property
     def view_profile_version(self) -> str:
+        """
+        Return the effective view profile version used during compilation.
+
+        Returns:
+            str: Effective view profile version.
+        """
         self.check_cleaned()
         return self._view_profile_version
 
     @property
     def codegen_profile_name(self) -> str:
+        """
+        Return the effective codegen profile name used during compilation.
+
+        Returns:
+            str: Effective codegen profile name.
+        """
         self.check_cleaned()
         return self._codegen_profile_name
 
     @property
     def codegen_profile_version(self) -> str:
+        """
+        Return the effective codegen profile version used during compilation.
+
+        Returns:
+            str: Effective codegen profile version.
+        """
         self.check_cleaned()
         return self._codegen_profile_version
 
     @property
     def allowed_kinds(self) -> Tuple[str, ...]:
+        """
+        Return the visible high-level kinds in this compiled surface.
+
+        Returns:
+            Tuple[str, ...]: Visible kind names such as frame/conduit/spell.
+        """
         self.check_cleaned()
         return self._allowed_kinds
 
     @property
     def allowed_commands(self) -> Tuple[str, ...]:
+        """
+        Return the effective allowed command names.
+
+        Returns:
+            Tuple[str, ...]: Command names allowed by the compiled ACL.
+        """
         self.check_cleaned()
         return self._allowed_commands
 
     @property
     def frame_payload_fields(self) -> Tuple[str, ...]:
+        """
+        Return the visible frame payload fields.
+
+        Returns:
+            Tuple[str, ...]: Frame payload field names visible to consumers.
+        """
         self.check_cleaned()
         return self._frame_payload_fields
 
     @property
     def visible_conduit_ids(self) -> Tuple[str, ...]:
+        """
+        Return the visible conduit ids.
+
+        Returns:
+            Tuple[str, ...]: Conduit ids visible under the compiled ACL.
+        """
         self.check_cleaned()
         return self._visible_conduit_ids
 
     @property
     def visible_spell_keys(self) -> Tuple[Tuple[str, str], ...]:
+        """
+        Return the visible spell record keys.
+
+        Returns:
+            Tuple[Tuple[str, str], ...]: Visible `(spellbook_id, spell_id)` keys.
+        """
         self.check_cleaned()
         return self._visible_spell_keys
 
     @property
     def conduit_payload_sections_by_id(self) -> Dict[str, Tuple[str, ...]]:
+        """
+        Return conduit payload-section visibility keyed by conduit id.
+
+        Contract:
+            Returns a detached dictionary so callers cannot mutate internal
+            section maps directly.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Visible conduit payload sections.
+        """
         self.check_cleaned()
         return dict(self._conduit_payload_sections_by_id)
 
     @property
     def spell_payload_sections_by_key(self) -> Dict[Tuple[str, str], Tuple[str, ...]]:
+        """
+        Return spell payload-section visibility keyed by spell record key.
+
+        Contract:
+            Returns a detached dictionary so callers cannot mutate internal
+            section maps directly.
+
+        Returns:
+            Dict[Tuple[str, str], Tuple[str, ...]]: Visible spell payload sections.
+        """
         self.check_cleaned()
         return dict(self._spell_payload_sections_by_key)
 
     @property
     def metadata(self) -> Dict[str, object]:
+        """
+        Return compiled-surface metadata.
+
+        Contract:
+            Returns a detached dictionary so callers cannot mutate internal
+            metadata directly.
+
+        Returns:
+            Dict[str, object]: Consumer-facing compiled-surface metadata.
+        """
         self.check_cleaned()
         return dict(self._metadata)

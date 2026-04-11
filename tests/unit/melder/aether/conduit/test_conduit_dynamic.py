@@ -424,6 +424,35 @@ def test_upgrade_to_normal_registers_hooks(
     assert conduit_dynamic_lesser._local_conduit_hooks["on_conduit_post_link"][0] is hook
 
 
+def test_create_lesser_conduit_publishes_descriptor_record_when_enabled(
+    conduit_dynamic_normal: Conduit,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify lesser creation publishes a conduit record when Nexus publication is enabled.
+
+    Contract:
+        - Lesser conduits inherit the parent's Nexus publish flag.
+        - The newly created lesser conduit publishes itself after lineage wiring.
+    """
+    published_calls = []
+
+    def _capture_publish(conduit: Conduit) -> None:
+        published_calls.append(conduit)
+
+    monkeypatch.setattr(
+        Conduit,
+        "_publish_conduit_record_to_nexus",
+        _capture_publish,
+    )
+    conduit_dynamic_normal._nexus_publish_enabled = True
+
+    new_conduit = conduit_dynamic_normal.create_lesser_conduit()
+
+    assert new_conduit._nexus_publish_enabled is True
+    assert published_calls == [new_conduit]
+
+
 def test_set_creation_gate_controller_for_lineage_uses_existing_gate_and_updates_lesser_conduits(
     conduit_dynamic_normal: Conduit,
 ) -> None:

@@ -184,6 +184,7 @@ def test_publish_methods_short_circuit_when_frame_is_not_publishable() -> None:
         _conduit_state=ConduitState.normal,
         _conduit_ward=types.SimpleNamespace(
             _policy=Policies.default,
+            _parent_conduit=None,
             _get_links=lambda: [],
         ),
     )
@@ -227,9 +228,9 @@ def test_publish_spell_record_updates_primary_store_and_indexes() -> None:
     assert record_key in descriptor.spell_keys_by_spellbook_id["spellbook-alpha"]
 
 
-def test_publish_conduit_record_ignores_lesser_conduits() -> None:
+def test_publish_conduit_record_includes_lesser_conduits_in_passive_ingest() -> None:
     """
-    Verify the first passive-ingest slice ignores ordinary lesser conduits.
+    Verify passive ingest now publishes ordinary lesser conduits as records.
 
     Returns:
         None.
@@ -246,14 +247,17 @@ def test_publish_conduit_record_ignores_lesser_conduits() -> None:
         _conduit_state=ConduitState.lesser,
         _conduit_ward=types.SimpleNamespace(
             _policy=Policies.default,
+            _parent_conduit=None,
             _get_links=lambda: [],
         ),
     )
 
-    assert nexus._publish_conduit_record(conduit) is False
-    assert nexus._frame_descriptor_manager._get_nexus_frame_record("ops") is None
-    with pytest.raises(KeyError, match="ops"):
-        nexus._get_required_frame_descriptor("ops")
+    assert nexus._publish_conduit_record(conduit) is True
+
+    descriptor = nexus._get_required_frame_descriptor("ops")
+
+    assert descriptor.conduit_records_by_id["conduit-1"].payload.conduit_state is ConduitState.lesser
+    assert descriptor.conduit_records_by_id["conduit-1"].payload.conduit_name == "lesser"
 
 
 def test_remove_spell_and_conduit_records_clear_indexes() -> None:
@@ -275,6 +279,7 @@ def test_remove_spell_and_conduit_records_clear_indexes() -> None:
         _conduit_state=ConduitState.normal,
         _conduit_ward=types.SimpleNamespace(
             _policy=Policies.default,
+            _parent_conduit=None,
             _get_links=lambda: [],
         ),
     )

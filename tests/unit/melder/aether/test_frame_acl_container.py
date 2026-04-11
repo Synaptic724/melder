@@ -3,8 +3,14 @@ import threading
 import pytest
 
 from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
+from melder.aether.nexus.acl.frame_acl_command_configuration import (
+    FrameACLCommandConfiguration,
+)
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.frame_acl_configuration_chain import FrameACLConfigurationChain
+from melder.aether.nexus.acl.frame_acl_set_compatibility_validator import (
+    FrameACLSetCompatibilityValidator,
+)
 from melder.aether.nexus.acl.frame_acl_container import FrameACLContainer
 from melder.aether.nexus.acl.profiles.frame_acl_rule import FrameACLRule
 from melder.aether.nexus.acl.profiles.frame_acl_ruleset import FrameACLRuleSet
@@ -28,6 +34,10 @@ def test_frame_acl_container_builds_defaults() -> None:
     assert isinstance(container.frame_acl_configuration, FrameACLConfiguration)
     assert isinstance(container.frame_acl_configuration_chain, FrameACLConfigurationChain)
     assert isinstance(container.frame_acl_validator, FrameACLValidator)
+    assert isinstance(
+        container.frame_acl_set_compatibility_validator,
+        FrameACLSetCompatibilityValidator,
+    )
     assert container.frame_acl_history == []
     assert container.list_named_configuration_names() == ["default"]
     assert (
@@ -99,6 +109,48 @@ def test_frame_acl_container_can_register_additional_named_configuration() -> No
     assert registered is named_configuration
     assert container.get_named_configuration("ops_contract") is named_configuration
     assert container.list_named_configuration_names() == ["default", "ops_contract"]
+
+
+def test_frame_acl_container_install_runs_set_compatibility_validation() -> None:
+    """
+    Verify install records compatibility-validator warnings for warning-only bundles.
+
+    Returns:
+        None.
+    """
+    container = FrameACLContainer("ops")
+    configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        container.frame_acl_configuration,
+        reason="warning",
+    )
+    configuration.set_command_configuration(
+        FrameACLCommandConfiguration(
+            profile_name="strict_command",
+            profile_version="0.0.1",
+            spell_override_ruleset=FrameACLRuleSet(
+                "spell_override",
+                rules=[
+                    FrameACLRule(
+                        rule_name="disable_spell",
+                        operation="enable",
+                        effect="deny",
+                    )
+                ],
+            ),
+        )
+    )
+    configuration.finalize()
+
+    container.install_configuration(configuration)
+
+    assert (
+        container.frame_acl_set_compatibility_validator.last_report
+        is not None
+    )
+    assert (
+        container.frame_acl_set_compatibility_validator.last_report.has_warnings
+        is True
+    )
 
 
 def test_frame_acl_container_rejects_duplicate_named_configuration() -> None:
@@ -272,12 +324,14 @@ def test_frame_acl_container_cleanup_cleans_all_owned_acl_objects() -> None:
     container.install_configuration(next_configuration)
     builder = container.frame_acl_builder
     validator = container.frame_acl_validator
+    compatibility_validator = container.frame_acl_set_compatibility_validator
     chain = container.frame_acl_configuration_chain
 
     container.cleanup()
 
     assert builder.cleaned is True
     assert validator.cleaned is True
+    assert compatibility_validator.cleaned is True
     assert previous_configuration.cleaned is True
     assert next_configuration.cleaned is True
     assert chain.cleaned is True

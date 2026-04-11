@@ -66,6 +66,19 @@ class ConduitRecord(Cleanable):
                 Owning Spellbook id when known.
             payload:
                 Descriptor-safe conduit payload for this record.
+        Contract:
+            - Captures one snapshot of Nexus publication state for a single
+              published conduit.
+            - Stores the descriptor payload by ownership, so cleanup of the
+              record also owns cleanup of the payload.
+            - Preserves both the conduit id and its root lineage id so Nexus
+              can reason about directly published conduits and their lineage
+              roots separately.
+        Raises:
+            ValueError:
+                If `nexus_label`, `nexus_version`, or `payload` is missing.
+            TypeError:
+                If `payload` does not satisfy `IConduitDescriptorPayload`.
         """
         super().__init__()
         if not nexus_label:
@@ -87,10 +100,14 @@ class ConduitRecord(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Idempotently clear the record.
+        Idempotently clear the record and its owned payload.
 
-        Returns:
-            None.
+        Contract:
+            - Safe to call more than once.
+            - Clears every stored publication field.
+            - Cleans the owned descriptor payload before dropping the payload
+              reference.
+            - Leaves future callers to fail through `check_cleaned()`.
         """
         if self._cleaned:
             return

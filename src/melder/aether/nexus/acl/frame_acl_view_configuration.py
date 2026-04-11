@@ -88,9 +88,13 @@ class FrameACLViewConfiguration(Cleanable):
                 Optional spell-level override ruleset.
             member_override_ruleset:
                 Optional member-level override ruleset.
-
-        Returns:
-            None.
+        Contract:
+            - Captures one applied view-ACL bundle derived from a reusable
+              profile plus optional override rulesets.
+            - Normalizes every override input into a detached `FrameACLRuleSet`
+              owned by this configuration object.
+            - Preserves the profile and Nexus/spell payload floors needed by
+              downstream view selection logic.
 
         Raises:
             ValueError:
@@ -146,8 +150,10 @@ class FrameACLViewConfiguration(Cleanable):
         """
         Idempotently clear the applied view configuration and its overrides.
 
-        Returns:
-            None.
+        Contract:
+            - Safe to call more than once.
+            - Cleans all owned override rulesets before dropping references.
+            - Leaves future callers to fail through `check_cleaned()`.
         """
         if self._cleaned:
             return
@@ -184,6 +190,11 @@ class FrameACLViewConfiguration(Cleanable):
     ) -> "FrameACLViewConfiguration":
         """
         Build one applied view configuration from a reusable view profile.
+
+        Contract:
+            - Copies profile identity/floor values from the reusable profile.
+            - Normalizes the supplied override rulesets into detached owned
+              rulesets on the returned configuration object.
 
         Args:
             profile:
@@ -226,6 +237,12 @@ class FrameACLViewConfiguration(Cleanable):
     ) -> "FrameACLViewConfiguration":
         """
         Build one applied view configuration from a JSON-compatible payload.
+
+        Contract:
+            - Reconstructs a complete typed configuration object from a
+              JSON-compatible dictionary.
+            - Fills missing override sections with empty named rulesets so the
+              returned object is still a complete bundle.
 
         Args:
             payload:
@@ -438,6 +455,10 @@ class FrameACLViewConfiguration(Cleanable):
         """
         Return the applied view configuration as a normalized JSON string.
 
+        Contract:
+            Uses `sort_keys=True` so equivalent view configurations produce the
+            same canonical JSON text.
+
         Returns:
             str: Normalized JSON payload string.
         """
@@ -447,6 +468,10 @@ class FrameACLViewConfiguration(Cleanable):
     def clone(self) -> "FrameACLViewConfiguration":
         """
         Return a detached copy of the applied view configuration.
+
+        Contract:
+            Round-trips through the JSON form so the returned object does not
+            share override-ruleset ownership with the source configuration.
 
         Returns:
             FrameACLViewConfiguration: Detached configuration copy.
@@ -461,6 +486,10 @@ class FrameACLViewConfiguration(Cleanable):
     ) -> FrameACLRuleSet:
         """
         Normalize one optional override ruleset input.
+
+        Contract:
+            - Returns a detached clone when a ruleset is supplied.
+            - Creates a default empty ruleset when the input is None.
 
         Args:
             ruleset:

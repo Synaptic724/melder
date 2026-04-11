@@ -17,6 +17,14 @@ def _sanitize_binding_profile(
     """
     Convert a binding profile into a descriptor-safe mapping.
 
+    Contract:
+        - Produces a plain data mapping suitable for publication on Nexus
+          records.
+        - Drops live runtime-object references and preserves only descriptor
+          fields that can safely cross the record boundary.
+        - Preserves enough structural detail for downstream viewers to explain
+          how the spell was bound without needing the original profile object.
+
     Args:
         binding_profile:
             Live binding profile to sanitize.
@@ -148,9 +156,17 @@ class SpellDescriptorPayload(Cleanable):
                 Optional originating spell-profile family name.
             source_profile_version:
                 Optional originating spell-profile version.
-
-        Returns:
-            None.
+        Contract:
+            - Stores the sanitized binding payload by ownership.
+            - Copies metadata-style dictionaries so callers cannot retain live
+              aliases back into the payload.
+            - Preserves optional rich profile/detail payloads as provided
+              because they are already descriptor-facing surfaces.
+        Raises:
+            ValueError:
+                If `payload_type` or `payload_version` is empty, or if
+                `source_profile_version` is provided without
+                `source_profile_name`.
         """
         super().__init__()
         if not payload_type:
@@ -190,6 +206,9 @@ class SpellDescriptorPayload(Cleanable):
         """
         Build one descriptor-safe payload from spell profile parts.
 
+        This is the bridge from live spell-examiner/profile data into the
+        published Nexus descriptor layer.
+
         Args:
             profile_name:
                 Source spell profile family name.
@@ -209,6 +228,11 @@ class SpellDescriptorPayload(Cleanable):
                 Optional instance-member mapping.
             dynamic_access:
                 Optional dynamic access flags.
+        Contract:
+            - Sanitizes the live binding profile before constructing the
+              published payload object.
+            - Preserves the source profile family/version so downstream readers
+              can explain where the payload contract came from.
 
         Returns:
             SpellDescriptorPayload: Descriptor-safe payload.
@@ -231,8 +255,10 @@ class SpellDescriptorPayload(Cleanable):
         """
         Idempotently clear the payload.
 
-        Returns:
-            None.
+        Contract:
+            - Safe to call more than once.
+            - Clears owned mapping payloads before dropping field references.
+            - Leaves future callers to fail through `check_cleaned()`.
         """
         if self._cleaned:
             return

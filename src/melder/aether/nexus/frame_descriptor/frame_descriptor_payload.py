@@ -75,9 +75,16 @@ class FrameDescriptorPayload(Cleanable):
                 Sorted tuple of cluster names.
             payload_version:
                 Descriptor payload contract version.
-
-        Returns:
-            None.
+        Contract:
+            - Stores one descriptor-facing snapshot of frame posture for Nexus
+              publication.
+            - Normalizes iterable inputs into tuples so the payload remains
+              value-oriented and stable after construction.
+            - Preserves the payload contract version alongside the frame-facing
+              posture fields.
+        Raises:
+            ValueError:
+                If `payload_version` is empty.
         """
         super().__init__()
         if not payload_version:
@@ -98,8 +105,10 @@ class FrameDescriptorPayload(Cleanable):
         """
         Idempotently clear the payload.
 
-        Returns:
-            None.
+        Contract:
+            - Safe to call more than once.
+            - Clears all stored descriptor-facing posture fields.
+            - Leaves future callers to fail through `check_cleaned()`.
         """
         if self._cleaned:
             return

@@ -74,7 +74,13 @@ class SpellIndex(Cleanable, ISpellIndex):
     # ------------------------------------------------------------
     def cleanup(self) -> None:
         """
-        Releases resources and marks the key as cleaned.
+        Release attachments and mark this index as cleaned.
+
+        Contract:
+            - Idempotent and lock-guarded.
+            - Clears version history and all spellbook / spell attachments
+              before dropping the lock reference.
+            - Leaves future callers to fail through `check_cleaned()`.
         """
         if self._cleaned:
             return
@@ -99,10 +105,14 @@ class SpellIndex(Cleanable, ISpellIndex):
     @property
     def current(self) -> str:
         """
-        Gets the currently active version ID (e.g., SHA256) this key points to.
+        Return the currently active version id for this lineage.
 
         Returns:
-            str: The current version ID, or None if cleaned.
+            str: The current version id.
+
+        Contract:
+            - Returns the live version pointer, not a historical value.
+            - Reads are lock-guarded so callers never observe a torn update.
         """
         self.check_cleaned()
         with self._lock:
@@ -156,14 +166,14 @@ class SpellIndex(Cleanable, ISpellIndex):
 
     def _attach_owner(self, spellbook: ISpellbook, spell: ISpell) -> None:
         """
-        Internal
-
         Attach this SpellIndex to an owning Spellbook and register the current
         spell_id in the Spellbook's owned id map.
 
         Contract:
             - A SpellIndex may only have one owning Spellbook.
             - Reattaching to a different owner raises.
+            - The current spell id is registered into the owner spellbook after
+              the attachment is recorded locally.
 
         Args:
             spellbook (ISpellbook): Owning Spellbook for this index.
@@ -188,12 +198,18 @@ class SpellIndex(Cleanable, ISpellIndex):
 
     def _set_owner_conduit_id(self, conduit_id: str) -> None:
         """
-        Internal
-
         Record the owning conduit identifier for this SpellIndex.
+
+        This is the lineage-side memory of which conduit currently owns the
+        spellbook attachment. It is used as attachment metadata, not as part of
+        hash/equality identity.
 
         Args:
             conduit_id (str): Identifier for the owning conduit.
+        Contract:
+            - The owner conduit id may be set once and then repeated with the
+              same value.
+            - Rebinding to a different owner conduit id raises immediately.
 
         Raises:
             RuntimeError: If an owner conduit id is already set to a different value.
@@ -207,10 +223,14 @@ class SpellIndex(Cleanable, ISpellIndex):
 
     def _attach_contracted(self, spellbook: ISpellbook, conduit_id: str, spell: ISpell) -> None:
         """
-        Internal
-
         Attach this SpellIndex to a contracted Spellbook and register the
         current spell_id in the contracted id map for the given conduit.
+
+        Contract:
+            - Contract attachments are keyed by `(spellbook, conduit_id)`.
+            - Reattaching the same key to a different spell instance raises.
+            - The contracted spell id mapping is registered after local
+              attachment state is updated.
 
         Args:
             spellbook (ISpellbook): The Spellbook receiving the contracted spell.
@@ -235,10 +255,14 @@ class SpellIndex(Cleanable, ISpellIndex):
 
     def _detach_contracted(self, spellbook: ISpellbook, conduit_id: str) -> None:
         """
-        Internal
-
         Detach this SpellIndex from a contracted Spellbook and remove the
         current spell_id mapping for the given conduit.
+
+        Contract:
+            - Removes the local contract attachment first, then unregisters the
+              contracted spell id mapping.
+            - Missing attachments are treated as an error because the caller is
+              attempting to tear down a contract that this index does not hold.
 
         Args:
             spellbook (ISpellbook): The Spellbook removing the contract entry.
@@ -260,10 +284,15 @@ class SpellIndex(Cleanable, ISpellIndex):
 
     def get_all_versions(self) -> set:
         """
-        Retrieves all version IDs that this key has pointed to.
+        Return a snapshot of every version id this lineage has pointed to.
 
         Returns:
             set: A set of all version IDs seen.
+
+        Contract:
+            - Returns a detached set copy.
+            - Includes the initial version id and every later id accepted by
+              `update(...)`.
         """
         self.check_cleaned()
         with self._lock:
@@ -272,12 +301,16 @@ class SpellIndex(Cleanable, ISpellIndex):
 
     def has_version(self, version_id: str) -> bool:
         """
-        Checks if the key has ever pointed to the specified version ID.
+        Return whether this lineage has ever pointed at `version_id`.
 
         Args:
             version_id (str): The version ID to check.
         Returns:
             bool: True if the version ID has been seen, False otherwise.
+
+        Contract:
+            - Checks against the full historical version set, not only the
+              current pointer.
         """
         self.check_cleaned()
         with self._lock:
@@ -286,8 +319,12 @@ class SpellIndex(Cleanable, ISpellIndex):
     @property
     def id(self) -> str:
         """
-        Returns the immutable, unique ULID that serves as the
-        object's stable identity.
+        Return the immutable ULID that defines this index's stable identity.
+
+        Contract:
+            - This value never changes for the lifetime of the index.
+            - Hashing and equality are derived from this id, not from the
+              mutable current version pointer.
         """
         return self._id
 
@@ -296,7 +333,7 @@ class SpellIndex(Cleanable, ISpellIndex):
     # ------------------------------------------------------------
     def __hash__(self) -> int:
         """
-        Generates the hash based *only* on the immutable ULID.
+        Hash this index by immutable lineage identity only.
 
         This ensures the hash is stable, even if _current_id changes,
         making it safe for use as a dictionary key.
@@ -305,7 +342,7 @@ class SpellIndex(Cleanable, ISpellIndex):
 
     def __eq__(self, other) -> bool:
         """
-        Compares two SpellKeys based *only* on their immutable ULID.
+        Compare two `SpellIndex` objects by immutable lineage identity only.
 
         This guarantees that key equality is stable and not affected
         by version changes.
@@ -317,18 +354,23 @@ class SpellIndex(Cleanable, ISpellIndex):
     # ------------------------------------------------------------
     def __repr__(self) -> str:
         """
-        Provides a developer-friendly representation of the key's state.
+        Return a developer-facing snapshot of identity and current version.
         """
         self.check_cleaned()
 
         # We lock here to ensure a consistent snapshot for repr
         with self._lock:
-            return f"<SpellKey id={self._id} current={self._current_id}>"
+            return f"<SpellIndex id={self._id} current={self._current_id}>"
 
 
     def __enter__(self) -> 'SpellIndex':
         """
-        Context manager entry. Returns self.
+        Acquire the internal lock and return this index.
+
+        Contract:
+            - Intended for rare manual critical sections around multiple reads
+              on the same `SpellIndex`.
+            - Must be paired with `__exit__` to release the lock.
         """
         self.check_cleaned()
         self._lock.acquire()
@@ -336,6 +378,6 @@ class SpellIndex(Cleanable, ISpellIndex):
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         """
-        Context manager exit. Releases the lock.
+        Release the internal lock acquired by `__enter__`.
         """
         self._lock.release()

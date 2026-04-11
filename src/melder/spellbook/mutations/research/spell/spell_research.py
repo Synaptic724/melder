@@ -9,23 +9,34 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class ResearchSpell(Cleanable):
     """
-    Represents a single spell mutation research line, tracking a linear history of changes
-    (mutations) made to a spell's blueprint.
+    One research-session lineage for experimental spell mutations.
 
-    - **Graph:** Owns a graph of `SpellMutationNode` instances.
-    - **HEAD:** Tracks the current HEAD node.
-    - **Target:** Holds a weak reference (`SyncWeakRef`) to the live spell blueprint object.
+    `ResearchSpell` is the mutable research-side record for one spell version as
+    it moves through experimental mutation attempts. It owns the mutation-node
+    graph for that line, tracks the logical HEAD within that graph, and keeps a
+    weak non-owning pointer to the live spell blueprint currently under test.
 
-    NOTE: This line is scoped within a single Research session.
+    Contract:
+    - Scope is limited to a single research session; this is not a permanent
+      spellbook lineage record.
+    - Node history is owned strongly by this object and cleaned with it.
+    - The live spell reference is weak on purpose so research bookkeeping does
+      not keep the blueprint alive after the owning runtime drops it.
     """
     __melder_internal__ = _mrg.sentinel
     def __init__(self, spell_id: str, *, name: Optional[str] = None) -> None:
         """
-        Initializes a ResearchSpell line.
+        Initialize one research line for a concrete spell version.
 
         Args:
             spell_id (str): Concrete spell version id (e.g., SHA256) used as the root version for this research line.
             name (Optional[str], optional): Human-readable name for the research line.
+        Contract:
+            - Creates one local research-line id distinct from the tracked
+              `spell_id`.
+            - Starts with no attached live spell and no mutation nodes.
+            - Starts with no HEAD; HEAD advances only after
+              `commit_mutation(...)`.
         """
         super().__init__()
         self._id: str = IDBuilder.create_id()
@@ -45,9 +56,16 @@ class ResearchSpell(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Cleans up the research line and all mutation nodes.
+        Tear down this research line and every owned mutation node.
 
-        This involves cleaning up the concurrent collections, disposing of the weak reference wrapper, and nulling out references. This method is idempotent.
+        Contract:
+            - Idempotent and lock-guarded.
+            - Cleans owned `SpellMutationNode` instances before dropping graph
+              containers.
+            - Cleans the weak-reference wrapper but does not attempt to clean
+              the live spell object itself.
+            - Nulls internal references so future callers fail through
+              `check_cleaned()`.
         """
         if self._cleaned:
             return
@@ -96,7 +114,7 @@ class ResearchSpell(Cleanable):
     @property
     def id(self) -> str:
         """
-        Returns the research line identifier (ULID string), local to the Research session.
+        Return the research-line identifier local to this session.
 
         Returns:
             str: The research line's unique ID.
@@ -106,7 +124,7 @@ class ResearchSpell(Cleanable):
     @property
     def spell_id(self) -> str:
         """
-        Returns the root spell version id (e.g., SHA256) for this research line.
+        Return the root spell version id tracked by this research line.
 
         Returns:
             str: The root spell version ID.
@@ -116,7 +134,7 @@ class ResearchSpell(Cleanable):
     @property
     def name(self) -> str:
         """
-        Returns the human-readable name for this research line.
+        Return the human-readable label for this research line.
 
         Returns:
             str: The line's name.
@@ -126,7 +144,11 @@ class ResearchSpell(Cleanable):
     @property
     def head_id(self) -> Optional[str]:
         """
-        Returns the identifier of the current HEAD node in this research line, if any.
+        Return the current logical HEAD node id, if any.
+
+        HEAD is the node this research line currently considers checked out for
+        further mutation or inspection. It is independent of whether a live
+        spell blueprint is currently attached.
 
         Returns:
             Optional[str]: The ID of the HEAD node.
@@ -136,12 +158,16 @@ class ResearchSpell(Cleanable):
     @property
     def metadata(self) -> Dict[str, Any]:
         """
-        Returns a shallow copy of research-line metadata.
+        Return a shallow snapshot of research-line metadata.
 
         This can store arbitrary annotations (owner agent id, difficulty, tags, scores).
 
         Returns:
             Dict[str, Any]: A copy of the line's metadata.
+
+        Contract:
+            - Returns a detached dictionary so callers cannot mutate internal
+              metadata storage directly.
         """
         return dict(self._metadata)
 
@@ -150,12 +176,17 @@ class ResearchSpell(Cleanable):
     # ------------------------------------------------------------------ #
     def attach_spell(self, spell: Any) -> None:
         """
-        Attaches a live spell object (blueprint) to this research line via `SyncWeakRef`.
+        Attach the current live spell blueprint to this research line.
 
-        This maintains a non-owning reference to the current blueprint under test.
+        This maintains a non-owning reference to the current blueprint under
+        test. Research bookkeeping uses the weak wrapper so the live spell can
+        still disappear naturally when the owning runtime releases it.
 
         Args:
             spell (Any): The live spell object (blueprint) to attach.
+        Contract:
+            - Replaces any prior weak wrapper for the previously attached spell.
+            - Never takes strong ownership of the live spell.
 
         Raises:
             ValueError: If `spell` is None.
@@ -177,10 +208,15 @@ class ResearchSpell(Cleanable):
 
     def get_spell(self) -> Optional[Any]:
         """
-        Returns the attached live spell object if it still exists.
+        Return the attached live spell blueprint if it still exists.
 
         Returns:
             Optional[Any]: The live spell object (blueprint) or None if it has been collected or if no spell has been attached.
+
+        Contract:
+            - Returns None when no live spell is attached.
+            - Returns None when the weak wrapper has been cleaned or when the
+              target has already been garbage collected.
         """
         self.check_cleaned()
         ref = self._spell_ref
@@ -203,7 +239,7 @@ class ResearchSpell(Cleanable):
             tags: Optional[List[str]] = None,
     ) -> SpellMutationNode:
         """
-        Starts a new spell mutation node on this research line.
+        Start a new uncommitted mutation node on this research line.
 
         Behavior:
           - Uses `parent_id` if provided, otherwise the current HEAD id.
@@ -214,6 +250,13 @@ class ResearchSpell(Cleanable):
             parent_id (Optional[str], optional): The explicit parent node ID. Defaults to the current HEAD.
             message (Optional[str], optional): A message describing the mutation.
             tags (Optional[List[str]], optional): Tags associated with the mutation.
+
+        Contract:
+            - Does not mutate line state or HEAD by itself.
+            - Captures the effective parent at call time so later HEAD moves do
+              not retroactively change the node's parent.
+            - Creates a metadata-only node; structure population and commit are
+              explicitly separate steps.
 
         Returns:
             SpellMutationNode: The newly created (uncommitted) mutation node.
@@ -239,13 +282,19 @@ class ResearchSpell(Cleanable):
 
     def commit_mutation(self, node: SpellMutationNode) -> None:
         """
-        Commits a fully-populated `SpellMutationNode` into this research line
-        and advances HEAD to that node.
+        Commit a populated mutation node into this research line and advance HEAD.
 
         If the node is already present (same id), this is treated as a HEAD move only.
 
         Args:
             node (SpellMutationNode): The fully populated node to commit.
+
+        Contract:
+            - Inserts the node into the graph if it is new.
+            - Preserves commit-order tracking in `_node_ids` for newly inserted
+              nodes.
+            - Always advances HEAD to the committed node id, even when the node
+              was already known.
 
         Raises:
             ValueError: If `node` is None.
@@ -268,13 +317,17 @@ class ResearchSpell(Cleanable):
 
     def checkout(self, node_id: str) -> SpellMutationNode:
         """
-        Sets the research line HEAD to the given node and returns it.
+        Move the logical HEAD to `node_id` and return that node.
 
         This does not automatically apply the mutation to the live spell; it
         only changes the logical HEAD in the research graph.
 
         Args:
             node_id (str): The ID of the node to checkout.
+
+        Contract:
+            - Changes only the research-line HEAD pointer.
+            - Does not mutate the attached live spell or any node contents.
 
         Returns:
             SpellMutationNode: The checked-out node.
@@ -301,10 +354,15 @@ class ResearchSpell(Cleanable):
 
     def get_head(self) -> Optional[SpellMutationNode]:
         """
-        Returns the current HEAD node for this research line, if any.
+        Return the current HEAD node for this research line, if any.
 
         Returns:
             Optional[SpellMutationNode]: The HEAD node, or None.
+
+        Contract:
+            - Returns None when no node has been committed yet.
+            - Returns the node currently named by `head_id`; it does not clone
+              the node.
         """
         self.check_cleaned()
         head_id = self._head_id
@@ -318,10 +376,15 @@ class ResearchSpell(Cleanable):
 
     def get_node(self, node_id: str) -> SpellMutationNode:
         """
-        Retrieves a specific mutation node by id.
+        Return one mutation node by id.
 
         Args:
             node_id (str): The ID of the node to retrieve.
+
+        Contract:
+            - Returns the live node object stored in this research line.
+            - Raises instead of returning None for unknown ids so callers do
+              not silently proceed on a missing mutation.
 
         Returns:
             SpellMutationNode: The requested node.
@@ -346,10 +409,16 @@ class ResearchSpell(Cleanable):
 
     def list_nodes(self) -> List[SpellMutationNode]:
         """
-        Returns all mutation nodes for this research line in commit order.
+        Return every mutation node for this research line in commit order.
 
         Returns:
             List[SpellMutationNode]: A list of all nodes.
+
+        Contract:
+            - Prefers the explicit commit-order index stored in `_node_ids`.
+            - Falls back to raw node values only if the commit-order snapshot
+              cannot be taken safely.
+            - Returns a new list container on every call.
         """
         self.check_cleaned()
         with self._lock:

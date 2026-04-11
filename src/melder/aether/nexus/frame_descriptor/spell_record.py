@@ -10,8 +10,6 @@ from melder.utilities.helpers.id_builder import IDBuilder
 
 class SpellRecord(Cleanable):
     """
-    Internal
-
     Canonical Nexus record for one published spell.
 
     Purpose:
@@ -93,6 +91,19 @@ class SpellRecord(Cleanable):
                 Spell existence policy.
             payload:
                 Sanitized spell descriptor payload for this record.
+        Contract:
+            - Captures one snapshot of Nexus publication state for a single
+              `(origin_spellbook_id, spell_id)` pair.
+            - Stores the sanitized descriptor payload by ownership, so cleanup
+              of the record also owns cleanup of the payload.
+            - Does not normalize or reinterpret `spellframe`, `permissions`, or
+              `existence`; it records the runtime values supplied by the Nexus
+              ingestion path.
+        Raises:
+            ValueError:
+                If `nexus_label`, `nexus_version`, or `payload` is missing.
+            TypeError:
+                If `payload` does not satisfy `ISpellDescriptorPayload`.
         """
         super().__init__()
         if not nexus_label:
@@ -125,16 +136,24 @@ class SpellRecord(Cleanable):
 
         Returns:
             Tuple[str, str]: `(origin_spellbook_id, spell_id)`.
+
+        Contract:
+            - Keys the record by originating spellbook plus current spell id.
+            - Uses the published spell/version id, not the stable lineage id.
         """
         self.check_cleaned()
         return self.origin_spellbook_id, self.spell_id
 
     def cleanup(self) -> None:
         """
-        Idempotently clear the record.
+        Idempotently clear the record and its owned payload.
 
-        Returns:
-            None.
+        Contract:
+            - Safe to call more than once.
+            - Clears every stored publication field.
+            - Cleans the owned descriptor payload before dropping the payload
+              reference.
+            - Leaves future callers to fail through `check_cleaned()`.
         """
         if self._cleaned:
             return

@@ -628,16 +628,18 @@ def test_publish_conduit_record_to_nexus_skips_when_disabled(
     conduit_normal._nexus._publish_conduit_record.assert_not_called()
 
 
-def test_publish_conduit_record_to_nexus_skips_when_not_normal(
+def test_publish_conduit_record_to_nexus_publishes_for_lesser(
     conduit_lesser: Conduit,
 ) -> None:
-    """_publish_conduit_record_to_nexus should no-op for lesser conduits."""
+    """_publish_conduit_record_to_nexus should publish for lesser conduits."""
     conduit_lesser._nexus = MagicMock()
     conduit_lesser._nexus_publish_enabled = True
 
     conduit_lesser._publish_conduit_record_to_nexus()
 
-    conduit_lesser._nexus._publish_conduit_record.assert_not_called()
+    conduit_lesser._nexus._publish_conduit_record.assert_called_once_with(
+        conduit_lesser
+    )
 
 
 def test_publish_frame_record_to_nexus_skips_when_spellbook_missing(
@@ -653,16 +655,19 @@ def test_publish_frame_record_to_nexus_skips_when_spellbook_missing(
     conduit_normal._nexus._publish_frame_record.assert_not_called()
 
 
-def test_remove_conduit_record_from_nexus_skips_when_not_normal(
+def test_remove_conduit_record_from_nexus_publishes_for_lesser(
     conduit_lesser: Conduit,
 ) -> None:
-    """_remove_conduit_record_from_nexus should no-op for lesser conduits."""
+    """_remove_conduit_record_from_nexus should remove lesser conduit records."""
     conduit_lesser._nexus = MagicMock()
     conduit_lesser._nexus_publish_enabled = True
 
     conduit_lesser._remove_conduit_record_from_nexus()
 
-    conduit_lesser._nexus._remove_conduit_record.assert_not_called()
+    conduit_lesser._nexus._remove_conduit_record.assert_called_once_with(
+        conduit_lesser._id,
+        conduit_lesser._aetheric_frame,
+    )
 
 
 def test_cleanup_spellspaces_logs_and_continues_when_space_cleanup_fails(

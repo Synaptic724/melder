@@ -1,6 +1,9 @@
 from typing import Dict, Optional, Set, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.aether.nexus.acl.frame_acl_command_configuration import (
+    FrameACLCommandConfiguration,
+)
 from melder.aether.nexus.acl.frame_acl_codegen_configuration import (
     FrameACLCodegenConfiguration,
 )
@@ -23,6 +26,8 @@ class FrameACLValidator(Cleanable):
 
     Contract:
         - Confirms that a configuration node belongs to the expected frame.
+        - Validates the typed view, command, and codegen child objects carried
+          by one frame ACL bundle.
         - Records the last validated configuration id for diagnostics.
         - Does not attempt to implement the full ACL rule engine in this
           placeholder slice.
@@ -90,6 +95,17 @@ class FrameACLValidator(Cleanable):
             "mutation",
             "contract_override",
             "unsafe_reflection",
+            "dunder_access",
+        },
+    }
+    _COMMAND_ALLOWED_OPERATIONS_BY_RULESET: Dict[str, Set[str]] = {
+        "frame": {"enable"},
+        "conduit": {"enable"},
+        "spell": {"enable"},
+        "member": {
+            "invoke_method",
+            "read_attribute",
+            "write_attribute",
             "dunder_access",
         },
     }
@@ -210,6 +226,13 @@ class FrameACLValidator(Cleanable):
             Confirm that a candidate configuration node belongs to the same
             frame as the validator.
 
+        Contract:
+            - Enforces frame-name alignment for the root bundle.
+            - Validates view, command, and codegen child configurations as one
+              coherent bundle.
+            - Records the validated configuration id only after all child
+              validation passes.
+
         Args:
             configuration:
                 Candidate frame ACL configuration node.
@@ -221,7 +244,8 @@ class FrameACLValidator(Cleanable):
             TypeError:
                 If `configuration` is not a `FrameACLConfiguration`.
             ValueError:
-                If the configuration targets another frame.
+                If the configuration targets another frame or one child
+                configuration violates its ruleset contract.
         """
         self.check_cleaned()
         if not isinstance(configuration, FrameACLConfiguration):
@@ -234,6 +258,7 @@ class FrameACLValidator(Cleanable):
                 )
             )
         self._validate_view_configuration(configuration.view_configuration)
+        self._validate_command_configuration(configuration.command_configuration)
         self._validate_codegen_configuration(configuration.codegen_configuration)
         self._last_validated_configuration_id = configuration.configuration_id
         return True
@@ -444,6 +469,64 @@ class FrameACLValidator(Cleanable):
         )
         if codegen_configuration.profile_name == "safe":
             self._validate_safe_codegen_configuration(codegen_configuration)
+
+    def _validate_command_configuration(
+            self,
+            command_configuration: FrameACLCommandConfiguration,
+    ) -> None:
+        """
+        Validate the typed command-side configuration object.
+
+        Contract:
+            - Treats command policy as a separate validation family from view
+              visibility and codegen policy.
+            - Enforces the first-cut command operation whitelist by ruleset
+              family:
+                frame, conduit, spell, and member.
+            - Requires member-scoped command rules to include selector shape
+              (`pattern` or `member_name`) so later runtime consumers can map
+              the rule deterministically.
+
+        Args:
+            command_configuration:
+                Typed command-side configuration to validate.
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError:
+                If `command_configuration` is not a
+                `FrameACLCommandConfiguration`.
+            ValueError:
+                If one ruleset contains an unsupported command operation or one
+                member rule omits selector shape.
+        """
+        if not isinstance(command_configuration, FrameACLCommandConfiguration):
+            raise TypeError(
+                "command_configuration must be a FrameACLCommandConfiguration."
+            )
+        self._validate_ruleset_family(
+            command_configuration.frame_override_ruleset,
+            self._COMMAND_ALLOWED_OPERATIONS_BY_RULESET["frame"],
+            "command.frame",
+        )
+        self._validate_ruleset_family(
+            command_configuration.conduit_override_ruleset,
+            self._COMMAND_ALLOWED_OPERATIONS_BY_RULESET["conduit"],
+            "command.conduit",
+        )
+        self._validate_ruleset_family(
+            command_configuration.spell_override_ruleset,
+            self._COMMAND_ALLOWED_OPERATIONS_BY_RULESET["spell"],
+            "command.spell",
+        )
+        self._validate_ruleset_family(
+            command_configuration.member_override_ruleset,
+            self._COMMAND_ALLOWED_OPERATIONS_BY_RULESET["member"],
+            "command.member",
+            require_member_shape=True,
+        )
 
     def _validate_ruleset_family(
             self,

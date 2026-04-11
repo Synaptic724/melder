@@ -159,6 +159,17 @@ class FrameACLCompiler(Cleanable):
             view_profile: FrameACLViewProfile,
             configuration: FrameACLConfiguration,
     ) -> Set[str]:
+        """
+        Derive the frame-level payload fields visible under the effective view ACL.
+
+        Contract:
+            - Merges the reusable view profile rules with the configuration's
+              frame override ruleset.
+            - Returns an empty set when frame payload visibility is denied or
+              not allowed.
+            - Returns only descriptor payload field names, not raw payload
+              values.
+        """
         fields: Set[str] = set()
         allow_operations, deny_operations = (
             FrameACLCompiler._collect_effective_operation_effects(
@@ -187,6 +198,16 @@ class FrameACLCompiler(Cleanable):
             view_profile: FrameACLViewProfile,
             configuration: FrameACLConfiguration,
     ) -> Tuple[Set[str], Dict[str, Tuple[str, ...]]]:
+        """
+        Derive conduit visibility and conduit payload sections for one frame.
+
+        Contract:
+            - Returns both the visible conduit-id set and the per-conduit
+              payload sections visible under the effective ACL.
+            - Visibility is all-or-nothing per conduit in this first cut; the
+              section tuple controls which conduit payload slices are exposed.
+            - Deny operations override allow operations.
+        """
         allow_operations, deny_operations = (
             FrameACLCompiler._collect_effective_operation_effects(
                 view_profile.conduit_ruleset,
@@ -217,6 +238,16 @@ class FrameACLCompiler(Cleanable):
             view_profile: FrameACLViewProfile,
             configuration: FrameACLConfiguration,
     ) -> Tuple[Set[Tuple[str, str]], Dict[Tuple[str, str], Tuple[str, ...]]]:
+        """
+        Derive spell visibility and payload sections for one frame.
+
+        Contract:
+            - Returns both the visible spell-key set and the per-record payload
+              section tuple visible under the effective ACL.
+            - Visibility is all-or-nothing per spell record in this first cut;
+              the section tuple controls which payload slices are exposed.
+            - Deny operations override allow operations.
+        """
         allow_operations, deny_operations = (
             FrameACLCompiler._collect_effective_operation_effects(
                 view_profile.spell_ruleset,
@@ -253,6 +284,13 @@ class FrameACLCompiler(Cleanable):
             visible_conduit_ids: Set[str],
             visible_spell_keys: Set[Tuple[str, str]],
     ) -> Set[str]:
+        """
+        Collapse compiled visibility sets into the high-level visible kinds set.
+
+        Contract:
+            Adds `"frame"`, `"conduit"`, and/or `"spell"` when the compiled
+            payload/visibility outputs show that kind is visible at all.
+        """
         allowed_kinds: Set[str] = set()
         if len(frame_payload_fields) > 0:
             allowed_kinds.add("frame")
@@ -267,6 +305,16 @@ class FrameACLCompiler(Cleanable):
             codegen_profile: FrameACLCodegenProfile,
             configuration: FrameACLConfiguration,
     ) -> Set[str]:
+        """
+        Derive the effective allowed command set for codegen/runtime consumers.
+
+        Contract:
+            - Merges frame, conduit, spell, and capability codegen rule
+              families.
+            - Applies deny operations after allow aggregation.
+            - Returns command names only; call sites decide how those commands
+              are interpreted.
+        """
         allow_operations: Set[str] = set()
         deny_operations: Set[str] = set()
         for base_ruleset, override_ruleset in (
@@ -301,6 +349,13 @@ class FrameACLCompiler(Cleanable):
     def _collect_operation_effects(
             ruleset: FrameACLRuleSet,
     ) -> Tuple[Set[str], Set[str]]:
+        """
+        Split one ruleset into allowed and denied operation sets.
+
+        Contract:
+            Reads only the rule effect/operation pairs and ignores other rule
+            metadata.
+        """
         allow_operations: Set[str] = set()
         deny_operations: Set[str] = set()
         for rule in ruleset.rules_by_name.values():
@@ -315,6 +370,14 @@ class FrameACLCompiler(Cleanable):
             base_ruleset: FrameACLRuleSet,
             override_ruleset: FrameACLRuleSet,
     ) -> Tuple[Set[str], Set[str]]:
+        """
+        Merge base and override rulesets into effective allow/deny sets.
+
+        Contract:
+            Effective operations are the union of base and override allow/deny
+            sets. Callers still apply deny-wins semantics at interpretation
+            time.
+        """
         base_allows, base_denies = FrameACLCompiler._collect_operation_effects(
             base_ruleset
         )

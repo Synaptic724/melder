@@ -564,6 +564,68 @@ def test_create_rift_configuration_can_clone_registered_profile() -> None:
     assert second_profiled_configuration.consumed is False
 
 
+def test_register_rift_profile_replaces_existing_template_and_cleans_old_clone() -> None:
+    """
+    Verify replacing a Rift profile cleans the displaced stored template.
+
+    Returns:
+        None.
+    """
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    nexus.enable(configuration)
+
+    first_profile = nexus.create_rift_configuration().with_space_name("ops-room")
+    second_profile = nexus.create_rift_configuration().with_space_name("finance-room")
+
+    nexus.register_rift_profile("ops_profile", first_profile)
+    first_stored_template = nexus._rift_profiles_by_name["ops_profile"]
+    nexus.register_rift_profile("ops_profile", second_profile)
+
+    second_stored_template = nexus._rift_profiles_by_name["ops_profile"]
+
+    assert first_stored_template.cleaned is True
+    assert second_stored_template is not second_profile
+    assert second_stored_template.get_property("space_name") == "finance-room"
+    assert second_stored_template.frozen is True
+
+
+def test_create_rift_configuration_profile_clone_detaches_event_configuration() -> None:
+    """
+    Verify Rift profile clones detach nested room-event configuration objects.
+
+    Returns:
+        None.
+    """
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    nexus.enable(configuration)
+
+    action_enricher = lambda action: None
+    memory_observer = lambda memory: None
+    event_configuration = RiftEventConfiguration(
+        action_enrichers=[action_enricher],
+        memory_observers=[memory_observer],
+    )
+    profile = nexus.create_rift_configuration().with_event_configuration(
+        event_configuration
+    )
+    nexus.register_rift_profile("ops_profile", profile)
+
+    first_clone = nexus.create_rift_configuration(profile_name="ops_profile")
+    second_clone = nexus.create_rift_configuration(profile_name="ops_profile")
+    first_event_configuration = first_clone.get_property("event_configuration")
+    second_event_configuration = second_clone.get_property("event_configuration")
+
+    assert first_event_configuration is not event_configuration
+    assert second_event_configuration is not event_configuration
+    assert first_event_configuration is not second_event_configuration
+    assert first_event_configuration._action_enrichers is not event_configuration._action_enrichers
+    assert first_event_configuration._memory_observers is not event_configuration._memory_observers
+    assert first_event_configuration._action_enrichers == [action_enricher]
+    assert second_event_configuration._memory_observers == [memory_observer]
+
+
 def test_create_rift_programs_primary_space_from_space_type() -> None:
     """
     Verify Rift creation programs one primary space from the chosen space type.
@@ -1330,6 +1392,27 @@ def test_one_per_workspace_mode_rejects_other_rift_frame_access() -> None:
 
     with pytest.raises(ValueError, match="private Nexus frame"):
         nexus.get_nexus_frame_for_rift(first.id, frame_name=second.default_nexus_frame_name)
+
+
+def test_one_per_workspace_mode_rejects_immutable_private_frame_creation() -> None:
+    """
+    Verify one-per-workspace mode forbids immutable private Nexus frames.
+
+    Returns:
+        None.
+    """
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_direct_rift_access(True)
+    configuration.with_nexus_frame_mode("one_per_workspace")
+    configuration.with_max_nexus_frame_count(3)
+    nexus.enable(configuration)
+
+    rift = nexus.create_rift(rift_name="isolated")
+
+    with pytest.raises(ValueError, match="cannot be immutable"):
+        nexus.create_nexus_frame_for_rift(rift.id, immutable=True)
 
 
 def test_indexed_mode_allows_shared_lookup_by_explicit_name() -> None:

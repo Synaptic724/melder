@@ -329,12 +329,21 @@ class Bind(Cleanable, IBind):
     @staticmethod
     def spell_id_inspector(spell: Any) -> str:
         """
-        Generates a unique identifier (SHA256 hash) for the spell based on its binding profile.
+        Compute the canonical spell fingerprint without registering the spell.
 
-        The ID is deterministic, ensuring the same spell definition always results in the same ID.
+        This is the read-only convenience path for tooling or diagnostics that
+        need the same deterministic fingerprint used by the real binding
+        pipeline but do not want to create or register a `Spell`.
 
         Args:
             spell (Any): The spell object (class, function, or instance) to inspect.
+        Contract:
+            - Builds the same `SpellGeneralProfile` / `SpellBindingProfile`
+              chain used by the real binding path.
+            - Returns the same fingerprint that `_bind_logic(...)` would use
+              for the same binding target.
+            - Does not register anything into a spellbook or mutate runtime
+              binding state.
 
         Returns:
             str: A unique identifier string (SHA256 hash) for the spell.
@@ -352,6 +361,17 @@ class Bind(Cleanable, IBind):
 
         This function is intentionally coupled to the `SpellBindingProfile`
         dataclasses rather than the heavier inspector profiles.
+
+        Contract:
+            - Fingerprints only normalized binding metadata, not transient
+              object identity.
+            - Uses the explicit `v2-binding` schema prefix so future
+              fingerprint-shape changes can version cleanly.
+            - Equal binding profiles produce equal hashes; materially different
+              profiles should produce different hashes.
+        Returns:
+            str: Deterministic SHA256 fingerprint for the supplied binding
+                profile.
         """
         parts: list[str] = ["v2-binding"]  # fingerprint schema version
 
@@ -409,12 +429,23 @@ class Bind(Cleanable, IBind):
             existence: Existence,
     ) -> None:
         """
-        Performs structural and policy checks on the binding parameters prior to registration.
+        Enforce binding-policy rules before a `Spell` is created.
+
+        This is the policy gate that keeps obviously-invalid bindings out of
+        the spellbook before profile fingerprinting and spell construction are
+        allowed to proceed.
 
         Args:
             profile (SpellBindingProfile): The binding profile of the spell.
             binding_name (Optional[str]): The optional binding name provided.
             existence (Existence): The lifecycle scope provided.
+        Contract:
+            - Rejects invalid `Existence` values up front.
+            - Forces pre-created object bindings into `Existence.unique`
+              because they are already materialized and cannot participate in
+              the other factory-driven lifecycle modes.
+            - Enforces lambda naming and callable lifecycle restrictions before
+              registration.
 
         Raises:
             ValueError: If the binding violates any rule:
@@ -469,10 +500,13 @@ class Bind(Cleanable, IBind):
     @staticmethod
     def _existence_check(existence: Existence):
         """
-        Checks if the provided object is a valid instance of the `Existence` enum.
+        Assert that the supplied lifecycle mode is a real `Existence` member.
 
         Args:
             existence (Existence): The object to check.
+        Contract:
+            - Accepts only concrete `Existence` enum members.
+            - Raises immediately instead of silently coercing or defaulting.
 
         Returns:
             bool: True if the object is a valid `Existence` instance.

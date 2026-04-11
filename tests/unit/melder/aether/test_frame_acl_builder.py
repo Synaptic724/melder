@@ -39,6 +39,10 @@ def test_frame_acl_builder_begin_change_seeds_typed_draft_from_current_config() 
         builder._draft_configuration.view_configuration.profile_name
         == container.frame_acl_configuration.view_configuration.profile_name
     )
+    assert (
+        builder._draft_configuration.command_configuration.profile_name
+        == container.frame_acl_configuration.command_configuration.profile_name
+    )
 
 
 def test_frame_acl_builder_load_requires_active_change_and_string_payload() -> None:
@@ -134,6 +138,7 @@ def test_frame_acl_builder_commit_installs_new_typed_configuration() -> None:
     assert next_configuration.source_configuration_id == previous_configuration.configuration_id
     assert next_configuration.locked is True
     assert next_configuration.view_configuration.profile_name == "hybrid"
+    assert next_configuration.command_configuration.profile_name == "default"
     assert next_configuration.codegen_configuration.profile_name == "permissive"
     assert builder._draft_configuration is None
     assert builder.change_active is False
@@ -294,6 +299,14 @@ def test_frame_acl_builder_load_json_rebuilds_typed_draft() -> None:
                     "spell_override_ruleset": {"name": "spell_override", "rules": []},
                     "member_override_ruleset": {"name": "member_override", "rules": []},
                 },
+                "command_configuration": {
+                    "profile_name": "strict_command",
+                    "profile_version": "0.0.1",
+                    "frame_override_ruleset": {"name": "frame_override", "rules": []},
+                    "conduit_override_ruleset": {"name": "conduit_override", "rules": []},
+                    "spell_override_ruleset": {"name": "spell_override", "rules": []},
+                    "member_override_ruleset": {"name": "member_override", "rules": []},
+                },
                 "codegen_configuration": {
                     "profile_name": "permissive",
                     "profile_version": "0.0.1",
@@ -308,5 +321,6 @@ def test_frame_acl_builder_load_json_rebuilds_typed_draft() -> None:
     )
 
     assert builder._draft_configuration.view_configuration.profile_name == "hybrid"
+    assert builder._draft_configuration.command_configuration.profile_name == "strict_command"
     assert builder._draft_configuration.codegen_configuration.profile_name == "permissive"
 

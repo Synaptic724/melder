@@ -68,9 +68,13 @@ class FrameACLCodegenConfiguration(Cleanable):
                 Optional spell-level override ruleset.
             capability_override_ruleset:
                 Optional capability-level override ruleset.
-
-        Returns:
-            None.
+        Contract:
+            - Captures one applied codegen ACL bundle derived from a reusable
+              profile plus optional override rulesets.
+            - Normalizes every override input into a detached `FrameACLRuleSet`
+              owned by this configuration object.
+            - Preserves the profile identity/version used by downstream codegen
+              selection and serialization flows.
 
         Raises:
             ValueError:
@@ -108,8 +112,10 @@ class FrameACLCodegenConfiguration(Cleanable):
         """
         Idempotently clear the applied codegen configuration and overrides.
 
-        Returns:
-            None.
+        Contract:
+            - Safe to call more than once.
+            - Cleans all owned override rulesets before dropping references.
+            - Leaves future callers to fail through `check_cleaned()`.
         """
         if self._cleaned:
             return
@@ -142,6 +148,11 @@ class FrameACLCodegenConfiguration(Cleanable):
     ) -> "FrameACLCodegenConfiguration":
         """
         Build one applied codegen configuration from a reusable codegen profile.
+
+        Contract:
+            - Copies profile identity from the reusable profile.
+            - Normalizes the supplied override rulesets into detached owned
+              rulesets on the returned configuration object.
 
         Args:
             profile:
@@ -176,6 +187,12 @@ class FrameACLCodegenConfiguration(Cleanable):
     ) -> "FrameACLCodegenConfiguration":
         """
         Build one applied codegen configuration from a JSON-compatible payload.
+
+        Contract:
+            - Reconstructs a complete typed configuration object from a
+              JSON-compatible dictionary.
+            - Fills missing override sections with empty named rulesets so the
+              returned object is still a complete bundle.
 
         Args:
             payload:
@@ -317,6 +334,10 @@ class FrameACLCodegenConfiguration(Cleanable):
         """
         Return the applied codegen configuration as a normalized JSON string.
 
+        Contract:
+            Uses `sort_keys=True` so equivalent codegen configurations produce
+            the same canonical JSON text.
+
         Returns:
             str: Normalized JSON payload string.
         """
@@ -326,6 +347,10 @@ class FrameACLCodegenConfiguration(Cleanable):
     def clone(self) -> "FrameACLCodegenConfiguration":
         """
         Return a detached copy of the applied codegen configuration.
+
+        Contract:
+            Round-trips through the JSON form so the returned object does not
+            share override-ruleset ownership with the source configuration.
 
         Returns:
             FrameACLCodegenConfiguration: Detached configuration copy.
@@ -340,6 +365,10 @@ class FrameACLCodegenConfiguration(Cleanable):
     ) -> FrameACLRuleSet:
         """
         Normalize one optional override ruleset input.
+
+        Contract:
+            - Returns a detached clone when a ruleset is supplied.
+            - Creates a default empty ruleset when the input is None.
 
         Args:
             ruleset:

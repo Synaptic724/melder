@@ -390,8 +390,11 @@ class FrameDescriptor(Cleanable):
             conduit registry.
 
         Contract:
-            Replacing an existing different record cleans the older record
-            before storing the new one.
+            - Replacing an existing different record cleans the older record
+              before storing the new one.
+            - Re-storing the same record object is a no-op for lifecycle
+              purposes.
+            - The descriptor takes ownership of the stored record.
 
         Args:
             conduit_record:
@@ -415,6 +418,10 @@ class FrameDescriptor(Cleanable):
         Args:
             conduit_id:
                 Conduit id whose record should be removed.
+        Contract:
+            - Missing conduit ids are treated as a no-op.
+            - Existing records are removed from the primary registry before
+              being cleaned.
         """
         self.check_cleaned()
         with self._lock:
@@ -469,6 +476,11 @@ class FrameDescriptor(Cleanable):
             record_key:
                 Canonical `(spellbook_id, spell_id)` key for the record to
                 remove.
+        Contract:
+            - Missing keys are treated as a no-op.
+            - Existing records are removed from the primary registry before
+              their secondary-index memberships are discarded.
+            - Owned records are cleaned after index teardown.
         """
         self.check_cleaned()
         with self._lock:
@@ -512,6 +524,11 @@ class FrameDescriptor(Cleanable):
             conduit_id:
                 Conduit id.
 
+        Contract:
+            - Returns the live mutable set owned by the descriptor.
+            - Creates the secondary-index bucket on demand when the conduit has
+              not been seen yet.
+
         Returns:
             Set[Tuple[str, str]]: Mutable spell-key set.
         """
@@ -535,6 +552,11 @@ class FrameDescriptor(Cleanable):
             spellbook_id:
                 Spellbook id.
 
+        Contract:
+            - Returns the live mutable set owned by the descriptor.
+            - Creates the secondary-index bucket on demand when the spellbook
+              has not been seen yet.
+
         Returns:
             Set[Tuple[str, str]]: Mutable spell-key set.
         """
@@ -555,6 +577,13 @@ class FrameDescriptor(Cleanable):
         Args:
             spell_record:
                 Spell record whose index memberships should be removed.
+        Contract:
+            - Removes the spell key from both spellbook-level and conduit-level
+              secondary indexes when present.
+            - Deletes empty secondary-index buckets after the key is removed so
+              the descriptor does not retain dead index shells.
+            - Does not clean the spell record; caller-owned removal paths decide
+              record lifecycle separately.
         """
         record_key = spell_record.record_key
         spellbook_spell_keys = self._spell_keys_by_spellbook_id.get(

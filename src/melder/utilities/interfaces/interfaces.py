@@ -2281,6 +2281,8 @@ class IConduitDescriptorPayload(IDescriptorPayload, Protocol):
     conduit_state: Any
     policy: Any
     peer_conduit_ids: Tuple[str, ...]
+    parent_conduit_id: Optional[str]
+    lineage_depth: int
 
 
 @runtime_checkable
@@ -2575,14 +2577,59 @@ class IFrameACLProfileBuilder(ICleanable, Protocol):
 
 
 @runtime_checkable
+class IFrameACLCommandConfiguration(ICleanable, Protocol):
+    """
+    Typed frame command ACL configuration contract.
+
+    Contract:
+        - Carries one command-policy profile identity/version pair.
+        - Represents the command-side sibling inside a frame ACL bundle.
+        - Is policy/configuration data only; it does not execute commands or
+          validate descriptor truth by itself.
+    """
+
+    profile_name: str
+    profile_version: str
+
+
+@runtime_checkable
+class IFrameACLSetCompatibilityReport(ICleanable, Protocol):
+    """
+    Detached compatibility-validation report for one ACL bundle.
+    """
+
+    frame_name: str
+    configuration_id: str
+    has_warnings: bool
+    has_errors: bool
+
+
+@runtime_checkable
+class IFrameACLSetCompatibilityValidator(ICleanable, Protocol):
+    """
+    Frame-local validator for cross-set ACL bundle compatibility.
+    """
+
+    frame_name: str
+    last_report: Optional[IFrameACLSetCompatibilityReport]
+
+
+@runtime_checkable
 class IFrameACLConfiguration(ICleanable, Protocol):
     """
     Typed frame ACL root configuration contract.
+
+    Contract:
+        - Represents one selected frame-local ACL bundle.
+        - Owns the typed child configurations that describe view, command, and
+          codegen policy for that bundle.
+        - Is the unit selected by named frame ACL contract binding.
     """
 
     frame_name: str
     configuration_id: str
     locked: bool
+    command_configuration: IFrameACLCommandConfiguration
 
 
 @runtime_checkable
@@ -2594,6 +2641,7 @@ class IFrameACLContainer(ICleanable, Protocol):
     frame_name: str
     frame_acl_configuration: IFrameACLConfiguration
     named_configurations_by_name: Dict[str, IFrameACLConfiguration]
+    frame_acl_set_compatibility_validator: IFrameACLSetCompatibilityValidator
 
     def install_configuration(
             self,

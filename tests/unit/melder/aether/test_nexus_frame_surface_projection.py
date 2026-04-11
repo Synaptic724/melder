@@ -281,8 +281,9 @@ def test_nexus_create_frame_viewer_for_rift_populates_available_views_from_assig
     _bind_target_frame_configuration("ops", rift_enabled=True)
     nexus = _create_enabled_nexus()
     _populate_descriptor(nexus, "ops")
-    rift_configuration = nexus.create_rift_configuration().with_target_frame_name("ops")
+    rift_configuration = nexus.create_rift_configuration()
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
+    rift.target_frame("ops", set_as_default=True)
 
     viewer = nexus.create_frame_viewer_for_rift(rift.id)
 
@@ -293,6 +294,75 @@ def test_nexus_create_frame_viewer_for_rift_populates_available_views_from_assig
     assert viewer.frame_descriptors_by_name["ops"].frame_name == "ops"
     assert viewer.default_view_frame_name == "ops"
     assert len(viewer.execute_method("list_targets")) >= 1
+
+
+def test_nexus_create_cached_frame_viewer_for_rift_reuses_cache_but_returns_detached_clone() -> None:
+    """
+    Verify cached Rift viewers reuse the cache entry while returning clones.
+
+    Returns:
+        None.
+    """
+    _bind_target_frame_configuration("ops", rift_enabled=True)
+    nexus = _create_enabled_nexus()
+    _populate_descriptor(nexus, "ops")
+    rift_configuration = nexus.create_rift_configuration()
+    rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
+    rift.target_frame("ops", set_as_default=True)
+
+    first_viewer = nexus.create_cached_frame_viewer_for_rift(rift.id)
+    second_viewer = nexus.create_cached_frame_viewer_for_rift(rift.id)
+
+    assert first_viewer is not second_viewer
+    assert first_viewer.metadata["rift_id"] == rift.id
+    assert second_viewer.metadata["assigned_frame_names"] == ("ops",)
+    assert len(nexus._projected_frame_viewers_by_cache_key) == 1
+
+
+def test_nexus_create_frame_viewer_for_rift_frame_scopes_to_one_engaged_frame() -> None:
+    """
+    Verify the Nexus frame-specific viewer facade scopes to one engaged frame.
+
+    Returns:
+        None.
+    """
+    _bind_target_frame_configuration("ops", rift_enabled=True)
+    nexus = _create_enabled_nexus()
+    _populate_descriptor(nexus, "ops")
+    rift_configuration = nexus.create_rift_configuration()
+    rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
+    rift.target_frame("ops", set_as_default=True)
+
+    viewer = nexus.create_frame_viewer_for_rift_frame(rift.id, "ops")
+
+    assert viewer.list_frame_names() == ["ops"]
+    assert viewer.default_view_frame_name == "ops"
+    assert viewer.metadata["rift_id"] == rift.id
+    assert viewer.metadata["assigned_frame_names"] == ("ops",)
+
+
+def test_nexus_create_frame_viewer_for_rift_frame_rejects_missing_or_unengaged_inputs() -> None:
+    """
+    Verify the frame-specific Rift viewer facade rejects invalid requests.
+
+    Returns:
+        None.
+    """
+    _bind_target_frame_configuration("ops", rift_enabled=True)
+    nexus = _create_enabled_nexus()
+    _populate_descriptor(nexus, "ops")
+    rift_configuration = nexus.create_rift_configuration()
+    rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
+    rift.target_frame("ops", set_as_default=True)
+
+    with pytest.raises(ValueError, match="rift_id cannot be empty"):
+        nexus.create_frame_viewer_for_rift_frame("", "ops")
+
+    with pytest.raises(ValueError, match="frame_name cannot be empty"):
+        nexus.create_frame_viewer_for_rift_frame(rift.id, "")
+
+    with pytest.raises(ValueError, match="is not engaged with frame"):
+        nexus.create_frame_viewer_for_rift_frame(rift.id, "finance")
 
 
 def test_nexus_create_frame_viewer_rejects_string_sequence_input() -> None:
@@ -319,4 +389,3 @@ def test_nexus_create_frame_viewer_rejects_empty_frame_names() -> None:
 
     with pytest.raises(ValueError, match="frame_names must contain non-empty strings"):
         nexus.create_frame_viewer(["ops", ""])
-

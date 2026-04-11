@@ -1976,6 +1976,9 @@ class Nexus(Cleanable, INexus):
             },
             default_profile_name=frame_viewer.profile_name,
             frame_descriptors_by_name=frame_viewer.frame_descriptors_by_name,
+            frame_acl_configurations_by_frame_name=(
+                frame_viewer.frame_acl_configurations_by_frame_name
+            ),
             compiled_access_surfaces_by_frame_name=(
                 frame_viewer.compiled_access_surfaces_by_frame_name
             ),

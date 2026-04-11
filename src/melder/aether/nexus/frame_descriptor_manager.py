@@ -313,7 +313,7 @@ class FrameDescriptorManager(Cleanable):
             conduit.
 
         Contract:
-            - Only normal conduits are publishable in this slice.
+            - Published conduit states in this slice are normal and lesser.
             - Short-circuits when the frame is not publishable.
             - Replaces the descriptor-owned conduit record for the conduit id.
 
@@ -327,7 +327,10 @@ class FrameDescriptorManager(Cleanable):
                 eligible.
         """
         self.check_cleaned()
-        if conduit is None or conduit._conduit_state is not ConduitState.normal:
+        if conduit is None or conduit._conduit_state not in (
+                ConduitState.normal,
+                ConduitState.lesser,
+        ):
             return False
 
         frame_name = conduit._aetheric_frame
@@ -347,12 +350,16 @@ class FrameDescriptorManager(Cleanable):
             origin_spellbook_id = None
             if conduit._spellbook is not None:
                 origin_spellbook_id = conduit._spellbook._id
+            parent_conduit_id = self._resolve_parent_conduit_id(conduit)
+            lineage_depth = self._compute_lineage_depth(conduit)
 
             payload = ConduitDescriptorPayload(
                 conduit_name=conduit._name,
                 conduit_state=conduit._conduit_state,
                 policy=conduit._conduit_ward._policy,
                 peer_conduit_ids=peer_conduit_ids,
+                parent_conduit_id=parent_conduit_id,
+                lineage_depth=lineage_depth,
             )
             self._validate_published_conduit_payload(payload)
             conduit_record = ConduitRecord(
@@ -369,6 +376,52 @@ class FrameDescriptorManager(Cleanable):
             )
             descriptor.upsert_conduit_record(conduit_record)
             return True
+
+    @staticmethod
+    def _resolve_parent_conduit_id(conduit: Any) -> Optional[str]:
+        """
+        Resolve the published parent conduit id for one conduit.
+
+        Args:
+            conduit:
+                Conduit-like object being published.
+
+        Returns:
+            Optional[str]: Parent conduit id when present; otherwise None.
+        """
+        conduit_ward = conduit._conduit_ward
+        if conduit_ward is None:
+            return None
+        parent_conduit = conduit_ward._parent_conduit
+        if parent_conduit is None:
+            return None
+        return parent_conduit._id
+
+    @classmethod
+    def _compute_lineage_depth(cls, conduit: Any) -> int:
+        """
+        Compute zero-based lineage depth for one conduit.
+
+        Args:
+            conduit:
+                Conduit-like object being published.
+
+        Returns:
+            int: Zero-based lineage depth from the published conduit to the
+            lineage root.
+        """
+        conduit_ward = conduit._conduit_ward
+        if conduit_ward is None:
+            return 0
+        depth = 0
+        parent_conduit = conduit_ward._parent_conduit
+        while parent_conduit is not None:
+            depth += 1
+            parent_conduit_ward = parent_conduit._conduit_ward
+            if parent_conduit_ward is None:
+                break
+            parent_conduit = parent_conduit_ward._parent_conduit
+        return depth
 
     def _remove_conduit_record(
             self,

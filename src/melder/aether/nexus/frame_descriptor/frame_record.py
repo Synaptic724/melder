@@ -64,6 +64,18 @@ class FrameRecord(Cleanable):
                 posture/config path when known.
             payload:
                 Descriptor-safe frame payload for this record.
+        Contract:
+            - Captures one snapshot of Nexus publication state for a single
+              published frame.
+            - Stores the descriptor payload by ownership, so cleanup of the
+              record also owns cleanup of the payload.
+            - Preserves the published Nexus label/version alongside the frame
+              identity fields used by downstream viewers.
+        Raises:
+            ValueError:
+                If `nexus_label`, `nexus_version`, or `payload` is missing.
+            TypeError:
+                If `payload` does not satisfy `IFrameDescriptorPayload`.
         """
         super().__init__()
         if not nexus_label:
@@ -84,10 +96,14 @@ class FrameRecord(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Idempotently clear the record.
+        Idempotently clear the record and its owned payload.
 
-        Returns:
-            None.
+        Contract:
+            - Safe to call more than once.
+            - Clears every stored publication field.
+            - Cleans the owned descriptor payload before dropping the payload
+              reference.
+            - Leaves future callers to fail through `check_cleaned()`.
         """
         if self._cleaned:
             return

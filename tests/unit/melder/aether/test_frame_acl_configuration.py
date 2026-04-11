@@ -2,6 +2,9 @@ import json
 
 import pytest
 
+from melder.aether.nexus.acl.frame_acl_command_configuration import (
+    FrameACLCommandConfiguration,
+)
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.frame_acl_codegen_configuration import (
     FrameACLCodegenConfiguration,
@@ -34,9 +37,11 @@ def test_frame_acl_configuration_create_default_sets_safe_typed_baseline() -> No
     assert configuration.frame_name == "ops"
     assert configuration.previous_configuration_id is None
     assert configuration.view_configuration.profile_name == "safe"
+    assert configuration.command_configuration.profile_name == "default"
     assert configuration.codegen_configuration.profile_name == "safe"
     assert payload["frame_name"] == "ops"
     assert payload["view_configuration"]["profile_name"] == "safe"
+    assert payload["command_configuration"]["profile_name"] == "default"
     assert payload["codegen_configuration"]["profile_name"] == "safe"
 
 
@@ -54,6 +59,14 @@ def test_frame_acl_configuration_from_json_reconstructs_typed_children() -> None
                 "profile_name": "hybrid",
                 "profile_version": "0.0.1",
                 "minimum_spell_payload_type": "detailed",
+                "frame_override_ruleset": {"name": "frame_override", "rules": []},
+                "conduit_override_ruleset": {"name": "conduit_override", "rules": []},
+                "spell_override_ruleset": {"name": "spell_override", "rules": []},
+                "member_override_ruleset": {"name": "member_override", "rules": []},
+            },
+            "command_configuration": {
+                "profile_name": "strict_command",
+                "profile_version": "0.0.1",
                 "frame_override_ruleset": {"name": "frame_override", "rules": []},
                 "conduit_override_ruleset": {"name": "conduit_override", "rules": []},
                 "spell_override_ruleset": {"name": "spell_override", "rules": []},
@@ -84,6 +97,7 @@ def test_frame_acl_configuration_from_json_reconstructs_typed_children() -> None
     assert configuration.reason == "from-json"
     assert configuration.locked is True
     assert configuration.view_configuration.profile_name == "hybrid"
+    assert configuration.command_configuration.profile_name == "strict_command"
     assert configuration.codegen_configuration.profile_name == "permissive"
 
 
@@ -100,6 +114,7 @@ def test_frame_acl_configuration_init_rejects_invalid_inputs() -> None:
             view_configuration=FrameACLViewConfiguration.from_profile(
                 FrameACLViewProfile.create_default()
             ),
+            command_configuration=FrameACLCommandConfiguration.create_default(),
             codegen_configuration=FrameACLCodegenConfiguration.from_profile(
                 FrameACLCodegenProfile.create_default()
             ),
@@ -113,6 +128,7 @@ def test_frame_acl_configuration_init_rejects_invalid_inputs() -> None:
         FrameACLConfiguration(
             frame_name="ops",
             view_configuration=None,
+            command_configuration=FrameACLCommandConfiguration.create_default(),
             codegen_configuration=FrameACLCodegenConfiguration.from_profile(
                 FrameACLCodegenProfile.create_default()
             ),
@@ -128,7 +144,24 @@ def test_frame_acl_configuration_init_rejects_invalid_inputs() -> None:
             view_configuration=FrameACLViewConfiguration.from_profile(
                 FrameACLViewProfile.create_default()
             ),
+            command_configuration=FrameACLCommandConfiguration.create_default(),
             codegen_configuration=None,
+            source_configuration_id=None,
+            previous_configuration_id=None,
+            reason="invalid",
+            locked=True,
+        )
+
+    with pytest.raises(TypeError, match="command_configuration must be a FrameACLCommandConfiguration"):
+        FrameACLConfiguration(
+            frame_name="ops",
+            view_configuration=FrameACLViewConfiguration.from_profile(
+                FrameACLViewProfile.create_default()
+            ),
+            command_configuration=None,
+            codegen_configuration=FrameACLCodegenConfiguration.from_profile(
+                FrameACLCodegenProfile.create_default()
+            ),
             source_configuration_id=None,
             previous_configuration_id=None,
             reason="invalid",
@@ -193,6 +226,7 @@ def test_frame_acl_configuration_create_new_from_acl_configuration_copies_childr
     assert copied.previous_configuration_id is None
     assert copied.locked is False
     assert copied.view_configuration is not source.view_configuration
+    assert copied.command_configuration is not source.command_configuration
     assert copied.codegen_configuration is not source.codegen_configuration
     assert copied.to_json_string() == source.to_json_string()
 
@@ -260,6 +294,14 @@ def test_frame_acl_configuration_set_json_configuration_string_rebuilds_children
                     "spell_override_ruleset": {"name": "spell_override", "rules": []},
                     "member_override_ruleset": {"name": "member_override", "rules": []},
                 },
+                "command_configuration": {
+                    "profile_name": "strict_command",
+                    "profile_version": "0.0.1",
+                    "frame_override_ruleset": {"name": "frame_override", "rules": []},
+                    "conduit_override_ruleset": {"name": "conduit_override", "rules": []},
+                    "spell_override_ruleset": {"name": "spell_override", "rules": []},
+                    "member_override_ruleset": {"name": "member_override", "rules": []},
+                },
                 "codegen_configuration": {
                     "profile_name": "permissive",
                     "profile_version": "0.0.1",
@@ -274,6 +316,7 @@ def test_frame_acl_configuration_set_json_configuration_string_rebuilds_children
     )
 
     assert configuration.view_configuration.profile_name == "hybrid"
+    assert configuration.command_configuration.profile_name == "strict_command"
     assert configuration.codegen_configuration.profile_name == "permissive"
 
 
@@ -291,14 +334,20 @@ def test_frame_acl_configuration_set_typed_children_requires_mutable_state() -> 
     new_view_configuration = FrameACLViewConfiguration.from_profile(
         FrameACLViewProfile.create_hybrid()
     )
+    new_command_configuration = FrameACLCommandConfiguration(
+        profile_name="strict_command",
+        profile_version="0.0.1",
+    )
     new_codegen_configuration = FrameACLCodegenConfiguration.from_profile(
         FrameACLCodegenProfile.create_permissive()
     )
 
     configuration.set_view_configuration(new_view_configuration)
+    configuration.set_command_configuration(new_command_configuration)
     configuration.set_codegen_configuration(new_codegen_configuration)
 
     assert configuration.view_configuration is new_view_configuration
+    assert configuration.command_configuration is new_command_configuration
     assert configuration.codegen_configuration is new_codegen_configuration
 
     configuration.finalize()
@@ -317,6 +366,11 @@ def test_frame_acl_configuration_set_typed_children_requires_mutable_state() -> 
             )
         )
 
+    with pytest.raises(RuntimeError, match="Cannot change command_configuration"):
+        configuration.set_command_configuration(
+            FrameACLCommandConfiguration.create_default()
+        )
+
 
 def test_frame_acl_configuration_set_typed_children_reject_invalid_types() -> None:
     """
@@ -332,6 +386,9 @@ def test_frame_acl_configuration_set_typed_children_reject_invalid_types() -> No
 
     with pytest.raises(TypeError, match="view_configuration must be a FrameACLViewConfiguration"):
         configuration.set_view_configuration(None)
+
+    with pytest.raises(TypeError, match="command_configuration must be a FrameACLCommandConfiguration"):
+        configuration.set_command_configuration(None)
 
     with pytest.raises(TypeError, match="codegen_configuration must be a FrameACLCodegenConfiguration"):
         configuration.set_codegen_configuration(None)
@@ -374,12 +431,18 @@ def test_frame_acl_configuration_child_config_objects_are_serializable() -> None
         FrameACLViewProfile.create_safe(),
         frame_override_ruleset=FrameACLRuleSet("frame_override"),
     )
+    command_configuration = FrameACLCommandConfiguration(
+        profile_name="strict_command",
+        profile_version="0.0.1",
+        spell_override_ruleset=FrameACLRuleSet("spell_override"),
+    )
     codegen_configuration = FrameACLCodegenConfiguration.from_profile(
         FrameACLCodegenProfile.create_hybrid(),
         capability_override_ruleset=FrameACLRuleSet("capability_override"),
     )
 
     assert view_configuration.to_json_dict()["profile_name"] == "safe"
+    assert command_configuration.to_json_dict()["profile_name"] == "strict_command"
     assert codegen_configuration.to_json_dict()["profile_name"] == "hybrid"
 
 
@@ -392,12 +455,14 @@ def test_frame_acl_configuration_cleanup_clears_fields() -> None:
     """
     configuration = FrameACLConfiguration.create_default("ops")
     view_configuration = configuration.view_configuration
+    command_configuration = configuration.command_configuration
     codegen_configuration = configuration.codegen_configuration
 
     configuration.cleanup()
 
     assert configuration.cleaned is True
     assert view_configuration.cleaned is True
+    assert command_configuration.cleaned is True
     assert codegen_configuration.cleaned is True
     assert configuration._configuration_id is None
     assert configuration._frame_name is None
@@ -407,6 +472,7 @@ def test_frame_acl_configuration_cleanup_clears_fields() -> None:
     assert configuration._reason is None
     assert configuration._locked is None
     assert configuration._view_configuration is None
+    assert configuration._command_configuration is None
     assert configuration._codegen_configuration is None
 
 
@@ -443,6 +509,7 @@ def test_frame_acl_configuration_init_rejects_empty_reason_and_non_bool_locked()
         FrameACLConfiguration(
             frame_name="ops",
             view_configuration=view_configuration,
+            command_configuration=FrameACLCommandConfiguration.create_default(),
             codegen_configuration=codegen_configuration,
             source_configuration_id=None,
             previous_configuration_id=None,
@@ -456,6 +523,7 @@ def test_frame_acl_configuration_init_rejects_empty_reason_and_non_bool_locked()
             view_configuration=FrameACLViewConfiguration.from_profile(
                 FrameACLViewProfile.create_default()
             ),
+            command_configuration=FrameACLCommandConfiguration.create_default(),
             codegen_configuration=FrameACLCodegenConfiguration.from_profile(
                 FrameACLCodegenProfile.create_default()
             ),

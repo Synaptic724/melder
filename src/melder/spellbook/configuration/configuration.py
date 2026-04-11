@@ -12,15 +12,25 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 
 class Configuration(Cleanable, IConfiguration):
     """
-    Configuration governs the behavior of the entire system.
+    Mutable build-time configuration surface for one spellbook/runtime context.
 
-    It acts as the configuration core for:
-    * **Conduit Management:** How Conduits handle service lifecycles.
-    * **Dynamic Behavior:** Flags controlling dynamic linking, expansion, and policies.
-    * **System Flags:** Global settings like debugging mode and resource disposal.
+    `Configuration` is the central staging object where spellbook-wide runtime
+    posture is assembled before conjure/freeze. It owns the typed property map,
+    idempotent keys, and the per-spellbook system hook registry that later
+    runtime systems consume.
 
-    This object should only be configured once and then frozen to prevent any further changes,
-    enforcing idempotent laws across the system. Thread-safe operations are ensured with RLock.
+    It governs:
+    * conduit/runtime posture
+    * dynamic/AI/Rift feature flags
+    * disposal and phase-scheduler tuning
+    * hook registration for Meld / Conduit / Link / Contract events
+
+    Contract:
+    - Properties are mutable only until the configuration is frozen.
+    - Idempotent keys may be set once and then become immutable even before
+      freeze.
+    - Validation is explicit and freeze/finalize enforce it.
+    - Thread-safe operations are serialized with the instance `RLock`.
     """
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
@@ -55,10 +65,14 @@ class Configuration(Cleanable, IConfiguration):
     )
     def __init__(self, aether_frame: str = "default"):
         """
-        Initializes a new Configuration manager.
+        Initialize one configuration manager.
 
         Args:
             aether_frame (str): The name of the Aether frame this configuration is associated with (defaults to "default").
+        Contract:
+            - Starts unfrozen and empty.
+            - Seeds the allowed property/type map and idempotent-key set.
+            - Starts with an empty per-spellbook hook registry.
         """
         # Thread-safe lock for concurrent access
         super().__init__()
@@ -96,9 +110,15 @@ class Configuration(Cleanable, IConfiguration):
 
     def cleanup(self) -> None:
         """
-        Cleans up the configuration, preventing any further modifications and cleaning up resources.
+        Finalize the configuration and drop all owned registries.
 
         This method sets both the `cleaned` and `frozen` flags.
+
+        Contract:
+            - Idempotent and lock-guarded.
+            - Clears property/type maps and hook registries.
+            - Prevents any future mutation or validation calls through
+              `check_cleaned()`.
 
         Raises:
             RuntimeError: If the configuration is already cleaned.
@@ -298,9 +318,11 @@ class Configuration(Cleanable, IConfiguration):
 
     def validate_enums(self) -> bool:
         """
-        Internal
+        Validate enum-backed properties explicitly.
 
-        Validates that all properties intended to be Enums (like `SystemState`) are indeed set to a valid Enum instance.
+        This is a narrower compatibility helper kept alongside the broader
+        `validate()` pipeline for callers that only want the enum-specific
+        portion of validation.
 
         Returns:
             bool: True if all enum values are valid.
@@ -322,8 +344,6 @@ class Configuration(Cleanable, IConfiguration):
 
     def _convert_enum_if_needed(self, key: str, value: Any) -> Any:
         """
-        Internal
-
         Converts string inputs into the correct enum types for known keys.
 
         Args:
@@ -335,6 +355,12 @@ class Configuration(Cleanable, IConfiguration):
 
         Raises:
             ValueError: If the string value is not a valid enum member or if the input type is incorrect.
+
+        Contract:
+            - Only keys listed in the local enum map are converted.
+            - Unknown keys pass through untouched.
+            - Known enum keys are normalized through the shared enum helper so
+              strings and enum instances follow one validation path.
         """
         enum_map: Dict[str, Type[Enum]] = {
             "system_state": SystemState,
@@ -350,7 +376,7 @@ class Configuration(Cleanable, IConfiguration):
 
     def get_property(self, key: str) -> Any:
         """
-        Retrieves the value of a configuration property.
+        Return one configuration property value.
 
         Args:
             key (str): The name of the property.
@@ -361,6 +387,10 @@ class Configuration(Cleanable, IConfiguration):
         Raises:
             RuntimeError: If the configuration is cleaned.
             KeyError: If the property does not exist in the configuration.
+
+        Contract:
+            - Returns the stored live value for the key.
+            - Raises instead of silently defaulting when the key is missing.
         """
         self.check_cleaned()
         try:
@@ -370,7 +400,7 @@ class Configuration(Cleanable, IConfiguration):
 
     def has_property(self, key: str) -> bool:
         """
-        Checks if a configuration property is defined.
+        Return whether a configuration property is currently defined.
 
         Args:
             key (str): The property name to check.
@@ -386,18 +416,30 @@ class Configuration(Cleanable, IConfiguration):
 
     def __iter__(self):
         """
-        Allows iteration over the configuration properties (keys).
+        Iterate over configuration property keys.
 
         Returns:
             Iterator: Property names (keys) in the configuration.
+
+        Contract:
+            - Iterates the live property mapping.
+            - Intended for build-time inspection/serialization, not stable
+              snapshot semantics.
         """
         return iter(self._properties)
 
     def load_default_dictionary(self) -> None:
         """
-        Loads and applies a default set of properties atomically.
+        Load the standard default property set.
 
-        This method sets sensible defaults for core properties like `system_state`, `debugging`, and `disposal`.
+        This method sets sensible defaults for core properties like
+        `system_state`, `debugging`, and `disposal`.
+
+        Contract:
+            - Populates only missing properties; existing explicit values are
+              preserved.
+            - Seeds `system_state` through the same enum-conversion path used by
+              normal property writes.
 
         Raises:
             RuntimeError: If the configuration is cleaned.
@@ -585,8 +627,6 @@ class Configuration(Cleanable, IConfiguration):
     # ---------------------------
     def with_phase_scheduler_workers(self, workers: int) -> IConfiguration:
         """
-        Fluent
-
         Set the number of worker threads used by the Resolution Phase Scheduler.
         Must be >= 1.
 
@@ -595,6 +635,10 @@ class Configuration(Cleanable, IConfiguration):
 
         Returns:
             IConfiguration: This same configuration instance (for chaining).
+
+        Contract:
+            - Validates the worker count before writing it.
+            - Mutates the live configuration and returns `self`.
         """
         if not isinstance(workers, int) or workers < 1:
             raise ValueError("phase_scheduler_workers must be a positive integer.")
@@ -604,8 +648,6 @@ class Configuration(Cleanable, IConfiguration):
 
     def with_phase_scheduler_barrier_timeout(self, timeout_milliseconds: int) -> IConfiguration:
         """
-        Fluent
-
         Set the barrier timeout in milliseconds used by the Resolution Phase Scheduler.
         Must be >= 0.
 
@@ -614,6 +656,10 @@ class Configuration(Cleanable, IConfiguration):
 
         Returns:
             IConfiguration: This same configuration instance (for chaining).
+
+        Contract:
+            - Rejects zero and excessively large values up front.
+            - Mutates the live configuration and returns `self`.
         """
         if not isinstance(timeout_milliseconds, int) or timeout_milliseconds < 0:
             raise ValueError("phase_scheduler_barrier_timeout_milliseconds must be a non-negative integer.")
@@ -629,8 +675,6 @@ class Configuration(Cleanable, IConfiguration):
 
     def with_ai_native(self, enabled: bool = True) -> IConfiguration:
         """
-        Fluent
-
         Enable or disable AI-native resolution pipeline features.
 
         Args:
@@ -638,6 +682,11 @@ class Configuration(Cleanable, IConfiguration):
 
         Returns:
             IConfiguration: This same configuration instance (for chaining).
+
+        Contract:
+            - Writes only the `ai_native_enabled` flag.
+            - Semantic compatibility with `system_state` is enforced later by
+              validation/freeze, not here.
         """
         if not isinstance(enabled, bool):
             raise TypeError("ai_native_enabled must be a bool.")
@@ -646,15 +695,17 @@ class Configuration(Cleanable, IConfiguration):
 
     def with_rift_enabled(self, enabled: bool = True) -> IConfiguration:
         """
-        Fluent
-
-        Enable or disable AI profile generation.
+        Enable or disable Rift-facing posture.
 
         Args:
-            enabled (bool): True to enable AI profiles.
+            enabled (bool): True to enable Rift-facing posture.
 
         Returns:
             IConfiguration: This same configuration instance (for chaining).
+
+        Contract:
+            - Writes only the `rift_enabled` flag.
+            - Returns `self` for chaining.
         """
         if not isinstance(enabled, bool):
             raise TypeError("rift_enabled must be a bool.")
@@ -771,8 +822,6 @@ class Configuration(Cleanable, IConfiguration):
 
     def with_debugging(self, enabled: bool = True) -> IConfiguration:
         """
-        Fluent
-
         Enable or disable debugging and return `self`.
 
         Args:
@@ -780,14 +829,16 @@ class Configuration(Cleanable, IConfiguration):
 
         Returns:
             IConfiguration: This same configuration instance (for chaining).
+
+        Contract:
+            - Writes only the `debugging` flag.
+            - Returns `self` for chaining.
         """
         self.set_property("debugging", enabled)
         return self
 
     def with_disposal(self, enabled: bool = True) -> IConfiguration:
         """
-        Fluent
-
         Enable or disable disposal features and return `self`.
 
         Args:
@@ -795,14 +846,16 @@ class Configuration(Cleanable, IConfiguration):
 
         Returns:
             IConfiguration: This same configuration instance (for chaining).
+
+        Contract:
+            - Writes only the `disposal` flag.
+            - Returns `self` for chaining.
         """
         self.set_property("disposal", enabled)
         return self
 
     def with_disposal_method_names(self, names: list[str]) -> IConfiguration:
         """
-        Fluent
-
         Replace the entire list of disposal method names and return `self`.
 
         Example:
@@ -813,6 +866,10 @@ class Configuration(Cleanable, IConfiguration):
 
         Returns:
             IConfiguration: This same configuration instance (for chaining).
+
+        Contract:
+            - Replaces the entire disposal-method list.
+            - Type-checks the container before writing it.
         """
         if not isinstance(names, list):
             raise TypeError("disposal_method_names must be a list[str].")
@@ -852,8 +909,6 @@ class Configuration(Cleanable, IConfiguration):
 
     def add_disposal_methods(self, *names: str) -> IConfiguration:
         """
-        Fluent
-
         Append one or more disposal method names (deduplicated, order-preserving)
         and return `self`.
 
@@ -866,6 +921,10 @@ class Configuration(Cleanable, IConfiguration):
 
         Returns:
             IConfiguration: This same configuration instance (for chaining).
+
+        Contract:
+            - Initializes the disposal-method list when absent.
+            - Preserves order while deduplicating names.
         """
         current = self._properties.get("disposal_method_names", [])
         if not isinstance(current, list):
@@ -883,36 +942,50 @@ class Configuration(Cleanable, IConfiguration):
 
     def finalize(self) -> IConfiguration:
         """
-        Fluent
-
         Validate and freeze, returning `self`.
 
         Returns:
             IConfiguration: This same configuration instance (for chaining).
+
+        Contract:
+            - Runs the full validation pipeline.
+            - Freezes the configuration on success.
+            - Returns `self` for chaining.
         """
         self.freeze()
         return self
 
     def build(self) -> IConfiguration:
         """
-        Fluent alias for finalize().
+        Fluent alias for `finalize()`.
+
+        Contract:
+            - Performs the same validation-and-freeze behavior as `finalize()`.
+            - Returns `self` for chaining.
         """
         return self.finalize()
 
     def dynamic_defaults(self) -> IConfiguration:
         """
-        Fluent
+        Load defaults and force dynamic system posture.
 
-        Load defaults and set dynamic state, returning `self`.
+        Contract:
+            - Sets `system_state` to dynamic through the normal property path.
+            - Then fills in any remaining defaults.
+            - Returns `self` for chaining.
         """
         self.set_property("system_state", "dynamic")
         return self.with_defaults()
 
     def automatic_defaults(self) -> IConfiguration:
         """
-        Fluent
+        Load defaults and force automatic system posture.
 
-        Load defaults and set automatic state, returning `self`.
+        Contract:
+            - Sets `system_state` to automatic through the normal property
+              path.
+            - Then fills in any remaining defaults.
+            - Returns `self` for chaining.
         """
         self.set_property("system_state", "automatic")
         return self.with_defaults()

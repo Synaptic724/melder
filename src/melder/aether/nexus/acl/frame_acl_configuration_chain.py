@@ -230,6 +230,10 @@ class FrameACLConfigurationChain(Cleanable):
         Purpose:
             Resolve the configuration node currently selected as active.
 
+        Contract:
+            Returns the node named by `current_configuration_id`; it does not
+            change head order or selection state.
+
         Returns:
             FrameACLConfiguration: Current configuration node.
         """
@@ -310,6 +314,10 @@ class FrameACLConfigurationChain(Cleanable):
             Provide a lightweight ordered chain view without exposing node
             objects.
 
+        Contract:
+            Preserves the same newest-to-oldest ordering produced by
+            `list_configurations(...)`.
+
         Args:
             limit:
                 Optional maximum number of returned ids.
@@ -329,6 +337,9 @@ class FrameACLConfigurationChain(Cleanable):
 
         Purpose:
             Expose the current chain size for validation and history control.
+
+        Contract:
+            Counts only currently retained nodes after any tail trimming.
 
         Returns:
             int: Number of owned config nodes.
@@ -412,6 +423,11 @@ class FrameACLConfigurationChain(Cleanable):
         Purpose:
             Move the chain's current pointer without changing head order.
 
+        Contract:
+            - Requires the target id to already exist in the chain.
+            - Changes only current selection; it does not reorder history or
+              move head.
+
         Args:
             configuration_id:
                 Existing configuration id to select as current.
@@ -432,6 +448,10 @@ class FrameACLConfigurationChain(Cleanable):
         Purpose:
             Provide a semantic rollback entrypoint over current-pointer
             selection.
+
+        Contract:
+            This is a history-oriented wrapper over
+            `select_current_configuration(...)`; it does not delete newer nodes.
 
         Args:
             configuration_id:
@@ -455,6 +475,11 @@ class FrameACLConfigurationChain(Cleanable):
         Purpose:
             Seed a new unlocked configuration node from a known chain state
             without inserting it yet.
+
+        Contract:
+            - Leaves the chain unchanged.
+            - Returns an unlocked detached draft derived from the selected
+              source node.
 
         Args:
             configuration_id:
@@ -487,6 +512,8 @@ class FrameACLConfigurationChain(Cleanable):
             - Removes only oldest tail nodes.
             - Never trims the current node.
             - Stops early when trimming would require deleting the current node.
+            - Updates the parent link above the removed tail so the retained
+              chain stays well-formed.
 
         Returns:
             None.

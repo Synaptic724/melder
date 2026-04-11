@@ -1,3 +1,5 @@
+import threading
+
 import pytest
 
 from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
@@ -13,6 +15,7 @@ from melder.aether.nexus.acl.profiles.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
 from melder.aether.nexus.frame_acl_manager import FrameACLManager
+from tests._nexus_viewer_matrix_support import build_descriptor
 
 
 def test_frame_acl_manager_starts_empty() -> None:
@@ -246,6 +249,75 @@ def test_frame_acl_manager_cleanup_cleans_all_owned_containers() -> None:
     assert manager._frame_acl_containers_by_name is None
 
 
+def test_frame_acl_manager_cleanup_rechecks_cleaned_inside_lock() -> None:
+    """
+    Verify cleanup returns early when another thread already cleaned the manager.
+
+    Returns:
+        None.
+    """
+
+    class _CoordinatedLock:
+        def __init__(self) -> None:
+            self._entered_first = threading.Event()
+            self._second_attempted = threading.Event()
+            self._lock = threading.RLock()
+
+        def __enter__(self):
+            if self._entered_first.is_set():
+                self._second_attempted.set()
+            self._lock.acquire()
+            if not self._entered_first.is_set():
+                self._entered_first.set()
+                assert self._second_attempted.wait(timeout=1.0)
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self._lock.release()
+
+    manager = FrameACLManager()
+    manager._ensure_frame_acl_container("ops")
+    coordinated_lock = _CoordinatedLock()
+    manager._lock = coordinated_lock
+
+    thread_results = []
+
+    def _run_cleanup() -> None:
+        manager.cleanup()
+        thread_results.append(True)
+
+    first = threading.Thread(target=_run_cleanup)
+    second = threading.Thread(target=_run_cleanup)
+    first.start()
+    coordinated_lock._entered_first.wait(timeout=1.0)
+    second.start()
+    first.join(timeout=1.0)
+    second.join(timeout=1.0)
+
+    assert thread_results == [True, True]
+    assert manager.cleaned is True
+    assert manager._lock is None
+
+
+def test_frame_acl_manager_exposes_identity_version_and_profile_snapshot_copy() -> None:
+    """
+    Verify id/version accessors and profile snapshots expose detached views.
+
+    Returns:
+        None.
+    """
+    manager = FrameACLManager()
+    profile = manager._create_frame_acl_profile("support")
+
+    snapshot = manager.frame_acl_profiles_by_name
+    snapshot.clear()
+
+    assert manager.id is not None
+    assert manager.version == "0.0.1"
+    assert snapshot == {}
+    assert manager._get_required_frame_acl_profile("support") is profile
+
+
 def test_frame_acl_manager_profile_builder_property_returns_builder_singleton() -> None:
     """
     Verify the manager exposes one stable profile builder object.
@@ -256,6 +328,50 @@ def test_frame_acl_manager_profile_builder_property_returns_builder_singleton() 
     manager = FrameACLManager()
 
     assert manager.frame_acl_profile_builder is manager._frame_acl_profile_builder
+
+
+def test_frame_acl_manager_insert_without_select_keeps_current_and_advances_head() -> None:
+    """
+    Verify non-selecting inserts validate and advance head without changing current.
+
+    Returns:
+        None.
+    """
+    manager = FrameACLManager()
+    original = manager._get_current_frame_acl_configuration("ops")
+    draft = FrameACLConfiguration.create_new_from_acl_configuration(
+        original,
+        reason="head_only",
+    )
+    draft.finalize()
+
+    inserted = manager._insert_head_frame_acl_configuration(
+        "ops",
+        draft,
+        select_as_current=False,
+    )
+
+    assert inserted is draft
+    assert manager._get_head_frame_acl_configuration("ops") is draft
+    assert manager._get_current_frame_acl_configuration("ops") is original
+
+
+def test_frame_acl_manager_validates_configuration_against_descriptor() -> None:
+    """
+    Verify descriptor-backed validation delegates through the frame container.
+
+    Returns:
+        None.
+    """
+    manager = FrameACLManager()
+    configuration = manager._get_current_frame_acl_configuration("ops")
+    frame_descriptor = build_descriptor("ops")
+
+    assert manager._validate_frame_acl_configuration_against_descriptor(
+        "ops",
+        configuration,
+        frame_descriptor,
+    ) is True
 
 
 def test_frame_acl_manager_register_view_profile_delegates_to_builder() -> None:
@@ -347,6 +463,52 @@ def test_frame_acl_manager_register_frame_acl_profile_rejects_invalid_type() -> 
     """
     with pytest.raises(TypeError, match="frame_acl_profile must be a FrameACLProfile"):
         FrameACLManager()._register_frame_acl_profile(None)
+
+
+def test_frame_acl_manager_registering_duplicate_profile_name_cleans_displaced_profile() -> None:
+    """
+    Verify replacing a distinct composed profile cleans the displaced instance.
+
+    Returns:
+        None.
+    """
+    manager = FrameACLManager()
+    first_profile = FrameACLProfile(
+        "support",
+        view_profile=FrameACLViewProfile.create_safe(),
+        codegen_profile=FrameACLCodegenProfile.create_safe(),
+    )
+    second_profile = FrameACLProfile(
+        "support",
+        view_profile=FrameACLViewProfile.create_hybrid(),
+        codegen_profile=FrameACLCodegenProfile.create_permissive(),
+    )
+
+    manager._register_frame_acl_profile(first_profile)
+    manager._register_frame_acl_profile(second_profile)
+
+    assert first_profile.cleaned is True
+    assert manager._get_required_frame_acl_profile("support") is second_profile
+
+
+def test_frame_acl_manager_profile_registry_get_list_and_remove_contracts() -> None:
+    """
+    Verify profile registry lookup, listing, and removal semantics.
+
+    Returns:
+        None.
+    """
+    manager = FrameACLManager()
+    profile = manager._create_frame_acl_profile("support")
+
+    assert manager._list_frame_acl_profile_names() == ["support"]
+    assert manager._get_required_frame_acl_profile("support") is profile
+    assert manager._remove_frame_acl_profile("support") is True
+    assert profile.cleaned is True
+    assert manager._remove_frame_acl_profile("support") is False
+
+    with pytest.raises(KeyError, match="support"):
+        manager._get_required_frame_acl_profile("support")
 
 
 def test_frame_acl_manager_cleanup_cleans_registered_profiles_and_builder() -> None:

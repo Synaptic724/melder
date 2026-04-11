@@ -1,7 +1,13 @@
 import threading
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.aether.nexus.acl.frame_acl_set_compatibility_validator import (
+    FrameACLSetCompatibilityValidator,
+)
+from melder.aether.nexus.acl.profiles.frame_acl_profile_builder import (
+    FrameACLProfileBuilder,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 
 from melder.aether.nexus.acl.frame_acl_builder import FrameACLBuilder
@@ -18,8 +24,8 @@ class FrameACLContainer(Cleanable):
 
     Contract:
         - One container exists per frame ACL registration.
-        - The container owns one configuration chain, one validator, and one
-          builder for the frame.
+        - The container owns one configuration chain, one child/type validator,
+          one set-compatibility validator, and one builder for the frame.
         - The builder is a stable object-singleton inside the container.
         - The container is the handoff point between manager-level frame
           targeting and chain-level ACL history mechanics.
@@ -29,8 +35,8 @@ class FrameACLContainer(Cleanable):
         container-owned operations.
 
     Lifecycle:
-        Cleanup is idempotent and cascades into the builder, validator, and
-        configuration chain before dropping references.
+        Cleanup is idempotent and cascades into the builder, both validators,
+        and the configuration chain before dropping references.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -40,7 +46,10 @@ class FrameACLContainer(Cleanable):
         "_frame_name",
         "_frame_acl_configuration_chain",
         "_named_configurations_by_name",
+        "_profile_builder",
+        "_owns_profile_builder",
         "_frame_acl_validator",
+        "_frame_acl_set_compatibility_validator",
         "_frame_acl_builder",
     ]
 
@@ -49,6 +58,7 @@ class FrameACLContainer(Cleanable):
             frame_name: str,
             *,
             history_limit: int = 15,
+            profile_builder: Optional[FrameACLProfileBuilder] = None,
     ) -> None:
         """
         Initialize one frame ACL container.
@@ -60,8 +70,11 @@ class FrameACLContainer(Cleanable):
         Contract:
             - `frame_name` must be a non-empty stable frame identifier.
             - `history_limit` must allow at least one retained configuration.
-            - Builder, validator, and chain are created eagerly and owned by
+            - Builder, validators, and chain are created eagerly and owned by
               the container from construction onward.
+            - Compatibility validation uses the shared ACL profile builder when
+              provided; otherwise a local builder/library is created for
+              standalone container use.
 
         Args:
             frame_name:
@@ -69,6 +82,9 @@ class FrameACLContainer(Cleanable):
             history_limit:
                 Maximum number of configuration nodes retained by the owned
                 chain.
+            profile_builder:
+                Optional shared ACL profile builder used by the compatibility
+                validator.
 
         Returns:
             None.
@@ -95,6 +111,16 @@ class FrameACLContainer(Cleanable):
         )
         self._named_configurations_by_name: Dict[str, FrameACLConfiguration] = {}
         self._frame_acl_validator: FrameACLValidator = FrameACLValidator(frame_name)
+        self._owns_profile_builder: bool = profile_builder is None
+        if profile_builder is None:
+            profile_builder = FrameACLProfileBuilder()
+        self._profile_builder: FrameACLProfileBuilder = profile_builder
+        self._frame_acl_set_compatibility_validator = (
+            FrameACLSetCompatibilityValidator(
+                frame_name,
+                self._profile_builder,
+            )
+        )
         self._frame_acl_builder: FrameACLBuilder = FrameACLBuilder(self)
         self._sync_default_named_configuration_to_current()
 
@@ -107,7 +133,7 @@ class FrameACLContainer(Cleanable):
 
         Contract:
             - Safe to call more than once.
-            - Cleans builder, validator, and configuration chain before
+            - Cleans builder, validators, and configuration chain before
               dropping references.
             - Leaves the container unusable after completion.
 
@@ -126,10 +152,16 @@ class FrameACLContainer(Cleanable):
             self._cleaned = True
             self._frame_acl_builder.cleanup()
             self._frame_acl_validator.cleanup()
+            self._frame_acl_set_compatibility_validator.cleanup()
+            if self._owns_profile_builder and self._profile_builder is not None:
+                self._profile_builder.cleanup()
             self._frame_acl_configuration_chain.cleanup()
             self._named_configurations_by_name.clear()
             self._frame_acl_builder = None
             self._frame_acl_validator = None
+            self._frame_acl_set_compatibility_validator = None
+            self._profile_builder = None
+            self._owns_profile_builder = None
             self._frame_acl_configuration_chain = None
             self._named_configurations_by_name = None
             self._frame_name = None
@@ -174,6 +206,10 @@ class FrameACLContainer(Cleanable):
         Purpose:
             Expose the currently selected configuration node from the owned
             configuration chain.
+
+        Contract:
+            This is the same node currently published under the reserved
+            `"default"` named configuration.
 
         Returns:
             FrameACLConfiguration: Current configuration.
@@ -234,6 +270,24 @@ class FrameACLContainer(Cleanable):
         return self._frame_acl_validator
 
     @property
+    def frame_acl_set_compatibility_validator(
+            self,
+    ) -> FrameACLSetCompatibilityValidator:
+        """
+        Return the frame-scoped ACL set compatibility validator.
+
+        Purpose:
+            Expose the owned validator that checks one selected ACL bundle for
+            cross-set compatibility across view, command, and codegen policy.
+
+        Returns:
+            FrameACLSetCompatibilityValidator:
+                Frame-scoped set compatibility validator.
+        """
+        self.check_cleaned()
+        return self._frame_acl_set_compatibility_validator
+
+    @property
     def frame_acl_history(self) -> List[FrameACLConfiguration]:
         """
         Return a snapshot of retained configuration history.
@@ -288,6 +342,9 @@ class FrameACLContainer(Cleanable):
         """
         self.check_cleaned()
         self._frame_acl_validator.validate_configuration(configuration)
+        self._frame_acl_set_compatibility_validator.validate_configuration(
+            configuration
+        )
         self._frame_acl_configuration_chain.insert_head_configuration(
             configuration,
             select_as_current=True,
@@ -303,6 +360,11 @@ class FrameACLContainer(Cleanable):
 
         Purpose:
             Move current selection to one already-owned configuration node.
+
+        Contract:
+            - Delegates the selection change to the owned configuration chain.
+            - Resynchronizes the reserved `"default"` named configuration after
+              selection changes.
 
         Args:
             configuration_id:
@@ -372,6 +434,9 @@ class FrameACLContainer(Cleanable):
             Expose the frame-local named contract registry keys in insertion
             order.
 
+        Contract:
+            Includes the reserved `"default"` contract name.
+
         Returns:
             List[str]:
                 Registered contract names for this frame.
@@ -427,6 +492,9 @@ class FrameACLContainer(Cleanable):
                 "Named ACL configuration must be locked before registration."
             )
         self._frame_acl_validator.validate_configuration(configuration)
+        self._frame_acl_set_compatibility_validator.validate_configuration(
+            configuration
+        )
         with self._lock:
             if contract_name in self._named_configurations_by_name:
                 raise ValueError(
@@ -448,6 +516,11 @@ class FrameACLContainer(Cleanable):
         Purpose:
             Provide a semantic rollback entrypoint over the underlying
             current-selection mechanics.
+
+        Contract:
+            - Delegates rollback/current selection to the chain.
+            - Resynchronizes the reserved `"default"` named configuration after
+              rollback.
 
         Args:
             configuration_id:
@@ -473,6 +546,10 @@ class FrameACLContainer(Cleanable):
             Preserve backward-compatible behavior where the default named ACL
             contract for a frame tracks the frame's currently selected
             configuration.
+
+        Contract:
+            Overwrites the `"default"` named configuration with the chain's
+            current selection every time it runs.
 
         Returns:
             None.

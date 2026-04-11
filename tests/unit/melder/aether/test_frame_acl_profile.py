@@ -70,9 +70,40 @@ def test_frame_acl_rule_copies_conditions() -> None:
     conditions["mutated"] = True
 
     assert rule.rule_name == "show_metadata"
+    assert rule.id is not None
     assert rule.operation == "show_metadata"
     assert rule.effect == "allow"
     assert rule.conditions == {"target": "spell", "section": "metadata"}
+
+
+def test_frame_acl_rule_cleanup_is_idempotent() -> None:
+    """
+    Verify cleanup can be called repeatedly.
+
+    Returns:
+        None.
+    """
+    rule = FrameACLRule(
+        rule_name="visible_rule",
+        operation="visible",
+        effect="allow",
+    )
+
+    rule.cleanup()
+    rule.cleanup()
+
+    assert rule.cleaned is True
+
+
+def test_frame_acl_rule_from_json_rejects_non_dict_payload() -> None:
+    """
+    Verify JSON reconstruction rejects non-dictionary payloads.
+
+    Returns:
+        None.
+    """
+    with pytest.raises(TypeError, match="payload must be a dict"):
+        FrameACLRule.from_json_dict(None)
 
 
 def test_frame_acl_ruleset_registers_replaces_and_removes_rules() -> None:
@@ -103,6 +134,110 @@ def test_frame_acl_ruleset_registers_replaces_and_removes_rules() -> None:
     assert ruleset.remove_rule("visible") is True
     assert second_rule.cleaned is True
     assert ruleset.remove_rule("visible") is False
+
+
+def test_frame_acl_ruleset_exposes_id_and_missing_lookup_behavior() -> None:
+    """
+    Verify rulesets expose their stable id and missing-rule lookup contract.
+
+    Returns:
+        None.
+    """
+    ruleset = FrameACLRuleSet("spell_rules")
+
+    assert ruleset.id is not None
+
+    with pytest.raises(KeyError, match="missing_rule"):
+        ruleset.get_required_rule("missing_rule")
+
+
+def test_frame_acl_ruleset_rejects_invalid_inputs() -> None:
+    """
+    Verify ruleset construction, registration, and JSON rebuild reject bad inputs.
+
+    Returns:
+        None.
+    """
+    with pytest.raises(ValueError, match="name cannot be empty"):
+        FrameACLRuleSet("")
+
+    ruleset = FrameACLRuleSet("spell_rules")
+
+    with pytest.raises(TypeError, match="rule must be a FrameACLRule"):
+        ruleset.register_rule(None)
+
+    with pytest.raises(TypeError, match="payload must be a dict"):
+        FrameACLRuleSet.from_json_dict(None)
+
+    with pytest.raises(TypeError, match="rules must be a list"):
+        FrameACLRuleSet.from_json_dict({"name": "rules", "rules": {}})
+
+    rebuilt = FrameACLRuleSet.from_json_dict({"name": "rules"})
+    assert rebuilt.list_rule_names() == []
+
+
+def test_frame_acl_ruleset_cleanup_is_idempotent() -> None:
+    """
+    Verify cleanup can be called repeatedly.
+
+    Returns:
+        None.
+    """
+    ruleset = FrameACLRuleSet("spell_rules")
+
+    ruleset.cleanup()
+    ruleset.cleanup()
+
+    assert ruleset.cleaned is True
+
+
+def test_frame_acl_ruleset_cleanup_rechecks_cleaned_inside_lock() -> None:
+    """
+    Verify cleanup returns early when another thread already cleaned the ruleset.
+
+    Returns:
+        None.
+    """
+
+    class _CoordinatedLock:
+        def __init__(self) -> None:
+            self._entered_first = threading.Event()
+            self._second_attempted = threading.Event()
+            self._lock = threading.RLock()
+
+        def __enter__(self):
+            if self._entered_first.is_set():
+                self._second_attempted.set()
+            self._lock.acquire()
+            if not self._entered_first.is_set():
+                self._entered_first.set()
+                assert self._second_attempted.wait(timeout=1.0)
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self._lock.release()
+
+    ruleset = FrameACLRuleSet("spell_rules")
+    coordinated_lock = _CoordinatedLock()
+    ruleset._lock = coordinated_lock
+
+    thread_results = []
+
+    def _run_cleanup() -> None:
+        ruleset.cleanup()
+        thread_results.append(True)
+
+    first = threading.Thread(target=_run_cleanup)
+    second = threading.Thread(target=_run_cleanup)
+    first.start()
+    coordinated_lock._entered_first.wait(timeout=1.0)
+    second.start()
+    first.join(timeout=1.0)
+    second.join(timeout=1.0)
+
+    assert thread_results == [True, True]
+    assert ruleset.cleaned is True
+    assert ruleset._lock is None
 
 
 def test_view_and_codegen_profiles_create_named_default_catalog() -> None:
@@ -258,6 +393,27 @@ def test_frame_acl_profile_requires_typed_profiles() -> None:
             codegen_profile=object(),
         )
 
+    with pytest.raises(ValueError, match="required_nexus_label cannot be empty"):
+        FrameACLViewProfile(
+            "custom",
+            minimum_spell_payload_type="general",
+            required_nexus_label="",
+        )
+
+    with pytest.raises(ValueError, match="required_nexus_version cannot be empty"):
+        FrameACLViewProfile(
+            "custom",
+            minimum_spell_payload_type="general",
+            required_nexus_version="",
+        )
+
+    with pytest.raises(ValueError, match="minimum_spell_payload_version cannot be empty"):
+        FrameACLViewProfile(
+            "custom",
+            minimum_spell_payload_type="general",
+            minimum_spell_payload_version="",
+        )
+
     with pytest.raises(ValueError, match="version cannot be empty"):
         FrameACLProfile(
             "support",
@@ -293,6 +449,7 @@ def test_frame_acl_profile_cleanup_cleans_only_owned_overrides() -> None:
     assert codegen_override_ruleset.cleaned is True
     assert view_profile.cleaned is False
     assert codegen_profile.cleaned is False
+    assert view_profile.id is not None
 
 
 def test_frame_acl_profile_exposes_stable_id() -> None:
@@ -381,6 +538,87 @@ def test_frame_acl_profile_cleanup_rechecks_cleaned_inside_lock() -> None:
     assert thread_results == [True, True]
     assert profile.cleaned is True
     assert profile._lock is None
+
+
+def test_frame_acl_view_profile_cleanup_is_idempotent() -> None:
+    """
+    Verify reusable view profile cleanup can be called repeatedly.
+
+    Returns:
+        None.
+    """
+    profile = FrameACLViewProfile(
+        "custom",
+        minimum_spell_payload_type="general",
+    )
+
+    profile.cleanup()
+    profile.cleanup()
+
+    assert profile.cleaned is True
+
+
+def test_frame_acl_view_profile_cleanup_rechecks_cleaned_inside_lock() -> None:
+    """
+    Verify reusable view profile cleanup returns early when already cleaned.
+
+    Returns:
+        None.
+    """
+
+    class _CoordinatedLock:
+        def __init__(self) -> None:
+            self._entered_first = threading.Event()
+            self._second_attempted = threading.Event()
+            self._lock = threading.RLock()
+
+        def __enter__(self):
+            if self._entered_first.is_set():
+                self._second_attempted.set()
+            self._lock.acquire()
+            if not self._entered_first.is_set():
+                self._entered_first.set()
+                assert self._second_attempted.wait(timeout=1.0)
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self._lock.release()
+
+    profile = FrameACLViewProfile(
+        "custom",
+        minimum_spell_payload_type="general",
+    )
+    coordinated_lock = _CoordinatedLock()
+    profile._lock = coordinated_lock
+
+    thread_results = []
+
+    def _run_cleanup() -> None:
+        profile.cleanup()
+        thread_results.append(True)
+
+    first = threading.Thread(target=_run_cleanup)
+    second = threading.Thread(target=_run_cleanup)
+    first.start()
+    coordinated_lock._entered_first.wait(timeout=1.0)
+    second.start()
+    first.join(timeout=1.0)
+    second.join(timeout=1.0)
+
+    assert thread_results == [True, True]
+    assert profile.cleaned is True
+    assert profile._lock is None
+
+
+def test_frame_acl_view_profile_coerce_ruleset_rejects_invalid_type() -> None:
+    """
+    Verify the reusable view profile ruleset coercion rejects wrong types.
+
+    Returns:
+        None.
+    """
+    with pytest.raises(TypeError, match="ruleset must be a FrameACLRuleSet"):
+        FrameACLViewProfile.coerce_ruleset("bad_ruleset", "default_name")
 
 
 def test_frame_acl_manager_exposes_profile_builder_and_profile_registry_surface() -> None:

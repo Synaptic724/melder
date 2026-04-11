@@ -12,6 +12,9 @@ from melder.aether.nexus.acl.profiles.frame_acl_ruleset import (
 from melder.aether.nexus.acl.profiles.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
+from melder.aether.nexus.acl.frame_acl_command_configuration import (
+    FrameACLCommandConfiguration,
+)
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.acl.frame_acl_validator import FrameACLValidator
 from melder.aether.nexus.acl.frame_acl_view_configuration import (
@@ -597,6 +600,87 @@ def test_frame_acl_validator_rejects_invalid_codegen_configuration_type() -> Non
 
     with pytest.raises(TypeError, match="codegen_configuration must be a FrameACLCodegenConfiguration"):
         validator._validate_codegen_configuration(None)
+
+
+def test_frame_acl_validator_rejects_invalid_command_configuration_type() -> None:
+    """
+    Verify the command validator rejects non-command configuration objects.
+
+    Returns:
+        None.
+    """
+    validator = FrameACLValidator("ops")
+
+    with pytest.raises(TypeError, match="command_configuration must be a FrameACLCommandConfiguration"):
+        validator._validate_command_configuration(None)
+
+
+def test_frame_acl_validator_rejects_wrong_command_operation_family() -> None:
+    """
+    Verify validator rejects operations stored in the wrong command ruleset family.
+
+    Returns:
+        None.
+    """
+    validator = FrameACLValidator("ops")
+    configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        FrameACLConfiguration.create_default("ops"),
+        reason="draft",
+    )
+    configuration.set_command_configuration(
+        FrameACLCommandConfiguration(
+            profile_name="strict_command",
+            profile_version="0.0.1",
+            frame_override_ruleset=FrameACLRuleSet(
+                "frame_override",
+                rules=[
+                    FrameACLRule(
+                        rule_name="bad_method_call",
+                        operation="invoke_method",
+                        effect="allow",
+                    )
+                ],
+            ),
+        )
+    )
+    configuration.finalize()
+
+    with pytest.raises(ValueError, match="Unsupported operation 'invoke_method' in command.frame ruleset"):
+        validator.validate_configuration(configuration)
+
+
+def test_frame_acl_validator_rejects_command_member_rule_without_pattern_or_name() -> None:
+    """
+    Verify validator rejects malformed command member rules missing selector shape.
+
+    Returns:
+        None.
+    """
+    validator = FrameACLValidator("ops")
+    configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        FrameACLConfiguration.create_default("ops"),
+        reason="draft",
+    )
+    configuration.set_command_configuration(
+        FrameACLCommandConfiguration(
+            profile_name="strict_command",
+            profile_version="0.0.1",
+            member_override_ruleset=FrameACLRuleSet(
+                "member_override",
+                rules=[
+                    FrameACLRule(
+                        rule_name="bad_member_command_rule",
+                        operation="invoke_method",
+                        effect="allow",
+                    )
+                ],
+            ),
+        )
+    )
+    configuration.finalize()
+
+    with pytest.raises(ValueError, match="Member rules in command.member must declare 'pattern' or 'member_name'"):
+        validator.validate_configuration(configuration)
 
 
 def test_frame_acl_validator_rejects_invalid_ruleset_family_input() -> None:

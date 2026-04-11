@@ -231,7 +231,10 @@ class FrameACLManager(Cleanable):
         with self._lock:
             container = self._frame_acl_containers_by_name.get(frame_name)
             if container is None:
-                container = FrameACLContainer(frame_name)
+                container = FrameACLContainer(
+                    frame_name,
+                    profile_builder=self._frame_acl_profile_builder,
+                )
                 self._frame_acl_containers_by_name[frame_name] = container
             return container
 
