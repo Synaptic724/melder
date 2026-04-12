@@ -1,5 +1,11 @@
 from typing import Dict, Optional
 
+from melder.aether.nexus.rift.rift_space.command_system.command_system import (
+    CommandSystem,
+)
+from melder.aether.nexus.rift.rift_space.command_system.static_command_system import (
+    StaticCommandSystem,
+)
 from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
 from melder.utilities.interfaces.interfaces import IStaticRiftSpace, IRiftEventConfiguration
 
@@ -49,7 +55,8 @@ class StaticRiftSpace(RiftSpace, IStaticRiftSpace):
 
         Contract:
             Delegates all storage and lifecycle behavior to `RiftSpace` while
-            fixing the room kind to `static`.
+            fixing the room kind to `static` and composing the static command
+            surface.
         """
         super().__init__(
             owner_rift_id,
@@ -58,4 +65,16 @@ class StaticRiftSpace(RiftSpace, IStaticRiftSpace):
             metadata=metadata,
             event_configuration=event_configuration,
             space_id=space_id,
+        )
+
+    def _create_command_system(self) -> CommandSystem:
+        """
+        Build the static room's command system.
+
+        Returns:
+            CommandSystem: Static-room command surface.
+        """
+        return StaticCommandSystem(
+            space=self,
+            workstation=self._workstation,
         )

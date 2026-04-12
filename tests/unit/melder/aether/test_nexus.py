@@ -32,6 +32,18 @@ from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.aether.nexus.nexus import Nexus
 from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.aether.nexus.rift.rift_space.command_system.capability_command_system import (
+    CapabilityCommandSystem,
+)
+from melder.aether.nexus.rift.rift_space.command_system.command_system import (
+    CommandSystem,
+)
+from melder.aether.nexus.rift.rift_space.command_system.dynamic_command_system import (
+    DynamicCommandSystem,
+)
+from melder.aether.nexus.rift.rift_space.command_system.static_command_system import (
+    StaticCommandSystem,
+)
 from melder.aether.nexus.rift.rift_space.rift_event_configuration import (
     RiftEventConfiguration,
 )
@@ -1124,6 +1136,57 @@ def test_rift_space_owns_command_system() -> None:
     assert space.command_system.owner_space_id == space.space_id
 
 
+def test_base_rift_space_composes_generic_command_system() -> None:
+    """
+    Verify the base room composes the shared generic command system.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+
+    assert isinstance(space.command_system, CommandSystem)
+    assert not isinstance(space.command_system, StaticCommandSystem)
+    assert not isinstance(space.command_system, CapabilityCommandSystem)
+    assert not isinstance(space.command_system, DynamicCommandSystem)
+
+
+def test_static_rift_space_composes_static_command_system() -> None:
+    """
+    Verify static rooms compose the static command system variant.
+
+    Returns:
+        None.
+    """
+    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+
+    assert isinstance(space.command_system, StaticCommandSystem)
+
+
+def test_capability_rift_space_composes_capability_command_system() -> None:
+    """
+    Verify capability rooms compose the capability command system variant.
+
+    Returns:
+        None.
+    """
+    space = CapabilityRiftSpace(owner_rift_id="rift-1", space_name="main")
+
+    assert isinstance(space.command_system, CapabilityCommandSystem)
+
+
+def test_dynamic_rift_space_composes_dynamic_command_system() -> None:
+    """
+    Verify dynamic rooms compose the dynamic command system variant.
+
+    Returns:
+        None.
+    """
+    space = DynamicRiftSpace(owner_rift_id="rift-1", space_name="main")
+
+    assert isinstance(space.command_system, DynamicCommandSystem)
+
+
 def test_command_system_can_get_selected_target_link_and_record() -> None:
     """
     Verify the command system resolves the single selected viewer target link and record.
@@ -1615,42 +1678,228 @@ def test_frame_viewer_clone_compiled_access_surface_preserves_command_acl_fields
     assert cloned_access_surface.enabled_spell_index_ids == ("lineage-1",)
 
 
-def test_static_room_denies_selected_target_runtime_object_access() -> None:
+def test_static_room_allows_selected_target_runtime_object_access_for_frame() -> None:
     """
-    Verify static rooms reject raw selected-target runtime-object access.
+    Verify static rooms can still return already-live frame runtime objects.
 
     Returns:
         None.
     """
     space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    frame_handle = object()
+    descriptor.set_frame_handle(frame_handle)
     space.attach_frame_viewer(viewer)
     frame_link = viewer.execute_method("list_targets", frame_name="ops")[0]
     space.select_target(frame_link.link_id)
 
-    with pytest.raises(
-        ValueError,
-        match="Raw runtime-object access via 'get_selected_target_runtime_object' is disabled in static RiftSpace",
-    ):
-        space.command_system.get_selected_target_runtime_object()
+    assert space.command_system.get_selected_target_runtime_object() is frame_handle
 
 
-def test_static_room_denies_direct_conduit_runtime_object_access() -> None:
+def test_static_room_allows_direct_conduit_runtime_object_access(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """
-    Verify static rooms reject direct conduit runtime-object access.
+    Verify static rooms can still return already-live conduit runtime objects.
 
     Returns:
         None.
     """
     space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        enabled_conduit_ids=("ops-conduit",),
+    )
     space.attach_frame_viewer(viewer)
+    conduit_object = object()
+    monkeypatch.setattr(
+        type(space.command_system),
+        "_aether",
+        SimpleNamespace(
+            _get_conduit_by_id=lambda conduit_id, frame_name: conduit_object,
+        ),
+    )
+
+    assert (
+        space.command_system.get_conduit_object_by_id(
+            "ops-conduit",
+            frame_name="ops",
+        ) is conduit_object
+    )
+
+
+def test_static_room_returns_live_spell_runtime_object_by_index_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify static rooms return a spell runtime object only when it is already live.
+
+    Returns:
+        None.
+    """
+    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="ops-spellbook",
+            frame_name="ops",
+            owner_conduit_id="ops-conduit",
+            spell_id="sha-1",
+            spell_index_id="lineage-1",
+            spell_name="OpsSpell",
+            spellframe=None,
+            binding_name="ops_spell",
+            permissions=Permissions.create,
+            existence=Existence.unique,
+            payload=SpellDescriptorPayload(
+                payload_type="detailed",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        enabled_conduit_ids=("ops-conduit",),
+        enabled_spell_index_ids=("lineage-1",),
+    )
+    space.attach_frame_viewer(viewer)
+    live_spell_object = object()
+    owner_conduit = SimpleNamespace(
+        _get_live_spell_runtime_object_by_index_id=lambda spell_index_id: (
+            live_spell_object if spell_index_id == "lineage-1" else None
+        )
+    )
+    monkeypatch.setattr(
+        type(space.command_system),
+        "get_conduit_object_by_id",
+        lambda self, conduit_id, *, frame_name=None: owner_conduit,
+    )
+
+    assert (
+        space.command_system.get_spell_object_by_index_id(
+            "lineage-1",
+            frame_name="ops",
+        ) is live_spell_object
+    )
+
+
+def test_static_room_denies_spell_runtime_object_when_not_live(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify static rooms fail when the published spell does not already have a live creation.
+
+    Returns:
+        None.
+    """
+    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="ops-spellbook",
+            frame_name="ops",
+            owner_conduit_id="ops-conduit",
+            spell_id="sha-1",
+            spell_index_id="lineage-1",
+            spell_name="OpsSpell",
+            spellframe=None,
+            binding_name="ops_spell",
+            permissions=Permissions.create,
+            existence=Existence.unique,
+            payload=SpellDescriptorPayload(
+                payload_type="detailed",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        enabled_conduit_ids=("ops-conduit",),
+        enabled_spell_index_ids=("lineage-1",),
+    )
+    space.attach_frame_viewer(viewer)
+    owner_conduit = SimpleNamespace(
+        _get_live_spell_runtime_object_by_index_id=lambda spell_index_id: None
+    )
+    monkeypatch.setattr(
+        type(space.command_system),
+        "get_conduit_object_by_id",
+        lambda self, conduit_id, *, frame_name=None: owner_conduit,
+    )
 
     with pytest.raises(
         ValueError,
-        match="Raw runtime-object access via 'get_conduit_object_by_id' is disabled in static RiftSpace",
+        match="Spell lineage 'lineage-1' is not live in frame 'ops'",
     ):
-        space.command_system.get_conduit_object_by_id("ops-conduit", frame_name="ops")
+        space.command_system.get_spell_object_by_index_id(
+            "lineage-1",
+            frame_name="ops",
+        )
 
 
 def test_capability_room_denies_direct_spell_runtime_object_access() -> None:

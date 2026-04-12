@@ -1,5 +1,11 @@
 from typing import Dict, Optional
 
+from melder.aether.nexus.rift.rift_space.command_system.command_system import (
+    CommandSystem,
+)
+from melder.aether.nexus.rift.rift_space.command_system.dynamic_command_system import (
+    DynamicCommandSystem,
+)
 from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
 from melder.utilities.interfaces.interfaces import IDynamicRiftSpace, IRiftEventConfiguration
 
@@ -50,7 +56,8 @@ class DynamicRiftSpace(RiftSpace, IDynamicRiftSpace):
 
         Contract:
             Delegates all storage and lifecycle behavior to `RiftSpace` while
-            fixing the room kind to `dynamic`.
+            fixing the room kind to `dynamic` and composing the dynamic command
+            surface.
         """
         super().__init__(
             owner_rift_id,
@@ -59,4 +66,16 @@ class DynamicRiftSpace(RiftSpace, IDynamicRiftSpace):
             metadata=metadata,
             event_configuration=event_configuration,
             space_id=space_id,
+        )
+
+    def _create_command_system(self) -> CommandSystem:
+        """
+        Build the dynamic room's command system.
+
+        Returns:
+            CommandSystem: Dynamic-room command surface.
+        """
+        return DynamicCommandSystem(
+            space=self,
+            workstation=self._workstation,
         )

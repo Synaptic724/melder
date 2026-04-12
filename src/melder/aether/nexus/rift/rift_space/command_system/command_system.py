@@ -6,7 +6,6 @@ from melder.aether.aether import Aether
 from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
     CompiledFrameACLAccessSurface,
 )
-from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -731,13 +730,13 @@ class CommandSystem(Cleanable):
             method_name: str,
     ) -> None:
         """
-        Enforce room-mode policy for raw runtime-object exposure.
+        Enforce raw runtime-object access policy for this command system.
 
         Contract:
-            - Blocks raw runtime-object getters in `static` and `capability`
-              rooms.
-            - Leaves `base` and `dynamic` behavior unchanged so existing
-              generic and dynamic command paths continue to work.
+            - Shared base implementation allows raw runtime-object access.
+            - Mode-specific command-system subclasses may override this hook
+              to restrict raw runtime-object exposure without changing the
+              public command method names.
             - Does not affect descriptor/record getters or already-bound
               workstation targets.
 
@@ -751,22 +750,11 @@ class CommandSystem(Cleanable):
 
         Raises:
             ValueError:
-                If the current room mode does not allow raw runtime-object
+                If the current command-system mode does not allow raw
+                runtime-object
                 access.
         """
-        room_kind = self._space.space_kind
-        if room_kind not in (
-                RiftSpaceType.static.value,
-                RiftSpaceType.capability.value,
-        ):
-            return
-        raise ValueError(
-            "Raw runtime-object access via '{0}' is disabled in {1} RiftSpace. "
-            "Use descriptor/record access or bind through an approved dynamic path.".format(
-                method_name,
-                room_kind,
-            )
-        )
+        _ = method_name
 
     def _assert_frame_command_enabled(self, frame_name: str) -> None:
         """

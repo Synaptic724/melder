@@ -1,5 +1,11 @@
 from typing import Dict, Optional
 
+from melder.aether.nexus.rift.rift_space.command_system.capability_command_system import (
+    CapabilityCommandSystem,
+)
+from melder.aether.nexus.rift.rift_space.command_system.command_system import (
+    CommandSystem,
+)
 from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
 from melder.utilities.interfaces.interfaces import (
     ICapabilityRiftSpace,
@@ -63,6 +69,7 @@ class CapabilityRiftSpace(RiftSpace, ICapabilityRiftSpace):
             - Fixes the persisted room kind to `capability` so later room
               selection and serialization can distinguish it from `static` and
               `dynamic` rooms.
+            - Composes the capability command surface for this room.
         """
         super().__init__(
             owner_rift_id,
@@ -71,4 +78,16 @@ class CapabilityRiftSpace(RiftSpace, ICapabilityRiftSpace):
             metadata=metadata,
             event_configuration=event_configuration,
             space_id=space_id,
+        )
+
+    def _create_command_system(self) -> CommandSystem:
+        """
+        Build the capability room's command system.
+
+        Returns:
+            CommandSystem: Capability-room command surface.
+        """
+        return CapabilityCommandSystem(
+            space=self,
+            workstation=self._workstation,
         )

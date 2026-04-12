@@ -6,7 +6,9 @@ from typing import Callable, Deque, Dict, List, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
-from melder.aether.nexus.rift.rift_space.command_system import CommandSystem
+from melder.aether.nexus.rift.rift_space.command_system.command_system import (
+    CommandSystem,
+)
 from melder.aether.nexus.rift.rift_space.workstation import Workstation
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -31,6 +33,9 @@ class RiftSpace(Cleanable, IRiftSpace):
           target state.
         - Owns a room-local command system for controlled getter/execute
           operations above the viewer/workstation split.
+        - Builds the command system through a room-owned factory seam so room
+          subclasses can compose a mode-specific command surface without
+          changing the public `space.command_system` access pattern.
         - Carries a room-level event configuration seam for future action and
           memory enrichment.
         - Does not yet implement full action history, memory points,
@@ -127,10 +132,7 @@ class RiftSpace(Cleanable, IRiftSpace):
             ),
             event_publisher=self._publish_runtime_event,
         )
-        self._command_system: CommandSystem = CommandSystem(
-            space=self,
-            workstation=self._workstation,
-        )
+        self._command_system: CommandSystem = self._create_command_system()
         self._event_configuration: IRiftEventConfiguration = (
             event_configuration if event_configuration is not None else RiftEventConfiguration()
         )
@@ -297,6 +299,24 @@ class RiftSpace(Cleanable, IRiftSpace):
         self.check_cleaned()
         with self._lock:
             return self._command_system
+
+    def _create_command_system(self) -> CommandSystem:
+        """
+        Build the room-local command system owned by this space.
+
+        Contract:
+            - Base `RiftSpace` composes the shared generic command surface.
+            - Room subclasses may override this factory to return a
+              mode-specific command-system subclass while preserving the same
+              public `space.command_system` contract.
+
+        Returns:
+            CommandSystem: Room-local command system for this space.
+        """
+        return CommandSystem(
+            space=self,
+            workstation=self._workstation,
+        )
 
     def attach_frame_viewer(self, frame_viewer: FrameViewer) -> None:
         """
