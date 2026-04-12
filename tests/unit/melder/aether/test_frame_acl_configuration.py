@@ -37,11 +37,11 @@ def test_frame_acl_configuration_create_default_sets_safe_typed_baseline() -> No
     assert configuration.frame_name == "ops"
     assert configuration.previous_configuration_id is None
     assert configuration.view_configuration.profile_name == "safe"
-    assert configuration.command_configuration.profile_name == "default"
+    assert configuration.command_configuration.profile_name == "safe"
     assert configuration.codegen_configuration.profile_name == "safe"
     assert payload["frame_name"] == "ops"
     assert payload["view_configuration"]["profile_name"] == "safe"
-    assert payload["command_configuration"]["profile_name"] == "default"
+    assert payload["command_configuration"]["profile_name"] == "safe"
     assert payload["codegen_configuration"]["profile_name"] == "safe"
 
 
@@ -532,4 +532,3 @@ def test_frame_acl_configuration_init_rejects_empty_reason_and_non_bool_locked()
             reason="invalid",
             locked=None,
         )
-

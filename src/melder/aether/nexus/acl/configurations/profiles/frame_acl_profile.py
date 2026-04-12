@@ -5,7 +5,12 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
+from melder.aether.nexus.acl.configurations.profiles.command.frame_acl_command_profile import (
+    FrameACLCommandProfile,
+)
+from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import (
+    FrameACLRuleSet,
+)
 from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
@@ -16,12 +21,12 @@ from melder.utilities.helpers.id_builder import IDBuilder
 class FrameACLProfile(Cleanable):
     """
     Purpose:
-        Represent one composed ACL profile that pairs a reusable view profile
-        with a reusable codegen profile plus local override rulesets.
+        Represent one composed ACL profile that pairs reusable view, command,
+        and codegen base profiles with local override rulesets.
 
     Contract:
-        - View/codegen profile references are shared library objects and are
-          not cleaned by this composed profile.
+        - Family profile references are shared library objects and are not
+          cleaned by this composed profile.
         - Local override rulesets are owned by this composed profile.
         - Uses an instance lock because cleanup and override ownership mutation
           are grouped state transitions in a nogil runtime.
@@ -38,8 +43,10 @@ class FrameACLProfile(Cleanable):
         "_version",
         "_name",
         "_view_profile",
+        "_command_profile",
         "_codegen_profile",
         "_view_override_ruleset",
+        "_command_override_ruleset",
         "_codegen_override_ruleset",
     ]
 
@@ -48,8 +55,10 @@ class FrameACLProfile(Cleanable):
             name: str,
             *,
             view_profile: FrameACLViewProfile,
+            command_profile: Optional[FrameACLCommandProfile] = None,
             codegen_profile: FrameACLCodegenProfile,
             view_override_ruleset: Optional[FrameACLRuleSet] = None,
+            command_override_ruleset: Optional[FrameACLRuleSet] = None,
             codegen_override_ruleset: Optional[FrameACLRuleSet] = None,
             version: str = "0.0.1",
     ) -> None:
@@ -61,10 +70,14 @@ class FrameACLProfile(Cleanable):
                 Stable composed profile name.
             view_profile:
                 Shared reusable view profile.
+            command_profile:
+                Shared reusable command profile.
             codegen_profile:
                 Shared reusable codegen profile.
             view_override_ruleset:
                 Optional local view override ruleset.
+            command_override_ruleset:
+                Optional local command override ruleset.
             codegen_override_ruleset:
                 Optional local codegen override ruleset.
             version:
@@ -78,6 +91,10 @@ class FrameACLProfile(Cleanable):
             raise ValueError("name cannot be empty.")
         if not isinstance(view_profile, FrameACLViewProfile):
             raise TypeError("view_profile must be a FrameACLViewProfile.")
+        if command_profile is None:
+            command_profile = FrameACLCommandProfile.create_default()
+        if not isinstance(command_profile, FrameACLCommandProfile):
+            raise TypeError("command_profile must be a FrameACLCommandProfile.")
         if not isinstance(codegen_profile, FrameACLCodegenProfile):
             raise TypeError("codegen_profile must be a FrameACLCodegenProfile.")
         if not version:
@@ -87,10 +104,15 @@ class FrameACLProfile(Cleanable):
         self._version: str = version
         self._name: str = name
         self._view_profile = view_profile
+        self._command_profile = command_profile
         self._codegen_profile = codegen_profile
         self._view_override_ruleset = FrameACLViewProfile.coerce_ruleset(
             view_override_ruleset,
             "{0}_view_override".format(name),
+        )
+        self._command_override_ruleset = FrameACLCommandProfile.coerce_ruleset(
+            command_override_ruleset,
+            "{0}_command_override".format(name),
         )
         self._codegen_override_ruleset = FrameACLViewProfile.coerce_ruleset(
             codegen_override_ruleset,
@@ -100,11 +122,6 @@ class FrameACLProfile(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently clear the composed profile.
-
-        Contract:
-            - Cleans the owned override rulesets only.
-            - Drops references to the shared reusable profiles without
-              cleaning those shared library objects.
 
         Returns:
             None.
@@ -116,10 +133,13 @@ class FrameACLProfile(Cleanable):
                 return
             self._cleaned = True
             self._view_override_ruleset.cleanup()
+            self._command_override_ruleset.cleanup()
             self._codegen_override_ruleset.cleanup()
             self._view_override_ruleset = None
+            self._command_override_ruleset = None
             self._codegen_override_ruleset = None
             self._view_profile = None
+            self._command_profile = None
             self._codegen_profile = None
             self._version = None
             self._name = None
@@ -151,6 +171,12 @@ class FrameACLProfile(Cleanable):
         return self._view_profile
 
     @property
+    def command_profile(self) -> FrameACLCommandProfile:
+        """Return the shared reusable command profile referenced by this composition."""
+        self.check_cleaned()
+        return self._command_profile
+
+    @property
     def codegen_profile(self) -> FrameACLCodegenProfile:
         """Return the shared reusable codegen profile referenced by this composition."""
         self.check_cleaned()
@@ -161,6 +187,12 @@ class FrameACLProfile(Cleanable):
         """Return the owned view override ruleset for this composed profile."""
         self.check_cleaned()
         return self._view_override_ruleset
+
+    @property
+    def command_override_ruleset(self) -> FrameACLRuleSet:
+        """Return the owned command override ruleset for this composed profile."""
+        self.check_cleaned()
+        return self._command_override_ruleset
 
     @property
     def codegen_override_ruleset(self) -> FrameACLRuleSet:

@@ -16,9 +16,9 @@ def test_frame_acl_command_configuration_create_default_sets_baseline() -> None:
     """
     configuration = FrameACLCommandConfiguration.create_default()
 
-    assert configuration.profile_name == "default"
+    assert configuration.profile_name == "safe"
     assert configuration.profile_version == "0.0.1"
-    assert configuration.to_json_dict()["profile_name"] == "default"
+    assert configuration.to_json_dict()["profile_name"] == "safe"
 
 
 def test_frame_acl_command_configuration_from_json_reconstructs_rulesets() -> None:

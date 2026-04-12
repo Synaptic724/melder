@@ -219,38 +219,99 @@ class FrameACLSetCompatibilityValidator(Cleanable):
         view_profile = self._profile_builder.get_required_view_profile(
             view_configuration.profile_name
         )
+        view_precision_profile = (
+            self._profile_builder.get_required_view_precision_profile(
+                view_configuration.precision_profile_name
+            )
+            if view_configuration.precision_profile_name is not None
+            else None
+        )
+        command_profile = self._profile_builder.get_required_command_profile(
+            command_configuration.profile_name
+        )
+        command_precision_profile = (
+            self._profile_builder.get_required_command_precision_profile(
+                command_configuration.precision_profile_name
+            )
+            if command_configuration.precision_profile_name is not None
+            else None
+        )
         self._check_visibility_vs_enable(
             report,
             family_label="frame",
-            view_ruleset=view_profile.frame_ruleset,
+            view_rulesets=(
+                view_profile.frame_ruleset,
+                view_precision_profile.frame_ruleset
+                if view_precision_profile is not None
+                else None,
+            ),
             view_override_ruleset=view_configuration.frame_override_ruleset,
-            command_ruleset=command_configuration.frame_override_ruleset,
+            command_rulesets=(
+                command_profile.frame_ruleset,
+                command_precision_profile.frame_ruleset
+                if command_precision_profile is not None
+                else None,
+            ),
+            command_override_ruleset=command_configuration.frame_override_ruleset,
             view_operation="visible",
             command_operation="enable",
         )
         self._check_visibility_vs_enable(
             report,
             family_label="conduit",
-            view_ruleset=view_profile.conduit_ruleset,
+            view_rulesets=(
+                view_profile.conduit_ruleset,
+                view_precision_profile.conduit_ruleset
+                if view_precision_profile is not None
+                else None,
+            ),
             view_override_ruleset=view_configuration.conduit_override_ruleset,
-            command_ruleset=command_configuration.conduit_override_ruleset,
+            command_rulesets=(
+                command_profile.conduit_ruleset,
+                command_precision_profile.conduit_ruleset
+                if command_precision_profile is not None
+                else None,
+            ),
+            command_override_ruleset=command_configuration.conduit_override_ruleset,
             view_operation="visible",
             command_operation="enable",
         )
         self._check_visibility_vs_enable(
             report,
             family_label="spell",
-            view_ruleset=view_profile.spell_ruleset,
+            view_rulesets=(
+                view_profile.spell_ruleset,
+                view_precision_profile.spell_ruleset
+                if view_precision_profile is not None
+                else None,
+            ),
             view_override_ruleset=view_configuration.spell_override_ruleset,
-            command_ruleset=command_configuration.spell_override_ruleset,
+            command_rulesets=(
+                command_profile.spell_ruleset,
+                command_precision_profile.spell_ruleset
+                if command_precision_profile is not None
+                else None,
+            ),
+            command_override_ruleset=command_configuration.spell_override_ruleset,
             view_operation="visible",
             command_operation="enable",
         )
         self._check_member_visibility_vs_command(
             report,
-            view_ruleset=view_profile.member_ruleset,
+            view_rulesets=(
+                view_profile.member_ruleset,
+                view_precision_profile.member_ruleset
+                if view_precision_profile is not None
+                else None,
+            ),
             view_override_ruleset=view_configuration.member_override_ruleset,
-            command_ruleset=command_configuration.member_override_ruleset,
+            command_rulesets=(
+                command_profile.member_ruleset,
+                command_precision_profile.member_ruleset
+                if command_precision_profile is not None
+                else None,
+            ),
+            command_override_ruleset=command_configuration.member_override_ruleset,
         )
 
     def _validate_command_and_codegen(
@@ -273,24 +334,54 @@ class FrameACLSetCompatibilityValidator(Cleanable):
         Returns:
             None.
         """
+        command_profile = self._profile_builder.get_required_command_profile(
+            command_configuration.profile_name
+        )
+        command_precision_profile = (
+            self._profile_builder.get_required_command_precision_profile(
+                command_configuration.precision_profile_name
+            )
+            if command_configuration.precision_profile_name is not None
+            else None
+        )
         codegen_profile = self._profile_builder.get_required_codegen_profile(
             codegen_configuration.profile_name
         )
-        command_spell_allows, command_spell_denies = (
-            self._collect_operation_effects(
-                command_configuration.spell_override_ruleset
+        codegen_precision_profile = (
+            self._profile_builder.get_required_codegen_precision_profile(
+                codegen_configuration.precision_profile_name
             )
+            if codegen_configuration.precision_profile_name is not None
+            else None
+        )
+        command_spell_allows, command_spell_denies = self._collect_effective_operation_effects_from_rulesets(
+            command_profile.spell_ruleset,
+            (
+                command_precision_profile.spell_ruleset
+                if command_precision_profile is not None
+                else None
+            ),
+            command_configuration.spell_override_ruleset,
         )
         command_member_allows, command_member_denies = (
-            self._collect_operation_effects(
-                command_configuration.member_override_ruleset
+            self._collect_effective_operation_effects_from_rulesets(
+                command_profile.member_ruleset,
+                (
+                    command_precision_profile.member_ruleset
+                    if command_precision_profile is not None
+                    else None
+                ),
+                command_configuration.member_override_ruleset,
             )
         )
-        codegen_spell_allows, codegen_spell_denies = (
-            self._collect_effective_operation_effects(
-                codegen_profile.spell_ruleset,
-                codegen_configuration.spell_override_ruleset,
-            )
+        codegen_spell_allows, codegen_spell_denies = self._collect_effective_operation_effects_from_rulesets(
+            codegen_profile.spell_ruleset,
+            (
+                codegen_precision_profile.spell_ruleset
+                if codegen_precision_profile is not None
+                else None
+            ),
+            codegen_configuration.spell_override_ruleset,
         )
         if (
                 "enable" not in command_spell_allows
@@ -323,9 +414,10 @@ class FrameACLSetCompatibilityValidator(Cleanable):
             report: FrameACLSetCompatibilityReport,
             *,
             family_label: str,
-            view_ruleset: FrameACLRuleSet,
+            view_rulesets: Tuple[Optional[FrameACLRuleSet], ...],
             view_override_ruleset: FrameACLRuleSet,
-            command_ruleset: FrameACLRuleSet,
+            command_rulesets: Tuple[Optional[FrameACLRuleSet], ...],
+            command_override_ruleset: FrameACLRuleSet,
             view_operation: str,
             command_operation: str,
     ) -> None:
@@ -337,12 +429,14 @@ class FrameACLSetCompatibilityValidator(Cleanable):
                 Report collecting warnings/errors.
             family_label:
                 Human-readable family name.
-            view_ruleset:
-                Base reusable view ruleset.
+            view_rulesets:
+                Base and precision reusable view rulesets.
             view_override_ruleset:
                 View override ruleset for the family.
-            command_ruleset:
-                Command ruleset for the family.
+            command_rulesets:
+                Base and precision reusable command rulesets.
+            command_override_ruleset:
+                Command override ruleset for the family.
             view_operation:
                 View operation to evaluate.
             command_operation:
@@ -351,12 +445,13 @@ class FrameACLSetCompatibilityValidator(Cleanable):
         Returns:
             None.
         """
-        view_allows, view_denies = self._collect_effective_operation_effects(
-            view_ruleset,
+        view_allows, view_denies = self._collect_effective_operation_effects_from_rulesets(
+            *view_rulesets,
             view_override_ruleset,
         )
-        command_allows, command_denies = self._collect_operation_effects(
-            command_ruleset
+        command_allows, command_denies = self._collect_effective_operation_effects_from_rulesets(
+            *command_rulesets,
+            command_override_ruleset,
         )
         command_has_policy = len(command_allows.union(command_denies)) > 0
         view_enabled = (
@@ -384,9 +479,10 @@ class FrameACLSetCompatibilityValidator(Cleanable):
             self,
             report: FrameACLSetCompatibilityReport,
             *,
-            view_ruleset: FrameACLRuleSet,
+            view_rulesets: Tuple[Optional[FrameACLRuleSet], ...],
             view_override_ruleset: FrameACLRuleSet,
-            command_ruleset: FrameACLRuleSet,
+            command_rulesets: Tuple[Optional[FrameACLRuleSet], ...],
+            command_override_ruleset: FrameACLRuleSet,
     ) -> None:
         """
         Compare member-level view exposure to member-level command actions.
@@ -404,12 +500,13 @@ class FrameACLSetCompatibilityValidator(Cleanable):
         Returns:
             None.
         """
-        view_allows, view_denies = self._collect_effective_operation_effects(
-            view_ruleset,
+        view_allows, view_denies = self._collect_effective_operation_effects_from_rulesets(
+            *view_rulesets,
             view_override_ruleset,
         )
-        command_allows, command_denies = self._collect_operation_effects(
-            command_ruleset
+        command_allows, command_denies = self._collect_effective_operation_effects_from_rulesets(
+            *command_rulesets,
+            command_override_ruleset,
         )
         command_has_policy = len(command_allows.union(command_denies)) > 0
         view_members_visible = (
@@ -484,3 +581,27 @@ class FrameACLSetCompatibilityValidator(Cleanable):
             base_allows.union(override_allows),
             base_denies.union(override_denies),
         )
+
+    @staticmethod
+    def _collect_effective_operation_effects_from_rulesets(
+            *rulesets: Optional[FrameACLRuleSet],
+    ) -> Tuple[Set[str], Set[str]]:
+        """
+        Merge an ordered list of base/precision/override rulesets into one effect set.
+
+        Returns:
+            Tuple[Set[str], Set[str]]: Effective allow and deny operation names.
+        """
+        allow_operations: Set[str] = set()
+        deny_operations: Set[str] = set()
+        for ruleset in rulesets:
+            if ruleset is None:
+                continue
+            ruleset_allows, ruleset_denies = (
+                FrameACLSetCompatibilityValidator._collect_operation_effects(
+                    ruleset
+                )
+            )
+            allow_operations.update(ruleset_allows)
+            deny_operations.update(ruleset_denies)
+        return allow_operations, deny_operations

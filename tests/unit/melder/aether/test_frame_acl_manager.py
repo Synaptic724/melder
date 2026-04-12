@@ -148,7 +148,7 @@ def test_frame_acl_manager_exposes_family_current_configs() -> None:
     codegen_configuration = manager._get_current_codegen_acl_configuration("ops")
 
     assert view_configuration.profile_name == "safe"
-    assert command_configuration.profile_name == "default"
+    assert command_configuration.profile_name == "safe"
     assert codegen_configuration.profile_name == "safe"
 
 

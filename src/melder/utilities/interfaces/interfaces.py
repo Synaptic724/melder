@@ -2429,10 +2429,26 @@ class IFrameACLViewProfile(ICleanable, Protocol):
 
     name: str
     version: str
+    validation_strategy_name: str
     required_nexus_label: str
     required_nexus_version: str
     minimum_spell_payload_type: str
     minimum_spell_payload_version: str
+    frame_ruleset: IFrameACLRuleSet
+    conduit_ruleset: IFrameACLRuleSet
+    spell_ruleset: IFrameACLRuleSet
+    member_ruleset: IFrameACLRuleSet
+
+
+@runtime_checkable
+class IFrameACLCommandProfile(ICleanable, Protocol):
+    """
+    Reusable command-side ACL profile contract.
+    """
+
+    name: str
+    version: str
+    validation_strategy_name: str
     frame_ruleset: IFrameACLRuleSet
     conduit_ruleset: IFrameACLRuleSet
     spell_ruleset: IFrameACLRuleSet
@@ -2447,6 +2463,7 @@ class IFrameACLCodegenProfile(ICleanable, Protocol):
 
     name: str
     version: str
+    validation_strategy_name: str
     frame_ruleset: IFrameACLRuleSet
     conduit_ruleset: IFrameACLRuleSet
     spell_ruleset: IFrameACLRuleSet
@@ -2462,8 +2479,10 @@ class IFrameACLProfile(ICleanable, Protocol):
     name: str
     version: str
     view_profile: IFrameACLViewProfile
+    command_profile: IFrameACLCommandProfile
     codegen_profile: IFrameACLCodegenProfile
     view_override_ruleset: IFrameACLRuleSet
+    command_override_ruleset: IFrameACLRuleSet
     codegen_override_ruleset: IFrameACLRuleSet
 
 
@@ -2475,7 +2494,11 @@ class IFrameACLProfileBuilder(ICleanable, Protocol):
 
     version: str
     view_profiles_by_name: Dict[str, IFrameACLViewProfile]
+    command_profiles_by_name: Dict[str, IFrameACLCommandProfile]
     codegen_profiles_by_name: Dict[str, IFrameACLCodegenProfile]
+    view_precision_profiles_by_name: Dict[str, IFrameACLViewProfile]
+    command_precision_profiles_by_name: Dict[str, IFrameACLCommandProfile]
+    codegen_precision_profiles_by_name: Dict[str, IFrameACLCodegenProfile]
 
     def register_view_profile(self, view_profile: IFrameACLViewProfile) -> None:
         """
@@ -2492,6 +2515,54 @@ class IFrameACLProfileBuilder(ICleanable, Protocol):
     ) -> None:
         """
         Register or replace one reusable codegen-side ACL profile.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def register_command_profile(
+            self,
+            command_profile: IFrameACLCommandProfile,
+    ) -> None:
+        """
+        Register or replace one reusable command-side ACL profile.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def register_view_precision_profile(
+            self,
+            precision_profile: IFrameACLViewProfile,
+    ) -> None:
+        """
+        Register or replace one reusable view precision profile.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def register_command_precision_profile(
+            self,
+            precision_profile: IFrameACLCommandProfile,
+    ) -> None:
+        """
+        Register or replace one reusable command precision profile.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def register_codegen_precision_profile(
+            self,
+            precision_profile: IFrameACLCodegenProfile,
+    ) -> None:
+        """
+        Register or replace one reusable codegen precision profile.
 
         Returns:
             None.
@@ -2522,6 +2593,54 @@ class IFrameACLProfileBuilder(ICleanable, Protocol):
         """
         ...
 
+    def get_required_command_profile(
+            self,
+            profile_name: str,
+    ) -> IFrameACLCommandProfile:
+        """
+        Return one existing command-side profile or raise.
+
+        Returns:
+            IFrameACLCommandProfile: Registered command profile.
+        """
+        ...
+
+    def get_required_view_precision_profile(
+            self,
+            profile_name: str,
+    ) -> IFrameACLViewProfile:
+        """
+        Return one existing view precision profile or raise.
+
+        Returns:
+            IFrameACLViewProfile: Registered view precision profile.
+        """
+        ...
+
+    def get_required_command_precision_profile(
+            self,
+            profile_name: str,
+    ) -> IFrameACLCommandProfile:
+        """
+        Return one existing command precision profile or raise.
+
+        Returns:
+            IFrameACLCommandProfile: Registered command precision profile.
+        """
+        ...
+
+    def get_required_codegen_precision_profile(
+            self,
+            profile_name: str,
+    ) -> IFrameACLCodegenProfile:
+        """
+        Return one existing codegen precision profile or raise.
+
+        Returns:
+            IFrameACLCodegenProfile: Registered codegen precision profile.
+        """
+        ...
+
     def list_view_profile_names(self) -> List[str]:
         """
         Return the registered view-profile names.
@@ -2537,6 +2656,42 @@ class IFrameACLProfileBuilder(ICleanable, Protocol):
 
         Returns:
             List[str]: Current codegen-profile names.
+        """
+        ...
+
+    def list_command_profile_names(self) -> List[str]:
+        """
+        Return the registered command-profile names.
+
+        Returns:
+            List[str]: Current command-profile names.
+        """
+        ...
+
+    def list_view_precision_profile_names(self) -> List[str]:
+        """
+        Return the registered view precision-profile names.
+
+        Returns:
+            List[str]: Current view precision-profile names.
+        """
+        ...
+
+    def list_command_precision_profile_names(self) -> List[str]:
+        """
+        Return the registered command precision-profile names.
+
+        Returns:
+            List[str]: Current command precision-profile names.
+        """
+        ...
+
+    def list_codegen_precision_profile_names(self) -> List[str]:
+        """
+        Return the registered codegen precision-profile names.
+
+        Returns:
+            List[str]: Current codegen precision-profile names.
         """
         ...
 
@@ -2558,13 +2713,51 @@ class IFrameACLProfileBuilder(ICleanable, Protocol):
         """
         ...
 
+    def remove_command_profile(self, profile_name: str) -> bool:
+        """
+        Remove one command-side profile by name.
+
+        Returns:
+            bool: True when the profile existed and was removed.
+        """
+        ...
+
+    def remove_view_precision_profile(self, profile_name: str) -> bool:
+        """
+        Remove one view precision profile by name.
+
+        Returns:
+            bool: True when the profile existed and was removed.
+        """
+        ...
+
+    def remove_command_precision_profile(self, profile_name: str) -> bool:
+        """
+        Remove one command precision profile by name.
+
+        Returns:
+            bool: True when the profile existed and was removed.
+        """
+        ...
+
+    def remove_codegen_precision_profile(self, profile_name: str) -> bool:
+        """
+        Remove one codegen precision profile by name.
+
+        Returns:
+            bool: True when the profile existed and was removed.
+        """
+        ...
+
     def create_profile(
             self,
             name: str,
             *,
             view_profile_name: str,
+            command_profile_name: str,
             codegen_profile_name: str,
             view_override_ruleset: Optional[IFrameACLRuleSet] = None,
+            command_override_ruleset: Optional[IFrameACLRuleSet] = None,
             codegen_override_ruleset: Optional[IFrameACLRuleSet] = None,
     ) -> IFrameACLProfile:
         """
@@ -2590,6 +2783,8 @@ class IFrameACLCommandConfiguration(ICleanable, Protocol):
 
     profile_name: str
     profile_version: str
+    precision_profile_name: Optional[str]
+    precision_profile_version: Optional[str]
 
 
 @runtime_checkable
@@ -2640,6 +2835,7 @@ class IFrameACLContainer(ICleanable, Protocol):
 
     frame_name: str
     frame_acl_configuration: IFrameACLConfiguration
+    frame_acl_profile_builder: IFrameACLProfileBuilder
     named_configurations_by_name: Dict[str, IFrameACLConfiguration]
     frame_acl_set_compatibility_validator: IFrameACLSetCompatibilityValidator
     view_chain_names: List[str]

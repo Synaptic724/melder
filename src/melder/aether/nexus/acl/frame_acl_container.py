@@ -95,11 +95,14 @@ class FrameACLContainer(Cleanable):
         self._view_configuration_chains_by_name: Dict[str, FrameACLConfigurationChain] = {}
         self._command_configuration_chains_by_name: Dict[str, FrameACLConfigurationChain] = {}
         self._codegen_configuration_chains_by_name: Dict[str, FrameACLConfigurationChain] = {}
-        self._frame_acl_validator: FrameACLValidator = FrameACLValidator(frame_name)
         self._owns_profile_builder: bool = profile_builder is None
         if profile_builder is None:
             profile_builder = FrameACLProfileBuilder()
         self._profile_builder: FrameACLProfileBuilder = profile_builder
+        self._frame_acl_validator: FrameACLValidator = FrameACLValidator(
+            frame_name,
+            self._profile_builder,
+        )
         self._change_callback: Optional[Callable[[str], None]] = change_callback
         self._frame_acl_set_compatibility_validator = (
             FrameACLSetCompatibilityValidator(
@@ -170,6 +173,17 @@ class FrameACLContainer(Cleanable):
         """
         self.check_cleaned()
         return self._frame_acl_builder
+
+    @property
+    def frame_acl_profile_builder(self) -> FrameACLProfileBuilder:
+        """
+        Return the shared ACL profile builder/library for this frame container.
+
+        Returns:
+            FrameACLProfileBuilder: Shared reusable profile builder.
+        """
+        self.check_cleaned()
+        return self._profile_builder
 
     @property
     def frame_acl_configuration(self) -> FrameACLConfiguration:

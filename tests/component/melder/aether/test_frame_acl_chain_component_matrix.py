@@ -85,6 +85,8 @@ def _make_locked_view_configuration(
         {
             "profile_name": "safe",
             "profile_version": "0.0.1",
+            "precision_profile_name": "precision",
+            "precision_profile_version": "0.0.1",
             "required_nexus_label": "default",
             "required_nexus_version": "0.0.1",
             "minimum_spell_payload_type": "detailed",
@@ -135,6 +137,8 @@ def _build_typed_json_payload(
             "view_configuration": {
                 "profile_name": "safe",
                 "profile_version": "0.0.1",
+                "precision_profile_name": "precision",
+                "precision_profile_version": "0.0.1",
                 "minimum_spell_payload_type": "detailed",
                 "frame_override_ruleset": {
                     "name": "frame_override_{0}".format(marker),
@@ -387,4 +391,3 @@ def test_component_frame_isolation_keeps_chains_separate(
     assert right_container.get_current_view_configuration() is right_next
     assert left_current.configuration_id != right_current.configuration_id
     assert left_next.configuration_id != right_next.configuration_id
-

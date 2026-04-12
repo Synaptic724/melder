@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, Optional, Set, Tuple
+from typing import Callable, Dict, Optional, Set, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.acl.configurations.frame_acl_command_configuration import (
@@ -8,6 +8,15 @@ from melder.aether.nexus.acl.configurations.frame_acl_command_configuration impo
 from melder.aether.nexus.acl.configurations.frame_acl_codegen_configuration import (
     FrameACLCodegenConfiguration,
 )
+from melder.aether.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder import (
+    FrameACLProfileBuilder,
+)
+from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
+    FrameACLCodegenProfile,
+)
+from melder.aether.nexus.acl.configurations.profiles.command.frame_acl_command_profile import (
+    FrameACLCommandProfile,
+)
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -15,6 +24,30 @@ from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguratio
 from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
+)
+from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
+    FrameACLViewProfile,
+)
+from melder.aether.nexus.acl.validator.profiles.common import (
+    validate_noop_profile_configuration,
+)
+from melder.aether.nexus.acl.validator.profiles.codegen.precision_strategy import (
+    validate_profile_configuration as validate_precision_codegen_profile_configuration,
+)
+from melder.aether.nexus.acl.validator.profiles.codegen.safe_strategy import (
+    validate_profile_configuration as validate_safe_codegen_profile_configuration,
+)
+from melder.aether.nexus.acl.validator.profiles.command.precision_strategy import (
+    validate_profile_configuration as validate_precision_command_profile_configuration,
+)
+from melder.aether.nexus.acl.validator.profiles.command.safe_strategy import (
+    validate_profile_configuration as validate_safe_command_profile_configuration,
+)
+from melder.aether.nexus.acl.validator.profiles.view.precision_strategy import (
+    validate_profile_configuration as validate_precision_view_profile_configuration,
+)
+from melder.aether.nexus.acl.validator.profiles.view.safe_strategy import (
+    validate_profile_configuration as validate_safe_view_profile_configuration,
 )
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -43,6 +76,11 @@ class FrameACLValidator(Cleanable):
         "_id",
         "_lock",
         "_frame_name",
+        "_profile_builder",
+        "_owns_profile_builder",
+        "_view_profile_validation_strategies_by_name",
+        "_command_profile_validation_strategies_by_name",
+        "_codegen_profile_validation_strategies_by_name",
         "_last_validated_configuration_id",
     ]
     _SUPPORTED_NEXUS_RECORD_CONTRACTS: Set[Tuple[str, str]] = {
@@ -111,38 +149,11 @@ class FrameACLValidator(Cleanable):
             "dunder_access",
         },
     }
-    _SAFE_VIEW_FORBIDDEN_OVERRIDES: Dict[str, Set[str]] = {
-        "conduit": {"show_policy", "show_peer_links"},
-        "spell": {
-            "show_class_profile",
-            "show_callable_profile",
-            "show_instance_members",
-            "show_dynamic_access",
-        },
-    }
-    _SAFE_CODEGEN_FORBIDDEN_OVERRIDES: Dict[str, Set[str]] = {
-        "conduit": {
-            "link",
-            "unlink",
-            "create_lesser_conduit",
-            "transfer_ownership",
-        },
-        "spell": {
-            "local_create",
-            "invoke_method",
-            "read_attribute",
-            "write_attribute",
-        },
-        "capability": {
-            "dynamic_access",
-            "mutation",
-            "contract_override",
-            "unsafe_reflection",
-            "dunder_access",
-        },
-    }
-
-    def __init__(self, frame_name: str) -> None:
+    def __init__(
+            self,
+            frame_name: str,
+            profile_builder: Optional[FrameACLProfileBuilder] = None,
+    ) -> None:
         """
         Initialize one frame-scoped ACL validator.
 
@@ -166,9 +177,28 @@ class FrameACLValidator(Cleanable):
         super().__init__()
         if not frame_name:
             raise ValueError("frame_name cannot be empty.")
+        self._owns_profile_builder: bool = profile_builder is None
+        if profile_builder is None:
+            profile_builder = FrameACLProfileBuilder()
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
+        self._profile_builder: FrameACLProfileBuilder = profile_builder
+        self._view_profile_validation_strategies_by_name = {
+            "generic": validate_noop_profile_configuration,
+            "safe": validate_safe_view_profile_configuration,
+            "precision": validate_precision_view_profile_configuration,
+        }
+        self._command_profile_validation_strategies_by_name = {
+            "generic": validate_noop_profile_configuration,
+            "safe": validate_safe_command_profile_configuration,
+            "precision": validate_precision_command_profile_configuration,
+        }
+        self._codegen_profile_validation_strategies_by_name = {
+            "generic": validate_noop_profile_configuration,
+            "safe": validate_safe_codegen_profile_configuration,
+            "precision": validate_precision_codegen_profile_configuration,
+        }
         self._last_validated_configuration_id: Optional[str] = None
 
     def cleanup(self) -> None:
@@ -190,7 +220,14 @@ class FrameACLValidator(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
+            if self._owns_profile_builder and self._profile_builder is not None:
+                self._profile_builder.cleanup()
             self._frame_name = None
+            self._profile_builder = None
+            self._owns_profile_builder = None
+            self._view_profile_validation_strategies_by_name = None
+            self._command_profile_validation_strategies_by_name = None
+            self._codegen_profile_validation_strategies_by_name = None
             self._last_validated_configuration_id = None
             self._id = None
         self._lock = None
@@ -292,7 +329,7 @@ class FrameACLValidator(Cleanable):
             bool: True when the configuration is structurally valid and the
                 descriptor payload contracts satisfy the ACL requirements.
         """
-        self.validate_configuration(configuration)
+        self._validate_configuration_shape_only(configuration)
         if not isinstance(frame_descriptor, FrameDescriptor):
             raise TypeError("frame_descriptor must be a FrameDescriptor.")
         if frame_descriptor.frame_name != self._frame_name:
@@ -308,6 +345,35 @@ class FrameACLValidator(Cleanable):
         )
         return True
 
+    def _validate_configuration_shape_only(
+            self,
+            configuration: FrameACLConfiguration,
+    ) -> None:
+        """
+        Validate the configuration bundle without resolving reusable profiles.
+
+        Returns:
+            None.
+        """
+        if not isinstance(configuration, FrameACLConfiguration):
+            raise TypeError("configuration must be a FrameACLConfiguration.")
+        if configuration.frame_name != self._frame_name:
+            raise ValueError(
+                "FrameACLConfiguration targets frame '{0}', expected '{1}'.".format(
+                    configuration.frame_name,
+                    self._frame_name,
+                )
+            )
+        self._validate_view_configuration_shape_only(
+            configuration.view_configuration
+        )
+        self._validate_command_configuration_shape_only(
+            configuration.command_configuration
+        )
+        self._validate_codegen_configuration_shape_only(
+            configuration.codegen_configuration
+        )
+
     def _validate_view_configuration(
             self,
             view_configuration: FrameACLViewConfiguration,
@@ -322,61 +388,68 @@ class FrameACLValidator(Cleanable):
         Returns:
             None.
         """
-        if not isinstance(view_configuration, FrameACLViewConfiguration):
-            raise TypeError(
-                "view_configuration must be a FrameACLViewConfiguration."
-            )
-        if (
-                view_configuration.required_nexus_label,
-                view_configuration.required_nexus_version,
-        ) not in self._SUPPORTED_NEXUS_RECORD_CONTRACTS:
+        self._validate_view_configuration_shape_only(view_configuration)
+        base_profile = self._profile_builder.get_required_view_profile(
+            view_configuration.profile_name
+        )
+        if view_configuration.profile_version != base_profile.version:
             raise ValueError(
-                "Unsupported required Nexus record contract '{0}:{1}'.".format(
-                    view_configuration.required_nexus_label,
-                    view_configuration.required_nexus_version,
+                "View configuration profile version '{0}' does not match reusable profile version '{1}' for '{2}'.".format(
+                    view_configuration.profile_version,
+                    base_profile.version,
+                    view_configuration.profile_name,
                 )
             )
+        precision_profile = None
+        if view_configuration.precision_profile_name is not None:
+            precision_profile = self._profile_builder.get_required_view_precision_profile(
+                view_configuration.precision_profile_name
+            )
+            if (
+                    view_configuration.precision_profile_version !=
+                    precision_profile.version
+            ):
+                raise ValueError(
+                    "View configuration precision profile version '{0}' does not match reusable precision profile version '{1}' for '{2}'.".format(
+                        view_configuration.precision_profile_version,
+                        precision_profile.version,
+                        view_configuration.precision_profile_name,
+                    )
+                )
+        (
+            expected_nexus_label,
+            expected_nexus_version,
+            expected_payload_type,
+            expected_payload_version,
+        ) = FrameACLViewConfiguration._resolve_effective_contract_fields(
+            base_profile,
+            precision_profile,
+        )
+        if view_configuration.required_nexus_label != expected_nexus_label:
+            raise ValueError(
+                "View configuration required_nexus_label does not match selected base/precision profiles."
+            )
+        if view_configuration.required_nexus_version != expected_nexus_version:
+            raise ValueError(
+                "View configuration required_nexus_version does not match selected base/precision profiles."
+            )
+        if view_configuration.minimum_spell_payload_type != expected_payload_type:
+            raise ValueError(
+                "View configuration minimum_spell_payload_type does not match selected base/precision profiles."
+            )
         if (
-                view_configuration.minimum_spell_payload_type
-                not in self._SUPPORTED_SPELL_PAYLOAD_TYPE_ORDER
+                view_configuration.minimum_spell_payload_version !=
+                expected_payload_version
         ):
             raise ValueError(
-                "Unsupported minimum_spell_payload_type '{0}'.".format(
-                    view_configuration.minimum_spell_payload_type
-                )
+                "View configuration minimum_spell_payload_version does not match selected base/precision profiles."
             )
-        if (
-                view_configuration.minimum_spell_payload_version
-                not in self._SUPPORTED_SPELL_PAYLOAD_VERSIONS
-        ):
-            raise ValueError(
-                "Unsupported minimum_spell_payload_version '{0}'.".format(
-                    view_configuration.minimum_spell_payload_version
-                )
+        self._run_view_profile_validation(base_profile, view_configuration)
+        if precision_profile is not None:
+            self._run_view_profile_validation(
+                precision_profile,
+                view_configuration,
             )
-        self._validate_ruleset_family(
-            view_configuration.frame_override_ruleset,
-            self._VIEW_ALLOWED_OPERATIONS_BY_RULESET["frame"],
-            "view.frame",
-        )
-        self._validate_ruleset_family(
-            view_configuration.conduit_override_ruleset,
-            self._VIEW_ALLOWED_OPERATIONS_BY_RULESET["conduit"],
-            "view.conduit",
-        )
-        self._validate_ruleset_family(
-            view_configuration.spell_override_ruleset,
-            self._VIEW_ALLOWED_OPERATIONS_BY_RULESET["spell"],
-            "view.spell",
-        )
-        self._validate_ruleset_family(
-            view_configuration.member_override_ruleset,
-            self._VIEW_ALLOWED_OPERATIONS_BY_RULESET["member"],
-            "view.member",
-            require_member_shape=True,
-        )
-        if view_configuration.profile_name == "safe":
-            self._validate_safe_view_configuration(view_configuration)
 
     def _validate_descriptor_record_contracts(
             self,
@@ -454,32 +527,43 @@ class FrameACLValidator(Cleanable):
         Returns:
             None.
         """
-        if not isinstance(codegen_configuration, FrameACLCodegenConfiguration):
-            raise TypeError(
-                "codegen_configuration must be a FrameACLCodegenConfiguration."
+        self._validate_codegen_configuration_shape_only(codegen_configuration)
+        base_profile = self._profile_builder.get_required_codegen_profile(
+            codegen_configuration.profile_name
+        )
+        if codegen_configuration.profile_version != base_profile.version:
+            raise ValueError(
+                "Codegen configuration profile version '{0}' does not match reusable profile version '{1}' for '{2}'.".format(
+                    codegen_configuration.profile_version,
+                    base_profile.version,
+                    codegen_configuration.profile_name,
+                )
             )
-        self._validate_ruleset_family(
-            codegen_configuration.frame_override_ruleset,
-            self._CODEGEN_ALLOWED_OPERATIONS_BY_RULESET["frame"],
-            "codegen.frame",
+        precision_profile = None
+        if codegen_configuration.precision_profile_name is not None:
+            precision_profile = self._profile_builder.get_required_codegen_precision_profile(
+                codegen_configuration.precision_profile_name
+            )
+            if (
+                    codegen_configuration.precision_profile_version !=
+                    precision_profile.version
+            ):
+                raise ValueError(
+                    "Codegen configuration precision profile version '{0}' does not match reusable precision profile version '{1}' for '{2}'.".format(
+                        codegen_configuration.precision_profile_version,
+                        precision_profile.version,
+                        codegen_configuration.precision_profile_name,
+                    )
+                )
+        self._run_codegen_profile_validation(
+            base_profile,
+            codegen_configuration,
         )
-        self._validate_ruleset_family(
-            codegen_configuration.conduit_override_ruleset,
-            self._CODEGEN_ALLOWED_OPERATIONS_BY_RULESET["conduit"],
-            "codegen.conduit",
-        )
-        self._validate_ruleset_family(
-            codegen_configuration.spell_override_ruleset,
-            self._CODEGEN_ALLOWED_OPERATIONS_BY_RULESET["spell"],
-            "codegen.spell",
-        )
-        self._validate_ruleset_family(
-            codegen_configuration.capability_override_ruleset,
-            self._CODEGEN_ALLOWED_OPERATIONS_BY_RULESET["capability"],
-            "codegen.capability",
-        )
-        if codegen_configuration.profile_name == "safe":
-            self._validate_safe_codegen_configuration(codegen_configuration)
+        if precision_profile is not None:
+            self._run_codegen_profile_validation(
+                precision_profile,
+                codegen_configuration,
+            )
 
     def _validate_command_configuration(
             self,
@@ -513,6 +597,164 @@ class FrameACLValidator(Cleanable):
                 If one ruleset contains an unsupported command operation or one
                 member rule omits selector shape.
         """
+        self._validate_command_configuration_shape_only(command_configuration)
+        base_profile = self._profile_builder.get_required_command_profile(
+            command_configuration.profile_name
+        )
+        if command_configuration.profile_version != base_profile.version:
+            raise ValueError(
+                "Command configuration profile version '{0}' does not match reusable profile version '{1}' for '{2}'.".format(
+                    command_configuration.profile_version,
+                    base_profile.version,
+                    command_configuration.profile_name,
+                )
+            )
+        precision_profile = None
+        if command_configuration.precision_profile_name is not None:
+            precision_profile = self._profile_builder.get_required_command_precision_profile(
+                command_configuration.precision_profile_name
+            )
+            if (
+                    command_configuration.precision_profile_version !=
+                    precision_profile.version
+            ):
+                raise ValueError(
+                    "Command configuration precision profile version '{0}' does not match reusable precision profile version '{1}' for '{2}'.".format(
+                        command_configuration.precision_profile_version,
+                        precision_profile.version,
+                        command_configuration.precision_profile_name,
+                    )
+                )
+        self._run_command_profile_validation(
+            base_profile,
+            command_configuration,
+        )
+        if precision_profile is not None:
+            self._run_command_profile_validation(
+                precision_profile,
+                command_configuration,
+            )
+
+    def _run_view_profile_validation(
+            self,
+            profile: FrameACLViewProfile,
+            configuration: FrameACLViewConfiguration,
+    ) -> None:
+        """
+        Run the validator-owned strategy for one resolved view profile.
+
+        Returns:
+            None.
+        """
+        strategy = self._view_profile_validation_strategies_by_name.get(
+            profile.validation_strategy_name
+        )
+        if strategy is None:
+            raise ValueError(
+                "Unknown view validation strategy '{0}' for profile '{1}'.".format(
+                    profile.validation_strategy_name,
+                    profile.name,
+                )
+            )
+        strategy(profile, configuration)
+
+    def _validate_view_configuration_shape_only(
+            self,
+            view_configuration: FrameACLViewConfiguration,
+    ) -> None:
+        """
+        Validate only the intrinsic shape of one view configuration.
+
+        Returns:
+            None.
+        """
+        if not isinstance(view_configuration, FrameACLViewConfiguration):
+            raise TypeError(
+                "view_configuration must be a FrameACLViewConfiguration."
+            )
+        if (
+                view_configuration.required_nexus_label,
+                view_configuration.required_nexus_version,
+        ) not in self._SUPPORTED_NEXUS_RECORD_CONTRACTS:
+            raise ValueError(
+                "Unsupported required Nexus record contract '{0}:{1}'.".format(
+                    view_configuration.required_nexus_label,
+                    view_configuration.required_nexus_version,
+                )
+            )
+        if (
+                view_configuration.minimum_spell_payload_type
+                not in self._SUPPORTED_SPELL_PAYLOAD_TYPE_ORDER
+        ):
+            raise ValueError(
+                "Unsupported minimum_spell_payload_type '{0}'.".format(
+                    view_configuration.minimum_spell_payload_type
+                )
+            )
+        if (
+                view_configuration.minimum_spell_payload_version
+                not in self._SUPPORTED_SPELL_PAYLOAD_VERSIONS
+        ):
+            raise ValueError(
+                "Unsupported minimum_spell_payload_version '{0}'.".format(
+                    view_configuration.minimum_spell_payload_version
+                )
+            )
+        self._validate_ruleset_family(
+            view_configuration.frame_override_ruleset,
+            self._VIEW_ALLOWED_OPERATIONS_BY_RULESET["frame"],
+            "view.frame",
+        )
+        self._validate_ruleset_family(
+            view_configuration.conduit_override_ruleset,
+            self._VIEW_ALLOWED_OPERATIONS_BY_RULESET["conduit"],
+            "view.conduit",
+        )
+        self._validate_ruleset_family(
+            view_configuration.spell_override_ruleset,
+            self._VIEW_ALLOWED_OPERATIONS_BY_RULESET["spell"],
+            "view.spell",
+        )
+        self._validate_ruleset_family(
+            view_configuration.member_override_ruleset,
+            self._VIEW_ALLOWED_OPERATIONS_BY_RULESET["member"],
+            "view.member",
+            require_member_shape=True,
+        )
+
+    def _run_command_profile_validation(
+            self,
+            profile: FrameACLCommandProfile,
+            configuration: FrameACLCommandConfiguration,
+    ) -> None:
+        """
+        Run the validator-owned strategy for one resolved command profile.
+
+        Returns:
+            None.
+        """
+        strategy = self._command_profile_validation_strategies_by_name.get(
+            profile.validation_strategy_name
+        )
+        if strategy is None:
+            raise ValueError(
+                "Unknown command validation strategy '{0}' for profile '{1}'.".format(
+                    profile.validation_strategy_name,
+                    profile.name,
+                )
+            )
+        strategy(profile, configuration)
+
+    def _validate_command_configuration_shape_only(
+            self,
+            command_configuration: FrameACLCommandConfiguration,
+    ) -> None:
+        """
+        Validate only the intrinsic shape of one command configuration.
+
+        Returns:
+            None.
+        """
         if not isinstance(command_configuration, FrameACLCommandConfiguration):
             raise TypeError(
                 "command_configuration must be a FrameACLCommandConfiguration."
@@ -537,6 +779,64 @@ class FrameACLValidator(Cleanable):
             self._COMMAND_ALLOWED_OPERATIONS_BY_RULESET["member"],
             "command.member",
             require_member_shape=True,
+        )
+
+    def _run_codegen_profile_validation(
+            self,
+            profile: FrameACLCodegenProfile,
+            configuration: FrameACLCodegenConfiguration,
+    ) -> None:
+        """
+        Run the validator-owned strategy for one resolved codegen profile.
+
+        Returns:
+            None.
+        """
+        strategy = self._codegen_profile_validation_strategies_by_name.get(
+            profile.validation_strategy_name
+        )
+        if strategy is None:
+            raise ValueError(
+                "Unknown codegen validation strategy '{0}' for profile '{1}'.".format(
+                    profile.validation_strategy_name,
+                    profile.name,
+                )
+            )
+        strategy(profile, configuration)
+
+    def _validate_codegen_configuration_shape_only(
+            self,
+            codegen_configuration: FrameACLCodegenConfiguration,
+    ) -> None:
+        """
+        Validate only the intrinsic shape of one codegen configuration.
+
+        Returns:
+            None.
+        """
+        if not isinstance(codegen_configuration, FrameACLCodegenConfiguration):
+            raise TypeError(
+                "codegen_configuration must be a FrameACLCodegenConfiguration."
+            )
+        self._validate_ruleset_family(
+            codegen_configuration.frame_override_ruleset,
+            self._CODEGEN_ALLOWED_OPERATIONS_BY_RULESET["frame"],
+            "codegen.frame",
+        )
+        self._validate_ruleset_family(
+            codegen_configuration.conduit_override_ruleset,
+            self._CODEGEN_ALLOWED_OPERATIONS_BY_RULESET["conduit"],
+            "codegen.conduit",
+        )
+        self._validate_ruleset_family(
+            codegen_configuration.spell_override_ruleset,
+            self._CODEGEN_ALLOWED_OPERATIONS_BY_RULESET["spell"],
+            "codegen.spell",
+        )
+        self._validate_ruleset_family(
+            codegen_configuration.capability_override_ruleset,
+            self._CODEGEN_ALLOWED_OPERATIONS_BY_RULESET["capability"],
+            "codegen.capability",
         )
 
     def _validate_ruleset_family(

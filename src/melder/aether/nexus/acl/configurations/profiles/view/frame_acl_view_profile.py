@@ -238,6 +238,23 @@ class FrameACLViewProfile(Cleanable):
 
         return create_permissive_view_profile()
 
+    @classmethod
+    def create_precision(cls) -> "FrameACLViewProfile":
+        """
+        Create the reusable `precision` view profile.
+
+        Contract:
+            Returns the standard precision-oriented view posture.
+
+        Returns:
+            FrameACLViewProfile: Reusable `precision` view profile.
+        """
+        from melder.aether.nexus.acl.configurations.profiles.view.precision import (
+            create_precision_view_profile,
+        )
+
+        return create_precision_view_profile()
+
     @property
     def id(self) -> str:
         """Return the stable identifier for this reusable view profile."""

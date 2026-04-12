@@ -45,6 +45,8 @@ class FrameACLViewConfiguration(Cleanable):
         "_lock",
         "_profile_name",
         "_profile_version",
+        "_precision_profile_name",
+        "_precision_profile_version",
         "_required_nexus_label",
         "_required_nexus_version",
         "_minimum_spell_payload_type",
@@ -60,6 +62,8 @@ class FrameACLViewConfiguration(Cleanable):
             *,
             profile_name: str,
             profile_version: str,
+            precision_profile_name: Optional[str] = None,
+            precision_profile_version: Optional[str] = None,
             minimum_spell_payload_type: str,
             required_nexus_label: str = "default",
             required_nexus_version: str = "0.0.1",
@@ -81,6 +85,10 @@ class FrameACLViewConfiguration(Cleanable):
                 Reusable view profile name that seeded this config.
             profile_version:
                 Reusable view profile version that seeded this config.
+            precision_profile_name:
+                Optional reusable precision profile name.
+            precision_profile_version:
+                Optional reusable precision profile version.
             minimum_spell_payload_type:
                 Minimum spell payload detail type required by this config.
             required_nexus_label:
@@ -121,6 +129,13 @@ class FrameACLViewConfiguration(Cleanable):
             raise ValueError("profile_name cannot be empty.")
         if not profile_version:
             raise ValueError("profile_version cannot be empty.")
+        if (
+                (precision_profile_name is None) !=
+                (precision_profile_version is None)
+        ):
+            raise ValueError(
+                "precision_profile_name and precision_profile_version must both be set or both be None."
+            )
         if not required_nexus_label:
             raise ValueError("required_nexus_label cannot be empty.")
         if not required_nexus_version:
@@ -144,6 +159,8 @@ class FrameACLViewConfiguration(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._profile_name: str = profile_name
         self._profile_version: str = profile_version
+        self._precision_profile_name: Optional[str] = precision_profile_name
+        self._precision_profile_version: Optional[str] = precision_profile_version
         self._required_nexus_label: str = required_nexus_label
         self._required_nexus_version: str = required_nexus_version
         self._minimum_spell_payload_type: str = minimum_spell_payload_type
@@ -170,6 +187,7 @@ class FrameACLViewConfiguration(Cleanable):
             cls,
             profile: FrameACLViewProfile,
             *,
+            precision_profile: Optional[FrameACLViewProfile] = None,
             frame_override_ruleset: Optional[FrameACLRuleSet] = None,
             conduit_override_ruleset: Optional[FrameACLRuleSet] = None,
             spell_override_ruleset: Optional[FrameACLRuleSet] = None,
@@ -185,6 +203,9 @@ class FrameACLViewConfiguration(Cleanable):
         Args:
             profile:
                 Reusable source view profile.
+            precision_profile:
+                Optional reusable precision profile layered on top of the base
+                view profile.
             frame_override_ruleset:
                 Optional frame-level override ruleset.
             conduit_override_ruleset:
@@ -207,13 +228,33 @@ class FrameACLViewConfiguration(Cleanable):
         """
         if not isinstance(profile, FrameACLViewProfile):
             raise TypeError("profile must be a FrameACLViewProfile.")
+        if (
+                precision_profile is not None
+                and not isinstance(precision_profile, FrameACLViewProfile)
+        ):
+            raise TypeError("precision_profile must be a FrameACLViewProfile.")
+        (
+            required_nexus_label,
+            required_nexus_version,
+            minimum_spell_payload_type,
+            minimum_spell_payload_version,
+        ) = cls._resolve_effective_contract_fields(
+            profile,
+            precision_profile,
+        )
         return cls(
             profile_name=profile.name,
             profile_version=profile.version,
-            required_nexus_label=profile.required_nexus_label,
-            required_nexus_version=profile.required_nexus_version,
-            minimum_spell_payload_type=profile.minimum_spell_payload_type,
-            minimum_spell_payload_version=profile.minimum_spell_payload_version,
+            precision_profile_name=(
+                precision_profile.name if precision_profile is not None else None
+            ),
+            precision_profile_version=(
+                precision_profile.version if precision_profile is not None else None
+            ),
+            required_nexus_label=required_nexus_label,
+            required_nexus_version=required_nexus_version,
+            minimum_spell_payload_type=minimum_spell_payload_type,
+            minimum_spell_payload_version=minimum_spell_payload_version,
             frame_override_ruleset=frame_override_ruleset,
             conduit_override_ruleset=conduit_override_ruleset,
             spell_override_ruleset=spell_override_ruleset,
@@ -255,8 +296,10 @@ class FrameACLViewConfiguration(Cleanable):
         if not isinstance(payload, dict):
             raise TypeError("payload must be a dict.")
         return cls(
-            profile_name=payload.get("profile_name"),
-            profile_version=payload.get("profile_version"),
+            profile_name=payload.get("profile_name", "safe"),
+            profile_version=payload.get("profile_version", "0.0.1"),
+            precision_profile_name=payload.get("precision_profile_name"),
+            precision_profile_version=payload.get("precision_profile_version"),
             required_nexus_label=payload.get("required_nexus_label", "default"),
             required_nexus_version=payload.get("required_nexus_version", "0.0.1"),
             minimum_spell_payload_type=payload.get("minimum_spell_payload_type"),
@@ -356,6 +399,8 @@ class FrameACLViewConfiguration(Cleanable):
             self._required_nexus_version = None
             self._minimum_spell_payload_type = None
             self._minimum_spell_payload_version = None
+            self._precision_profile_name = None
+            self._precision_profile_version = None
             self._profile_version = None
             self._profile_name = None
             self._id = None
@@ -457,6 +502,30 @@ class FrameACLViewConfiguration(Cleanable):
         self.check_cleaned()
         with self._lock:
             return self._profile_version
+
+    @property
+    def precision_profile_name(self) -> Optional[str]:
+        """
+        Return the optional reusable precision profile name.
+
+        Returns:
+            Optional[str]: Precision profile name when one is selected.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._precision_profile_name
+
+    @property
+    def precision_profile_version(self) -> Optional[str]:
+        """
+        Return the optional reusable precision profile version.
+
+        Returns:
+            Optional[str]: Precision profile version when one is selected.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._precision_profile_version
 
     @property
     def required_nexus_label(self) -> str:
@@ -566,6 +635,8 @@ class FrameACLViewConfiguration(Cleanable):
             return {
                 "profile_name": self._profile_name,
                 "profile_version": self._profile_version,
+                "precision_profile_name": self._precision_profile_name,
+                "precision_profile_version": self._precision_profile_version,
                 "required_nexus_label": self._required_nexus_label,
                 "required_nexus_version": self._required_nexus_version,
                 "minimum_spell_payload_type": self._minimum_spell_payload_type,
@@ -637,6 +708,59 @@ class FrameACLViewConfiguration(Cleanable):
         with self._lock:
             self._locked = True
 
+    def set_profiles(
+            self,
+            profile: FrameACLViewProfile,
+            *,
+            precision_profile: Optional[FrameACLViewProfile] = None,
+    ) -> None:
+        """
+        Replace the base and precision profile identity while the config is mutable.
+
+        Args:
+            profile:
+                Replacement base view profile.
+            precision_profile:
+                Optional replacement precision profile.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if not isinstance(profile, FrameACLViewProfile):
+            raise TypeError("profile must be a FrameACLViewProfile.")
+        if (
+                precision_profile is not None
+                and not isinstance(precision_profile, FrameACLViewProfile)
+        ):
+            raise TypeError("precision_profile must be a FrameACLViewProfile.")
+        with self._lock:
+            if self._locked:
+                raise RuntimeError(
+                    "Cannot change profiles on a locked configuration."
+                )
+            (
+                required_nexus_label,
+                required_nexus_version,
+                minimum_spell_payload_type,
+                minimum_spell_payload_version,
+            ) = self._resolve_effective_contract_fields(
+                profile,
+                precision_profile,
+            )
+            self._profile_name = profile.name
+            self._profile_version = profile.version
+            self._precision_profile_name = (
+                precision_profile.name if precision_profile is not None else None
+            )
+            self._precision_profile_version = (
+                precision_profile.version if precision_profile is not None else None
+            )
+            self._required_nexus_label = required_nexus_label
+            self._required_nexus_version = required_nexus_version
+            self._minimum_spell_payload_type = minimum_spell_payload_type
+            self._minimum_spell_payload_version = minimum_spell_payload_version
+
     @staticmethod
     def _coerce_ruleset(
             ruleset: Optional[FrameACLRuleSet],
@@ -660,3 +784,46 @@ class FrameACLViewConfiguration(Cleanable):
         if not isinstance(ruleset, FrameACLRuleSet):
             raise TypeError("ruleset must be a FrameACLRuleSet.")
         return ruleset.clone()
+
+    @staticmethod
+    def _resolve_effective_contract_fields(
+            profile: FrameACLViewProfile,
+            precision_profile: Optional[FrameACLViewProfile],
+    ) -> tuple:
+        """
+        Resolve the effective descriptor floor fields from base + precision.
+
+        Returns:
+            tuple: Required nexus label/version and minimum spell payload
+                type/version.
+        """
+        required_nexus_label = profile.required_nexus_label
+        required_nexus_version = profile.required_nexus_version
+        minimum_spell_payload_type = profile.minimum_spell_payload_type
+        minimum_spell_payload_version = profile.minimum_spell_payload_version
+        if precision_profile is None:
+            return (
+                required_nexus_label,
+                required_nexus_version,
+                minimum_spell_payload_type,
+                minimum_spell_payload_version,
+            )
+        if precision_profile.required_nexus_label != required_nexus_label:
+            raise ValueError(
+                "precision_profile required_nexus_label must match base profile."
+            )
+        if precision_profile.required_nexus_version != required_nexus_version:
+            raise ValueError(
+                "precision_profile required_nexus_version must match base profile."
+            )
+        if precision_profile.minimum_spell_payload_type == "detailed":
+            minimum_spell_payload_type = precision_profile.minimum_spell_payload_type
+            minimum_spell_payload_version = (
+                precision_profile.minimum_spell_payload_version
+            )
+        return (
+            required_nexus_label,
+            required_nexus_version,
+            minimum_spell_payload_type,
+            minimum_spell_payload_version,
+        )

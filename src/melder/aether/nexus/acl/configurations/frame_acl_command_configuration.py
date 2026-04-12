@@ -4,6 +4,9 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.aether.nexus.acl.configurations.profiles.command.frame_acl_command_profile import (
+    FrameACLCommandProfile,
+)
 from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -36,6 +39,8 @@ class FrameACLCommandConfiguration(Cleanable):
         "_lock",
         "_profile_name",
         "_profile_version",
+        "_precision_profile_name",
+        "_precision_profile_version",
         "_frame_override_ruleset",
         "_conduit_override_ruleset",
         "_spell_override_ruleset",
@@ -47,6 +52,8 @@ class FrameACLCommandConfiguration(Cleanable):
             *,
             profile_name: str,
             profile_version: str,
+            precision_profile_name: Optional[str] = None,
+            precision_profile_version: Optional[str] = None,
             frame_override_ruleset: Optional[FrameACLRuleSet] = None,
             conduit_override_ruleset: Optional[FrameACLRuleSet] = None,
             spell_override_ruleset: Optional[FrameACLRuleSet] = None,
@@ -64,6 +71,10 @@ class FrameACLCommandConfiguration(Cleanable):
                 Stable command-profile name.
             profile_version:
                 Stable command-profile version.
+            precision_profile_name:
+                Optional reusable precision profile name.
+            precision_profile_version:
+                Optional reusable precision profile version.
             frame_override_ruleset:
                 Optional frame-level command ruleset override.
             conduit_override_ruleset:
@@ -86,6 +97,13 @@ class FrameACLCommandConfiguration(Cleanable):
             raise ValueError("profile_name cannot be empty.")
         if not profile_version:
             raise ValueError("profile_version cannot be empty.")
+        if (
+                (precision_profile_name is None) !=
+                (precision_profile_version is None)
+        ):
+            raise ValueError(
+                "precision_profile_name and precision_profile_version must both be set or both be None."
+            )
         if not isinstance(reason, str) or not reason:
             raise ValueError("reason cannot be empty.")
 
@@ -101,6 +119,8 @@ class FrameACLCommandConfiguration(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._profile_name: str = profile_name
         self._profile_version: str = profile_version
+        self._precision_profile_name: Optional[str] = precision_profile_name
+        self._precision_profile_version: Optional[str] = precision_profile_version
         self._frame_override_ruleset = self._coerce_ruleset(
             frame_override_ruleset,
             "{0}_frame_override".format(profile_name),
@@ -133,9 +153,55 @@ class FrameACLCommandConfiguration(Cleanable):
         Returns:
             FrameACLCommandConfiguration: Default command configuration.
         """
+        return cls.from_profile(
+            FrameACLCommandProfile.create_default(),
+            source_configuration_id=source_configuration_id,
+            previous_configuration_id=previous_configuration_id,
+            reason=reason,
+            locked=locked,
+        )
+
+    @classmethod
+    def from_profile(
+            cls,
+            profile: FrameACLCommandProfile,
+            *,
+            precision_profile: Optional[FrameACLCommandProfile] = None,
+            frame_override_ruleset: Optional[FrameACLRuleSet] = None,
+            conduit_override_ruleset: Optional[FrameACLRuleSet] = None,
+            spell_override_ruleset: Optional[FrameACLRuleSet] = None,
+            member_override_ruleset: Optional[FrameACLRuleSet] = None,
+            source_configuration_id: Optional[str] = None,
+            previous_configuration_id: Optional[str] = None,
+            reason: str = "from_profile",
+            locked: bool = True,
+    ) -> "FrameACLCommandConfiguration":
+        """
+        Build one applied command configuration from reusable profile assets.
+
+        Returns:
+            FrameACLCommandConfiguration: Applied command configuration.
+        """
+        if not isinstance(profile, FrameACLCommandProfile):
+            raise TypeError("profile must be a FrameACLCommandProfile.")
+        if (
+                precision_profile is not None
+                and not isinstance(precision_profile, FrameACLCommandProfile)
+        ):
+            raise TypeError("precision_profile must be a FrameACLCommandProfile.")
         return cls(
-            profile_name="default",
-            profile_version="0.0.1",
+            profile_name=profile.name,
+            profile_version=profile.version,
+            precision_profile_name=(
+                precision_profile.name if precision_profile is not None else None
+            ),
+            precision_profile_version=(
+                precision_profile.version if precision_profile is not None else None
+            ),
+            frame_override_ruleset=frame_override_ruleset,
+            conduit_override_ruleset=conduit_override_ruleset,
+            spell_override_ruleset=spell_override_ruleset,
+            member_override_ruleset=member_override_ruleset,
             source_configuration_id=source_configuration_id,
             previous_configuration_id=previous_configuration_id,
             reason=reason,
@@ -161,8 +227,10 @@ class FrameACLCommandConfiguration(Cleanable):
         if not isinstance(payload, dict):
             raise TypeError("payload must be a dict.")
         return cls(
-            profile_name=payload.get("profile_name", "default"),
+            profile_name=payload.get("profile_name", "safe"),
             profile_version=payload.get("profile_version", "0.0.1"),
+            precision_profile_name=payload.get("precision_profile_name"),
+            precision_profile_version=payload.get("precision_profile_version"),
             frame_override_ruleset=FrameACLRuleSet.from_json_dict(
                 payload.get(
                     "frame_override_ruleset",
@@ -245,6 +313,8 @@ class FrameACLCommandConfiguration(Cleanable):
             self._created_at = None
             self._reason = None
             self._locked = None
+            self._precision_profile_name = None
+            self._precision_profile_version = None
             self._profile_version = None
             self._profile_name = None
             self._id = None
@@ -347,6 +417,30 @@ class FrameACLCommandConfiguration(Cleanable):
             return self._profile_version
 
     @property
+    def precision_profile_name(self) -> Optional[str]:
+        """
+        Return the optional reusable precision profile name.
+
+        Returns:
+            Optional[str]: Precision profile name when one is selected.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._precision_profile_name
+
+    @property
+    def precision_profile_version(self) -> Optional[str]:
+        """
+        Return the optional reusable precision profile version.
+
+        Returns:
+            Optional[str]: Precision profile version when one is selected.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._precision_profile_version
+
+    @property
     def frame_override_ruleset(self) -> FrameACLRuleSet:
         """
         Return the frame-level command override ruleset.
@@ -406,6 +500,8 @@ class FrameACLCommandConfiguration(Cleanable):
             return {
                 "profile_name": self._profile_name,
                 "profile_version": self._profile_version,
+                "precision_profile_name": self._precision_profile_name,
+                "precision_profile_version": self._precision_profile_version,
                 "frame_override_ruleset": self._frame_override_ruleset.to_json_dict(),
                 "conduit_override_ruleset": (
                     self._conduit_override_ruleset.to_json_dict()
@@ -472,6 +568,48 @@ class FrameACLCommandConfiguration(Cleanable):
         self.check_cleaned()
         with self._lock:
             self._locked = True
+
+    def set_profiles(
+            self,
+            profile: FrameACLCommandProfile,
+            *,
+            precision_profile: Optional[FrameACLCommandProfile] = None,
+    ) -> None:
+        """
+        Replace the base and precision profile identity while the config is mutable.
+
+        Args:
+            profile:
+                Replacement base command profile.
+            precision_profile:
+                Optional replacement precision command profile.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if not isinstance(profile, FrameACLCommandProfile):
+            raise TypeError("profile must be a FrameACLCommandProfile.")
+        if (
+                precision_profile is not None
+                and not isinstance(precision_profile, FrameACLCommandProfile)
+        ):
+            raise TypeError(
+                "precision_profile must be a FrameACLCommandProfile."
+            )
+        with self._lock:
+            if self._locked:
+                raise RuntimeError(
+                    "Cannot change profiles on a locked configuration."
+                )
+            self._profile_name = profile.name
+            self._profile_version = profile.version
+            self._precision_profile_name = (
+                precision_profile.name if precision_profile is not None else None
+            )
+            self._precision_profile_version = (
+                precision_profile.version if precision_profile is not None else None
+            )
 
     @staticmethod
     def _coerce_ruleset(

@@ -197,6 +197,23 @@ class FrameACLCodegenProfile(Cleanable):
 
         return create_permissive_codegen_profile()
 
+    @classmethod
+    def create_precision(cls) -> "FrameACLCodegenProfile":
+        """
+        Create the reusable `precision` codegen profile.
+
+        Contract:
+            Returns the standard precision-oriented codegen posture.
+
+        Returns:
+            FrameACLCodegenProfile: Reusable `precision` codegen profile.
+        """
+        from melder.aether.nexus.acl.configurations.profiles.codegen.precision import (
+            create_precision_codegen_profile,
+        )
+
+        return create_precision_codegen_profile()
+
     @property
     def id(self) -> str:
         """Return the stable identifier for this reusable codegen profile."""

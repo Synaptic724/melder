@@ -193,7 +193,7 @@ class FrameACLBuilder(Cleanable):
             frame_acl_profile: FrameACLProfile,
     ) -> None:
         """
-        Apply one reusable ACL profile into an active view or codegen draft.
+        Apply one reusable ACL profile into an active family draft.
 
         Args:
             frame_acl_profile:
@@ -219,6 +219,19 @@ class FrameACLBuilder(Cleanable):
                     locked=False,
                 )
                 return
+            if self._draft_family_name == "command":
+                self._draft_configuration.cleanup()
+                self._draft_configuration = (
+                    FrameACLCommandConfiguration.from_profile(
+                        frame_acl_profile.command_profile,
+                        member_override_ruleset=(
+                            frame_acl_profile.command_override_ruleset.clone()
+                        ),
+                        reason="builder_profile_apply",
+                        locked=False,
+                    )
+                )
+                return
             if self._draft_family_name == "codegen":
                 self._draft_configuration.cleanup()
                 self._draft_configuration = (
@@ -232,9 +245,123 @@ class FrameACLBuilder(Cleanable):
                     )
                 )
                 return
-            raise RuntimeError(
-                "FrameACLBuilder profile application only supports view or codegen drafts."
-            )
+            raise RuntimeError("FrameACLBuilder has no draft family.")
+
+    def set_profile_name(self, profile_name: str) -> None:
+        """
+        Replace the base profile identity on the active family draft.
+
+        Args:
+            profile_name:
+                Registered base profile name for the active family.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if not self._change_active or self._draft_configuration is None:
+                raise RuntimeError("FrameACLBuilder has no active change.")
+            profile_builder = self._container.frame_acl_profile_builder
+            if self._draft_family_name == "view":
+                self._draft_configuration.set_profiles(
+                    profile_builder.get_required_view_profile(profile_name),
+                    precision_profile=(
+                        profile_builder.get_required_view_precision_profile(
+                            self._draft_configuration.precision_profile_name
+                        )
+                        if self._draft_configuration.precision_profile_name is not None
+                        else None
+                    ),
+                )
+                return
+            if self._draft_family_name == "command":
+                self._draft_configuration.set_profiles(
+                    profile_builder.get_required_command_profile(profile_name),
+                    precision_profile=(
+                        profile_builder.get_required_command_precision_profile(
+                            self._draft_configuration.precision_profile_name
+                        )
+                        if self._draft_configuration.precision_profile_name is not None
+                        else None
+                    ),
+                )
+                return
+            if self._draft_family_name == "codegen":
+                self._draft_configuration.set_profiles(
+                    profile_builder.get_required_codegen_profile(profile_name),
+                    precision_profile=(
+                        profile_builder.get_required_codegen_precision_profile(
+                            self._draft_configuration.precision_profile_name
+                        )
+                        if self._draft_configuration.precision_profile_name is not None
+                        else None
+                    ),
+                )
+                return
+            raise RuntimeError("FrameACLBuilder has no draft family.")
+
+    def set_precision_profile_name(
+            self,
+            profile_name: Optional[str],
+    ) -> None:
+        """
+        Replace the precision profile identity on the active family draft.
+
+        Args:
+            profile_name:
+                Registered precision profile name for the active family, or
+                None to clear precision selection.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if not self._change_active or self._draft_configuration is None:
+                raise RuntimeError("FrameACLBuilder has no active change.")
+            profile_builder = self._container.frame_acl_profile_builder
+            if self._draft_family_name == "view":
+                self._draft_configuration.set_profiles(
+                    profile_builder.get_required_view_profile(
+                        self._draft_configuration.profile_name
+                    ),
+                    precision_profile=(
+                        profile_builder.get_required_view_precision_profile(profile_name)
+                        if profile_name is not None
+                        else None
+                    ),
+                )
+                return
+            if self._draft_family_name == "command":
+                self._draft_configuration.set_profiles(
+                    profile_builder.get_required_command_profile(
+                        self._draft_configuration.profile_name
+                    ),
+                    precision_profile=(
+                        profile_builder.get_required_command_precision_profile(
+                            profile_name
+                        )
+                        if profile_name is not None
+                        else None
+                    ),
+                )
+                return
+            if self._draft_family_name == "codegen":
+                self._draft_configuration.set_profiles(
+                    profile_builder.get_required_codegen_profile(
+                        self._draft_configuration.profile_name
+                    ),
+                    precision_profile=(
+                        profile_builder.get_required_codegen_precision_profile(
+                            profile_name
+                        )
+                        if profile_name is not None
+                        else None
+                    ),
+                )
+                return
+            raise RuntimeError("FrameACLBuilder has no draft family.")
 
     def load_json_configuration_string(
             self,
