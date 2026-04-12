@@ -1,3 +1,5 @@
+import pytest
+
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
 from melder.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
@@ -180,3 +182,92 @@ def test_topology_dependency_mismatch_skips_when_aligned() -> None:
     )
 
     assert diagnostics == []
+
+
+def test_topology_dependency_mismatch_skips_missing_topology() -> None:
+    index = SpellSystemIndex()
+    index.upsert_node(
+        SpellSystemNode(
+            spell_id="root",
+            lineage_id="lineage-root",
+            dependencies={"a"},
+        )
+    )
+    diagnostics: list = []
+
+    TopologyDependencyMismatchStrategy().run(
+        index=index,
+        blueprints={},
+        phase4_results={},
+        broken_spell_ids=set(),
+        spell_system_states=_StatesStub({}),
+        spell_lookup={},
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert diagnostics == []
+
+
+def test_topology_dependency_mismatch_ignores_non_normal_sockets() -> None:
+    index = SpellSystemIndex()
+    index.upsert_node(
+        SpellSystemNode(
+            spell_id="root",
+            lineage_id="lineage-root",
+            dependencies=set(),
+        )
+    )
+    topology = _TopologyStub(
+        [
+            _SocketStub(
+                socket_kind=SocketKind.SPELL_CONTRACT,
+                target_spell_ids={"contract-dep"},
+            ),
+        ]
+    )
+    diagnostics: list = []
+
+    TopologyDependencyMismatchStrategy().run(
+        index=index,
+        blueprints={},
+        phase4_results={},
+        broken_spell_ids=set(),
+        spell_system_states=_StatesStub({"root": topology}),
+        spell_lookup={},
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert diagnostics == []
+
+
+def test_topology_dependency_mismatch_honors_cancellation() -> None:
+    class _Cancel:
+        @property
+        def is_set(self):
+            return True
+
+        def throw_if_set(self):
+            raise RuntimeError("cancelled")
+
+    index = SpellSystemIndex()
+    index.upsert_node(
+        SpellSystemNode(
+            spell_id="root",
+            lineage_id="lineage-root",
+            dependencies=set(),
+        )
+    )
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        TopologyDependencyMismatchStrategy().run(
+            index=index,
+            blueprints={},
+            phase4_results={},
+            broken_spell_ids=set(),
+            spell_system_states=_StatesStub({}),
+            spell_lookup={},
+            diagnostics=[],
+            cancel_event=_Cancel(),
+        )

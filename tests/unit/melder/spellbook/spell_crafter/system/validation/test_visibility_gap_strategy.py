@@ -1,3 +1,5 @@
+import pytest
+
 from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
 from melder.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
 from melder.spellbook.spell_crafter.system.validation.visibility_gap_strategy import (
@@ -134,3 +136,63 @@ def test_visibility_gap_skips_when_dependencies_match() -> None:
     )
 
     assert diagnostics == []
+
+
+def test_visibility_gap_skips_missing_or_none_state_dependencies() -> None:
+    index = SpellSystemIndex()
+    index.upsert_node(
+        SpellSystemNode(
+            spell_id="root",
+            lineage_id="lineage-root",
+            dependencies={"visible"},
+        )
+    )
+
+    class _NoneState:
+        direct_dependencies = None
+
+    diagnostics: list = []
+
+    VisibilityGapStrategy().run(
+        index=index,
+        blueprints={},
+        phase4_results={},
+        broken_spell_ids=set(),
+        spell_system_states=_StatesStub({"root": _NoneState()}),
+        spell_lookup={},
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert diagnostics == []
+
+
+def test_visibility_gap_honors_cancellation() -> None:
+    class _Cancel:
+        @property
+        def is_set(self):
+            return True
+
+        def throw_if_set(self):
+            raise RuntimeError("cancelled")
+
+    index = SpellSystemIndex()
+    index.upsert_node(
+        SpellSystemNode(
+            spell_id="root",
+            lineage_id="lineage-root",
+            dependencies=set(),
+        )
+    )
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        VisibilityGapStrategy().run(
+            index=index,
+            blueprints={},
+            phase4_results={},
+            broken_spell_ids=set(),
+            spell_system_states=_StatesStub({}),
+            spell_lookup={},
+            diagnostics=[],
+            cancel_event=_Cancel(),
+        )
