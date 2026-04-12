@@ -1,3 +1,5 @@
+import pytest
+
 from melder.spellbook.spell_crafter.dag.socket_kind import SocketKind
 from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
 from melder.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
@@ -316,3 +318,229 @@ def test_contract_graph_cycle_skips_when_no_cycle() -> None:
     )
 
     assert diagnostics == []
+
+
+def test_contract_graph_cycle_skips_missing_topology_and_non_contract_sockets() -> None:
+    class FrameA:
+        pass
+
+    spell_lookup = {
+        "A": _SpellStub(spellframe=FrameA, spell_name="spell-a", binding_name=None),
+    }
+    states = _StatesStub(
+        {
+            "with_normal_socket": _TopologyStub(
+                [
+                    _SocketStub(
+                        socket_kind=SocketKind.NORMAL,
+                        contract_key=("ignored", "ignored"),
+                        param_name="plain_dep",
+                    ),
+                ]
+            ),
+        }
+    )
+
+    index = SpellSystemIndex()
+    index.upsert_node(
+        SpellSystemNode(
+            spell_id="missing_topology",
+            lineage_id="lineage-missing",
+            dependencies=set(),
+        )
+    )
+    index.upsert_node(
+        SpellSystemNode(
+            spell_id="with_normal_socket",
+            lineage_id="lineage-normal",
+            dependencies=set(),
+        )
+    )
+
+    diagnostics: list = []
+
+    ContractGraphCycleStrategy().run(
+        index=index,
+        blueprints={},
+        phase4_results={},
+        broken_spell_ids=set(),
+        spell_system_states=states,
+        spell_lookup=spell_lookup,
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert diagnostics == []
+
+
+def test_contract_graph_cycle_reports_missing_contract_key() -> None:
+    states = _StatesStub(
+        {
+            "A": _TopologyStub(
+                [
+                    _SocketStub(
+                        socket_kind=SocketKind.SPELL_CONTRACT,
+                        contract_key=None,
+                        param_name="contract_dep",
+                    ),
+                ]
+            ),
+        }
+    )
+
+    index = SpellSystemIndex()
+    index.upsert_node(
+        SpellSystemNode(
+            spell_id="A",
+            lineage_id="lineage-a",
+            dependencies=set(),
+        )
+    )
+
+    diagnostics: list = []
+
+    ContractGraphCycleStrategy().run(
+        index=index,
+        blueprints={},
+        phase4_results={},
+        broken_spell_ids=set(),
+        spell_system_states=states,
+        spell_lookup={},
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert len(diagnostics) == 1
+    diag = diagnostics[0]
+    assert diag.code == "contract_key_missing"
+    assert diag.spell_id == "A"
+    assert diag.details["param_name"] == "contract_dep"
+    assert diag.details["socket_kind"] == "SPELL_CONTRACT"
+
+
+def test_contract_graph_cycle_skips_contract_socket_without_visible_provider() -> None:
+    states = _StatesStub(
+        {
+            "A": _TopologyStub(
+                [
+                    _SocketStub(
+                        socket_kind=SocketKind.MUTATION_CONTRACT,
+                        contract_key=("missing", "provider"),
+                        param_name="mutation_dep",
+                    ),
+                ]
+            ),
+        }
+    )
+
+    index = SpellSystemIndex()
+    index.upsert_node(
+        SpellSystemNode(
+            spell_id="A",
+            lineage_id="lineage-a",
+            dependencies=set(),
+        )
+    )
+
+    diagnostics: list = []
+
+    ContractGraphCycleStrategy().run(
+        index=index,
+        blueprints={},
+        phase4_results={},
+        broken_spell_ids=set(),
+        spell_system_states=states,
+        spell_lookup={},
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert diagnostics == []
+
+
+def test_contract_graph_cycle_honors_cancellation_during_provider_map() -> None:
+    class _Cancel:
+        @property
+        def is_set(self):
+            return True
+
+        def throw_if_set(self):
+            raise RuntimeError("cancelled")
+
+    class FrameA:
+        pass
+
+    spell_lookup = {
+        "A": _SpellStub(spellframe=FrameA, spell_name="spell-a", binding_name=None),
+    }
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        ContractGraphCycleStrategy().run(
+            index=SpellSystemIndex(),
+            blueprints={},
+            phase4_results={},
+            broken_spell_ids=set(),
+            spell_system_states=_StatesStub({}),
+            spell_lookup=spell_lookup,
+            diagnostics=[],
+            cancel_event=_Cancel(),
+        )
+
+
+def test_contract_graph_cycle_honors_cancellation_during_node_iteration() -> None:
+    class _Cancel:
+        @property
+        def is_set(self):
+            return True
+
+        def throw_if_set(self):
+            raise RuntimeError("cancelled")
+
+    index = SpellSystemIndex()
+    index.upsert_node(
+        SpellSystemNode(
+            spell_id="A",
+            lineage_id="lineage-a",
+            dependencies=set(),
+        )
+    )
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        ContractGraphCycleStrategy().run(
+            index=index,
+            blueprints={},
+            phase4_results={},
+            broken_spell_ids=set(),
+            spell_system_states=_StatesStub({}),
+            spell_lookup={},
+            diagnostics=[],
+            cancel_event=_Cancel(),
+        )
+
+
+def test_detect_cycles_honors_cancellation() -> None:
+    class _Cancel:
+        @property
+        def is_set(self):
+            return True
+
+        def throw_if_set(self):
+            raise RuntimeError("cancelled")
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        ContractGraphCycleStrategy()._detect_cycles(  # noqa: SLF001
+            {"A": {"B"}, "B": {"A"}},
+            _Cancel(),
+        )
+
+
+def test_normalize_cycle_handles_short_input() -> None:
+    assert ContractGraphCycleStrategy()._normalize_cycle(["solo"]) == (  # noqa: SLF001
+        "solo",
+    )
+
+
+def test_normalize_cycle_rotates_to_lexicographically_smallest_node() -> None:
+    assert ContractGraphCycleStrategy()._normalize_cycle(  # noqa: SLF001
+        ["B", "C", "A", "B"]
+    ) == ("A", "B", "C", "A")

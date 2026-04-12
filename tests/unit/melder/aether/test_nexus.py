@@ -3,7 +3,7 @@ import logging
 import threading
 import weakref
 from types import SimpleNamespace
-from typing import Dict
+from typing import Dict, Tuple
 
 import pytest
 
@@ -156,13 +156,26 @@ def _seed_frame_descriptor(frame_name: str) -> None:
     )
 
 
-def _build_descriptor_backed_viewer(frame_name: str) -> FrameViewer:
+def _build_descriptor_backed_viewer(
+    frame_name: str,
+    *,
+    command_frame_enabled: bool = True,
+    enabled_conduit_ids: Tuple[str, ...] = tuple(),
+    enabled_spell_index_ids: Tuple[str, ...] = tuple(),
+) -> FrameViewer:
     """
     Build one minimal descriptor-backed viewer for RiftSpace host tests.
 
     Args:
         frame_name:
             Hosted frame name.
+        command_frame_enabled:
+            Whether frame-level command access is enabled in the compiled ACL
+            surface.
+        enabled_conduit_ids:
+            Command-enabled conduit ids for the hosted frame.
+        enabled_spell_index_ids:
+            Command-enabled spell lineage ids for the hosted frame.
 
     Returns:
         FrameViewer: Descriptor-backed viewer with one visible frame target.
@@ -177,12 +190,15 @@ def _build_descriptor_backed_viewer(frame_name: str) -> FrameViewer:
         view_profile_version=frame_acl_configuration.view_configuration.profile_version,
         codegen_profile_name=frame_acl_configuration.codegen_configuration.profile_name,
         codegen_profile_version=frame_acl_configuration.codegen_configuration.profile_version,
+        command_frame_enabled=command_frame_enabled,
         allowed_kinds=("frame",),
         allowed_commands=("query",),
         frame_payload_fields=("system_state", "rift_enabled"),
         visible_conduit_ids=tuple(),
         visible_spell_keys=tuple(),
         visible_spell_index_ids=tuple(),
+        enabled_conduit_ids=enabled_conduit_ids,
+        enabled_spell_index_ids=enabled_spell_index_ids,
         conduit_payload_sections_by_id={},
         spell_payload_sections_by_key={},
         metadata={"visible_spell_count": 0},
@@ -196,6 +212,61 @@ def _build_descriptor_backed_viewer(frame_name: str) -> FrameViewer:
             frame_name: compiled_access_surface,
         },
         default_view_frame_name=frame_name,
+    )
+
+
+def _replace_compiled_access_surface(
+    viewer: FrameViewer,
+    frame_name: str,
+    *,
+    command_frame_enabled: bool,
+    enabled_conduit_ids: Tuple[str, ...] = tuple(),
+    enabled_spell_index_ids: Tuple[str, ...] = tuple(),
+) -> None:
+    """
+    Replace one hosted compiled ACL surface with updated command-enablement data.
+
+    Args:
+        viewer:
+            Hosted frame viewer whose compiled surface should be replaced.
+        frame_name:
+            Hosted frame name whose surface should be replaced.
+        command_frame_enabled:
+            Whether frame-level command access is enabled.
+        enabled_conduit_ids:
+            Command-enabled conduit ids for the frame.
+        enabled_spell_index_ids:
+            Command-enabled spell lineage ids for the frame.
+
+    Returns:
+        None.
+    """
+    compiled_access_surface = viewer._get_required_compiled_access_surface(frame_name)
+    viewer._compiled_access_surfaces_by_frame_name[frame_name] = (
+        CompiledFrameACLAccessSurface(
+            frame_name=compiled_access_surface.frame_name,
+            configuration_id=compiled_access_surface.configuration_id,
+            view_profile_name=compiled_access_surface.view_profile_name,
+            view_profile_version=compiled_access_surface.view_profile_version,
+            codegen_profile_name=compiled_access_surface.codegen_profile_name,
+            codegen_profile_version=compiled_access_surface.codegen_profile_version,
+            command_frame_enabled=command_frame_enabled,
+            allowed_kinds=compiled_access_surface.allowed_kinds,
+            allowed_commands=compiled_access_surface.allowed_commands,
+            frame_payload_fields=compiled_access_surface.frame_payload_fields,
+            visible_conduit_ids=compiled_access_surface.visible_conduit_ids,
+            visible_spell_keys=compiled_access_surface.visible_spell_keys,
+            visible_spell_index_ids=compiled_access_surface.visible_spell_index_ids,
+            enabled_conduit_ids=enabled_conduit_ids,
+            enabled_spell_index_ids=enabled_spell_index_ids,
+            conduit_payload_sections_by_id=(
+                compiled_access_surface.conduit_payload_sections_by_id
+            ),
+            spell_payload_sections_by_key=(
+                compiled_access_surface.spell_payload_sections_by_key
+            ),
+            metadata=compiled_access_surface.metadata,
+        )
     )
 
 
@@ -1175,6 +1246,12 @@ def test_command_system_can_get_conduit_object_by_id_with_lesser_fallback(
     """
     space = RiftSpace(owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        enabled_conduit_ids=("lesser-1",),
+    )
     space.attach_frame_viewer(viewer)
     sentinel = object()
     root_conduit = SimpleNamespace(
@@ -1217,6 +1294,51 @@ def test_command_system_can_get_spell_object_by_id(
     """
     space = RiftSpace(owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="ops-spellbook",
+            frame_name="ops",
+            owner_conduit_id="ops-conduit",
+            spell_id="sha-1",
+            spell_index_id="lineage-1",
+            spell_name="OpsSpell",
+            spellframe=None,
+            binding_name="ops_spell",
+            permissions=Permissions.create,
+            existence=Existence.unique,
+            payload=SpellDescriptorPayload(
+                payload_type="detailed",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        enabled_spell_index_ids=("lineage-1",),
+    )
     space.attach_frame_viewer(viewer)
     spell = object()
 
@@ -1296,6 +1418,12 @@ def test_command_system_can_get_spell_object_by_index_id(
             ),
         )
     )
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        enabled_spell_index_ids=("lineage-1",),
+    )
     space.attach_frame_viewer(viewer)
     spell = object()
     owner_conduit = SimpleNamespace(
@@ -1315,6 +1443,176 @@ def test_command_system_can_get_spell_object_by_index_id(
     )
 
     assert result is spell
+
+
+def test_command_system_denies_selected_target_link_when_frame_command_disabled() -> None:
+    """
+    Verify selected-target access fails fast when frame command access is disabled.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer(
+        "ops",
+        command_frame_enabled=False,
+    )
+    space.attach_frame_viewer(viewer)
+    frame_link = viewer.execute_method("list_targets", frame_name="ops")[0]
+    space.select_target(frame_link.link_id)
+
+    with pytest.raises(ValueError, match="Command access is disabled for frame 'ops'"):
+        space.command_system.get_selected_target_link()
+
+
+def test_command_system_denies_conduit_object_by_id_when_conduit_acl_disabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify direct conduit access fails fast when the conduit is not command-enabled.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        enabled_conduit_ids=tuple(),
+    )
+    space.attach_frame_viewer(viewer)
+    monkeypatch.setattr(
+        type(space.command_system),
+        "_aether",
+        SimpleNamespace(_get_conduit_by_id=lambda conduit_id, frame_name: object()),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Command access to conduit 'ops-conduit' is disabled in frame 'ops'",
+    ):
+        space.command_system.get_conduit_object_by_id("ops-conduit", frame_name="ops")
+
+
+def test_command_system_denies_spell_object_by_index_id_when_spell_acl_disabled() -> None:
+    """
+    Verify direct spell access fails fast when the spell lineage is not command-enabled.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="ops-spellbook",
+            frame_name="ops",
+            owner_conduit_id="ops-conduit",
+            spell_id="sha-1",
+            spell_index_id="lineage-1",
+            spell_name="OpsSpell",
+            spellframe=None,
+            binding_name="ops_spell",
+            permissions=Permissions.create,
+            existence=Existence.unique,
+            payload=SpellDescriptorPayload(
+                payload_type="detailed",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        enabled_spell_index_ids=tuple(),
+    )
+    space.attach_frame_viewer(viewer)
+
+    with pytest.raises(
+        ValueError,
+        match="Command access to spell lineage 'lineage-1' is disabled in frame 'ops'",
+    ):
+        space.command_system.get_spell_object_by_index_id(
+            "lineage-1",
+            frame_name="ops",
+        )
+
+
+def test_frame_viewer_clone_compiled_access_surface_preserves_command_acl_fields() -> None:
+    """
+    Verify compiled-surface cloning preserves command ACL enablement fields.
+
+    Returns:
+        None.
+    """
+    compiled_access_surface = CompiledFrameACLAccessSurface(
+        frame_name="ops",
+        configuration_id="cfg-1",
+        view_profile_name="safe",
+        view_profile_version="0.0.1",
+        codegen_profile_name="safe",
+        codegen_profile_version="0.0.1",
+        command_frame_enabled=True,
+        allowed_kinds=("frame", "conduit", "spell"),
+        allowed_commands=("query",),
+        frame_payload_fields=("system_state",),
+        visible_conduit_ids=("ops-conduit",),
+        visible_spell_keys=(("ops-spellbook", "sha-1"),),
+        visible_spell_index_ids=("lineage-1",),
+        enabled_conduit_ids=("ops-conduit",),
+        enabled_spell_index_ids=("lineage-1",),
+        conduit_payload_sections_by_id={"ops-conduit": ("conduit_name",)},
+        spell_payload_sections_by_key={
+            ("ops-spellbook", "sha-1"): ("binding_payload",)
+        },
+    )
+
+    cloned_access_surface = FrameViewer._clone_compiled_access_surface(
+        compiled_access_surface
+    )
+
+    assert cloned_access_surface.command_frame_enabled is True
+    assert cloned_access_surface.enabled_conduit_ids == ("ops-conduit",)
+    assert cloned_access_surface.enabled_spell_index_ids == ("lineage-1",)
 
 
 def test_rift_space_can_delegate_frame_surface_calls_to_attached_viewer() -> None:

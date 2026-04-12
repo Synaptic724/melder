@@ -446,6 +446,21 @@ def test_validate_raises_after_cleanup_of_strategies():
         )
 
 
+def test_validate_raises_when_strategy_list_is_missing_without_cleanup():
+    strategy = _RecordingStrategy()
+    sys_val = SpellSystemValidationSystem([strategy])
+    sys_val._strategies = None  # noqa: SLF001
+    with pytest.raises(RuntimeError, match="cleaned"):
+        sys_val.validate(
+            index=_index_with_nodes("a"),
+            blueprints=_blueprint(),
+            phase4_results={},
+            broken_spell_ids=set(),
+            spell_system_states=_States({}),
+            spell_lookup={},
+        )
+
+
 def test_validate_can_run_multiple_times():
     strategy = _RecordingStrategy()
     sys_val = SpellSystemValidationSystem([strategy])
@@ -708,3 +723,20 @@ def test_validate_returns_diagnostics_when_error_present():
     assert result.errors
     assert result.errors[0].severity is SystemDiagnosticSeverity.ERROR
     assert result.is_valid is False
+
+
+def test_record_conduit_resolution_state_ignores_none_conduit_id():
+    sys_val = SpellSystemValidationSystem([])
+    states = _States({})
+    sys_val._record_conduit_resolution_state(  # noqa: SLF001
+        spell_system_states=states,
+        conduit_id=None,
+        index=_index_with_nodes("a"),
+        blueprints=_blueprint(),
+        diagnostics=[],
+        has_error=False,
+    )
+    assert states.spell_validity_calls == []
+    assert states.root_validity_calls == []
+    assert states.diagnostics_calls == []
+    assert states.clear_dirty_calls == []

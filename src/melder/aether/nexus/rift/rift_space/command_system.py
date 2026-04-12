@@ -3,6 +3,9 @@ from typing import Any, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aether import Aether
+from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
+    CompiledFrameACLAccessSurface,
+)
 from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -21,11 +24,14 @@ class CommandSystem(Cleanable):
     Contract:
         - Uses `RiftSpace` selected target ids plus the attached viewer for
           selected-target getters.
+        - Enforces compiled command ACL state on selected-target and direct
+          fetch paths before exposing frame/conduit/spell runtime objects.
         - Uses the owned workstation for active-target attribute/method getters
           and method execution.
         - Does not store results itself. Callers that want persistence must
           bind returned values into the workstation explicitly.
-        - Does not implement ACL enforcement in this first cut.
+        - Leaves already-bound workstation objects outside post-bind ACL
+          policing; command ACLs gate access before bind.
 
     Lifecycle:
         Owned by one `RiftSpace`. Cleanup drops references to the owning room
@@ -147,7 +153,8 @@ class CommandSystem(Cleanable):
 
         Raises:
             ValueError:
-                If no selected target exists or the selected set is ambiguous.
+                If no selected target exists, the selected set is ambiguous, or
+                command ACL denies access to the resolved target.
         """
         self.check_cleaned()
         with self._lock:
@@ -172,6 +179,7 @@ class CommandSystem(Cleanable):
                     frame_name=selected_frame_name,
             ):
                 if frame_link.link_id == selected_target_ids[0]:
+                    self._assert_selected_target_command_enabled(frame_link)
                     return frame_link
             raise ValueError(
                 "Selected target '{0}' was not found in frame '{1}'.".format(
@@ -206,7 +214,7 @@ class CommandSystem(Cleanable):
         Raises:
             ValueError:
                 If no selected target exists or the selected target kind is not
-                supported.
+                supported, or command ACL denies access to the target.
         """
         self.check_cleaned()
         with self._lock:
@@ -256,6 +264,11 @@ class CommandSystem(Cleanable):
 
         Returns:
             object: Live frame handle, conduit object, or spell object.
+
+        Raises:
+            ValueError:
+                If the selected target kind is unsupported or command ACL
+                denies access to the resolved target.
         """
         self.check_cleaned()
         with self._lock:
@@ -305,10 +318,20 @@ class CommandSystem(Cleanable):
 
         Returns:
             object: Live conduit object.
+
+        Raises:
+            ValueError:
+                If the conduit is not published in the selected frame or
+                command ACL denies conduit access.
         """
         self.check_cleaned()
         with self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            self._assert_frame_command_enabled(resolved_frame_name)
+            self._assert_conduit_command_enabled(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
             try:
                 return self._aether._get_conduit_by_id(
                     conduit_id,
@@ -348,10 +371,24 @@ class CommandSystem(Cleanable):
 
         Returns:
             object: Live conduit object.
+
+        Raises:
+            ValueError:
+                If the conduit name is not published in the selected frame,
+                resolves ambiguously, or command ACL denies access.
         """
         self.check_cleaned()
         with self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            self._assert_frame_command_enabled(resolved_frame_name)
+            conduit_id = self._get_required_published_conduit_id_by_name(
+                conduit_name,
+                frame_name=resolved_frame_name,
+            )
+            self._assert_conduit_command_enabled(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
             return self._aether._get_conduit_by_name(
                 conduit_name,
                 resolved_frame_name,
@@ -375,6 +412,11 @@ class CommandSystem(Cleanable):
 
         Returns:
             object: Live spell object.
+
+        Raises:
+            ValueError:
+                If the spell source id is not published in the selected frame
+                or command ACL denies spell access.
         """
         self.check_cleaned()
         with self._lock:
@@ -383,8 +425,8 @@ class CommandSystem(Cleanable):
                 spell_source_id,
                 frame_name=frame_name,
             )
-            return self.get_spell_object_by_id(
-                spell_record.spell_id,
+            return self.get_spell_object_by_index_id(
+                spell_record.spell_index_id,
                 frame_name=resolved_frame_name,
             )
 
@@ -406,12 +448,22 @@ class CommandSystem(Cleanable):
 
         Returns:
             object: Live spell object.
+
+        Raises:
+            ValueError:
+                If the spell lineage is not published in the selected frame or
+                command ACL denies spell access.
         """
         self.check_cleaned()
         with self._lock:
             if not spell_index_id:
                 raise ValueError("spell_index_id cannot be empty.")
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            self._assert_frame_command_enabled(resolved_frame_name)
+            self._assert_spell_command_enabled(
+                spell_index_id,
+                frame_name=resolved_frame_name,
+            )
             viewer = self._space.get_required_frame_viewer()
             descriptor = viewer._get_required_frame_descriptor(resolved_frame_name)
             matching_spell_records = [
@@ -462,10 +514,24 @@ class CommandSystem(Cleanable):
 
         Returns:
             object: Live spell object.
+
+        Raises:
+            ValueError:
+                If the spell is not published in the selected frame or command
+                ACL denies spell access.
         """
         self.check_cleaned()
         with self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            self._assert_frame_command_enabled(resolved_frame_name)
+            spell_index_id = self._get_required_published_spell_index_id_by_spell_id(
+                spell_id,
+                frame_name=resolved_frame_name,
+            )
+            self._assert_spell_command_enabled(
+                spell_index_id,
+                frame_name=resolved_frame_name,
+            )
             owner_conduit = self._aether._get_conduit_by_spell_id(
                 spell_id,
                 resolved_frame_name,
@@ -598,6 +664,269 @@ class CommandSystem(Cleanable):
             selected_frame_name,
             tuple(self._space.list_selected_target_ids(frame_name=selected_frame_name)),
         )
+
+    def _assert_selected_target_command_enabled(
+            self,
+            frame_link: FrameLink,
+    ) -> None:
+        """
+        Enforce command ACL on one selected viewer target.
+
+        Contract:
+            - Applies command ACL only to selected-target access paths.
+            - Resolves spell targets through published descriptor truth so
+              spell gating stays on stable lineage identity.
+            - Leaves unsupported target kinds to the public callers so they
+              retain the existing kind-specific error behavior.
+
+        Args:
+            frame_link:
+                Selected viewer target link being resolved.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If command ACL denies access to the selected frame, conduit, or
+                spell target.
+        """
+        if frame_link.source_kind == "frame":
+            self._assert_frame_command_enabled(frame_link.frame_name)
+            return
+        if frame_link.source_kind == "conduit":
+            self._assert_frame_command_enabled(frame_link.frame_name)
+            self._assert_conduit_command_enabled(
+                frame_link.source_id,
+                frame_name=frame_link.frame_name,
+            )
+            return
+        if frame_link.source_kind == "spell":
+            self._assert_frame_command_enabled(frame_link.frame_name)
+            viewer = self._space.get_required_frame_viewer()
+            _, spell_record = viewer._get_required_spell_record(
+                frame_link.source_id,
+                frame_name=frame_link.frame_name,
+            )
+            self._assert_spell_command_enabled(
+                spell_record.spell_index_id,
+                frame_name=frame_link.frame_name,
+            )
+
+    def _assert_frame_command_enabled(self, frame_name: str) -> None:
+        """
+        Enforce frame-level command access for one hosted frame.
+
+        Args:
+            frame_name:
+                Hosted frame whose command gate should be checked.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If the frame does not enable command access.
+        """
+        compiled_access_surface = self._get_required_compiled_access_surface(frame_name)
+        if compiled_access_surface.command_frame_enabled:
+            return
+        raise ValueError(
+            "Command access is disabled for frame '{0}'.".format(frame_name)
+        )
+
+    def _assert_conduit_command_enabled(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: str,
+    ) -> None:
+        """
+        Enforce conduit-level command access for one published conduit id.
+
+        Args:
+            conduit_id:
+                Published conduit id being resolved.
+            frame_name:
+                Hosted frame the conduit belongs to.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If the conduit is not command-enabled in the target frame.
+        """
+        compiled_access_surface = self._get_required_compiled_access_surface(frame_name)
+        if conduit_id in compiled_access_surface.enabled_conduit_ids:
+            return
+        raise ValueError(
+            "Command access to conduit '{0}' is disabled in frame '{1}'.".format(
+                conduit_id,
+                frame_name,
+            )
+        )
+
+    def _assert_spell_command_enabled(
+            self,
+            spell_index_id: str,
+            *,
+            frame_name: str,
+    ) -> None:
+        """
+        Enforce spell-level command access for one stable spell lineage id.
+
+        Args:
+            spell_index_id:
+                Stable spell lineage id being resolved.
+            frame_name:
+                Hosted frame the spell belongs to.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If the spell lineage is not command-enabled in the target
+                frame.
+        """
+        compiled_access_surface = self._get_required_compiled_access_surface(frame_name)
+        if spell_index_id in compiled_access_surface.enabled_spell_index_ids:
+            return
+        raise ValueError(
+            "Command access to spell lineage '{0}' is disabled in frame '{1}'.".format(
+                spell_index_id,
+                frame_name,
+            )
+        )
+
+    def _get_required_published_conduit_id_by_name(
+            self,
+            conduit_name: str,
+            *,
+            frame_name: str,
+    ) -> str:
+        """
+        Return the published conduit id matching one conduit name.
+
+        Contract:
+            - Resolves against published descriptor truth, not runtime conduit
+              registries.
+            - Raises on missing or ambiguous published matches.
+
+        Args:
+            conduit_name:
+                Published conduit name to resolve.
+            frame_name:
+                Hosted frame to query.
+
+        Returns:
+            str: Published conduit id for the named conduit.
+
+        Raises:
+            ValueError:
+                If the conduit name is empty, missing, or ambiguous.
+        """
+        if not conduit_name:
+            raise ValueError("conduit_name cannot be empty.")
+        viewer = self._space.get_required_frame_viewer()
+        descriptor = viewer._get_required_frame_descriptor(frame_name)
+        matching_conduit_ids = [
+            conduit_record.conduit_id
+            for conduit_record in descriptor.conduit_records_by_id.values()
+            if conduit_record.payload.conduit_name == conduit_name
+        ]
+        if len(matching_conduit_ids) == 0:
+            raise ValueError(
+                "Conduit name '{0}' was not found in frame '{1}'.".format(
+                    conduit_name,
+                    frame_name,
+                )
+            )
+        if len(matching_conduit_ids) > 1:
+            raise ValueError(
+                "Conduit name '{0}' is ambiguous in frame '{1}'.".format(
+                    conduit_name,
+                    frame_name,
+                )
+            )
+        return matching_conduit_ids[0]
+
+    def _get_required_published_spell_index_id_by_spell_id(
+            self,
+            spell_id: str,
+            *,
+            frame_name: str,
+    ) -> str:
+        """
+        Return the stable spell lineage id matching one published spell id.
+
+        Contract:
+            - Resolves through published descriptor truth so ACL checks stay on
+              stable lineage identity.
+            - Accepts multiple matching records only when they collapse to one
+              lineage id.
+
+        Args:
+            spell_id:
+                Current published spell id to resolve.
+            frame_name:
+                Hosted frame to query.
+
+        Returns:
+            str: Stable published spell lineage id.
+
+        Raises:
+            ValueError:
+                If the spell id is empty, missing, or ambiguous across
+                published lineages.
+        """
+        if not spell_id:
+            raise ValueError("spell_id cannot be empty.")
+        viewer = self._space.get_required_frame_viewer()
+        descriptor = viewer._get_required_frame_descriptor(frame_name)
+        matching_spell_index_ids = {
+            spell_record.spell_index_id
+            for spell_record in descriptor.spell_records_by_key.values()
+            if spell_record.spell_id == spell_id
+        }
+        if len(matching_spell_index_ids) == 0:
+            raise ValueError(
+                "Spell id '{0}' was not found in frame '{1}'.".format(
+                    spell_id,
+                    frame_name,
+                )
+            )
+        if len(matching_spell_index_ids) > 1:
+            raise ValueError(
+                "Spell id '{0}' is ambiguous in frame '{1}'.".format(
+                    spell_id,
+                    frame_name,
+                )
+            )
+        return next(iter(matching_spell_index_ids))
+
+    def _get_required_compiled_access_surface(
+            self,
+            frame_name: str,
+    ) -> CompiledFrameACLAccessSurface:
+        """
+        Return the compiled ACL access surface for one hosted frame.
+
+        Args:
+            frame_name:
+                Hosted frame whose compiled ACL surface is required.
+
+        Returns:
+            CompiledFrameACLAccessSurface:
+                Compiled frame ACL access surface for the target frame.
+
+        Raises:
+            ValueError:
+                If the attached viewer does not host the requested frame.
+        """
+        viewer = self._space.get_required_frame_viewer()
+        return viewer._get_required_compiled_access_surface(frame_name)
 
     def _bind_result(
             self,
