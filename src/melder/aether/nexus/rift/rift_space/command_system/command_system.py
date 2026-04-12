@@ -303,6 +303,39 @@ class CommandSystem(Cleanable):
                 )
             )
 
+    def get_conduit_cloud(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return the live conduit cloud for one hosted frame.
+
+        Purpose:
+            Expose the frame-local conduit discovery mesh through the shared
+            command surface so non-static rooms can use the same mediated API
+            vocabulary instead of reaching around it.
+
+        Args:
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            object: Live conduit-cloud object for the resolved frame.
+
+        Raises:
+            ValueError:
+                If command access is disabled for the frame or the current room
+                blocks raw runtime-object access.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            self._assert_raw_runtime_object_access_allowed("get_conduit_cloud")
+            self._assert_frame_command_enabled(resolved_frame_name)
+            return self._aether.get_conduit_cloud(resolved_frame_name)
+
     def get_conduit_by_id(
             self,
             conduit_id: str,
@@ -398,6 +431,306 @@ class CommandSystem(Cleanable):
                 conduit_name,
                 resolved_frame_name,
             )
+
+    def create_lesser_conduit(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Create one lesser conduit beneath an existing conduit.
+
+        Purpose:
+            Provide the shared manual-runtime command seam for lesser-conduit
+            creation without forcing callers to fetch a conduit first and then
+            call into it directly.
+
+        Args:
+            conduit_id:
+                Conduit id that should own the new lesser conduit.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            object: Newly created lesser conduit object.
+
+        Raises:
+            ValueError:
+                If the current room denies runtime topology mutation or the
+                conduit cannot be resolved through the command surface.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._assert_topology_mutation_allowed("create_lesser_conduit")
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return conduit.create_lesser_conduit()
+
+    def create_cluster(
+            self,
+            conduit_id: str,
+            cluster_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> None:
+        """
+        Create one cluster through an existing conduit.
+
+        Args:
+            conduit_id:
+                Conduit id that should issue the cluster creation request.
+            cluster_name:
+                Cluster name to create.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If the current room denies runtime topology mutation or the
+                conduit cannot be resolved through the command surface.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._assert_topology_mutation_allowed("create_cluster")
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            conduit.create_cluster(cluster_name)
+
+    def delete_cluster(
+            self,
+            conduit_id: str,
+            cluster_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> None:
+        """
+        Delete one cluster through an existing conduit.
+
+        Args:
+            conduit_id:
+                Conduit id that should issue the cluster deletion request.
+            cluster_name:
+                Cluster name to delete.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._assert_topology_mutation_allowed("delete_cluster")
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            conduit.delete_cluster(cluster_name)
+
+    def join_cluster(
+            self,
+            conduit_id: str,
+            cluster_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> None:
+        """
+        Join one conduit to one cluster through the shared command surface.
+
+        Args:
+            conduit_id:
+                Conduit id that should join the cluster.
+            cluster_name:
+                Cluster name to join.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._assert_topology_mutation_allowed("join_cluster")
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            conduit.join_cluster(cluster_name)
+
+    def leave_cluster(
+            self,
+            conduit_id: str,
+            cluster_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> None:
+        """
+        Remove one conduit from one cluster through the shared command surface.
+
+        Args:
+            conduit_id:
+                Conduit id that should leave the cluster.
+            cluster_name:
+                Cluster name to leave.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._assert_topology_mutation_allowed("leave_cluster")
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            conduit.leave_cluster(cluster_name)
+
+    def list_clusters(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return the cluster names visible from one conduit.
+
+        Args:
+            conduit_id:
+                Conduit id whose cluster membership view should be queried.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            Tuple[str, ...]: Cluster names visible from the conduit.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return tuple(conduit.list_clusters())
+
+    def link_conduits(
+            self,
+            source_conduit_id: str,
+            target_conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> bool:
+        """
+        Link two conduits through the shared command surface.
+
+        Args:
+            source_conduit_id:
+                Conduit id that should initiate the link.
+            target_conduit_id:
+                Target conduit id.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            bool: True when the link succeeds.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._assert_topology_mutation_allowed("link_conduits")
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            source_conduit = self.get_conduit_by_id(
+                source_conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            target_conduit = self.get_conduit_by_id(
+                target_conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return source_conduit.link(target_conduit)
+
+    def sever_link(
+            self,
+            source_conduit_id: str,
+            target_conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> bool:
+        """
+        Sever one conduit link through the shared command surface.
+
+        Args:
+            source_conduit_id:
+                Conduit id that owns the link to sever.
+            target_conduit_id:
+                Target conduit id.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            bool: True when the link is removed.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._assert_topology_mutation_allowed("sever_link")
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            source_conduit = self.get_conduit_by_id(
+                source_conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            target_conduit = self.get_conduit_by_id(
+                target_conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return source_conduit.sever_link(target_conduit)
+
+    def get_links(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[object, ...]:
+        """
+        Return the current peer links for one conduit.
+
+        Args:
+            conduit_id:
+                Conduit id whose peer links should be returned.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            Tuple[object, ...]: Linked conduit objects.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return tuple(conduit.get_links())
 
     def list_conduit_ids(
             self,
@@ -830,6 +1163,50 @@ class CommandSystem(Cleanable):
                 )
             return result
 
+    def list_supported_command_methods(self) -> Tuple[str, ...]:
+        """
+        Return the public command methods supported by this room surface.
+
+        Purpose:
+            Give callers a cheap, explicit way to discover the current
+            command-surface vocabulary instead of guessing from room type or
+            trial-and-error errors.
+
+        Returns:
+            Tuple[str, ...]: Supported public command method names in stable
+                presentation order.
+        """
+        self.check_cleaned()
+        return (
+            "get_selected_target_link",
+            "get_selected_target_record",
+            "get_selected_target_runtime_object",
+            "get_conduit_cloud",
+            "get_conduit_by_id",
+            "get_conduit_by_name",
+            "list_conduit_ids",
+            "list_conduit_names",
+            "count_conduits",
+            "has_conduit_id",
+            "has_conduit_name",
+            "find_conduit_id_by_name",
+            "create_lesser_conduit",
+            "create_cluster",
+            "delete_cluster",
+            "join_cluster",
+            "leave_cluster",
+            "list_clusters",
+            "link_conduits",
+            "sever_link",
+            "get_links",
+            "get_spell_object_by_source_id",
+            "get_spell_object_by_index_id",
+            "get_spell_object_by_id",
+            "get_target_attribute",
+            "get_target_method",
+            "execute_target_method",
+        )
+
     def _resolve_selected_target_ids(
             self,
             *,
@@ -930,6 +1307,28 @@ class CommandSystem(Cleanable):
                 If the current command-system mode does not allow raw
                 runtime-object
                 access.
+        """
+        _ = method_name
+
+    def _assert_topology_mutation_allowed(
+            self,
+            method_name: str,
+    ) -> None:
+        """
+        Enforce room-level topology-mutation policy for shared command methods.
+
+        Contract:
+            - Shared base implementation allows topology mutation.
+            - Room-specific command systems may override this helper to deny
+              runtime structure creation or rewiring while keeping the shared
+              method vocabulary intact.
+
+        Args:
+            method_name:
+                Public topology-mutation method being attempted.
+
+        Returns:
+            None.
         """
         _ = method_name
 

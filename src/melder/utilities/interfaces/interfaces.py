@@ -6821,6 +6821,16 @@ class ICommandSystem(ICleanable, Protocol):
         """
         ...
 
+    def get_conduit_cloud(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return the live conduit cloud for one hosted frame.
+        """
+        ...
+
     def list_conduit_ids(
             self,
             *,
@@ -6881,6 +6891,111 @@ class ICommandSystem(ICleanable, Protocol):
     ) -> Optional[str]:
         """
         Return the published command-enabled conduit id for one conduit name.
+        """
+        ...
+
+    def create_lesser_conduit(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Create one lesser conduit beneath an existing conduit.
+        """
+        ...
+
+    def create_cluster(
+            self,
+            conduit_id: str,
+            cluster_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> None:
+        """
+        Create one cluster through an existing conduit.
+        """
+        ...
+
+    def delete_cluster(
+            self,
+            conduit_id: str,
+            cluster_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> None:
+        """
+        Delete one cluster through an existing conduit.
+        """
+        ...
+
+    def join_cluster(
+            self,
+            conduit_id: str,
+            cluster_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> None:
+        """
+        Join one conduit to one cluster through the shared command surface.
+        """
+        ...
+
+    def leave_cluster(
+            self,
+            conduit_id: str,
+            cluster_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> None:
+        """
+        Remove one conduit from one cluster through the shared command surface.
+        """
+        ...
+
+    def list_clusters(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return the cluster names visible from one conduit.
+        """
+        ...
+
+    def link_conduits(
+            self,
+            source_conduit_id: str,
+            target_conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> bool:
+        """
+        Link two conduits through the shared command surface.
+        """
+        ...
+
+    def sever_link(
+            self,
+            source_conduit_id: str,
+            target_conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> bool:
+        """
+        Sever one conduit link through the shared command surface.
+        """
+        ...
+
+    def get_links(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[object, ...]:
+        """
+        Return the current peer links for one conduit.
         """
         ...
 
@@ -6962,6 +7077,12 @@ class ICommandSystem(ICleanable, Protocol):
     ) -> object:
         """
         Execute one method on the current workstation target.
+        """
+        ...
+
+    def list_supported_command_methods(self) -> Tuple[str, ...]:
+        """
+        Return the public command methods supported by this room surface.
         """
         ...
 

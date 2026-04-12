@@ -43,6 +43,31 @@ class StaticCommandSystem(CommandSystem):
         """
         _ = method_name
 
+    def _assert_topology_mutation_allowed(
+            self,
+            method_name: str,
+    ) -> None:
+        """
+        Deny runtime topology mutation through the static command surface.
+
+        Args:
+            method_name:
+                Shared topology-mutation method being attempted.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                Always, because static rooms do not allow runtime structure
+                creation or rewiring through the command surface.
+        """
+        raise ValueError(
+            "Static command surface does not allow topology mutation method '{0}'.".format(
+                method_name
+            )
+        )
+
     def get_spell_object_by_source_id(
             self,
             spell_source_id: str,
@@ -438,3 +463,26 @@ class StaticCommandSystem(CommandSystem):
             ),
             "reason": reason,
         }
+
+    def list_supported_command_methods(self) -> tuple[str, ...]:
+        """
+        Return the public command methods supported by static rooms.
+
+        Returns:
+            tuple[str, ...]: Supported public command method names for static
+                command usage.
+        """
+        denied_methods = {
+            "create_lesser_conduit",
+            "create_cluster",
+            "delete_cluster",
+            "join_cluster",
+            "leave_cluster",
+            "link_conduits",
+            "sever_link",
+        }
+        return tuple(
+            method_name
+            for method_name in super().list_supported_command_methods()
+            if method_name not in denied_methods
+        )

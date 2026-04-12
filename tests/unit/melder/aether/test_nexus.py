@@ -2831,17 +2831,9 @@ def test_capability_room_can_access_conduit_cloud_on_dynamic_frame() -> None:
         )
         space.attach_frame_viewer(viewer)
         space.command_system._aether = SimpleNamespace(
-            get_conduit_by_id=lambda conduit_id, frame_name: conduit,
+            get_conduit_cloud=lambda frame_name: conduit.get_conduit_cloud(),
         )
-
-        capability_conduit = space.command_system.get_conduit_by_id(
-            conduit.id,
-            frame_name="ops",
-        )
-        space.workstation.bind_object("root", capability_conduit, weak_ref=False)
-        space.workstation.set_target("root", store="objects")
-
-        conduit_cloud = space.command_system.execute_target_method("get_conduit_cloud")
+        conduit_cloud = space.command_system.get_conduit_cloud(frame_name="ops")
 
         assert conduit_cloud.has_conduit_name("root") is True
     finally:
@@ -2896,22 +2888,11 @@ def test_capability_room_can_create_lesser_conduit_on_automatic_frame() -> None:
         space.command_system._aether = SimpleNamespace(
             get_conduit_by_id=lambda conduit_id, frame_name: conduit,
         )
-
-        capability_conduit = space.command_system.get_conduit_by_id(
+        lesser = space.command_system.create_lesser_conduit(
             conduit.id,
             frame_name="ops",
         )
-        space.workstation.bind_object("root", capability_conduit, weak_ref=False)
-        space.workstation.set_target("root", store="objects")
 
-        lesser = space.command_system.execute_target_method(
-            "create_lesser_conduit",
-            bind_as_name="lesser",
-            bind_as_store="objects",
-            bind_result_weak_ref=False,
-        )
-
-        assert lesser is space.workstation.get("lesser", store="objects")
         assert lesser.id != conduit.id
     finally:
         conduit.cleanup()
@@ -2965,22 +2946,32 @@ def test_capability_room_can_manage_clusters_on_dynamic_frame() -> None:
         space.command_system._aether = SimpleNamespace(
             get_conduit_by_id=lambda conduit_id, frame_name: conduit,
         )
-
-        capability_conduit = space.command_system.get_conduit_by_id(
+        space.command_system.create_cluster(
+            conduit.id,
+            "alpha",
+            frame_name="ops",
+        )
+        space.command_system.join_cluster(
+            conduit.id,
+            "alpha",
+            frame_name="ops",
+        )
+        clusters = space.command_system.list_clusters(
             conduit.id,
             frame_name="ops",
         )
-        space.workstation.bind_object("root", capability_conduit, weak_ref=False)
-        space.workstation.set_target("root", store="objects")
+        space.command_system.leave_cluster(
+            conduit.id,
+            "alpha",
+            frame_name="ops",
+        )
+        after_leave = space.command_system.list_clusters(
+            conduit.id,
+            frame_name="ops",
+        )
 
-        space.command_system.execute_target_method("create_cluster", "alpha")
-        space.command_system.execute_target_method("join_cluster", "alpha")
-        clusters = space.command_system.execute_target_method("list_clusters")
-        space.command_system.execute_target_method("leave_cluster", "alpha")
-        after_leave = space.command_system.execute_target_method("list_clusters")
-
-        assert clusters == ["alpha"]
-        assert after_leave == []
+        assert clusters == ("alpha",)
+        assert after_leave == tuple()
     finally:
         conduit.cleanup()
         spellbook.cleanup()
@@ -3044,24 +3035,91 @@ def test_capability_room_can_link_conduits_on_dynamic_frame() -> None:
                 left_conduit if conduit_id == left_conduit.id else right_conduit
             ),
         )
-
-        capability_conduit = space.command_system.get_conduit_by_id(
+        linked = space.command_system.link_conduits(
+            left_conduit.id,
+            right_conduit.id,
+            frame_name="ops",
+        )
+        links = space.command_system.get_links(
             left_conduit.id,
             frame_name="ops",
         )
-        space.workstation.bind_object("left", capability_conduit, weak_ref=False)
-        space.workstation.set_target("left", store="objects")
-
-        linked = space.command_system.execute_target_method("link", right_conduit)
-        links = space.command_system.execute_target_method("get_links")
 
         assert linked is True
-        assert right_conduit in links
+        assert links == (right_conduit,)
     finally:
         left_conduit.cleanup()
         right_conduit.cleanup()
         left_spellbook.cleanup()
         right_spellbook.cleanup()
+
+
+def test_static_command_system_denies_shared_topology_mutation_methods() -> None:
+    """
+    Verify static rooms deny shared topology-mutation command methods.
+
+    Returns:
+        None.
+    """
+    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    denied_calls = (
+        lambda: space.command_system.create_lesser_conduit("conduit-1"),
+        lambda: space.command_system.create_cluster("conduit-1", "alpha"),
+        lambda: space.command_system.delete_cluster("conduit-1", "alpha"),
+        lambda: space.command_system.join_cluster("conduit-1", "alpha"),
+        lambda: space.command_system.leave_cluster("conduit-1", "alpha"),
+        lambda: space.command_system.link_conduits("left", "right"),
+        lambda: space.command_system.sever_link("left", "right"),
+    )
+
+    for denied_call in denied_calls:
+        with pytest.raises(
+                ValueError,
+                match="Static command surface does not allow topology mutation method",
+        ):
+            denied_call()
+
+
+def test_static_command_system_lists_only_supported_methods() -> None:
+    """
+    Verify static command introspection excludes denied topology-mutation methods.
+
+    Returns:
+        None.
+    """
+    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+
+    supported_methods = space.command_system.list_supported_command_methods()
+
+    assert "create_lesser_conduit" not in supported_methods
+    assert "create_cluster" not in supported_methods
+    assert "link_conduits" not in supported_methods
+    assert "sever_link" not in supported_methods
+    assert "get_conduit_by_id" in supported_methods
+    assert "get_conduit_cloud" in supported_methods
+
+
+def test_capability_command_system_lists_shared_manual_runtime_methods() -> None:
+    """
+    Verify capability command introspection exposes the shared manual-runtime methods.
+
+    Returns:
+        None.
+    """
+    space = CapabilityRiftSpace(owner_rift_id="rift-1", space_name="main")
+
+    supported_methods = space.command_system.list_supported_command_methods()
+
+    assert "get_conduit_cloud" in supported_methods
+    assert "create_lesser_conduit" in supported_methods
+    assert "create_cluster" in supported_methods
+    assert "delete_cluster" in supported_methods
+    assert "join_cluster" in supported_methods
+    assert "leave_cluster" in supported_methods
+    assert "list_clusters" in supported_methods
+    assert "link_conduits" in supported_methods
+    assert "sever_link" in supported_methods
+    assert "get_links" in supported_methods
 
 
 def test_rift_space_can_delegate_frame_surface_calls_to_attached_viewer() -> None:

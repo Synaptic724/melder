@@ -892,6 +892,176 @@ def test_frame_viewer_descriptor_host_methods_report_record_level_inventory() ->
     assert viewer.list_existence_kinds() == ["unique"]
 
 
+def test_frame_viewer_host_property_and_default_profile_helper_paths_work() -> None:
+    profile = FrameViewerProfile.create_general()
+    empty_viewer = FrameViewer(
+        active_profiles_by_name={},
+        frame_descriptors_by_name={},
+        frame_acl_configurations_by_frame_name={},
+        compiled_access_surfaces_by_frame_name={},
+    )
+
+    empty_viewer.register_active_profile(profile)
+
+    assert empty_viewer._default_profile_name == "general"
+    assert empty_viewer.enabled_helpers == profile.enabled_helpers
+    assert empty_viewer.default_grouping == profile.default_grouping
+    assert empty_viewer.default_detail_level == profile.default_detail_level
+    assert empty_viewer.profile is profile
+    assert empty_viewer.list_enabled_helpers() == profile.enabled_helpers
+    assert empty_viewer.list_available_tools() == profile.list_tool_names()
+    assert empty_viewer.has_enabled_helper("list_frames") is True
+
+    empty_viewer._require_helper_enabled("list_frames")
+    empty_viewer._require_helper_enabled("list_frame_names")
+    assert FrameViewer._resolve_tool_handler(profile, "missing.handler", viewer=None) is None
+
+    with pytest.raises(ValueError, match="FrameViewer helper 'missing' is not enabled"):
+        empty_viewer._require_helper_enabled("missing")
+
+    empty_viewer._default_profile_name = None
+    assert empty_viewer.list_available_tools() == tuple()
+    assert empty_viewer.profile is None
+    empty_viewer._require_helper_enabled("anything")
+
+    with pytest.raises(ValueError, match="FrameViewer has no default active profile."):
+        empty_viewer._resolve_profile(None, None)
+
+    empty_viewer._default_profile_name = "general"
+    with pytest.raises(ValueError, match="FrameViewer has no default selected frame."):
+        empty_viewer._get_required_default_frame_name()
+    assert empty_viewer._resolve_profile("general", None) is profile
+
+    viewer = _build_viewer(("ops",))
+    original_selected = viewer.get_selected_profile_for_frame("ops")
+    viewer.set_default_profile("general")
+    assert original_selected.cleaned is True
+    assert viewer.get_selected_profile_for_frame("ops") is not original_selected
+
+
+def test_frame_viewer_host_skip_guard_and_internal_resolver_paths_work() -> None:
+    viewer = _build_viewer(("ops", "finance"))
+    viewer.frame_descriptors_by_name["finance"]._frame_overview = None
+
+    assert viewer.list_frame_ids() == ["ops-frame"]
+    assert viewer.list_nexus_contracts() == [
+        {
+            "frame_name": "ops",
+            "nexus_label": "default",
+            "nexus_version": "0.0.1",
+        }
+    ]
+
+    with pytest.raises(ValueError, match="conduit_id cannot be empty."):
+        viewer.list_spells_by_owner_conduit("")
+
+    with pytest.raises(ValueError, match="spellbook_id cannot be empty."):
+        viewer.list_spells_by_spellbook_id("")
+
+    with pytest.raises(ValueError, match="permission cannot be empty."):
+        viewer.list_spells_by_permission("")
+
+    with pytest.raises(ValueError, match="existence cannot be empty."):
+        viewer.list_spells_by_existence("")
+
+    with pytest.raises(ValueError, match="spellframe_name cannot be empty."):
+        viewer.list_spells_by_spellframe("")
+
+    with pytest.raises(ValueError, match="FrameViewer has no active profiles."):
+        FrameViewer(
+            active_profiles_by_name={},
+            frame_descriptors_by_name={},
+            frame_acl_configurations_by_frame_name={},
+            compiled_access_surfaces_by_frame_name={},
+        )._resolve_profile(None, None)
+
+    with pytest.raises(ValueError, match="frame_name cannot be empty."):
+        viewer._get_required_selected_frame_name("")
+
+    assert viewer._get_required_selected_frame_name() == "ops"
+
+    with pytest.raises(ValueError, match="Frame 'missing' was not found."):
+        viewer._get_required_frame_descriptor("missing")
+
+    with pytest.raises(ValueError, match="Compiled access surface for frame 'missing' was not found."):
+        viewer._get_required_compiled_access_surface("missing")
+
+    with pytest.raises(ValueError, match="Frame ACL configuration for frame 'missing' was not found."):
+        viewer._get_required_frame_acl_configuration("missing")
+
+    with pytest.raises(ValueError, match="frame_name cannot be empty."):
+        viewer._get_frame_names_for_query("")
+
+    with pytest.raises(ValueError, match="spell_source_id cannot be empty."):
+        viewer._get_required_spell_record("")
+
+    with pytest.raises(ValueError, match="Spell source id 'missing:spell' was not found."):
+        viewer._get_required_spell_record("missing:spell")
+
+    with pytest.raises(ValueError, match="conduit_id cannot be empty."):
+        viewer._get_required_conduit_record("")
+
+    with pytest.raises(ValueError, match="Conduit id 'missing' was not found."):
+        viewer._get_required_conduit_record("missing")
+
+    with pytest.raises(ValueError, match="spell_source_id 'bad' must be in 'spellbook_id:spell_id' form."):
+        viewer._parse_spell_source_id("bad")
+
+    finance_descriptor = viewer.frame_descriptors_by_name["finance"]
+    finance_descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="ops-spellbook",
+            frame_name="finance",
+            owner_conduit_id="finance-conduit",
+            spell_id="ops-spell",
+            spell_index_id="shared-lineage",
+            spell_name="DuplicateSpell",
+            spellframe=None,
+            binding_name="duplicate_spell",
+            permissions=Permissions.create,
+            existence=Existence.unique,
+            payload=SpellDescriptorPayload(
+                payload_type="general",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+    with pytest.raises(ValueError, match="Spell source id 'ops-spellbook:ops-spell' is ambiguous across hosted frames."):
+        viewer._get_required_spell_record("ops-spellbook:ops-spell")
+
+    finance_descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="finance-conduit",
+            frame_name="finance",
+            origin_spellbook_id="finance-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="shadow",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    with pytest.raises(ValueError, match="Conduit id 'ops-conduit' is ambiguous across hosted frames."):
+        viewer._get_required_conduit_record("ops-conduit")
+
+    assert FrameViewer._normalize_spellframe_value(FrameViewer) == "FrameViewer"
+    assert FrameViewer._normalize_spellframe_value(None) is None
+    assert isinstance(FrameViewer._normalize_spellframe_value(object()), str)
+    assert FrameViewer._normalize_policy_name(None) is None
+    assert viewer._describe_spell_value_groups(
+        frame_name="ops",
+        value_getter=lambda record: None,
+    ) == {}
+
+
 def test_frame_viewer_descriptor_host_descriptions_report_topology_and_records() -> None:
     viewer = _build_viewer(("ops",))
 
