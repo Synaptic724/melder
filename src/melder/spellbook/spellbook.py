@@ -1281,13 +1281,15 @@ class Spellbook(Cleanable, ISpellbook):
         Raises:
             RuntimeError: If the spell is not found in the spellbook (local or contracted).
         """
-        key = self._make_spell_key(spellframe, spell_name, binding_name)
-        if key in self._lookup_spells:
-            return self._lookup_spells[key]
-        for contracted_spells in self._lookup_contracted_spells.values():
-            if key in contracted_spells:
-                return contracted_spells[key]
-        self._logger.error("Spell not found in the spellbook.", "find_spell_id", exc_info=True)
+        self.check_cleaned()
+        with self._lock:
+            key = self._make_spell_key(spellframe, spell_name, binding_name)
+            if key in self._lookup_spells:
+                return self._lookup_spells[key]
+            for contracted_spells in self._lookup_contracted_spells.values():
+                if key in contracted_spells:
+                    return contracted_spells[key]
+            self._logger.error("Spell not found in the spellbook.", "find_spell_id", exc_info=True)
         raise RuntimeError("Spell not found in the spellbook.")
 
     def _make_spell_key(self, spellframe: str, spell_name: str, binding_name: str) -> tuple:
@@ -1388,14 +1390,16 @@ class Spellbook(Cleanable, ISpellbook):
         Raises:
             RuntimeError: If the spell key is not found (local or contracted).
         """
-        key = self._make_spell_key(spellframe, spell_name, binding_name)
-        if key in self._lookup_spells:
-            return key
-        for contracted_spells in self._lookup_contracted_spells.values():
-            if key in contracted_spells:
+        self.check_cleaned()
+        with self._lock:
+            key = self._make_spell_key(spellframe, spell_name, binding_name)
+            if key in self._lookup_spells:
                 return key
-        self._logger.error("Spell key not found in the spellbook.", "find_spell_key", exc_info=True)
-        raise RuntimeError("Spell key not found in the spellbook.")
+            for contracted_spells in self._lookup_contracted_spells.values():
+                if key in contracted_spells:
+                    return key
+            self._logger.error("Spell key not found in the spellbook.", "find_spell_key", exc_info=True)
+            raise RuntimeError("Spell key not found in the spellbook.")
 
 
     def inspect_spell(self, spell: Any, aetheric_frame= "default") -> Optional[str]:
