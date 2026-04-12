@@ -1,3 +1,5 @@
+import threading
+
 import pytest
 
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
@@ -149,3 +151,52 @@ def test_cleanup_resets_fields_to_safe_defaults():
     assert dep._target_annotation is None  # noqa: SLF001
     assert dep._is_collection is False  # noqa: SLF001
     assert dep._spellmap_default is None  # noqa: SLF001
+
+
+def test_cleanup_rechecks_cleaned_inside_lock() -> None:
+    """
+    Verify cleanup returns early when another thread marks the dependency cleaned.
+
+    Returns:
+        None.
+    """
+
+    class _CoordinatedLock:
+        def __init__(self) -> None:
+            self._entered_first = threading.Event()
+            self._second_attempted = threading.Event()
+            self._lock = threading.RLock()
+
+        def __enter__(self):
+            if self._entered_first.is_set():
+                self._second_attempted.set()
+            self._lock.acquire()
+            if not self._entered_first.is_set():
+                self._entered_first.set()
+                assert self._second_attempted.wait(timeout=1.0)
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self._lock.release()
+
+    dep = _dep()
+    coordinated_lock = _CoordinatedLock()
+    dep._lock = coordinated_lock
+
+    thread_results = []
+
+    def _run_cleanup() -> None:
+        dep.cleanup()
+        thread_results.append(True)
+
+    first = threading.Thread(target=_run_cleanup)
+    second = threading.Thread(target=_run_cleanup)
+    first.start()
+    coordinated_lock._entered_first.wait(timeout=1.0)
+    second.start()
+    first.join(timeout=1.0)
+    second.join(timeout=1.0)
+
+    assert thread_results == [True, True]
+    assert dep.cleaned is True
+    assert dep._lock is None  # noqa: SLF001

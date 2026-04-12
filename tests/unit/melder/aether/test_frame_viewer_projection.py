@@ -174,6 +174,7 @@ def _build_surface(
         frame_payload_fields=("system_state", "rift_enabled"),
         visible_conduit_ids=("{0}-conduit".format(frame_name),),
         visible_spell_keys=(( "{0}-spellbook".format(frame_name), "{0}-spell".format(frame_name)),),
+        visible_spell_index_ids=("{0}-lineage".format(frame_name),),
         conduit_payload_sections_by_id=conduit_sections_by_id or {
             "{0}-conduit".format(frame_name): ("conduit_name", "conduit_state")
         },

@@ -3295,6 +3295,7 @@ class FrameViewer(Cleanable):
             frame_payload_fields=compiled_access_surface.frame_payload_fields,
             visible_conduit_ids=compiled_access_surface.visible_conduit_ids,
             visible_spell_keys=compiled_access_surface.visible_spell_keys,
+            visible_spell_index_ids=compiled_access_surface.visible_spell_index_ids,
             conduit_payload_sections_by_id=(
                 compiled_access_surface.conduit_payload_sections_by_id
             ),

@@ -376,6 +376,32 @@ def test_find_spell_key_returns_key(
     assert result == key
 
 
+def test_get_spell_by_index_id_delegates_to_spellbook(
+    conduit_lesser: Conduit,
+    spellbook_stub: MagicMock,
+) -> None:
+    """
+    Verify get_spell_by_index_id delegates directly to Spellbook.
+
+    Contract:
+        - The Spellbook return value is passed through unchanged.
+
+    Args:
+        conduit_lesser (Conduit): Lesser conduit instance.
+        spellbook_stub (MagicMock): Spellbook stub bound to the conduit.
+
+    Raises:
+        AssertionError: If delegation does not occur.
+    """
+    sentinel = object()
+    spellbook_stub.get_spell_by_index_id.return_value = sentinel
+
+    result = conduit_lesser.get_spell_by_index_id("lineage-1")
+
+    spellbook_stub.get_spell_by_index_id.assert_called_once_with("lineage-1")
+    assert result is sentinel
+
+
 def test_get_spell_permissions_returns_name(
     conduit_lesser: Conduit,
     spellbook_stub: MagicMock,

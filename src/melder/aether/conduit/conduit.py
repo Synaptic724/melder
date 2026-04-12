@@ -1629,6 +1629,44 @@ class Conduit(Cleanable, IConduit):
 
         return result
 
+    def get_spell_by_index_id(
+            self,
+            spell_index_id: str,
+    ) -> Optional[Any]:
+        """
+        Public API
+
+        Retrieve a spell object by its stable SpellIndex lineage id.
+
+        Purpose:
+            Expose the Spellbook-owned stable-lineage lookup path on the
+            conduit facade so higher runtime surfaces can consume
+            `spell_index_id` directly.
+
+        Args:
+            spell_index_id:
+                Stable SpellIndex lineage id (ULID) to resolve.
+
+        Returns:
+            Optional[Any]:
+                Matching spell object when found, otherwise ``None``.
+
+        Raises:
+            RuntimeError:
+                If the Conduit has been cleaned or the Spellbook is unavailable.
+        """
+        self.check_cleaned()
+        spellbook = self._spellbook
+        if spellbook is None:
+            self._logger.error(
+                "Spellbook is unavailable.",
+                "get_spell_by_index_id",
+                exc_info=True,
+            )
+            raise RuntimeError("Spellbook is unavailable.")
+        with self._lock:
+            return spellbook.get_spell_by_index_id(spell_index_id)
+
 
     def find_contracted_spell(self, spell_id: str) -> Optional[ISpell]:
         """

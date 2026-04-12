@@ -49,6 +49,7 @@ from melder.aether.nexus.acl.validator.profiles.view.precision_strategy import (
 from melder.aether.nexus.acl.validator.profiles.view.safe_strategy import (
     validate_profile_configuration as validate_safe_view_profile_configuration,
 )
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.helpers.id_builder import IDBuilder
 
 
@@ -343,6 +344,10 @@ class FrameACLValidator(Cleanable):
             frame_descriptor,
             configuration.view_configuration,
         )
+        self._validate_spell_selector_rules_against_descriptor(
+            frame_descriptor,
+            configuration,
+        )
         return True
 
     def _validate_configuration_shape_only(
@@ -512,6 +517,271 @@ class FrameACLValidator(Cleanable):
                 ),
                 frame_name=frame_descriptor.frame_name,
             )
+
+    def _validate_spell_selector_rules_against_descriptor(
+            self,
+            frame_descriptor: FrameDescriptor,
+            configuration: FrameACLConfiguration,
+    ) -> None:
+        """
+        Validate selector-aware spell rules against published descriptor truth.
+
+        Returns:
+            None.
+        """
+        self._validate_view_spell_selector_rules(
+            frame_descriptor,
+            configuration.view_configuration,
+        )
+        self._validate_command_spell_selector_rules(
+            frame_descriptor,
+            configuration.command_configuration,
+        )
+        self._validate_codegen_spell_selector_rules(
+            frame_descriptor,
+            configuration.codegen_configuration,
+        )
+
+    def _validate_view_spell_selector_rules(
+            self,
+            frame_descriptor: FrameDescriptor,
+            configuration: FrameACLViewConfiguration,
+    ) -> None:
+        """
+        Validate selector-aware spell rules from one view config.
+
+        Returns:
+            None.
+        """
+        profile_rulesets = []
+        try:
+            profile_rulesets.append(
+                self._profile_builder.get_required_view_profile(
+                    configuration.profile_name
+                ).spell_ruleset
+            )
+        except KeyError:
+            pass
+        if configuration.precision_profile_name is not None:
+            try:
+                profile_rulesets.append(
+                    self._profile_builder.get_required_view_precision_profile(
+                        configuration.precision_profile_name
+                    ).spell_ruleset
+                )
+            except KeyError:
+                pass
+        for index, ruleset in enumerate(profile_rulesets):
+            self._validate_spell_rule_selectors(
+                frame_descriptor,
+                ruleset,
+                "view.profile.{0}".format(index),
+            )
+        self._validate_spell_rule_selectors(
+            frame_descriptor,
+            configuration.spell_override_ruleset,
+            "view.override",
+        )
+
+    def _validate_command_spell_selector_rules(
+            self,
+            frame_descriptor: FrameDescriptor,
+            configuration: FrameACLCommandConfiguration,
+    ) -> None:
+        """
+        Validate selector-aware spell rules from one command config.
+
+        Returns:
+            None.
+        """
+        profile_rulesets = []
+        try:
+            profile_rulesets.append(
+                self._profile_builder.get_required_command_profile(
+                    configuration.profile_name
+                ).spell_ruleset
+            )
+        except KeyError:
+            pass
+        if configuration.precision_profile_name is not None:
+            try:
+                profile_rulesets.append(
+                    self._profile_builder.get_required_command_precision_profile(
+                        configuration.precision_profile_name
+                    ).spell_ruleset
+                )
+            except KeyError:
+                pass
+        for index, ruleset in enumerate(profile_rulesets):
+            self._validate_spell_rule_selectors(
+                frame_descriptor,
+                ruleset,
+                "command.profile.{0}".format(index),
+            )
+        self._validate_spell_rule_selectors(
+            frame_descriptor,
+            configuration.spell_override_ruleset,
+            "command.override",
+        )
+
+    def _validate_codegen_spell_selector_rules(
+            self,
+            frame_descriptor: FrameDescriptor,
+            configuration: FrameACLCodegenConfiguration,
+    ) -> None:
+        """
+        Validate selector-aware spell rules from one codegen config.
+
+        Returns:
+            None.
+        """
+        profile_rulesets = []
+        try:
+            profile_rulesets.append(
+                self._profile_builder.get_required_codegen_profile(
+                    configuration.profile_name
+                ).spell_ruleset
+            )
+        except KeyError:
+            pass
+        if configuration.precision_profile_name is not None:
+            try:
+                profile_rulesets.append(
+                    self._profile_builder.get_required_codegen_precision_profile(
+                        configuration.precision_profile_name
+                    ).spell_ruleset
+                )
+            except KeyError:
+                pass
+        for index, ruleset in enumerate(profile_rulesets):
+            self._validate_spell_rule_selectors(
+                frame_descriptor,
+                ruleset,
+                "codegen.profile.{0}".format(index),
+            )
+        self._validate_spell_rule_selectors(
+            frame_descriptor,
+            configuration.spell_override_ruleset,
+            "codegen.override",
+        )
+
+    def _validate_spell_rule_selectors(
+            self,
+            frame_descriptor: FrameDescriptor,
+            ruleset: FrameACLRuleSet,
+            label: str,
+    ) -> None:
+        """
+        Validate selector-aware spell rules in one spell ruleset.
+
+        Returns:
+            None.
+        """
+        for rule in ruleset.rules_by_name.values():
+            selector = self._extract_spell_selector(rule.conditions, label)
+            if selector is None:
+                continue
+            matches = self._resolve_spell_records_by_selector(
+                frame_descriptor,
+                selector,
+            )
+            if len(matches) == 0:
+                raise ValueError(
+                    "Spell selector in {0} rule '{1}' matched no published spells.".format(
+                        label,
+                        rule.rule_name,
+                    )
+                )
+            if len(matches) > 1:
+                raise ValueError(
+                    "Spell selector in {0} rule '{1}' is ambiguous.".format(
+                        label,
+                        rule.rule_name,
+                    )
+                )
+
+    @staticmethod
+    def _extract_spell_selector(
+            conditions: Dict[str, object],
+            label: str,
+    ) -> Optional[Dict[str, object]]:
+        """
+        Extract one supported spell selector from rule conditions.
+
+        Returns:
+            Optional[Dict[str, object]]: Selector dict when one is present.
+        """
+        selector_keys = {
+            "spell_id",
+            "spell_index_id",
+            "spellframe",
+            "spell_name",
+            "binding_name",
+        }
+        if len(conditions) == 0:
+            return None
+        unsupported_keys = set(conditions.keys()).difference(selector_keys)
+        if len(unsupported_keys) > 0:
+            raise ValueError(
+                "Unsupported spell selector key(s) {0} in {1}.".format(
+                    sorted(unsupported_keys),
+                    label,
+                )
+            )
+        if not any(key in conditions for key in selector_keys):
+            return None
+        return {
+            key: conditions[key]
+            for key in selector_keys
+            if key in conditions
+        }
+
+    @staticmethod
+    def _resolve_spell_records_by_selector(
+            frame_descriptor: FrameDescriptor,
+            selector: Dict[str, object],
+    ) -> Tuple[object, ...]:
+        """
+        Resolve published spell records that match one selector dict.
+
+        Returns:
+            Tuple[object, ...]: Matching spell records.
+        """
+        matches = []
+        for spell_record in frame_descriptor.spell_records_by_key.values():
+            if (
+                    "spell_id" in selector and
+                    selector["spell_id"] != spell_record.spell_id
+            ):
+                continue
+            if (
+                    "spell_index_id" in selector and
+                    selector["spell_index_id"] != spell_record.spell_index_id
+            ):
+                continue
+            if "spellframe" in selector:
+                if spell_record.spellframe is None:
+                    continue
+                if (
+                        SpellInputUtils.normalize_frame_key(selector["spellframe"]) !=
+                        SpellInputUtils.normalize_frame_key(spell_record.spellframe)
+                ):
+                    continue
+            if "spell_name" in selector:
+                if str(selector["spell_name"]).lower() != str(spell_record.spell_name).lower():
+                    continue
+            if "binding_name" in selector:
+                if (
+                        SpellInputUtils.normalize_binding_name(
+                            selector["binding_name"]
+                        ) !=
+                        SpellInputUtils.normalize_binding_name(
+                            spell_record.binding_name
+                        )
+                ):
+                    continue
+            matches.append(spell_record)
+        return tuple(matches)
 
     def _validate_codegen_configuration(
             self,

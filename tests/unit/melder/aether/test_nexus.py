@@ -170,6 +170,7 @@ def _build_descriptor_backed_viewer(frame_name: str) -> FrameViewer:
         frame_payload_fields=("system_state", "rift_enabled"),
         visible_conduit_ids=tuple(),
         visible_spell_keys=tuple(),
+        visible_spell_index_ids=tuple(),
         conduit_payload_sections_by_id={},
         spell_payload_sections_by_key={},
         metadata={"visible_spell_count": 0},

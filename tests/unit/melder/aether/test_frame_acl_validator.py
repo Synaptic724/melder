@@ -714,3 +714,97 @@ def test_frame_acl_validator_rejects_unsupported_descriptor_spell_payload_type()
             configuration,
             descriptor,
         )
+
+
+def test_frame_acl_validator_rejects_ambiguous_spell_selector() -> None:
+    """
+    Verify descriptor-aware validation rejects ambiguous spell selectors.
+
+    Returns:
+        None.
+    """
+    validator = FrameACLValidator("ops")
+    configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        FrameACLConfiguration.create_default("ops"),
+        reason="ambiguous_selector",
+    )
+    configuration.set_view_configuration(
+        FrameACLViewConfiguration.from_profile(
+            FrameACLViewProfile.create_safe(),
+            precision_profile=FrameACLViewProfile.create_precision(),
+            spell_override_ruleset=FrameACLRuleSet(
+                "spell_override",
+                rules=[
+                    FrameACLRule(
+                        rule_name="select_duplicate_signature",
+                        operation="visible",
+                        effect="allow",
+                        conditions={
+                            "spellframe": "ILogic",
+                            "binding_name": "primary",
+                        },
+                    )
+                ],
+            ),
+        )
+    )
+    configuration.finalize()
+    descriptor = _build_descriptor()
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            nexus_version="0.0.1",
+            origin_spellbook_id="other-spellbook",
+            frame_name="ops",
+            owner_conduit_id="ops-conduit",
+            spell_id="ops-spell-2",
+            spell_index_id="ops-lineage-2",
+            spell_name="OtherSpell",
+            spellframe="ILogic",
+            binding_name="primary",
+            permissions=Permissions.create,
+            existence=Existence.unique,
+            payload=SpellDescriptorPayload(
+                payload_type="detailed",
+                payload_version="0.0.1",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            nexus_version="0.0.1",
+            origin_spellbook_id="third-spellbook",
+            frame_name="ops",
+            owner_conduit_id="ops-conduit",
+            spell_id="ops-spell-3",
+            spell_index_id="ops-lineage-3",
+            spell_name="ThirdSpell",
+            spellframe="ILogic",
+            binding_name="primary",
+            permissions=Permissions.create,
+            existence=Existence.unique,
+            payload=SpellDescriptorPayload(
+                payload_type="detailed",
+                payload_version="0.0.1",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+
+    with pytest.raises(ValueError, match="is ambiguous"):
+        validator.validate_configuration_against_descriptor(
+            configuration,
+            descriptor,
+        )

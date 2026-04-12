@@ -36,6 +36,7 @@ class CompiledFrameACLAccessSurface(Cleanable):
         "_frame_payload_fields",
         "_visible_conduit_ids",
         "_visible_spell_keys",
+        "_visible_spell_index_ids",
         "_conduit_payload_sections_by_id",
         "_spell_payload_sections_by_key",
         "_metadata",
@@ -55,6 +56,7 @@ class CompiledFrameACLAccessSurface(Cleanable):
             frame_payload_fields: Tuple[str, ...],
             visible_conduit_ids: Tuple[str, ...],
             visible_spell_keys: Tuple[Tuple[str, str], ...],
+            visible_spell_index_ids: Tuple[str, ...],
             conduit_payload_sections_by_id: Dict[str, Tuple[str, ...]],
             spell_payload_sections_by_key: Dict[Tuple[str, str], Tuple[str, ...]],
             metadata: Optional[Dict[str, object]] = None,
@@ -85,6 +87,9 @@ class CompiledFrameACLAccessSurface(Cleanable):
                 Sorted visible conduit ids.
             visible_spell_keys:
                 Sorted visible spell record keys.
+            visible_spell_index_ids:
+                Sorted visible spell index ids compiled from selector-aware
+                spell visibility.
             conduit_payload_sections_by_id:
                 Visible conduit payload sections keyed by conduit id.
             spell_payload_sections_by_key:
@@ -114,6 +119,9 @@ class CompiledFrameACLAccessSurface(Cleanable):
         self._visible_conduit_ids: Tuple[str, ...] = tuple(visible_conduit_ids)
         self._visible_spell_keys: Tuple[Tuple[str, str], ...] = tuple(
             visible_spell_keys
+        )
+        self._visible_spell_index_ids: Tuple[str, ...] = tuple(
+            visible_spell_index_ids
         )
         self._conduit_payload_sections_by_id: Dict[str, Tuple[str, ...]] = {
             conduit_id: tuple(sections)
@@ -157,6 +165,7 @@ class CompiledFrameACLAccessSurface(Cleanable):
             self._frame_payload_fields = None
             self._visible_conduit_ids = None
             self._visible_spell_keys = None
+            self._visible_spell_index_ids = None
             self._conduit_payload_sections_by_id = None
             self._spell_payload_sections_by_key = None
             self._metadata = None
@@ -283,6 +292,17 @@ class CompiledFrameACLAccessSurface(Cleanable):
         """
         self.check_cleaned()
         return self._visible_spell_keys
+
+    @property
+    def visible_spell_index_ids(self) -> Tuple[str, ...]:
+        """
+        Return the visible spell index ids.
+
+        Returns:
+            Tuple[str, ...]: Visible stable spell lineage ids.
+        """
+        self.check_cleaned()
+        return self._visible_spell_index_ids
 
     @property
     def conduit_payload_sections_by_id(self) -> Dict[str, Tuple[str, ...]]:

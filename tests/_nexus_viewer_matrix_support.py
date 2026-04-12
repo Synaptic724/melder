@@ -285,6 +285,14 @@ def build_surface(
         frame_payload_fields=frame_payload_fields,
         visible_conduit_ids=visible_conduit_ids or tuple(),
         visible_spell_keys=visible_spell_keys or tuple(),
+        visible_spell_index_ids=tuple(
+            sorted(
+                {
+                    spell_id
+                    for _, spell_id in (visible_spell_keys or tuple())
+                }
+            )
+        ),
         conduit_payload_sections_by_id=conduit_sections_by_id or {},
         spell_payload_sections_by_key=spell_sections_by_key or {},
         metadata={"visible_spell_count": len(visible_spell_keys or tuple())},

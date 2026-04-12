@@ -142,6 +142,7 @@ def test_compiled_access_surface_snapshot_dicts_are_detached() -> None:
         frame_payload_fields=("system_state",),
         visible_conduit_ids=("conduit-1",),
         visible_spell_keys=(("spellbook-1", "spell-1"),),
+        visible_spell_index_ids=("lineage-1",),
         conduit_payload_sections_by_id={"conduit-1": ("conduit_name",)},
         spell_payload_sections_by_key={
             ("spellbook-1", "spell-1"): ("binding_payload",),
@@ -184,8 +185,76 @@ def test_compiled_access_surface_cleanup_clears_owned_state() -> None:
     assert surface._configuration_id is None
     assert surface._allowed_kinds is None
     assert surface._allowed_commands is None
+    assert surface._visible_spell_index_ids is None
     assert surface._conduit_payload_sections_by_id is None
     assert surface._spell_payload_sections_by_key is None
+
+
+def test_frame_acl_compiler_selector_rule_compiles_visible_spell_index_ids() -> None:
+    """
+    Verify selector-aware spell visibility compiles to visible spell index ids.
+
+    Returns:
+        None.
+    """
+    descriptor = _build_frame_descriptor()
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="spellbook-2",
+            frame_name="ops",
+            owner_conduit_id="conduit-1",
+            spell_id="spell-2",
+            spell_index_id="lineage-2",
+            spell_name="SpellTwo",
+            spellframe="IOther",
+            binding_name="secondary",
+            permissions=Permissions.create,
+            existence=Existence.unique,
+            payload=SpellDescriptorPayload(
+                payload_type="detailed",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+    configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        FrameACLConfiguration.create_default("ops"),
+        reason="selector_compile",
+    )
+    configuration.set_view_configuration(
+        FrameACLViewConfiguration.from_profile(
+            FrameACLViewProfile.create_safe(),
+            precision_profile=FrameACLViewProfile.create_precision(),
+            spell_override_ruleset=FrameACLRuleSet(
+                "spell_override",
+                rules=[
+                    FrameACLRule(
+                        rule_name="select_logic_primary",
+                        operation="visible",
+                        effect="allow",
+                        conditions={
+                            "spellframe": "IOther",
+                            "binding_name": "secondary",
+                        },
+                    )
+                ],
+            ),
+        )
+    )
+    configuration.finalize()
+
+    compiled_surface = _build_compiler().compile_frame_access_surface(
+        descriptor,
+        configuration,
+    )
+
+    assert compiled_surface.visible_spell_index_ids == ("lineage-2",)
+    assert compiled_surface.visible_spell_keys == (("spellbook-2", "spell-2"),)
 
 
 def test_frame_acl_compiler_init_rejects_missing_profile_builder() -> None:

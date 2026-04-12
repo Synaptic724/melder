@@ -1,4 +1,5 @@
 import inspect
+import threading
 
 import pytest
 
@@ -149,3 +150,59 @@ def test_spell_id_must_be_non_empty():
             binding_name=None,
             parameters=[],
         )
+
+
+def test_cleanup_rechecks_cleaned_inside_lock() -> None:
+    """
+    Verify cleanup returns early when another thread marks the object cleaned.
+
+    Returns:
+        None.
+    """
+
+    class _CoordinatedLock:
+        def __init__(self) -> None:
+            self._entered_first = threading.Event()
+            self._second_attempted = threading.Event()
+            self._lock = threading.RLock()
+
+        def __enter__(self):
+            if self._entered_first.is_set():
+                self._second_attempted.set()
+            self._lock.acquire()
+            if not self._entered_first.is_set():
+                self._entered_first.set()
+                assert self._second_attempted.wait(timeout=1.0)
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self._lock.release()
+
+    reqs = SpellRequirements(
+        spell_id="sid",
+        spell_type=SpellType.SPELL,
+        existence=Existence.unique,
+        spellframe=None,
+        binding_name=None,
+        parameters=[],
+    )
+    coordinated_lock = _CoordinatedLock()
+    reqs._lock = coordinated_lock
+
+    thread_results = []
+
+    def _run_cleanup() -> None:
+        reqs.cleanup()
+        thread_results.append(True)
+
+    first = threading.Thread(target=_run_cleanup)
+    second = threading.Thread(target=_run_cleanup)
+    first.start()
+    coordinated_lock._entered_first.wait(timeout=1.0)
+    second.start()
+    first.join(timeout=1.0)
+    second.join(timeout=1.0)
+
+    assert thread_results == [True, True]
+    assert reqs.cleaned is True
+    assert reqs._lock is None

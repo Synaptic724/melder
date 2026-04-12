@@ -1260,6 +1260,35 @@ def test_find_spell_and_contracted_spell():
     assert sb._find_contracted_spell(idx) is spell
 
 
+def test_get_spell_by_index_id_prefers_local_then_contracted() -> None:
+    """
+    Purpose:
+        Verify stable SpellIndex lookup resolves local first, then contracted.
+    Contract:
+        - Local lineage matches return the local spell.
+        - Contracted lineage matches return the contracted spell when local is absent.
+        - Unknown lineage ids return None.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If lineage lookup routing is incorrect.
+    """
+    sb = Spellbook()
+    local_index = DummySpellIndex(sid="lineage-local", current="sid-local")
+    local_spell = DummySpell(spell_id="sid-local")
+    contracted_index = DummySpellIndex(
+        sid="lineage-contracted",
+        current="sid-contracted",
+    )
+    contracted_spell = DummySpell(spell_id="sid-contracted")
+    sb._spells[local_index] = local_spell
+    sb._contracted_spells["peer"] = {contracted_index: contracted_spell}
+
+    assert sb.get_spell_by_index_id("lineage-local") is local_spell
+    assert sb.get_spell_by_index_id("lineage-contracted") is contracted_spell
+    assert sb.get_spell_by_index_id("missing-lineage") is None
+
+
 def test_link_contract_registers_link_mirror() -> None:
     """
     Purpose:

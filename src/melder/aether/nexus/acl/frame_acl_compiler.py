@@ -13,6 +13,7 @@ from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile
     FrameACLViewProfile,
 )
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
+from melder.utilities.helpers.general_helpers import SpellInputUtils
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import IFrameACLProfileBuilder
@@ -128,7 +129,7 @@ class FrameACLCompiler(Cleanable):
                 configuration,
             )
         )
-        visible_spell_keys, spell_payload_sections_by_key = (
+        visible_spell_keys, visible_spell_index_ids, spell_payload_sections_by_key = (
             self._compile_spell_access(
                 frame_descriptor,
                 view_profile,
@@ -164,6 +165,7 @@ class FrameACLCompiler(Cleanable):
             ),
             "visible_conduit_count": len(visible_conduit_ids),
             "visible_spell_count": len(visible_spell_keys),
+            "visible_spell_index_count": len(visible_spell_index_ids),
         }
         return CompiledFrameACLAccessSurface(
             frame_name=frame_descriptor.frame_name,
@@ -177,6 +179,7 @@ class FrameACLCompiler(Cleanable):
             frame_payload_fields=tuple(sorted(frame_payload_fields)),
             visible_conduit_ids=tuple(sorted(visible_conduit_ids)),
             visible_spell_keys=tuple(sorted(visible_spell_keys)),
+            visible_spell_index_ids=tuple(sorted(visible_spell_index_ids)),
             conduit_payload_sections_by_id=conduit_payload_sections_by_id,
             spell_payload_sections_by_key=spell_payload_sections_by_key,
             metadata=metadata,
@@ -270,30 +273,26 @@ class FrameACLCompiler(Cleanable):
             view_profile: FrameACLViewProfile,
             precision_profile: FrameACLViewProfile,
             configuration: FrameACLConfiguration,
-    ) -> Tuple[Set[Tuple[str, str]], Dict[Tuple[str, str], Tuple[str, ...]]]:
+    ) -> Tuple[
+        Set[Tuple[str, str]],
+        Set[str],
+        Dict[Tuple[str, str], Tuple[str, ...]],
+    ]:
         """
         Derive spell visibility and payload sections for one frame.
 
         Contract:
             - Returns both the visible spell-key set and the per-record payload
               section tuple visible under the effective ACL.
+            - Also returns the visible stable `spell_index_id` set so later
+              runtime consumers can target lineages directly.
             - Visibility is all-or-nothing per spell record in this first cut;
               the section tuple controls which payload slices are exposed.
             - Deny operations override allow operations.
         """
-        allow_operations, deny_operations = (
-            FrameACLCompiler._collect_effective_operation_effects_from_rulesets(
-                view_profile.spell_ruleset,
-                precision_profile.spell_ruleset if precision_profile is not None else None,
-                configuration.view_configuration.spell_override_ruleset,
-            )
-        )
         visible_keys: Set[Tuple[str, str]] = set()
+        visible_spell_index_ids: Set[str] = set()
         sections_by_key: Dict[Tuple[str, str], Tuple[str, ...]] = {}
-        if "visible" in deny_operations:
-            return visible_keys, sections_by_key
-        if "visible" not in allow_operations:
-            return visible_keys, sections_by_key
         operation_to_section = {
             "show_binding_payload": "binding_payload",
             "show_resolution_payload": "resolution_payload",
@@ -303,14 +302,55 @@ class FrameACLCompiler(Cleanable):
             "show_instance_members": "instance_members",
             "show_dynamic_access": "dynamic_access",
         }
-        for record_key in frame_descriptor.spell_records_by_key.keys():
+        spell_rulesets = (
+            view_profile.spell_ruleset,
+            precision_profile.spell_ruleset if precision_profile is not None else None,
+            configuration.view_configuration.spell_override_ruleset,
+        )
+        selector_visible_rules_present = (
+            FrameACLCompiler._spell_selector_rules_present_for_operation(
+                "visible",
+                *spell_rulesets,
+            )
+        )
+        for record_key, spell_record in frame_descriptor.spell_records_by_key.items():
+            if selector_visible_rules_present:
+                selector_visible_allow, selector_visible_deny = (
+                    FrameACLCompiler._collect_selector_spell_operation_effects_for_record(
+                        "visible",
+                        spell_record,
+                        *spell_rulesets,
+                    )
+                )
+                if "visible" in selector_visible_deny:
+                    continue
+                if "visible" not in selector_visible_allow:
+                    continue
+            else:
+                allow_operations, deny_operations = (
+                    FrameACLCompiler._collect_effective_spell_operation_effects_for_record(
+                        spell_record,
+                        *spell_rulesets,
+                    )
+                )
+                if "visible" in deny_operations:
+                    continue
+                if "visible" not in allow_operations:
+                    continue
+            allow_operations, deny_operations = (
+                FrameACLCompiler._collect_effective_spell_operation_effects_for_record(
+                    spell_record,
+                    *spell_rulesets,
+                )
+            )
             sections: List[str] = []
             for operation, section_name in operation_to_section.items():
                 if operation in allow_operations and operation not in deny_operations:
                     sections.append(section_name)
             visible_keys.add(record_key)
+            visible_spell_index_ids.add(spell_record.spell_index_id)
             sections_by_key[record_key] = tuple(sorted(sections))
-        return visible_keys, sections_by_key
+        return visible_keys, visible_spell_index_ids, sections_by_key
 
     @staticmethod
     def _compile_allowed_kinds(
@@ -449,4 +489,163 @@ class FrameACLCompiler(Cleanable):
             )
             allow_operations.update(ruleset_allows)
             deny_operations.update(ruleset_denies)
+        return allow_operations, deny_operations
+
+    @staticmethod
+    def _collect_effective_spell_operation_effects_for_record(
+            spell_record: object,
+            *rulesets: FrameACLRuleSet,
+    ) -> Tuple[Set[str], Set[str]]:
+        """
+        Merge spell operations for one record using selector-aware spell rules.
+
+        Returns:
+            Tuple[Set[str], Set[str]]: Effective allow and deny operations for
+                the target record.
+        """
+        allow_operations: Set[str] = set()
+        deny_operations: Set[str] = set()
+        for ruleset in rulesets:
+            if ruleset is None:
+                continue
+            for rule in ruleset.rules_by_name.values():
+                if not FrameACLCompiler._spell_rule_matches_record(
+                        rule.conditions,
+                        spell_record,
+                ):
+                    continue
+                if rule.effect == "allow":
+                    allow_operations.add(rule.operation)
+                elif rule.effect == "deny":
+                    deny_operations.add(rule.operation)
+        return allow_operations, deny_operations
+
+    @staticmethod
+    def _spell_rule_matches_record(
+            conditions: Dict[str, object],
+            spell_record: object,
+    ) -> bool:
+        """
+        Return whether one spell rule condition set matches a spell record.
+
+        Returns:
+            bool: True when the selector is absent or matches the target record.
+        """
+        selector_keys = {
+            "spell_id",
+            "spell_index_id",
+            "spellframe",
+            "spell_name",
+            "binding_name",
+        }
+        if not any(key in conditions for key in selector_keys):
+            return True
+        if (
+                "spell_id" in conditions
+                and conditions["spell_id"] != spell_record.spell_id
+        ):
+            return False
+        if (
+                "spell_index_id" in conditions
+                and conditions["spell_index_id"] != spell_record.spell_index_id
+        ):
+            return False
+        if "spellframe" in conditions:
+            if spell_record.spellframe is None:
+                return False
+            if (
+                    SpellInputUtils.normalize_frame_key(conditions["spellframe"]) !=
+                    SpellInputUtils.normalize_frame_key(spell_record.spellframe)
+            ):
+                return False
+        if "spell_name" in conditions:
+            if str(conditions["spell_name"]).lower() != str(spell_record.spell_name).lower():
+                return False
+        if "binding_name" in conditions:
+            if (
+                    SpellInputUtils.normalize_binding_name(
+                        conditions["binding_name"]
+                    ) !=
+                    SpellInputUtils.normalize_binding_name(
+                        spell_record.binding_name
+                    )
+            ):
+                return False
+        return True
+
+    @staticmethod
+    def _spell_rule_has_selector(
+            conditions: Dict[str, object],
+    ) -> bool:
+        """
+        Return whether one spell rule condition set carries selector keys.
+
+        Returns:
+            bool: True when selector keys are present.
+        """
+        return any(
+            key in conditions
+            for key in (
+                "spell_id",
+                "spell_index_id",
+                "spellframe",
+                "spell_name",
+                "binding_name",
+            )
+        )
+
+    @staticmethod
+    def _spell_selector_rules_present_for_operation(
+            operation: str,
+            *rulesets: FrameACLRuleSet,
+    ) -> bool:
+        """
+        Return whether any selector-aware rule exists for one spell operation.
+
+        Returns:
+            bool: True when selector-aware rules exist for the operation.
+        """
+        for ruleset in rulesets:
+            if ruleset is None:
+                continue
+            for rule in ruleset.rules_by_name.values():
+                if (
+                        rule.operation == operation and
+                        FrameACLCompiler._spell_rule_has_selector(rule.conditions)
+                ):
+                    return True
+        return False
+
+    @staticmethod
+    def _collect_selector_spell_operation_effects_for_record(
+            operation: str,
+            spell_record: object,
+            *rulesets: FrameACLRuleSet,
+    ) -> Tuple[Set[str], Set[str]]:
+        """
+        Collect selector-aware effects for one operation and spell record only.
+
+        Returns:
+            Tuple[Set[str], Set[str]]: Allow and deny operations from
+                selector-aware rules matching the target record.
+        """
+        allow_operations: Set[str] = set()
+        deny_operations: Set[str] = set()
+        for ruleset in rulesets:
+            if ruleset is None:
+                continue
+            for rule in ruleset.rules_by_name.values():
+                if rule.operation != operation:
+                    continue
+                if not FrameACLCompiler._spell_rule_has_selector(rule.conditions):
+                    continue
+                if not FrameACLCompiler._spell_rule_matches_record(
+                        rule.conditions,
+                        spell_record,
+                ):
+                    continue
+                if rule.effect == "allow":
+                    allow_operations.add(rule.operation)
+                elif rule.effect == "deny":
+                    deny_operations.add(rule.operation)
         return allow_operations, deny_operations

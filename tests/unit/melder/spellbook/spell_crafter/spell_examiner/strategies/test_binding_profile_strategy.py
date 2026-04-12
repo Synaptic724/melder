@@ -6,6 +6,7 @@ from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile impo
     ClassBindingProfile,
     CallableBindingProfile,
     InstanceBindingProfile,
+    OtherBindingProfile,
 )
 from melder.spellbook.spell_crafter.spell_examiner.strategies.binding_profile_strategy import (
     BindingProfileStrategy,
@@ -250,3 +251,124 @@ def test_binding_profile_strategy_abstract_flag_matches_inspect() -> None:
 
     assert isinstance(profile, CallableBindingProfile)
     assert profile.abstract is inspect.isabstract(_abstract_function)
+
+
+def test_binding_profile_strategy_class_profile_fallbacks_clear_optional_source_details(
+        monkeypatch,
+) -> None:
+    """
+    Purpose:
+        Verify class-profile building tolerates annotation/file/source failures.
+    Contract:
+        - Failed annotation resolution falls back to an empty dict.
+        - Missing file/source information falls back to None.
+    Returns:
+        None.
+    """
+
+    class Sample:
+        def ping(self) -> str:
+            return "pong"
+
+    strategy = BindingProfileStrategy()
+
+    monkeypatch.setattr(inspect, "get_annotations", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("boom")))
+    monkeypatch.setattr(inspect, "getfile", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("boom")))
+    monkeypatch.setattr(inspect, "getsourcelines", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("boom")))
+
+    profile = strategy._build_class_profile(Sample)
+
+    assert profile.annotations == {}
+    assert profile.origin_file is None
+    assert profile.origin_line is None
+    assert profile.source_preview is None
+
+
+def test_binding_profile_strategy_callable_profile_falls_back_when_signature_unavailable(
+        monkeypatch,
+) -> None:
+    """
+    Purpose:
+        Verify callable-profile building tolerates signature failures.
+    Contract:
+        - Signature becomes None.
+        - Parameter summaries become empty.
+    Returns:
+        None.
+    """
+    strategy = BindingProfileStrategy()
+
+    monkeypatch.setattr(inspect, "signature", lambda *args, **kwargs: (_ for _ in ()).throw(ValueError("boom")))
+
+    profile = strategy._build_callable_profile(_sample_function)
+
+    assert profile.signature is None
+    assert profile.parameters == []
+
+
+def test_binding_profile_strategy_build_other_profile_and_final_fallback(monkeypatch) -> None:
+    """
+    Purpose:
+        Verify the fallback OTHER profile path remains available.
+    Contract:
+        - _build_other_profile returns an OtherBindingProfile.
+        - build_profile can still route to the final fallback branch.
+    Returns:
+        None.
+    """
+    strategy = BindingProfileStrategy()
+    candidate = object()
+
+    direct_profile = strategy._build_other_profile(candidate)
+    assert isinstance(direct_profile, OtherBindingProfile)
+    assert direct_profile.kind is SpellBindingKind.OTHER
+
+    call_state = {"count": 0}
+    fallback_candidate = lambda value: value
+
+    def fake_isclass(value):
+        call_state["count"] += 1
+        if call_state["count"] == 1:
+            return False
+        return True
+
+    monkeypatch.setattr(inspect, "isclass", fake_isclass)
+
+    fallback_profile = strategy.build_profile(fallback_candidate)
+
+    assert isinstance(fallback_profile, OtherBindingProfile)
+    assert fallback_profile.kind is SpellBindingKind.OTHER
+
+
+def test_binding_profile_strategy_decorated_class_heuristic_edges() -> None:
+    """
+    Purpose:
+        Verify the decorated-class heuristic covers non-class and wrapped cases.
+    Contract:
+        - Non-class values return True.
+        - Objects with __wrapped__ return True.
+        - Builtin-style classes return False.
+    Returns:
+        None.
+    """
+    assert BindingProfileStrategy._is_probably_decorated_class(object()) is True
+
+    Wrapped = type("Wrapped", (), {})
+    Wrapped.__wrapped__ = object()
+    assert BindingProfileStrategy._is_probably_decorated_class(Wrapped) is True
+
+    class Meta(type):
+        pass
+
+    class MetaClassed(metaclass=Meta):
+        pass
+
+    assert BindingProfileStrategy._is_probably_decorated_class(MetaClassed) is True
+
+    Weird = type("Weird", (), {})
+    Weird.__qualname__ = "Outer.Inner"
+    Weird.__name__ = "Different"
+    assert BindingProfileStrategy._is_probably_decorated_class(Weird) is True
+
+    Plain = type("Plain", (), {})
+    assert BindingProfileStrategy._is_probably_decorated_class(Plain) is False

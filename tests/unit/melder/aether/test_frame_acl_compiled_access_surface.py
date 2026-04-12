@@ -24,6 +24,7 @@ def _build_surface() -> CompiledFrameACLAccessSurface:
         frame_payload_fields=("system_state", "rift_enabled"),
         visible_conduit_ids=("conduit-1",),
         visible_spell_keys=(("spellbook-1", "spell-1"),),
+        visible_spell_index_ids=("lineage-1",),
         conduit_payload_sections_by_id={"conduit-1": ("conduit_name",)},
         spell_payload_sections_by_key={
             ("spellbook-1", "spell-1"): ("binding_payload", "metadata")
@@ -52,6 +53,7 @@ def test_compiled_access_surface_exposes_expected_accessors() -> None:
     assert surface.frame_payload_fields == ("system_state", "rift_enabled")
     assert surface.visible_conduit_ids == ("conduit-1",)
     assert surface.visible_spell_keys == (("spellbook-1", "spell-1"),)
+    assert surface.visible_spell_index_ids == ("lineage-1",)
     assert surface.conduit_payload_sections_by_id == {
         "conduit-1": ("conduit_name",),
     }

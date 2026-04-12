@@ -1696,6 +1696,21 @@ class ISpellbook(ICleanable, Protocol):
         """
         ...
 
+    def get_spell_by_index_id(
+            self,
+            spell_index_id: str,
+    ) -> Optional[ISpell]:
+        """
+        Public API
+
+        Resolve a spell by its stable SpellIndex lineage id.
+
+        Returns:
+            Optional[ISpell]:
+                Matching local or contracted spell when found.
+        """
+        ...
+
     def get_spell_permissions(self, spell_index: ISpellIndex) -> Optional[str]:
         """
         Public API
@@ -4911,6 +4926,17 @@ class IConduit(ICleanable, Protocol):
 
         Returns:
             Optional[ISpell]: The contracted spell instance, or None if not found.
+        """
+        ...
+
+    def get_spell_by_index_id(self, spell_index_id: str) -> Optional[Any]:
+        """
+        Public API
+
+        Retrieves a spell object by its stable SpellIndex lineage id.
+
+        Returns:
+            Optional[Any]: The spell object if found, otherwise None.
         """
         ...
 

@@ -1,4 +1,9 @@
+import ast
+import builtins
 import inspect
+import threading
+import typing
+from types import SimpleNamespace
 from typing import List, Optional, Union, get_args, get_origin
 
 import pytest
@@ -76,6 +81,18 @@ class Namespace:
     Dep = Dep
 
 
+class _SupportsGetItem:
+    @classmethod
+    def __class_getitem__(cls, item):
+        return ("ok", item)
+
+
+class _BrokenGetItem:
+    @classmethod
+    def __class_getitem__(cls, item):
+        raise RuntimeError("boom")
+
+
 def test_existing_creation_spells_have_no_parameters():
     for st in (
         SpellType.EXISTING_CREATION,
@@ -86,6 +103,11 @@ def test_existing_creation_spells_have_no_parameters():
         reqs = SpellRequirementsFinder(spell).build_requirements()
         assert reqs.spell_id == "v123"
         assert reqs.parameters == ()
+
+
+def test_finder_constructor_rejects_none_spell():
+    with pytest.raises(ValueError, match="spell must not be None"):
+        SpellRequirementsFinder(None)
 
 
 def test_build_requirements_is_cached_until_cleanup():
@@ -105,12 +127,428 @@ def test_build_requirements_is_cached_until_cleanup():
     assert r3 is not r1
 
 
+def test_cleanup_swallows_requirement_cleanup_errors_and_rechecks_cleaned_inside_lock():
+    class ExplodingRequirements:
+        def cleanup(self):
+            raise RuntimeError("boom")
+
+    class _CoordinatedLock:
+        def __init__(self) -> None:
+            self._entered_first = threading.Event()
+            self._second_attempted = threading.Event()
+            self._lock = threading.RLock()
+
+        def __enter__(self):
+            if self._entered_first.is_set():
+                self._second_attempted.set()
+            self._lock.acquire()
+            if not self._entered_first.is_set():
+                self._entered_first.set()
+                assert self._second_attempted.wait(timeout=1.0)
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self._lock.release()
+
+    finder = SpellRequirementsFinder(_make_spell(lambda: None))
+    finder._requirements = ExplodingRequirements()
+    finder.cleanup()
+    assert finder.cleaned is True
+
+    finder = SpellRequirementsFinder(_make_spell(lambda: None))
+    coordinated_lock = _CoordinatedLock()
+    finder._lock = coordinated_lock
+    thread_results = []
+
+    def _run_cleanup() -> None:
+        finder.cleanup()
+        thread_results.append(True)
+
+    first = threading.Thread(target=_run_cleanup)
+    second = threading.Thread(target=_run_cleanup)
+    first.start()
+    coordinated_lock._entered_first.wait(timeout=1.0)
+    second.start()
+    first.join(timeout=1.0)
+    second.join(timeout=1.0)
+
+    assert thread_results == [True, True]
+    assert finder.cleaned is True
+    assert finder._lock is None
+
+
 def test_resolve_call_target_returns_spell_callable():
     fn = lambda x: x  # noqa: E731
     spell = _make_spell(fn, spell_type=SpellType.METHOD)
     finder = SpellRequirementsFinder(spell)
     target = finder._resolve_call_target(spell)
     assert target is fn
+
+
+def test_resolve_call_target_falls_back_to_raw_spell_object():
+    spell = _make_spell(object(), spell_type=SpellType.EXISTING_CREATION)
+    finder = SpellRequirementsFinder(spell)
+    assert finder._resolve_call_target(spell) is spell.spell
+
+
+def test_spell_property_and_annotation_resolution_fast_paths(monkeypatch):
+    finder = SpellRequirementsFinder(_make_spell(lambda: None))
+    signature = inspect.signature(lambda value: value)
+
+    assert finder.spell is finder._spell
+    assert finder._should_resolve_annotations(
+        call_target=None,
+        signature=signature,
+    ) is False
+
+    monkeypatch.delattr(inspect, "get_annotations")
+    assert finder._should_resolve_annotations(
+        call_target=lambda value: value,
+        signature=signature,
+    ) is True
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("", False),
+        (" dep", False),
+        ("None", False),
+        ("pkg.", False),
+        ("foo[bar]", False),
+        ("foo bar", False),
+        ("pkg.Dep", True),
+    ],
+)
+def test_simple_name_resolution_and_invalid_name_forms(text, expected):
+    finder = SpellRequirementsFinder(_make_spell(lambda: None))
+    assert finder._is_simple_annotation_name(text) is expected
+
+
+def test_name_and_expression_resolution_helper_edges():
+    finder = SpellRequirementsFinder(_make_spell(lambda: None))
+    sentinel = object()
+
+    localns = {"Dep": Dep}
+    globalns = {
+        "__builtins__": {"int": int},
+        "builtins": builtins,
+        "pkg": Namespace,
+    }
+
+    assert finder._resolve_annotation_name("Dep", globalns, localns) is Dep
+    assert finder._resolve_annotation_name("int", globalns, {}) is int
+    assert finder._resolve_annotation_name("pkg.Dep", globalns, {}) is Dep
+    assert finder._resolve_annotation_name("pkg.Missing", globalns, {}) is None
+
+    parsed, value = finder._parse_annotation_expression("list[", globalns, localns)
+    assert parsed is False
+    assert value is None
+
+    parsed, value = finder._parse_annotation_expression("call(Dep)", globalns, localns)
+    assert parsed is False
+    assert value is None
+
+    node = ast.parse("pkg.Dep", mode="eval").body
+    assert finder._resolve_annotation_node(
+        node=node,
+        globalns={},
+        localns={},
+        sentinel=sentinel,
+    ) == "pkg.Dep"
+
+    node = ast.parse("pkg.Missing", mode="eval").body
+    assert finder._resolve_annotation_node(
+        node=node,
+        globalns={"pkg": SimpleNamespace()},
+        localns={},
+        sentinel=sentinel,
+    ) is sentinel
+
+    node = ast.parse("pkg.Missing | Dep", mode="eval").body
+    assert finder._resolve_annotation_node(
+        node=node,
+        globalns={"pkg": SimpleNamespace(), "Dep": Dep},
+        localns={},
+        sentinel=sentinel,
+    ) is sentinel
+
+    node = ast.parse("pkg.Missing[Dep]", mode="eval").body
+    assert finder._resolve_annotation_node(
+        node=node,
+        globalns={"pkg": SimpleNamespace(), "Dep": Dep},
+        localns={},
+        sentinel=sentinel,
+    ) is sentinel
+
+    node = ast.parse("list[pkg.Missing]", mode="eval").body
+    assert finder._resolve_annotation_node(
+        node=node,
+        globalns={"pkg": SimpleNamespace()},
+        localns={},
+        sentinel=sentinel,
+    ) is sentinel
+
+
+def test_annotation_build_and_normalize_helper_edges():
+    finder = SpellRequirementsFinder(_make_spell(lambda: None))
+    sentinel = object()
+
+    assert finder._build_subscripted_annotation(
+        container=list,
+        args=tuple(),
+        sentinel=sentinel,
+    ) is sentinel
+    assert finder._build_subscripted_annotation(
+        container=list,
+        args=(int, str),
+        sentinel=sentinel,
+    ) is sentinel
+    assert finder._build_subscripted_annotation(
+        container=set,
+        args=(int, str),
+        sentinel=sentinel,
+    ) is sentinel
+    assert finder._build_subscripted_annotation(
+        container=frozenset,
+        args=(int, str),
+        sentinel=sentinel,
+    ) is sentinel
+    assert finder._build_subscripted_annotation(
+        container=dict,
+        args=(int,),
+        sentinel=sentinel,
+    ) is sentinel
+    assert finder._build_subscripted_annotation(
+        container=Optional,
+        args=(int, str),
+        sentinel=sentinel,
+    ) is sentinel
+
+    class _SupportsGetItem:
+        @classmethod
+        def __class_getitem__(cls, item):
+            return ("ok", item)
+
+    class _BrokenGetItem:
+        @classmethod
+        def __class_getitem__(cls, item):
+            raise RuntimeError("boom")
+
+    assert finder._build_subscripted_annotation(
+        container=_SupportsGetItem,
+        args=(int,),
+        sentinel=sentinel,
+    ) == ("ok", int)
+    assert finder._build_subscripted_annotation(
+        container=_BrokenGetItem,
+        args=(int,),
+        sentinel=sentinel,
+    ) is sentinel
+
+    assert finder._normalize_annotation(
+        annotation=None,
+        globalns={},
+        localns={},
+    ) is None
+    assert finder._normalize_annotation(
+        annotation="pkg.Dep",
+        globalns={},
+        localns={},
+    ) == "pkg.Dep"
+    assert finder._normalize_annotation(
+        annotation=typing.List,
+        globalns={},
+        localns={},
+    ) is typing.List
+
+    assert finder._rebuild_annotation(
+        annotation=typing.List,
+        origin=list,
+        args=tuple(),
+    ) is typing.List
+    assert finder._rebuild_annotation(
+        annotation=typing.List[int],
+        origin=set,
+        args=(int,),
+    ) == set[int]
+    assert finder._rebuild_annotation(
+        annotation=typing.List[int],
+        origin=frozenset,
+        args=(int,),
+    ) == frozenset[int]
+    assert finder._rebuild_annotation(
+        annotation=typing.Tuple[int, ...],
+        origin=tuple,
+        args=(int, Ellipsis),
+    ) == tuple[int, Ellipsis]
+    unchanged = typing.Iterable[int]
+    assert finder._rebuild_annotation(
+        annotation=unchanged,
+        origin=get_origin(unchanged),
+        args=get_args(unchanged),
+    ) is unchanged
+
+
+def test_resolve_parameter_annotations_handles_none_class_targets_and_fallbacks(monkeypatch):
+    finder = SpellRequirementsFinder(_make_spell(lambda: None))
+
+    assert finder._resolve_parameter_annotations(None) == {}
+
+    def plain(value: int):
+        return value
+
+    assert finder._resolve_parameter_annotations(plain) == plain.__annotations__
+
+    class Service:
+        def __init__(self, dep: "Dep"):
+            self.dep = dep
+
+    resolved = finder._resolve_parameter_annotations(Service)
+    assert resolved["dep"] is Dep
+
+    class NoAnnotations:
+        def __call__(self, value):
+            return value
+
+    assert finder._resolve_parameter_annotations(NoAnnotations()) == {}
+
+    monkeypatch.delattr(inspect, "get_annotations")
+    assert finder._resolve_parameter_annotations(plain) == {}
+
+
+def test_resolve_parameter_annotations_falls_back_when_get_annotations_raises(monkeypatch):
+    finder = SpellRequirementsFinder(_make_spell(lambda: None))
+
+    def typed(value: "Dep"):
+        return value
+
+    def _raise(*args, **kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(inspect, "get_annotations", _raise)
+
+    resolved = finder._resolve_parameter_annotations(typed)
+
+    assert resolved == {}
+
+
+def test_name_resolution_and_annotation_normalization_remaining_edges():
+    finder = SpellRequirementsFinder(_make_spell(lambda: None))
+
+    assert finder._resolve_annotation_name(
+        "len",
+        {"__builtins__": builtins},
+        {},
+    ) is len
+
+    assert finder._normalize_annotation(
+        annotation="'pkg.Dep'",
+        globalns={},
+        localns={},
+    ) == "pkg.Dep"
+    assert finder._normalize_annotation(
+        annotation="call(Dep)",
+        globalns={"Dep": Dep},
+        localns={},
+    ) == "call(Dep)"
+
+
+def test_remaining_subscript_optional_and_di_target_edges():
+    finder = SpellRequirementsFinder(_make_spell(lambda: None))
+    sentinel = object()
+
+    assert finder._build_subscripted_annotation(
+        container=set,
+        args=(int,),
+        sentinel=sentinel,
+    ) == set[int]
+    assert finder._build_subscripted_annotation(
+        container=frozenset,
+        args=(int,),
+        sentinel=sentinel,
+    ) == frozenset[int]
+    assert finder._build_subscripted_annotation(
+        container=dict,
+        args=(str, int),
+        sentinel=sentinel,
+    ) == dict[str, int]
+    assert finder._build_subscripted_annotation(
+        container=tuple,
+        args=(int, str),
+        sentinel=sentinel,
+    ) == tuple[int, str]
+    assert finder._build_subscripted_annotation(
+        container=_SupportsGetItem,
+        args=(int, str),
+        sentinel=sentinel,
+    ) == ("ok", (int, str))
+
+    annotation, is_optional, origin, args = finder._unwrap_optional(
+        annotation=typing.Union[typing.ForwardRef("Dep"), None],
+        origin=Union,
+        args=get_args(typing.Union[typing.ForwardRef("Dep"), None]),
+    )
+    assert annotation == "Dep"
+    assert is_optional is True
+
+    annotation, is_optional, origin, args = finder._unwrap_optional(
+        annotation=typing.Union[Dep, str, None],
+        origin=Union,
+        args=get_args(typing.Union[Dep, str, None]),
+    )
+    assert annotation == typing.Union[Dep, str, None]
+    assert is_optional is True
+
+    assert finder._looks_like_di_target(typing.Any) is False
+    assert finder._looks_like_di_target(typing.ForwardRef("Dep")) is True
+    assert finder._looks_like_di_target("Dep") is True
+    assert finder._looks_like_di_target(int) is False
+    assert finder._looks_like_di_target(Dep) is True
+    assert finder._looks_like_di_target(typing.Callable) is False
+
+
+def test_remaining_helper_edges_for_builtins_sentinels_and_tuple_paths(monkeypatch):
+    finder = SpellRequirementsFinder(_make_spell(lambda: None))
+    sentinel = object()
+
+    class _GlobalsCarrier:
+        __annotations__ = {"value": "int"}
+        __globals__ = {}
+
+    monkeypatch.setattr(
+        inspect,
+        "get_annotations",
+        lambda *args, **kwargs: {"value": "int"},
+    )
+    assert finder._resolve_parameter_annotations(_GlobalsCarrier())["value"] is int
+
+    node = ast.parse("call(Dep).attr", mode="eval").body
+    assert finder._resolve_annotation_node(
+        node=node,
+        globalns={"Dep": Dep},
+        localns={},
+        sentinel=sentinel,
+    ) is sentinel
+
+    assert finder._build_subscripted_annotation(
+        container=tuple,
+        args=(int, Ellipsis),
+        sentinel=sentinel,
+    ) == tuple[int, Ellipsis]
+    assert finder._build_subscripted_annotation(
+        container=object(),
+        args=(int,),
+        sentinel=sentinel,
+    ) is sentinel
+
+    assert finder._rebuild_annotation(
+        annotation=typing.Tuple[int, str],
+        origin=tuple,
+        args=(int, str),
+    ) == tuple[int, str]
+
+    assert finder._looks_like_di_target(list) is False
 
 
 def test_parameter_classification_shapes_and_optional_logic():

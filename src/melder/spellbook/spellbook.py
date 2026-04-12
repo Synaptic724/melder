@@ -1127,6 +1127,94 @@ class Spellbook(Cleanable, ISpellbook):
         self._logger.error(f"Contracted spell with ID {spell_index} not found.", "_find_contracted_spell", exc_info=True)
         raise RuntimeError(f"Contracted spell with ID {spell_index} not found in the spellbook.")
 
+    def _find_spell_index_by_index_id(
+            self,
+            spell_index_id: str,
+    ) -> Optional[ISpellIndex]:
+        """
+        Internal
+
+        Locate a **local** SpellIndex by its stable lineage id.
+
+        Args:
+            spell_index_id:
+                Stable SpellIndex lineage id (ULID) to resolve.
+
+        Returns:
+            Optional[ISpellIndex]:
+                Matching local SpellIndex when found, else ``None``.
+        """
+        self.check_cleaned()
+        with self._lock:
+            for spell_index in self._spells.keys():
+                if spell_index.id == spell_index_id:
+                    return spell_index
+        return None
+
+    def _find_contracted_spell_index_by_index_id(
+            self,
+            spell_index_id: str,
+    ) -> Optional[ISpellIndex]:
+        """
+        Internal
+
+        Locate a contracted SpellIndex by its stable lineage id.
+
+        Args:
+            spell_index_id:
+                Stable SpellIndex lineage id (ULID) to resolve.
+
+        Returns:
+            Optional[ISpellIndex]:
+                Matching contracted SpellIndex when found, else ``None``.
+        """
+        self.check_cleaned()
+        with self._lock:
+            for contracted_spells in self._contracted_spells.values():
+                for spell_index in contracted_spells.keys():
+                    if spell_index.id == spell_index_id:
+                        return spell_index
+        return None
+
+    def get_spell_by_index_id(
+            self,
+            spell_index_id: str,
+    ) -> Optional[ISpell]:
+        """
+        Public API
+
+        Resolve a spell by its stable SpellIndex lineage id.
+
+        Purpose:
+            Provide a runtime lookup path keyed by the stable lineage identity
+            (`spell_index_id`) rather than the current version id (`spell_id`).
+
+        Contract:
+            - Searches local SpellIndex attachments first, then contracted ones.
+            - Once the matching `SpellIndex` object is found, resolves the
+              spell directly through the existing index-based helpers instead of
+              bouncing back through a second spell-id lookup.
+            - Returns ``None`` when no matching lineage exists.
+
+        Args:
+            spell_index_id:
+                Stable SpellIndex lineage id (ULID) to resolve.
+
+        Returns:
+            Optional[ISpell]:
+                Matching local or contracted spell when found, else ``None``.
+        """
+        self.check_cleaned()
+        local_spell_index = self._find_spell_index_by_index_id(spell_index_id)
+        if local_spell_index is not None:
+            return self._find_spell(local_spell_index)
+        contracted_spell_index = self._find_contracted_spell_index_by_index_id(
+            spell_index_id
+        )
+        if contracted_spell_index is not None:
+            return self._find_contracted_spell(contracted_spell_index)
+        return None
+
     def _find_spell_count(self) -> int:
         """
         Internal
