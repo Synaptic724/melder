@@ -3367,6 +3367,88 @@ def test_command_system_can_delegate_conduit_introspection_helpers(
     )
 
 
+def test_command_system_can_delegate_spell_query_and_snapshot_helpers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify the shared command surface delegates spell query/snapshot helpers.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        enabled_conduit_ids=("ops-conduit",),
+    )
+    space.attach_frame_viewer(viewer)
+    spellspace = object()
+    snapshot = {"conduit_id": "ops-conduit"}
+    owner_conduit = SimpleNamespace(
+        get_active_spellspace=lambda: spellspace,
+        find_spell_id=lambda spellframe, spell_name, binding_name: "sha-1",
+        find_spell_key=lambda spellframe, spell_name, binding_name: (
+            spellframe,
+            binding_name,
+        ),
+        get_spell_permissions=lambda spell_id: "create",
+        snapshot_state=lambda: snapshot,
+    )
+    monkeypatch.setattr(
+        type(space.command_system),
+        "get_conduit_by_id",
+        lambda self, conduit_id, *, frame_name=None: owner_conduit,
+    )
+
+    assert (
+        space.command_system.get_active_spellspace(
+            "ops-conduit",
+            frame_name="ops",
+        ) is spellspace
+    )
+    assert space.command_system.find_spell_id(
+        "ops-conduit",
+        "OpsFrame",
+        "OpsSpell",
+        "ops_binding",
+        frame_name="ops",
+    ) == "sha-1"
+    assert space.command_system.find_spell_key(
+        "ops-conduit",
+        "OpsFrame",
+        "OpsSpell",
+        "ops_binding",
+        frame_name="ops",
+    ) == ("OpsFrame", "ops_binding")
+    assert space.command_system.get_spell_permissions(
+        "ops-conduit",
+        "sha-1",
+        frame_name="ops",
+    ) == "create"
+    assert space.command_system.snapshot_state(
+        "ops-conduit",
+        frame_name="ops",
+    ) == snapshot
+
+
 def test_rift_space_can_delegate_frame_surface_calls_to_attached_viewer() -> None:
     """
     Verify a RiftSpace delegates frame-surface calls through the attached viewer.

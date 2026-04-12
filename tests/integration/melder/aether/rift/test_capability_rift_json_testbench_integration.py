@@ -123,6 +123,49 @@ def _build_capability_request_matrix() -> List[Dict[str, object]]:
             "kind": "spell_metadata_object",
         },
         {
+            "name": "command_find_spell_id",
+            "request": {
+                "surface": "command",
+                "method": "find_spell_id",
+                "args": [
+                    "@manifest.conduits.left.id",
+                    "CapabilityBench",
+                    "CapabilityBenchService",
+                    "live_spell",
+                ],
+                "kwargs": {"frame_name": "@manifest.frame_name"},
+            },
+            "kind": "found_spell_id",
+        },
+        {
+            "name": "command_find_spell_key",
+            "request": {
+                "surface": "command",
+                "method": "find_spell_key",
+                "args": [
+                    "@manifest.conduits.left.id",
+                    "CapabilityBench",
+                    "CapabilityBenchService",
+                    "live_spell",
+                ],
+                "kwargs": {"frame_name": "@manifest.frame_name"},
+            },
+            "kind": "found_spell_key",
+        },
+        {
+            "name": "command_get_spell_permissions",
+            "request": {
+                "surface": "command",
+                "method": "get_spell_permissions",
+                "args": [
+                    "@manifest.conduits.left.id",
+                    "@manifest.spell.spell_id",
+                ],
+                "kwargs": {"frame_name": "@manifest.frame_name"},
+            },
+            "kind": "spell_permissions",
+        },
+        {
             "name": "command_meld",
             "request": {
                 "surface": "command",
@@ -157,6 +200,59 @@ def _build_capability_request_matrix() -> List[Dict[str, object]]:
                 "kwargs": {"frame_name": "@manifest.frame_name"},
             },
             "kind": "created_lesser",
+        },
+        {
+            "name": "command_get_lesser_conduit",
+            "request": {
+                "surface": "command",
+                "method": "get_lesser_conduit",
+                "args": [
+                    "@manifest.conduits.left.id",
+                    "@manifest.conduits.initial_lesser.id",
+                ],
+                "kwargs": {"frame_name": "@manifest.frame_name"},
+            },
+            "kind": "initial_lesser_object",
+        },
+        {
+            "name": "command_describe_spells_in_conduit",
+            "request": {
+                "surface": "command",
+                "method": "describe_spells_in_conduit",
+                "args": ["@manifest.conduits.left.id"],
+                "kwargs": {"frame_name": "@manifest.frame_name"},
+            },
+            "kind": "described_spells",
+        },
+        {
+            "name": "command_get_resolution_state",
+            "request": {
+                "surface": "command",
+                "method": "get_resolution_state",
+                "args": ["@manifest.conduits.left.id"],
+                "kwargs": {"frame_name": "@manifest.frame_name"},
+            },
+            "kind": "resolution_state",
+        },
+        {
+            "name": "command_get_active_spellspace",
+            "request": {
+                "surface": "command",
+                "method": "get_active_spellspace",
+                "args": ["@manifest.conduits.left.id"],
+                "kwargs": {"frame_name": "@manifest.frame_name"},
+            },
+            "kind": "active_spellspace",
+        },
+        {
+            "name": "command_snapshot_state",
+            "request": {
+                "surface": "command",
+                "method": "snapshot_state",
+                "args": ["@manifest.conduits.left.id"],
+                "kwargs": {"frame_name": "@manifest.frame_name"},
+            },
+            "kind": "snapshot_state",
         },
         {
             "name": "command_get_conduit_cloud",
@@ -316,6 +412,62 @@ def _build_capability_turn_script_matrix() -> List[Dict[str, object]]:
                     }
                 ),
                 "kind": "link_cycle",
+            }
+        )
+        scenarios.append(
+            {
+                "name": "dynamic_link_introspection_{0}".format(index),
+                "frame_mode": "dynamic",
+                "script_json": json.dumps(
+                    {
+                        "turns": [
+                            {
+                                "surface": "command",
+                                "method": "link",
+                                "args": [
+                                    "@manifest.conduits.left.id",
+                                    "@manifest.conduits.right.id",
+                                ],
+                                "kwargs": {"frame_name": "@manifest.frame_name"},
+                            },
+                            {
+                                "surface": "command",
+                                "method": "get_initiated_conduits",
+                                "args": ["@manifest.conduits.left.id"],
+                                "kwargs": {"frame_name": "@manifest.frame_name"},
+                                "save_as": "initiated_conduits",
+                            },
+                            {
+                                "surface": "command",
+                                "method": "get_provider_conduits",
+                                "args": ["@manifest.conduits.right.id"],
+                                "kwargs": {"frame_name": "@manifest.frame_name"},
+                                "save_as": "provider_conduits",
+                            },
+                            {
+                                "surface": "command",
+                                "method": "get_initiated_conduit",
+                                "args": [
+                                    "@manifest.conduits.left.id",
+                                    "@manifest.conduits.right.id",
+                                ],
+                                "kwargs": {"frame_name": "@manifest.frame_name"},
+                                "save_as": "initiated_conduit",
+                            },
+                            {
+                                "surface": "command",
+                                "method": "get_provider_conduit",
+                                "args": [
+                                    "@manifest.conduits.right.id",
+                                    "@manifest.conduits.left.id",
+                                ],
+                                "kwargs": {"frame_name": "@manifest.frame_name"},
+                                "save_as": "provider_conduit",
+                            },
+                        ]
+                    }
+                ),
+                "kind": "link_introspection",
             }
         )
     for index in range(5):
@@ -541,11 +693,40 @@ def _assert_capability_request_result(
         assert result.spell_id == bench.manifest["spell"]["spell_id"]
         assert result.spell_name == bench.manifest["spell"]["spell_name"]
         return
+    if kind == "found_spell_id":
+        assert result == bench.manifest["spell"]["spell_id"]
+        return
+    if kind == "found_spell_key":
+        assert result == ("capabilitybench", "live_spell")
+        return
+    if kind == "spell_permissions":
+        assert result == "create"
+        return
     if kind == "meld_runtime_object":
         assert result.kind == "capability_live"
         return
     if kind == "created_lesser":
         assert result.id != bench.manifest["conduits"]["left"]["id"]
+        return
+    if kind == "initial_lesser_object":
+        assert result.id == bench.manifest["conduits"]["initial_lesser"]["id"]
+        return
+    if kind == "described_spells":
+        assert isinstance(result, list)
+        assert any(
+            current_result["spell_id"] == bench.manifest["spell"]["spell_id"]
+            for current_result in result
+        )
+        return
+    if kind == "resolution_state":
+        assert result is not None
+        return
+    if kind == "active_spellspace":
+        assert result is None
+        return
+    if kind == "snapshot_state":
+        assert result["conduit_id"] == bench.manifest["conduits"]["left"]["id"]
+        assert result["conduit_name"] == bench.manifest["conduits"]["left"]["name"]
         return
     if kind == "cloud_object":
         expected_count = 2 if bench.dynamic_frame else 0
@@ -601,6 +782,26 @@ def _assert_capability_turn_script_result(
         assert saved_results["severed"] is True
         assert saved_results["links_after_sever"] == tuple()
         assert saved_results["cloud_count"] == 2
+        return
+    if kind == "link_introspection":
+        assert len(saved_results["initiated_conduits"]) == 1
+        assert (
+            saved_results["initiated_conduits"][0].id
+            == bench.manifest["conduits"]["right"]["id"]
+        )
+        assert len(saved_results["provider_conduits"]) == 1
+        assert (
+            saved_results["provider_conduits"][0].id
+            == bench.manifest["conduits"]["left"]["id"]
+        )
+        assert (
+            saved_results["initiated_conduit"].id
+            == bench.manifest["conduits"]["right"]["id"]
+        )
+        assert (
+            saved_results["provider_conduit"].id
+            == bench.manifest["conduits"]["left"]["id"]
+        )
         return
     if kind == "automatic_lower_floor":
         assert (

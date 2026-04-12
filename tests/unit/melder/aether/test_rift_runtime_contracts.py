@@ -388,6 +388,34 @@ def test_rift_conduit_discovery_facades_delegate_to_aether() -> None:
     assert rift.get_conduit_by_name("alpha") is conduit_object
 
 
+def test_rift_conduit_discovery_target_frame_helper_covers_remaining_branches() -> None:
+    """
+    Verify the private conduit-discovery frame resolver covers explicit-miss and fallback branches.
+
+    Returns:
+        None.
+    """
+    rift = _create_registered_rift()
+    rift._frame_link_contract = SimpleNamespace(
+        has_frame=lambda frame_name: frame_name == "ops",
+        cleanup=lambda: None,
+    )
+    rift._default_target_frame_name = None
+    rift._target_frame_names = ("ops",)
+
+    assert rift._resolve_conduit_frame_name(None) == "ops"
+
+    with pytest.raises(ValueError, match="Rift is not targeting frame 'finance'"):
+        rift._resolve_conduit_frame_name("finance")
+
+    rift._target_frame_names = ("ops", "finance")
+    with pytest.raises(
+        ValueError,
+        match="multiple targeted frames and no default target frame",
+    ):
+        rift._resolve_conduit_frame_name(None)
+
+
 def test_rift_conduit_discovery_requires_targeted_frame() -> None:
     """
     Verify Rift conduit discovery fails fast without a targeted frame.

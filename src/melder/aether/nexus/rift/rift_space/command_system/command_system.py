@@ -1,5 +1,5 @@
 import threading
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aether import Aether
@@ -948,6 +948,103 @@ class CommandSystem(Cleanable):
             )
             return conduit.get_resolution_state()
 
+    def get_active_spellspace(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return the active spellspace for one conduit, if any.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return conduit.get_active_spellspace()
+
+    def find_spell_id(
+            self,
+            conduit_id: str,
+            spellframe: str,
+            spell_name: str,
+            binding_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return the current spell id resolved from logical spell identifiers.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return conduit.find_spell_id(spellframe, spell_name, binding_name)
+
+    def find_spell_key(
+            self,
+            conduit_id: str,
+            spellframe: str,
+            spell_name: str,
+            binding_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return the spellbook key resolved from logical spell identifiers.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return conduit.find_spell_key(spellframe, spell_name, binding_name)
+
+    def get_spell_permissions(
+            self,
+            conduit_id: str,
+            spell_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return the permissions string for one spell inside one conduit.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return conduit.get_spell_permissions(spell_id)
+
+    def snapshot_state(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Return a detached snapshot of one conduit state payload.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return conduit.snapshot_state()
+
     def list_conduit_ids(
             self,
             *,
@@ -1530,6 +1627,11 @@ class CommandSystem(Cleanable):
             "get_spells_in_contract_by_conduit_name",
             "describe_spells_in_conduit",
             "get_resolution_state",
+            "get_active_spellspace",
+            "find_spell_id",
+            "find_spell_key",
+            "get_spell_permissions",
+            "snapshot_state",
             "get_spell_by_source_id",
             "get_spell_by_index_id",
             "get_spell_by_id",

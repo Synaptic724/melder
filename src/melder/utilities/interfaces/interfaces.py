@@ -7126,6 +7126,68 @@ class ICommandSystem(ICleanable, Protocol):
         """
         ...
 
+    def get_active_spellspace(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return the active spellspace for one conduit, if any.
+        """
+        ...
+
+    def find_spell_id(
+            self,
+            conduit_id: str,
+            spellframe: str,
+            spell_name: str,
+            binding_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return the current spell id resolved from logical spell identifiers.
+        """
+        ...
+
+    def find_spell_key(
+            self,
+            conduit_id: str,
+            spellframe: str,
+            spell_name: str,
+            binding_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return the spellbook key resolved from logical spell identifiers.
+        """
+        ...
+
+    def get_spell_permissions(
+            self,
+            conduit_id: str,
+            spell_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return the permissions string for one spell inside one conduit.
+        """
+        ...
+
+    def snapshot_state(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Return a detached snapshot of one conduit state payload.
+        """
+        ...
+
     def get_conduit_by_id(
             self,
             conduit_id: str,
