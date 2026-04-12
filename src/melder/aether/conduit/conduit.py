@@ -1620,13 +1620,16 @@ class Conduit(Cleanable, IConduit):
                 result = None
             else:
                 # Walk the owner's SpellIndex keys and find the lineage that contains this version
-                result = None
-                for spell_index, spell in owner._spellbook._spells.items():
-                    # SpellIndex is responsible for telling us whether it owns this version
-                    if spell_index.has_version(spell_id):
-                        result = spell
-                        break
-
+                spellbook = owner._spellbook
+                if spellbook is None:
+                    self._logger.error(
+                        "Owner conduit has no spellbook.",
+                        "get_spell_by_id",
+                        exc_info=True,
+                    )
+                    raise RuntimeError("Owner conduit has no spellbook.")
+                else:
+                    result = spellbook.find_spell_by_id(spell_id)
         return result
 
     def get_spell_by_index_id(
@@ -1666,86 +1669,6 @@ class Conduit(Cleanable, IConduit):
             raise RuntimeError("Spellbook is unavailable.")
         with self._lock:
             return spellbook.get_spell_by_index_id(spell_index_id)
-
-    def _get_live_spell_runtime_object_by_index_id(
-            self,
-            spell_index_id: str,
-    ) -> Optional[Any]:
-        """
-        Internal
-
-        Return the already-live runtime object for one stable spell lineage id.
-
-        Purpose:
-            Support static-mode runtime access without entering any creation
-            path by reading current live creation storage only.
-
-        Contract:
-            - Never creates, registers, or mutates runtime objects.
-            - Returns ``None`` when the spell exists but no live creation is
-              currently available.
-            - Returns ``None`` for `Existence.many`, because static generic
-              retrieval requires one stable live object rather than an
-              ambiguous collection.
-            - Uses the current conduit, active spellspace, or owner creations
-              according to the spell's existing lifecycle contract.
-
-        Args:
-            spell_index_id:
-                Stable SpellIndex lineage id (ULID) to resolve.
-
-        Returns:
-            Optional[Any]:
-                Live runtime object when one is already available, else
-                ``None``.
-
-        Raises:
-            RuntimeError:
-                If the Conduit or its Spellbook has already been cleaned.
-        """
-        self.check_cleaned()
-        spell = self.get_spell_by_index_id(spell_index_id)
-        if spell is None:
-            return None
-        if spell.is_existing_creation:
-            return spell.user_created_object
-
-        existence = spell.existence
-        spell_id = spell.spell_id
-
-        if existence is Existence.many:
-            return None
-
-        if existence is Existence.unique_per_conduit:
-            with self._creations._lock:
-                creation = self._creations._creations.get(spell_id)
-                return None if creation is None else creation.value
-
-        if existence is Existence.unique_per_spell_space:
-            spellspace = self.get_active_spellspace()
-            if spellspace is None:
-                return None
-            with self._creations._lock:
-                creation = self._creations.get_spellspace_creation(
-                    spellspace.id,
-                    spell_id,
-                )
-                return None if creation is None else creation.value
-
-        if existence in {
-                Existence.unique,
-                Existence.unique_per_conduit_cluster,
-                Existence.unique_per_conduit_lineage,
-        }:
-            owner_creations = spell._owner_creations
-            if owner_creations is None:
-                return None
-            with spell._lock:
-                with owner_creations._lock:
-                    creation = owner_creations._creations.get(spell_id)
-                    return None if creation is None else creation.value
-
-        return None
 
 
     def find_contracted_spell(self, spell_id: str) -> Optional[ISpell]:

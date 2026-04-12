@@ -1,3 +1,5 @@
+import pytest
+
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
@@ -99,3 +101,49 @@ def test_root_reachability_orphan_nodes_include_reachable_details():
     assert detail["spell_id"] == "orphan"
     assert detail["reachable_node_count"] == 1
     assert detail["reachable_nodes"] == ["root"]
+
+
+def test_root_reachability_handles_shared_reachable_node_once() -> None:
+    strategy = RootReachabilityStrategy()
+    index = SpellSystemIndex()
+    blueprint = _blueprint("root", ["root", "left", "right", "shared"])
+    blueprint.dag.add_dependency(parent_key="left", child_key="root")
+    blueprint.dag.add_dependency(parent_key="right", child_key="root")
+    blueprint.dag.add_dependency(parent_key="shared", child_key="left")
+    blueprint.dag.add_dependency(parent_key="shared", child_key="right")
+    diagnostics = []
+
+    strategy.run(
+        index=index,
+        blueprints={"root": blueprint},
+        phase4_results={},
+        broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert diagnostics == []
+
+
+def test_root_reachability_honors_cancellation() -> None:
+    class _Cancel:
+        @property
+        def is_set(self):
+            return True
+
+        def throw_if_set(self):
+            raise RuntimeError("cancelled")
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        RootReachabilityStrategy().run(
+            index=SpellSystemIndex(),
+            blueprints={"root": _blueprint("root", ["root"])},
+            phase4_results={},
+            broken_spell_ids=set(),
+            spell_system_states=object(),
+            spell_lookup={},
+            diagnostics=[],
+            cancel_event=_Cancel(),
+        )

@@ -1,3 +1,5 @@
+import pytest
+
 from melder.spellbook.spell_crafter.blueprints.root_resolution_blueprint import (
     RootResolutionBlueprint,
 )
@@ -158,3 +160,75 @@ def test_root_coverage_missing_root_blueprint_includes_details():
     assert detail["root_id"] == "root"
     assert detail["blueprint_root_ids"] == []
     assert detail["index_root_ids"] == ["root"]
+
+
+def test_root_coverage_skips_matching_root_mapping() -> None:
+    strategy = RootCoverageStrategy()
+    index = SpellSystemIndex()
+    index.upsert_node(_node("root", is_root=True))
+    diagnostics = []
+
+    strategy.run(
+        index=index,
+        blueprints={"root": _blueprint("root", ["root"])},
+        phase4_results={},
+        broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert diagnostics == []
+
+
+def test_root_coverage_honors_cancellation_in_blueprint_loop() -> None:
+    class _Cancel:
+        @property
+        def is_set(self):
+            return True
+
+        def throw_if_set(self):
+            raise RuntimeError("cancelled")
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        RootCoverageStrategy().run(
+            index=SpellSystemIndex(),
+            blueprints={"root": _blueprint("root", ["root"])},
+            phase4_results={},
+            broken_spell_ids=set(),
+            spell_system_states=object(),
+            spell_lookup={},
+            diagnostics=[],
+            cancel_event=_Cancel(),
+        )
+
+
+def test_root_coverage_honors_cancellation_in_index_loop() -> None:
+    class _Cancel:
+        def __init__(self) -> None:
+            self._calls = 0
+
+        @property
+        def is_set(self):
+            self._calls += 1
+            return self._calls > 1
+
+        def throw_if_set(self):
+            raise RuntimeError("cancelled")
+
+    index = SpellSystemIndex()
+    index.upsert_node(_node("root", is_root=False))
+    index.upsert_node(_node("other", is_root=False))
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        RootCoverageStrategy().run(
+            index=index,
+            blueprints={},
+            phase4_results={},
+            broken_spell_ids=set(),
+            spell_system_states=object(),
+            spell_lookup={},
+            diagnostics=[],
+            cancel_event=_Cancel(),
+        )

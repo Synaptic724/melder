@@ -1621,6 +1621,18 @@ class ISpellbook(ICleanable, Protocol):
         """
         ...
 
+    def find_spell_by_id(self, spell_id: str) -> Optional[ISpell]:
+        """
+        Finds a spell by its unique identifier within the spellbook.
+
+        Args:
+            spell_id: The identifier of the spell to find.
+
+        Returns:
+            Optional[ISpell]: The spell if found, otherwise None.
+        """
+        ...
+
     def describe_spells_in_spellbook(self) -> list[dict[str, Any]]:
         """
         Return a user-facing dump of spell targeting details currently visible

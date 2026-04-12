@@ -1059,6 +1059,23 @@ class Spellbook(Cleanable, ISpellbook):
 
     #region Core Methods
     #region General Methods
+    def find_spell_by_id(self, spell_id: str) -> Optional[ISpell]:
+        """
+        Finds a spell by its unique identifier within the spellbook.
+
+        Args:
+            spell_id: The identifier of the spell to find.
+
+        Returns:
+            Optional[ISpell]: The spell if found, otherwise None.
+        """
+        for spell_index, spell in self._spells.items():
+            # SpellIndex is responsible for telling us whether it owns this version
+            if spell_index.has_version(spell_id):
+                return spell
+
+        return None
+
     def get_spell_permissions(self, spell_index: ISpellIndex) -> Optional[str]:
         """
         Public API
