@@ -106,7 +106,7 @@ def _build_capability_request_matrix() -> List[Dict[str, object]]:
             "name": "command_get_spell_by_index",
             "request": {
                 "surface": "command",
-                "method": "get_spell_object_by_index_id",
+                "method": "get_spell_by_index_id",
                 "args": ["@manifest.spell.spell_index_id"],
                 "kwargs": {"frame_name": "@manifest.frame_name"},
             },
@@ -116,11 +116,37 @@ def _build_capability_request_matrix() -> List[Dict[str, object]]:
             "name": "command_get_spell_by_source",
             "request": {
                 "surface": "command",
-                "method": "get_spell_object_by_source_id",
+                "method": "get_spell_by_source_id",
                 "args": ["@manifest.spell.source_id"],
                 "kwargs": {"frame_name": "@manifest.frame_name"},
             },
             "kind": "spell_metadata_object",
+        },
+        {
+            "name": "command_meld",
+            "request": {
+                "surface": "command",
+                "method": "meld",
+                "args": ["@manifest.conduits.left.id"],
+                "kwargs": {
+                    "spell": "@manifest.spell.spell_id",
+                    "frame_name": "@manifest.frame_name",
+                },
+            },
+            "kind": "meld_runtime_object",
+        },
+        {
+            "name": "command_meld_existing_spell",
+            "request": {
+                "surface": "command",
+                "method": "meld_existing_spell",
+                "args": ["@manifest.conduits.left.id"],
+                "kwargs": {
+                    "spell": "@manifest.spell.spell_id",
+                    "frame_name": "@manifest.frame_name",
+                },
+            },
+            "kind": "meld_runtime_object",
         },
         {
             "name": "command_create_lesser_conduit",
@@ -248,7 +274,7 @@ def _build_capability_turn_script_matrix() -> List[Dict[str, object]]:
                         "turns": [
                             {
                                 "surface": "command",
-                                "method": "link_conduits",
+                                "method": "link",
                                 "args": [
                                     "@manifest.conduits.left.id",
                                     "@manifest.conduits.right.id",
@@ -290,6 +316,60 @@ def _build_capability_turn_script_matrix() -> List[Dict[str, object]]:
                     }
                 ),
                 "kind": "link_cycle",
+            }
+        )
+    for index in range(5):
+        scenarios.append(
+            {
+                "name": "dynamic_meld_cycle_{0}".format(index),
+                "frame_mode": "dynamic",
+                "script_json": json.dumps(
+                    {
+                        "turns": [
+                            {
+                                "surface": "command",
+                                "method": "meld",
+                                "args": ["@manifest.conduits.left.id"],
+                                "kwargs": {
+                                    "spell": "@manifest.spell.spell_id",
+                                    "frame_name": "@manifest.frame_name",
+                                },
+                                "save_as": "live_object",
+                            },
+                            {
+                                "surface": "workstation",
+                                "method": "bind_object",
+                                "args": ["live", "@turns.live_object"],
+                                "kwargs": {"weak_ref": False},
+                            },
+                            {
+                                "surface": "workstation",
+                                "method": "set_target",
+                                "args": ["live"],
+                                "kwargs": {"store": "objects"},
+                            },
+                            {
+                                "surface": "command",
+                                "method": "execute_target_method",
+                                "args": ["run", "dynamic_{0}".format(index)],
+                                "kwargs": {"bind_as_name": "run_result"},
+                                "save_as": "run_result",
+                            },
+                            {
+                                "surface": "command",
+                                "method": "meld_existing_spell",
+                                "args": ["@manifest.conduits.left.id"],
+                                "kwargs": {
+                                    "spell": "@manifest.spell.spell_id",
+                                    "frame_name": "@manifest.frame_name",
+                                },
+                                "save_as": "existing_object",
+                            },
+                        ]
+                    }
+                ),
+                "kind": "meld_cycle",
+                "prefix": "dynamic_{0}".format(index),
             }
         )
     for index in range(5):
@@ -336,7 +416,7 @@ def _build_capability_turn_script_matrix() -> List[Dict[str, object]]:
                             },
                             {
                                 "surface": "command",
-                                "method": "link_conduits",
+                                "method": "link",
                                 "args": [
                                     "@manifest.conduits.left.id",
                                     "@manifest.conduits.right.id",
@@ -350,6 +430,59 @@ def _build_capability_turn_script_matrix() -> List[Dict[str, object]]:
                     }
                 ),
                 "kind": "automatic_lower_floor",
+            }
+        )
+        scenarios.append(
+            {
+                "name": "automatic_meld_cycle_{0}".format(index),
+                "frame_mode": "automatic",
+                "script_json": json.dumps(
+                    {
+                        "turns": [
+                            {
+                                "surface": "command",
+                                "method": "meld",
+                                "args": ["@manifest.conduits.left.id"],
+                                "kwargs": {
+                                    "spell": "@manifest.spell.spell_id",
+                                    "frame_name": "@manifest.frame_name",
+                                },
+                                "save_as": "live_object",
+                            },
+                            {
+                                "surface": "workstation",
+                                "method": "bind_object",
+                                "args": ["live", "@turns.live_object"],
+                                "kwargs": {"weak_ref": False},
+                            },
+                            {
+                                "surface": "workstation",
+                                "method": "set_target",
+                                "args": ["live"],
+                                "kwargs": {"store": "objects"},
+                            },
+                            {
+                                "surface": "command",
+                                "method": "execute_target_method",
+                                "args": ["run", "automatic_{0}".format(index)],
+                                "kwargs": {"bind_as_name": "run_result"},
+                                "save_as": "run_result",
+                            },
+                            {
+                                "surface": "command",
+                                "method": "meld_existing_spell",
+                                "args": ["@manifest.conduits.left.id"],
+                                "kwargs": {
+                                    "spell": "@manifest.spell.spell_id",
+                                    "frame_name": "@manifest.frame_name",
+                                },
+                                "save_as": "existing_object",
+                            },
+                        ]
+                    }
+                ),
+                "kind": "meld_cycle",
+                "prefix": "automatic_{0}".format(index),
             }
         )
     return scenarios
@@ -379,7 +512,7 @@ def _assert_capability_request_result(
         assert "get_conduit_cloud" in result
         assert "create_lesser_conduit" in result
         assert "create_cluster" in result
-        assert "link_conduits" in result
+        assert "link" in result
         return
     if kind == "conduit_ids":
         assert result == (
@@ -407,6 +540,9 @@ def _assert_capability_request_result(
     if kind == "spell_metadata_object":
         assert result.spell_id == bench.manifest["spell"]["spell_id"]
         assert result.spell_name == bench.manifest["spell"]["spell_name"]
+        return
+    if kind == "meld_runtime_object":
+        assert result.kind == "capability_live"
         return
     if kind == "created_lesser":
         assert result.id != bench.manifest["conduits"]["left"]["id"]
@@ -473,6 +609,13 @@ def _assert_capability_turn_script_result(
         )
         assert saved_results["joined_clusters"] == (scenario["cluster_name"],)
         assert saved_results["link_error"]["error_type"] == "RuntimeError"
+        return
+    if kind == "meld_cycle":
+        assert saved_results["live_object"].kind == "capability_live"
+        assert saved_results["run_result"] == "capability_live:{0}".format(
+            scenario["prefix"]
+        )
+        assert saved_results["existing_object"].kind == "capability_live"
         return
     raise AssertionError(kind)
 

@@ -2,7 +2,10 @@ from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
 )
 from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
+    CallableBindingProfile,
     ClassBindingProfile,
+    InstanceBindingProfile,
+    OtherBindingProfile,
     SpellBindingKind,
 )
 
@@ -122,6 +125,81 @@ def test_spell_descriptor_payload_from_spell_profile_sanitizes_binding_profile()
     assert payload.binding_payload["module"] == "tests.example"
     assert payload.binding_payload["method_names"] == ["run"]
     assert "original_object" not in payload.binding_payload
+
+
+def test_spell_descriptor_payload_from_spell_profile_sanitizes_other_profile_kinds() -> None:
+    callable_payload = SpellDescriptorPayload.from_spell_profile(
+        "general",
+        "0.0.1",
+        CallableBindingProfile(
+            kind=SpellBindingKind.CALLABLE,
+            original_object=lambda value: value,
+            object_id="callable-1",
+            name="run",
+            qualname="run",
+            module="tests.example",
+            parameters=[{"name": "value"}],
+            repr_string="<function run>",
+            type_name="function",
+            signature="(value)",
+            lambda_function=False,
+            builtin_module=False,
+            extension_module=False,
+        ),
+        resolution_payload={},
+    )
+    instance_payload = SpellDescriptorPayload.from_spell_profile(
+        "general",
+        "0.0.1",
+        InstanceBindingProfile(
+            kind=SpellBindingKind.INSTANCE,
+            original_object=object(),
+            type_name="Service",
+            module="tests.example",
+            repr_string="<Service>",
+        ),
+        resolution_payload={},
+    )
+    other_payload = SpellDescriptorPayload.from_spell_profile(
+        "general",
+        "0.0.1",
+        OtherBindingProfile(
+            kind=SpellBindingKind.OTHER,
+            original_object=object(),
+            type_name="Opaque",
+            module="tests.example",
+            repr_string="<Opaque>",
+        ),
+        resolution_payload={},
+    )
+
+    assert callable_payload.binding_payload == {
+        "kind": "CALLABLE",
+        "name": "run",
+        "qualname": "run",
+        "module": "tests.example",
+        "object_id": "callable-1",
+        "type_name": "function",
+        "repr_string": "<function run>",
+        "signature": "(value)",
+        "parameters": [{"name": "value"}],
+        "builtin_module": False,
+        "extension_module": False,
+        "lambda_function": False,
+        "abstract": False,
+    }
+    assert instance_payload.binding_payload == {
+        "kind": "INSTANCE",
+        "type_name": "Service",
+        "module": "tests.example",
+        "repr_string": "<Service>",
+    }
+    assert other_payload.binding_payload == {
+        "kind": "OTHER",
+        "type_name": "Opaque",
+        "module": "tests.example",
+        "repr_string": "<Opaque>",
+    }
 
 
 def test_spell_descriptor_payload_cleanup_is_idempotent() -> None:

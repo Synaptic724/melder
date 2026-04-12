@@ -154,7 +154,7 @@ def _build_spell_case_matrix() -> List[Dict[str, object]]:
             "name": "command_get_by_index",
             "request": {
                 "surface": "command",
-                "method": "get_spell_object_by_index_id",
+                "method": "get_spell_by_index_id",
                 "args": ["@manifest.spells.__CASE__.spell_index_id"],
                 "kwargs": {"frame_name": "@manifest.frame_name"},
             },
@@ -165,7 +165,7 @@ def _build_spell_case_matrix() -> List[Dict[str, object]]:
             "name": "command_get_by_source",
             "request": {
                 "surface": "command",
-                "method": "get_spell_object_by_source_id",
+                "method": "get_spell_by_source_id",
                 "args": ["@manifest.spells.__CASE__.source_id"],
                 "kwargs": {"frame_name": "@manifest.frame_name"},
             },
@@ -177,7 +177,7 @@ def _build_spell_case_matrix() -> List[Dict[str, object]]:
             "name": "command_get_by_id",
             "request": {
                 "surface": "command",
-                "method": "get_spell_object_by_id",
+                "method": "get_spell_by_id",
                 "args": ["@manifest.spells.__CASE__.spell_id"],
                 "kwargs": {"frame_name": "@manifest.frame_name"},
             },
@@ -515,7 +515,7 @@ def _build_turn_script_scenarios() -> List[Dict[str, object]]:
                             },
                             {
                                 "surface": "command",
-                                "method": "get_spell_object_by_index_id",
+                                "method": "get_spell_by_index_id",
                                 "args": ["@manifest.spells.__CASE__.spell_index_id"],
                                 "kwargs": {"frame_name": "@manifest.frame_name"},
                                 "save_as": "fetch",
@@ -834,7 +834,7 @@ def _build_turn_script_scenarios() -> List[Dict[str, object]]:
                 "turns": [
                     {
                         "surface": "command",
-                        "method": "get_spell_object_by_source_id",
+                        "method": "get_spell_by_source_id",
                         "args": ["@manifest.spells.unique_live.source_id"],
                         "kwargs": {"frame_name": "@manifest.frame_name"},
                         "save_as": "spell",

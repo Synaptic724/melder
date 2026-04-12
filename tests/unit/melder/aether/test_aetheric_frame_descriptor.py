@@ -1,6 +1,7 @@
 ﻿from types import SimpleNamespace
 
 import pytest
+import threading
 from typing import Optional, Tuple
 
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
@@ -450,6 +451,108 @@ def test_descriptor_properties_raise_after_cleanup() -> None:
 
     with pytest.raises(RuntimeError):
         _ = descriptor.frame_configuration
+
+
+def test_descriptor_exposes_frame_name_and_cleanup_rechecks_cleaned_inside_lock() -> None:
+    class _CoordinatedLock:
+        def __init__(self, descriptor: FrameDescriptor) -> None:
+            self._descriptor = descriptor
+            self._entered_first = threading.Event()
+            self._second_attempted = threading.Event()
+            self._lock = threading.RLock()
+
+        def __enter__(self):
+            if self._entered_first.is_set():
+                self._second_attempted.set()
+            self._lock.acquire()
+            if not self._entered_first.is_set():
+                self._entered_first.set()
+                assert self._second_attempted.wait(timeout=1.0)
+                self._descriptor._cleaned = True
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self._lock.release()
+
+    descriptor = FrameDescriptor("ops")
+    conduit_record = ConduitRecord(
+        conduit_id="conduit-1",
+        root_conduit_id="conduit-1",
+        frame_name="ops",
+        origin_spellbook_id="spellbook-1",
+        payload=_conduit_payload(
+            conduit_name="alpha",
+            conduit_state=ConduitState.normal,
+            policy=Policies.default,
+            peer_conduit_ids=tuple(),
+        ),
+    )
+    spell_record = SpellRecord(
+        origin_spellbook_id="spellbook-1",
+        frame_name="ops",
+        owner_conduit_id="conduit-1",
+        spell_id="spell-1",
+        spell_index_id="lineage-1",
+        spell_name="SpellOne",
+        spellframe=None,
+        binding_name="spell_one",
+        permissions=Permissions.create,
+        existence=Existence.many,
+        payload=_spell_payload(),
+    )
+
+    descriptor.upsert_conduit_record(conduit_record)
+    descriptor.upsert_spell_record(spell_record)
+    assert descriptor.frame_name == "ops"
+
+    descriptor = FrameDescriptor("ops")
+    descriptor._lock = _CoordinatedLock(descriptor)
+
+    first = threading.Thread(target=descriptor.cleanup)
+    second = threading.Thread(target=descriptor.cleanup)
+    first.start()
+    second.start()
+    first.join(timeout=1.0)
+    second.join(timeout=1.0)
+
+    assert descriptor.cleaned is True
+
+
+def test_descriptor_cleanup_cleans_owned_conduit_and_spell_records() -> None:
+    descriptor = FrameDescriptor("ops")
+    conduit_record = ConduitRecord(
+        conduit_id="conduit-1",
+        root_conduit_id="conduit-1",
+        frame_name="ops",
+        origin_spellbook_id="spellbook-1",
+        payload=_conduit_payload(
+            conduit_name="alpha",
+            conduit_state=ConduitState.normal,
+            policy=Policies.default,
+            peer_conduit_ids=tuple(),
+        ),
+    )
+    spell_record = SpellRecord(
+        origin_spellbook_id="spellbook-1",
+        frame_name="ops",
+        owner_conduit_id="conduit-1",
+        spell_id="spell-1",
+        spell_index_id="lineage-1",
+        spell_name="SpellOne",
+        spellframe=None,
+        binding_name="spell_one",
+        permissions=Permissions.create,
+        existence=Existence.many,
+        payload=_spell_payload(),
+    )
+
+    descriptor.upsert_conduit_record(conduit_record)
+    descriptor.upsert_spell_record(spell_record)
+    descriptor.cleanup()
+    descriptor.cleanup()
+
+    assert conduit_record.cleaned is True
+    assert spell_record.cleaned is True
 
 def _spell_payload(payload_type: str = "detailed") -> SpellDescriptorPayload:
     """

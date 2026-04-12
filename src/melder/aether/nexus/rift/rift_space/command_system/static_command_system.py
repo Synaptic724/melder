@@ -68,7 +68,32 @@ class StaticCommandSystem(CommandSystem):
             )
         )
 
-    def get_spell_object_by_source_id(
+    def _assert_spell_activation_allowed(
+            self,
+            method_name: str,
+    ) -> None:
+        """
+        Deny direct conduit-level spell activation in static rooms.
+
+        Args:
+            method_name:
+                Shared spell-activation method being attempted.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                Always, because static rooms must use the published live-only
+                spell surface instead of direct raw conduit activation.
+        """
+        raise ValueError(
+            "Static command surface does not allow spell activation method '{0}'.".format(
+                method_name
+            )
+        )
+
+    def get_spell_by_source_id(
             self,
             spell_source_id: str,
             *,
@@ -97,7 +122,7 @@ class StaticCommandSystem(CommandSystem):
             spell_source_id,
             frame_name=frame_name,
         )
-        return self.get_spell_object_by_index_id(
+        return self.get_spell_by_index_id(
             spell_record.spell_index_id,
             frame_name=resolved_frame_name,
         )
@@ -270,7 +295,7 @@ class StaticCommandSystem(CommandSystem):
             frame_name=resolved_frame_name,
         )
 
-    def get_spell_object_by_index_id(
+    def get_spell_by_index_id(
             self,
             spell_index_id: str,
             *,
@@ -361,7 +386,7 @@ class StaticCommandSystem(CommandSystem):
             )
         )
 
-    def get_spell_object_by_id(
+    def get_spell_by_id(
             self,
             spell_id: str,
             *,
@@ -390,7 +415,7 @@ class StaticCommandSystem(CommandSystem):
             spell_id,
             frame_name=resolved_frame_name,
         )
-        return self.get_spell_object_by_index_id(
+        return self.get_spell_by_index_id(
             spell_index_id,
             frame_name=resolved_frame_name,
         )
@@ -478,8 +503,10 @@ class StaticCommandSystem(CommandSystem):
             "delete_cluster",
             "join_cluster",
             "leave_cluster",
-            "link_conduits",
+            "link",
             "sever_link",
+            "meld",
+            "meld_existing_spell",
         }
         return tuple(
             method_name

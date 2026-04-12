@@ -6964,7 +6964,7 @@ class ICommandSystem(ICleanable, Protocol):
         """
         ...
 
-    def link_conduits(
+    def link(
             self,
             source_conduit_id: str,
             target_conduit_id: str,
@@ -7021,7 +7021,7 @@ class ICommandSystem(ICleanable, Protocol):
         """
         ...
 
-    def get_spell_object_by_source_id(
+    def get_spell_by_source_id(
             self,
             spell_source_id: str,
             *,
@@ -7032,7 +7032,7 @@ class ICommandSystem(ICleanable, Protocol):
         """
         ...
 
-    def get_spell_object_by_index_id(
+    def get_spell_by_index_id(
             self,
             spell_index_id: str,
             *,
@@ -7043,7 +7043,7 @@ class ICommandSystem(ICleanable, Protocol):
         """
         ...
 
-    def get_spell_object_by_id(
+    def get_spell_by_id(
             self,
             spell_id: str,
             *,
@@ -7051,6 +7051,37 @@ class ICommandSystem(ICleanable, Protocol):
     ) -> object:
         """
         Return one live spell object by current spell id.
+        """
+        ...
+
+    def meld(
+            self,
+            conduit_id: str,
+            spell_name: Optional[str] = None,
+            *,
+            spell: Optional[object] = None,
+            spellframe: Optional[object] = None,
+            binding_name: Optional[str] = None,
+            frame_name: Optional[str] = None,
+            spell_override: Optional[dict | list | tuple] = None,
+    ) -> object:
+        """
+        Resolve and activate one spell through a command-selected conduit.
+        """
+        ...
+
+    def meld_existing_spell(
+            self,
+            conduit_id: str,
+            spell_name: Optional[str] = None,
+            *,
+            spell: Optional[object] = None,
+            spellframe: Optional[object] = None,
+            binding_name: Optional[str] = None,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one already-live spell runtime object through a selected conduit.
         """
         ...
 

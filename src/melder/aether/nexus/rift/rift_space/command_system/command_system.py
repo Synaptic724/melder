@@ -293,7 +293,7 @@ class CommandSystem(Cleanable):
                     frame_name=selected_target.frame_name,
                 )
             if selected_target.source_kind == "spell":
-                return self.get_spell_object_by_source_id(
+                return self.get_spell_by_source_id(
                     selected_target.source_id,
                     frame_name=selected_target.frame_name,
                 )
@@ -632,7 +632,7 @@ class CommandSystem(Cleanable):
             )
             return tuple(conduit.list_clusters())
 
-    def link_conduits(
+    def link(
             self,
             source_conduit_id: str,
             target_conduit_id: str,
@@ -656,7 +656,7 @@ class CommandSystem(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            self._assert_topology_mutation_allowed("link_conduits")
+            self._assert_topology_mutation_allowed("link")
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
             source_conduit = self.get_conduit_by_id(
                 source_conduit_id,
@@ -903,7 +903,7 @@ class CommandSystem(Cleanable):
                 return conduit_id
             return None
 
-    def get_spell_object_by_source_id(
+    def get_spell_by_source_id(
             self,
             spell_source_id: str,
             *,
@@ -935,14 +935,14 @@ class CommandSystem(Cleanable):
                 frame_name=frame_name,
             )
             self._assert_raw_runtime_object_access_allowed(
-                "get_spell_object_by_source_id"
+                "get_spell_by_source_id"
             )
-            return self.get_spell_object_by_index_id(
+            return self.get_spell_by_index_id(
                 spell_record.spell_index_id,
                 frame_name=resolved_frame_name,
             )
 
-    def get_spell_object_by_index_id(
+    def get_spell_by_index_id(
             self,
             spell_index_id: str,
             *,
@@ -972,7 +972,7 @@ class CommandSystem(Cleanable):
                 raise ValueError("spell_index_id cannot be empty.")
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
             self._assert_raw_runtime_object_access_allowed(
-                "get_spell_object_by_index_id"
+                "get_spell_by_index_id"
             )
             self._assert_frame_command_enabled(resolved_frame_name)
             self._assert_spell_command_enabled(
@@ -1011,7 +1011,7 @@ class CommandSystem(Cleanable):
                 )
             )
 
-    def get_spell_object_by_id(
+    def get_spell_by_id(
             self,
             spell_id: str,
             *,
@@ -1038,7 +1038,7 @@ class CommandSystem(Cleanable):
         self.check_cleaned()
         with self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            self._assert_raw_runtime_object_access_allowed("get_spell_object_by_id")
+            self._assert_raw_runtime_object_access_allowed("get_spell_by_id")
             self._assert_frame_command_enabled(resolved_frame_name)
             spell_index_id = self._get_required_published_spell_index_id_by_spell_id(
                 spell_id,
@@ -1062,6 +1062,110 @@ class CommandSystem(Cleanable):
                     return spell
             raise ValueError(
                 "Spell id '{0}' was not found in the owner spellbook.".format(spell_id)
+            )
+
+    def meld(
+            self,
+            conduit_id: str,
+            spell_name: Optional[str] = None,
+            *,
+            spell: Optional[object] = None,
+            spellframe: Optional[object] = None,
+            binding_name: Optional[str] = None,
+            frame_name: Optional[str] = None,
+            spell_override: Optional[dict | list | tuple] = None,
+    ) -> object:
+        """
+        Resolve and activate one spell through a command-selected conduit.
+
+        Purpose:
+            Mirror the lower `Conduit.meld(...)` API on the shared command
+            surface without inventing a command-only alias.
+
+        Args:
+            conduit_id:
+                Conduit id that should perform the meld.
+            spell_name:
+                Optional logical spell name key.
+            spell:
+                Optional spell id string or spell object.
+            spellframe:
+                Optional spellframe / protocol / frame key.
+            binding_name:
+                Optional binding name for resolution.
+            frame_name:
+                Optional hosted frame name. When omitted, the room default
+                frame is used.
+            spell_override:
+                Optional per-call override payload forwarded to the conduit.
+
+        Returns:
+            object: Activated runtime object returned by the conduit meld path.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._assert_spell_activation_allowed("meld")
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return conduit.meld(
+                spell_name=spell_name,
+                spell=spell,
+                spellframe=spellframe,
+                binding_name=binding_name,
+                spell_override=spell_override,
+            )
+
+    def meld_existing_spell(
+            self,
+            conduit_id: str,
+            spell_name: Optional[str] = None,
+            *,
+            spell: Optional[object] = None,
+            spellframe: Optional[object] = None,
+            binding_name: Optional[str] = None,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one already-live spell runtime object through a selected conduit.
+
+        Purpose:
+            Mirror the lower `Conduit.meld_existing_spell(...)` API on the
+            shared command surface.
+
+        Args:
+            conduit_id:
+                Conduit id that should perform the reuse-only resolution.
+            spell_name:
+                Optional logical spell name key.
+            spell:
+                Optional spell id string or spell object.
+            spellframe:
+                Optional spellframe / protocol / frame key.
+            binding_name:
+                Optional binding name for resolution.
+            frame_name:
+                Optional hosted frame name. When omitted, the room default
+                frame is used.
+
+        Returns:
+            object: Already-live runtime object returned by the conduit.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._assert_spell_activation_allowed("meld_existing_spell")
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return conduit.meld_existing_spell(
+                spell_name=spell_name,
+                spell=spell,
+                spellframe=spellframe,
+                binding_name=binding_name,
             )
 
     def get_target_attribute(self, attribute_name: str) -> object:
@@ -1196,12 +1300,14 @@ class CommandSystem(Cleanable):
             "join_cluster",
             "leave_cluster",
             "list_clusters",
-            "link_conduits",
+            "link",
             "sever_link",
             "get_links",
-            "get_spell_object_by_source_id",
-            "get_spell_object_by_index_id",
-            "get_spell_object_by_id",
+            "get_spell_by_source_id",
+            "get_spell_by_index_id",
+            "get_spell_by_id",
+            "meld",
+            "meld_existing_spell",
             "get_target_attribute",
             "get_target_method",
             "execute_target_method",
@@ -1326,6 +1432,27 @@ class CommandSystem(Cleanable):
         Args:
             method_name:
                 Public topology-mutation method being attempted.
+
+        Returns:
+            None.
+        """
+        _ = method_name
+
+    def _assert_spell_activation_allowed(
+            self,
+            method_name: str,
+    ) -> None:
+        """
+        Enforce room-level direct spell-activation policy for shared commands.
+
+        Contract:
+            - Shared base implementation allows direct spell activation.
+            - Room-specific command systems may override this helper to deny
+              raw activation paths while keeping the shared vocabulary intact.
+
+        Args:
+            method_name:
+                Direct spell-activation method being attempted.
 
         Returns:
             None.

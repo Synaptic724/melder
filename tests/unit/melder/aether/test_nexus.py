@@ -1464,7 +1464,7 @@ def test_command_system_can_query_command_enabled_conduits() -> None:
     )
 
 
-def test_command_system_can_get_spell_object_by_id(
+def test_command_system_can_get_spell_by_id(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
@@ -1541,7 +1541,7 @@ def test_command_system_can_get_spell_object_by_id(
         aether_stub,
     )
 
-    result = space.command_system.get_spell_object_by_id(
+    result = space.command_system.get_spell_by_id(
         "sha-1",
         frame_name="ops",
     )
@@ -1549,7 +1549,7 @@ def test_command_system_can_get_spell_object_by_id(
     assert result is spell
 
 
-def test_command_system_can_get_spell_object_by_index_id(
+def test_command_system_can_get_spell_by_index_id(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
@@ -1618,7 +1618,7 @@ def test_command_system_can_get_spell_object_by_index_id(
         lambda self, conduit_id, *, frame_name=None: owner_conduit,
     )
 
-    result = space.command_system.get_spell_object_by_index_id(
+    result = space.command_system.get_spell_by_index_id(
         "lineage-1",
         frame_name="ops",
     )
@@ -1752,7 +1752,7 @@ def test_command_system_denies_spell_object_by_index_id_when_spell_acl_disabled(
         ValueError,
         match="Command access to spell lineage 'lineage-1' is disabled in frame 'ops'",
     ):
-        space.command_system.get_spell_object_by_index_id(
+        space.command_system.get_spell_by_index_id(
             "lineage-1",
             frame_name="ops",
         )
@@ -1936,7 +1936,7 @@ def test_static_room_returns_live_spell_runtime_object_by_index_id(
     )
 
     assert (
-        space.command_system.get_spell_object_by_index_id(
+        space.command_system.get_spell_by_index_id(
             "lineage-1",
             frame_name="ops",
         ) is live_spell_object
@@ -2371,7 +2371,7 @@ def test_static_room_denies_many_and_spellspace_spell_runtime_object_access(
     )
 
     with pytest.raises(ValueError, match="unsupported static existence 'many'"):
-        space.command_system.get_spell_object_by_index_id(
+        space.command_system.get_spell_by_index_id(
             "lineage-many",
             frame_name="ops",
         )
@@ -2380,7 +2380,7 @@ def test_static_room_denies_many_and_spellspace_spell_runtime_object_access(
         ValueError,
         match="unsupported static existence 'unique_per_spell_space'",
     ):
-        space.command_system.get_spell_object_by_index_id(
+        space.command_system.get_spell_by_index_id(
             "lineage-spellspace",
             frame_name="ops",
         )
@@ -2611,7 +2611,7 @@ def test_static_room_denies_spell_runtime_object_when_not_live(
         ValueError,
         match="Spell lineage 'lineage-1' is not live in frame 'ops'",
     ):
-        space.command_system.get_spell_object_by_index_id(
+        space.command_system.get_spell_by_index_id(
             "lineage-1",
             frame_name="ops",
         )
@@ -2684,7 +2684,7 @@ def test_capability_room_allows_direct_spell_runtime_object_access() -> None:
     )
 
     assert (
-        space.command_system.get_spell_object_by_index_id(
+        space.command_system.get_spell_by_index_id(
             "lineage-1",
             frame_name="ops",
         ) is spell
@@ -2977,7 +2977,7 @@ def test_capability_room_can_manage_clusters_on_dynamic_frame() -> None:
         spellbook.cleanup()
 
 
-def test_capability_room_can_link_conduits_on_dynamic_frame() -> None:
+def test_capability_room_can_link_on_dynamic_frame() -> None:
     """
     Verify capability can link conduits on a dynamic frame.
 
@@ -3035,7 +3035,7 @@ def test_capability_room_can_link_conduits_on_dynamic_frame() -> None:
                 left_conduit if conduit_id == left_conduit.id else right_conduit
             ),
         )
-        linked = space.command_system.link_conduits(
+        linked = space.command_system.link(
             left_conduit.id,
             right_conduit.id,
             frame_name="ops",
@@ -3054,6 +3054,102 @@ def test_capability_room_can_link_conduits_on_dynamic_frame() -> None:
         right_spellbook.cleanup()
 
 
+def test_capability_room_can_meld_through_command_surface() -> None:
+    """
+    Verify capability can call the shared command-level `meld(...)` helper.
+
+    Returns:
+        None.
+    """
+    space = CapabilityRiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        enabled_conduit_ids=("ops-conduit",),
+    )
+    space.attach_frame_viewer(viewer)
+    runtime_object = object()
+    owner_conduit = SimpleNamespace(
+        meld=lambda **kwargs: runtime_object,
+    )
+    space.command_system._aether = SimpleNamespace(
+        get_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
+    )
+
+    result = space.command_system.meld(
+        "ops-conduit",
+        spell="sha-1",
+        frame_name="ops",
+    )
+
+    assert result is runtime_object
+
+
+def test_capability_room_can_meld_existing_spell_through_command_surface() -> None:
+    """
+    Verify capability can call the shared reuse-only `meld_existing_spell(...)` helper.
+
+    Returns:
+        None.
+    """
+    space = CapabilityRiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        enabled_conduit_ids=("ops-conduit",),
+    )
+    space.attach_frame_viewer(viewer)
+    runtime_object = object()
+    owner_conduit = SimpleNamespace(
+        meld_existing_spell=lambda **kwargs: runtime_object,
+    )
+    space.command_system._aether = SimpleNamespace(
+        get_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
+    )
+
+    result = space.command_system.meld_existing_spell(
+        "ops-conduit",
+        spell="sha-1",
+        frame_name="ops",
+    )
+
+    assert result is runtime_object
+
+
 def test_static_command_system_denies_shared_topology_mutation_methods() -> None:
     """
     Verify static rooms deny shared topology-mutation command methods.
@@ -3068,7 +3164,7 @@ def test_static_command_system_denies_shared_topology_mutation_methods() -> None
         lambda: space.command_system.delete_cluster("conduit-1", "alpha"),
         lambda: space.command_system.join_cluster("conduit-1", "alpha"),
         lambda: space.command_system.leave_cluster("conduit-1", "alpha"),
-        lambda: space.command_system.link_conduits("left", "right"),
+        lambda: space.command_system.link("left", "right"),
         lambda: space.command_system.sever_link("left", "right"),
     )
 
@@ -3076,6 +3172,30 @@ def test_static_command_system_denies_shared_topology_mutation_methods() -> None
         with pytest.raises(
                 ValueError,
                 match="Static command surface does not allow topology mutation method",
+        ):
+            denied_call()
+
+
+def test_static_command_system_denies_direct_spell_activation_methods() -> None:
+    """
+    Verify static rooms deny direct command-level spell activation helpers.
+
+    Returns:
+        None.
+    """
+    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    denied_calls = (
+        lambda: space.command_system.meld("conduit-1", spell="sha-1"),
+        lambda: space.command_system.meld_existing_spell(
+            "conduit-1",
+            spell="sha-1",
+        ),
+    )
+
+    for denied_call in denied_calls:
+        with pytest.raises(
+                ValueError,
+                match="Static command surface does not allow spell activation method",
         ):
             denied_call()
 
@@ -3093,8 +3213,10 @@ def test_static_command_system_lists_only_supported_methods() -> None:
 
     assert "create_lesser_conduit" not in supported_methods
     assert "create_cluster" not in supported_methods
-    assert "link_conduits" not in supported_methods
+    assert "link" not in supported_methods
     assert "sever_link" not in supported_methods
+    assert "meld" not in supported_methods
+    assert "meld_existing_spell" not in supported_methods
     assert "get_conduit_by_id" in supported_methods
     assert "get_conduit_cloud" in supported_methods
 
@@ -3117,9 +3239,11 @@ def test_capability_command_system_lists_shared_manual_runtime_methods() -> None
     assert "join_cluster" in supported_methods
     assert "leave_cluster" in supported_methods
     assert "list_clusters" in supported_methods
-    assert "link_conduits" in supported_methods
+    assert "link" in supported_methods
     assert "sever_link" in supported_methods
     assert "get_links" in supported_methods
+    assert "meld" in supported_methods
+    assert "meld_existing_spell" in supported_methods
 
 
 def test_rift_space_can_delegate_frame_surface_calls_to_attached_viewer() -> None:
