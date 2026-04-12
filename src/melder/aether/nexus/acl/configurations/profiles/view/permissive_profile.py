@@ -18,6 +18,7 @@ def create_permissive_view_profile() -> FrameACLViewProfile:
     return FrameACLViewProfile(
         "permissive",
         minimum_spell_payload_type="general",
+        validation_strategy_name="generic",
         frame_ruleset=FrameACLViewProfile.build_ruleset(
             "permissive_frame",
             [

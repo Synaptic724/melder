@@ -21,6 +21,7 @@ def create_hybrid_codegen_profile() -> FrameACLCodegenProfile:
     """
     return FrameACLCodegenProfile(
         "hybrid",
+        validation_strategy_name="generic",
         frame_ruleset=FrameACLViewProfile.build_ruleset(
             "hybrid_frame_codegen",
             [

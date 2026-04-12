@@ -28,6 +28,7 @@ class FrameACLCodegenProfile(Cleanable):
         "_lock",
         "_version",
         "_name",
+        "_validation_strategy_name",
         "_frame_ruleset",
         "_conduit_ruleset",
         "_spell_ruleset",
@@ -42,6 +43,7 @@ class FrameACLCodegenProfile(Cleanable):
             conduit_ruleset: Optional[FrameACLRuleSet] = None,
             spell_ruleset: Optional[FrameACLRuleSet] = None,
             capability_ruleset: Optional[FrameACLRuleSet] = None,
+            validation_strategy_name: str = "generic",
             version: str = "0.0.1",
     ) -> None:
         """
@@ -58,6 +60,8 @@ class FrameACLCodegenProfile(Cleanable):
                 Optional spell-scoped ruleset override.
             capability_ruleset:
                 Optional capability-scoped ruleset override.
+            validation_strategy_name:
+                Validator-owned strategy key used for profile-specific checks.
             version:
                 Profile version string.
 
@@ -67,12 +71,15 @@ class FrameACLCodegenProfile(Cleanable):
         super().__init__()
         if not name:
             raise ValueError("name cannot be empty.")
+        if not validation_strategy_name:
+            raise ValueError("validation_strategy_name cannot be empty.")
         if not version:
             raise ValueError("version cannot be empty.")
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._version: str = version
         self._name: str = name
+        self._validation_strategy_name: str = validation_strategy_name
         self._frame_ruleset = FrameACLViewProfile.coerce_ruleset(
             frame_ruleset,
             "{0}_frame".format(name),
@@ -115,6 +122,7 @@ class FrameACLCodegenProfile(Cleanable):
             self._conduit_ruleset = None
             self._spell_ruleset = None
             self._capability_ruleset = None
+            self._validation_strategy_name = None
             self._version = None
             self._name = None
             self._id = None
@@ -206,6 +214,12 @@ class FrameACLCodegenProfile(Cleanable):
         """Return the stable name of this reusable codegen profile."""
         self.check_cleaned()
         return self._name
+
+    @property
+    def validation_strategy_name(self) -> str:
+        """Return the validator-owned strategy key for this profile."""
+        self.check_cleaned()
+        return self._validation_strategy_name
 
     @property
     def frame_ruleset(self) -> FrameACLRuleSet:

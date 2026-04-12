@@ -20,6 +20,7 @@ def create_permissive_codegen_profile() -> FrameACLCodegenProfile:
     """
     return FrameACLCodegenProfile(
         "permissive",
+        validation_strategy_name="generic",
         frame_ruleset=FrameACLViewProfile.build_ruleset(
             "permissive_frame_codegen",
             [

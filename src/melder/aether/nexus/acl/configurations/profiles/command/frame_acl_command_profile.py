@@ -2,22 +2,25 @@ import threading
 from typing import List, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
+from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import (
+    FrameACLRule,
+)
+from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import (
+    FrameACLRuleSet,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
 
-class FrameACLViewProfile(Cleanable):
+class FrameACLCommandProfile(Cleanable):
     """
     Purpose:
-        Hold one reusable typed view-profile ruleset bundle.
+        Hold one reusable typed command-profile ruleset bundle.
 
     Contract:
         - Owns frame, conduit, spell, and member rulesets.
-        - Carries the required Nexus dataset contract for published records.
-        - Carries the minimum spell payload detail floor required for richer
-          spell/member rules.
+        - Carries one validator-owned strategy key used for profile-specific
+          validation behavior.
         - Uses an instance lock because cleanup and ruleset ownership mutation
           are grouped state transitions in a nogil runtime.
 
@@ -26,17 +29,12 @@ class FrameACLViewProfile(Cleanable):
     """
 
     __melder_internal__ = _mrg.sentinel
-    _DEFAULT_SPELL_PAYLOAD_PROFILE_NAME = "general"
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_lock",
         "_version",
         "_name",
         "_validation_strategy_name",
-        "_required_nexus_label",
-        "_required_nexus_version",
-        "_minimum_spell_payload_type",
-        "_minimum_spell_payload_version",
         "_frame_ruleset",
         "_conduit_ruleset",
         "_spell_ruleset",
@@ -47,10 +45,6 @@ class FrameACLViewProfile(Cleanable):
             self,
             name: str,
             *,
-            minimum_spell_payload_type: str,
-            required_nexus_label: str = "default",
-            required_nexus_version: str = "0.0.1",
-            minimum_spell_payload_version: str = "0.0.1",
             frame_ruleset: Optional[FrameACLRuleSet] = None,
             conduit_ruleset: Optional[FrameACLRuleSet] = None,
             spell_ruleset: Optional[FrameACLRuleSet] = None,
@@ -59,19 +53,11 @@ class FrameACLViewProfile(Cleanable):
             version: str = "0.0.1",
     ) -> None:
         """
-        Initialize one reusable view ACL profile.
+        Initialize one reusable command ACL profile.
 
         Args:
             name:
                 Stable profile name.
-            required_nexus_label:
-                Required Nexus dataset label for published records.
-            required_nexus_version:
-                Required Nexus dataset version for published records.
-            minimum_spell_payload_type:
-                Minimum spell payload detail type required by this profile.
-            minimum_spell_payload_version:
-                Minimum spell payload contract version required by this profile.
             frame_ruleset:
                 Optional frame-scoped ruleset override.
             conduit_ruleset:
@@ -91,18 +77,6 @@ class FrameACLViewProfile(Cleanable):
         super().__init__()
         if not name:
             raise ValueError("name cannot be empty.")
-        if not required_nexus_label:
-            raise ValueError("required_nexus_label cannot be empty.")
-        if not required_nexus_version:
-            raise ValueError("required_nexus_version cannot be empty.")
-        if not minimum_spell_payload_type:
-            raise ValueError(
-                "minimum_spell_payload_type cannot be empty."
-            )
-        if not minimum_spell_payload_version:
-            raise ValueError(
-                "minimum_spell_payload_version cannot be empty."
-            )
         if not validation_strategy_name:
             raise ValueError("validation_strategy_name cannot be empty.")
         if not version:
@@ -112,12 +86,6 @@ class FrameACLViewProfile(Cleanable):
         self._version: str = version
         self._name: str = name
         self._validation_strategy_name: str = validation_strategy_name
-        self._required_nexus_label: str = required_nexus_label
-        self._required_nexus_version: str = required_nexus_version
-        self._minimum_spell_payload_type: str = minimum_spell_payload_type
-        self._minimum_spell_payload_version: str = (
-            minimum_spell_payload_version
-        )
         self._frame_ruleset = self._coerce_ruleset(
             frame_ruleset,
             "{0}_frame".format(name),
@@ -137,11 +105,7 @@ class FrameACLViewProfile(Cleanable):
 
     def cleanup(self) -> None:
         """
-        Idempotently clear the view profile and owned rulesets.
-
-        Contract:
-            - Cleans all owned rulesets before dropping references.
-            - Leaves the profile unusable after cleanup.
+        Idempotently clear the command profile and owned rulesets.
 
         Returns:
             None.
@@ -160,10 +124,6 @@ class FrameACLViewProfile(Cleanable):
             self._conduit_ruleset = None
             self._spell_ruleset = None
             self._member_ruleset = None
-            self._required_nexus_label = None
-            self._required_nexus_version = None
-            self._minimum_spell_payload_type = None
-            self._minimum_spell_payload_version = None
             self._validation_strategy_name = None
             self._version = None
             self._name = None
@@ -171,88 +131,65 @@ class FrameACLViewProfile(Cleanable):
         self._lock = None
 
     @classmethod
-    def create_default(cls) -> "FrameACLViewProfile":
-        """
-        Create the default reusable view profile.
-
-        Contract:
-            Delegates to the standard `safe` view profile factory.
-
-        Returns:
-            FrameACLViewProfile: Default reusable view profile.
-        """
-        from melder.aether.nexus.acl.configurations.profiles.view.safe_profile import (
-            create_safe_view_profile,
+    def create_default(cls) -> "FrameACLCommandProfile":
+        """Create the default reusable command profile."""
+        from melder.aether.nexus.acl.configurations.profiles.command.safe_profile import (
+            create_safe_command_profile,
         )
 
-        return create_safe_view_profile()
+        return create_safe_command_profile()
 
     @classmethod
-    def create_safe(cls) -> "FrameACLViewProfile":
-        """
-        Create the reusable `safe` view profile.
-
-        Contract:
-            Returns the restrictive default view posture.
-
-        Returns:
-            FrameACLViewProfile: Reusable `safe` view profile.
-        """
-        from melder.aether.nexus.acl.configurations.profiles.view.safe_profile import (
-            create_safe_view_profile,
+    def create_safe(cls) -> "FrameACLCommandProfile":
+        """Create the reusable `safe` command profile."""
+        from melder.aether.nexus.acl.configurations.profiles.command.safe_profile import (
+            create_safe_command_profile,
         )
 
-        return create_safe_view_profile()
+        return create_safe_command_profile()
 
     @classmethod
-    def create_hybrid(cls) -> "FrameACLViewProfile":
-        """
-        Create the reusable `hybrid` view profile.
-
-        Contract:
-            Returns the intermediate view posture between safe and permissive.
-
-        Returns:
-            FrameACLViewProfile: Reusable `hybrid` view profile.
-        """
-        from melder.aether.nexus.acl.configurations.profiles.view.hybrid_profile import (
-            create_hybrid_view_profile,
+    def create_hybrid(cls) -> "FrameACLCommandProfile":
+        """Create the reusable `hybrid` command profile."""
+        from melder.aether.nexus.acl.configurations.profiles.command.hybrid_profile import (
+            create_hybrid_command_profile,
         )
 
-        return create_hybrid_view_profile()
+        return create_hybrid_command_profile()
 
     @classmethod
-    def create_permissive(cls) -> "FrameACLViewProfile":
-        """
-        Create the reusable `permissive` view profile.
-
-        Contract:
-            Returns the most open standard view posture.
-
-        Returns:
-            FrameACLViewProfile: Reusable `permissive` view profile.
-        """
-        from melder.aether.nexus.acl.configurations.profiles.view.permissive_profile import (
-            create_permissive_view_profile,
+    def create_permissive(cls) -> "FrameACLCommandProfile":
+        """Create the reusable `permissive` command profile."""
+        from melder.aether.nexus.acl.configurations.profiles.command.permissive_profile import (
+            create_permissive_command_profile,
         )
 
-        return create_permissive_view_profile()
+        return create_permissive_command_profile()
+
+    @classmethod
+    def create_precision(cls) -> "FrameACLCommandProfile":
+        """Create the reusable `precision` command profile."""
+        from melder.aether.nexus.acl.configurations.profiles.command.precision import (
+            create_precision_command_profile,
+        )
+
+        return create_precision_command_profile()
 
     @property
     def id(self) -> str:
-        """Return the stable identifier for this reusable view profile."""
+        """Return the stable identifier for this reusable command profile."""
         self.check_cleaned()
         return self._id
 
     @property
     def version(self) -> str:
-        """Return the version string carried by this reusable view profile."""
+        """Return the version string carried by this reusable command profile."""
         self.check_cleaned()
         return self._version
 
     @property
     def name(self) -> str:
-        """Return the stable name of this reusable view profile."""
+        """Return the stable name of this reusable command profile."""
         self.check_cleaned()
         return self._name
 
@@ -263,50 +200,26 @@ class FrameACLViewProfile(Cleanable):
         return self._validation_strategy_name
 
     @property
-    def required_nexus_label(self) -> str:
-        """Return the required Nexus dataset label for this profile."""
-        self.check_cleaned()
-        return self._required_nexus_label
-
-    @property
-    def required_nexus_version(self) -> str:
-        """Return the required Nexus dataset version for this profile."""
-        self.check_cleaned()
-        return self._required_nexus_version
-
-    @property
-    def minimum_spell_payload_type(self) -> str:
-        """Return the minimum spell payload detail type for this profile."""
-        self.check_cleaned()
-        return self._minimum_spell_payload_type
-
-    @property
-    def minimum_spell_payload_version(self) -> str:
-        """Return the minimum spell payload version for this profile."""
-        self.check_cleaned()
-        return self._minimum_spell_payload_version
-
-    @property
     def frame_ruleset(self) -> FrameACLRuleSet:
-        """Return the owned frame-scoped ruleset for this view profile."""
+        """Return the owned frame-scoped ruleset for this command profile."""
         self.check_cleaned()
         return self._frame_ruleset
 
     @property
     def conduit_ruleset(self) -> FrameACLRuleSet:
-        """Return the owned conduit-scoped ruleset for this view profile."""
+        """Return the owned conduit-scoped ruleset for this command profile."""
         self.check_cleaned()
         return self._conduit_ruleset
 
     @property
     def spell_ruleset(self) -> FrameACLRuleSet:
-        """Return the owned spell-scoped ruleset for this view profile."""
+        """Return the owned spell-scoped ruleset for this command profile."""
         self.check_cleaned()
         return self._spell_ruleset
 
     @property
     def member_ruleset(self) -> FrameACLRuleSet:
-        """Return the owned member-scoped ruleset for this view profile."""
+        """Return the owned member-scoped ruleset for this command profile."""
         self.check_cleaned()
         return self._member_ruleset
 
@@ -316,7 +229,7 @@ class FrameACLViewProfile(Cleanable):
             default_name: str,
     ) -> FrameACLRuleSet:
         """Normalize one optional ruleset input into a usable ruleset object."""
-        return FrameACLViewProfile._coerce_ruleset(ruleset, default_name)
+        return FrameACLCommandProfile._coerce_ruleset(ruleset, default_name)
 
     @staticmethod
     def build_rule(
@@ -326,7 +239,7 @@ class FrameACLViewProfile(Cleanable):
             conditions: Optional[dict] = None,
     ) -> FrameACLRule:
         """Build one typed ACL rule from the supplied rule components."""
-        return FrameACLViewProfile._build_rule(
+        return FrameACLCommandProfile._build_rule(
             rule_name,
             operation,
             effect,
@@ -339,20 +252,13 @@ class FrameACLViewProfile(Cleanable):
             rules: List[FrameACLRule],
     ) -> FrameACLRuleSet:
         """Build one typed ACL ruleset from a name and rule list."""
-        return FrameACLViewProfile._build_ruleset(name, rules)
+        return FrameACLCommandProfile._build_ruleset(name, rules)
 
     @staticmethod
     def _coerce_ruleset(
             ruleset: Optional[FrameACLRuleSet],
             default_name: str,
     ) -> FrameACLRuleSet:
-        """
-        Normalize one optional ruleset into a concrete ruleset instance.
-
-        Contract:
-            Returns a new empty ruleset when `ruleset` is None and otherwise
-            validates that the supplied object is already a `FrameACLRuleSet`.
-        """
         if ruleset is None:
             return FrameACLRuleSet(default_name)
         if not isinstance(ruleset, FrameACLRuleSet):
@@ -366,9 +272,6 @@ class FrameACLViewProfile(Cleanable):
             effect: str,
             conditions: Optional[dict] = None,
     ) -> FrameACLRule:
-        """
-        Build one typed ACL rule from primitive rule components.
-        """
         return FrameACLRule(
             rule_name=rule_name,
             operation=operation,
@@ -381,7 +284,4 @@ class FrameACLViewProfile(Cleanable):
             name: str,
             rules: List[FrameACLRule],
     ) -> FrameACLRuleSet:
-        """
-        Build one typed ACL ruleset from a ruleset name and rule list.
-        """
         return FrameACLRuleSet(name, rules=rules)
