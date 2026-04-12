@@ -1,5 +1,9 @@
 from typing import Dict, Optional
 
+from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
+    StaticFrameViewer,
+)
 from melder.aether.nexus.rift.rift_space.command_system.command_system import (
     CommandSystem,
 )
@@ -78,3 +82,20 @@ class StaticRiftSpace(RiftSpace, IStaticRiftSpace):
             space=self,
             workstation=self._workstation,
         )
+
+    def attach_frame_viewer(self, frame_viewer: FrameViewer) -> None:
+        """
+        Attach the static viewer variant for this room.
+
+        Args:
+            frame_viewer:
+                Viewer to attach to this space.
+
+        Returns:
+            None.
+        """
+        if isinstance(frame_viewer, StaticFrameViewer):
+            static_frame_viewer = frame_viewer
+        else:
+            static_frame_viewer = StaticFrameViewer.from_frame_viewer(frame_viewer)
+        super().attach_frame_viewer(static_frame_viewer)

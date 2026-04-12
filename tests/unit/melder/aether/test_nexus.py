@@ -3,7 +3,7 @@ import logging
 import threading
 import weakref
 from types import SimpleNamespace
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 import pytest
 
@@ -32,6 +32,9 @@ from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.aether.nexus.nexus import Nexus
 from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
+    StaticFrameViewer,
+)
 from melder.aether.nexus.rift.rift_space.command_system.capability_command_system import (
     CapabilityCommandSystem,
 )
@@ -232,6 +235,9 @@ def _replace_compiled_access_surface(
     frame_name: str,
     *,
     command_frame_enabled: bool,
+    allowed_kinds: Optional[Tuple[str, ...]] = None,
+    visible_spell_keys: Optional[Tuple[Tuple[str, str], ...]] = None,
+    visible_spell_index_ids: Optional[Tuple[str, ...]] = None,
     enabled_conduit_ids: Tuple[str, ...] = tuple(),
     enabled_spell_index_ids: Tuple[str, ...] = tuple(),
 ) -> None:
@@ -245,6 +251,12 @@ def _replace_compiled_access_surface(
             Hosted frame name whose surface should be replaced.
         command_frame_enabled:
             Whether frame-level command access is enabled.
+        allowed_kinds:
+            Optional visible kind names for the frame.
+        visible_spell_keys:
+            Optional visible spell record keys for the frame.
+        visible_spell_index_ids:
+            Optional visible spell lineage ids for the frame.
         enabled_conduit_ids:
             Command-enabled conduit ids for the frame.
         enabled_spell_index_ids:
@@ -263,12 +275,24 @@ def _replace_compiled_access_surface(
             codegen_profile_name=compiled_access_surface.codegen_profile_name,
             codegen_profile_version=compiled_access_surface.codegen_profile_version,
             command_frame_enabled=command_frame_enabled,
-            allowed_kinds=compiled_access_surface.allowed_kinds,
+            allowed_kinds=(
+                allowed_kinds
+                if allowed_kinds is not None
+                else compiled_access_surface.allowed_kinds
+            ),
             allowed_commands=compiled_access_surface.allowed_commands,
             frame_payload_fields=compiled_access_surface.frame_payload_fields,
             visible_conduit_ids=compiled_access_surface.visible_conduit_ids,
-            visible_spell_keys=compiled_access_surface.visible_spell_keys,
-            visible_spell_index_ids=compiled_access_surface.visible_spell_index_ids,
+            visible_spell_keys=(
+                visible_spell_keys
+                if visible_spell_keys is not None
+                else compiled_access_surface.visible_spell_keys
+            ),
+            visible_spell_index_ids=(
+                visible_spell_index_ids
+                if visible_spell_index_ids is not None
+                else compiled_access_surface.visible_spell_index_ids
+            ),
             enabled_conduit_ids=enabled_conduit_ids,
             enabled_spell_index_ids=enabled_spell_index_ids,
             conduit_payload_sections_by_id=(
@@ -1298,7 +1322,7 @@ def test_command_system_execute_target_method_can_bind_result() -> None:
     assert workstation.get("status", store="attributes") == "ops-done"
 
 
-def test_command_system_can_get_conduit_object_by_id_with_lesser_fallback(
+def test_command_system_can_get_conduit_by_id_with_lesser_fallback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
@@ -1323,7 +1347,7 @@ def test_command_system_can_get_conduit_object_by_id_with_lesser_fallback(
         )
     )
     aether_stub = SimpleNamespace(
-        _get_conduit_by_id=lambda conduit_id, frame_name: (_ for _ in ()).throw(
+        get_conduit_by_id=lambda conduit_id, frame_name: (_ for _ in ()).throw(
             ValueError("missing")
         ),
         _aetheric_frames={
@@ -1338,12 +1362,75 @@ def test_command_system_can_get_conduit_object_by_id_with_lesser_fallback(
         aether_stub,
     )
 
-    result = space.command_system.get_conduit_object_by_id(
+    result = space.command_system.get_conduit_by_id(
         "lesser-1",
         frame_name="ops",
     )
 
     assert result is sentinel
+
+
+def test_command_system_can_query_command_enabled_conduits() -> None:
+    """
+    Verify command-side conduit query helpers use published command-enabled truth.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="shadow-conduit",
+            root_conduit_id="shadow-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="shadow",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        enabled_conduit_ids=("ops-conduit",),
+    )
+    space.attach_frame_viewer(viewer)
+
+    assert space.command_system.list_conduit_ids(frame_name="ops") == ("ops-conduit",)
+    assert space.command_system.list_conduit_names(frame_name="ops") == ("root",)
+    assert space.command_system.count_conduits(frame_name="ops") == 1
+    assert space.command_system.has_conduit_id("ops-conduit", frame_name="ops") is True
+    assert space.command_system.has_conduit_id("shadow-conduit", frame_name="ops") is False
+    assert space.command_system.has_conduit_name("root", frame_name="ops") is True
+    assert space.command_system.has_conduit_name("shadow", frame_name="ops") is False
+    assert (
+        space.command_system.find_conduit_id_by_name("root", frame_name="ops")
+        == "ops-conduit"
+    )
+    assert (
+        space.command_system.find_conduit_id_by_name("shadow", frame_name="ops")
+        is None
+    )
 
 
 def test_command_system_can_get_spell_object_by_id(
@@ -1496,7 +1583,7 @@ def test_command_system_can_get_spell_object_by_index_id(
     )
     monkeypatch.setattr(
         type(space.command_system),
-        "get_conduit_object_by_id",
+        "get_conduit_by_id",
         lambda self, conduit_id, *, frame_name=None: owner_conduit,
     )
 
@@ -1571,7 +1658,7 @@ def test_command_system_denies_conduit_object_by_id_when_conduit_acl_disabled(
         ValueError,
         match="Command access to conduit 'ops-conduit' is disabled in frame 'ops'",
     ):
-        space.command_system.get_conduit_object_by_id("ops-conduit", frame_name="ops")
+        space.command_system.get_conduit_by_id("ops-conduit", frame_name="ops")
 
 
 def test_command_system_denies_spell_object_by_index_id_when_spell_acl_disabled() -> None:
@@ -1735,12 +1822,12 @@ def test_static_room_allows_direct_conduit_runtime_object_access(
         type(space.command_system),
         "_aether",
         SimpleNamespace(
-            _get_conduit_by_id=lambda conduit_id, frame_name: conduit_object,
+            get_conduit_by_id=lambda conduit_id, frame_name: conduit_object,
         ),
     )
 
     assert (
-        space.command_system.get_conduit_object_by_id(
+        space.command_system.get_conduit_by_id(
             "ops-conduit",
             frame_name="ops",
         ) is conduit_object
@@ -1823,6 +1910,449 @@ def test_static_room_returns_live_spell_runtime_object_by_index_id(
             frame_name="ops",
         ) is live_spell_object
     )
+
+
+def test_static_room_wraps_viewer_and_filters_non_live_spells(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify static rooms attach a static viewer and expose only live spells.
+
+    Returns:
+        None.
+    """
+    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="ops-spellbook",
+            frame_name="ops",
+            owner_conduit_id="ops-conduit",
+            spell_id="live-sha",
+            spell_index_id="lineage-live",
+            spell_name="LiveSpell",
+            spellframe=None,
+            binding_name="live_spell",
+            permissions=Permissions.create,
+            existence=Existence.unique,
+            payload=SpellDescriptorPayload(
+                payload_type="detailed",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="ops-spellbook",
+            frame_name="ops",
+            owner_conduit_id="ops-conduit",
+            spell_id="dead-sha",
+            spell_index_id="lineage-dead",
+            spell_name="DeadSpell",
+            spellframe=None,
+            binding_name="dead_spell",
+            permissions=Permissions.create,
+            existence=Existence.unique,
+            payload=SpellDescriptorPayload(
+                payload_type="detailed",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        allowed_kinds=("frame", "spell"),
+        visible_spell_keys=(
+            ("ops-spellbook", "dead-sha"),
+            ("ops-spellbook", "live-sha"),
+        ),
+        visible_spell_index_ids=(
+            "lineage-dead",
+            "lineage-live",
+        ),
+    )
+    owner_conduit = SimpleNamespace(
+        has_live_creation=lambda *, spell_name=None, spell=None, spellframe=None, binding_name=None: (
+            spell == "live-sha"
+        )
+    )
+    monkeypatch.setattr(
+        StaticFrameViewer,
+        "_aether",
+        SimpleNamespace(
+            get_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
+        ),
+    )
+
+    space.attach_frame_viewer(viewer)
+
+    assert isinstance(space.frame_viewer, StaticFrameViewer)
+    assert space.frame_viewer.list_spell_source_ids_for_frame("ops") == [
+        "ops-spellbook:live-sha"
+    ]
+    assert space.frame_viewer.list_spell_names(frame_name="ops") == ["LiveSpell"]
+
+    with pytest.raises(ValueError, match="dead-sha"):
+        space.frame_viewer.describe_spell_record(
+            "ops-spellbook:dead-sha",
+            frame_name="ops",
+        )
+
+
+def test_static_room_viewer_filters_non_live_spell_targets(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify static viewer target projection exposes only live spell targets.
+
+    Returns:
+        None.
+    """
+    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="ops-spellbook",
+            frame_name="ops",
+            owner_conduit_id="ops-conduit",
+            spell_id="live-sha",
+            spell_index_id="lineage-live",
+            spell_name="LiveSpell",
+            spellframe=None,
+            binding_name="live_spell",
+            permissions=Permissions.create,
+            existence=Existence.unique,
+            payload=SpellDescriptorPayload(
+                payload_type="detailed",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="ops-spellbook",
+            frame_name="ops",
+            owner_conduit_id="ops-conduit",
+            spell_id="dead-sha",
+            spell_index_id="lineage-dead",
+            spell_name="DeadSpell",
+            spellframe=None,
+            binding_name="dead_spell",
+            permissions=Permissions.create,
+            existence=Existence.unique,
+            payload=SpellDescriptorPayload(
+                payload_type="detailed",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        allowed_kinds=("frame", "spell"),
+        visible_spell_keys=(
+            ("ops-spellbook", "dead-sha"),
+            ("ops-spellbook", "live-sha"),
+        ),
+        visible_spell_index_ids=(
+            "lineage-dead",
+            "lineage-live",
+        ),
+    )
+    owner_conduit = SimpleNamespace(
+        has_live_creation=lambda *, spell_name=None, spell=None, spellframe=None, binding_name=None: (
+            spell == "live-sha"
+        )
+    )
+    monkeypatch.setattr(
+        StaticFrameViewer,
+        "_aether",
+        SimpleNamespace(
+            get_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
+        ),
+    )
+
+    space.attach_frame_viewer(viewer)
+    frame_links = space.frame_viewer.execute_method("list_targets", frame_name="ops")
+    spell_source_ids = [
+        frame_link.source_id
+        for frame_link in frame_links
+        if frame_link.source_kind == "spell"
+    ]
+
+    assert spell_source_ids == ["ops-spellbook:live-sha"]
+
+
+def test_static_room_viewer_hides_many_and_spellspace_spells(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify static viewer excludes unsupported spell existences even when live.
+
+    Returns:
+        None.
+    """
+    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="ops-spellbook",
+            frame_name="ops",
+            owner_conduit_id="ops-conduit",
+            spell_id="many-sha",
+            spell_index_id="lineage-many",
+            spell_name="ManySpell",
+            spellframe=None,
+            binding_name="many_spell",
+            permissions=Permissions.create,
+            existence=Existence.many,
+            payload=SpellDescriptorPayload(
+                payload_type="detailed",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="ops-spellbook",
+            frame_name="ops",
+            owner_conduit_id="ops-conduit",
+            spell_id="spellspace-sha",
+            spell_index_id="lineage-spellspace",
+            spell_name="SpellspaceSpell",
+            spellframe=None,
+            binding_name="spellspace_spell",
+            permissions=Permissions.create,
+            existence=Existence.unique_per_spell_space,
+            payload=SpellDescriptorPayload(
+                payload_type="detailed",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        allowed_kinds=("frame", "spell"),
+        visible_spell_keys=(
+            ("ops-spellbook", "many-sha"),
+            ("ops-spellbook", "spellspace-sha"),
+        ),
+        visible_spell_index_ids=(
+            "lineage-many",
+            "lineage-spellspace",
+        ),
+    )
+    owner_conduit = SimpleNamespace(
+        has_live_creation=lambda *, spell_name=None, spell=None, spellframe=None, binding_name=None: True
+    )
+    monkeypatch.setattr(
+        StaticFrameViewer,
+        "_aether",
+        SimpleNamespace(
+            get_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
+        ),
+    )
+
+    space.attach_frame_viewer(viewer)
+
+    assert space.frame_viewer.list_spell_source_ids_for_frame("ops") == []
+    frame_links = space.frame_viewer.execute_method("list_targets", frame_name="ops")
+    assert [frame_link for frame_link in frame_links if frame_link.source_kind == "spell"] == []
+
+
+def test_static_room_denies_many_and_spellspace_spell_runtime_object_access(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify static command rejects unsupported spell existences explicitly.
+
+    Returns:
+        None.
+    """
+    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="ops-spellbook",
+            frame_name="ops",
+            owner_conduit_id="ops-conduit",
+            spell_id="many-sha",
+            spell_index_id="lineage-many",
+            spell_name="ManySpell",
+            spellframe=None,
+            binding_name="many_spell",
+            permissions=Permissions.create,
+            existence=Existence.many,
+            payload=SpellDescriptorPayload(
+                payload_type="detailed",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="ops-spellbook",
+            frame_name="ops",
+            owner_conduit_id="ops-conduit",
+            spell_id="spellspace-sha",
+            spell_index_id="lineage-spellspace",
+            spell_name="SpellspaceSpell",
+            spellframe=None,
+            binding_name="spellspace_spell",
+            permissions=Permissions.create,
+            existence=Existence.unique_per_spell_space,
+            payload=SpellDescriptorPayload(
+                payload_type="detailed",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        enabled_conduit_ids=("ops-conduit",),
+        enabled_spell_index_ids=("lineage-many", "lineage-spellspace"),
+    )
+    space.attach_frame_viewer(viewer)
+    owner_conduit = SimpleNamespace(
+        meld_existing_spell=lambda *, spell_name=None, spell=None, spellframe=None, binding_name=None: object()
+    )
+    monkeypatch.setattr(
+        type(space.command_system),
+        "_aether",
+        SimpleNamespace(
+            _get_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="unsupported static existence 'many'"):
+        space.command_system.get_spell_object_by_index_id(
+            "lineage-many",
+            frame_name="ops",
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="unsupported static existence 'unique_per_spell_space'",
+    ):
+        space.command_system.get_spell_object_by_index_id(
+            "lineage-spellspace",
+            frame_name="ops",
+        )
 
 
 def test_static_room_denies_spell_runtime_object_when_not_live(

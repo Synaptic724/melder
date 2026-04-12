@@ -574,6 +574,59 @@ def test_get_conduit_cloud_missing_frame_raises(aether_with_mocks):
     with pytest.raises(ValueError, match="does not exist"):
         a._get_conduit_cloud("missing_frame")
 
+
+def test_aether_conduit_discovery_helpers_expose_frame_inventory(
+        aether_with_mocks,
+) -> None:
+    """
+    Verify the generic conduit-discovery helpers expose root-frame inventory.
+
+    Returns:
+        None.
+    """
+    a = aether_with_mocks
+    conduit_a = MagicMock(spec=IConduit)
+    conduit_a.name = "alpha"
+    conduit_a._id = "c1"
+    conduit_b = MagicMock(spec=IConduit)
+    conduit_b.name = "beta"
+    conduit_b._id = "c2"
+    a._default_frame._conduits = {"c1": conduit_a, "c2": conduit_b}
+    a._default_frame._conduit_ids_by_name = {"alpha": "c1", "beta": "c2"}
+    cloud = MagicMock(spec=IConduitCloud)
+    a._default_frame._conduit_cloud = cloud
+
+    assert a.get_conduit_cloud() is cloud
+    assert a.list_conduit_ids() == ("c1", "c2")
+    assert a.list_conduit_names() == ("alpha", "beta")
+    assert a.count_conduits() == 2
+    assert a.has_conduit_id("c1") is True
+    assert a.has_conduit_name("alpha") is True
+    assert a.find_conduit_id_by_name("beta") == "c2"
+    assert a.get_conduit_by_id("c1") is conduit_a
+    assert a.get_conduit_by_name("beta") is conduit_b
+
+
+def test_aether_conduit_discovery_helpers_validate_custom_frame(
+        aether_with_mocks,
+) -> None:
+    """
+    Verify the generic conduit-discovery helpers fail clearly for missing frames.
+
+    Returns:
+        None.
+    """
+    a = aether_with_mocks
+
+    with pytest.raises(ValueError, match="does not exist"):
+        a.list_conduit_ids("missing_frame")
+
+    with pytest.raises(ValueError, match="does not exist"):
+        a.list_conduit_names("missing_frame")
+
+    with pytest.raises(ValueError, match="does not exist"):
+        a.find_conduit_id_by_name("alpha", "missing_frame")
+
 # ----------------------------------------------------------------------
 # 4. Delegation Tests (Configuration & Spells)
 # ----------------------------------------------------------------------

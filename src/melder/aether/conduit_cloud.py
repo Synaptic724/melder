@@ -1,5 +1,5 @@
 import threading
-from typing import Dict
+from typing import Dict, Optional, Tuple
 import ulid
 # Melder imports
 from melder.utilities.interfaces.interfaces import IConduit, IConduitCloud
@@ -109,10 +109,132 @@ class ConduitCloud(Cleanable, IConduitCloud):
             RuntimeError: If the ConduitCloud is cleaned.
             ValueError: If a conduit with that name is not found.
         """
+        return self.get_conduit_by_name(name)
+
+    def get_conduit_by_name(self, name: str) -> IConduit:
+        """
+        Return a registered conduit by name.
+
+        Args:
+            name:
+                Registered conduit name to resolve.
+
+        Returns:
+            IConduit: Matching conduit instance.
+
+        Raises:
+            RuntimeError: If the ConduitCloud is cleaned.
+            ValueError: If the conduit name is not registered.
+        """
         self.check_cleaned()
-        if name in self._registry:
-            return self._registry[name]
-        raise ValueError(f"Conduit with name {name} not found.")
+        with self._lock:
+            conduit = self._registry.get(name)
+            if conduit is not None:
+                return conduit
+        raise ValueError("Conduit with name {0} not found.".format(name))
+
+    def get_conduit_by_id(self, conduit_id: str) -> IConduit:
+        """
+        Return a registered conduit by id.
+
+        Args:
+            conduit_id:
+                Conduit id to resolve.
+
+        Returns:
+            IConduit: Matching conduit instance.
+
+        Raises:
+            RuntimeError: If the ConduitCloud is cleaned.
+            ValueError: If the conduit id is not registered.
+        """
+        self.check_cleaned()
+        with self._lock:
+            for conduit in self._registry.values():
+                if conduit.id == conduit_id:
+                    return conduit
+        raise ValueError("Conduit with id {0} not found.".format(conduit_id))
+
+    def list_conduit_ids(self) -> Tuple[str, ...]:
+        """
+        Return the registered conduit ids in this cloud.
+
+        Returns:
+            Tuple[str, ...]: Snapshot of conduit ids.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return tuple(conduit.id for conduit in self._registry.values())
+
+    def list_conduit_names(self) -> Tuple[str, ...]:
+        """
+        Return the registered conduit names in this cloud.
+
+        Returns:
+            Tuple[str, ...]: Snapshot of conduit names.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return tuple(self._registry.keys())
+
+    def count_conduits(self) -> int:
+        """
+        Return the number of registered conduits in this cloud.
+
+        Returns:
+            int: Number of registered conduits.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return len(self._registry)
+
+    def has_conduit_id(self, conduit_id: str) -> bool:
+        """
+        Return whether one conduit id is registered in this cloud.
+
+        Args:
+            conduit_id:
+                Conduit id to check.
+
+        Returns:
+            bool: True when the conduit id is registered.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return any(conduit.id == conduit_id for conduit in self._registry.values())
+
+    def has_conduit_name(self, name: str) -> bool:
+        """
+        Return whether one conduit name is registered in this cloud.
+
+        Args:
+            name:
+                Conduit name to check.
+
+        Returns:
+            bool: True when the conduit name is registered.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return name in self._registry
+
+    def find_conduit_id_by_name(self, name: str) -> Optional[str]:
+        """
+        Return the conduit id registered under one conduit name, if present.
+
+        Args:
+            name:
+                Conduit name to resolve.
+
+        Returns:
+            Optional[str]: Matching conduit id, or None when missing.
+        """
+        self.check_cleaned()
+        with self._lock:
+            conduit = self._registry.get(name)
+            if conduit is None:
+                return None
+            return conduit.id
 
     def _register_conduit(self, conduit: IConduit):
         """
@@ -135,12 +257,17 @@ class ConduitCloud(Cleanable, IConduitCloud):
                 in the registry.
         """
         self.check_cleaned()
-        if conduit.name is None:
-            raise ValueError("Conduit name cannot be None for cloud registration.")
+        with self._lock:
+            if conduit.name is None:
+                raise ValueError("Conduit name cannot be None for cloud registration.")
 
-        if conduit.name in self._registry:
-            raise ValueError(f"Conduit with name {conduit.name} already exists in the cloud. Please rename conduit to something unique.")
-        self._registry[conduit.name] = conduit
+            if conduit.name in self._registry:
+                raise ValueError(
+                    "Conduit with name {0} already exists in the cloud. Please rename conduit to something unique.".format(
+                        conduit.name
+                    )
+                )
+            self._registry[conduit.name] = conduit
 
     def _unregister_conduit(self, conduit: IConduit):
         """
@@ -161,9 +288,14 @@ class ConduitCloud(Cleanable, IConduitCloud):
             ValueError: If the conduit has no name or is not registered.
         """
         self.check_cleaned()
-        if conduit.name is None:
-            raise ValueError("Conduit name cannot be None for cloud unregistration.")
+        with self._lock:
+            if conduit.name is None:
+                raise ValueError("Conduit name cannot be None for cloud unregistration.")
 
-        removed = self._registry.pop(conduit.name, None)
-        if removed is None:
-            raise ValueError(f"Conduit with name {conduit.name} is not registered in the cloud.")
+            removed = self._registry.pop(conduit.name, None)
+            if removed is None:
+                raise ValueError(
+                    "Conduit with name {0} is not registered in the cloud.".format(
+                        conduit.name
+                    )
+                )

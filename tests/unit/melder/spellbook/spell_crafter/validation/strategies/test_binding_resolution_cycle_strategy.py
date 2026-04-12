@@ -1,5 +1,9 @@
 from typing import Dict, List, Optional
 
+import pytest
+
+from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
+from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.aether.conduit.meld.contracts.spell_map import SpellMap
 from melder.spellbook.spell_crafter.spell_examiner.spell_requirements_finder.parameter_di_shape import (
     ParameterDIShape,
@@ -109,6 +113,12 @@ class _RequirementsStub:
             tuple[_RequirementStub, ...]: Stored parameter list.
         """
         return tuple(self._parameters)
+
+
+class _RaisingRequirementsStub(_RequirementsStub):
+    @property
+    def parameters(self):
+        raise RuntimeError("requirements unavailable")
 
 
 class _CrafterStub:
@@ -229,6 +239,20 @@ def _spellmap_requirement(*, name: str, spellframe: object) -> _RequirementStub:
         di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
         spellmap_default=spellmap,
     )
+
+
+class _CancelAfter:
+    def __init__(self, threshold: int) -> None:
+        self._checks = 0
+        self._threshold = threshold
+
+    @property
+    def is_set(self):
+        self._checks += 1
+        return self._checks > self._threshold
+
+    def throw_if_set(self):
+        raise RuntimeError("cancelled")
 
 
 def _make_context(
@@ -366,3 +390,333 @@ def test_binding_resolution_cycle_skips_when_acyclic() -> None:
     BindingResolutionCycleStrategy().validate(context)
 
     assert issues == []
+
+
+def test_binding_resolution_cycle_returns_when_spell_or_spellbook_missing() -> None:
+    class FrameA:
+        pass
+
+    spell = _SpellStub(
+        spell_id="a",
+        spellframe=FrameA,
+        spell_name="spell-a",
+        binding_name=None,
+        requirements=None,
+    )
+    context, issues = _make_context(spell, spellbook=None)
+
+    BindingResolutionCycleStrategy().validate(context)
+    assert issues == []
+
+    context.spell = None
+    BindingResolutionCycleStrategy().validate(context)
+    assert issues == []
+
+
+def test_binding_resolution_cycle_honors_cancellation_before_scan() -> None:
+    class FrameA:
+        pass
+
+    spell = _SpellStub(
+        spell_id="a",
+        spellframe=FrameA,
+        spell_name="spell-a",
+        binding_name=None,
+        requirements=None,
+    )
+    spellbook = _SpellbookStub(spells=[spell])
+    context, _ = _make_context(spell, spellbook=spellbook)
+    context.cancel_event = _CancelAfter(0)
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        BindingResolutionCycleStrategy().validate(context)
+
+
+def test_binding_resolution_cycle_honors_cancellation_during_spellbook_scan() -> None:
+    class FrameA:
+        pass
+
+    class FrameB:
+        pass
+
+    req_a = _RequirementsStub([_spellmap_requirement(name="dep", spellframe=FrameB)])
+    spell_a = _SpellStub(
+        spell_id="a",
+        spellframe=FrameA,
+        spell_name="spell-a",
+        binding_name=None,
+        requirements=req_a,
+    )
+    spell_b = _SpellStub(
+        spell_id="b",
+        spellframe=FrameB,
+        spell_name="spell-b",
+        binding_name=None,
+        requirements=None,
+    )
+    spellbook = _SpellbookStub(spells=[spell_a, spell_b])
+    context, _ = _make_context(spell_a, spellbook=spellbook)
+    context.cancel_event = _CancelAfter(1)
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        BindingResolutionCycleStrategy().validate(context)
+
+
+def test_binding_resolution_cycle_skips_unusable_spellbook_entries() -> None:
+    class FrameA:
+        pass
+
+    class FrameB:
+        pass
+
+    plain_requirement = _RequirementStub(
+        name="plain",
+        di_shape=ParameterDIShape.PLAIN,
+        spellmap_default=SpellMap(spellframe=FrameB),
+    )
+    root_requirements = _RequirementsStub([plain_requirement])
+    cleaned_requirements = _RequirementsStub([], cleaned=True)
+    raising_requirements = _RaisingRequirementsStub([])
+
+    root_spell = _SpellStub(
+        spell_id="root",
+        spellframe=FrameA,
+        spell_name="root-spell",
+        binding_name=None,
+        requirements=root_requirements,
+    )
+    no_crafter_spell = _SpellStub(
+        spell_id="no-crafter",
+        spellframe=FrameB,
+        spell_name="no-crafter",
+        binding_name=None,
+        requirements=None,
+    )
+    no_crafter_spell._crafter = None
+    no_requirements_spell = _SpellStub(
+        spell_id="no-req",
+        spellframe=FrameB,
+        spell_name="no-req",
+        binding_name=None,
+        requirements=None,
+    )
+    cleaned_spell = _SpellStub(
+        spell_id="cleaned",
+        spellframe=FrameB,
+        spell_name="cleaned",
+        binding_name=None,
+        requirements=cleaned_requirements,
+    )
+    raising_spell = _SpellStub(
+        spell_id="raising",
+        spellframe=FrameB,
+        spell_name="raising",
+        binding_name=None,
+        requirements=raising_requirements,
+    )
+
+    spellbook = _SpellbookStub(
+        spells=[
+            root_spell,
+            no_crafter_spell,
+            no_requirements_spell,
+            cleaned_spell,
+            raising_spell,
+        ]
+    )
+    context, issues = _make_context(root_spell, spellbook=spellbook)
+
+    BindingResolutionCycleStrategy().validate(context)
+
+    assert issues == []
+
+
+def test_binding_resolution_cycle_collects_duplicate_spells_per_binding_key() -> None:
+    class FrameA:
+        pass
+
+    class FrameB:
+        pass
+
+    req_a = _RequirementsStub([_spellmap_requirement(name="dep", spellframe=FrameB)])
+    req_b = _RequirementsStub([_spellmap_requirement(name="dep", spellframe=FrameA)])
+    root_spell = _SpellStub(
+        spell_id="a",
+        spellframe=FrameA,
+        spell_name="spell-a",
+        binding_name=None,
+        requirements=req_a,
+    )
+    dep_spell = _SpellStub(
+        spell_id="b",
+        spellframe=FrameB,
+        spell_name="spell-b",
+        binding_name=None,
+        requirements=req_b,
+    )
+    duplicate_root = _SpellStub(
+        spell_id="a-copy",
+        spellframe=FrameA,
+        spell_name="spell-a-copy",
+        binding_name=None,
+        requirements=None,
+    )
+    unrelated = _SpellStub(
+        spell_id="other",
+        spellframe=str,
+        spell_name="other",
+        binding_name="x",
+        requirements=None,
+    )
+
+    spellbook = _SpellbookStub(spells=[root_spell, dep_spell, unrelated], contracted=[duplicate_root])
+    context, issues = _make_context(root_spell, spellbook=spellbook)
+
+    strategy = BindingResolutionCycleStrategy()
+    strategy.validate(context)
+
+    assert len(issues) == 1
+    cycle_spells = issues[0].details["cycle_spells"]
+    root_key = strategy._format_key(strategy._spell_key(root_spell))  # noqa: SLF001
+    assert cycle_spells[root_key] == ["a", "a-copy"]
+    assert "str:x" not in cycle_spells
+
+
+def test_binding_resolution_cycle_honors_cancellation_during_cycle_spell_collection() -> None:
+    class FrameA:
+        pass
+
+    class FrameB:
+        pass
+
+    req_a = _RequirementsStub([_spellmap_requirement(name="dep", spellframe=FrameB)])
+    req_b = _RequirementsStub([_spellmap_requirement(name="dep", spellframe=FrameA)])
+    spell_a = _SpellStub(
+        spell_id="a",
+        spellframe=FrameA,
+        spell_name="spell-a",
+        binding_name=None,
+        requirements=req_a,
+    )
+    spell_b = _SpellStub(
+        spell_id="b",
+        spellframe=FrameB,
+        spell_name="spell-b",
+        binding_name=None,
+        requirements=req_b,
+    )
+    spellbook = _SpellbookStub(spells=[spell_a, spell_b])
+    context, _ = _make_context(spell_a, spellbook=spellbook)
+    context.cancel_event = _CancelAfter(6)
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        BindingResolutionCycleStrategy().validate(context)
+
+
+def test_binding_key_for_requirement_covers_supported_shapes() -> None:
+    strategy = BindingResolutionCycleStrategy()
+
+    class FrameA:
+        pass
+
+    assert strategy._binding_key_for_requirement(  # noqa: SLF001
+        _RequirementStub(
+            name="single-none",
+            di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION,
+            spellmap_default=SpellMap(spellframe=FrameA),
+        )
+    ) is None
+
+    single_requirement = _RequirementStub(
+        name="single",
+        di_shape=ParameterDIShape.SINGLE_BY_ANNOTATION,
+        spellmap_default=SpellMap(spellframe=FrameA),
+    )
+    single_requirement.annotation = FrameA
+    assert strategy._binding_key_for_requirement(single_requirement) == ("framea", "__default__")  # noqa: SLF001
+
+    collection_requirement = _RequirementStub(
+        name="collection",
+        di_shape=ParameterDIShape.COLLECTION_BY_ANNOTATION,
+        spellmap_default=SpellMap(spellframe=FrameA),
+    )
+    assert strategy._binding_key_for_requirement(collection_requirement) is None  # noqa: SLF001
+    collection_requirement.collection_element_annotation = FrameA
+    assert strategy._binding_key_for_requirement(collection_requirement) == ("framea", "__default__")  # noqa: SLF001
+
+    spellmap_requirement = _RequirementStub(
+        name="map",
+        di_shape=ParameterDIShape.SPELLMAP_DEFAULT,
+        spellmap_default=None,
+    )
+    assert strategy._binding_key_for_requirement(spellmap_requirement) is None  # noqa: SLF001
+    spellmap_requirement.spellmap_default = SpellMap(spellframe=FrameA, binding_name="named")
+    assert strategy._binding_key_for_requirement(spellmap_requirement) == ("framea", "named")  # noqa: SLF001
+
+    contract_requirement = _RequirementStub(
+        name="contract",
+        di_shape=ParameterDIShape.SPELL_CONTRACT,
+        spellmap_default=None,
+    )
+    contract_requirement.default_value = None
+    assert strategy._binding_key_for_requirement(contract_requirement) is None  # noqa: SLF001
+    contract_requirement.default_value = SpellContract(spellframe=FrameA, binding_name="contract")
+    assert strategy._binding_key_for_requirement(contract_requirement) == ("framea", "contract")  # noqa: SLF001
+
+    mutation_requirement = _RequirementStub(
+        name="mutation",
+        di_shape=ParameterDIShape.MUTATION_CONTRACT,
+        spellmap_default=None,
+    )
+    mutation_requirement.default_value = None
+    assert strategy._binding_key_for_requirement(mutation_requirement) is None  # noqa: SLF001
+    mutation_requirement.default_value = MutationContract(spellframe=FrameA, binding_name="mutation")
+    assert strategy._binding_key_for_requirement(mutation_requirement) == ("framea", "mutation")  # noqa: SLF001
+
+    plain_requirement = _RequirementStub(
+        name="plain",
+        di_shape=ParameterDIShape.PLAIN,
+        spellmap_default=None,
+    )
+    assert strategy._binding_key_for_requirement(plain_requirement) is None  # noqa: SLF001
+
+
+def test_binding_resolution_cycle_helper_methods_cover_fallbacks() -> None:
+    strategy = BindingResolutionCycleStrategy()
+
+    class FrameA:
+        pass
+
+    fallback_spell = type(
+        "_FallbackSpell",
+        (),
+        {"spellframe": FrameA, "spell_name": "SpellA", "binding_name": None},
+    )()
+    assert strategy._spell_key(fallback_spell) == ("framea", "__default__")  # noqa: SLF001
+
+    assert strategy._normalize_cycle([]) == ()  # noqa: SLF001
+    assert strategy._normalize_cycle(  # noqa: SLF001
+        [("z", "z"), ("a", "a"), ("m", "m"), ("z", "z")]
+    ) == (("a", "a"), ("m", "m"), ("z", "z"), ("a", "a"))
+
+    graph = {
+        ("A", "__default__"): {("B", "__default__"), ("C", "__default__")},
+        ("B", "__default__"): {("D", "__default__")},
+        ("C", "__default__"): {("D", "__default__")},
+    }
+    assert strategy._detect_cycles(("A", "__default__"), graph, None) == []  # noqa: SLF001
+
+
+def test_binding_resolution_cycle_detect_cycles_honors_cancellation() -> None:
+    strategy = BindingResolutionCycleStrategy()
+    graph = {
+        ("A", "__default__"): {("B", "__default__")},
+        ("B", "__default__"): {("A", "__default__")},
+    }
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        strategy._detect_cycles(  # noqa: SLF001
+            ("A", "__default__"),
+            graph,
+            _CancelAfter(0),
+        )

@@ -288,7 +288,7 @@ class CommandSystem(Cleanable):
                     )
                 return descriptor.frame_handle
             if selected_target.source_kind == "conduit":
-                return self.get_conduit_object_by_id(
+                return self.get_conduit_by_id(
                     selected_target.source_id,
                     frame_name=selected_target.frame_name,
                 )
@@ -303,7 +303,7 @@ class CommandSystem(Cleanable):
                 )
             )
 
-    def get_conduit_object_by_id(
+    def get_conduit_by_id(
             self,
             conduit_id: str,
             *,
@@ -330,14 +330,14 @@ class CommandSystem(Cleanable):
         self.check_cleaned()
         with self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            self._assert_raw_runtime_object_access_allowed("get_conduit_object_by_id")
+            self._assert_raw_runtime_object_access_allowed("get_conduit_by_id")
             self._assert_frame_command_enabled(resolved_frame_name)
             self._assert_conduit_command_enabled(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
             try:
-                return self._aether._get_conduit_by_id(
+                return self._aether.get_conduit_by_id(
                     conduit_id,
                     resolved_frame_name,
                 )
@@ -357,7 +357,7 @@ class CommandSystem(Cleanable):
                     )
                 )
 
-    def get_conduit_object_by_name(
+    def get_conduit_by_name(
             self,
             conduit_name: str,
             *,
@@ -384,7 +384,7 @@ class CommandSystem(Cleanable):
         self.check_cleaned()
         with self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            self._assert_raw_runtime_object_access_allowed("get_conduit_object_by_name")
+            self._assert_raw_runtime_object_access_allowed("get_conduit_by_name")
             self._assert_frame_command_enabled(resolved_frame_name)
             conduit_id = self._get_required_published_conduit_id_by_name(
                 conduit_name,
@@ -394,10 +394,181 @@ class CommandSystem(Cleanable):
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
-            return self._aether._get_conduit_by_name(
+            return self._aether.get_conduit_by_name(
                 conduit_name,
                 resolved_frame_name,
             )
+
+    def list_conduit_ids(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return the command-enabled published conduit ids for one frame.
+
+        Args:
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            Tuple[str, ...]: Published command-enabled conduit ids.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit_records = self._get_enabled_published_conduit_records(
+                resolved_frame_name
+            )
+            return tuple(record.conduit_id for record in conduit_records)
+
+    def list_conduit_names(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return the command-enabled published conduit names for one frame.
+
+        Args:
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            Tuple[str, ...]: Published command-enabled conduit names.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit_records = self._get_enabled_published_conduit_records(
+                resolved_frame_name
+            )
+            return tuple(
+                record.payload.conduit_name
+                for record in conduit_records
+                if record.payload.conduit_name is not None
+            )
+
+    def count_conduits(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> int:
+        """
+        Return the number of command-enabled published conduits for one frame.
+
+        Args:
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            int: Number of published command-enabled conduits.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return len(self.list_conduit_ids(frame_name=frame_name))
+
+    def has_conduit_id(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> bool:
+        """
+        Return whether one published command-enabled conduit id exists.
+
+        Args:
+            conduit_id:
+                Conduit id to check.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            bool: True when the conduit id is published and command-enabled.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit_records = self._get_enabled_published_conduit_records(
+                resolved_frame_name
+            )
+            return any(record.conduit_id == conduit_id for record in conduit_records)
+
+    def has_conduit_name(
+            self,
+            conduit_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> bool:
+        """
+        Return whether one published command-enabled conduit name exists.
+
+        Args:
+            conduit_name:
+                Conduit name to check.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            bool: True when the conduit name is published and command-enabled.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit_records = self._get_enabled_published_conduit_records(
+                resolved_frame_name
+            )
+            return any(
+                record.payload.conduit_name == conduit_name
+                for record in conduit_records
+            )
+
+    def find_conduit_id_by_name(
+            self,
+            conduit_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Optional[str]:
+        """
+        Return the published command-enabled conduit id for one conduit name.
+
+        Args:
+            conduit_name:
+                Conduit name to resolve.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            Optional[str]: Matching conduit id, or None when missing.
+
+        Raises:
+            ValueError: If the conduit name resolves ambiguously.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            self._assert_frame_command_enabled(resolved_frame_name)
+            try:
+                conduit_id = self._get_required_published_conduit_id_by_name(
+                    conduit_name,
+                    frame_name=resolved_frame_name,
+                )
+            except ValueError as exc:
+                if "was not found" in str(exc):
+                    return None
+                raise
+            compiled_access_surface = self._get_required_compiled_access_surface(
+                resolved_frame_name
+            )
+            if conduit_id in compiled_access_surface.enabled_conduit_ids:
+                return conduit_id
+            return None
 
     def get_spell_object_by_source_id(
             self,
@@ -493,7 +664,7 @@ class CommandSystem(Cleanable):
                 owner_conduit_id = spell_record.owner_conduit_id
                 if not owner_conduit_id:
                     continue
-                owner_conduit = self.get_conduit_object_by_id(
+                owner_conduit = self.get_conduit_by_id(
                     owner_conduit_id,
                     frame_name=resolved_frame_name,
                 )
@@ -841,6 +1012,36 @@ class CommandSystem(Cleanable):
                 spell_index_id,
                 frame_name,
             )
+        )
+
+    def _get_enabled_published_conduit_records(
+            self,
+            frame_name: str,
+    ) -> Tuple[Any, ...]:
+        """
+        Return published conduit records that are command-enabled in one frame.
+
+        Args:
+            frame_name:
+                Hosted frame to query.
+
+        Returns:
+            Tuple[Any, ...]: Published conduit records enabled for command
+                access in the target frame.
+
+        Raises:
+            ValueError:
+                If command access is disabled for the frame.
+        """
+        self._assert_frame_command_enabled(frame_name)
+        compiled_access_surface = self._get_required_compiled_access_surface(frame_name)
+        enabled_conduit_ids = set(compiled_access_surface.enabled_conduit_ids)
+        viewer = self._space.get_required_frame_viewer()
+        descriptor = viewer._get_required_frame_descriptor(frame_name)
+        return tuple(
+            conduit_record
+            for conduit_record in descriptor.conduit_records_by_id.values()
+            if conduit_record.conduit_id in enabled_conduit_ids
         )
 
     def _get_required_published_conduit_id_by_name(

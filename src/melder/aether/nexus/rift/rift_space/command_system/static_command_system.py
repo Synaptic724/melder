@@ -3,6 +3,7 @@ from typing import Optional
 from melder.aether.nexus.rift.rift_space.command_system.command_system import (
     CommandSystem,
 )
+from melder.spellbook.existence.existence import Existence
 
 
 class StaticCommandSystem(CommandSystem):
@@ -124,6 +125,11 @@ class StaticCommandSystem(CommandSystem):
                 )
             )
         for spell_record in matching_spell_records:
+            if spell_record.existence in {
+                    Existence.many,
+                    Existence.unique_per_spell_space,
+            }:
+                continue
             owner_conduit_id = spell_record.owner_conduit_id
             if not owner_conduit_id:
                 continue
@@ -137,6 +143,24 @@ class StaticCommandSystem(CommandSystem):
                 )
             except ValueError:
                 continue
+        unsupported_spell_record = next(
+            (
+                spell_record
+                for spell_record in matching_spell_records
+                if spell_record.existence in {
+                    Existence.many,
+                    Existence.unique_per_spell_space,
+                }
+            ),
+            None,
+        )
+        if unsupported_spell_record is not None:
+            raise ValueError(
+                "Spell lineage '{0}' uses unsupported static existence '{1}'.".format(
+                    spell_index_id,
+                    unsupported_spell_record.existence.name,
+                )
+            )
         raise ValueError(
             "Spell lineage '{0}' is not live in frame '{1}'.".format(
                 spell_index_id,

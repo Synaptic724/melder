@@ -1,6 +1,6 @@
 import logging
 from threading import RLock
-from typing import Optional, Any, Dict, List, Set
+from typing import Optional, Any, Dict, List, Set, Tuple
 import ulid
 # Melder Imports
 from melder.aether.aether_utility_system import AetherUtilitySystem
@@ -697,6 +697,240 @@ class Aether(Cleanable, IAether):
             cloud = self._default_frame._conduit_cloud
 
         return cloud
+
+    def get_conduit_cloud(self, aetheric_frame_name: str = "default") -> IConduitCloud:
+        """
+        Return the frame-local conduit cloud for one frame.
+
+        Args:
+            aetheric_frame_name:
+                Name of the target frame.
+
+        Returns:
+            IConduitCloud: The live conduit cloud owned by that frame.
+
+        Raises:
+            ValueError: If the specified frame does not exist.
+        """
+        self.check_cleaned()
+        return self._get_conduit_cloud(aetheric_frame_name)
+
+    def list_conduit_ids(
+            self,
+            aetheric_frame_name: str = "default",
+    ) -> Tuple[str, ...]:
+        """
+        Return the registered root conduit identifiers for one frame.
+
+        Args:
+            aetheric_frame_name:
+                Name of the target frame.
+
+        Returns:
+            Tuple[str, ...]: Snapshot of root conduit ids.
+
+        Raises:
+            ValueError: If the specified frame does not exist.
+        """
+        self.check_cleaned()
+        if aetheric_frame_name != "default":
+            try:
+                frame = self._aetheric_frames[aetheric_frame_name]
+            except KeyError:
+                self._logger.error(
+                    "Aetheric frame '{0}' does not exist.".format(
+                        aetheric_frame_name
+                    ),
+                    "list_conduit_ids",
+                    exc_info=True,
+                )
+                raise ValueError(
+                    "Aetheric frame '{0}' does not exist.".format(
+                        aetheric_frame_name
+                    )
+                )
+        else:
+            self._ensure_default_frame()
+            frame = self._default_frame
+        return tuple(frame._conduits.keys())
+
+    def list_conduit_names(
+            self,
+            aetheric_frame_name: str = "default",
+    ) -> Tuple[str, ...]:
+        """
+        Return the registered root conduit names for one frame.
+
+        Args:
+            aetheric_frame_name:
+                Name of the target frame.
+
+        Returns:
+            Tuple[str, ...]: Snapshot of root conduit names.
+
+        Raises:
+            ValueError: If the specified frame does not exist.
+        """
+        self.check_cleaned()
+        if aetheric_frame_name != "default":
+            try:
+                frame = self._aetheric_frames[aetheric_frame_name]
+            except KeyError:
+                self._logger.error(
+                    "Aetheric frame '{0}' does not exist.".format(
+                        aetheric_frame_name
+                    ),
+                    "list_conduit_names",
+                    exc_info=True,
+                )
+                raise ValueError(
+                    "Aetheric frame '{0}' does not exist.".format(
+                        aetheric_frame_name
+                    )
+                )
+        else:
+            self._ensure_default_frame()
+            frame = self._default_frame
+        return tuple(frame._conduit_ids_by_name.keys())
+
+    def count_conduits(self, aetheric_frame_name: str = "default") -> int:
+        """
+        Return the number of registered root conduits for one frame.
+
+        Args:
+            aetheric_frame_name:
+                Name of the target frame.
+
+        Returns:
+            int: Number of registered root conduits.
+        """
+        return len(self.list_conduit_ids(aetheric_frame_name))
+
+    def has_conduit_id(
+            self,
+            conduit_id: str,
+            aetheric_frame_name: str = "default",
+    ) -> bool:
+        """
+        Return whether one root conduit id exists in one frame.
+
+        Args:
+            conduit_id:
+                Root conduit id to check.
+            aetheric_frame_name:
+                Name of the target frame.
+
+        Returns:
+            bool: True when the conduit id exists in the target frame.
+        """
+        return conduit_id in self.list_conduit_ids(aetheric_frame_name)
+
+    def has_conduit_name(
+            self,
+            name: str,
+            aetheric_frame_name: str = "default",
+    ) -> bool:
+        """
+        Return whether one root conduit name exists in one frame.
+
+        Args:
+            name:
+                Root conduit name to check.
+            aetheric_frame_name:
+                Name of the target frame.
+
+        Returns:
+            bool: True when the conduit name exists in the target frame.
+        """
+        return name in self.list_conduit_names(aetheric_frame_name)
+
+    def find_conduit_id_by_name(
+            self,
+            name: str,
+            aetheric_frame_name: str = "default",
+    ) -> Optional[str]:
+        """
+        Return the registered root conduit id for one name, if present.
+
+        Args:
+            name:
+                Root conduit name to resolve.
+            aetheric_frame_name:
+                Name of the target frame.
+
+        Returns:
+            Optional[str]: Matching conduit id, or None when missing.
+
+        Raises:
+            ValueError: If the specified frame does not exist.
+        """
+        self.check_cleaned()
+        if aetheric_frame_name != "default":
+            try:
+                frame = self._aetheric_frames[aetheric_frame_name]
+            except KeyError:
+                self._logger.error(
+                    "Aetheric frame '{0}' does not exist.".format(
+                        aetheric_frame_name
+                    ),
+                    "find_conduit_id_by_name",
+                    exc_info=True,
+                )
+                raise ValueError(
+                    "Aetheric frame '{0}' does not exist.".format(
+                        aetheric_frame_name
+                    )
+                )
+        else:
+            self._ensure_default_frame()
+            frame = self._default_frame
+        return frame._conduit_ids_by_name.get(name)
+
+    def get_conduit_by_name(
+            self,
+            name: str,
+            aetheric_frame_name: str = "default",
+    ) -> IConduit:
+        """
+        Return one registered root conduit by name.
+
+        Args:
+            name:
+                Root conduit name to resolve.
+            aetheric_frame_name:
+                Name of the target frame.
+
+        Returns:
+            IConduit: Matching root conduit.
+
+        Raises:
+            ValueError: If the frame does not exist or the conduit is missing.
+        """
+        self.check_cleaned()
+        return self._get_conduit_by_name(name, aetheric_frame_name)
+
+    def get_conduit_by_id(
+            self,
+            conduit_id: str,
+            aetheric_frame_name: str = "default",
+    ) -> IConduit:
+        """
+        Return one registered root conduit by id.
+
+        Args:
+            conduit_id:
+                Root conduit id to resolve.
+            aetheric_frame_name:
+                Name of the target frame.
+
+        Returns:
+            IConduit: Matching root conduit.
+
+        Raises:
+            ValueError: If the frame does not exist or the conduit is missing.
+        """
+        self.check_cleaned()
+        return self._get_conduit_by_id(conduit_id, aetheric_frame_name)
 
     def _get_conduit_by_name(self, name: str, aetheric_frame_name: str = "default") -> IConduit:
         """

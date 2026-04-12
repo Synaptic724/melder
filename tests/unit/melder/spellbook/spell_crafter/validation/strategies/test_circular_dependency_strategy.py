@@ -370,6 +370,31 @@ def test_validate_ignores_unreachable_cycle() -> None:
     assert issues == []
 
 
+def test_validate_shared_dependency_is_not_reported_as_cycle() -> None:
+    """
+    Purpose:
+        Verify revisiting an already explored shared dependency does not emit a cycle.
+    Contract:
+        A diamond-shaped graph leaves issues empty.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If a cycle issue is emitted for a shared dependency.
+    """
+    strategy = CircularDependencyStrategy()
+    root = _SpellStub(spell_id="root", dependencies=["left", "right"])
+    left = _SpellStub(spell_id="left", dependencies=["shared"])
+    right = _SpellStub(spell_id="right", dependencies=["shared"])
+    shared = _SpellStub(spell_id="shared", dependencies=[])
+    spellbook = _SpellbookStub([root, left, right, shared])
+    issues: list[SpellValidationIssue] = []
+    context = _make_context(spell=root, spellbook=spellbook, issues=issues)
+
+    strategy.validate(context)
+
+    assert issues == []
+
+
 def test_validate_reports_single_issue_for_multiple_cycles() -> None:
     """
     Purpose:

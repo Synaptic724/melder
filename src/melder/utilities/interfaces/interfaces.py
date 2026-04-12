@@ -6176,6 +6176,54 @@ class IConduitCloud(ICleanable, Protocol):
         """
         ...
 
+    def get_conduit_by_name(self, name: str) -> IConduit:
+        """
+        Retrieve a conduit by its registered name.
+        """
+        ...
+
+    def get_conduit_by_id(self, conduit_id: str) -> IConduit:
+        """
+        Retrieve a conduit by its registered identifier.
+        """
+        ...
+
+    def list_conduit_ids(self) -> Tuple[str, ...]:
+        """
+        Return the registered conduit identifiers in this cloud.
+        """
+        ...
+
+    def list_conduit_names(self) -> Tuple[str, ...]:
+        """
+        Return the registered conduit names in this cloud.
+        """
+        ...
+
+    def count_conduits(self) -> int:
+        """
+        Return the number of registered conduits in this cloud.
+        """
+        ...
+
+    def has_conduit_id(self, conduit_id: str) -> bool:
+        """
+        Return whether the given conduit id is present in this cloud.
+        """
+        ...
+
+    def has_conduit_name(self, name: str) -> bool:
+        """
+        Return whether the given conduit name is present in this cloud.
+        """
+        ...
+
+    def find_conduit_id_by_name(self, name: str) -> Optional[str]:
+        """
+        Return the conduit id registered for one name, if present.
+        """
+        ...
+
     def _register_conduit(self, conduit: IConduit):
         """
         Registers a named conduit into the cloud. (Internal use)
@@ -6773,7 +6821,70 @@ class ICommandSystem(ICleanable, Protocol):
         """
         ...
 
-    def get_conduit_object_by_id(
+    def list_conduit_ids(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return the command-enabled published conduit ids for one frame.
+        """
+        ...
+
+    def list_conduit_names(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return the command-enabled published conduit names for one frame.
+        """
+        ...
+
+    def count_conduits(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> int:
+        """
+        Return the number of command-enabled published conduits for one frame.
+        """
+        ...
+
+    def has_conduit_id(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> bool:
+        """
+        Return whether one published command-enabled conduit id exists.
+        """
+        ...
+
+    def has_conduit_name(
+            self,
+            conduit_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> bool:
+        """
+        Return whether one published command-enabled conduit name exists.
+        """
+        ...
+
+    def find_conduit_id_by_name(
+            self,
+            conduit_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Optional[str]:
+        """
+        Return the published command-enabled conduit id for one conduit name.
+        """
+        ...
+
+    def get_conduit_by_id(
             self,
             conduit_id: str,
             *,
@@ -6784,7 +6895,7 @@ class ICommandSystem(ICleanable, Protocol):
         """
         ...
 
-    def get_conduit_object_by_name(
+    def get_conduit_by_name(
             self,
             conduit_name: str,
             *,
@@ -7241,6 +7352,80 @@ class IRift(ICleanable, Protocol):
         """
         ...
 
+    def get_conduit_cloud(self, frame_name: Optional[str] = None) -> IConduitCloud:
+        """
+        Return the conduit cloud for one targeted frame.
+        """
+        ...
+
+    def list_conduit_ids(self, frame_name: Optional[str] = None) -> Tuple[str, ...]:
+        """
+        Return conduit ids for one targeted frame.
+        """
+        ...
+
+    def list_conduit_names(self, frame_name: Optional[str] = None) -> Tuple[str, ...]:
+        """
+        Return conduit names for one targeted frame.
+        """
+        ...
+
+    def count_conduits(self, frame_name: Optional[str] = None) -> int:
+        """
+        Return the number of conduits in one targeted frame.
+        """
+        ...
+
+    def has_conduit_id(
+            self,
+            conduit_id: str,
+            frame_name: Optional[str] = None,
+    ) -> bool:
+        """
+        Return whether a conduit id exists in one targeted frame.
+        """
+        ...
+
+    def has_conduit_name(
+            self,
+            name: str,
+            frame_name: Optional[str] = None,
+    ) -> bool:
+        """
+        Return whether a conduit name exists in one targeted frame.
+        """
+        ...
+
+    def find_conduit_id_by_name(
+            self,
+            name: str,
+            frame_name: Optional[str] = None,
+    ) -> Optional[str]:
+        """
+        Return the conduit id registered for one name in one targeted frame.
+        """
+        ...
+
+    def get_conduit_by_id(
+            self,
+            conduit_id: str,
+            frame_name: Optional[str] = None,
+    ) -> IConduit:
+        """
+        Return one conduit object by id from one targeted frame.
+        """
+        ...
+
+    def get_conduit_by_name(
+            self,
+            name: str,
+            frame_name: Optional[str] = None,
+    ) -> IConduit:
+        """
+        Return one conduit object by name from one targeted frame.
+        """
+        ...
+
     def on_nexus_frame_disposed(self, frame_name: str) -> None:
         """
         Notify this Rift that one accessible Nexus frame has been disposed.
@@ -7658,6 +7843,86 @@ class IAether(ICleanable, Protocol):
 
         Raises:
             ValueError: If the specified frame does not exist.
+        """
+        ...
+
+    def get_conduit_cloud(self, aetheric_frame_name: str = "default") -> IConduitCloud:
+        """
+        Return the conduit cloud for one frame.
+        """
+        ...
+
+    def list_conduit_ids(
+            self,
+            aetheric_frame_name: str = "default",
+    ) -> Tuple[str, ...]:
+        """
+        Return the registered root conduit ids for one frame.
+        """
+        ...
+
+    def list_conduit_names(
+            self,
+            aetheric_frame_name: str = "default",
+    ) -> Tuple[str, ...]:
+        """
+        Return the registered root conduit names for one frame.
+        """
+        ...
+
+    def count_conduits(self, aetheric_frame_name: str = "default") -> int:
+        """
+        Return the number of registered root conduits for one frame.
+        """
+        ...
+
+    def has_conduit_id(
+            self,
+            conduit_id: str,
+            aetheric_frame_name: str = "default",
+    ) -> bool:
+        """
+        Return whether one root conduit id exists in one frame.
+        """
+        ...
+
+    def has_conduit_name(
+            self,
+            name: str,
+            aetheric_frame_name: str = "default",
+    ) -> bool:
+        """
+        Return whether one root conduit name exists in one frame.
+        """
+        ...
+
+    def find_conduit_id_by_name(
+            self,
+            name: str,
+            aetheric_frame_name: str = "default",
+    ) -> Optional[str]:
+        """
+        Return the conduit id registered under one root conduit name, if present.
+        """
+        ...
+
+    def get_conduit_by_name(
+            self,
+            name: str,
+            aetheric_frame_name: str = "default",
+    ) -> IConduit:
+        """
+        Return one registered root conduit by name.
+        """
+        ...
+
+    def get_conduit_by_id(
+            self,
+            conduit_id: str,
+            aetheric_frame_name: str = "default",
+    ) -> IConduit:
+        """
+        Return one registered root conduit by id.
         """
         ...
 

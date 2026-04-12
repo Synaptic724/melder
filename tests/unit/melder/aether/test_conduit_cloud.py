@@ -24,6 +24,7 @@ def mock_conduit():
     Fixture to provide a mock IConduit with a name.
     """
     conduit = MagicMock(spec=IConduit)
+    conduit.id = "conduit-1"
     conduit.name = "test_conduit"
     return conduit
 
@@ -94,6 +95,46 @@ def test_get_conduit_not_found_raises(conduit_cloud):
     """
     with pytest.raises(ValueError, match="not found"):
         conduit_cloud.get_conduit("missing")
+
+
+def test_conduit_cloud_discovery_helpers_return_registered_names_and_ids(
+        conduit_cloud,
+        mock_conduit,
+):
+    """
+    Verify the cloud exposes the new discovery mesh helpers.
+
+    Returns:
+        None.
+    """
+    conduit_cloud._register_conduit(mock_conduit)
+
+    assert conduit_cloud.list_conduit_ids() == ("conduit-1",)
+    assert conduit_cloud.list_conduit_names() == ("test_conduit",)
+    assert conduit_cloud.count_conduits() == 1
+    assert conduit_cloud.has_conduit_id("conduit-1") is True
+    assert conduit_cloud.has_conduit_name("test_conduit") is True
+    assert conduit_cloud.find_conduit_id_by_name("test_conduit") == "conduit-1"
+    assert conduit_cloud.get_conduit_by_name("test_conduit") is mock_conduit
+    assert conduit_cloud.get_conduit_by_id("conduit-1") is mock_conduit
+
+
+def test_conduit_cloud_discovery_helpers_report_missing_entries(
+        conduit_cloud,
+) -> None:
+    """
+    Verify the new cloud discovery helpers handle missing entries cleanly.
+
+    Returns:
+        None.
+    """
+    assert conduit_cloud.count_conduits() == 0
+    assert conduit_cloud.has_conduit_id("missing") is False
+    assert conduit_cloud.has_conduit_name("missing") is False
+    assert conduit_cloud.find_conduit_id_by_name("missing") is None
+
+    with pytest.raises(ValueError, match="not found"):
+        conduit_cloud.get_conduit_by_id("missing")
 
 def test_unregister_conduit_success(conduit_cloud, mock_conduit):
     """

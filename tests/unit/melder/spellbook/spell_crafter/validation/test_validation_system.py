@@ -1068,6 +1068,63 @@ def test_cleanup_is_idempotent() -> None:
     assert system._lock is None
 
 
+def test_cleanup_returns_early_when_cleaned_inside_lock() -> None:
+    """
+    Purpose:
+        Cover the inner cleanup recheck after lock acquisition.
+    Contract:
+        cleanup returns without touching strategies when another actor marked
+        the system cleaned before the body runs.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cleanup continues past the inner recheck.
+    """
+
+    class _FlipCleanedLock:
+        def __init__(self, system: _TestValidationSystem) -> None:
+            self._system = system
+
+        def __enter__(self):
+            self._system._cleaned = True  # noqa: SLF001
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return None
+
+    system = _TestValidationSystem()
+    strategy = _CleanupStrategy(name="rec")
+    system.register_strategy(strategy)
+    system._lock = _FlipCleanedLock(system)  # noqa: SLF001
+
+    system.cleanup()
+
+    assert strategy.cleanup_calls == 0
+    assert system.cleaned is True
+    assert isinstance(system._lock, _FlipCleanedLock)  # noqa: SLF001
+
+
+def test_cleanup_swallows_strategy_cleanup_errors() -> None:
+    """
+    Purpose:
+        Ensure system cleanup suppresses strategy cleanup failures.
+    Contract:
+        cleanup completes, clears the registry, and marks the system cleaned.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cleanup propagates or leaves stale registry state.
+    """
+    system = _TestValidationSystem()
+    system.register_strategy(_RaisingCleanupStrategy(name="boom"))
+
+    system.cleanup()
+
+    assert system.cleaned is True
+    assert system._strategies == {}  # noqa: SLF001
+    assert system._lock is None  # noqa: SLF001
+
+
 def test_validate_spell_after_cleanup_raises() -> None:
     """
     Purpose:
@@ -1212,3 +1269,42 @@ def test_validate_spell_cleanup_context_on_success(monkeypatch: pytest.MonkeyPat
     assert _ContextStub.last_instance is not None
     assert _ContextStub.last_instance.cleaned is True
     assert _ContextStub.last_instance.cleanup_calls == 1
+
+
+def test_validate_spell_swallows_context_cleanup_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+    """
+    Purpose:
+        Ensure context cleanup failures are suppressed after validation.
+    Contract:
+        validate_spell still returns a result when context.cleanup raises.
+    Args:
+        monkeypatch: Pytest fixture for patching SpellValidationContext.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cleanup failure prevents result construction.
+    """
+
+    class _RaisingContextStub(_ContextStub):
+        def cleanup(self) -> None:
+            self.cleanup_calls += 1
+            raise RuntimeError("context cleanup boom")
+
+    monkeypatch.setattr(
+        validation_system_module,
+        "SpellValidationContext",
+        _RaisingContextStub,
+    )
+    system = _TestValidationSystem()
+    system.register_strategy(_RecordingStrategy(name="rec"))
+
+    result = system.validate_spell(
+        spell=_make_spell(),
+        requirements=None,
+        symbolic_graph=None,
+        resolution_frame=None,
+    )
+
+    assert result.spell_id == "spell-id"
+    assert _RaisingContextStub.last_instance is not None
+    assert _RaisingContextStub.last_instance.cleanup_calls == 1

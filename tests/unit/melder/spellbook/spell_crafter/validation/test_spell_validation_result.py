@@ -265,6 +265,28 @@ def test_cleanup_swallows_issue_list_clear_errors() -> None:
     assert result.cleaned is True
 
 
+def test_cleanup_returns_immediately_when_already_cleaned() -> None:
+    """
+    Purpose:
+        Cover the early-return path on repeated cleanup calls.
+    Contract:
+        A second cleanup call does not invoke nested issue cleanup again.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If cleanup work is repeated after the result is cleaned.
+    """
+    issue = _IssueStub()
+    result = SpellValidationResult(spell_id="id", spell_name="name", issues=[issue])
+
+    result.cleanup()
+    assert issue.cleanup_calls == 1
+
+    result.cleanup()
+
+    assert issue.cleanup_calls == 1
+
+
 def test_check_cleaned_raises_after_cleanup() -> None:
     """
     Purpose:
