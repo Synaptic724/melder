@@ -83,7 +83,7 @@ def test_frame_acl_set_compatibility_validator_warns_when_actionable_spell_is_hi
     )
     configuration.set_command_configuration(
         FrameACLCommandConfiguration(
-            profile_name="strict_command",
+            profile_name="safe",
             profile_version="0.0.1",
             spell_override_ruleset=FrameACLRuleSet(
                 "spell_override",
@@ -105,6 +105,7 @@ def test_frame_acl_set_compatibility_validator_warns_when_actionable_spell_is_hi
     assert report.has_warnings is True
     assert report.warnings == (
         "command.spell is enabled while view.spell is not visible.",
+        "command.member permits actions while view.member does not expose members.",
     )
 
 
@@ -125,28 +126,36 @@ def test_frame_acl_set_compatibility_validator_warns_when_visible_spell_is_not_a
     )
     configuration.set_command_configuration(
         FrameACLCommandConfiguration(
-            profile_name="strict_command",
+            profile_name="safe",
             profile_version="0.0.1",
             spell_override_ruleset=FrameACLRuleSet(
                 "spell_override",
                 rules=[
-                    FrameACLRule(
-                        rule_name="disable_spell",
-                        operation="enable",
-                        effect="deny",
-                    )
+                        FrameACLRule(
+                            rule_name="disable_spell",
+                            operation="enable",
+                            effect="deny",
+                        )
                 ],
             ),
         )
     )
     configuration.finalize()
 
-    report = validator.validate_configuration(configuration)
+    with pytest.raises(
+            ValueError,
+            match="command.member enables actions while command.spell does not enable spell access",
+    ):
+        validator.validate_configuration(configuration)
 
-    assert report.has_errors is False
+    report = validator.last_report
+
+    assert report is not None
+    assert report.has_errors is True
     assert report.has_warnings is True
     assert report.warnings == (
         "view.spell is visible while command.spell is not enabled.",
+        "command.member permits actions while view.member does not expose members.",
     )
 
 
@@ -167,8 +176,18 @@ def test_frame_acl_set_compatibility_validator_errors_when_member_actions_lack_s
     )
     configuration.set_command_configuration(
         FrameACLCommandConfiguration(
-            profile_name="strict_command",
+            profile_name="safe",
             profile_version="0.0.1",
+            spell_override_ruleset=FrameACLRuleSet(
+                "spell_override",
+                rules=[
+                    FrameACLRule(
+                        rule_name="disable_spell",
+                        operation="enable",
+                        effect="deny",
+                    )
+                ],
+            ),
             member_override_ruleset=FrameACLRuleSet(
                 "member_override",
                 rules=[

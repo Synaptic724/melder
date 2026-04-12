@@ -77,6 +77,174 @@ class StaticCommandSystem(CommandSystem):
             frame_name=resolved_frame_name,
         )
 
+    def describe_spell_status_by_source_id(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> dict:
+        """
+        Return static availability status for one published spell source id.
+
+        Args:
+            spell_source_id:
+                Published spell source id in `spellbook_id:spell_id` form.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            dict: Static spell status payload.
+        """
+        resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+        if not spell_source_id:
+            raise ValueError("spell_source_id cannot be empty.")
+        spellbook_id, spell_id = spell_source_id.split(":", 1)
+        viewer = self._space.get_required_frame_viewer()
+        descriptor = viewer._get_required_frame_descriptor(resolved_frame_name)
+        matching_spell_records = [
+            spell_record
+            for spell_record in descriptor.spell_records_by_key.values()
+            if (
+                spell_record.origin_spellbook_id == spellbook_id
+                and spell_record.spell_id == spell_id
+            )
+        ]
+        if len(matching_spell_records) == 0:
+            return {
+                "frame_name": resolved_frame_name,
+                "spell_source_id": spell_source_id,
+                "is_published": False,
+                "is_command_enabled": False,
+                "is_static_supported": False,
+                "is_live": False,
+                "is_available": False,
+                "reason": "not_published",
+            }
+        if len(matching_spell_records) > 1:
+            return {
+                "frame_name": resolved_frame_name,
+                "spell_source_id": spell_source_id,
+                "is_published": True,
+                "is_command_enabled": False,
+                "is_static_supported": False,
+                "is_live": False,
+                "is_available": False,
+                "reason": "ambiguous_spell_source_id",
+            }
+        return self._describe_static_spell_status(
+            matching_spell_records[0],
+            frame_name=resolved_frame_name,
+        )
+
+    def describe_spell_status_by_id(
+            self,
+            spell_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> dict:
+        """
+        Return static availability status for one current spell id.
+
+        Args:
+            spell_id:
+                Current spell id to resolve.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            dict: Static spell status payload.
+        """
+        resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+        viewer = self._space.get_required_frame_viewer()
+        descriptor = viewer._get_required_frame_descriptor(resolved_frame_name)
+        matching_spell_records = [
+            spell_record
+            for spell_record in descriptor.spell_records_by_key.values()
+            if spell_record.spell_id == spell_id
+        ]
+        if len(matching_spell_records) == 0:
+            return {
+                "frame_name": resolved_frame_name,
+                "spell_id": spell_id,
+                "is_published": False,
+                "is_command_enabled": False,
+                "is_static_supported": False,
+                "is_live": False,
+                "is_available": False,
+                "reason": "not_published",
+            }
+        if len(matching_spell_records) > 1:
+            return {
+                "frame_name": resolved_frame_name,
+                "spell_id": spell_id,
+                "is_published": True,
+                "is_command_enabled": False,
+                "is_static_supported": False,
+                "is_live": False,
+                "is_available": False,
+                "reason": "ambiguous_spell_id",
+            }
+        return self._describe_static_spell_status(
+            matching_spell_records[0],
+            frame_name=resolved_frame_name,
+        )
+
+    def describe_spell_status_by_index_id(
+            self,
+            spell_index_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> dict:
+        """
+        Return static availability status for one stable spell lineage id.
+
+        Args:
+            spell_index_id:
+                Stable SpellIndex lineage id to resolve.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            dict: Static spell status payload.
+        """
+        resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+        viewer = self._space.get_required_frame_viewer()
+        descriptor = viewer._get_required_frame_descriptor(resolved_frame_name)
+        matching_spell_records = [
+            spell_record
+            for spell_record in descriptor.spell_records_by_key.values()
+            if spell_record.spell_index_id == spell_index_id
+        ]
+        if len(matching_spell_records) == 0:
+            return {
+                "frame_name": resolved_frame_name,
+                "spell_index_id": spell_index_id,
+                "is_published": False,
+                "is_command_enabled": False,
+                "is_static_supported": False,
+                "is_live": False,
+                "is_available": False,
+                "reason": "not_published",
+            }
+        if len(matching_spell_records) > 1:
+            return {
+                "frame_name": resolved_frame_name,
+                "spell_index_id": spell_index_id,
+                "is_published": True,
+                "is_command_enabled": False,
+                "is_static_supported": False,
+                "is_live": False,
+                "is_available": False,
+                "reason": "ambiguous_spell_index_id",
+            }
+        return self._describe_static_spell_status(
+            matching_spell_records[0],
+            frame_name=resolved_frame_name,
+        )
+
     def get_spell_object_by_index_id(
             self,
             spell_index_id: str,
@@ -201,3 +369,72 @@ class StaticCommandSystem(CommandSystem):
             spell_index_id,
             frame_name=resolved_frame_name,
         )
+
+    def _describe_static_spell_status(
+            self,
+            spell_record: object,
+            *,
+            frame_name: str,
+    ) -> dict:
+        """
+        Build one static spell status payload from a published spell record.
+
+        Args:
+            spell_record:
+                Published spell record to inspect.
+            frame_name:
+                Hosted frame name.
+
+        Returns:
+            dict: Static spell status payload.
+        """
+        is_command_enabled = False
+        try:
+            self._assert_frame_command_enabled(frame_name)
+            self._assert_spell_command_enabled(
+                spell_record.spell_index_id,
+                frame_name=frame_name,
+            )
+            is_command_enabled = True
+        except ValueError:
+            is_command_enabled = False
+        is_static_supported = spell_record.existence not in {
+            Existence.many,
+            Existence.unique_per_spell_space,
+        }
+        is_live = False
+        owner_conduit_id = spell_record.owner_conduit_id
+        if owner_conduit_id:
+            owner_conduit = self._aether._get_conduit_by_id(
+                owner_conduit_id,
+                frame_name,
+            )
+            is_live = owner_conduit.has_live_creation(spell=spell_record.spell_id)
+        if not is_command_enabled:
+            reason = "command_disabled"
+        elif not is_static_supported:
+            reason = "unsupported_static_existence"
+        elif not is_live:
+            reason = "not_live"
+        else:
+            reason = "available"
+        return {
+            "frame_name": frame_name,
+            "spell_source_id": "{0}:{1}".format(
+                spell_record.origin_spellbook_id,
+                spell_record.spell_id,
+            ),
+            "spell_id": spell_record.spell_id,
+            "spell_index_id": spell_record.spell_index_id,
+            "spell_name": spell_record.spell_name,
+            "binding_name": spell_record.binding_name,
+            "existence": spell_record.existence.name,
+            "is_published": True,
+            "is_command_enabled": is_command_enabled,
+            "is_static_supported": is_static_supported,
+            "is_live": is_live,
+            "is_available": (
+                is_command_enabled and is_static_supported and is_live
+            ),
+            "reason": reason,
+        }

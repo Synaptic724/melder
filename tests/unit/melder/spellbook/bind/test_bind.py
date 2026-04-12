@@ -212,6 +212,13 @@ def test_existing_object_with_non_unique_existence_raises():
         Bind._validate_binding(profile, binding_name=None, existence=Existence.many)
 
 
+@pytest.mark.parametrize("existence", [None, "bad", 123])
+def test_validate_binding_rejects_invalid_existence_type(existence):
+    profile = class_profile()
+    with pytest.raises(ValueError, match="Invalid existence type"):
+        Bind._validate_binding(profile, binding_name=None, existence=existence)
+
+
 def test_lambda_without_name_raises():
     profile = callable_profile(lambda_function=True)
     with pytest.raises(ValueError):

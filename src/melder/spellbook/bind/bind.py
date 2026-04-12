@@ -454,11 +454,8 @@ class Bind(Cleanable, IBind):
                 - Existing-object spells bound with an existence type other than `Existence.unique`.
                 - Invalid `existence` type provided.
         """
-        # Validate that existence is a valid Existence member
-        if Bind._existence_check(existence) is False:
-            raise ValueError(
-                f"Invalid existence type: {existence}. Must be an instance of Existence."
-            )
+        # Validate that existence is a valid Existence member.
+        Bind._existence_check(existence)
 
         # ------------------------------------------------------------------
         # Existing-object spells: must be Existence.unique (global singleton)

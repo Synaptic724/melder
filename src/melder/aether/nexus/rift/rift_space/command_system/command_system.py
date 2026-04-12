@@ -792,6 +792,7 @@ class CommandSystem(Cleanable):
             *args: Any,
             bind_as_name: Optional[str] = None,
             bind_as_store: str = "objects",
+            bind_result_weak_ref: Optional[bool] = None,
             **kwargs: Any
     ) -> object:
         """
@@ -806,6 +807,10 @@ class CommandSystem(Cleanable):
                 Optional workstation binding name for the return value.
             bind_as_store:
                 Store to use when binding the return value.
+            bind_result_weak_ref:
+                Optional workstation reference-mode override for the bound
+                result. `True` forces weak storage, `False` forces strong
+                storage, and `None` uses the room/workstation default.
             **kwargs:
                 Keyword arguments passed to the method.
 
@@ -821,6 +826,7 @@ class CommandSystem(Cleanable):
                     bind_as_name=bind_as_name,
                     bind_as_store=bind_as_store,
                     value=result,
+                    bind_result_weak_ref=bind_result_weak_ref,
                 )
             return result
 
@@ -1178,6 +1184,7 @@ class CommandSystem(Cleanable):
             bind_as_name: str,
             bind_as_store: str,
             value: object,
+            bind_result_weak_ref: Optional[bool] = None,
     ) -> None:
         """
         Bind a returned value back into the workstation.
@@ -1194,18 +1201,33 @@ class CommandSystem(Cleanable):
                 Target workstation store.
             value:
                 Value to bind.
+            bind_result_weak_ref:
+                Optional workstation reference-mode override for the bound
+                result.
 
         Returns:
             None.
         """
         if bind_as_store == "objects":
-            self._workstation.bind_object(bind_as_name, value)
+            self._workstation.bind_object(
+                bind_as_name,
+                value,
+                weak_ref=bind_result_weak_ref,
+            )
             return
         if bind_as_store == "attributes":
-            self._workstation.bind_attribute(bind_as_name, value)
+            self._workstation.bind_attribute(
+                bind_as_name,
+                value,
+                weak_ref=bind_result_weak_ref,
+            )
             return
         if bind_as_store == "methods":
-            self._workstation.bind_method(bind_as_name, value)
+            self._workstation.bind_method(
+                bind_as_name,
+                value,
+                weak_ref=bind_result_weak_ref,
+            )
             return
         raise ValueError(
             "Unsupported workstation store '{0}'.".format(bind_as_store)

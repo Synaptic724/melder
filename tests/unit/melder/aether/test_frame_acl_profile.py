@@ -414,6 +414,13 @@ def test_frame_acl_profile_requires_typed_profiles() -> None:
             minimum_spell_payload_version="",
         )
 
+    with pytest.raises(ValueError, match="validation_strategy_name cannot be empty"):
+        FrameACLViewProfile(
+            "custom",
+            minimum_spell_payload_type="general",
+            validation_strategy_name="",
+        )
+
     with pytest.raises(ValueError, match="version cannot be empty"):
         FrameACLProfile(
             "support",
@@ -661,4 +668,3 @@ def test_frame_acl_manager_profile_replace_and_remove_cleanup_old_profiles() -> 
     assert manager._remove_frame_acl_profile("support") is False
     with pytest.raises(KeyError, match="support"):
         manager._get_required_frame_acl_profile("support")
-

@@ -1,4 +1,5 @@
 import inspect
+import threading
 
 import pytest
 
@@ -87,3 +88,35 @@ def test_cleanup_nulls_and_blocks_property_access():
 
     # Idempotent
     req.cleanup()
+
+
+def test_cleanup_rechecks_cleaned_inside_lock() -> None:
+    class _CoordinatedLock:
+        def __init__(self, requirement: SpellParameterRequirement) -> None:
+            self._requirement = requirement
+            self._entered_first = threading.Event()
+            self._second_attempted = threading.Event()
+            self._lock = threading.RLock()
+
+        def __enter__(self):
+            if self._entered_first.is_set():
+                self._second_attempted.set()
+            self._lock.acquire()
+            if not self._entered_first.is_set():
+                self._entered_first.set()
+                assert self._second_attempted.wait(timeout=1.0)
+                self._requirement._cleaned = True
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self._lock.release()
+
+    req = _make_requirement()
+    req._lock = _CoordinatedLock(req)
+
+    thread = threading.Thread(target=req.cleanup)
+    thread.start()
+    req.cleanup()
+    thread.join(timeout=1.0)
+
+    assert req.cleaned is True

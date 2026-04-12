@@ -1,6 +1,9 @@
 import types
 import pytest
 
+from melder.spellbook.spell_crafter.spell_examiner.inspectors import (
+    inspector_utility as utility_module,
+)
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.inspector_utility import (
     InspectorUtility,
 )
@@ -87,3 +90,42 @@ def test_unwrap_callable_returns_input_on_failure(monkeypatch):
         lambda o: (_ for _ in ()).throw(RuntimeError("fail")),
     )
     assert InspectorUtility.unwrap_callable(obj) is obj
+
+
+def test_unwrap_callable_skips_bad_closure_cells_and_follows_good_ones(monkeypatch):
+    class _BadCell:
+        @property
+        def cell_contents(self):
+            raise RuntimeError("boom")
+
+    class _GoodCell:
+        def __init__(self, value):
+            self.cell_contents = value
+
+    def original():
+        return "hit"
+
+    fake_wrapper = types.SimpleNamespace(
+        __closure__=[_BadCell(), _GoodCell(original)],
+    )
+    real_isfunction = utility_module.inspect.isfunction
+
+    def fake_isfunction(obj):
+        if obj is fake_wrapper:
+            return True
+        return real_isfunction(obj)
+
+    monkeypatch.setattr(utility_module.inspect, "isfunction", fake_isfunction)
+
+    assert InspectorUtility.unwrap_callable(fake_wrapper) is original
+
+
+def test_unwrap_callable_swallows_closure_iteration_failures(monkeypatch):
+    target = object()
+
+    def fake_isfunction(_obj):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(utility_module.inspect, "isfunction", fake_isfunction)
+
+    assert InspectorUtility.unwrap_callable(target) is target

@@ -6957,6 +6957,7 @@ class ICommandSystem(ICleanable, Protocol):
             *args: Any,
             bind_as_name: Optional[str] = None,
             bind_as_store: str = "objects",
+            bind_result_weak_ref: Optional[bool] = None,
             **kwargs: Any
     ) -> object:
         """

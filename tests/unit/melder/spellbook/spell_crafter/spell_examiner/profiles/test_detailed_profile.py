@@ -70,6 +70,41 @@ def test_create_from_target_raw_target_rewraps_general_profile(monkeypatch) -> N
     assert profile.dynamic_access == {}
 
 
+def test_create_from_target_spell_runs_detail_completion(monkeypatch) -> None:
+    binding_profile = object()
+    spell = _make_spell()
+    calls: dict[str, Any] = {}
+
+    monkeypatch.setattr(
+        detailed_module.SpellGeneralProfile,
+        "create_from_target",
+        classmethod(
+            lambda cls, target, show_dunders=False, max_repr=120: SimpleNamespace(
+                binding_profile=binding_profile,
+                resolution_profile="resolution",
+            )
+        ),
+        raising=True,
+    )
+
+    def fake_complete_with_spell(self: SpellDetailedProfile, target: Spell) -> None:
+        calls["spell"] = target
+        self.resolution_profile = "resolution"
+
+    monkeypatch.setattr(
+        detailed_module.SpellDetailedProfile,
+        "complete_with_spell",
+        fake_complete_with_spell,
+        raising=True,
+    )
+
+    profile = SpellDetailedProfile.create_from_target(spell)
+
+    assert isinstance(profile, SpellDetailedProfile)
+    assert profile.binding_profile is binding_profile
+    assert calls["spell"] is spell
+
+
 def test_complete_with_spell_rejects_non_spell_instance() -> None:
     profile = SpellDetailedProfile(binding_profile=object())
 
@@ -360,6 +395,155 @@ def test_inspect_class_skips_members_that_fail_lookup(monkeypatch) -> None:
 
     assert class_profile.name == "BrokenClass"
     assert class_profile.methods == {}
+
+
+def test_inspect_class_builds_method_profiles_for_callable_members(monkeypatch) -> None:
+    class DummyClassInspector:
+        def __init__(self, target: Any, show_dunders: bool, max_repr: int) -> None:
+            self.target = target
+            self.show_dunders = show_dunders
+            self.max_repr = max_repr
+
+        def inspect(self) -> dict[str, Any]:
+            return {
+                "name": "Service",
+                "qualname": "Service",
+                "module": "tests",
+                "mro": ["Service", "object"],
+                "bases": ["object"],
+                "annotations": {},
+                "protocols": {},
+                "slots": [],
+                "file": None,
+                "source_line_offset": None,
+                "source_end_line": None,
+                "source_preview": None,
+                "source_text": None,
+                "members": {"run": {"callable": True}},
+                "is_dataclass": False,
+                "decorated": False,
+                "docstring_raw": None,
+                "docstring_summary": "",
+                "behavior_summary": "",
+                "tags": [],
+                "dynamic_access": {"has_getattr": True},
+            }
+
+    class DummyMethodInspector:
+        def __init__(self, target: Any, max_repr: int) -> None:
+            self.target = target
+            self.max_repr = max_repr
+
+        def inspect(self) -> dict[str, Any]:
+            return {
+                "name": "run",
+                "qualname": "Service.run",
+                "module": "tests",
+                "id": 7,
+                "type": "function",
+                "repr": "<function Service.run>",
+                "builtin_mod": False,
+                "extension_mod": False,
+                "file": "service.py",
+                "preview": "def run(self): ...",
+                "src_offset": 11,
+                "start_line": 11,
+                "end_line": 12,
+                "source_text": "def run(self): return 'ok'",
+                "signature": "(self)",
+                "parameters": [],
+                "uninspectable": False,
+                "func": True,
+                "method": True,
+                "builtin": False,
+                "classmethod": False,
+                "staticmethod": False,
+                "generator": False,
+                "async_gen": False,
+                "coroutine": False,
+                "lambda_fn": False,
+                "abstract": False,
+                "closure": None,
+                "decorated": False,
+                "wrapped_repr": None,
+                "docstring_raw": None,
+                "docstring_summary": "",
+                "behavior_summary": "",
+                "tags": [],
+            }
+
+    monkeypatch.setattr(detailed_module, "ClassInspector", DummyClassInspector)
+    monkeypatch.setattr(detailed_module, "MethodInspector", DummyMethodInspector)
+
+    class Service:
+        def run(self) -> str:
+            return "ok"
+
+    spell = _make_spell(spell_object=Service, spell_type=SpellType.SPELL)
+    profile = SpellDetailedProfile(binding_profile=object())
+    class_profile = profile._inspect_class(spell)
+
+    assert "run" in class_profile.methods
+    assert class_profile.methods["run"].qualname == "Service.run"
+    assert class_profile.dynamic_access == {"has_getattr": True}
+
+
+def test_inspect_callable_builds_method_profile(monkeypatch) -> None:
+    class DummyMethodInspector:
+        def __init__(self, target: Any, max_repr: int) -> None:
+            self.target = target
+            self.max_repr = max_repr
+
+        def inspect(self) -> dict[str, Any]:
+            return {
+                "name": "spell_fn",
+                "qualname": "spell_fn",
+                "module": "tests",
+                "id": 9,
+                "type": "function",
+                "repr": "<function spell_fn>",
+                "builtin_mod": False,
+                "extension_mod": False,
+                "file": "spell.py",
+                "preview": "def spell_fn(): ...",
+                "src_offset": 21,
+                "start_line": 21,
+                "end_line": 22,
+                "source_text": "def spell_fn(): return 1",
+                "signature": "()",
+                "parameters": [],
+                "uninspectable": False,
+                "func": True,
+                "method": False,
+                "builtin": False,
+                "classmethod": False,
+                "staticmethod": False,
+                "generator": False,
+                "async_gen": False,
+                "coroutine": False,
+                "lambda_fn": False,
+                "abstract": False,
+                "closure": None,
+                "decorated": False,
+                "wrapped_repr": None,
+                "docstring_raw": None,
+                "docstring_summary": "",
+                "behavior_summary": "",
+                "tags": [],
+            }
+
+    monkeypatch.setattr(detailed_module, "MethodInspector", DummyMethodInspector)
+
+    def spell_fn() -> int:
+        return 1
+
+    spell = _make_spell(spell_object=spell_fn, spell_type=SpellType.METHOD)
+    profile = SpellDetailedProfile(binding_profile=object())
+    method_profile = profile._inspect_callable(spell)
+
+    assert method_profile.name == "spell_fn"
+    assert method_profile.signature == "()"
+    assert method_profile.file == "spell.py"
 
 
 def test_instance_member_helpers_filter_and_capture_runtime_surface() -> None:

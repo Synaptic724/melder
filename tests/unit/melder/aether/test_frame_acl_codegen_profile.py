@@ -1,5 +1,7 @@
 import threading
 
+import pytest
+
 from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
@@ -48,6 +50,33 @@ def test_frame_acl_codegen_profile_exposes_id_and_rulesets() -> None:
     assert profile.conduit_ruleset.name == "conduit_rules"
     assert profile.spell_ruleset.name == "spell_rules"
     assert profile.capability_ruleset.name == "capability_rules"
+
+
+def test_frame_acl_codegen_profile_rejects_empty_validation_strategy_name() -> None:
+    """
+    Verify codegen profiles require a non-empty validation strategy name.
+
+    Returns:
+        None.
+    """
+    with pytest.raises(ValueError, match="validation_strategy_name cannot be empty"):
+        FrameACLCodegenProfile(
+            "custom",
+            validation_strategy_name="",
+        )
+
+
+def test_frame_acl_codegen_profile_create_precision_exposes_precision_identity() -> None:
+    """
+    Verify the reusable precision codegen profile can be created directly.
+
+    Returns:
+        None.
+    """
+    profile = FrameACLCodegenProfile.create_precision()
+
+    assert profile.name == "precision"
+    assert profile.validation_strategy_name == "precision"
 
 
 def test_frame_acl_codegen_profile_cleanup_is_idempotent() -> None:

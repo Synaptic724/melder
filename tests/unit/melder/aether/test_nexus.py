@@ -1322,6 +1322,35 @@ def test_command_system_execute_target_method_can_bind_result() -> None:
     assert workstation.get("status", store="attributes") == "ops-done"
 
 
+def test_command_system_execute_target_method_can_force_strong_result_binding() -> None:
+    """
+    Verify command execution can force strong result binding for one returned value.
+
+    Returns:
+        None.
+    """
+    class _Target:
+        def run(self, prefix: str) -> str:
+            return "{0}-done".format(prefix)
+
+    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    workstation = space.workstation
+    target = _Target()
+    workstation.bind_object("target", target, weak_ref=False)
+    workstation.set_target("target", store="objects")
+
+    result = space.command_system.execute_target_method(
+        "run",
+        "ops",
+        bind_as_name="status",
+        bind_as_store="attributes",
+        bind_result_weak_ref=False,
+    )
+
+    assert result == "ops-done"
+    assert workstation.get("status", store="attributes") == "ops-done"
+
+
 def test_command_system_can_get_conduit_by_id_with_lesser_fallback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -2353,6 +2382,158 @@ def test_static_room_denies_many_and_spellspace_spell_runtime_object_access(
             "lineage-spellspace",
             frame_name="ops",
         )
+
+
+def test_static_command_system_reports_spell_status_for_live_spell() -> None:
+    """
+    Verify static spell status reporting explains a live available spell.
+
+    Returns:
+        None.
+    """
+    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="ops-spellbook",
+            frame_name="ops",
+            owner_conduit_id="ops-conduit",
+            spell_id="live-sha",
+            spell_index_id="lineage-live",
+            spell_name="LiveSpell",
+            spellframe=None,
+            binding_name="live_spell",
+            permissions=Permissions.create,
+            existence=Existence.unique,
+            payload=SpellDescriptorPayload(
+                payload_type="detailed",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        enabled_spell_index_ids=("lineage-live",),
+    )
+    space.attach_frame_viewer(viewer)
+    owner_conduit = SimpleNamespace(
+        has_live_creation=lambda *, spell_name=None, spell=None, spellframe=None, binding_name=None: (
+            spell == "live-sha"
+        )
+    )
+    space.command_system._aether = SimpleNamespace(
+        _get_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
+    )
+
+    status = space.command_system.describe_spell_status_by_index_id(
+        "lineage-live",
+        frame_name="ops",
+    )
+
+    assert status["is_published"] is True
+    assert status["is_command_enabled"] is True
+    assert status["is_static_supported"] is True
+    assert status["is_live"] is True
+    assert status["is_available"] is True
+    assert status["reason"] == "available"
+
+
+def test_static_command_system_reports_spell_status_for_unsupported_spell() -> None:
+    """
+    Verify static spell status reporting explains unsupported static existence.
+
+    Returns:
+        None.
+    """
+    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="ops-spellbook",
+            frame_name="ops",
+            owner_conduit_id="ops-conduit",
+            spell_id="many-sha",
+            spell_index_id="lineage-many",
+            spell_name="ManySpell",
+            spellframe=None,
+            binding_name="many_spell",
+            permissions=Permissions.create,
+            existence=Existence.many,
+            payload=SpellDescriptorPayload(
+                payload_type="detailed",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        enabled_spell_index_ids=("lineage-many",),
+    )
+    space.attach_frame_viewer(viewer)
+    owner_conduit = SimpleNamespace(
+        has_live_creation=lambda *, spell_name=None, spell=None, spellframe=None, binding_name=None: True
+    )
+    space.command_system._aether = SimpleNamespace(
+        _get_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
+    )
+
+    status = space.command_system.describe_spell_status_by_source_id(
+        "ops-spellbook:many-sha",
+        frame_name="ops",
+    )
+
+    assert status["is_published"] is True
+    assert status["is_command_enabled"] is True
+    assert status["is_static_supported"] is False
+    assert status["is_live"] is True
+    assert status["is_available"] is False
+    assert status["reason"] == "unsupported_static_existence"
 
 
 def test_static_room_denies_spell_runtime_object_when_not_live(

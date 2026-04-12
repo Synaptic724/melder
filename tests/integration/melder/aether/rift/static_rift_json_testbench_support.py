@@ -198,12 +198,12 @@ class StaticRiftJsonBench:
         Returns:
             None.
         """
+        if self.spellbook is not None and not self.spellbook.cleaned:
+            self.spellbook.cleanup()
         if self.rift is not None and not self.rift.cleaned:
             self.rift.cleanup()
         if self.root_conduit is not None and not self.root_conduit.cleaned:
             self.root_conduit.cleanup()
-        if self.spellbook is not None and not self.spellbook.cleaned:
-            self.spellbook.cleanup()
 
     def dispatch_json(self, request_json: str) -> Any:
         """
@@ -225,6 +225,65 @@ class StaticRiftJsonBench:
         surface = self._resolve_surface(surface_name, kwargs)
         method = getattr(surface, method_name)
         return method(*args, **kwargs)
+
+    def dispatch_turn_script_json(self, script_json: str) -> Dict[str, Any]:
+        """
+        Dispatch one multistep turn script against the harness.
+
+        Args:
+            script_json:
+                JSON payload containing a `turns` list.
+
+        Returns:
+            Dict[str, Any]: Saved turn results keyed by `save_as`.
+        """
+        script = json.loads(script_json)
+        return self.dispatch_turn_script(script)
+
+    def dispatch_turn_script(self, script: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Dispatch one multistep turn script against the harness.
+
+        Args:
+            script:
+                Parsed turn-script payload.
+
+        Returns:
+            Dict[str, Any]: Saved turn results keyed by `save_as`.
+        """
+        turns = script.get("turns")
+        if not isinstance(turns, list) or len(turns) == 0:
+            raise ValueError("turn script must include a non-empty 'turns' list.")
+        saved_results: Dict[str, Any] = {}
+        for turn in turns:
+            if not isinstance(turn, dict):
+                raise ValueError("each turn must be a mapping.")
+            save_as = turn.get("save_as")
+            expect_error_contains = turn.get("expect_error_contains")
+            surface_name = turn["surface"]
+            method_name = turn["method"]
+            args = self._resolve_turn_value(turn.get("args", []), saved_results)
+            kwargs = self._resolve_turn_value(turn.get("kwargs", {}), saved_results)
+            surface = self._resolve_surface(surface_name, kwargs)
+            method = getattr(surface, method_name)
+            try:
+                result = method(*args, **kwargs)
+            except ValueError as exc:
+                if expect_error_contains is None:
+                    raise
+                if expect_error_contains not in str(exc):
+                    raise
+                result = {"error": str(exc)}
+            else:
+                if expect_error_contains is not None:
+                    raise AssertionError(
+                        "Expected ValueError containing '{0}'.".format(
+                            expect_error_contains
+                        )
+                    )
+            if save_as is not None:
+                saved_results[save_as] = result
+        return saved_results
 
     def drop_object_reference(self, object_name: str) -> None:
         """
@@ -459,6 +518,34 @@ class StaticRiftJsonBench:
             return self._resolve_object_path(value[len("@objects."):])
         return value
 
+    def _resolve_turn_value(
+            self,
+            value: Any,
+            saved_results: Dict[str, Any],
+    ) -> Any:
+        """
+        Resolve manifest/object/turn placeholders inside one turn payload.
+
+        Args:
+            value:
+                Raw turn value.
+            saved_results:
+                Saved results from earlier turns.
+
+        Returns:
+            Any: Resolved value.
+        """
+        if isinstance(value, list):
+            return [self._resolve_turn_value(item, saved_results) for item in value]
+        if isinstance(value, dict):
+            return {
+                key: self._resolve_turn_value(current_value, saved_results)
+                for key, current_value in value.items()
+            }
+        if isinstance(value, str) and value.startswith("@turns."):
+            return self._resolve_turn_path(value[len("@turns."):], saved_results)
+        return self._resolve_request_value(value)
+
     def _resolve_manifest_path(self, path: str) -> Any:
         """
         Resolve one manifest placeholder path.
@@ -487,3 +574,31 @@ class StaticRiftJsonBench:
             object: Managed object reference.
         """
         return self._objects_by_name[path]
+
+    def _resolve_turn_path(
+            self,
+            path: str,
+            saved_results: Dict[str, Any],
+    ) -> Any:
+        """
+        Resolve one saved-turn placeholder path.
+
+        Args:
+            path:
+                Placeholder path after the `@turns.` prefix.
+            saved_results:
+                Saved results from earlier turns.
+
+        Returns:
+            Any: Resolved saved-turn value.
+        """
+        current_value: Any = saved_results
+        for current_part in path.split("."):
+            if isinstance(current_value, dict):
+                current_value = current_value[current_part]
+                continue
+            if isinstance(current_value, (list, tuple)):
+                current_value = current_value[int(current_part)]
+                continue
+            current_value = getattr(current_value, current_part)
+        return current_value

@@ -594,3 +594,116 @@ def test_signature_original_for_classmethod_wrapped():
 
     info = ClassInspector(C, show_dunders=True).inspect()["members"]["cm"]
     assert info["signature"] in ("(cls, x: int)", "(cls, x)", "(*args, **kwargs)")
+
+
+def test_classify_members_primary_path_is_used_when_available(monkeypatch):
+    class C:
+        value = 1
+
+        def f(self):
+            return self.value
+
+    def fake_classify_members(_cls):
+        return [
+            ("f", "method", C.__dict__["f"]),
+            ("value", "data", C.__dict__["value"]),
+        ]
+
+    monkeypatch.setattr(inspect, "classify_members", fake_classify_members, raising=False)
+
+    members = ClassInspector(C, show_dunders=True).inspect()["members"]
+
+    assert "f" in members
+    assert "value" in members
+
+
+def test_original_signature_failure_is_swallowed(monkeypatch):
+    def deco(fn):
+        def wrapper(*args, **kwargs):
+            return fn(*args, **kwargs)
+
+        return wrapper
+
+    class Wrapped:
+        @deco
+        def f(self, x):
+            return x
+
+    real_signature = inspect.signature
+
+    def fake_signature(obj):
+        if getattr(obj, "__name__", None) == "f":
+            raise RuntimeError("boom")
+        return real_signature(obj)
+
+    monkeypatch.setattr(inspect, "signature", fake_signature)
+
+    info = ClassInspector(Wrapped, show_dunders=True).inspect()["members"]["f"]
+
+    assert info["signature"] == "(*args, **kwargs)"
+    assert info.get("original_signature") is None
+
+
+def test_detect_decorator_wrapping_records_unwrapped_repr(monkeypatch):
+    class Original:
+        pass
+
+    class Wrapped(Original):
+        pass
+
+    inspector = ClassInspector(Wrapped, show_dunders=True)
+    inspector.data = {}
+    monkeypatch.setattr(inspect, "unwrap", lambda obj: Original)
+
+    inspector._detect_decorator_wrapping()
+
+    assert inspector.data["decorated"] is True
+    assert "wrapped_repr" in inspector.data
+
+
+def test_is_probably_decorated_returns_true_for_non_class_proxy() -> None:
+    inspector = ClassInspector.__new__(ClassInspector)
+    inspector.cls = object()
+
+    assert inspector._is_probably_decorated() is True
+
+
+def test_is_probably_decorated_returns_true_for_qualname_mismatch() -> None:
+    class Odd:
+        pass
+
+    Odd.__qualname__ = "Outer.Inner"
+    inspector = ClassInspector(Odd, show_dunders=True)
+
+    assert inspector._is_probably_decorated() is True
+
+
+def test_callable_resolution_helpers_handle_wrapped_descriptors() -> None:
+    class Holder:
+        @staticmethod
+        def static(value):
+            return value
+
+        @classmethod
+        def clsmethod(cls, value):
+            return value
+
+        @property
+        def prop(self):
+            return 1
+
+    inspector = ClassInspector(Holder, show_dunders=True)
+    static = Holder.__dict__["static"]
+    clsmethod = Holder.__dict__["clsmethod"]
+    prop = Holder.__dict__["prop"]
+
+    assert inspector._resolve_signature_target(static) is static.__func__
+    assert inspector._resolve_signature_target(clsmethod) is clsmethod.__func__
+    assert inspector._resolve_callable_target(static) is static.__func__
+    assert inspector._resolve_callable_target(clsmethod) is clsmethod.__func__
+    assert inspector._resolve_callable_target(prop) is prop.fget
+    assert inspector._is_callable_member(static) is True
+    assert inspector._is_callable_member(clsmethod) is True
+    assert inspector._is_descriptor(prop) is False
+    assert inspector._resolve_member_kind("clsmethod", clsmethod) == "classmethod"
+    assert inspector._resolve_member_kind("static", static) == "staticmethod"

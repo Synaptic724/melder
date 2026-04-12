@@ -199,3 +199,24 @@ def test_spell_examiner_cleanup_clears_registry_and_id() -> None:
     assert examiner.cleaned is True
     assert examiner._profile_builders_by_name is None
     assert examiner._id is None
+
+
+def test_spell_examiner_id_exposes_stable_value_and_cleanup_is_idempotent() -> None:
+    """
+    Verify the public id is readable before cleanup and cleanup stays idempotent.
+
+    Returns:
+        None.
+    """
+    examiner = SpellExaminer()
+    examiner_id = examiner.id
+
+    assert isinstance(examiner_id, str)
+    assert examiner_id
+
+    examiner.cleanup()
+
+    with pytest.raises(RuntimeError, match="cleaned"):
+        _ = examiner.id
+
+    examiner.cleanup()
