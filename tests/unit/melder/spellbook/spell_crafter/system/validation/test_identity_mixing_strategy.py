@@ -1,3 +1,5 @@
+import pytest
+
 from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
 from melder.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
 from melder.spellbook.spell_crafter.system.validation.identity_mixing_strategy import (
@@ -89,3 +91,66 @@ def test_identity_mixing_skips_version_dependencies() -> None:
     )
 
     assert diagnostics == []
+
+
+def test_identity_mixing_skips_unknown_dependency_ids() -> None:
+    index = SpellSystemIndex()
+    index.upsert_node(
+        SpellSystemNode(
+            spell_id="root",
+            lineage_id="lineage-root",
+            dependencies={"unknown-id"},
+        )
+    )
+    index.upsert_node(
+        SpellSystemNode(
+            spell_id="dep",
+            lineage_id="lineage-dep",
+            dependencies=set(),
+        )
+    )
+    diagnostics: list = []
+
+    IdentityMixingStrategy().run(
+        index=index,
+        blueprints={},
+        phase4_results={},
+        broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={},
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert diagnostics == []
+
+
+def test_identity_mixing_honors_cancellation() -> None:
+    class _Cancel:
+        @property
+        def is_set(self):
+            return True
+
+        def throw_if_set(self):
+            raise RuntimeError("cancelled")
+
+    index = SpellSystemIndex()
+    index.upsert_node(
+        SpellSystemNode(
+            spell_id="root",
+            lineage_id="lineage-root",
+            dependencies={"lineage-dep"},
+        )
+    )
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        IdentityMixingStrategy().run(
+            index=index,
+            blueprints={},
+            phase4_results={},
+            broken_spell_ids=set(),
+            spell_system_states=object(),
+            spell_lookup={},
+            diagnostics=[],
+            cancel_event=_Cancel(),
+        )

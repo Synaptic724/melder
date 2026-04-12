@@ -1615,6 +1615,65 @@ def test_frame_viewer_clone_compiled_access_surface_preserves_command_acl_fields
     assert cloned_access_surface.enabled_spell_index_ids == ("lineage-1",)
 
 
+def test_static_room_denies_selected_target_runtime_object_access() -> None:
+    """
+    Verify static rooms reject raw selected-target runtime-object access.
+
+    Returns:
+        None.
+    """
+    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    space.attach_frame_viewer(viewer)
+    frame_link = viewer.execute_method("list_targets", frame_name="ops")[0]
+    space.select_target(frame_link.link_id)
+
+    with pytest.raises(
+        ValueError,
+        match="Raw runtime-object access via 'get_selected_target_runtime_object' is disabled in static RiftSpace",
+    ):
+        space.command_system.get_selected_target_runtime_object()
+
+
+def test_static_room_denies_direct_conduit_runtime_object_access() -> None:
+    """
+    Verify static rooms reject direct conduit runtime-object access.
+
+    Returns:
+        None.
+    """
+    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    space.attach_frame_viewer(viewer)
+
+    with pytest.raises(
+        ValueError,
+        match="Raw runtime-object access via 'get_conduit_object_by_id' is disabled in static RiftSpace",
+    ):
+        space.command_system.get_conduit_object_by_id("ops-conduit", frame_name="ops")
+
+
+def test_capability_room_denies_direct_spell_runtime_object_access() -> None:
+    """
+    Verify capability rooms reject direct spell runtime-object access.
+
+    Returns:
+        None.
+    """
+    space = CapabilityRiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    space.attach_frame_viewer(viewer)
+
+    with pytest.raises(
+        ValueError,
+        match="Raw runtime-object access via 'get_spell_object_by_index_id' is disabled in capability RiftSpace",
+    ):
+        space.command_system.get_spell_object_by_index_id(
+            "lineage-1",
+            frame_name="ops",
+        )
+
+
 def test_rift_space_can_delegate_frame_surface_calls_to_attached_viewer() -> None:
     """
     Verify a RiftSpace delegates frame-surface calls through the attached viewer.

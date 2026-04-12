@@ -1,3 +1,5 @@
+import pytest
+
 from melder.spellbook.spell_crafter.system.spell_system_index import SpellSystemIndex
 from melder.spellbook.spell_crafter.system.spell_system_node import SpellSystemNode
 from melder.spellbook.spell_crafter.system.validation.contracted_version_drift_strategy import (
@@ -120,6 +122,112 @@ def test_contracted_version_drift_skips_visible_version() -> None:
         broken_spell_ids=set(),
         spell_system_states=object(),
         spell_lookup=spell_lookup,
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert diagnostics == []
+
+
+def test_contracted_version_drift_honors_cancellation_during_spell_lookup() -> None:
+    class _Cancel:
+        @property
+        def is_set(self):
+            return True
+
+        def throw_if_set(self):
+            raise RuntimeError("cancelled")
+
+    index = SpellSystemIndex()
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        ContractedVersionDriftStrategy().run(
+            index=index,
+            blueprints={},
+            phase4_results={},
+            broken_spell_ids=set(),
+            spell_system_states=object(),
+            spell_lookup={"current-version": _SpellStub("lineage-1")},
+            diagnostics=[],
+            cancel_event=_Cancel(),
+        )
+
+
+def test_contracted_version_drift_honors_cancellation_during_node_iteration() -> None:
+    class _Cancel:
+        @property
+        def is_set(self):
+            return True
+
+        def throw_if_set(self):
+            raise RuntimeError("cancelled")
+
+    index = SpellSystemIndex()
+    index.upsert_node(
+        SpellSystemNode(
+            spell_id="current-version",
+            lineage_id="lineage-1",
+            dependencies=set(),
+        )
+    )
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        ContractedVersionDriftStrategy().run(
+            index=index,
+            blueprints={},
+            phase4_results={},
+            broken_spell_ids=set(),
+            spell_system_states=object(),
+            spell_lookup={},
+            diagnostics=[],
+            cancel_event=_Cancel(),
+        )
+
+
+def test_contracted_version_drift_skips_nodes_without_lineage_id() -> None:
+    class _NodeStub:
+        def __init__(self) -> None:
+            self.spell_id = "orphan-version"
+            self.lineage_id = None
+
+    index = SpellSystemIndex()
+    index._nodes["orphan-version"] = _NodeStub()  # noqa: SLF001
+
+    diagnostics: list = []
+
+    ContractedVersionDriftStrategy().run(
+        index=index,
+        blueprints={},
+        phase4_results={},
+        broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={"visible-version": _SpellStub("lineage-1")},
+        diagnostics=diagnostics,
+        cancel_event=None,
+    )
+
+    assert diagnostics == []
+
+
+def test_contracted_version_drift_skips_lineages_without_visible_versions() -> None:
+    index = SpellSystemIndex()
+    index.upsert_node(
+        SpellSystemNode(
+            spell_id="hidden-version",
+            lineage_id="lineage-hidden",
+            dependencies=set(),
+        )
+    )
+
+    diagnostics: list = []
+
+    ContractedVersionDriftStrategy().run(
+        index=index,
+        blueprints={},
+        phase4_results={},
+        broken_spell_ids=set(),
+        spell_system_states=object(),
+        spell_lookup={"visible-version": _SpellStub("lineage-visible")},
         diagnostics=diagnostics,
         cancel_event=None,
     )

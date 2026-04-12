@@ -6,6 +6,7 @@ from melder.aether.aether import Aether
 from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
     CompiledFrameACLAccessSurface,
 )
+from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -273,6 +274,9 @@ class CommandSystem(Cleanable):
         self.check_cleaned()
         with self._lock:
             selected_target = self.get_selected_target_link(frame_name=frame_name)
+            self._assert_raw_runtime_object_access_allowed(
+                "get_selected_target_runtime_object"
+            )
             if selected_target.source_kind == "frame":
                 descriptor = self._space.get_required_frame_viewer()._get_required_frame_descriptor(
                     selected_target.frame_name
@@ -327,6 +331,7 @@ class CommandSystem(Cleanable):
         self.check_cleaned()
         with self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            self._assert_raw_runtime_object_access_allowed("get_conduit_object_by_id")
             self._assert_frame_command_enabled(resolved_frame_name)
             self._assert_conduit_command_enabled(
                 conduit_id,
@@ -380,6 +385,7 @@ class CommandSystem(Cleanable):
         self.check_cleaned()
         with self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            self._assert_raw_runtime_object_access_allowed("get_conduit_object_by_name")
             self._assert_frame_command_enabled(resolved_frame_name)
             conduit_id = self._get_required_published_conduit_id_by_name(
                 conduit_name,
@@ -425,6 +431,9 @@ class CommandSystem(Cleanable):
                 spell_source_id,
                 frame_name=frame_name,
             )
+            self._assert_raw_runtime_object_access_allowed(
+                "get_spell_object_by_source_id"
+            )
             return self.get_spell_object_by_index_id(
                 spell_record.spell_index_id,
                 frame_name=resolved_frame_name,
@@ -459,6 +468,9 @@ class CommandSystem(Cleanable):
             if not spell_index_id:
                 raise ValueError("spell_index_id cannot be empty.")
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            self._assert_raw_runtime_object_access_allowed(
+                "get_spell_object_by_index_id"
+            )
             self._assert_frame_command_enabled(resolved_frame_name)
             self._assert_spell_command_enabled(
                 spell_index_id,
@@ -523,6 +535,7 @@ class CommandSystem(Cleanable):
         self.check_cleaned()
         with self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            self._assert_raw_runtime_object_access_allowed("get_spell_object_by_id")
             self._assert_frame_command_enabled(resolved_frame_name)
             spell_index_id = self._get_required_published_spell_index_id_by_spell_id(
                 spell_id,
@@ -712,6 +725,48 @@ class CommandSystem(Cleanable):
                 spell_record.spell_index_id,
                 frame_name=frame_link.frame_name,
             )
+
+    def _assert_raw_runtime_object_access_allowed(
+            self,
+            method_name: str,
+    ) -> None:
+        """
+        Enforce room-mode policy for raw runtime-object exposure.
+
+        Contract:
+            - Blocks raw runtime-object getters in `static` and `capability`
+              rooms.
+            - Leaves `base` and `dynamic` behavior unchanged so existing
+              generic and dynamic command paths continue to work.
+            - Does not affect descriptor/record getters or already-bound
+              workstation targets.
+
+        Args:
+            method_name:
+                Public command-system method attempting raw runtime-object
+                exposure.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If the current room mode does not allow raw runtime-object
+                access.
+        """
+        room_kind = self._space.space_kind
+        if room_kind not in (
+                RiftSpaceType.static.value,
+                RiftSpaceType.capability.value,
+        ):
+            return
+        raise ValueError(
+            "Raw runtime-object access via '{0}' is disabled in {1} RiftSpace. "
+            "Use descriptor/record access or bind through an approved dynamic path.".format(
+                method_name,
+                room_kind,
+            )
+        )
 
     def _assert_frame_command_enabled(self, frame_name: str) -> None:
         """
