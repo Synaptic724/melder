@@ -100,6 +100,7 @@ def test_component_manager_keeps_frame_conduit_and_spell_records_coherent() -> N
         _conduit_state=ConduitState.normal,
         _conduit_ward=types.SimpleNamespace(
             _policy=Policies.default,
+            _parent_conduit=None,
             _get_links=lambda: [],
         ),
     )

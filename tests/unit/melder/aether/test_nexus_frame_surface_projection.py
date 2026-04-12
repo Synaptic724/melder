@@ -21,8 +21,13 @@ from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.nexus import Nexus
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
+    StaticFrameViewer,
+)
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
+from melder.spellbook.spellbook import Spellbook
+from melder.aether.conduit.conduit import Conduit
 
 
 @pytest.fixture(autouse=True)
@@ -36,10 +41,18 @@ def fresh_singletons() -> None:
     AetherUtilitySystem._reset_singleton_for_tests()
     Nexus._reset_singleton_for_tests()
     Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    StaticFrameViewer._aether = aether
     yield
     Nexus._reset_singleton_for_tests()
     Aether._reset_singleton_for_tests()
     AetherUtilitySystem._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    StaticFrameViewer._aether = aether
 
 
 def _populate_descriptor(nexus: Nexus, frame_name: str) -> None:
@@ -246,7 +259,7 @@ def test_nexus_cached_frame_viewer_invalidates_on_acl_change() -> None:
         reason="viewer_cache_invalidation",
     )
     draft.set_json_configuration_string(
-        '{"frame_name":"ops","view_configuration":{"profile_name":"hybrid","profile_version":"0.0.1","minimum_spell_payload_type":"detailed","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"member_override_ruleset":{"name":"member_override","rules":[]}},"codegen_configuration":{"profile_name":"safe","profile_version":"0.0.1","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"capability_override_ruleset":{"name":"capability_override","rules":[]}}}'
+        '{"frame_name":"ops","view_configuration":{"profile_name":"hybrid","profile_version":"0.0.1","minimum_spell_payload_type":"general","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"member_override_ruleset":{"name":"member_override","rules":[]}},"codegen_configuration":{"profile_name":"safe","profile_version":"0.0.1","frame_override_ruleset":{"name":"frame_override","rules":[]},"conduit_override_ruleset":{"name":"conduit_override","rules":[]},"spell_override_ruleset":{"name":"spell_override","rules":[]},"capability_override_ruleset":{"name":"capability_override","rules":[]}}}'
     )
     draft.finalize()
 

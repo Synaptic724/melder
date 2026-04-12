@@ -18,17 +18,17 @@ class CapabilityRiftSpace(RiftSpace, ICapabilityRiftSpace):
     Internal
 
     Purpose:
-        Represent the middle-ground concrete room type for restrictive
-        pre-published execution workflows.
+        Represent the middle-ground concrete room type for broad manual runtime
+        access without codegen.
 
     Contract:
         - Inherits all base room behavior.
         - Fixes `space_kind` to `capability`.
-        - Exists as the restrictive middle posture between static and fully
-          dynamic room behavior.
-        - In this cut it is still mostly a typed placeholder; richer
-          capability-execution semantics are intentionally deferred to higher
-          room/workstation layers.
+        - Exists as the non-codegen manual runtime posture between strict
+          static and later codegen-oriented dynamic work.
+        - Allows broad manual object/runtime work through the composed command
+          surface.
+        - Does not override underlying Melder frame/runtime truth.
     """
 
     def __init__(
@@ -69,7 +69,8 @@ class CapabilityRiftSpace(RiftSpace, ICapabilityRiftSpace):
             - Fixes the persisted room kind to `capability` so later room
               selection and serialization can distinguish it from `static` and
               `dynamic` rooms.
-            - Composes the capability command surface for this room.
+            - Composes the broad manual capability command surface for this
+              room.
         """
         super().__init__(
             owner_rift_id,

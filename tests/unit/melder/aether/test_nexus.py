@@ -54,12 +54,14 @@ from melder.aether.nexus.rift.rift_space.capability_rift_space import Capability
 from melder.aether.nexus.rift.rift_space.dynamic_rift_space import DynamicRiftSpace
 from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
 from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
+from melder.aether.conduit.conduit import Conduit
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
+from melder.spellbook.spellbook import Spellbook
 
 
 @pytest.fixture(autouse=True)
@@ -2615,25 +2617,173 @@ def test_static_room_denies_spell_runtime_object_when_not_live(
         )
 
 
-def test_capability_room_denies_direct_spell_runtime_object_access() -> None:
+def test_capability_room_allows_direct_spell_runtime_object_access() -> None:
     """
-    Verify capability rooms reject direct spell runtime-object access.
+    Verify capability rooms allow direct spell runtime-object access.
 
     Returns:
         None.
     """
     space = CapabilityRiftSpace(owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="ops-spellbook",
+            frame_name="ops",
+            owner_conduit_id="ops-conduit",
+            spell_id="sha-1",
+            spell_index_id="lineage-1",
+            spell_name="OpsSpell",
+            spellframe=None,
+            binding_name="ops_spell",
+            permissions=Permissions.create,
+            existence=Existence.unique,
+            payload=SpellDescriptorPayload(
+                payload_type="detailed",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        enabled_conduit_ids=("ops-conduit",),
+        enabled_spell_index_ids=("lineage-1",),
+    )
     space.attach_frame_viewer(viewer)
+    spell = object()
+    owner_conduit = SimpleNamespace(
+        get_spell_by_index_id=lambda spell_index_id: (
+            spell if spell_index_id == "lineage-1" else None
+        )
+    )
+    space.command_system._aether = SimpleNamespace(
+        get_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
+    )
 
-    with pytest.raises(
-        ValueError,
-        match="Raw runtime-object access via 'get_spell_object_by_index_id' is disabled in capability RiftSpace",
-    ):
+    assert (
         space.command_system.get_spell_object_by_index_id(
             "lineage-1",
             frame_name="ops",
+        ) is spell
+    )
+
+
+def test_capability_rift_can_attach_to_automatic_target_frame_when_rift_enabled() -> None:
+    """
+    Verify capability Rift can attach to an automatic target frame.
+
+    Returns:
+        None.
+    """
+    _bind_target_frame_configuration(
+        "ops",
+        rift_enabled=True,
+        ai_native_enabled=False,
+        system_state=SystemState.automatic,
+    )
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_target_frame_override(True)
+    configuration.with_allowed_target_frame_names(("default", "ops"))
+    nexus.enable(configuration)
+    _seed_frame_descriptor("ops")
+
+    rift_configuration = nexus.create_rift_configuration().with_space_type(
+        RiftSpaceType.capability
+    )
+    rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops-capability")
+    rift.target_frame("ops", set_as_default=True)
+
+    assert isinstance(
+        rift.get_space(rift.active_space_id),
+        CapabilityRiftSpace,
+    )
+    assert rift.default_target_frame_name == "ops"
+
+
+def test_capability_room_broad_access_still_respects_automatic_runtime_floor() -> None:
+    """
+    Verify capability can fetch real objects but lower runtime still rejects automatic-only dynamic operations.
+
+    Returns:
+        None.
+    """
+    configuration = Configuration(aether_frame="ops_capability_auto")
+    configuration.automatic_defaults()
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    configuration.set_property("rift_enabled", True)
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    spellbook = Spellbook(
+        aetheric_frame="ops_capability_auto",
+        configuration=configuration,
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        space = CapabilityRiftSpace(owner_rift_id="rift-1", space_name="main")
+        viewer = _build_descriptor_backed_viewer("ops")
+        descriptor = viewer._get_required_frame_descriptor("ops")
+        descriptor.upsert_conduit_record(
+            ConduitRecord(
+                conduit_id=conduit.id,
+                root_conduit_id=conduit.id,
+                frame_name="ops",
+                origin_spellbook_id=spellbook.id,
+                payload=ConduitDescriptorPayload(
+                    conduit_name=conduit.name,
+                    conduit_state=ConduitState.normal,
+                    policy=Policies.default,
+                    peer_conduit_ids=tuple(),
+                ),
+            )
         )
+        _replace_compiled_access_surface(
+            viewer,
+            "ops",
+            command_frame_enabled=True,
+            enabled_conduit_ids=(conduit.id,),
+        )
+        space.attach_frame_viewer(viewer)
+        space.command_system._aether = SimpleNamespace(
+            get_conduit_by_id=lambda conduit_id, frame_name: conduit,
+        )
+        capability_conduit = space.command_system.get_conduit_by_id(
+            conduit.id,
+            frame_name="ops",
+        )
+        space.workstation.bind_object("root", capability_conduit, weak_ref=False)
+        space.workstation.set_target("root", store="objects")
+
+        with pytest.raises(RuntimeError, match="Dynamic environment is not enabled"):
+            space.command_system.execute_target_method("get_conduit_cloud")
+    finally:
+        conduit.cleanup()
+        spellbook.cleanup()
 
 
 def test_rift_space_can_delegate_frame_surface_calls_to_attached_viewer() -> None:

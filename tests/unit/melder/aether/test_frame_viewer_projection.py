@@ -1338,6 +1338,50 @@ def test_view_conduit_brief_and_missing_section_methods_work() -> None:
     }
 
 
+def test_view_conduit_guardrails_and_optional_paths_work() -> None:
+    viewer = _build_viewer(("ops",))
+    view_conduit = viewer.get_selected_profile_for_frame("ops").view_conduit
+    descriptor = viewer.frame_descriptors_by_name["ops"]
+    conduit_record = descriptor.conduit_records_by_id["ops-conduit"]
+    spell_record = descriptor.spell_records_by_key[("ops-spellbook", "ops-spell")]
+
+    assert len(view_conduit.describe_conduits()) == 1
+
+    with pytest.raises(ValueError, match="root_conduit_id cannot be empty."):
+        view_conduit.list_conduits_by_root_id("")
+
+    with pytest.raises(ValueError, match="policy_name cannot be empty."):
+        view_conduit.list_conduits_by_policy("")
+
+    with pytest.raises(ValueError, match="state_name cannot be empty."):
+        view_conduit.list_conduits_by_state("")
+
+    with pytest.raises(ValueError, match="conduit_name cannot be empty."):
+        view_conduit.find_conduit_by_name("")
+
+    with pytest.raises(ValueError, match="field_name cannot be empty."):
+        view_conduit.get_conduit_payload_field("ops-conduit", "")
+
+    with pytest.raises(ValueError, match="conduit_id cannot be empty."):
+        view_conduit.get_required_conduit("")
+
+    conduit_record.payload.policy = None
+    spell_record.binding_name = None
+
+    assert view_conduit.list_conduits_by_policy("default") == []
+    assert view_conduit.list_binding_names_for_conduit("ops-conduit") == tuple()
+
+    with pytest.raises(
+            ValueError,
+            match="Conduit payload field 'policy' is not visible for conduit 'ops-conduit'.",
+    ):
+        view_conduit.get_conduit_payload_field("ops-conduit", "policy")
+
+    view_conduit._frame_view = None
+    with pytest.raises(ValueError, match="GeneralViewConduit is not bound to a frame view."):
+        view_conduit.list_conduits()
+
+
 def test_view_spell_extended_identity_origin_and_filter_methods_work() -> None:
     viewer = _build_viewer(("ops",))
     view_spell = viewer.get_selected_profile_for_frame("ops").view_spell
@@ -1660,6 +1704,16 @@ def test_view_conduit_crosswalk_and_compare_methods_work() -> None:
     assert comparison["same_root_conduit_id"] is False
     assert comparison["same_policy"] is True
     assert comparison["peer_conduit_ids"]["shared"] == tuple()
+
+
+def test_view_conduit_cleanup_is_idempotent() -> None:
+    viewer = _build_viewer(("ops",))
+    view_conduit = viewer.get_selected_profile_for_frame("ops").view_conduit
+
+    view_conduit.cleanup()
+    view_conduit.cleanup()
+
+    assert view_conduit.cleaned is True
 
 
 def test_view_spell_crosswalk_and_compare_methods_work() -> None:

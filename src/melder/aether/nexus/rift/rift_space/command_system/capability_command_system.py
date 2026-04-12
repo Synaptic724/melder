@@ -1,4 +1,3 @@
-from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.rift.rift_space.command_system.command_system import (
     CommandSystem,
 )
@@ -11,15 +10,18 @@ class CapabilityCommandSystem(CommandSystem):
     Capability-room command surface.
 
     Purpose:
-        Keep the shared command API while restricting raw runtime-object
-        exposure for `CapabilityRiftSpace` until a dedicated capability handle
-        surface exists.
+        Keep the shared command API while opening broad manual runtime access
+        for `CapabilityRiftSpace`.
 
     Contract:
         - Inherits all shared selected-target, ACL, and workstation behavior
           from `CommandSystem`.
-        - Rejects raw runtime-object getters so capability rooms do not expose
-          naked runtime objects through the generic command surface.
+        - Allows the shared broad runtime-object getters and manual object
+          work surface.
+        - Does not add codegen behavior; it only stops denying the existing
+          manual runtime surface.
+        - Still relies on the underlying Melder frame/runtime to reject
+          dynamic-only operations when the target frame is automatic.
         - Leaves already-bound workstation objects outside post-bind policing.
     """
 
@@ -28,7 +30,7 @@ class CapabilityCommandSystem(CommandSystem):
             method_name: str,
     ) -> None:
         """
-        Reject raw runtime-object access in capability rooms.
+        Allow raw runtime-object access in capability rooms.
 
         Args:
             method_name:
@@ -37,16 +39,5 @@ class CapabilityCommandSystem(CommandSystem):
 
         Returns:
             None.
-
-        Raises:
-            ValueError:
-                Always, because capability rooms do not expose naked runtime
-                objects through the generic command getters in this cut.
         """
-        raise ValueError(
-            "Raw runtime-object access via '{0}' is disabled in {1} RiftSpace. "
-            "Use descriptor/record access or bind through an approved dynamic path.".format(
-                method_name,
-                RiftSpaceType.capability.value,
-            )
-        )
+        _ = method_name

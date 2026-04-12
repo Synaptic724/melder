@@ -5,6 +5,9 @@ from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.nexus.nexus import Nexus
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
+    StaticFrameViewer,
+)
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
@@ -26,6 +29,7 @@ def reset_singletons_for_nexus_projection_integration() -> None:
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
+    StaticFrameViewer._aether = aether
     yield
     Nexus._reset_singleton_for_tests()
     Aether._reset_singleton_for_tests()
@@ -33,6 +37,7 @@ def reset_singletons_for_nexus_projection_integration() -> None:
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
+    StaticFrameViewer._aether = aether
 
 
 def _make_rift_publishable_configuration(
