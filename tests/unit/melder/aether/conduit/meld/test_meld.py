@@ -2204,6 +2204,124 @@ def test_has_live_creation_returns_true_for_unique_per_conduit_creation() -> Non
     spell._get_or_build_creation_context.assert_not_called()
 
 
+def test_existing_only_meld_returns_live_unique_per_conduit_creation() -> None:
+    """
+    Verify `existing_only` returns the live unique-per-conduit object.
+
+    Contract:
+        - Reuses current live storage only.
+        - Does not attempt creation-context build.
+    """
+    creations, _ = _make_creations()
+    live_instance = object()
+    creations.add_creation("spell-1", live_instance)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.unique_per_conduit,
+    )
+    spell._get_or_build_creation_context = MagicMock()
+    spellbook = _SpellbookStub(spells={spell.spell_index: spell})
+    meld = _make_meld(creations=creations, spellbook=spellbook)
+
+    assert meld.meld(spell="spell-1", existing_only=True) is live_instance
+    spell._get_or_build_creation_context.assert_not_called()
+
+
+def test_existing_only_meld_raises_when_unique_per_conduit_not_live() -> None:
+    """
+    Verify `existing_only` fails when no live unique-per-conduit object exists.
+    """
+    creations, _ = _make_creations()
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.unique_per_conduit,
+    )
+    spellbook = _SpellbookStub(spells={spell.spell_index: spell})
+    meld = _make_meld(creations=creations, spellbook=spellbook)
+
+    with pytest.raises(ValueError, match="Spell 'spell-1' is not live"):
+        meld.meld(spell="spell-1", existing_only=True)
+
+
+def test_existing_only_meld_rejects_many_lifecycle() -> None:
+    """
+    Verify `existing_only` fails fast for the ambiguous `many` lifecycle.
+    """
+    creations, _ = _make_creations()
+    creations.add_many_creations("spell-1", object())
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.many,
+    )
+    spellbook = _SpellbookStub(spells={spell.spell_index: spell})
+    meld = _make_meld(creations=creations, spellbook=spellbook)
+
+    with pytest.raises(
+        RuntimeError,
+        match="existing_only meld is not supported for Existence.many",
+    ):
+        meld.meld(spell="spell-1", existing_only=True)
+
+
+def test_existing_only_meld_returns_live_unique_per_conduit_creation() -> None:
+    """
+    Verify `existing_only` returns the live unique-per-conduit object.
+
+    Contract:
+        - Reuses current live storage only.
+        - Does not attempt creation-context build.
+    """
+    creations, _ = _make_creations()
+    live_instance = object()
+    creations.add_creation("spell-1", live_instance)
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.unique_per_conduit,
+    )
+    spell._get_or_build_creation_context = MagicMock()
+    spellbook = _SpellbookStub(spells={spell.spell_index: spell})
+    meld = _make_meld(creations=creations, spellbook=spellbook)
+
+    assert meld.meld(spell="spell-1", existing_only=True) is live_instance
+    spell._get_or_build_creation_context.assert_not_called()
+
+
+def test_existing_only_meld_raises_when_unique_per_conduit_not_live() -> None:
+    """
+    Verify `existing_only` fails when no live unique-per-conduit object exists.
+    """
+    creations, _ = _make_creations()
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.unique_per_conduit,
+    )
+    spellbook = _SpellbookStub(spells={spell.spell_index: spell})
+    meld = _make_meld(creations=creations, spellbook=spellbook)
+
+    with pytest.raises(ValueError, match="Spell 'spell-1' is not live"):
+        meld.meld(spell="spell-1", existing_only=True)
+
+
+def test_existing_only_meld_rejects_many_lifecycle() -> None:
+    """
+    Verify `existing_only` fails fast for the ambiguous `many` lifecycle.
+    """
+    creations, _ = _make_creations()
+    creations.add_many_creations("spell-1", object())
+    spell = _SpellStub(
+        spell_id="spell-1",
+        existence=Existence.many,
+    )
+    spellbook = _SpellbookStub(spells={spell.spell_index: spell})
+    meld = _make_meld(creations=creations, spellbook=spellbook)
+
+    with pytest.raises(
+        RuntimeError,
+        match="existing_only meld is not supported for Existence.many",
+    ):
+        meld.meld(spell="spell-1", existing_only=True)
+
+
 def test_has_live_creation_returns_false_when_unique_per_conduit_missing() -> None:
     """
     Verify the probe returns False when no unique-per-conduit creation exists.

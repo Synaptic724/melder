@@ -3476,6 +3476,7 @@ class IMeld(ICleanable, Protocol):
             spellframe: str | object | None = None,
             binding_name: str | None = None,
             spell_override: Optional[dict | list | tuple] = None,
+            existing_only: bool = False,
     ) -> Optional[Any]:
         """
         Resolves and creates an instance of a spell.
@@ -3486,6 +3487,8 @@ class IMeld(ICleanable, Protocol):
             spellframe (str | object, optional): Spellframe / protocol / frame key.
             binding_name (str, optional): Binding name used for lookup.
             spell_override (dict | list | tuple, optional): Per-call override payload.
+            existing_only (bool, optional): Return an already-existing object
+                or fail without creating when True.
         """
         ...
 
@@ -5315,6 +5318,7 @@ class IConduit(ICleanable, Protocol):
             spellframe: str | object | None = None,
             binding_name: str | None = None,
             spell_override: Optional[dict | list | tuple] = None,
+            existing_only: bool = False,
     ) -> Optional[Any]:
         """
         Public API
@@ -5354,6 +5358,9 @@ class IConduit(ICleanable, Protocol):
                 Optional per-call override payload (dict / list / tuple)
                 passed through to ``Meld.meld`` for constructor/factory
                 argument overrides.
+            existing_only:
+                When True, return an already-existing live object or fail
+                without creating a new one.
 
         Returns:
             Any:

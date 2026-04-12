@@ -1614,22 +1614,21 @@ class Conduit(Cleanable, IConduit):
             RuntimeError: If the Conduit is cleaned.
         """
         self.check_cleaned()
-        with self._lock:
-            owner = self.get_conduit_by_spell_id(spell_id, aetheric_frame_name)
-            if owner is None:
-                result = None
+        owner = self.get_conduit_by_spell_id(spell_id, aetheric_frame_name)
+        if owner is None:
+            result = None
+        else:
+            # Walk the owner's SpellIndex keys and find the lineage that contains this version
+            spellbook = owner._spellbook
+            if spellbook is None:
+                self._logger.error(
+                    "Owner conduit has no spellbook.",
+                    "get_spell_by_id",
+                    exc_info=True,
+                )
+                raise RuntimeError("Owner conduit has no spellbook.")
             else:
-                # Walk the owner's SpellIndex keys and find the lineage that contains this version
-                spellbook = owner._spellbook
-                if spellbook is None:
-                    self._logger.error(
-                        "Owner conduit has no spellbook.",
-                        "get_spell_by_id",
-                        exc_info=True,
-                    )
-                    raise RuntimeError("Owner conduit has no spellbook.")
-                else:
-                    result = spellbook.find_spell_by_id(spell_id)
+                result = spellbook.find_spell_by_id(spell_id)
         return result
 
     def get_spell_by_index_id(
@@ -1667,8 +1666,7 @@ class Conduit(Cleanable, IConduit):
                 exc_info=True,
             )
             raise RuntimeError("Spellbook is unavailable.")
-        with self._lock:
-            return spellbook.get_spell_by_index_id(spell_index_id)
+        return spellbook.get_spell_by_index_id(spell_index_id)
 
 
     def find_contracted_spell(self, spell_id: str) -> Optional[ISpell]:
@@ -2447,6 +2445,7 @@ class Conduit(Cleanable, IConduit):
             spellframe: str | object | None = None,
             binding_name: str | None = None,
             spell_override: Optional[dict | list | tuple] = None,
+            existing_only: bool = False,
     ) -> Optional[Any]:
         """
         Public API
@@ -2496,6 +2495,9 @@ class Conduit(Cleanable, IConduit):
                 Optional per-call override payload (dict / list / tuple)
                 passed through to ``Meld.meld`` for constructor/factory
                 argument overrides.
+            existing_only:
+                When True, return an already-existing live object or fail
+                without creating a new one.
 
         Returns:
             Any:
@@ -2545,6 +2547,7 @@ class Conduit(Cleanable, IConduit):
                     spellframe=spellframe,
                     binding_name=binding_name,
                     spell_override=spell_override,
+                    existing_only=existing_only,
                 )
             finally:
                 creation_gate.unregister_ticket()
@@ -2555,6 +2558,7 @@ class Conduit(Cleanable, IConduit):
             spellframe=spellframe,
             binding_name=binding_name,
             spell_override=spell_override,
+            existing_only=existing_only,
         )
 
     def has_live_creation(

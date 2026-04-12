@@ -545,15 +545,15 @@ def test_get_spell_by_id_returns_owner_spell(
         AssertionError: If the spell is not returned.
     """
     spell = _make_spell("sha-1")
-    spell_index = SpellIndex("sha-1")
     owner = MagicMock()
     owner._spellbook = MagicMock()
-    owner._spellbook._spells = {spell_index: spell}
+    owner._spellbook.find_spell_by_id = MagicMock(return_value=spell)
     aether_stub._get_conduit_by_spell_id.return_value = owner
 
     result = conduit_normal.get_spell_by_id("sha-1")
 
     assert result is spell
+    owner._spellbook.find_spell_by_id.assert_called_once_with("sha-1")
 
 
 def test_find_contracted_spell_returns_none_when_empty(
@@ -659,6 +659,7 @@ def test_meld_forwards_non_string_spell_name(conduit_lesser: Conduit) -> None:
         spellframe=None,
         binding_name=None,
         spell_override=None,
+        existing_only=False,
     )
 
 
@@ -688,6 +689,7 @@ def test_meld_forwards_non_string_binding_name(conduit_lesser: Conduit) -> None:
         spellframe=None,
         binding_name=5,
         spell_override=None,
+        existing_only=False,
     )
 
 
@@ -722,8 +724,33 @@ def test_meld_delegates_to_meld_instance(conduit_lesser: Conduit) -> None:
         spellframe="frame",
         binding_name="bind",
         spell_override={"k": "v"},
+        existing_only=False,
     )
     assert result == "result"
+
+
+def test_meld_forwards_existing_only_flag(conduit_lesser: Conduit) -> None:
+    """
+    Verify the conduit meld facade forwards `existing_only` unchanged.
+
+    Contract:
+        - Conduit does not reinterpret the flag.
+        - The underlying Meld instance receives the exact value.
+    """
+    conduit_lesser._meld = MagicMock()
+    conduit_lesser._meld.meld.return_value = "result"
+
+    result = conduit_lesser.meld(spell="sha-1", existing_only=True)
+
+    assert result == "result"
+    conduit_lesser._meld.meld.assert_called_once_with(
+        spell_name=None,
+        spell="sha-1",
+        spellframe=None,
+        binding_name=None,
+        spell_override=None,
+        existing_only=True,
+    )
 
 
 def test_has_live_creation_delegates_to_meld_instance(conduit_lesser: Conduit) -> None:

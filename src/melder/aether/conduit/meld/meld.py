@@ -222,6 +222,7 @@ class Meld(Cleanable, IMeld):
             spellframe: str | object | None = None,
             binding_name: str | None = None,
             spell_override: Optional[dict | list | tuple] = None,
+            existing_only: bool = False,
     ) -> Optional[Any]:
         """
         Entry point for resolving and activating a spell (component) within this Conduit.
@@ -258,6 +259,9 @@ class Meld(Cleanable, IMeld):
                 represents **per-call overrides** (constructor arguments, factory
                 inputs, etc.) and is normalized into a dictionary by
                 :meth:`_normalize_spell_override`.
+            existing_only (bool):
+                When True, return an already-live object or fail without
+                entering any creation path.
 
                 Semantics:
                 - `dict`  → treated as keyword-style overrides (param_name → value).
@@ -334,6 +338,9 @@ class Meld(Cleanable, IMeld):
                         None,
                     )
                 input_resolution_cache[cache_key] = target_spell
+
+        if existing_only:
+            return self._resolve_existing_only_object(target_spell)
 
         # 3) SpellSystemState / SpellValidity gate + lazy revalidation.
         if self._spellbook._spellbook_validation_required:
@@ -458,6 +465,92 @@ class Meld(Cleanable, IMeld):
             spellframe=spellframe,
             binding_name=binding_name,
         )["is_live"]
+
+    def _resolve_existing_only_object(self, spell: ISpell) -> Any:
+        """
+        Return an already-live object for one resolved spell or fail.
+
+        Purpose:
+            Support `existing_only=True` without falling through to the normal
+            creation path.
+
+        Args:
+            spell:
+                Resolved spell object whose live runtime object should be
+                returned.
+
+        Returns:
+            Any: Existing live runtime object for the resolved spell.
+
+        Raises:
+            ValueError:
+                If the spell is not currently live.
+            RuntimeError:
+                If the spell lifecycle does not support unambiguous
+                existing-only retrieval.
+        """
+        if spell.is_existing_creation:
+            if spell.user_created_object is None:
+                raise ValueError(
+                    "Spell '{0}' is not live.".format(spell.spell_id)
+                )
+            return spell.user_created_object
+
+        existence = spell.existence
+        spell_id = spell.spell_id
+        caller_creations = self._creations
+
+        if existence is Existence.many:
+            raise RuntimeError(
+                "existing_only meld is not supported for Existence.many."
+            )
+
+        if existence is Existence.unique_per_conduit:
+            creation = caller_creations._creations.get(spell_id)
+            if creation is None:
+                raise ValueError(
+                    "Spell '{0}' is not live.".format(spell_id)
+                )
+            return creation.value
+
+        if existence is Existence.unique_per_spell_space:
+            spellspace = caller_creations._conduit.get_active_spellspace()
+            if spellspace is None:
+                raise ValueError(
+                    "Spell '{0}' is not live.".format(spell_id)
+                )
+            creation = caller_creations.get_spellspace_creation(
+                spellspace.id,
+                spell_id,
+            )
+            if creation is None:
+                raise ValueError(
+                    "Spell '{0}' is not live.".format(spell_id)
+                )
+            return creation.value
+
+        if existence in {
+                Existence.unique,
+                Existence.unique_per_conduit_cluster,
+                Existence.unique_per_conduit_lineage,
+        }:
+            owner_creations = spell._owner_creations
+            if owner_creations is None:
+                raise ValueError(
+                    "Spell '{0}' is not live.".format(spell_id)
+                )
+            creation = owner_creations._creations.get(spell_id)
+            if creation is None:
+                raise ValueError(
+                    "Spell '{0}' is not live.".format(spell_id)
+                )
+            return creation.value
+
+        raise RuntimeError(
+            "existing_only meld is unsupported for existence '{0}'.".format(
+                existence.name
+            )
+        )
 
     def describe_live_creation_status(
             self,
@@ -672,39 +765,37 @@ class Meld(Cleanable, IMeld):
         caller_creations = self._creations
 
         if existence is Existence.many:
-            with caller_creations._lock:
-                creation_bucket = caller_creations._creations.get(spell_id)
-                creation_count = (
-                    len(creation_bucket)
-                    if isinstance(creation_bucket, list)
-                    else 0
-                )
-                return {
-                    "is_live": creation_count > 0,
-                    "spell_id": spell_id,
-                    "spell_name": spell.spell_name,
-                    "existence": existence.name,
-                    "query_conduit_id": query_conduit_id,
-                    "storage_scope_kind": "caller_conduit_many",
-                    "storage_owner_conduit_id": query_conduit_id,
-                    "active_spellspace_id": None,
-                    "creation_count": creation_count,
-                }
+            creation_bucket = caller_creations._creations.get(spell_id)
+            creation_count = (
+                len(creation_bucket)
+                if isinstance(creation_bucket, list)
+                else 0
+            )
+            return {
+                "is_live": creation_count > 0,
+                "spell_id": spell_id,
+                "spell_name": spell.spell_name,
+                "existence": existence.name,
+                "query_conduit_id": query_conduit_id,
+                "storage_scope_kind": "caller_conduit_many",
+                "storage_owner_conduit_id": query_conduit_id,
+                "active_spellspace_id": None,
+                "creation_count": creation_count,
+            }
 
         if existence is Existence.unique_per_conduit:
-            with caller_creations._lock:
-                creation = caller_creations._creations.get(spell_id)
-                return {
-                    "is_live": creation is not None,
-                    "spell_id": spell_id,
-                    "spell_name": spell.spell_name,
-                    "existence": existence.name,
-                    "query_conduit_id": query_conduit_id,
-                    "storage_scope_kind": "caller_conduit",
-                    "storage_owner_conduit_id": query_conduit_id,
-                    "active_spellspace_id": None,
-                    "creation_count": 1 if creation is not None else 0,
-                }
+            creation = caller_creations._creations.get(spell_id)
+            return {
+                "is_live": creation is not None,
+                "spell_id": spell_id,
+                "spell_name": spell.spell_name,
+                "existence": existence.name,
+                "query_conduit_id": query_conduit_id,
+                "storage_scope_kind": "caller_conduit",
+                "storage_owner_conduit_id": query_conduit_id,
+                "active_spellspace_id": None,
+                "creation_count": 1 if creation is not None else 0,
+            }
 
         if existence is Existence.unique_per_spell_space:
             spellspace = caller_creations._conduit.get_active_spellspace()
@@ -720,22 +811,21 @@ class Meld(Cleanable, IMeld):
                     "active_spellspace_id": None,
                     "creation_count": 0,
                 }
-            with caller_creations._lock:
-                creation = caller_creations.get_spellspace_creation(
-                    spellspace.id,
-                    spell_id,
-                )
-                return {
-                    "is_live": creation is not None,
-                    "spell_id": spell_id,
-                    "spell_name": spell.spell_name,
-                    "existence": existence.name,
-                    "query_conduit_id": query_conduit_id,
-                    "storage_scope_kind": "active_spellspace",
-                    "storage_owner_conduit_id": query_conduit_id,
-                    "active_spellspace_id": spellspace.id,
-                    "creation_count": 1 if creation is not None else 0,
-                }
+            creation = caller_creations.get_spellspace_creation(
+                spellspace.id,
+                spell_id,
+            )
+            return {
+                "is_live": creation is not None,
+                "spell_id": spell_id,
+                "spell_name": spell.spell_name,
+                "existence": existence.name,
+                "query_conduit_id": query_conduit_id,
+                "storage_scope_kind": "active_spellspace",
+                "storage_owner_conduit_id": query_conduit_id,
+                "active_spellspace_id": spellspace.id,
+                "creation_count": 1 if creation is not None else 0,
+            }
 
         if existence in {
                 Existence.unique,
@@ -755,20 +845,18 @@ class Meld(Cleanable, IMeld):
                     "active_spellspace_id": None,
                     "creation_count": 0,
                 }
-            with spell._lock:
-                with owner_creations._lock:
-                    creation = owner_creations._creations.get(spell_id)
-                    return {
-                        "is_live": creation is not None,
-                        "spell_id": spell_id,
-                        "spell_name": spell.spell_name,
-                        "existence": existence.name,
-                        "query_conduit_id": query_conduit_id,
-                        "storage_scope_kind": "owner_creations",
-                        "storage_owner_conduit_id": spell._owner_conduit_id,
-                        "active_spellspace_id": None,
-                        "creation_count": 1 if creation is not None else 0,
-                    }
+            creation = owner_creations._creations.get(spell_id)
+            return {
+                "is_live": creation is not None,
+                "spell_id": spell_id,
+                "spell_name": spell.spell_name,
+                "existence": existence.name,
+                "query_conduit_id": query_conduit_id,
+                "storage_scope_kind": "owner_creations",
+                "storage_owner_conduit_id": spell._owner_conduit_id,
+                "active_spellspace_id": None,
+                "creation_count": 1 if creation is not None else 0,
+            }
 
         raise RuntimeError(
             "Unsupported existence '{0}' for live creation probe.".format(
