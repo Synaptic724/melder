@@ -3246,6 +3246,127 @@ def test_capability_command_system_lists_shared_manual_runtime_methods() -> None
     assert "meld_existing_spell" in supported_methods
 
 
+def test_command_system_can_delegate_conduit_introspection_helpers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify the shared command surface delegates the conduit introspection helpers.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        enabled_conduit_ids=("ops-conduit",),
+    )
+    space.attach_frame_viewer(viewer)
+    lesser = object()
+    initiated = object()
+    provider = object()
+    contract_spell = object()
+    resolution_state = object()
+    owner_conduit = SimpleNamespace(
+        get_lesser_conduit=lambda conduit_id: lesser,
+        get_initiated_conduit=lambda conduit_id: initiated,
+        get_provider_conduit=lambda conduit_id: provider,
+        get_initiated_conduits=lambda: [initiated],
+        get_provider_conduits=lambda: [provider],
+        get_contracted_conduits=lambda: [("peer", provider)],
+        get_spell_in_contracts=lambda spell_id: ("peer", contract_spell),
+        get_spells_in_contract_by_conduit=lambda conduit_id: {
+            "outbound": [("sha-1", contract_spell)]
+        },
+        get_spells_in_contract_by_conduit_name=lambda conduit_name: {
+            "outbound": [("sha-1", contract_spell)]
+        },
+        describe_spells_in_conduit=lambda: [{"spell_id": "sha-1"}],
+        get_resolution_state=lambda: resolution_state,
+    )
+    monkeypatch.setattr(
+        type(space.command_system),
+        "get_conduit_by_id",
+        lambda self, conduit_id, *, frame_name=None: owner_conduit,
+    )
+
+    assert (
+        space.command_system.get_lesser_conduit(
+            "ops-conduit",
+            "lesser-1",
+            frame_name="ops",
+        ) is lesser
+    )
+    assert (
+        space.command_system.get_initiated_conduit(
+            "ops-conduit",
+            "peer",
+            frame_name="ops",
+        ) is initiated
+    )
+    assert (
+        space.command_system.get_provider_conduit(
+            "ops-conduit",
+            "peer",
+            frame_name="ops",
+        ) is provider
+    )
+    assert space.command_system.get_initiated_conduits(
+        "ops-conduit",
+        frame_name="ops",
+    ) == (initiated,)
+    assert space.command_system.get_provider_conduits(
+        "ops-conduit",
+        frame_name="ops",
+    ) == (provider,)
+    assert space.command_system.get_contracted_conduits(
+        "ops-conduit",
+        frame_name="ops",
+    ) == [("peer", provider)]
+    assert space.command_system.get_spell_in_contracts(
+        "ops-conduit",
+        "sha-1",
+        frame_name="ops",
+    ) == ("peer", contract_spell)
+    assert space.command_system.get_spells_in_contract_by_conduit(
+        "ops-conduit",
+        "peer",
+        frame_name="ops",
+    ) == {"outbound": [("sha-1", contract_spell)]}
+    assert space.command_system.get_spells_in_contract_by_conduit_name(
+        "ops-conduit",
+        "peer-name",
+        frame_name="ops",
+    ) == {"outbound": [("sha-1", contract_spell)]}
+    assert space.command_system.describe_spells_in_conduit(
+        "ops-conduit",
+        frame_name="ops",
+    ) == [{"spell_id": "sha-1"}]
+    assert (
+        space.command_system.get_resolution_state(
+            "ops-conduit",
+            frame_name="ops",
+        ) is resolution_state
+    )
+
+
 def test_rift_space_can_delegate_frame_surface_calls_to_attached_viewer() -> None:
     """
     Verify a RiftSpace delegates frame-surface calls through the attached viewer.

@@ -1,3 +1,5 @@
+import threading
+
 from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
 
 
@@ -83,6 +85,7 @@ def test_frame_link_cleanup_clears_owned_state() -> None:
     assert link._source_id is None
     assert link._display_name is None
     assert link._metadata is None
+    link.cleanup()
 
 
 def test_frame_link_rejects_empty_identity_fields() -> None:
@@ -133,3 +136,41 @@ def test_frame_link_metadata_property_and_clone_detach_state() -> None:
     assert cloned is not link
     assert cloned.link_id == link.link_id
     assert cloned.metadata == {"policy": "default"}
+
+
+def test_frame_link_cleanup_rechecks_cleaned_inside_lock() -> None:
+    class _CoordinatedLock:
+        def __init__(self, link: FrameLink) -> None:
+            self._link = link
+            self._entered_first = threading.Event()
+            self._second_attempted = threading.Event()
+            self._lock = threading.RLock()
+
+        def __enter__(self):
+            if self._entered_first.is_set():
+                self._second_attempted.set()
+            self._lock.acquire()
+            if not self._entered_first.is_set():
+                self._entered_first.set()
+                assert self._second_attempted.wait(timeout=1.0)
+                self._link._cleaned = True
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self._lock.release()
+
+    link = FrameLink(
+        frame_name="ops",
+        source_kind="frame",
+        source_id="ops",
+    )
+    link._lock = _CoordinatedLock(link)
+
+    first = threading.Thread(target=link.cleanup)
+    second = threading.Thread(target=link.cleanup)
+    first.start()
+    second.start()
+    first.join(timeout=1.0)
+    second.join(timeout=1.0)
+
+    assert link.cleaned is True

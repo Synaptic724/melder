@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aether import Aether
@@ -732,6 +732,222 @@ class CommandSystem(Cleanable):
             )
             return tuple(conduit.get_links())
 
+    def get_lesser_conduit(
+            self,
+            parent_conduit_id: str,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one lesser conduit linked beneath a parent conduit.
+
+        Args:
+            parent_conduit_id:
+                Parent conduit id that owns the lesser lineage.
+            conduit_id:
+                Lesser conduit id to resolve.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            object: Matching lesser conduit object, or None when missing.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                parent_conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return conduit.get_lesser_conduit(conduit_id)
+
+    def get_initiated_conduit(
+            self,
+            conduit_id: str,
+            peer_conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one outbound linked conduit from a source conduit.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return conduit.get_initiated_conduit(peer_conduit_id)
+
+    def get_provider_conduit(
+            self,
+            conduit_id: str,
+            peer_conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one inbound provider conduit for a source conduit.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return conduit.get_provider_conduit(peer_conduit_id)
+
+    def get_initiated_conduits(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[object, ...]:
+        """
+        Return the outbound linked conduits for one conduit.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return tuple(conduit.get_initiated_conduits())
+
+    def get_provider_conduits(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[object, ...]:
+        """
+        Return the inbound provider conduits for one conduit.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return tuple(conduit.get_provider_conduits())
+
+    def get_contracted_conduits(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return the contracted peer conduits for one conduit.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return conduit.get_contracted_conduits()
+
+    def get_spell_in_contracts(
+            self,
+            conduit_id: str,
+            spell_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one contracted spell lookup result from a conduit.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return conduit.get_spell_in_contracts(spell_id)
+
+    def get_spells_in_contract_by_conduit(
+            self,
+            conduit_id: str,
+            peer_conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return contracted spell data keyed by peer conduit id.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return conduit.get_spells_in_contract_by_conduit(peer_conduit_id)
+
+    def get_spells_in_contract_by_conduit_name(
+            self,
+            conduit_id: str,
+            conduit_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return contracted spell data keyed by peer conduit name.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return conduit.get_spells_in_contract_by_conduit_name(conduit_name)
+
+    def describe_spells_in_conduit(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[dict[str, Any]]:
+        """
+        Return the spell description payloads exposed by one conduit.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return conduit.describe_spells_in_conduit()
+
+    def get_resolution_state(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return the conduit-scoped resolution state for one conduit.
+        """
+        self.check_cleaned()
+        with self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self.get_conduit_by_id(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return conduit.get_resolution_state()
+
     def list_conduit_ids(
             self,
             *,
@@ -1303,6 +1519,17 @@ class CommandSystem(Cleanable):
             "link",
             "sever_link",
             "get_links",
+            "get_lesser_conduit",
+            "get_initiated_conduit",
+            "get_provider_conduit",
+            "get_initiated_conduits",
+            "get_provider_conduits",
+            "get_contracted_conduits",
+            "get_spell_in_contracts",
+            "get_spells_in_contract_by_conduit",
+            "get_spells_in_contract_by_conduit_name",
+            "describe_spells_in_conduit",
+            "get_resolution_state",
             "get_spell_by_source_id",
             "get_spell_by_index_id",
             "get_spell_by_id",
