@@ -659,7 +659,6 @@ def test_meld_forwards_non_string_spell_name(conduit_lesser: Conduit) -> None:
         spellframe=None,
         binding_name=None,
         spell_override=None,
-        existing_only=False,
     )
 
 
@@ -689,7 +688,6 @@ def test_meld_forwards_non_string_binding_name(conduit_lesser: Conduit) -> None:
         spellframe=None,
         binding_name=5,
         spell_override=None,
-        existing_only=False,
     )
 
 
@@ -724,32 +722,29 @@ def test_meld_delegates_to_meld_instance(conduit_lesser: Conduit) -> None:
         spellframe="frame",
         binding_name="bind",
         spell_override={"k": "v"},
-        existing_only=False,
     )
     assert result == "result"
 
 
-def test_meld_forwards_existing_only_flag(conduit_lesser: Conduit) -> None:
+def test_meld_existing_spell_delegates_to_meld_instance(conduit_lesser: Conduit) -> None:
     """
-    Verify the conduit meld facade forwards `existing_only` unchanged.
+    Verify the conduit existing-only meld facade delegates unchanged.
 
     Contract:
-        - Conduit does not reinterpret the flag.
-        - The underlying Meld instance receives the exact value.
+        - Conduit does not reinterpret the identity inputs.
+        - The underlying Meld instance receives the dedicated cold-path call.
     """
     conduit_lesser._meld = MagicMock()
-    conduit_lesser._meld.meld.return_value = "result"
+    conduit_lesser._meld.meld_existing_spell.return_value = "result"
 
-    result = conduit_lesser.meld(spell="sha-1", existing_only=True)
+    result = conduit_lesser.meld_existing_spell(spell="sha-1")
 
     assert result == "result"
-    conduit_lesser._meld.meld.assert_called_once_with(
+    conduit_lesser._meld.meld_existing_spell.assert_called_once_with(
         spell_name=None,
         spell="sha-1",
         spellframe=None,
         binding_name=None,
-        spell_override=None,
-        existing_only=True,
     )
 
 

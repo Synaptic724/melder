@@ -2445,7 +2445,6 @@ class Conduit(Cleanable, IConduit):
             spellframe: str | object | None = None,
             binding_name: str | None = None,
             spell_override: Optional[dict | list | tuple] = None,
-            existing_only: bool = False,
     ) -> Optional[Any]:
         """
         Public API
@@ -2495,10 +2494,6 @@ class Conduit(Cleanable, IConduit):
                 Optional per-call override payload (dict / list / tuple)
                 passed through to ``Meld.meld`` for constructor/factory
                 argument overrides.
-            existing_only:
-                When True, return an already-existing live object or fail
-                without creating a new one.
-
         Returns:
             Any:
                 The resolved component instance (reused or newly
@@ -2547,7 +2542,6 @@ class Conduit(Cleanable, IConduit):
                     spellframe=spellframe,
                     binding_name=binding_name,
                     spell_override=spell_override,
-                    existing_only=existing_only,
                 )
             finally:
                 creation_gate.unregister_ticket()
@@ -2558,7 +2552,83 @@ class Conduit(Cleanable, IConduit):
             spellframe=spellframe,
             binding_name=binding_name,
             spell_override=spell_override,
-            existing_only=existing_only,
+        )
+
+    def meld_existing_spell(
+            self,
+            spell_name: str | None = None,
+            *,
+            spell: str | object | None = None,
+            spellframe: str | object | None = None,
+            binding_name: str | None = None,
+    ) -> Any:
+        """
+        Public API
+
+        Return an already-existing live object for one resolved spell.
+
+        Purpose:
+            Expose the cold-path reuse-only runtime operation without adding
+            branches to the hot `meld(...)` path.
+
+        Args:
+            spell_name:
+                Logical spell name (string). When provided without an explicit
+                `spell` or `spellframe`, this is treated as the name-based key
+                for resolution.
+            spell:
+                Primary spell identifier as spell id string or spell object.
+            spellframe:
+                Optional spellframe / protocol / string frame key used for
+                resolution.
+            binding_name:
+                Optional binding name associated with the spell.
+
+        Returns:
+            Any: Existing live runtime object for the resolved spell.
+
+        Raises:
+            RuntimeError:
+                - If the Conduit has been cleaned.
+                - If the underlying `Meld` instance is missing.
+                - If the CreationGate is closed.
+            ValueError:
+                If the resolved spell is not currently live.
+            RuntimeError:
+                If the lifecycle does not support deterministic
+                existing-object retrieval.
+        """
+        self.check_cleaned()
+
+        meld_component = self._meld
+
+        if self.__dynamic_environment__:
+            creation_gate = self._creation_gate
+
+            if creation_gate.is_closed():
+                raise RuntimeError(f"[CONDUIT: {self.id}] CreationGate is closed.")
+
+            if not creation_gate.enabled:
+                creation_gate.wait()
+                if creation_gate.is_closed():
+                    raise RuntimeError(f"[CONDUIT: {self.id}] CreationGate is closed.")
+
+            try:
+                creation_gate.register_ticket()
+                return meld_component.meld_existing_spell(
+                    spell_name=spell_name,
+                    spell=spell,
+                    spellframe=spellframe,
+                    binding_name=binding_name,
+                )
+            finally:
+                creation_gate.unregister_ticket()
+
+        return meld_component.meld_existing_spell(
+            spell_name=spell_name,
+            spell=spell,
+            spellframe=spellframe,
+            binding_name=binding_name,
         )
 
     def has_live_creation(

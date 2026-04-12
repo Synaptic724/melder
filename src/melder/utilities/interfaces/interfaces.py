@@ -3476,7 +3476,6 @@ class IMeld(ICleanable, Protocol):
             spellframe: str | object | None = None,
             binding_name: str | None = None,
             spell_override: Optional[dict | list | tuple] = None,
-            existing_only: bool = False,
     ) -> Optional[Any]:
         """
         Resolves and creates an instance of a spell.
@@ -3487,8 +3486,19 @@ class IMeld(ICleanable, Protocol):
             spellframe (str | object, optional): Spellframe / protocol / frame key.
             binding_name (str, optional): Binding name used for lookup.
             spell_override (dict | list | tuple, optional): Per-call override payload.
-            existing_only (bool, optional): Return an already-existing object
-                or fail without creating when True.
+        """
+        ...
+
+    def meld_existing_spell(
+            self,
+            spell_name: str | None = None,
+            *,
+            spell: str | object | None = None,
+            spellframe: str | object | None = None,
+            binding_name: str | None = None,
+    ) -> Any:
+        """
+        Return an already-existing live object for one resolved spell.
         """
         ...
 
@@ -5318,7 +5328,6 @@ class IConduit(ICleanable, Protocol):
             spellframe: str | object | None = None,
             binding_name: str | None = None,
             spell_override: Optional[dict | list | tuple] = None,
-            existing_only: bool = False,
     ) -> Optional[Any]:
         """
         Public API
@@ -5358,9 +5367,6 @@ class IConduit(ICleanable, Protocol):
                 Optional per-call override payload (dict / list / tuple)
                 passed through to ``Meld.meld`` for constructor/factory
                 argument overrides.
-            existing_only:
-                When True, return an already-existing live object or fail
-                without creating a new one.
 
         Returns:
             Any:
@@ -5384,6 +5390,38 @@ class IConduit(ICleanable, Protocol):
                 existence modes not yet implemented.
             HookExecutionError:
                 Propagated from ``Meld.meld`` if hook execution fails.
+        """
+        ...
+
+    def meld_existing_spell(
+            self,
+            spell_name: str | None = None,
+            *,
+            spell: str | object | None = None,
+            spellframe: str | object | None = None,
+            binding_name: str | None = None,
+    ) -> Any:
+        """
+        Public API
+
+        Return an already-existing live object for one resolved spell.
+
+        Args:
+            spell_name:
+                Logical spell name (string). When provided without an explicit
+                `spell` or `spellframe`, this is treated as the name-based key
+                for resolution.
+            spell:
+                Primary spell identifier as spell id string or spell object.
+            spellframe:
+                Optional spellframe / protocol / string frame key used for
+                resolution.
+            binding_name:
+                Optional binding name associated with the spell.
+
+        Returns:
+            Any:
+                Existing live runtime object for the resolved spell.
         """
         ...
 

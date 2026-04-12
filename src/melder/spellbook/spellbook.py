@@ -1120,7 +1120,8 @@ class Spellbook(Cleanable, ISpellbook):
             Optional[ISpell]:
                 The spell object if found, else ``None``.
         """
-        spell = self._spells.get(spell_index)
+        with self._lock:
+            spell = self._spells.get(spell_index, None)
         return spell
 
     def _find_contracted_spell(self, spell_index: SpellIndex) -> Optional[ISpell]:
@@ -1138,10 +1139,12 @@ class Spellbook(Cleanable, ISpellbook):
         Raises:
             RuntimeError: If the contracted spell with the given ID is not found.
         """
-        for contracted_spells in self._contracted_spells.values():
-            if spell_index in contracted_spells:
-                return contracted_spells[spell_index]
-        self._logger.error(f"Contracted spell with ID {spell_index} not found.", "_find_contracted_spell", exc_info=True)
+        self.check_cleaned()
+        with self._lock:
+            for contracted_spells in self._contracted_spells.values():
+                if spell_index in contracted_spells:
+                    return contracted_spells[spell_index]
+            self._logger.error(f"Contracted spell with ID {spell_index} not found.", "_find_contracted_spell", exc_info=True)
         raise RuntimeError(f"Contracted spell with ID {spell_index} not found in the spellbook.")
 
     def _find_spell_index_by_index_id(

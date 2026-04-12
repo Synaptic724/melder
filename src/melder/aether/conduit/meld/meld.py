@@ -222,7 +222,6 @@ class Meld(Cleanable, IMeld):
             spellframe: str | object | None = None,
             binding_name: str | None = None,
             spell_override: Optional[dict | list | tuple] = None,
-            existing_only: bool = False,
     ) -> Optional[Any]:
         """
         Entry point for resolving and activating a spell (component) within this Conduit.
@@ -259,18 +258,6 @@ class Meld(Cleanable, IMeld):
                 represents **per-call overrides** (constructor arguments, factory
                 inputs, etc.) and is normalized into a dictionary by
                 :meth:`_normalize_spell_override`.
-            existing_only (bool):
-                When True, return an already-live object or fail without
-                entering any creation path.
-
-                Semantics:
-                - `dict`  → treated as keyword-style overrides (param_name → value).
-                - `list` / `tuple` → treated as positional overrides, stored under
-                  a special internal key (e.g. `"__args__"`).
-
-                This data is **not** written onto the Spell itself; it is intended
-                to be consumed by the runtime codegen layer for this specific
-                meld invocation.
 
         Returns:
             Optional[Any]:
@@ -338,9 +325,6 @@ class Meld(Cleanable, IMeld):
                         None,
                     )
                 input_resolution_cache[cache_key] = target_spell
-
-        if existing_only:
-            return self._resolve_existing_only_object(target_spell)
 
         # 3) SpellSystemState / SpellValidity gate + lazy revalidation.
         if self._spellbook._spellbook_validation_required:
@@ -410,6 +394,151 @@ class Meld(Cleanable, IMeld):
             # 3) Return the resolved instance.
             return instance
 
+    def meld_existing_spell(
+            self,
+            spell_name: str | None = None,
+            *,
+            spell: str | object | None = None,
+            spellframe: str | object | None = None,
+            binding_name: str | None = None,
+    ) -> Any:
+        """
+        Return an already-live object for one resolved spell or fail.
+
+        Purpose:
+            Provide a cold-path reuse-only runtime operation that resolves
+            spell identity the same way `meld(...)` does but never creates.
+
+        Contract:
+            - Reuses the same spell identity inputs accepted by `meld(...)`.
+            - Never enters any creation path.
+            - Returns one already-live object or raises.
+            - Supports only lifecycles that can resolve to one deterministic
+              existing object.
+
+        Args:
+            spell_name:
+                Optional logical spell name for name-based resolution.
+            spell:
+                Optional spell id string or spell object used for resolution.
+            spellframe:
+                Optional spellframe / protocol / frame key used for
+                resolution.
+            binding_name:
+                Optional binding name used for lookup-key resolution.
+
+        Returns:
+            Any: Existing live runtime object for the resolved spell.
+
+        Raises:
+            ValueError:
+                If the spell is not currently live.
+            RuntimeError:
+                If the spell lifecycle does not support unambiguous
+                existing-object retrieval.
+        """
+        target_spell: Optional[ISpell] = None
+        if isinstance(spell, str):
+            spell_id_resolution_cache = self._spell_id_resolution_cache
+            target_spell = spell_id_resolution_cache.get(spell)
+            if target_spell is None:
+                target_spell = self._resolve_spell_by_id(spell)
+                if len(spell_id_resolution_cache) >= self._max_resolution_cache_size:
+                    spell_id_resolution_cache.pop(
+                        next(iter(spell_id_resolution_cache)),
+                        None,
+                    )
+                spell_id_resolution_cache[spell] = target_spell
+        else:
+            input_resolution_cache = self._input_resolution_cache
+            cache_key = (spell_name, spell, spellframe, binding_name)
+            try:
+                target_spell = input_resolution_cache.get(cache_key)
+            except TypeError:
+                cache_key = (
+                    spell_name,
+                    id(spell),
+                    id(spellframe),
+                    binding_name,
+                )
+                target_spell = input_resolution_cache.get(cache_key)
+            if target_spell is None:
+                target_spell = self._resolve_spell(
+                    spell=spell,
+                    spell_name=spell_name,
+                    spellframe=spellframe,
+                    binding_name=binding_name,
+                )
+                if len(input_resolution_cache) >= self._max_resolution_cache_size:
+                    input_resolution_cache.pop(
+                        next(iter(input_resolution_cache)),
+                        None,
+                    )
+                input_resolution_cache[cache_key] = target_spell
+
+        if target_spell.is_existing_creation:
+            if target_spell.user_created_object is None:
+                raise ValueError(
+                    "Spell '{0}' is not live.".format(target_spell.spell_id)
+                )
+            return target_spell.user_created_object
+
+        existence = target_spell.existence
+        spell_id = target_spell.spell_id
+        caller_creations = self._creations
+
+        if existence is Existence.many:
+            raise RuntimeError(
+                "meld_existing_spell is not supported for Existence.many."
+            )
+
+        if existence is Existence.unique_per_conduit:
+            creation = caller_creations._creations.get(spell_id)
+            if creation is None:
+                raise ValueError(
+                    "Spell '{0}' is not live.".format(spell_id)
+                )
+            return creation.value
+
+        if existence is Existence.unique_per_spell_space:
+            spellspace = caller_creations._conduit.get_active_spellspace()
+            if spellspace is None:
+                raise ValueError(
+                    "Spell '{0}' is not live.".format(spell_id)
+                )
+            creation = caller_creations.get_spellspace_creation(
+                spellspace.id,
+                spell_id,
+            )
+            if creation is None:
+                raise ValueError(
+                    "Spell '{0}' is not live.".format(spell_id)
+                )
+            return creation.value
+
+        if existence in {
+                Existence.unique,
+                Existence.unique_per_conduit_cluster,
+                Existence.unique_per_conduit_lineage,
+        }:
+            owner_creations = target_spell._owner_creations
+            if owner_creations is None:
+                raise ValueError(
+                    "Spell '{0}' is not live.".format(spell_id)
+                )
+            creation = owner_creations._creations.get(spell_id)
+            if creation is None:
+                raise ValueError(
+                    "Spell '{0}' is not live.".format(spell_id)
+                )
+            return creation.value
+
+        raise RuntimeError(
+            "meld_existing_spell is unsupported for existence '{0}'.".format(
+                existence.name
+            )
+        )
+
     def has_live_creation(
             self,
             spell_name: str | None = None,
@@ -465,92 +594,6 @@ class Meld(Cleanable, IMeld):
             spellframe=spellframe,
             binding_name=binding_name,
         )["is_live"]
-
-    def _resolve_existing_only_object(self, spell: ISpell) -> Any:
-        """
-        Return an already-live object for one resolved spell or fail.
-
-        Purpose:
-            Support `existing_only=True` without falling through to the normal
-            creation path.
-
-        Args:
-            spell:
-                Resolved spell object whose live runtime object should be
-                returned.
-
-        Returns:
-            Any: Existing live runtime object for the resolved spell.
-
-        Raises:
-            ValueError:
-                If the spell is not currently live.
-            RuntimeError:
-                If the spell lifecycle does not support unambiguous
-                existing-only retrieval.
-        """
-        if spell.is_existing_creation:
-            if spell.user_created_object is None:
-                raise ValueError(
-                    "Spell '{0}' is not live.".format(spell.spell_id)
-                )
-            return spell.user_created_object
-
-        existence = spell.existence
-        spell_id = spell.spell_id
-        caller_creations = self._creations
-
-        if existence is Existence.many:
-            raise RuntimeError(
-                "existing_only meld is not supported for Existence.many."
-            )
-
-        if existence is Existence.unique_per_conduit:
-            creation = caller_creations._creations.get(spell_id)
-            if creation is None:
-                raise ValueError(
-                    "Spell '{0}' is not live.".format(spell_id)
-                )
-            return creation.value
-
-        if existence is Existence.unique_per_spell_space:
-            spellspace = caller_creations._conduit.get_active_spellspace()
-            if spellspace is None:
-                raise ValueError(
-                    "Spell '{0}' is not live.".format(spell_id)
-                )
-            creation = caller_creations.get_spellspace_creation(
-                spellspace.id,
-                spell_id,
-            )
-            if creation is None:
-                raise ValueError(
-                    "Spell '{0}' is not live.".format(spell_id)
-                )
-            return creation.value
-
-        if existence in {
-                Existence.unique,
-                Existence.unique_per_conduit_cluster,
-                Existence.unique_per_conduit_lineage,
-        }:
-            owner_creations = spell._owner_creations
-            if owner_creations is None:
-                raise ValueError(
-                    "Spell '{0}' is not live.".format(spell_id)
-                )
-            creation = owner_creations._creations.get(spell_id)
-            if creation is None:
-                raise ValueError(
-                    "Spell '{0}' is not live.".format(spell_id)
-                )
-            return creation.value
-
-        raise RuntimeError(
-            "existing_only meld is unsupported for existence '{0}'.".format(
-                existence.name
-            )
-        )
 
     def describe_live_creation_status(
             self,
