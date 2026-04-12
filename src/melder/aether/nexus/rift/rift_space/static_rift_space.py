@@ -26,6 +26,13 @@ class StaticRiftSpace(RiftSpace, IStaticRiftSpace):
         - Fixes `space_kind` to `static`.
         - Represents the lower-risk room surface where declared targets and a
           more stable local structure are the primary operational model.
+        - Wraps attached viewers into `StaticFrameViewer`.
+        - Uses the static command posture:
+          - live-only spell retrieval
+          - no topology mutation
+          - no direct create-path spell activation
+          - `meld_existing_spell(...)` remains allowed
+        - Workstation defaults weak when binds omit `weak_ref`.
     """
 
     def __init__(

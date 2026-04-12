@@ -29,6 +29,10 @@ class CapabilityRiftSpace(RiftSpace, ICapabilityRiftSpace):
         - Allows broad manual object/runtime work through the composed command
           surface.
         - Does not override underlying Melder frame/runtime truth.
+        - Uses the generic viewer posture.
+        - Workstation defaults strong when binds omit `weak_ref`.
+        - Keeps deeper conduit APIs object-oriented once callers obtain the
+          conduit object instead of mirroring every lower method into command.
     """
 
     def __init__(

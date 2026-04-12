@@ -23,6 +23,10 @@ class DynamicRiftSpace(RiftSpace, IDynamicRiftSpace):
         - Fixes `space_kind` to `dynamic`.
         - Represents the richer room surface intended for local construction,
           mutable room state, and more open-ended workflows.
+        - Currently shares the same broad manual runtime command posture as
+          capability.
+        - Reserved for later codegen-oriented differentiation rather than a
+          different current manual-runtime policy.
     """
 
     def __init__(

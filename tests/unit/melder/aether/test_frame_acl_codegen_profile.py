@@ -66,6 +66,20 @@ def test_frame_acl_codegen_profile_rejects_empty_validation_strategy_name() -> N
         )
 
 
+def test_frame_acl_codegen_profile_rejects_empty_name_and_version() -> None:
+    """
+    Verify codegen profiles reject empty required constructor fields.
+
+    Returns:
+        None.
+    """
+    with pytest.raises(ValueError, match="name cannot be empty"):
+        FrameACLCodegenProfile("")
+
+    with pytest.raises(ValueError, match="version cannot be empty"):
+        FrameACLCodegenProfile("custom", version="")
+
+
 def test_frame_acl_codegen_profile_create_precision_exposes_precision_identity() -> None:
     """
     Verify the reusable precision codegen profile can be created directly.
@@ -77,6 +91,19 @@ def test_frame_acl_codegen_profile_create_precision_exposes_precision_identity()
 
     assert profile.name == "precision"
     assert profile.validation_strategy_name == "precision"
+
+
+def test_frame_acl_codegen_profile_create_hybrid_exposes_hybrid_identity() -> None:
+    """
+    Verify the reusable hybrid codegen profile can be created directly.
+
+    Returns:
+        None.
+    """
+    profile = FrameACLCodegenProfile.create_hybrid()
+
+    assert profile.name == "hybrid"
+    assert profile.validation_strategy_name == "generic"
 
 
 def test_frame_acl_codegen_profile_cleanup_is_idempotent() -> None:

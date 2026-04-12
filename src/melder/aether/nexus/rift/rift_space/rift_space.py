@@ -41,6 +41,28 @@ class RiftSpace(Cleanable, IRiftSpace):
         - Does not yet implement full action history, memory points,
           checkpoints, or disposition semantics.
 
+    Room Mode Matrix:
+        Shared base behavior:
+        - Every room owns a workstation, command system, viewer attachment
+          point, selected-target state, and room-local event queue/config.
+        - Lower Melder frame/runtime truth still governs what actually works on
+          automatic versus dynamic frames.
+
+        `static`:
+        - Uses the static viewer/command specializations.
+        - Spell-facing room surface is live-only and more restrictive.
+        - Workstation defaults weak when binds omit `weak_ref`.
+
+        `capability`:
+        - Uses the broad manual runtime command surface.
+        - Workstation defaults strong when binds omit `weak_ref`.
+        - No codegen distinction is added here.
+
+        `dynamic`:
+        - Currently uses the same broad manual runtime command surface as
+          capability.
+        - Intended to be the later codegen-oriented room.
+
     Lifecycle:
         Owned by a `Rift`. Cleanup clears room-local fields and cleans
         the attached `RiftEventConfiguration` plus the owned workstation.

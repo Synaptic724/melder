@@ -48,6 +48,23 @@ class Rift(Cleanable, IRift):
         - Treats `Aether` as hidden substrate reached later by lower runtime
           layers such as workstation/workspace logic.
 
+    Room Mode Matrix:
+        - `static`
+          - Programs `StaticRiftSpace`.
+          - Uses the static viewer/command posture.
+          - Defaults workstation binds to weak when callers omit `weak_ref`.
+          - Denies topology mutation and direct create-path spell activation.
+        - `capability`
+          - Programs `CapabilityRiftSpace`.
+          - Broad manual runtime/object access without codegen.
+          - Defaults workstation binds to strong.
+          - Lower Melder frame/runtime truth still decides what actually works.
+        - `dynamic`
+          - Programs `DynamicRiftSpace`.
+          - Currently shares the same broad manual runtime posture as
+            capability.
+          - Reserved for later codegen-oriented differentiation.
+
     Lifecycle:
         Created by `Nexus`, then registered into the Nexus registry. Cleanup
         clears room registries and owned live-state references.
@@ -1056,6 +1073,10 @@ class Rift(Cleanable, IRift):
             - Uses the configured space name and a cloned event configuration.
             - Registers the resulting room immediately so the Rift always has
               a working primary-space anchor after creation.
+            - Current mapping is:
+              - `static` -> `StaticRiftSpace`
+              - `capability` -> `CapabilityRiftSpace`
+              - `dynamic` -> `DynamicRiftSpace`
 
         Args:
             space_id:

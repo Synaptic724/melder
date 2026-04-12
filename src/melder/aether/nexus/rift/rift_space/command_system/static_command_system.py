@@ -87,10 +87,39 @@ class StaticCommandSystem(CommandSystem):
                 Always, because static rooms must use the published live-only
                 spell surface instead of direct raw conduit activation.
         """
-        raise ValueError(
-            "Static command surface does not allow spell activation method '{0}'.".format(
-                method_name
+        if method_name == "meld":
+            raise ValueError(
+                "Static command surface does not allow spell activation method '{0}'.".format(
+                    method_name
+                )
             )
+
+    def list_clusters(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> tuple[str, ...]:
+        """
+        Deny cluster listing through the static command surface.
+
+        Args:
+            conduit_id:
+                Ignored conduit id from the shared command signature.
+            frame_name:
+                Ignored frame name from the shared command signature.
+
+        Returns:
+            tuple[str, ...]: Never returns successfully.
+
+        Raises:
+            ValueError:
+                Always, because static rooms do not expose cluster topology.
+        """
+        _ = conduit_id
+        _ = frame_name
+        raise ValueError(
+            "Static command surface does not allow cluster query method 'list_clusters'."
         )
 
     def get_spell_by_source_id(
@@ -503,10 +532,10 @@ class StaticCommandSystem(CommandSystem):
             "delete_cluster",
             "join_cluster",
             "leave_cluster",
+            "list_clusters",
             "link",
             "sever_link",
             "meld",
-            "meld_existing_spell",
         }
         return tuple(
             method_name

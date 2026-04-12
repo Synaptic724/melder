@@ -3184,20 +3184,75 @@ def test_static_command_system_denies_direct_spell_activation_methods() -> None:
         None.
     """
     space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
-    denied_calls = (
-        lambda: space.command_system.meld("conduit-1", spell="sha-1"),
-        lambda: space.command_system.meld_existing_spell(
-            "conduit-1",
-            spell="sha-1",
-        ),
+    with pytest.raises(
+            ValueError,
+            match="Static command surface does not allow spell activation method 'meld'",
+    ):
+        space.command_system.meld("conduit-1", spell="sha-1")
+
+
+def test_static_command_system_allows_meld_existing_spell() -> None:
+    """
+    Verify static rooms allow the reuse-only spell activation helper.
+
+    Returns:
+        None.
+    """
+    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        enabled_conduit_ids=("ops-conduit",),
+    )
+    space.attach_frame_viewer(viewer)
+    runtime_object = object()
+    owner_conduit = SimpleNamespace(
+        meld_existing_spell=lambda **kwargs: runtime_object,
+    )
+    space.command_system._aether = SimpleNamespace(
+        get_conduit_by_id=lambda conduit_id, frame_name: owner_conduit,
     )
 
-    for denied_call in denied_calls:
-        with pytest.raises(
-                ValueError,
-                match="Static command surface does not allow spell activation method",
-        ):
-            denied_call()
+    result = space.command_system.meld_existing_spell(
+        "ops-conduit",
+        spell="sha-1",
+        frame_name="ops",
+    )
+
+    assert result is runtime_object
+
+
+def test_static_command_system_denies_list_clusters() -> None:
+    """
+    Verify static rooms do not expose cluster topology through command.
+
+    Returns:
+        None.
+    """
+    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+
+    with pytest.raises(
+            ValueError,
+            match="Static command surface does not allow cluster query method 'list_clusters'",
+    ):
+        space.command_system.list_clusters("conduit-1")
 
 
 def test_static_command_system_lists_only_supported_methods() -> None:
@@ -3213,10 +3268,11 @@ def test_static_command_system_lists_only_supported_methods() -> None:
 
     assert "create_lesser_conduit" not in supported_methods
     assert "create_cluster" not in supported_methods
+    assert "list_clusters" not in supported_methods
     assert "link" not in supported_methods
     assert "sever_link" not in supported_methods
     assert "meld" not in supported_methods
-    assert "meld_existing_spell" not in supported_methods
+    assert "meld_existing_spell" in supported_methods
     assert "get_conduit_by_id" in supported_methods
     assert "get_conduit_cloud" in supported_methods
 
