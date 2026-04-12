@@ -1807,14 +1807,14 @@ def test_static_room_returns_live_spell_runtime_object_by_index_id(
     space.attach_frame_viewer(viewer)
     live_spell_object = object()
     owner_conduit = SimpleNamespace(
-        _get_live_spell_runtime_object_by_index_id=lambda spell_index_id: (
-            live_spell_object if spell_index_id == "lineage-1" else None
+        meld_existing_spell=lambda *, spell_name=None, spell=None, spellframe=None, binding_name=None: (
+            live_spell_object if spell == "sha-1" else None
         )
     )
     monkeypatch.setattr(
-        type(space.command_system),
-        "get_conduit_object_by_id",
-        lambda self, conduit_id, *, frame_name=None: owner_conduit,
+        type(space.command_system)._aether,
+        "_get_conduit_by_id",
+        lambda conduit_id, frame_name: owner_conduit,
     )
 
     assert (
@@ -1884,12 +1884,14 @@ def test_static_room_denies_spell_runtime_object_when_not_live(
     )
     space.attach_frame_viewer(viewer)
     owner_conduit = SimpleNamespace(
-        _get_live_spell_runtime_object_by_index_id=lambda spell_index_id: None
+        meld_existing_spell=lambda *, spell_name=None, spell=None, spellframe=None, binding_name=None: (_ for _ in ()).throw(
+            ValueError("Spell 'sha-1' is not live.")
+        )
     )
     monkeypatch.setattr(
-        type(space.command_system),
-        "get_conduit_object_by_id",
-        lambda self, conduit_id, *, frame_name=None: owner_conduit,
+        type(space.command_system)._aether,
+        "_get_conduit_by_id",
+        lambda conduit_id, frame_name: owner_conduit,
     )
 
     with pytest.raises(

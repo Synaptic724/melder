@@ -101,50 +101,48 @@ class StaticCommandSystem(CommandSystem):
                 does not currently have a live creation.
         """
         self.check_cleaned()
-        with self._lock:
-            if not spell_index_id:
-                raise ValueError("spell_index_id cannot be empty.")
-            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            self._assert_frame_command_enabled(resolved_frame_name)
-            self._assert_spell_command_enabled(
-                spell_index_id,
-                frame_name=resolved_frame_name,
-            )
-            viewer = self._space.get_required_frame_viewer()
-            descriptor = viewer._get_required_frame_descriptor(resolved_frame_name)
-            matching_spell_records = [
-                spell_record
-                for spell_record in descriptor.spell_records_by_key.values()
-                if spell_record.spell_index_id == spell_index_id
-            ]
-            if len(matching_spell_records) == 0:
-                raise ValueError(
-                    "Spell index id '{0}' was not found in frame '{1}'.".format(
-                        spell_index_id,
-                        resolved_frame_name,
-                    )
-                )
-            for spell_record in matching_spell_records:
-                owner_conduit_id = spell_record.owner_conduit_id
-                if not owner_conduit_id:
-                    continue
-                owner_conduit = self.get_conduit_object_by_id(
-                    owner_conduit_id,
-                    frame_name=resolved_frame_name,
-                )
-                spell_runtime_object = (
-                    owner_conduit._get_live_spell_runtime_object_by_index_id(
-                        spell_index_id
-                    )
-                )
-                if spell_runtime_object is not None:
-                    return spell_runtime_object
+        if not spell_index_id:
+            raise ValueError("spell_index_id cannot be empty.")
+        resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+        self._assert_frame_command_enabled(resolved_frame_name)
+        self._assert_spell_command_enabled(
+            spell_index_id,
+            frame_name=resolved_frame_name,
+        )
+        viewer = self._space.get_required_frame_viewer()
+        descriptor = viewer._get_required_frame_descriptor(resolved_frame_name)
+        matching_spell_records = [
+            spell_record
+            for spell_record in descriptor.spell_records_by_key.values()
+            if spell_record.spell_index_id == spell_index_id
+        ]
+        if len(matching_spell_records) == 0:
             raise ValueError(
-                "Spell lineage '{0}' is not live in frame '{1}'.".format(
+                "Spell index id '{0}' was not found in frame '{1}'.".format(
                     spell_index_id,
                     resolved_frame_name,
                 )
             )
+        for spell_record in matching_spell_records:
+            owner_conduit_id = spell_record.owner_conduit_id
+            if not owner_conduit_id:
+                continue
+            owner_conduit = self._aether._get_conduit_by_id(
+                owner_conduit_id,
+                resolved_frame_name,
+            )
+            try:
+                return owner_conduit.meld_existing_spell(
+                    spell=spell_record.spell_id,
+                )
+            except ValueError:
+                continue
+        raise ValueError(
+            "Spell lineage '{0}' is not live in frame '{1}'.".format(
+                spell_index_id,
+                resolved_frame_name,
+            )
+        )
 
     def get_spell_object_by_id(
             self,
