@@ -8,6 +8,9 @@ from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguratio
 from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
+from melder.aether.nexus.acl.configurations.profiles.command.frame_acl_command_profile import (
+    FrameACLCommandProfile,
+)
 from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
@@ -115,6 +118,16 @@ class FrameACLCompiler(Cleanable):
             if configuration.codegen_configuration.precision_profile_name is not None
             else None
         )
+        command_profile = self._profile_builder.get_required_command_profile(
+            configuration.command_configuration.profile_name
+        )
+        command_precision_profile = (
+            self._profile_builder.get_required_command_precision_profile(
+                configuration.command_configuration.precision_profile_name
+            )
+            if configuration.command_configuration.precision_profile_name is not None
+            else None
+        )
 
         frame_payload_fields = self._compile_frame_payload_fields(
             view_profile,
@@ -147,6 +160,16 @@ class FrameACLCompiler(Cleanable):
             codegen_precision_profile,
             configuration,
         )
+        (
+            command_frame_enabled,
+            enabled_conduit_ids,
+            enabled_spell_index_ids,
+        ) = self._compile_command_enablement(
+            frame_descriptor,
+            command_profile,
+            command_precision_profile,
+            configuration,
+        )
 
         metadata = {
             "view_profile_name": view_profile.name,
@@ -163,9 +186,18 @@ class FrameACLCompiler(Cleanable):
                 if codegen_precision_profile is not None
                 else None
             ),
+            "command_profile_name": command_profile.name,
+            "command_profile_version": command_profile.version,
+            "command_precision_profile_name": (
+                command_precision_profile.name
+                if command_precision_profile is not None
+                else None
+            ),
             "visible_conduit_count": len(visible_conduit_ids),
             "visible_spell_count": len(visible_spell_keys),
             "visible_spell_index_count": len(visible_spell_index_ids),
+            "enabled_conduit_count": len(enabled_conduit_ids),
+            "enabled_spell_index_count": len(enabled_spell_index_ids),
         }
         return CompiledFrameACLAccessSurface(
             frame_name=frame_descriptor.frame_name,
@@ -174,12 +206,15 @@ class FrameACLCompiler(Cleanable):
             view_profile_version=view_profile.version,
             codegen_profile_name=codegen_profile.name,
             codegen_profile_version=codegen_profile.version,
+            command_frame_enabled=command_frame_enabled,
             allowed_kinds=tuple(sorted(allowed_kinds)),
             allowed_commands=tuple(sorted(allowed_commands)),
             frame_payload_fields=tuple(sorted(frame_payload_fields)),
             visible_conduit_ids=tuple(sorted(visible_conduit_ids)),
             visible_spell_keys=tuple(sorted(visible_spell_keys)),
             visible_spell_index_ids=tuple(sorted(visible_spell_index_ids)),
+            enabled_conduit_ids=tuple(sorted(enabled_conduit_ids)),
+            enabled_spell_index_ids=tuple(sorted(enabled_spell_index_ids)),
             conduit_payload_sections_by_id=conduit_payload_sections_by_id,
             spell_payload_sections_by_key=spell_payload_sections_by_key,
             metadata=metadata,
@@ -424,6 +459,83 @@ class FrameACLCompiler(Cleanable):
             allow_operations.update(ruleset_allows)
             deny_operations.update(ruleset_denies)
         return allow_operations.difference(deny_operations)
+
+    @staticmethod
+    def _compile_command_enablement(
+            frame_descriptor: FrameDescriptor,
+            command_profile: FrameACLCommandProfile,
+            precision_profile: FrameACLCommandProfile,
+            configuration: FrameACLConfiguration,
+    ) -> Tuple[bool, Set[str], Set[str]]:
+        """
+        Derive command enablement for frame/conduit/spell access paths.
+
+        Returns:
+            Tuple[bool, Set[str], Set[str]]: Frame enabled flag, enabled
+                conduit ids, and enabled spell index ids.
+        """
+        frame_allows, frame_denies = (
+            FrameACLCompiler._collect_effective_operation_effects_from_rulesets(
+                command_profile.frame_ruleset,
+                precision_profile.frame_ruleset if precision_profile is not None else None,
+                configuration.command_configuration.frame_override_ruleset,
+            )
+        )
+        conduit_allows, conduit_denies = (
+            FrameACLCompiler._collect_effective_operation_effects_from_rulesets(
+                command_profile.conduit_ruleset,
+                precision_profile.conduit_ruleset if precision_profile is not None else None,
+                configuration.command_configuration.conduit_override_ruleset,
+            )
+        )
+        spell_rulesets = (
+            command_profile.spell_ruleset,
+            precision_profile.spell_ruleset if precision_profile is not None else None,
+            configuration.command_configuration.spell_override_ruleset,
+        )
+        command_frame_enabled = (
+            "enable" in frame_allows and "enable" not in frame_denies
+        )
+        enabled_conduit_ids: Set[str] = set()
+        if "enable" in conduit_allows and "enable" not in conduit_denies:
+            enabled_conduit_ids.update(frame_descriptor.conduit_records_by_id.keys())
+        enabled_spell_index_ids: Set[str] = set()
+        selector_enable_rules_present = (
+            FrameACLCompiler._spell_selector_rules_present_for_operation(
+                "enable",
+                *spell_rulesets,
+            )
+        )
+        for spell_record in frame_descriptor.spell_records_by_key.values():
+            if selector_enable_rules_present:
+                selector_enable_allow, selector_enable_deny = (
+                    FrameACLCompiler._collect_selector_spell_operation_effects_for_record(
+                        "enable",
+                        spell_record,
+                        *spell_rulesets,
+                    )
+                )
+                if "enable" in selector_enable_deny:
+                    continue
+                if "enable" not in selector_enable_allow:
+                    continue
+            else:
+                spell_allows, spell_denies = (
+                    FrameACLCompiler._collect_effective_spell_operation_effects_for_record(
+                        spell_record,
+                        *spell_rulesets,
+                    )
+                )
+                if "enable" in spell_denies:
+                    continue
+                if "enable" not in spell_allows:
+                    continue
+            enabled_spell_index_ids.add(spell_record.spell_index_id)
+        return (
+            command_frame_enabled,
+            enabled_conduit_ids,
+            enabled_spell_index_ids,
+        )
 
     @staticmethod
     def _collect_operation_effects(

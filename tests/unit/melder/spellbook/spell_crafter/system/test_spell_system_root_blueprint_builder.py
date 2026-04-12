@@ -214,6 +214,34 @@ def test_build_root_blueprints_handles_unknown_root_id():
     assert bp.ordered_node_ids == ["missing"]
 
 
+def test_build_blueprint_for_spell_id_builds_non_root_blueprint():
+    deps = {"root": {"mid"}, "mid": {"leaf"}, "leaf": set()}
+    snapshot = _snapshot(deps, roots={"root"})
+
+    blueprint = SpellSystemRootBlueprintBuilder().build_blueprint_for_spell_id(
+        root_spell_id="mid",
+        snapshot=snapshot,
+    )
+
+    assert blueprint.root_spell_id == "mid"
+    assert set(blueprint.dag.nodes.keys()) == {"mid", "leaf"}
+    assert blueprint.ordered_node_ids == ["leaf", "mid"]
+
+
+def test_build_single_root_dag_respects_allowed_spell_ids_filter():
+    deps = {"root": {"mid", "blocked"}, "mid": {"leaf"}, "leaf": set(), "blocked": set()}
+
+    dag, ordered = SpellSystemRootBlueprintBuilder()._build_single_root_dag(
+        "root",
+        deps,
+        allowed_spell_ids={"root", "mid", "leaf"},
+    )
+
+    assert set(dag.nodes.keys()) == {"root", "mid", "leaf"}
+    assert "blocked" not in dag.nodes
+    assert ordered == ["leaf", "mid", "root"]
+
+
 def test_overlay_skips_missing_child_topology():
     deps = {"root": {"child"}, "child": {"leaf"}, "leaf": set()}
     root_top = SpellLocalTopology(
@@ -277,6 +305,45 @@ def test_overlay_allows_multiple_sockets_same_path():
     ]
     assert len(shared_refs) == 2
     assert {s.param_name for s in shared_refs} == {"shared"}
+
+
+def test_overlay_skips_revisiting_same_target_path_pair():
+    topo_root = SpellLocalTopology(
+        spell_id="root",
+        sockets=(
+            SpellSocketDescriptor("root", "shared", 0, SocketKind.NORMAL, False, False, ("child",)),
+            SpellSocketDescriptor("root", "shared", 1, SocketKind.NORMAL, False, False, ("child",)),
+        ),
+    )
+    topo_child = SpellLocalTopology(spell_id="child", sockets=())
+    deps = {"root": {"child"}, "child": set()}
+    snapshot = _snapshot(
+        deps,
+        roots={"root"},
+        topologies={"root": topo_root, "child": topo_child},
+    )
+
+    bp = SpellSystemRootBlueprintBuilder().build_root_blueprints(snapshot)["root"]
+    path_registry = bp.path_registry
+    shared_refs = [
+        s
+        for s in bp.socket_refs
+        if path_registry.materialize_path(s.param_path_id) == ("shared",)
+    ]
+
+    assert len(shared_refs) == 2
+
+
+def test_build_single_root_dag_skips_revisiting_reachable_ids():
+    deps = {"root": ["a", "a"], "a": set()}
+
+    dag, ordered = SpellSystemRootBlueprintBuilder()._build_single_root_dag(
+        "root",
+        deps,
+    )
+
+    assert set(dag.nodes.keys()) == {"root", "a"}
+    assert ordered == ["a", "root"]
 
 
 def test_dependency_without_topology_still_in_dag():

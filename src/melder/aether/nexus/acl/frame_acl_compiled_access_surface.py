@@ -31,12 +31,15 @@ class CompiledFrameACLAccessSurface(Cleanable):
         "_view_profile_version",
         "_codegen_profile_name",
         "_codegen_profile_version",
+        "_command_frame_enabled",
         "_allowed_kinds",
         "_allowed_commands",
         "_frame_payload_fields",
         "_visible_conduit_ids",
         "_visible_spell_keys",
         "_visible_spell_index_ids",
+        "_enabled_conduit_ids",
+        "_enabled_spell_index_ids",
         "_conduit_payload_sections_by_id",
         "_spell_payload_sections_by_key",
         "_metadata",
@@ -51,12 +54,15 @@ class CompiledFrameACLAccessSurface(Cleanable):
             view_profile_version: str,
             codegen_profile_name: str,
             codegen_profile_version: str,
+            command_frame_enabled: bool = False,
             allowed_kinds: Tuple[str, ...],
             allowed_commands: Tuple[str, ...],
             frame_payload_fields: Tuple[str, ...],
             visible_conduit_ids: Tuple[str, ...],
             visible_spell_keys: Tuple[Tuple[str, str], ...],
             visible_spell_index_ids: Tuple[str, ...],
+            enabled_conduit_ids: Tuple[str, ...] = tuple(),
+            enabled_spell_index_ids: Tuple[str, ...] = tuple(),
             conduit_payload_sections_by_id: Dict[str, Tuple[str, ...]],
             spell_payload_sections_by_key: Dict[Tuple[str, str], Tuple[str, ...]],
             metadata: Optional[Dict[str, object]] = None,
@@ -77,6 +83,8 @@ class CompiledFrameACLAccessSurface(Cleanable):
                 Effective reusable codegen profile name.
             codegen_profile_version:
                 Effective reusable codegen profile version.
+            command_frame_enabled:
+                True when frame-level command access is enabled.
             allowed_kinds:
                 Sorted visible kind names.
             allowed_commands:
@@ -90,6 +98,10 @@ class CompiledFrameACLAccessSurface(Cleanable):
             visible_spell_index_ids:
                 Sorted visible spell index ids compiled from selector-aware
                 spell visibility.
+            enabled_conduit_ids:
+                Sorted conduit ids enabled for command access.
+            enabled_spell_index_ids:
+                Sorted spell index ids enabled for command access.
             conduit_payload_sections_by_id:
                 Visible conduit payload sections keyed by conduit id.
             spell_payload_sections_by_key:
@@ -113,6 +125,7 @@ class CompiledFrameACLAccessSurface(Cleanable):
         self._view_profile_version: str = view_profile_version
         self._codegen_profile_name: str = codegen_profile_name
         self._codegen_profile_version: str = codegen_profile_version
+        self._command_frame_enabled: bool = bool(command_frame_enabled)
         self._allowed_kinds: Tuple[str, ...] = tuple(allowed_kinds)
         self._allowed_commands: Tuple[str, ...] = tuple(allowed_commands)
         self._frame_payload_fields: Tuple[str, ...] = tuple(frame_payload_fields)
@@ -122,6 +135,10 @@ class CompiledFrameACLAccessSurface(Cleanable):
         )
         self._visible_spell_index_ids: Tuple[str, ...] = tuple(
             visible_spell_index_ids
+        )
+        self._enabled_conduit_ids: Tuple[str, ...] = tuple(enabled_conduit_ids)
+        self._enabled_spell_index_ids: Tuple[str, ...] = tuple(
+            enabled_spell_index_ids
         )
         self._conduit_payload_sections_by_id: Dict[str, Tuple[str, ...]] = {
             conduit_id: tuple(sections)
@@ -160,12 +177,15 @@ class CompiledFrameACLAccessSurface(Cleanable):
             self._view_profile_version = None
             self._codegen_profile_name = None
             self._codegen_profile_version = None
+            self._command_frame_enabled = None
             self._allowed_kinds = None
             self._allowed_commands = None
             self._frame_payload_fields = None
             self._visible_conduit_ids = None
             self._visible_spell_keys = None
             self._visible_spell_index_ids = None
+            self._enabled_conduit_ids = None
+            self._enabled_spell_index_ids = None
             self._conduit_payload_sections_by_id = None
             self._spell_payload_sections_by_key = None
             self._metadata = None
@@ -239,6 +259,17 @@ class CompiledFrameACLAccessSurface(Cleanable):
         return self._codegen_profile_version
 
     @property
+    def command_frame_enabled(self) -> bool:
+        """
+        Return whether frame-level command access is enabled.
+
+        Returns:
+            bool: True when frame command access is enabled.
+        """
+        self.check_cleaned()
+        return self._command_frame_enabled
+
+    @property
     def allowed_kinds(self) -> Tuple[str, ...]:
         """
         Return the visible high-level kinds in this compiled surface.
@@ -303,6 +334,28 @@ class CompiledFrameACLAccessSurface(Cleanable):
         """
         self.check_cleaned()
         return self._visible_spell_index_ids
+
+    @property
+    def enabled_conduit_ids(self) -> Tuple[str, ...]:
+        """
+        Return conduit ids enabled for command access.
+
+        Returns:
+            Tuple[str, ...]: Enabled conduit ids.
+        """
+        self.check_cleaned()
+        return self._enabled_conduit_ids
+
+    @property
+    def enabled_spell_index_ids(self) -> Tuple[str, ...]:
+        """
+        Return spell index ids enabled for command access.
+
+        Returns:
+            Tuple[str, ...]: Enabled spell lineage ids.
+        """
+        self.check_cleaned()
+        return self._enabled_spell_index_ids
 
     @property
     def conduit_payload_sections_by_id(self) -> Dict[str, Tuple[str, ...]]:
