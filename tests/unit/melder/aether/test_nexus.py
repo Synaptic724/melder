@@ -21,6 +21,14 @@ from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
     FrameDescriptorPayload,
 )
+from melder.aether.nexus.frame_descriptor.conduit_descriptor_payload import (
+    ConduitDescriptorPayload,
+)
+from melder.aether.nexus.frame_descriptor.conduit_record import ConduitRecord
+from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
+    SpellDescriptorPayload,
+)
+from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.aether.nexus.nexus import Nexus
 from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
@@ -31,8 +39,12 @@ from melder.aether.nexus.rift.rift_space.capability_rift_space import Capability
 from melder.aether.nexus.rift.rift_space.dynamic_rift_space import DynamicRiftSpace
 from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
 from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
+from melder.aether.conduit.conduit_state.conduit_state import ConduitState
+from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
+from melder.aether.conduit.conduit_ward.policies.policies import Policies
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.configuration.system_state import SystemState
+from melder.spellbook.existence.existence import Existence
 
 
 @pytest.fixture(autouse=True)
@@ -1228,6 +1240,77 @@ def test_command_system_can_get_spell_object_by_id(
 
     result = space.command_system.get_spell_object_by_id(
         "sha-1",
+        frame_name="ops",
+    )
+
+    assert result is spell
+
+
+def test_command_system_can_get_spell_object_by_index_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify spell lookup resolves through spell_index_id using descriptor owner records.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="ops-spellbook",
+            frame_name="ops",
+            owner_conduit_id="ops-conduit",
+            spell_id="sha-1",
+            spell_index_id="lineage-1",
+            spell_name="OpsSpell",
+            spellframe=None,
+            binding_name="ops_spell",
+            permissions=Permissions.create,
+            existence=Existence.unique,
+            payload=SpellDescriptorPayload(
+                payload_type="detailed",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+    space.attach_frame_viewer(viewer)
+    spell = object()
+    owner_conduit = SimpleNamespace(
+        get_spell_by_index_id=lambda spell_index_id: (
+            spell if spell_index_id == "lineage-1" else None
+        )
+    )
+    monkeypatch.setattr(
+        type(space.command_system),
+        "get_conduit_object_by_id",
+        lambda self, conduit_id, *, frame_name=None: owner_conduit,
+    )
+
+    result = space.command_system.get_spell_object_by_index_id(
+        "lineage-1",
         frame_name="ops",
     )
 

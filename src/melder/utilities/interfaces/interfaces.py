@@ -6749,6 +6749,17 @@ class ICommandSystem(ICleanable, Protocol):
         """
         ...
 
+    def get_spell_object_by_index_id(
+            self,
+            spell_index_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one live spell object by stable spell index id.
+        """
+        ...
+
     def get_spell_object_by_id(
             self,
             spell_id: str,

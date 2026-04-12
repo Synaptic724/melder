@@ -1,3 +1,5 @@
+import threading
+
 import pytest
 
 from melder.spellbook.spell_crafter.symbolic_graph.spell_symbolic_graph import (
@@ -108,4 +110,53 @@ def test_cleanup_on_empty_dependencies_still_marks_cleaned():
     g = _graph([])
     g.cleanup()
     assert g._cleaned is True  # noqa: SLF001
+
+
+def test_cleanup_rechecks_cleaned_inside_lock() -> None:
+    """
+    Verify cleanup returns early when another thread marks the graph cleaned.
+
+    Returns:
+        None.
+    """
+
+    class _CoordinatedLock:
+        def __init__(self) -> None:
+            self._entered_first = threading.Event()
+            self._second_attempted = threading.Event()
+            self._lock = threading.RLock()
+
+        def __enter__(self):
+            if self._entered_first.is_set():
+                self._second_attempted.set()
+            self._lock.acquire()
+            if not self._entered_first.is_set():
+                self._entered_first.set()
+                assert self._second_attempted.wait(timeout=1.0)
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            self._lock.release()
+
+    graph = _graph([])
+    coordinated_lock = _CoordinatedLock()
+    graph._lock = coordinated_lock
+
+    thread_results = []
+
+    def _run_cleanup() -> None:
+        graph.cleanup()
+        thread_results.append(True)
+
+    first = threading.Thread(target=_run_cleanup)
+    second = threading.Thread(target=_run_cleanup)
+    first.start()
+    coordinated_lock._entered_first.wait(timeout=1.0)
+    second.start()
+    first.join(timeout=1.0)
+    second.join(timeout=1.0)
+
+    assert thread_results == [True, True]
+    assert graph.cleaned is True
+    assert graph._lock is None  # noqa: SLF001
 
