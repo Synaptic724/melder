@@ -2786,6 +2786,284 @@ def test_capability_room_broad_access_still_respects_automatic_runtime_floor() -
         spellbook.cleanup()
 
 
+def test_capability_room_can_access_conduit_cloud_on_dynamic_frame() -> None:
+    """
+    Verify capability can access the conduit cloud on a dynamic frame.
+
+    Returns:
+        None.
+    """
+    configuration = Configuration(aether_frame="ops_capability_dynamic")
+    configuration.dynamic_defaults()
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    configuration.set_property("rift_enabled", True)
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    spellbook = Spellbook(
+        aetheric_frame="ops_capability_dynamic",
+        configuration=configuration,
+    )
+    conduit = spellbook.conjure(name="root", automatic=False)
+    try:
+        space = CapabilityRiftSpace(owner_rift_id="rift-1", space_name="main")
+        viewer = _build_descriptor_backed_viewer("ops")
+        descriptor = viewer._get_required_frame_descriptor("ops")
+        descriptor.upsert_conduit_record(
+            ConduitRecord(
+                conduit_id=conduit.id,
+                root_conduit_id=conduit.id,
+                frame_name="ops",
+                origin_spellbook_id=spellbook.id,
+                payload=ConduitDescriptorPayload(
+                    conduit_name=conduit.name,
+                    conduit_state=ConduitState.normal,
+                    policy=Policies.default,
+                    peer_conduit_ids=tuple(),
+                ),
+            )
+        )
+        _replace_compiled_access_surface(
+            viewer,
+            "ops",
+            command_frame_enabled=True,
+            enabled_conduit_ids=(conduit.id,),
+        )
+        space.attach_frame_viewer(viewer)
+        space.command_system._aether = SimpleNamespace(
+            get_conduit_by_id=lambda conduit_id, frame_name: conduit,
+        )
+
+        capability_conduit = space.command_system.get_conduit_by_id(
+            conduit.id,
+            frame_name="ops",
+        )
+        space.workstation.bind_object("root", capability_conduit, weak_ref=False)
+        space.workstation.set_target("root", store="objects")
+
+        conduit_cloud = space.command_system.execute_target_method("get_conduit_cloud")
+
+        assert conduit_cloud.has_conduit_name("root") is True
+    finally:
+        conduit.cleanup()
+        spellbook.cleanup()
+
+
+def test_capability_room_can_create_lesser_conduit_on_automatic_frame() -> None:
+    """
+    Verify capability can create lesser conduits on an automatic frame.
+
+    Returns:
+        None.
+    """
+    configuration = Configuration(aether_frame="ops_capability_auto_lesser")
+    configuration.automatic_defaults()
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    configuration.set_property("rift_enabled", True)
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    spellbook = Spellbook(
+        aetheric_frame="ops_capability_auto_lesser",
+        configuration=configuration,
+    )
+    conduit = spellbook.conjure(name="root")
+    try:
+        space = CapabilityRiftSpace(owner_rift_id="rift-1", space_name="main")
+        viewer = _build_descriptor_backed_viewer("ops")
+        descriptor = viewer._get_required_frame_descriptor("ops")
+        descriptor.upsert_conduit_record(
+            ConduitRecord(
+                conduit_id=conduit.id,
+                root_conduit_id=conduit.id,
+                frame_name="ops",
+                origin_spellbook_id=spellbook.id,
+                payload=ConduitDescriptorPayload(
+                    conduit_name=conduit.name,
+                    conduit_state=ConduitState.normal,
+                    policy=Policies.default,
+                    peer_conduit_ids=tuple(),
+                ),
+            )
+        )
+        _replace_compiled_access_surface(
+            viewer,
+            "ops",
+            command_frame_enabled=True,
+            enabled_conduit_ids=(conduit.id,),
+        )
+        space.attach_frame_viewer(viewer)
+        space.command_system._aether = SimpleNamespace(
+            get_conduit_by_id=lambda conduit_id, frame_name: conduit,
+        )
+
+        capability_conduit = space.command_system.get_conduit_by_id(
+            conduit.id,
+            frame_name="ops",
+        )
+        space.workstation.bind_object("root", capability_conduit, weak_ref=False)
+        space.workstation.set_target("root", store="objects")
+
+        lesser = space.command_system.execute_target_method(
+            "create_lesser_conduit",
+            bind_as_name="lesser",
+            bind_as_store="objects",
+            bind_result_weak_ref=False,
+        )
+
+        assert lesser is space.workstation.get("lesser", store="objects")
+        assert lesser.id != conduit.id
+    finally:
+        conduit.cleanup()
+        spellbook.cleanup()
+
+
+def test_capability_room_can_manage_clusters_on_dynamic_frame() -> None:
+    """
+    Verify capability can create, join, and leave clusters on a dynamic frame.
+
+    Returns:
+        None.
+    """
+    configuration = Configuration(aether_frame="ops_capability_dynamic_cluster")
+    configuration.dynamic_defaults()
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    configuration.set_property("rift_enabled", True)
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    spellbook = Spellbook(
+        aetheric_frame="ops_capability_dynamic_cluster",
+        configuration=configuration,
+    )
+    conduit = spellbook.conjure(name="root", automatic=False)
+    try:
+        space = CapabilityRiftSpace(owner_rift_id="rift-1", space_name="main")
+        viewer = _build_descriptor_backed_viewer("ops")
+        descriptor = viewer._get_required_frame_descriptor("ops")
+        descriptor.upsert_conduit_record(
+            ConduitRecord(
+                conduit_id=conduit.id,
+                root_conduit_id=conduit.id,
+                frame_name="ops",
+                origin_spellbook_id=spellbook.id,
+                payload=ConduitDescriptorPayload(
+                    conduit_name=conduit.name,
+                    conduit_state=ConduitState.normal,
+                    policy=Policies.default,
+                    peer_conduit_ids=tuple(),
+                ),
+            )
+        )
+        _replace_compiled_access_surface(
+            viewer,
+            "ops",
+            command_frame_enabled=True,
+            enabled_conduit_ids=(conduit.id,),
+        )
+        space.attach_frame_viewer(viewer)
+        space.command_system._aether = SimpleNamespace(
+            get_conduit_by_id=lambda conduit_id, frame_name: conduit,
+        )
+
+        capability_conduit = space.command_system.get_conduit_by_id(
+            conduit.id,
+            frame_name="ops",
+        )
+        space.workstation.bind_object("root", capability_conduit, weak_ref=False)
+        space.workstation.set_target("root", store="objects")
+
+        space.command_system.execute_target_method("create_cluster", "alpha")
+        space.command_system.execute_target_method("join_cluster", "alpha")
+        clusters = space.command_system.execute_target_method("list_clusters")
+        space.command_system.execute_target_method("leave_cluster", "alpha")
+        after_leave = space.command_system.execute_target_method("list_clusters")
+
+        assert clusters == ["alpha"]
+        assert after_leave == []
+    finally:
+        conduit.cleanup()
+        spellbook.cleanup()
+
+
+def test_capability_room_can_link_conduits_on_dynamic_frame() -> None:
+    """
+    Verify capability can link conduits on a dynamic frame.
+
+    Returns:
+        None.
+    """
+    configuration = Configuration(aether_frame="ops_capability_dynamic_link")
+    configuration.dynamic_defaults()
+    configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
+    configuration.set_property("rift_enabled", True)
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    left_spellbook = Spellbook(
+        aetheric_frame="ops_capability_dynamic_link",
+        configuration=configuration,
+    )
+    right_spellbook = Spellbook(
+        aetheric_frame="ops_capability_dynamic_link",
+        configuration=configuration,
+    )
+    left_conduit = left_spellbook.conjure(name="left", automatic=False)
+    right_conduit = right_spellbook.conjure(name="right", automatic=False)
+    try:
+        space = CapabilityRiftSpace(owner_rift_id="rift-1", space_name="main")
+        viewer = _build_descriptor_backed_viewer("ops")
+        descriptor = viewer._get_required_frame_descriptor("ops")
+        for current_conduit, spellbook in (
+            (left_conduit, left_spellbook),
+            (right_conduit, right_spellbook),
+        ):
+            descriptor.upsert_conduit_record(
+                ConduitRecord(
+                    conduit_id=current_conduit.id,
+                    root_conduit_id=current_conduit.id,
+                    frame_name="ops",
+                    origin_spellbook_id=spellbook.id,
+                    payload=ConduitDescriptorPayload(
+                        conduit_name=current_conduit.name,
+                        conduit_state=ConduitState.normal,
+                        policy=Policies.default,
+                        peer_conduit_ids=tuple(),
+                    ),
+                )
+            )
+        _replace_compiled_access_surface(
+            viewer,
+            "ops",
+            command_frame_enabled=True,
+            enabled_conduit_ids=(left_conduit.id, right_conduit.id),
+        )
+        space.attach_frame_viewer(viewer)
+        space.command_system._aether = SimpleNamespace(
+            get_conduit_by_id=lambda conduit_id, frame_name: (
+                left_conduit if conduit_id == left_conduit.id else right_conduit
+            ),
+        )
+
+        capability_conduit = space.command_system.get_conduit_by_id(
+            left_conduit.id,
+            frame_name="ops",
+        )
+        space.workstation.bind_object("left", capability_conduit, weak_ref=False)
+        space.workstation.set_target("left", store="objects")
+
+        linked = space.command_system.execute_target_method("link", right_conduit)
+        links = space.command_system.execute_target_method("get_links")
+
+        assert linked is True
+        assert right_conduit in links
+    finally:
+        left_conduit.cleanup()
+        right_conduit.cleanup()
+        left_spellbook.cleanup()
+        right_spellbook.cleanup()
+
+
 def test_rift_space_can_delegate_frame_surface_calls_to_attached_viewer() -> None:
     """
     Verify a RiftSpace delegates frame-surface calls through the attached viewer.

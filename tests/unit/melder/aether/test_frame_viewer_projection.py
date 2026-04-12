@@ -28,10 +28,22 @@ from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile import (
     FrameViewerProfile,
 )
+from melder.aether.nexus.rift.frame_viewer.profiles.general.view_frame import (
+    GeneralViewFrame,
+)
+from melder.aether.nexus.rift.frame_viewer.profiles.general.view_spell import (
+    GeneralViewSpell,
+)
 from melder.utilities.helpers.class_surface_ast_describer import (
     ClassSurfaceAstDescriber,
 )
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.class_profile import (
+    ClassProfile,
+)
+from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_profile import (
+    MethodProfile,
+)
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 from tests._nexus_viewer_matrix_support import (
@@ -1267,6 +1279,172 @@ def test_view_frame_search_and_identity_helpers_work() -> None:
     }
 
 
+def test_view_frame_guardrails_and_missing_record_paths_work() -> None:
+    with pytest.raises(ValueError, match="default_detail_level cannot be empty."):
+        GeneralViewFrame(
+            frame_name=None,
+            frame_descriptor=None,
+            frame_acl_configuration=None,
+            compiled_access_surface=None,
+            default_detail_level="",
+        )
+
+    viewer = _build_viewer(("ops",))
+    view_frame = viewer.get_selected_profile_for_frame("ops").view_frame
+    descriptor = viewer.frame_descriptors_by_name["ops"]
+    spell_record = descriptor.spell_records_by_key[("ops-spellbook", "ops-spell")]
+
+    spell_record.binding_name = None
+    spell_record.owner_conduit_id = None
+    spell_record.spellframe = FrameViewer
+
+    assert view_frame.list_visible_binding_names() == []
+    assert view_frame.list_visible_spellframes() == ["FrameViewer"]
+    assert view_frame.describe_visible_spell_ownership() == {}
+
+    with pytest.raises(ValueError, match="text cannot be empty."):
+        view_frame.search_targets_contains("")
+
+    with pytest.raises(ValueError, match="prefix cannot be empty."):
+        view_frame.search_targets_prefix("")
+
+    with pytest.raises(ValueError, match="display_name cannot be empty."):
+        view_frame.find_target_by_display_name("")
+
+    with pytest.raises(ValueError, match="source_kind cannot be empty."):
+        view_frame.explain_target_access(source_kind="", source_id="ops-conduit")
+
+    with pytest.raises(ValueError, match="source_id cannot be empty."):
+        view_frame.explain_target_access(source_kind="conduit", source_id="")
+
+    with pytest.raises(ValueError, match="Unsupported source_kind 'unknown'."):
+        view_frame.explain_target_access(source_kind="unknown", source_id="x")
+
+    with pytest.raises(ValueError, match="field_name cannot be empty."):
+        view_frame.get_frame_payload_field("")
+
+    with pytest.raises(ValueError, match="Frame payload field 'cluster_count' is not visible"):
+        view_frame.get_frame_payload_field("cluster_count")
+
+    with pytest.raises(ValueError, match="source_kind cannot be empty."):
+        view_frame.get_required_target_by_source(source_kind="", source_id="ops-conduit")
+
+    with pytest.raises(ValueError, match="source_id cannot be empty."):
+        view_frame.get_required_target_by_source(source_kind="conduit", source_id="")
+
+    with pytest.raises(ValueError, match="target 'conduit:missing' was not found"):
+        view_frame.get_required_target_by_source(source_kind="conduit", source_id="missing")
+
+    descriptor._frame_overview = None
+    with pytest.raises(ValueError, match="must expose frame_overview for frame payload description"):
+        view_frame.describe_frame_payload()
+
+    viewer = _build_viewer(("ops",))
+    view_frame = viewer.get_selected_profile_for_frame("ops").view_frame
+    descriptor = viewer.frame_descriptors_by_name["ops"]
+    descriptor._conduit_records_by_id.pop("ops-conduit")
+    with pytest.raises(ValueError, match="Missing ConduitRecord for compiled conduit id 'ops-conduit'."):
+        view_frame.list_targets(source_kind="conduit")
+
+    viewer = _build_viewer(("ops",))
+    view_frame = viewer.get_selected_profile_for_frame("ops").view_frame
+    descriptor = viewer.frame_descriptors_by_name["ops"]
+    descriptor._spell_records_by_key.pop(("ops-spellbook", "ops-spell"))
+    with pytest.raises(ValueError, match="Missing SpellRecord for compiled spell key"):
+        view_frame.list_targets(source_kind="spell")
+
+    assert GeneralViewFrame._normalize_value(("a", Permissions.create)) == ("a", "create")
+    assert GeneralViewFrame._find_spell_record_key_by_source_id("ops-spellbook:ops-spell") == (
+        "ops-spellbook",
+        "ops-spell",
+    )
+    with pytest.raises(ValueError, match="must be in 'spellbook_id:spell_id' form"):
+        GeneralViewFrame._find_spell_record_key_by_source_id("bad")
+
+    assert GeneralViewFrame._normalize_spellframe_value(FrameViewer) == "FrameViewer"
+    assert isinstance(GeneralViewFrame._normalize_spellframe_value(object()), str)
+
+    unbound = GeneralViewFrame(
+        frame_name=None,
+        frame_descriptor=None,
+        frame_acl_configuration=None,
+        compiled_access_surface=None,
+        default_detail_level="summary",
+    )
+    with pytest.raises(ValueError, match="GeneralViewFrame is not bound to a frame."):
+        unbound._get_required_frame_name()
+    with pytest.raises(ValueError, match="GeneralViewFrame has no bound FrameDescriptor."):
+        unbound._get_required_frame_descriptor()
+    with pytest.raises(ValueError, match="GeneralViewFrame has no bound CompiledFrameACLAccessSurface."):
+        unbound._get_required_compiled_access_surface()
+    with pytest.raises(ValueError, match="frame_name cannot be empty."):
+        unbound._assert_optional_frame_name("")
+    with pytest.raises(ValueError, match="bound to frame 'ops', not 'finance'"):
+        viewer.get_selected_profile_for_frame("ops").view_frame._assert_optional_frame_name("finance")
+
+
+def test_view_frame_cleanup_and_frame_identity_branches_work() -> None:
+    viewer = _build_viewer(("ops",))
+    view_frame = viewer.get_selected_profile_for_frame("ops").view_frame
+    descriptor = viewer.frame_descriptors_by_name["ops"]
+
+    frame_identity = view_frame.describe_target_identity(
+        source_kind="frame",
+        source_id="ops-frame",
+    )
+    conduit_identity = view_frame.describe_target_identity(
+        source_kind="conduit",
+        source_id="ops-conduit",
+    )
+    frame_access = view_frame.explain_target_access(
+        source_kind="frame",
+        source_id="ops-frame",
+    )
+    frame_target = view_frame.describe_target_brief(
+        source_kind="frame",
+        source_id="ops-frame",
+    )
+
+    assert frame_identity["frame_id"] == "ops-frame"
+    assert conduit_identity["root_conduit_id"] == "ops-conduit"
+    assert frame_access["target_exists"] is True
+    assert frame_access["visible"] is True
+    assert frame_target["visible_payload_keys"] == ("system_state", "rift_enabled")
+    assert view_frame.get_frame_payload_field("system_state") == "dynamic"
+
+    descriptor._frame_overview = None
+    with pytest.raises(ValueError, match="must expose frame_overview for frame links"):
+        view_frame.list_targets(source_kind="frame")
+
+    view_frame.cleanup()
+    view_frame.cleanup()
+
+    assert view_frame.cleaned is True
+
+
+def test_view_frame_cleanup_rechecks_cleaned_inside_lock() -> None:
+    class _FlipCleanedOnEnter:
+        def __init__(self, view_frame: GeneralViewFrame) -> None:
+            self._view_frame = view_frame
+
+        def __enter__(self):
+            self._view_frame._cleaned = True
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> bool:
+            return False
+
+    view_frame = _build_viewer(("ops",)).get_selected_profile_for_frame("ops").view_frame
+    original_lock = view_frame._lock
+    view_frame._lock = _FlipCleanedOnEnter(view_frame)
+    try:
+        view_frame.cleanup()
+    finally:
+        view_frame._lock = original_lock
+
+    assert view_frame.cleaned is True
+
+
 def test_view_conduit_extended_methods_report_inventory_and_relationships() -> None:
     viewer = _build_viewer(("ops",))
     view_conduit = viewer.get_selected_profile_for_frame("ops").view_conduit
@@ -1495,6 +1673,303 @@ def test_view_spell_brief_and_missing_section_methods_work() -> None:
         "not_published_sections": tuple(),
     }
 
+
+def test_view_spell_guardrails_and_detail_normalizers_work() -> None:
+    viewer = _build_viewer(("ops",))
+    view_spell = viewer.get_selected_profile_for_frame("ops").view_spell
+
+    with pytest.raises(ValueError, match="payload_type cannot be empty."):
+        view_spell.list_spells_by_payload_type("")
+    with pytest.raises(ValueError, match="binding_name cannot be empty."):
+        view_spell.find_spell_by_binding_name("")
+    with pytest.raises(ValueError, match="conduit_id cannot be empty."):
+        view_spell.list_spells_by_owner_conduit("")
+    with pytest.raises(ValueError, match="spellbook_id cannot be empty."):
+        view_spell.list_spells_by_spellbook_id("")
+    with pytest.raises(ValueError, match="lineage_id cannot be empty."):
+        view_spell.list_spells_by_lineage_id("")
+    with pytest.raises(ValueError, match="permission_name cannot be empty."):
+        view_spell.list_spells_by_permission("")
+    with pytest.raises(ValueError, match="existence_name cannot be empty."):
+        view_spell.list_spells_by_existence("")
+    with pytest.raises(ValueError, match="spell_name cannot be empty."):
+        view_spell.list_spells_by_spell_name("")
+    with pytest.raises(ValueError, match="spellframe_name cannot be empty."):
+        view_spell.list_spells_by_spellframe("")
+    with pytest.raises(ValueError, match="text cannot be empty."):
+        view_spell.search_spells_contains("")
+    with pytest.raises(ValueError, match="prefix cannot be empty."):
+        view_spell.search_spells_prefix("")
+    with pytest.raises(ValueError, match="section_name cannot be empty."):
+        view_spell.get_spell_payload_section("ops-spellbook:ops-spell", "")
+    with pytest.raises(ValueError, match="spell_source_id cannot be empty."):
+        view_spell.get_required_spell("")
+
+    payload_summary = view_spell.describe_spell_payload("ops-spellbook:ops-spell")
+    assert payload_summary["payload_type"] == "general"
+    assert payload_summary["payload_version"] == "0.0.1"
+
+    assert view_spell.describe_spell_class_profile("ops-spellbook:ops-spell") == {
+        "source_id": "ops-spellbook:ops-spell",
+        "payload_type": "general",
+        "detail_available": False,
+        "reason": "payload_not_detailed",
+        "visible_sections": ("binding_payload", "resolution_payload", "metadata"),
+        "payload": {},
+    }
+
+    detailed_descriptor = _build_detailed_descriptor("ops")
+    detailed_configuration = FrameACLConfiguration.create_default("ops")
+    restricted_surface = _build_surface(
+        "ops",
+        detailed_configuration,
+        spell_sections_by_key={
+            ("ops-spellbook", "ops-spell"): (
+                "binding_payload",
+                "resolution_payload",
+                "metadata",
+            )
+        },
+    )
+    restricted_viewer = FrameViewer(
+        frame_descriptors_by_name={"ops": detailed_descriptor},
+        frame_acl_configurations_by_frame_name={"ops": detailed_configuration},
+        compiled_access_surfaces_by_frame_name={"ops": restricted_surface},
+        default_view_frame_name="ops",
+    )
+    restricted_view_spell = restricted_viewer.get_selected_profile_for_frame("ops").view_spell
+    assert restricted_view_spell.describe_spell_class_profile("ops-spellbook:ops-spell") == {
+        "source_id": "ops-spellbook:ops-spell",
+        "payload_type": "detailed",
+        "detail_available": False,
+        "reason": "acl_restricted",
+        "visible_sections": ("binding_payload", "resolution_payload", "metadata"),
+        "payload": {},
+    }
+
+    not_published_descriptor = _build_detailed_descriptor("ops")
+    not_published_descriptor.spell_records_by_key[("ops-spellbook", "ops-spell")].payload.class_profile = None
+    published_surface = _build_surface(
+        "ops",
+        detailed_configuration,
+        spell_sections_by_key={
+            ("ops-spellbook", "ops-spell"): (
+                "binding_payload",
+                "resolution_payload",
+                "metadata",
+                "class_profile",
+            )
+        },
+    )
+    not_published_viewer = FrameViewer(
+        frame_descriptors_by_name={"ops": not_published_descriptor},
+        frame_acl_configurations_by_frame_name={"ops": detailed_configuration},
+        compiled_access_surfaces_by_frame_name={"ops": published_surface},
+        default_view_frame_name="ops",
+    )
+    not_published_view_spell = not_published_viewer.get_selected_profile_for_frame("ops").view_spell
+    assert not_published_view_spell.describe_spell_class_profile("ops-spellbook:ops-spell") == {
+        "source_id": "ops-spellbook:ops-spell",
+        "payload_type": "detailed",
+        "detail_available": False,
+        "reason": "not_published",
+        "visible_sections": ("binding_payload", "resolution_payload", "metadata", "class_profile"),
+        "payload": {},
+    }
+
+    class_profile = ClassProfile(
+        name="Service",
+        qualname="Service",
+        module="tests",
+        mro=["Service", "object"],
+        bases=["object"],
+        annotations={"value": int},
+        protocols={"call": True},
+        slots=["value"],
+        origin_file="service.py",
+        origin_line=10,
+        origin_end_line=20,
+        source_preview="class Service:",
+        members={"__dict__": {}, "value": {}},
+        methods={},
+        is_dataclass=False,
+        decorated=False,
+        tags=["tag"],
+        dynamic_access={"has_getattr": False},
+    )
+    method_profile = MethodProfile(
+        name="run",
+        qualname="Service.run",
+        module="tests",
+        id=1,
+        type="function",
+        repr="<function Service.run>",
+        builtin_mod=False,
+        extension_mod=False,
+        signature="()",
+        parameters=[{"name": "x"}],
+        tags=["tag"],
+    )
+
+    normalized_class = view_spell._normalize_class_profile_value(class_profile)
+    normalized_callable = view_spell._normalize_callable_profile_value(method_profile)
+
+    assert view_spell._normalize_class_profile_value(None) is None
+    assert normalized_class["member_names"] == ("__dict__", "value")
+    assert normalized_class["dunder_member_names"] == ("__dict__",)
+    assert normalized_callable["name"] == "run"
+    assert normalized_callable["parameters"] == [{"name": "x"}]
+    assert view_spell._normalize_instance_members_value(None) is None
+    assert view_spell._extract_class_profile_name_sets(
+        {"members": ["b", "a"], "methods": ["run", "__enter__"]}
+    ) == (("a", "b"), ("__enter__", "run"))
+    assert view_spell._normalize_spellframe_value(FrameViewer) == "FrameViewer"
+    assert isinstance(view_spell._normalize_spellframe_value(object()), str)
+
+    payload = SpellDescriptorPayload(
+        payload_type="detailed",
+        binding_payload={"kind": "class"},
+        resolution_payload={},
+        class_profile=None,
+        callable_profile=None,
+        metadata={},
+        instance_members={},
+        dynamic_access={},
+    )
+    assert view_spell._filter_spell_payload(
+        payload,
+        ("binding_payload", "metadata", "instance_members"),
+    ) == {"binding_payload": {"kind": "class"}}
+
+    view_spell.cleanup()
+    view_spell.cleanup()
+    assert view_spell.cleaned is True
+
+    unbound_spell = GeneralViewSpell(frame_view=None)
+    with pytest.raises(ValueError, match="GeneralViewSpell is not bound to a frame view."):
+        unbound_spell.list_spells()
+
+
+def test_view_spell_remaining_lineage_payload_and_fallback_paths_work() -> None:
+    viewer = _build_visible_collision_viewer()
+    descriptor = viewer.frame_descriptors_by_name["ops"]
+    view_spell = viewer.get_selected_profile_for_frame("ops").view_spell
+
+    descriptor.upsert_spell_record(
+        SpellRecord(
+            origin_spellbook_id="ops-spellbook",
+            frame_name="ops",
+            owner_conduit_id="ops-conduit-1",
+            spell_id="ops-spell-3",
+            spell_index_id="other-lineage",
+            spell_name="OtherSpell",
+            spellframe=None,
+            binding_name="other_binding",
+            permissions=Permissions.create,
+            existence=Existence.unique,
+            payload=SpellDescriptorPayload(
+                payload_type="general",
+                binding_payload={"kind": "class"},
+                resolution_payload={"requirements": []},
+                class_profile=None,
+                callable_profile=None,
+                metadata={},
+                instance_members={},
+                dynamic_access={},
+            ),
+        )
+    )
+
+    lineage = view_spell.describe_spell_lineage("ops-spellbook:ops-spell-1")
+    assert "ops-spellbook:ops-spell-3" not in lineage["related_source_ids"]
+
+    with pytest.raises(
+            ValueError,
+            match="Spell payload section 'class_profile' is not visible for spell 'ops-spellbook:ops-spell'.",
+    ):
+        _build_viewer(("ops",)).get_selected_profile_for_frame("ops").view_spell.get_spell_payload_section(
+            "ops-spellbook:ops-spell",
+            "class_profile",
+        )
+
+    dynamic_descriptor = _build_detailed_descriptor("ops")
+    dynamic_descriptor.spell_records_by_key[("ops-spellbook", "ops-spell")].payload.dynamic_access = {}
+    dynamic_configuration = FrameACLConfiguration.create_default("ops")
+    dynamic_surface = _build_surface(
+        "ops",
+        dynamic_configuration,
+        spell_sections_by_key={
+            ("ops-spellbook", "ops-spell"): (
+                "binding_payload",
+                "resolution_payload",
+                "metadata",
+                "dynamic_access",
+            )
+        },
+    )
+    dynamic_viewer = FrameViewer(
+        frame_descriptors_by_name={"ops": dynamic_descriptor},
+        frame_acl_configurations_by_frame_name={"ops": dynamic_configuration},
+        compiled_access_surfaces_by_frame_name={"ops": dynamic_surface},
+        default_view_frame_name="ops",
+    )
+    dynamic_view_spell = dynamic_viewer.get_selected_profile_for_frame("ops").view_spell
+    assert dynamic_view_spell.describe_spell_dynamic_access("ops-spellbook:ops-spell") == {
+        "source_id": "ops-spellbook:ops-spell",
+        "payload_type": "detailed",
+        "detail_available": False,
+        "reason": "not_published",
+        "visible_sections": ("binding_payload", "resolution_payload", "metadata", "dynamic_access"),
+        "payload": {},
+    }
+
+    restricted_payload_configuration = FrameACLConfiguration.create_default("ops")
+    restricted_payload_surface = _build_surface(
+        "ops",
+        restricted_payload_configuration,
+        spell_sections_by_key={
+            ("ops-spellbook", "ops-spell"): (
+                "binding_payload",
+                "resolution_payload",
+                "metadata",
+                "class_profile",
+            )
+        },
+    )
+    restricted_payload_descriptor = _build_detailed_descriptor("ops")
+    restricted_payload_descriptor.spell_records_by_key[("ops-spellbook", "ops-spell")].payload.class_profile = None
+    restricted_payload_viewer = FrameViewer(
+        frame_descriptors_by_name={"ops": restricted_payload_descriptor},
+        frame_acl_configurations_by_frame_name={"ops": restricted_payload_configuration},
+        compiled_access_surfaces_by_frame_name={"ops": restricted_payload_surface},
+        default_view_frame_name="ops",
+    )
+    restricted_payload_view_spell = restricted_payload_viewer.get_selected_profile_for_frame("ops").view_spell
+    with pytest.raises(
+            ValueError,
+            match="Spell payload section 'class_profile' is not available in the published payload",
+    ):
+        restricted_payload_view_spell.get_spell_payload_section(
+            "ops-spellbook:ops-spell",
+            "class_profile",
+        )
+
+    assert view_spell._normalize_detail_section_value("metadata", {"frame": "ops"}) == {
+        "frame": "ops"
+    }
+    assert view_spell._normalize_class_profile_value({"members": ["b"], "methods": ["run"]}) == {
+        "members": ["b"],
+        "methods": ["run"],
+        "member_names": ("b",),
+        "method_names": ("run",),
+        "dunder_member_names": tuple(),
+        "dunder_method_names": tuple(),
+    }
+    fallback_class_profile = object()
+    fallback_callable_profile = object()
+    assert view_spell._normalize_class_profile_value(fallback_class_profile) is fallback_class_profile
+    assert view_spell._normalize_callable_profile_value(None) is None
+    assert view_spell._normalize_callable_profile_value(fallback_callable_profile) is fallback_callable_profile
 
 def test_execute_method_routes_new_brief_and_compare_methods() -> None:
     viewer = _build_viewer(("ops", "finance"))
