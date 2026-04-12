@@ -1,5 +1,7 @@
 from typing import Dict, List, Optional, Tuple
 
+import pytest
+
 from melder.aether.conduit.meld.contracts.mutation_contract import MutationContract
 from melder.aether.conduit.meld.contracts.spell_contract import SpellContract
 from melder.spellbook.configuration.system_state import SystemState
@@ -245,6 +247,25 @@ class _SpellbookStub:
             Optional[_ConfigStub]: Stored configuration.
         """
         return self._config
+
+
+class _RaisingConfigStub(_ConfigStub):
+    def get_property(self, name: str) -> Optional[SystemState]:
+        raise RuntimeError("config failed")
+
+
+class _CancelAfter:
+    def __init__(self, threshold: int) -> None:
+        self._checks = 0
+        self._threshold = threshold
+
+    @property
+    def is_set(self):
+        self._checks += 1
+        return self._checks > self._threshold
+
+    def throw_if_set(self):
+        raise RuntimeError("cancelled")
 
 
 def _make_context(
@@ -496,3 +517,164 @@ def test_contract_provider_presence_mutation_contract_disabled_late_errors() -> 
     assert len(issues) == 1
     assert issues[0].severity == "error"
     assert issues[0].code == "MUTATION_CONTRACT_DISABLED"
+
+
+def test_contract_provider_presence_honors_cancellation_before_scan() -> None:
+    requirements = _RequirementsStub([])
+    context, _ = _make_context(
+        requirements=requirements,
+        contracted_spells=[],
+        system_state=None,
+    )
+    context.cancel_event = _CancelAfter(0)
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        ContractProviderPresenceStrategy().validate(context)
+
+
+def test_contract_provider_presence_returns_when_requirements_missing() -> None:
+    issues: list = []
+    context = SpellValidationContext(
+        spell=_SpellStub(),
+        spellbook=_SpellbookStub(config=None, contracted_spells=None),
+        requirements=None,
+        symbolic_graph=None,
+        resolution_frame=None,
+        cancel_event=None,
+        issues=issues,
+    )
+
+    ContractProviderPresenceStrategy().validate(context)
+
+    assert issues == []
+
+
+def test_contract_provider_presence_swallows_configuration_errors() -> None:
+    class IService:
+        pass
+
+    contract = SpellContract(spellframe=IService, binding_name="primary")
+    requirements = _RequirementsStub(
+        [
+            _ParamStub(
+                name="service",
+                di_shape=ParameterDIShape.SPELL_CONTRACT,
+                default_value=contract,
+            )
+        ]
+    )
+    issues: list = []
+    context = SpellValidationContext(
+        spell=_SpellStub(),
+        spellbook=_SpellbookStub(config=_RaisingConfigStub(SystemState.dynamic), contracted_spells=None),
+        requirements=requirements,
+        symbolic_graph=None,
+        resolution_frame=None,
+        cancel_event=None,
+        issues=issues,
+    )
+
+    ContractProviderPresenceStrategy().validate(context)
+
+    assert len(issues) == 1
+    assert issues[0].code == "SPELL_CONTRACT_MISSING_PROVIDER"
+
+
+def test_contract_provider_presence_honors_cancellation_during_provider_scan() -> None:
+    class IService:
+        pass
+
+    contract = SpellContract(spellframe=IService, binding_name="primary")
+    requirements = _RequirementsStub(
+        [
+            _ParamStub(
+                name="service",
+                di_shape=ParameterDIShape.SPELL_CONTRACT,
+                default_value=contract,
+            )
+        ]
+    )
+    contracted_spells = [
+        (_SpellIndexStub("prov-a"), _ProviderSpellStub(spellframe=IService, spell_name="A", binding_name="primary")),
+    ]
+    context, _ = _make_context(
+        requirements=requirements,
+        contracted_spells=contracted_spells,
+        system_state=None,
+    )
+    context.cancel_event = _CancelAfter(1)
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        ContractProviderPresenceStrategy().validate(context)
+
+
+def test_contract_provider_presence_skips_non_contract_parameters() -> None:
+    requirements = _RequirementsStub(
+        [
+            _ParamStub(
+                name="plain",
+                di_shape=ParameterDIShape.PLAIN,
+                default_value=None,
+            )
+        ]
+    )
+    context, issues = _make_context(
+        requirements=requirements,
+        contracted_spells=[],
+        system_state=None,
+    )
+
+    ContractProviderPresenceStrategy().validate(context)
+
+    assert issues == []
+
+
+def test_contract_provider_presence_invalid_spell_contract_errors() -> None:
+    requirements = _RequirementsStub(
+        [
+            _ParamStub(
+                name="service",
+                di_shape=ParameterDIShape.SPELL_CONTRACT,
+                default_value=object(),
+            )
+        ]
+    )
+    context, issues = _make_context(
+        requirements=requirements,
+        contracted_spells=[],
+        system_state=None,
+    )
+
+    ContractProviderPresenceStrategy().validate(context)
+
+    assert len(issues) == 1
+    assert issues[0].code == "SPELL_CONTRACT_INVALID"
+
+
+def test_contract_provider_presence_honors_cancellation_during_parameter_loop() -> None:
+    class IService:
+        pass
+
+    requirements = _RequirementsStub(
+        [
+            _ParamStub(
+                name="plain",
+                di_shape=ParameterDIShape.PLAIN,
+                default_value=None,
+            ),
+            _ParamStub(
+                name="service",
+                di_shape=ParameterDIShape.SPELL_CONTRACT,
+                default_value=SpellContract(spellframe=IService, binding_name="primary"),
+            ),
+        ]
+    )
+    context, _ = _make_context(
+        requirements=requirements,
+        contracted_spells=[],
+        system_state=None,
+    )
+    context.cancel_event = _CancelAfter(2)
+
+    with pytest.raises(RuntimeError, match="cancelled"):
+        ContractProviderPresenceStrategy().validate(context)

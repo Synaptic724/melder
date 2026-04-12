@@ -72,7 +72,6 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
 
         spell = context.spell
         spellbook = context.spellbook
-        spellbook = context.spellbook
 
         system_state: Optional[SystemState] = None
         if spellbook is not None:
@@ -200,66 +199,3 @@ class ContractProviderPresenceStrategy(SpellValidationStrategy):
                         )
                     )
                 continue
-
-            contract = param.default_value
-            if not isinstance(contract, MutationContract):
-                context.issues.append(
-                    SpellValidationIssue(
-                        severity="error",
-                        code="MUTATION_CONTRACT_INVALID",
-                        message=(
-                            f"Spell {spell.spell_name!r} parameter {param.name!r} "
-                            "is marked as MutationContract but the default is not a MutationContract."
-                        ),
-                        details={
-                            "parameter_name": param.name,
-                            "default_value_type": type(contract).__name__,
-                        },
-                    )
-                )
-                continue
-
-            contract_key = contract.canonical_key
-            providers = provider_map.get(contract_key, [])
-            if len(providers) > 1:
-                context.issues.append(
-                    SpellValidationIssue(
-                        severity="error",
-                        code="MUTATION_CONTRACT_AMBIGUOUS",
-                        message=(
-                            f"Spell {spell.spell_name!r} parameter {param.name!r} "
-                            f"matches multiple providers for mutation key {contract_key}."
-                        ),
-                        details={
-                            "parameter_name": param.name,
-                            "contract_key": contract_key,
-                            "provider_spell_ids": sorted(providers),
-                            "late_binding": contract.late_binding,
-                        },
-                    )
-                )
-                continue
-
-            if not providers:
-                if contract.late_binding or automatic_mode:
-                    severity = "warning"
-                    code = "MUTATION_CONTRACT_MISSING_PROVIDER"
-                else:
-                    severity = "error"
-                    code = "MUTATION_CONTRACT_MISSING_PROVIDER_EARLY"
-                context.issues.append(
-                    SpellValidationIssue(
-                        severity=severity,
-                        code=code,
-                        message=(
-                            f"Spell {spell.spell_name!r} parameter {param.name!r} "
-                            f"has no provider for mutation key {contract_key} "
-                            f"(late_binding={contract.late_binding})."
-                        ),
-                        details={
-                            "parameter_name": param.name,
-                            "contract_key": contract_key,
-                            "late_binding": contract.late_binding,
-                        },
-                    )
-                )
