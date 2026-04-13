@@ -694,6 +694,95 @@ def test_component_required_holes_strategy_reports_plain_required_parameters() -
         spellbook.cleanup()
 
 
+def test_component_required_holes_strategy_ignores_injected_and_defaulted_parameters() -> None:
+    """
+    Purpose:
+        Validate RequiredHolesStrategy reports only caller-required plain parameters.
+    Contract:
+        - Injected dependencies and defaulted plain parameters are ignored.
+        - Only required plain parameters emit REQUIRED_HOLE warnings.
+    Returns:
+        None.
+    Raises:
+        AssertionError: If the wrong parameter is reported as a required hole.
+    """
+    spellbook = _make_spellbook()
+    strategy = RequiredHolesStrategy()
+
+    class MixedInputs:
+        """
+        Purpose:
+            Provide a spell with DI, defaulted, and caller-required parameters.
+        Contract:
+            - `service` is satisfiable through DI when BasicService is bound.
+            - `required_value` remains a caller-required plain parameter.
+            - `optional_value` is defaulted and must not be reported as a hole.
+        Args:
+            service: Injected service dependency.
+            required_value: Caller-supplied plain parameter with no default.
+            optional_value: Defaulted plain parameter.
+        """
+
+        def __init__(
+                self,
+                service: BasicService,
+                required_value: int,
+                optional_value: int = 7,
+        ) -> None:
+            """
+            Purpose:
+                Capture the mixed input set for requirements analysis.
+            Contract:
+                Stores the provided constructor inputs without mutation.
+            Args:
+                service: Injected service dependency.
+                required_value: Caller-required plain parameter.
+                optional_value: Defaulted plain parameter.
+            Returns:
+                None.
+            """
+            self.service = service
+            self.required_value = required_value
+            self.optional_value = optional_value
+
+    try:
+        spellbook.bind(
+            spell=BasicService,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        spell_id = spellbook.bind(
+            spell=MixedInputs,
+            existence=Existence.unique,
+            permissions="create",
+        )
+        spell = _get_spell_by_version_id(spellbook, spell_id)
+        assert spell is not None
+
+        spell.run_phase_requirements()
+        requirements = spell.requirements
+
+        context, issues = _make_context(
+            spell=spell,
+            spellbook=spellbook,
+            requirements=requirements,
+        )
+        try:
+            strategy.validate(context)
+            assert len(issues) == 1
+            issue = issues[0]
+            assert issue.code == "REQUIRED_HOLE"
+            assert issue.severity == "warning"
+            assert issue.details["parameter_name"] == "required_value"
+            assert issue.details["position"] == 1
+            assert issue.details["annotation"] is int
+        finally:
+            context.cleanup()
+    finally:
+        strategy.cleanup()
+        spellbook.cleanup()
+
+
 def test_component_dangling_dependencies_strategy_ignores_resolved_dependencies() -> None:
     """
     Purpose:
