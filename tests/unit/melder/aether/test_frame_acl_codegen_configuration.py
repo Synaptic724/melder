@@ -133,6 +133,8 @@ def test_frame_acl_codegen_configuration_from_json_round_trips() -> None:
     payload = {
         "profile_name": "hybrid",
         "profile_version": "1.2.3",
+        "precision_profile_name": None,
+        "precision_profile_version": None,
         "frame_override_ruleset": _build_ruleset("frame_override").to_json_dict(),
         "conduit_override_ruleset": _build_ruleset("conduit_override").to_json_dict(),
         "spell_override_ruleset": _build_ruleset("spell_override").to_json_dict(),

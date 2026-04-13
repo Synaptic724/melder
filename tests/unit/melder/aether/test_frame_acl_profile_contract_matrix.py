@@ -246,6 +246,34 @@ def test_frame_acl_view_profile_requires_valid_inputs() -> None:
             minimum_spell_payload_type="",
         )
 
+    with pytest.raises(ValueError, match="required_nexus_label cannot be empty"):
+        FrameACLViewProfile(
+            "safe",
+            minimum_spell_payload_type="detailed",
+            required_nexus_label="",
+        )
+
+    with pytest.raises(ValueError, match="required_nexus_version cannot be empty"):
+        FrameACLViewProfile(
+            "safe",
+            minimum_spell_payload_type="detailed",
+            required_nexus_version="",
+        )
+
+    with pytest.raises(ValueError, match="minimum_spell_payload_version cannot be empty"):
+        FrameACLViewProfile(
+            "safe",
+            minimum_spell_payload_type="detailed",
+            minimum_spell_payload_version="",
+        )
+
+    with pytest.raises(ValueError, match="validation_strategy_name cannot be empty"):
+        FrameACLViewProfile(
+            "safe",
+            minimum_spell_payload_type="detailed",
+            validation_strategy_name="",
+        )
+
     with pytest.raises(ValueError, match="version cannot be empty"):
         FrameACLViewProfile(
             "safe",
@@ -288,6 +316,20 @@ def test_frame_acl_view_profile_create_default_matches_safe_factory() -> None:
     assert default_profile.frame_ruleset.list_rule_names() == (
         safe_profile.frame_ruleset.list_rule_names()
     )
+
+
+def test_frame_acl_view_profile_create_precision_and_permissive_match_factories() -> None:
+    """
+    Verify the additional reusable view-profile wrappers delegate correctly.
+
+    Returns:
+        None.
+    """
+    precision_profile = FrameACLViewProfile.create_precision()
+    permissive_profile = FrameACLViewProfile.create_permissive()
+
+    assert precision_profile.name == "precision"
+    assert permissive_profile.name == "permissive"
 
 
 def test_frame_acl_view_profile_cleanup_cascades_to_owned_rulesets() -> None:
@@ -504,4 +546,3 @@ def test_frame_acl_profile_builder_cleanup_cascades_to_owned_profiles() -> None:
     assert safe_codegen.cleaned is True
     assert builder._view_profiles_by_name is None
     assert builder._codegen_profiles_by_name is None
-

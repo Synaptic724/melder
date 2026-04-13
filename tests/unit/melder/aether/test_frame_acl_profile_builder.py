@@ -27,13 +27,46 @@ def test_frame_acl_profile_builder_exposes_id_and_registry_snapshots() -> None:
     assert builder.id is not None
     assert builder.version == "0.0.1"
     assert set(builder.list_view_profile_names()) == {"safe", "hybrid", "permissive"}
+    assert set(builder.list_command_profile_names()) == {"safe", "hybrid", "permissive"}
     assert set(builder.list_codegen_profile_names()) == {"safe", "hybrid", "permissive"}
+    assert set(builder.list_view_precision_profile_names()) == {"precision"}
+    assert set(builder.list_command_precision_profile_names()) == {"precision"}
+    assert set(builder.list_codegen_precision_profile_names()) == {"precision"}
 
     view_snapshot.clear()
     codegen_snapshot.clear()
 
     assert set(builder.list_view_profile_names()) == {"safe", "hybrid", "permissive"}
+    assert set(builder.list_command_profile_names()) == {"safe", "hybrid", "permissive"}
     assert set(builder.list_codegen_profile_names()) == {"safe", "hybrid", "permissive"}
+
+
+def test_frame_acl_profile_builder_exposes_command_and_precision_registry_snapshots() -> None:
+    """
+    Verify command/codegen registry snapshots and precision helpers are exposed.
+
+    Returns:
+        None.
+    """
+    builder = FrameACLProfileBuilder()
+    command_snapshot = builder.command_profiles_by_name
+    view_precision_snapshot = builder.view_precision_profiles_by_name
+    command_precision_snapshot = builder.command_precision_profiles_by_name
+    codegen_precision_snapshot = builder.codegen_precision_profiles_by_name
+
+    assert builder.get_required_view_precision_profile("precision").name == "precision"
+    assert builder.get_required_command_precision_profile("precision").name == "precision"
+    assert builder.get_required_codegen_precision_profile("precision").name == "precision"
+
+    command_snapshot.clear()
+    view_precision_snapshot.clear()
+    command_precision_snapshot.clear()
+    codegen_precision_snapshot.clear()
+
+    assert set(builder.list_command_profile_names()) == {"safe", "hybrid", "permissive"}
+    assert set(builder.list_view_precision_profile_names()) == {"precision"}
+    assert set(builder.list_command_precision_profile_names()) == {"precision"}
+    assert set(builder.list_codegen_precision_profile_names()) == {"precision"}
 
 
 def test_frame_acl_profile_builder_register_replaces_and_cleans_old_profiles() -> None:
@@ -92,7 +125,11 @@ def test_frame_acl_profile_builder_remove_returns_false_for_missing_profiles() -
     builder = FrameACLProfileBuilder()
 
     assert builder.remove_view_profile("missing_view") is False
+    assert builder.remove_command_profile("missing_command") is False
     assert builder.remove_codegen_profile("missing_codegen") is False
+    assert builder.remove_view_precision_profile("missing_view_precision") is False
+    assert builder.remove_command_precision_profile("missing_command_precision") is False
+    assert builder.remove_codegen_precision_profile("missing_codegen_precision") is False
 
 
 def test_frame_acl_profile_builder_cleanup_is_idempotent() -> None:

@@ -29,7 +29,7 @@ def _make_locked_view_configuration(
         "profile_version": "0.0.1",
         "required_nexus_label": "default",
         "required_nexus_version": "0.0.1",
-        "minimum_spell_payload_type": "detailed",
+        "minimum_spell_payload_type": "general",
         "minimum_spell_payload_version": "0.0.1",
         "frame_override_ruleset": {
             "name": "frame_override_{0}".format(marker),
@@ -249,16 +249,16 @@ def test_builder_view_family_round_trip_for_multiple_payloads(
     builder.begin_change("view")
     builder.load_json_configuration_string(
         json.dumps(
-            {
-                "profile_name": profile_name,
-                "profile_version": "0.0.1",
-                "required_nexus_label": "default",
-                "required_nexus_version": "0.0.1",
-                "minimum_spell_payload_type": "detailed",
-                "minimum_spell_payload_version": "0.0.1",
-                "frame_override_ruleset": {
-                    "name": "frame_override",
-                    "rules": [],
+                {
+                    "profile_name": profile_name,
+                    "profile_version": "0.0.1",
+                    "required_nexus_label": "default",
+                    "required_nexus_version": "0.0.1",
+                    "minimum_spell_payload_type": "general",
+                    "minimum_spell_payload_version": "0.0.1",
+                    "frame_override_ruleset": {
+                        "name": "frame_override",
+                        "rules": [],
                 },
                 "conduit_override_ruleset": {
                     "name": "conduit_override",

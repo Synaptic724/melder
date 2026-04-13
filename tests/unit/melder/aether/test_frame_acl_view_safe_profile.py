@@ -16,7 +16,10 @@ def test_safe_view_profile_exposes_expected_identity_and_rulesets() -> None:
     profile = create_safe_view_profile()
 
     assert isinstance(profile, FrameACLViewProfile)
+    assert profile.id is not None
     assert profile.name == "safe"
+    assert profile.version == "0.0.1"
+    assert profile.validation_strategy_name == "safe"
     assert profile.required_nexus_label == "default"
     assert profile.required_nexus_version == "0.0.1"
     assert profile.minimum_spell_payload_type == "general"

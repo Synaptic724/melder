@@ -3,12 +3,42 @@ from types import SimpleNamespace
 
 import pytest
 
+from melder.aether.aether import Aether
+from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.conduit.conduit import Conduit
+from melder.aether.nexus.nexus import Nexus
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
     StaticFrameViewer,
 )
+from melder.spellbook.spellbook import Spellbook
 from melder.spellbook.existence.existence import Existence
 from tests.unit.melder.aether.test_frame_viewer_projection import _build_viewer
+
+
+@pytest.fixture(autouse=True)
+def fresh_singletons() -> None:
+    """
+    Reset singleton runtime surfaces around each static-viewer unit test.
+
+    Returns:
+        None.
+    """
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    StaticFrameViewer._aether = aether
+    yield
+    Nexus._reset_singleton_for_tests()
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    aether = Aether()
+    Spellbook._aether = aether
+    Conduit._aether = aether
+    StaticFrameViewer._aether = aether
 
 
 def test_static_frame_viewer_from_frame_viewer_handles_plain_and_static_sources() -> None:

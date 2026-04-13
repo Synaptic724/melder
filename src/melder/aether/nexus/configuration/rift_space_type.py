@@ -11,14 +11,15 @@ class RiftSpaceType(Enum):
 
     Members:
         static:
-            The Rift exposes a stable room surface with fixed local structure.
+            The Rift exposes the lower-risk room surface with live-only
+            spell-facing behavior and no runtime topology mutation.
         capability:
-            The Rift exposes a restrictive pre-published execution surface
-            without implying that full capability semantics are implemented
-            yet.
+            The Rift exposes broad manual runtime and object access without
+            codegen while still honoring lower Melder frame truth.
         dynamic:
-            The Rift exposes a room surface intended for mutable or evolving
-            local state/layout.
+            The Rift exposes the richer room surface intended for mutable local
+            state and later codegen-oriented differentiation. It currently
+            shares the same broad manual-runtime posture as capability.
     """
 
     __melder_internal__ = _mrg.sentinel

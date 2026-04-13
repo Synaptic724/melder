@@ -51,7 +51,7 @@ def _build_typed_json_payload(
             "view_configuration": {
                 "profile_name": view_profile_name,
                 "profile_version": "0.0.1",
-                "minimum_spell_payload_type": "detailed",
+                "minimum_spell_payload_type": "general",
                 "frame_override_ruleset": {
                     "name": "frame_override",
                     "rules": [],

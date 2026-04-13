@@ -386,6 +386,14 @@ def test_frame_acl_profile_requires_typed_profiles() -> None:
             codegen_profile=FrameACLCodegenProfile.create_default(),
         )
 
+    with pytest.raises(TypeError, match="command_profile must be a FrameACLCommandProfile"):
+        FrameACLProfile(
+            "support",
+            view_profile=FrameACLViewProfile.create_default(),
+            command_profile=object(),
+            codegen_profile=FrameACLCodegenProfile.create_default(),
+        )
+
     with pytest.raises(TypeError, match="codegen_profile must be a FrameACLCodegenProfile"):
         FrameACLProfile(
             "support",
@@ -446,17 +454,27 @@ def test_frame_acl_profile_cleanup_cleans_only_owned_overrides() -> None:
         codegen_profile=codegen_profile,
     )
 
+    command_profile = profile.command_profile
     view_override_ruleset = profile.view_override_ruleset
+    command_override_ruleset = profile.command_override_ruleset
     codegen_override_ruleset = profile.codegen_override_ruleset
 
     profile.cleanup()
 
     assert profile.cleaned is True
     assert view_override_ruleset.cleaned is True
+    assert command_override_ruleset.cleaned is True
     assert codegen_override_ruleset.cleaned is True
     assert view_profile.cleaned is False
+    assert command_profile.cleaned is False
     assert codegen_profile.cleaned is False
     assert view_profile.id is not None
+
+    with pytest.raises(RuntimeError, match="cleaned"):
+        _ = profile.command_profile
+
+    with pytest.raises(RuntimeError, match="cleaned"):
+        _ = profile.command_override_ruleset
 
 
 def test_frame_acl_profile_exposes_stable_id() -> None:

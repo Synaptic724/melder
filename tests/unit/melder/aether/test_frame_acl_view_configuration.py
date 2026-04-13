@@ -193,6 +193,8 @@ def test_frame_acl_view_configuration_from_json_round_trips() -> None:
     payload = {
         "profile_name": "hybrid",
         "profile_version": "1.2.3",
+        "precision_profile_name": None,
+        "precision_profile_version": None,
         "required_nexus_label": "default",
         "required_nexus_version": "0.0.1",
         "minimum_spell_payload_type": "detailed",
