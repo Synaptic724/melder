@@ -25,6 +25,50 @@ from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.helpers.init_helpers import InitHelpers
 
 
+class _RiftSpaceDouble:
+    """
+    Minimal cleanup-capable room double for Rift registry tests.
+
+    Contract:
+        - Mirrors the small subset of room attributes `Rift.register_space(...)`
+          and `Rift.cleanup()` use directly.
+        - Provides an idempotent `cleanup()` method so the owning Rift teardown
+          can exercise its real ownership contract.
+    """
+
+    def __init__(
+            self,
+            *,
+            owner_rift_id: str,
+            space_id: str,
+            space_name: Optional[str],
+    ) -> None:
+        """
+        Build one minimal cleanup-capable room double.
+
+        Args:
+            owner_rift_id:
+                Owning Rift id exposed to registration logic.
+            space_id:
+                Stable room id.
+            space_name:
+                Optional stable room name.
+        """
+        self.owner_rift_id: str = owner_rift_id
+        self.space_id: str = space_id
+        self.space_name: Optional[str] = space_name
+        self.cleaned: bool = False
+
+    def cleanup(self) -> None:
+        """
+        Idempotently mark this room double cleaned.
+
+        Returns:
+            None.
+        """
+        self.cleaned = True
+
+
 @pytest.fixture(autouse=True)
 def fresh_singletons() -> None:
     """
@@ -497,7 +541,7 @@ def test_rift_register_space_rejects_wrong_owner_and_duplicates() -> None:
 
     with pytest.raises(ValueError, match="must match the owning Rift id"):
         rift.register_space(
-            SimpleNamespace(
+            _RiftSpaceDouble(
                 owner_rift_id="other",
                 space_id="space-1",
                 space_name="ops",
@@ -505,7 +549,7 @@ def test_rift_register_space_rejects_wrong_owner_and_duplicates() -> None:
         )
 
     rift.register_space(
-        SimpleNamespace(
+        _RiftSpaceDouble(
             owner_rift_id=rift.id,
             space_id="space-1",
             space_name="ops",
@@ -514,7 +558,7 @@ def test_rift_register_space_rejects_wrong_owner_and_duplicates() -> None:
 
     with pytest.raises(ValueError, match="Space with id 'space-1' already exists"):
         rift.register_space(
-            SimpleNamespace(
+            _RiftSpaceDouble(
                 owner_rift_id=rift.id,
                 space_id="space-1",
                 space_name="other",
@@ -523,7 +567,7 @@ def test_rift_register_space_rejects_wrong_owner_and_duplicates() -> None:
 
     with pytest.raises(ValueError, match="Space name 'ops' already exists"):
         rift.register_space(
-            SimpleNamespace(
+            _RiftSpaceDouble(
                 owner_rift_id=rift.id,
                 space_id="space-2",
                 space_name="ops",
@@ -558,7 +602,7 @@ def test_rift_space_lookup_and_active_space_success_paths_use_live_registry() ->
         None.
     """
     rift = _create_registered_rift()
-    room = SimpleNamespace(
+    room = _RiftSpaceDouble(
         owner_rift_id=rift.id,
         space_id="space-2",
         space_name="ops",

@@ -260,7 +260,11 @@ class Rift(Cleanable, IRift):
         Idempotently cleanup the live Rift object.
 
         Contract:
-            - Clears room registries and live state references.
+            - Cleans every owned room before clearing the room registries.
+            - Cleans the owned per-Rift configuration snapshot before dropping
+              the reference.
+            - Clears room registries and live state references only after owned
+              teardown completes.
             - Does not attempt to clean Nexus or Aether-owned global state.
             - Leaves the Rift unusable after cleanup.
 
@@ -275,6 +279,10 @@ class Rift(Cleanable, IRift):
                 return
             self._logger.info("Cleaning Rift runtime state.", "cleanup")
             self._cleaned = True
+            for space in self._spaces_by_id.values():
+                space.cleanup()
+            if self._configuration is not None:
+                self._configuration.cleanup()
             self._spaces_by_id.clear()
             self._space_ids_by_name.clear()
             self._metadata.clear()
