@@ -103,7 +103,7 @@ def test_rift_configuration_set_property_normalizes_enums_and_round_trips_event_
     configuration.set_property("validation_mode", "strict")
     configuration.set_property("event_configuration", event_configuration)
 
-    assert configuration.get_property("space_type") is RiftSpaceType.dynamic
+    assert configuration.get_property("space_type") is RiftSpaceType.codegen
     assert configuration.get_property("validation_mode") is RiftValidationMode.strict
     assert configuration.get_property("event_configuration") is event_configuration
 
@@ -207,7 +207,7 @@ def test_rift_configuration_fluent_setters_return_self_and_store_values() -> Non
     )
 
     assert chained is configuration
-    assert configuration.get_property("space_type") is RiftSpaceType.dynamic
+    assert configuration.get_property("space_type") is RiftSpaceType.codegen
     assert configuration.get_property("space_name") == "ops-room"
     assert configuration.get_property("auto_activate_on_program") is False
     assert configuration.get_property("validation_mode") is RiftValidationMode.strict

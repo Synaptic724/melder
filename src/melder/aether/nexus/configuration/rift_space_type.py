@@ -16,13 +16,17 @@ class RiftSpaceType(Enum):
         capability:
             The Rift exposes broad manual runtime and object access without
             codegen while still honoring lower Melder frame truth.
-        dynamic:
+        codegen:
             The Rift exposes the richer room surface intended for mutable local
             state and later codegen-oriented differentiation. It currently
             shares the same broad manual-runtime posture as capability.
+        dynamic:
+            Legacy alias for `codegen`. Retained temporarily so older AR
+            configuration inputs can still normalize during the room rename.
     """
 
     __melder_internal__ = _mrg.sentinel
     static = "static"
     capability = "capability"
-    dynamic = "dynamic"
+    codegen = "codegen"
+    dynamic = codegen

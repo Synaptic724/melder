@@ -41,8 +41,8 @@ from melder.aether.nexus.rift.rift_space.command_system.capability_command_syste
 from melder.aether.nexus.rift.rift_space.command_system.command_system import (
     CommandSystem,
 )
-from melder.aether.nexus.rift.rift_space.command_system.dynamic_command_system import (
-    DynamicCommandSystem,
+from melder.aether.nexus.rift.rift_space.command_system.codegen_command_system import (
+    CodegenCommandSystem,
 )
 from melder.aether.nexus.rift.rift_space.command_system.static_command_system import (
     StaticCommandSystem,
@@ -51,7 +51,7 @@ from melder.aether.nexus.rift.rift_space.rift_event_configuration import (
     RiftEventConfiguration,
 )
 from melder.aether.nexus.rift.rift_space.capability_rift_space import CapabilityRiftSpace
-from melder.aether.nexus.rift.rift_space.dynamic_rift_space import DynamicRiftSpace
+from melder.aether.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
 from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
 from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
 from melder.aether.conduit.conduit import Conduit
@@ -707,7 +707,7 @@ def test_create_rift_configuration_can_clone_registered_profile() -> None:
     nexus.enable(configuration)
 
     profile = nexus.create_rift_configuration()
-    profile.with_space_type(RiftSpaceType.dynamic)
+    profile.with_space_type(RiftSpaceType.codegen)
     profile.with_space_name("ops-room")
     nexus.register_rift_profile("ops_profile", profile)
 
@@ -715,7 +715,7 @@ def test_create_rift_configuration_can_clone_registered_profile() -> None:
     second_profiled_configuration = nexus.create_rift_configuration(profile_name="ops_profile")
 
     assert profiled_configuration is not second_profiled_configuration
-    assert profiled_configuration.get_property("space_type") == RiftSpaceType.dynamic
+    assert profiled_configuration.get_property("space_type") == RiftSpaceType.codegen
     assert profiled_configuration.get_property("space_name") == "ops-room"
     assert profiled_configuration.consumed is False
     assert second_profiled_configuration.consumed is False
@@ -799,11 +799,11 @@ def test_create_rift_programs_primary_space_from_space_type() -> None:
         configuration=capability_configuration,
         rift_name="gamma",
     )
-    dynamic_configuration = nexus.create_rift_configuration().with_space_type(
-        RiftSpaceType.dynamic
+    codegen_configuration = nexus.create_rift_configuration().with_space_type(
+        RiftSpaceType.codegen
     )
-    dynamic_rift = nexus.create_rift(
-        configuration=dynamic_configuration,
+    codegen_rift = nexus.create_rift(
+        configuration=codegen_configuration,
         rift_name="beta",
     )
 
@@ -814,8 +814,8 @@ def test_create_rift_programs_primary_space_from_space_type() -> None:
         capability_rift.get_space(capability_rift.active_space_id),
         CapabilityRiftSpace,
     )
-    assert len(dynamic_rift.list_space_ids()) == 1
-    assert isinstance(dynamic_rift.get_space(dynamic_rift.active_space_id), DynamicRiftSpace)
+    assert len(codegen_rift.list_space_ids()) == 1
+    assert isinstance(codegen_rift.get_space(codegen_rift.active_space_id), CodegenRiftSpace)
 
 
 def test_rift_space_can_attach_and_detach_frame_viewer() -> None:
@@ -1174,7 +1174,7 @@ def test_base_rift_space_composes_generic_command_system() -> None:
     assert isinstance(space.command_system, CommandSystem)
     assert not isinstance(space.command_system, StaticCommandSystem)
     assert not isinstance(space.command_system, CapabilityCommandSystem)
-    assert not isinstance(space.command_system, DynamicCommandSystem)
+    assert not isinstance(space.command_system, CodegenCommandSystem)
 
 
 def test_static_rift_space_composes_static_command_system() -> None:
@@ -1201,16 +1201,16 @@ def test_capability_rift_space_composes_capability_command_system() -> None:
     assert isinstance(space.command_system, CapabilityCommandSystem)
 
 
-def test_dynamic_rift_space_composes_dynamic_command_system() -> None:
+def test_codegen_rift_space_composes_codegen_command_system() -> None:
     """
-    Verify dynamic rooms compose the dynamic command system variant.
+    Verify codegen rooms compose the codegen command system variant.
 
     Returns:
         None.
     """
-    space = DynamicRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = CodegenRiftSpace(owner_rift_id="rift-1", space_name="main")
 
-    assert isinstance(space.command_system, DynamicCommandSystem)
+    assert isinstance(space.command_system, CodegenCommandSystem)
 
 
 def test_command_system_can_get_selected_target_link_and_record() -> None:
@@ -3943,9 +3943,9 @@ def test_static_rift_requires_target_frame_ai_profiles() -> None:
         rift.target_frame("ops")
 
 
-def test_dynamic_rift_requires_target_frame_ai_native_enabled() -> None:
+def test_codegen_rift_requires_target_frame_ai_native_enabled() -> None:
     """
-    Verify dynamic AR refuses frames that do not enable AI-native mode.
+    Verify codegen AR refuses frames that do not enable AI-native mode.
 
     Returns:
         None.
@@ -3964,17 +3964,17 @@ def test_dynamic_rift_requires_target_frame_ai_native_enabled() -> None:
     nexus.enable(configuration)
 
     rift_configuration = nexus.create_rift_configuration().with_space_type(
-        RiftSpaceType.dynamic
+        RiftSpaceType.codegen
     )
-    rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops-dynamic")
+    rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops-codegen")
 
     with pytest.raises(ValueError, match="ai_native_enabled"):
         rift.target_frame("ops")
 
 
-def test_dynamic_rift_requires_dynamic_target_frame_system_state() -> None:
+def test_codegen_rift_requires_dynamic_target_frame_system_state() -> None:
     """
-    Verify dynamic AR refuses frames that are not in dynamic system_state.
+    Verify codegen AR refuses frames that are not in dynamic system_state.
 
     Returns:
         None.
@@ -3993,17 +3993,17 @@ def test_dynamic_rift_requires_dynamic_target_frame_system_state() -> None:
     nexus.enable(configuration)
 
     rift_configuration = nexus.create_rift_configuration().with_space_type(
-        RiftSpaceType.dynamic
+        RiftSpaceType.codegen
     )
-    rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops-dynamic")
+    rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops-codegen")
 
     with pytest.raises(ValueError, match="dynamic system_state"):
         rift.target_frame("ops")
 
 
-def test_dynamic_rift_can_attach_to_dynamic_ai_native_target_frame() -> None:
+def test_codegen_rift_can_attach_to_dynamic_ai_native_target_frame() -> None:
     """
-    Verify dynamic AR attaches successfully when the target frame is fully
+    Verify codegen AR attaches successfully when the target frame is fully
     eligible.
 
     Returns:
@@ -4024,13 +4024,13 @@ def test_dynamic_rift_can_attach_to_dynamic_ai_native_target_frame() -> None:
     _seed_frame_descriptor("ops")
 
     rift_configuration = nexus.create_rift_configuration().with_space_type(
-        RiftSpaceType.dynamic
+        RiftSpaceType.codegen
     )
-    rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops-dynamic")
+    rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops-codegen")
     rift.target_frame("ops", set_as_default=True)
 
     assert rift.target_frame_names == ("ops",)
-    assert rift.configuration.get_property("space_type") == RiftSpaceType.dynamic
+    assert rift.configuration.get_property("space_type") == RiftSpaceType.codegen
 
 
 def test_static_rift_can_attach_to_automatic_target_frame_when_rift_enabled() -> None:

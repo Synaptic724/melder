@@ -7490,9 +7490,9 @@ class IStaticRiftSpace(IRiftSpace, Protocol):
 
 
 @runtime_checkable
-class IDynamicRiftSpace(IRiftSpace, Protocol):
+class ICodegenRiftSpace(IRiftSpace, Protocol):
     """
-    Interface for DynamicRiftSpace.
+    Interface for CodegenRiftSpace.
     """
 
 

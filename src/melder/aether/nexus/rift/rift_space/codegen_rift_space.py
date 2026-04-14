@@ -3,30 +3,30 @@ from typing import Dict, Optional
 from melder.aether.nexus.rift.rift_space.command_system.command_system import (
     CommandSystem,
 )
-from melder.aether.nexus.rift.rift_space.command_system.dynamic_command_system import (
-    DynamicCommandSystem,
+from melder.aether.nexus.rift.rift_space.command_system.codegen_command_system import (
+    CodegenCommandSystem,
 )
 from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
-from melder.utilities.interfaces.interfaces import IDynamicRiftSpace, IRiftEventConfiguration
+from melder.utilities.interfaces.interfaces import ICodegenRiftSpace, IRiftEventConfiguration
 
 
-class DynamicRiftSpace(RiftSpace, IDynamicRiftSpace):
+class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
     """
     Internal
 
     Purpose:
-        Represent the richer concrete room type for dynamic/local-construction
+        Represent the richer concrete room type for codegen/local-construction
         workflows.
 
     Contract:
         - Inherits all base room behavior.
-        - Fixes `space_kind` to `dynamic`.
+        - Fixes `space_kind` to `codegen`.
         - Represents the richer room surface intended for local construction,
           mutable room state, and more open-ended workflows.
         - Currently shares the same broad manual runtime command posture as
           capability.
-        - Reserved for later codegen-oriented differentiation rather than a
-          different current manual-runtime policy.
+        - Reserved as the codegen-oriented room rather than a different current
+          manual-runtime policy.
     """
 
     def __init__(
@@ -41,7 +41,7 @@ class DynamicRiftSpace(RiftSpace, IDynamicRiftSpace):
         """
         Internal
 
-        Initialize a dynamic room.
+        Initialize a codegen room.
 
         Args:
             owner_rift_id:
@@ -60,13 +60,13 @@ class DynamicRiftSpace(RiftSpace, IDynamicRiftSpace):
 
         Contract:
             Delegates all storage and lifecycle behavior to `RiftSpace` while
-            fixing the room kind to `dynamic` and composing the dynamic command
+            fixing the room kind to `codegen` and composing the codegen command
             surface.
         """
         super().__init__(
             owner_rift_id,
             space_name=space_name,
-            space_kind="dynamic",
+            space_kind="codegen",
             metadata=metadata,
             event_configuration=event_configuration,
             space_id=space_id,
@@ -74,12 +74,12 @@ class DynamicRiftSpace(RiftSpace, IDynamicRiftSpace):
 
     def _create_command_system(self) -> CommandSystem:
         """
-        Build the dynamic room's command system.
+        Build the codegen room's command system.
 
         Returns:
-            CommandSystem: Dynamic-room command surface.
+            CommandSystem: Codegen-room command surface.
         """
-        return DynamicCommandSystem(
+        return CodegenCommandSystem(
             space=self,
             workstation=self._workstation,
         )

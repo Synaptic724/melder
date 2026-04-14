@@ -137,7 +137,7 @@ def _build_real_rift_viewer() -> object:
     system_configuration.with_target_frame_override(True)
     system_configuration.with_multiple_target_frames(True)
     system_configuration.with_max_target_frame_count(2)
-    system_configuration.with_default_space_type(RiftSpaceType.dynamic)
+    system_configuration.with_default_space_type(RiftSpaceType.codegen)
     system_configuration.with_allowed_target_frame_names(("default", "ops"))
     nexus.enable(system_configuration)
 
@@ -227,7 +227,7 @@ def _build_real_multi_frame_rift_viewer() -> object:
     system_configuration.with_target_frame_override(True)
     system_configuration.with_multiple_target_frames(True)
     system_configuration.with_max_target_frame_count(3)
-    system_configuration.with_default_space_type(RiftSpaceType.dynamic)
+    system_configuration.with_default_space_type(RiftSpaceType.codegen)
     system_configuration.with_allowed_target_frame_names(("default", "ops", "finance"))
     nexus.enable(system_configuration)
 

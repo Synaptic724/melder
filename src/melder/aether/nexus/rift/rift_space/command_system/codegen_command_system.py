@@ -3,15 +3,15 @@ from melder.aether.nexus.rift.rift_space.command_system.command_system import (
 )
 
 
-class DynamicCommandSystem(CommandSystem):
+class CodegenCommandSystem(CommandSystem):
     """
     Internal
 
-    Dynamic-room command surface.
+    Codegen-room command surface.
 
     Purpose:
         Preserve the shared broad runtime command behavior for
-        `DynamicRiftSpace`.
+        `CodegenRiftSpace`.
 
     Contract:
         - Inherits all shared selected-target, ACL, and workstation behavior

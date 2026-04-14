@@ -7,7 +7,7 @@ from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.rift.frame_link.frame_link_contract import FrameLinkContract
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.rift_space.capability_rift_space import CapabilityRiftSpace
-from melder.aether.nexus.rift.rift_space.dynamic_rift_space import DynamicRiftSpace
+from melder.aether.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
 from melder.aether.nexus.rift.rift_space.rift_event_configuration import RiftEventConfiguration
 from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
 from melder.utilities.general_base.cleanable import Cleanable
@@ -59,10 +59,10 @@ class Rift(Cleanable, IRift):
           - Broad manual runtime/object access without codegen.
           - Defaults workstation binds to strong.
           - Lower Melder frame/runtime truth still decides what actually works.
-        - `dynamic`
-          - Programs `DynamicRiftSpace`.
+        - `codegen`
+          - Programs `CodegenRiftSpace`.
           - Currently shares the same broad manual runtime posture as
-            capability.
+          capability.
           - Reserved for later codegen-oriented differentiation.
 
     Lifecycle:
@@ -1076,7 +1076,7 @@ class Rift(Cleanable, IRift):
             - Current mapping is:
               - `static` -> `StaticRiftSpace`
               - `capability` -> `CapabilityRiftSpace`
-              - `dynamic` -> `DynamicRiftSpace`
+              - `codegen` -> `CodegenRiftSpace`
 
         Args:
             space_id:
@@ -1094,8 +1094,8 @@ class Rift(Cleanable, IRift):
         cloned_event_configuration = self._clone_rift_event_configuration(
             configured_event_configuration
         )
-        if configured_space_type == RiftSpaceType.dynamic:
-            primary_space = DynamicRiftSpace(
+        if configured_space_type == RiftSpaceType.codegen:
+            primary_space = CodegenRiftSpace(
                 owner_rift_id=self._id,
                 space_name=configured_space_name,
                 event_configuration=cloned_event_configuration,

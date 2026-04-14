@@ -340,7 +340,8 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
 
         Args:
             space_type:
-                Room-kind enum or string (`static` or `dynamic`) used to
+                Room-kind enum or string (`static`, `capability`, or
+                `codegen`) used to
                 instantiate the primary space during Rift creation.
 
         Returns:
@@ -441,6 +442,8 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
             object: Normalized property value.
         """
         if key == "space_type":
+            if value == "dynamic":
+                value = RiftSpaceType.codegen
             return EnumHelpers.convert_enum_and_check(value, RiftSpaceType)
         if key == "validation_mode":
             return EnumHelpers.convert_enum_and_check(value, RiftValidationMode)

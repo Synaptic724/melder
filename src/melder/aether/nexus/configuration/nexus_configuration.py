@@ -858,6 +858,8 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
         if key == "nexus_frame_mode":
             return EnumHelpers.convert_enum_and_check(value, NexusFrameMode)
         if key == "default_space_type":
+            if value == "dynamic":
+                value = RiftSpaceType.codegen
             return EnumHelpers.convert_enum_and_check(value, RiftSpaceType)
         if key == "default_validation_mode":
             return EnumHelpers.convert_enum_and_check(value, RiftValidationMode)

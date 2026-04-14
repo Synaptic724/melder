@@ -123,7 +123,7 @@ def test_nexus_configuration_set_property_normalizes_enums_and_frame_names() -> 
     )
 
     assert configuration.get_property("nexus_frame_mode") is NexusFrameMode.indexed
-    assert configuration.get_property("default_space_type") is RiftSpaceType.dynamic
+    assert configuration.get_property("default_space_type") is RiftSpaceType.codegen
     assert configuration.get_property("default_validation_mode") is RiftValidationMode.strict
     assert configuration.get_property("allowed_target_frame_names") == (
         "default",
@@ -320,7 +320,7 @@ def test_nexus_configuration_fluent_setters_return_self_and_store_values() -> No
     assert configuration.get_property("allow_target_frame_override") is True
     assert configuration.get_property("allow_multiple_target_frames") is True
     assert configuration.get_property("max_target_frame_count") == 3
-    assert configuration.get_property("default_space_type") is RiftSpaceType.dynamic
+    assert configuration.get_property("default_space_type") is RiftSpaceType.codegen
     assert configuration.get_property("default_auto_activate_on_program") is False
     assert configuration.get_property("default_auto_create_space") is True
     assert configuration.get_property("default_validation_mode") is RiftValidationMode.strict

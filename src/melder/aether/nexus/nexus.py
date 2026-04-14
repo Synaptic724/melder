@@ -2373,9 +2373,9 @@ class Nexus(Cleanable, INexus):
         Rules:
             - AR always requires `rift_enabled=True` on the target
               frame configuration.
-            - Dynamic Rift spaces additionally require
+            - Codegen Rift spaces additionally require
               `ai_native_enabled=True`.
-            - Dynamic Rift spaces additionally require
+            - Codegen Rift spaces additionally require
               `system_state == dynamic`.
             - If a frame declares `ai_native_enabled=True`, it must also be in
               dynamic system state.
@@ -2410,16 +2410,16 @@ class Nexus(Cleanable, INexus):
                 )
             )
 
-        if requested_space_type == RiftSpaceType.dynamic:
+        if requested_space_type == RiftSpaceType.codegen:
             if not ai_native_enabled:
                 raise ValueError(
-                    "Dynamic AR requires ai_native_enabled on target frame '{0}'.".format(
+                    "Codegen AR requires ai_native_enabled on target frame '{0}'.".format(
                         target_frame_name
                     )
                 )
             if target_system_state != SystemState.dynamic:
                 raise ValueError(
-                    "Dynamic AR requires target frame '{0}' to be in dynamic system_state.".format(
+                    "Codegen AR requires target frame '{0}' to be in dynamic system_state.".format(
                         target_frame_name
                     )
                 )

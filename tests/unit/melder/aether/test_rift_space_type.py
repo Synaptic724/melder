@@ -10,7 +10,7 @@ def test_rift_space_type_members_are_stable() -> None:
     assert members == [
         RiftSpaceType.static,
         RiftSpaceType.capability,
-        RiftSpaceType.dynamic,
+        RiftSpaceType.codegen,
     ]
 
 
@@ -21,7 +21,7 @@ def test_rift_space_type_values_are_stable_strings() -> None:
     assert [member.value for member in RiftSpaceType] == [
         "static",
         "capability",
-        "dynamic",
+        "codegen",
     ]
 
 
