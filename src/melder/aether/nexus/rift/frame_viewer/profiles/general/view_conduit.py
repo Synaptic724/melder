@@ -1,3 +1,4 @@
+import threading
 from typing import Dict, List, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -29,6 +30,7 @@ class GeneralViewConduit(Cleanable):
         "inside one bound frame."
     )
     __slots__ = Cleanable.__slots__ + [
+        "_lock",
         "_frame_view",
     ]
 
@@ -48,19 +50,28 @@ class GeneralViewConduit(Cleanable):
             None.
         """
         super().__init__()
+        self._lock: threading.RLock = threading.RLock()
         self._frame_view: Optional[GeneralViewFrame] = frame_view
 
     def cleanup(self) -> None:
         """
         Idempotently drop the borrowed frame-helper reference.
 
+        Contract:
+            - Safe to call more than once.
+            - Runs grouped teardown under the helper-owned instance lock.
+
         Returns:
             None.
         """
         if self._cleaned:
             return
-        self._cleaned = True
-        self._frame_view = None
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._frame_view = None
+            self._lock = None
 
     def list_conduits(self, *, frame_name: Optional[str] = None) -> List[FrameLink]:
         """

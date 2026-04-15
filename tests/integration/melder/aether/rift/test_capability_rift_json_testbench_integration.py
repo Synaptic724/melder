@@ -7,7 +7,7 @@ from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.nexus.nexus import Nexus
-from melder.aether.nexus.rift.rift_space.command_system.command_system import (
+from melder.aether.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
 from melder.spellbook.spellbook import Spellbook

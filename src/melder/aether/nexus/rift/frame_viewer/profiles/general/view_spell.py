@@ -1,3 +1,4 @@
+import threading
 from typing import Any, Dict, List, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -36,6 +37,7 @@ class GeneralViewSpell(Cleanable):
         "frame."
     )
     __slots__ = Cleanable.__slots__ + [
+        "_lock",
         "_frame_view",
     ]
 
@@ -55,19 +57,28 @@ class GeneralViewSpell(Cleanable):
             None.
         """
         super().__init__()
+        self._lock: threading.RLock = threading.RLock()
         self._frame_view: Optional[GeneralViewFrame] = frame_view
 
     def cleanup(self) -> None:
         """
         Idempotently drop the borrowed frame-helper reference.
 
+        Contract:
+            - Safe to call more than once.
+            - Runs grouped teardown under the helper-owned instance lock.
+
         Returns:
             None.
         """
         if self._cleaned:
             return
-        self._cleaned = True
-        self._frame_view = None
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._frame_view = None
+            self._lock = None
 
     def list_spells(self, *, frame_name: Optional[str] = None) -> List[FrameLink]:
         """

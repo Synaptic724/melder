@@ -34,6 +34,10 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
     Lifecycle:
         Cleanup is idempotent and cascades into the helper objects before the
         inherited profile cleanup clears the binding state.
+
+    Threading / Concurrency:
+        Reuses the inherited profile lock for grouped helper cleanup and base
+        profile teardown.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -168,21 +172,29 @@ class GeneralFrameViewerProfile(FrameViewerProfile):
         """
         Idempotently clear the helper trio before base-profile cleanup runs.
 
+        Contract:
+            - Safe to call more than once.
+            - Runs grouped helper teardown under the inherited profile lock.
+            - Defers template/binding metadata cleanup to the base profile.
+
         Returns:
             None.
         """
         if self._cleaned:
             return
-        if self._view_spell is not None:
-            self._view_spell.cleanup()
-            self._view_spell = None
-        if self._view_conduit is not None:
-            self._view_conduit.cleanup()
-            self._view_conduit = None
-        if self._view_frame is not None:
-            self._view_frame.cleanup()
-            self._view_frame = None
-        super().cleanup()
+        with self._lock:
+            if self._cleaned:
+                return
+            if self._view_spell is not None:
+                self._view_spell.cleanup()
+                self._view_spell = None
+            if self._view_conduit is not None:
+                self._view_conduit.cleanup()
+                self._view_conduit = None
+            if self._view_frame is not None:
+                self._view_frame.cleanup()
+                self._view_frame = None
+            super().cleanup()
 
     def _rebuild_helper_surfaces(self) -> None:
         """

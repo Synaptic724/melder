@@ -1,4 +1,5 @@
 import json
+import threading
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
@@ -67,16 +68,16 @@ class FrameACLConfiguration(Cleanable):
         configuration objects.
 
     Threading / Concurrency:
-        - This object itself does not own a lock.
-        - It relies on owning container/builder lifecycle rules for serialized
-          mutation, and it owns child configuration objects that manage their
-          own internal locks where needed.
+        - Owns one instance lock for grouped cleanup and lifecycle mutation.
+        - Still relies on owning container/builder lifecycle rules for higher-
+          level serialized draft/chain mutation.
     """
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
         "_configuration_id",
+        "_lock",
         "_frame_name",
         "_source_configuration_id",
         "_previous_configuration_id",
@@ -147,6 +148,7 @@ class FrameACLConfiguration(Cleanable):
             raise TypeError("locked must be a bool.")
         self._id: str = IDBuilder.create_id()
         self._configuration_id: str = IDBuilder.create_id()
+        self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
         self._source_configuration_id: Optional[str] = source_configuration_id
         self._previous_configuration_id: Optional[str] = previous_configuration_id
@@ -376,20 +378,24 @@ class FrameACLConfiguration(Cleanable):
         """
         if self._cleaned:
             return
-        self._cleaned = True
-        self._view_configuration.cleanup()
-        self._command_configuration.cleanup()
-        self._codegen_configuration.cleanup()
-        self._configuration_id = None
-        self._frame_name = None
-        self._source_configuration_id = None
-        self._previous_configuration_id = None
-        self._created_at = None
-        self._reason = None
-        self._locked = None
-        self._view_configuration = None
-        self._command_configuration = None
-        self._codegen_configuration = None
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._view_configuration.cleanup()
+            self._command_configuration.cleanup()
+            self._codegen_configuration.cleanup()
+            self._configuration_id = None
+            self._frame_name = None
+            self._source_configuration_id = None
+            self._previous_configuration_id = None
+            self._created_at = None
+            self._reason = None
+            self._locked = None
+            self._view_configuration = None
+            self._command_configuration = None
+            self._codegen_configuration = None
+            self._lock = None
 
     @property
     def configuration_id(self) -> str:

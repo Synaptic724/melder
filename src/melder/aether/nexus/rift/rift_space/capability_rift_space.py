@@ -1,9 +1,9 @@
 from typing import Dict, Optional
 
-from melder.aether.nexus.rift.rift_space.command_system.capability_command_system import (
+from melder.aether.nexus.rift.command_system.capability_command_system import (
     CapabilityCommandSystem,
 )
-from melder.aether.nexus.rift.rift_space.command_system.command_system import (
+from melder.aether.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
 from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace

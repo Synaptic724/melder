@@ -6,7 +6,7 @@ from typing import Callable, Deque, Dict, List, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
-from melder.aether.nexus.rift.rift_space.command_system.command_system import (
+from melder.aether.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
 from melder.aether.nexus.rift.rift_space.workstation import Workstation

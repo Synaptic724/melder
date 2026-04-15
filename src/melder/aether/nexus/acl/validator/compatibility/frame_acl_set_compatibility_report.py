@@ -1,3 +1,4 @@
+import threading
 from typing import List, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -24,6 +25,7 @@ class FrameACLSetCompatibilityReport(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
+        "_lock",
         "_frame_name",
         "_configuration_id",
         "_warnings",
@@ -58,6 +60,7 @@ class FrameACLSetCompatibilityReport(Cleanable):
         if not configuration_id:
             raise ValueError("configuration_id cannot be empty.")
         self._id: str = IDBuilder.create_id()
+        self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
         self._configuration_id: str = configuration_id
         self._warnings: List[str] = []
@@ -70,20 +73,25 @@ class FrameACLSetCompatibilityReport(Cleanable):
         Contract:
             - Safe to call more than once.
             - Clears recorded warnings/errors and identity references.
+            - Runs grouped teardown under the report-owned instance lock.
 
         Returns:
             None.
         """
         if self._cleaned:
             return
-        self._cleaned = True
-        self._warnings.clear()
-        self._errors.clear()
-        self._frame_name = None
-        self._configuration_id = None
-        self._warnings = None
-        self._errors = None
-        self._id = None
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._warnings.clear()
+            self._errors.clear()
+            self._frame_name = None
+            self._configuration_id = None
+            self._warnings = None
+            self._errors = None
+            self._id = None
+            self._lock = None
 
     @property
     def frame_name(self) -> str:

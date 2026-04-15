@@ -1,6 +1,6 @@
 from typing import Optional
 
-from melder.aether.nexus.rift.rift_space.command_system.command_system import (
+from melder.aether.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
 from melder.spellbook.existence.existence import Existence

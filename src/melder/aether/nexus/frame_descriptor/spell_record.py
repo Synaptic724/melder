@@ -1,3 +1,4 @@
+import threading
 from typing import Any, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -29,6 +30,7 @@ class SpellRecord(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
+        "_lock",
         "nexus_label",
         "nexus_version",
         "origin_spellbook_id",
@@ -115,6 +117,7 @@ class SpellRecord(Cleanable):
         if not isinstance(payload, ISpellDescriptorPayload):
             raise TypeError("payload must satisfy ISpellDescriptorPayload.")
         self._id: str = IDBuilder.create_id()
+        self._lock: threading.RLock = threading.RLock()
         self.nexus_label = nexus_label
         self.nexus_version = nexus_version
         self.origin_spellbook_id = origin_spellbook_id
@@ -154,22 +157,28 @@ class SpellRecord(Cleanable):
             - Cleans the owned descriptor payload before dropping the payload
               reference.
             - Leaves future callers to fail through `check_cleaned()`.
+            - Runs grouped teardown under the record-owned instance lock.
         """
         if self._cleaned:
             return
-        self._cleaned = True
-        self.nexus_label = None
-        self.nexus_version = None
-        self.origin_spellbook_id = None
-        self.frame_name = None
-        self.owner_conduit_id = None
-        self.spell_id = None
-        self.spell_index_id = None
-        self.spell_name = None
-        self.spellframe = None
-        self.binding_name = None
-        self.permissions = None
-        self.existence = None
-        if self.payload is not None:
-            self.payload.cleanup()
-        self.payload = None
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self.nexus_label = None
+            self.nexus_version = None
+            self.origin_spellbook_id = None
+            self.frame_name = None
+            self.owner_conduit_id = None
+            self.spell_id = None
+            self.spell_index_id = None
+            self.spell_name = None
+            self.spellframe = None
+            self.binding_name = None
+            self.permissions = None
+            self.existence = None
+            if self.payload is not None:
+                self.payload.cleanup()
+            self.payload = None
+            self._id = None
+            self._lock = None

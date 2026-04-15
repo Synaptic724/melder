@@ -1,3 +1,4 @@
+import threading
 from typing import Any, Dict, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -102,6 +103,7 @@ class SpellDescriptorPayload(Cleanable):
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_lock",
         "payload_type",
         "payload_version",
         "source_profile_name",
@@ -177,6 +179,7 @@ class SpellDescriptorPayload(Cleanable):
             raise ValueError(
                 "source_profile_version requires source_profile_name."
             )
+        self._lock: threading.RLock = threading.RLock()
         self.payload_type = payload_type
         self.payload_version = payload_version
         self.source_profile_name = source_profile_name
@@ -259,26 +262,31 @@ class SpellDescriptorPayload(Cleanable):
             - Safe to call more than once.
             - Clears owned mapping payloads before dropping field references.
             - Leaves future callers to fail through `check_cleaned()`.
+            - Runs grouped teardown under the payload-owned instance lock.
         """
         if self._cleaned:
             return
-        self._cleaned = True
-        if isinstance(self.binding_payload, dict):
-            self.binding_payload.clear()
-        if isinstance(self.metadata, dict):
-            self.metadata.clear()
-        if isinstance(self.instance_members, dict):
-            self.instance_members.clear()
-        if isinstance(self.dynamic_access, dict):
-            self.dynamic_access.clear()
-        self.payload_type = None
-        self.payload_version = None
-        self.source_profile_name = None
-        self.source_profile_version = None
-        self.binding_payload = None
-        self.resolution_payload = None
-        self.class_profile = None
-        self.callable_profile = None
-        self.metadata = None
-        self.instance_members = None
-        self.dynamic_access = None
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            if isinstance(self.binding_payload, dict):
+                self.binding_payload.clear()
+            if isinstance(self.metadata, dict):
+                self.metadata.clear()
+            if isinstance(self.instance_members, dict):
+                self.instance_members.clear()
+            if isinstance(self.dynamic_access, dict):
+                self.dynamic_access.clear()
+            self.payload_type = None
+            self.payload_version = None
+            self.source_profile_name = None
+            self.source_profile_version = None
+            self.binding_payload = None
+            self.resolution_payload = None
+            self.class_profile = None
+            self.callable_profile = None
+            self.metadata = None
+            self.instance_members = None
+            self.dynamic_access = None
+            self._lock = None

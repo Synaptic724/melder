@@ -1,3 +1,4 @@
+import threading
 from typing import Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -28,6 +29,7 @@ class ConduitRecord(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
+        "_lock",
         "nexus_label",
         "nexus_version",
         "conduit_id",
@@ -90,6 +92,7 @@ class ConduitRecord(Cleanable):
         if not isinstance(payload, IConduitDescriptorPayload):
             raise TypeError("payload must satisfy IConduitDescriptorPayload.")
         self._id: str = IDBuilder.create_id()
+        self._lock: threading.RLock = threading.RLock()
         self.nexus_label = nexus_label
         self.nexus_version = nexus_version
         self.conduit_id = conduit_id
@@ -108,16 +111,22 @@ class ConduitRecord(Cleanable):
             - Cleans the owned descriptor payload before dropping the payload
               reference.
             - Leaves future callers to fail through `check_cleaned()`.
+            - Runs grouped teardown under the record-owned instance lock.
         """
         if self._cleaned:
             return
-        self._cleaned = True
-        self.nexus_label = None
-        self.nexus_version = None
-        self.conduit_id = None
-        self.root_conduit_id = None
-        self.frame_name = None
-        self.origin_spellbook_id = None
-        if self.payload is not None:
-            self.payload.cleanup()
-        self.payload = None
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self.nexus_label = None
+            self.nexus_version = None
+            self.conduit_id = None
+            self.root_conduit_id = None
+            self.frame_name = None
+            self.origin_spellbook_id = None
+            if self.payload is not None:
+                self.payload.cleanup()
+            self.payload = None
+            self._id = None
+            self._lock = None

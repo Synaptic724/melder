@@ -1,3 +1,4 @@
+import threading
 from typing import Any, Dict, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -26,6 +27,7 @@ class FrameACLRule(Cleanable):
     _VALID_EFFECTS = (_ALLOW_EFFECT, _DENY_EFFECT)
     __slots__ = Cleanable.__slots__ + [
         "_id",
+        "_lock",
         "_rule_name",
         "_operation",
         "_effect",
@@ -70,6 +72,7 @@ class FrameACLRule(Cleanable):
         if conditions is not None and not isinstance(conditions, dict):
             raise TypeError("conditions must be a dict when provided.")
         self._id: str = IDBuilder.create_id()
+        self._lock: threading.RLock = threading.RLock()
         self._rule_name: str = rule_name
         self._operation: str = operation
         self._effect: str = effect
@@ -84,20 +87,25 @@ class FrameACLRule(Cleanable):
         Contract:
             - Clears the owned detached condition map.
             - Drops the rule's identity and payload references.
+            - Runs grouped teardown under the rule-owned instance lock.
 
         Returns:
             None.
         """
         if self._cleaned:
             return
-        self._cleaned = True
-        if self._conditions is not None:
-            self._conditions.clear()
-        self._rule_name = None
-        self._operation = None
-        self._effect = None
-        self._conditions = None
-        self._id = None
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            if self._conditions is not None:
+                self._conditions.clear()
+            self._rule_name = None
+            self._operation = None
+            self._effect = None
+            self._conditions = None
+            self._id = None
+            self._lock = None
 
     @property
     def id(self) -> str:

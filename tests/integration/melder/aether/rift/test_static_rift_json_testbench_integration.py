@@ -11,7 +11,7 @@ from melder.aether.nexus.nexus import Nexus
 from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
     StaticFrameViewer,
 )
-from melder.aether.nexus.rift.rift_space.command_system.command_system import (
+from melder.aether.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
 from melder.spellbook.spellbook import Spellbook

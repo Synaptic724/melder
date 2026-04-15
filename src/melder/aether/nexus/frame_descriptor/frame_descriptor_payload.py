@@ -1,3 +1,4 @@
+import threading
 from typing import Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -21,6 +22,7 @@ class FrameDescriptorPayload(Cleanable):
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
+        "_lock",
         "payload_version",
         "system_state",
         "ai_native_enabled",
@@ -89,6 +91,7 @@ class FrameDescriptorPayload(Cleanable):
         super().__init__()
         if not payload_version:
             raise ValueError("payload_version cannot be empty.")
+        self._lock: threading.RLock = threading.RLock()
         self.payload_version: str = payload_version
         self.system_state = system_state
         self.ai_native_enabled = ai_native_enabled
@@ -109,18 +112,23 @@ class FrameDescriptorPayload(Cleanable):
             - Safe to call more than once.
             - Clears all stored descriptor-facing posture fields.
             - Leaves future callers to fail through `check_cleaned()`.
+            - Runs grouped teardown under the payload-owned instance lock.
         """
         if self._cleaned:
             return
-        self._cleaned = True
-        self.payload_version = None
-        self.system_state = None
-        self.ai_native_enabled = None
-        self.rift_enabled = None
-        self.root_conduit_count = None
-        self.root_conduit_ids = None
-        self.named_root_conduits = None
-        self.conduit_cloud_entry_count = None
-        self.conduit_cloud_names = None
-        self.cluster_count = None
-        self.cluster_names = None
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self.payload_version = None
+            self.system_state = None
+            self.ai_native_enabled = None
+            self.rift_enabled = None
+            self.root_conduit_count = None
+            self.root_conduit_ids = None
+            self.named_root_conduits = None
+            self.conduit_cloud_entry_count = None
+            self.conduit_cloud_names = None
+            self.cluster_count = None
+            self.cluster_names = None
+            self._lock = None

@@ -1,3 +1,4 @@
+import threading
 from typing import Dict, List, Set, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -40,6 +41,7 @@ class FrameACLCompiler(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
+        "_lock",
         "_profile_builder",
     ]
 
@@ -59,20 +61,30 @@ class FrameACLCompiler(Cleanable):
         if profile_builder is None:
             raise TypeError("profile_builder cannot be None.")
         self._id: str = IDBuilder.create_id()
+        self._lock: threading.RLock = threading.RLock()
         self._profile_builder: IFrameACLProfileBuilder = profile_builder
 
     def cleanup(self) -> None:
         """
         Idempotently clear compiler-owned references.
 
+        Contract:
+            - Safe to call more than once.
+            - Runs grouped teardown under the compiler-owned instance lock.
+            - Drops only compiler-owned references.
+
         Returns:
             None.
         """
         if self._cleaned:
             return
-        self._cleaned = True
-        self._profile_builder = None
-        self._id = None
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._profile_builder = None
+            self._id = None
+            self._lock = None
 
     def compile_frame_access_surface(
             self,

@@ -30,21 +30,20 @@ from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
 )
 from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
 from melder.aether.nexus.nexus import Nexus
-from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
     StaticFrameViewer,
 )
-from melder.aether.nexus.rift.rift_space.command_system.capability_command_system import (
+from melder.aether.nexus.rift.command_system.capability_command_system import (
     CapabilityCommandSystem,
 )
-from melder.aether.nexus.rift.rift_space.command_system.command_system import (
+from melder.aether.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
-from melder.aether.nexus.rift.rift_space.command_system.codegen_command_system import (
+from melder.aether.nexus.rift.command_system.codegen_command_system import (
     CodegenCommandSystem,
 )
-from melder.aether.nexus.rift.rift_space.command_system.static_command_system import (
+from melder.aether.nexus.rift.command_system.static_command_system import (
     StaticCommandSystem,
 )
 from melder.aether.nexus.rift.rift_space.rift_event_configuration import (

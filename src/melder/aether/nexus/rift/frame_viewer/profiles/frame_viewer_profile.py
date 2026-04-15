@@ -1,3 +1,4 @@
+import threading
 from typing import Dict, Mapping, Optional, Sequence, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -30,6 +31,9 @@ class FrameViewerProfile(Cleanable):
     Lifecycle:
         Cleanup is idempotent, clears only owned profile metadata, and never
         disposes bound descriptor or ACL objects because they are not owned here.
+
+    Threading / Concurrency:
+        Owns one instance lock for grouped cleanup of profile-owned state.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -41,6 +45,7 @@ class FrameViewerProfile(Cleanable):
     )
     __slots__ = Cleanable.__slots__ + [
         "_profile_id",
+        "_lock",
         "_name",
         "_version",
         "_required_nexus_label",
@@ -114,6 +119,7 @@ class FrameViewerProfile(Cleanable):
             None.
         """
         super().__init__()
+        self._lock: threading.RLock = threading.RLock()
         if not name:
             raise ValueError("name cannot be empty.")
         if not version:
@@ -771,22 +777,26 @@ class FrameViewerProfile(Cleanable):
         """
         if self._cleaned:
             return
-        self._cleaned = True
-        self._tool_handler_names_by_name.clear()
-        self._tool_handler_names_by_name = None
-        self._default_grouping = None
-        self._default_detail_level = None
-        self._required_nexus_label = None
-        self._required_nexus_version = None
-        self._required_acl_view_profile_name = None
-        self._required_acl_view_profile_version = None
-        self._bound_frame_name = None
-        self._frame_descriptor = None
-        self._frame_acl_configuration = None
-        self._compiled_access_surface = None
-        self._version = None
-        self._name = None
-        self._profile_id = None
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._tool_handler_names_by_name.clear()
+            self._tool_handler_names_by_name = None
+            self._default_grouping = None
+            self._default_detail_level = None
+            self._required_nexus_label = None
+            self._required_nexus_version = None
+            self._required_acl_view_profile_name = None
+            self._required_acl_view_profile_version = None
+            self._bound_frame_name = None
+            self._frame_descriptor = None
+            self._frame_acl_configuration = None
+            self._compiled_access_surface = None
+            self._version = None
+            self._name = None
+            self._profile_id = None
+            self._lock = None
 
     @staticmethod
     def _assert_descriptor_records_match_nexus_contract(

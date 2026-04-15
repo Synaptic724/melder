@@ -9,7 +9,7 @@ from melder.aether.nexus.rift.rift import Rift
 from melder.aether.nexus.rift.rift_space.capability_rift_space import (
     CapabilityRiftSpace,
 )
-from melder.aether.nexus.rift.rift_space.command_system.command_system import (
+from melder.aether.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
 from melder.spellbook.configuration.configuration import Configuration

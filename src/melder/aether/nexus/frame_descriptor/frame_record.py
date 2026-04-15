@@ -1,3 +1,4 @@
+import threading
 from typing import Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -29,6 +30,7 @@ class FrameRecord(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
+        "_lock",
         "nexus_label",
         "nexus_version",
         "frame_name",
@@ -87,6 +89,7 @@ class FrameRecord(Cleanable):
         if not isinstance(payload, IFrameDescriptorPayload):
             raise TypeError("payload must satisfy IFrameDescriptorPayload.")
         self._id: str = IDBuilder.create_id()
+        self._lock: threading.RLock = threading.RLock()
         self.nexus_label = nexus_label
         self.nexus_version = nexus_version
         self.frame_name = frame_name
@@ -104,15 +107,21 @@ class FrameRecord(Cleanable):
             - Cleans the owned descriptor payload before dropping the payload
               reference.
             - Leaves future callers to fail through `check_cleaned()`.
+            - Runs grouped teardown under the record-owned instance lock.
         """
         if self._cleaned:
             return
-        self._cleaned = True
-        self.nexus_label = None
-        self.nexus_version = None
-        self.frame_name = None
-        self.frame_id = None
-        self.config_origin_spellbook_id = None
-        if self.payload is not None:
-            self.payload.cleanup()
-        self.payload = None
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self.nexus_label = None
+            self.nexus_version = None
+            self.frame_name = None
+            self.frame_id = None
+            self.config_origin_spellbook_id = None
+            if self.payload is not None:
+                self.payload.cleanup()
+            self.payload = None
+            self._id = None
+            self._lock = None
