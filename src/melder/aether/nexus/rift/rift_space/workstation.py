@@ -136,7 +136,8 @@ class Workstation(Cleanable):
         """
         if self._cleaned:
             return
-        with self._lock:
+        lock = self._lock
+        with lock:
             if self._cleaned:
                 return
             self._cleaned = True

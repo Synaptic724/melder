@@ -161,7 +161,6 @@ class Rift(Cleanable, IRift):
             raise TypeError("nexus cannot be None.")
         if not isinstance(nexus, INexus):
             raise TypeError("nexus must satisfy INexus.")
-        nexus.check_cleaned()
         if not nexus.is_configured:
             raise RuntimeError("Rift requires a configured Nexus.")
         if not nexus.is_enabled:
