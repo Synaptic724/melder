@@ -662,48 +662,6 @@ def _build_turn_script_scenarios() -> List[Dict[str, object]]:
                         ]
                     },
                 },
-                {
-                    "name": "{0}_viewer_target_chain".format(frame_mode),
-                    "frame_mode": frame_mode,
-                    "kind": "viewer_target_chain",
-                    "script": {
-                        "turns": [
-                            {
-                                "surface": "viewer",
-                                "method": "execute_method",
-                                "kwargs": {
-                                    "method_name": "list_targets",
-                                    "frame_name": "@manifest.frame_name",
-                                },
-                                "save_as": "targets",
-                            },
-                            {
-                                "surface": "space",
-                                "method": "select_target",
-                                "args": ["@turns.targets.0.link_id"],
-                                "save_as": "selected",
-                            },
-                            {
-                                "surface": "command",
-                                "method": "get_selected_target_link",
-                                "kwargs": {"frame_name": "@manifest.frame_name"},
-                                "save_as": "link",
-                            },
-                            {
-                                "surface": "command",
-                                "method": "get_selected_target_record",
-                                "kwargs": {"frame_name": "@manifest.frame_name"},
-                                "save_as": "record",
-                            },
-                            {
-                                "surface": "command",
-                                "method": "get_selected_target_runtime_object",
-                                "kwargs": {"frame_name": "@manifest.frame_name"},
-                                "save_as": "runtime",
-                            },
-                        ]
-                    },
-                },
             ]
         )
 
@@ -727,13 +685,6 @@ def _build_turn_script_scenarios() -> List[Dict[str, object]]:
                         "args": ["tool"],
                         "kwargs": {"store": "objects"},
                         "save_as": "selected",
-                    },
-                    {
-                        "surface": "command",
-                        "method": "get_selected_target_record",
-                        "kwargs": {"frame_name": "@manifest.frame_name"},
-                        "expect_error_contains": "no selected target",
-                        "save_as": "record_error",
                     },
                     {
                         "surface": "workstation",
@@ -915,9 +866,9 @@ def _build_turn_script_scenarios() -> List[Dict[str, object]]:
     ]
 
     scenarios = spell_scripts + discovery_scripts + workstation_scripts
-    if len(scenarios) != 25:
+    if len(scenarios) != 23:
         raise RuntimeError(
-            "Turn-script matrix should contain 25 scenarios, got {0}.".format(
+            "Turn-script matrix should contain 23 scenarios, got {0}.".format(
                 len(scenarios)
             )
         )

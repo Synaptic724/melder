@@ -6961,36 +6961,6 @@ class ICommandSystem(ICleanable, Protocol):
         """
         ...
 
-    def get_selected_target_link(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> object:
-        """
-        Return the single selected viewer target link for one frame.
-        """
-        ...
-
-    def get_selected_target_record(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> object:
-        """
-        Return the descriptor-backed record for the single selected viewer target.
-        """
-        ...
-
-    def get_selected_target_runtime_object(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> object:
-        """
-        Return the live runtime object for the single selected viewer target.
-        """
-        ...
-
     def get_conduit_cloud(
             self,
             *,

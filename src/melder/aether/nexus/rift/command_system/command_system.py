@@ -7,7 +7,6 @@ from melder.aether.aether import Aether
 from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
     CompiledFrameACLAccessSurface,
 )
-from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 
@@ -23,10 +22,10 @@ class CommandSystem(Cleanable):
         split without owning discovery or persistence itself.
 
     Contract:
-        - Uses `RiftSpace` selected target ids plus the attached viewer for
-          selected-target getters.
-        - Enforces compiled command ACL state on selected-target and direct
-          fetch paths before exposing frame/conduit/spell runtime objects.
+        - Uses the owning `RiftSpace` command projections as the command
+          substrate.
+        - Enforces compiled command ACL state on direct fetch paths before
+          exposing frame/conduit/spell runtime objects.
         - Uses the owned workstation for active-target attribute/method getters
           and method execution.
         - Does not store results itself. Callers that want persistence must
@@ -50,9 +49,6 @@ class CommandSystem(Cleanable):
     ]
     _MEMORY_EMISSION_METHOD_NAMES = frozenset(
         (
-            "get_selected_target_link",
-            "get_selected_target_record",
-            "get_selected_target_runtime_object",
             "get_conduit_cloud",
             "get_conduit_by_id",
             "get_conduit_by_name",
@@ -218,158 +214,6 @@ class CommandSystem(Cleanable):
         self.check_cleaned()
         with self._lock:
             return self._owner_space_id
-
-    def get_selected_target_link(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> FrameLink:
-        """
-        Return the single selected viewer target link for one frame.
-
-        Contract:
-            - Requires the selected-target set to contain exactly one target in
-              the resolved frame.
-            - Re-resolves the live viewer target list and returns the matching
-              `FrameLink` instead of caching links locally.
-
-        Args:
-            frame_name:
-                Optional frame name. When omitted, the room default frame is
-                used.
-
-        Returns:
-            FrameLink: The selected target link.
-
-        Raises:
-            ValueError:
-                If no selected target exists, the selected set is ambiguous, or
-                command ACL denies access to the resolved target.
-        """
-        self.check_cleaned()
-        with self._lock:
-            frame_link = self._space.get_selected_target_link_for_command(
-                frame_name=frame_name
-            )
-            self._assert_selected_target_command_enabled(frame_link)
-            return frame_link
-
-    def get_selected_target_record(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> object:
-        """
-        Return the descriptor-backed record for the single selected viewer target.
-
-        Contract:
-            - Resolves the selected target through the viewer first.
-            - Returns the corresponding frame overview, conduit record, or
-              spell record depending on target kind.
-            - Raises instead of fabricating a fallback for unsupported target
-              kinds.
-
-        Args:
-            frame_name:
-                Optional frame name. When omitted, the room default frame is
-                used.
-
-        Returns:
-            object: Selected frame/conduit/spell record.
-
-        Raises:
-            ValueError:
-                If no selected target exists or the selected target kind is not
-                supported, or command ACL denies access to the target.
-        """
-        self.check_cleaned()
-        with self._lock:
-            selected_target = self.get_selected_target_link(frame_name=frame_name)
-            descriptor = self._space.get_required_command_projection(
-                selected_target.frame_name
-            ).frame_descriptor
-            if selected_target.source_kind == "frame":
-                if descriptor.frame_overview is None:
-                    raise ValueError(
-                        "Frame '{0}' has no published frame overview.".format(
-                            selected_target.frame_name
-                        )
-                    )
-                return descriptor.frame_overview
-            if selected_target.source_kind == "conduit":
-                try:
-                    return descriptor.conduit_records_by_id[selected_target.source_id]
-                except KeyError as exc:
-                    raise ValueError(
-                        "Conduit '{0}' was not found in frame '{1}'.".format(
-                            selected_target.source_id,
-                            selected_target.frame_name,
-                        )
-                    ) from exc
-            if selected_target.source_kind == "spell":
-                return self._get_required_published_spell_record_by_source_id(
-                    selected_target.source_id,
-                    frame_name=selected_target.frame_name,
-                )
-            raise ValueError(
-                "Unsupported selected target kind '{0}'.".format(
-                    selected_target.source_kind
-                )
-            )
-
-    def get_selected_target_runtime_object(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> object:
-        """
-        Return the live runtime object for the single selected viewer target.
-
-        Args:
-            frame_name:
-                Optional frame name. When omitted, the room default frame is
-                used.
-
-        Returns:
-            object: Live frame handle, conduit object, or spell object.
-
-        Raises:
-            ValueError:
-                If the selected target kind is unsupported or command ACL
-                denies access to the resolved target.
-        """
-        self.check_cleaned()
-        with self._lock:
-            selected_target = self.get_selected_target_link(frame_name=frame_name)
-            self._assert_raw_runtime_object_access_allowed(
-                "get_selected_target_runtime_object"
-            )
-            if selected_target.source_kind == "frame":
-                descriptor = self._space.get_required_command_projection(
-                    selected_target.frame_name
-                ).frame_descriptor
-                if descriptor.frame_handle is None:
-                    raise ValueError(
-                        "Frame '{0}' has no live frame handle.".format(
-                            selected_target.frame_name
-                        )
-                    )
-                return descriptor.frame_handle
-            if selected_target.source_kind == "conduit":
-                return self.get_conduit_by_id(
-                    selected_target.source_id,
-                    frame_name=selected_target.frame_name,
-                )
-            if selected_target.source_kind == "spell":
-                return self.get_spell_by_source_id(
-                    selected_target.source_id,
-                    frame_name=selected_target.frame_name,
-                )
-            raise ValueError(
-                "Unsupported selected target kind '{0}'.".format(
-                    selected_target.source_kind
-                )
-            )
 
     def get_conduit_cloud(
             self,
@@ -1667,9 +1511,6 @@ class CommandSystem(Cleanable):
         """
         self.check_cleaned()
         return (
-            "get_selected_target_link",
-            "get_selected_target_record",
-            "get_selected_target_runtime_object",
             "get_conduit_cloud",
             "get_conduit_by_id",
             "get_conduit_by_name",
@@ -1837,83 +1678,6 @@ class CommandSystem(Cleanable):
             return self._resolve_runtime_frame_name(frame_name)
         except Exception:
             return None
-
-    def _resolve_selected_target_ids(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> Tuple[str, Tuple[str, ...]]:
-        """
-        Resolve one frame name and its selected target ids.
-
-        Args:
-            frame_name:
-                Optional explicit frame name.
-
-        Returns:
-            Tuple[str, Tuple[str, ...]]: Resolved frame name and selected ids.
-        """
-        selected_frame_name = (
-            frame_name
-            if frame_name is not None
-            else self._space.get_default_runtime_frame_name()
-        )
-        if selected_frame_name is None:
-            raise ValueError("RiftSpace has no default selected frame.")
-        return (
-            selected_frame_name,
-            tuple(self._space.list_selected_target_ids(frame_name=selected_frame_name)),
-        )
-
-    def _assert_selected_target_command_enabled(
-            self,
-            frame_link: FrameLink,
-    ) -> None:
-        """
-        Enforce command ACL on one selected viewer target.
-
-        Contract:
-            - Applies command ACL only to selected-target access paths.
-            - Resolves spell targets through published descriptor truth so
-              spell gating stays on stable lineage identity.
-            - Leaves unsupported target kinds to the public callers so they
-              retain the existing kind-specific error behavior.
-
-        Args:
-            frame_link:
-                Selected viewer target link being resolved.
-
-        Returns:
-            None.
-
-        Raises:
-            ValueError:
-                If command ACL denies access to the selected frame, conduit, or
-                spell target.
-        """
-        if frame_link.source_kind == "frame":
-            self._assert_frame_command_enabled(frame_link.frame_name)
-            return
-        if frame_link.source_kind == "conduit":
-            self._assert_frame_command_enabled(frame_link.frame_name)
-            self._assert_conduit_command_enabled(
-                frame_link.source_id,
-                frame_name=frame_link.frame_name,
-            )
-            return
-        if frame_link.source_kind == "spell":
-            self._assert_frame_command_enabled(frame_link.frame_name)
-            descriptor = self._space.get_required_command_projection(
-                frame_link.frame_name
-            ).frame_descriptor
-            spell_record = self._get_required_published_spell_record_by_source_id(
-                frame_link.source_id,
-                frame_name=frame_link.frame_name,
-            )
-            self._assert_spell_command_enabled(
-                spell_record.spell_index_id,
-                frame_name=frame_link.frame_name,
-            )
 
     def _assert_raw_runtime_object_access_allowed(
             self,
@@ -2284,7 +2048,7 @@ class CommandSystem(Cleanable):
 
         Raises:
             ValueError:
-                If the attached viewer does not host the requested frame.
+                If the room has no command projection for the requested frame.
         """
         return self._space.get_required_command_projection(
             frame_name

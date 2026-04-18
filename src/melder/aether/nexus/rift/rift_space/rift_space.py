@@ -2,16 +2,11 @@ import threading
 from typing import Dict, List, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
-from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
-from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
-from melder.aether.nexus.rift.projection.command_projection import CommandProjection
 from melder.aether.nexus.rift.projection.frame_projection_set import (
     FrameProjectionSet,
 )
-from melder.aether.nexus.rift.projection.view_projection import ViewProjection
 from melder.aether.nexus.rift.rift_space.event_system.rift_event_system import (
     RiftEventSystem,
 )
@@ -406,13 +401,6 @@ class RiftSpace(Cleanable, IRiftSpace):
             if self._frame_viewer is not None and self._frame_viewer is not frame_viewer:
                 self._frame_viewer.cleanup()
             self._bind_rift_gate_to_frame_viewer(frame_viewer)
-            if len(self._projection_sets_by_frame_name) == 0:
-                try:
-                    self._projection_sets_by_frame_name = self._synthesize_projection_sets_from_viewer(
-                        frame_viewer
-                    )
-                except AttributeError:
-                    pass
             self._frame_viewer = frame_viewer
 
     def detach_frame_viewer(self) -> None:
@@ -530,59 +518,6 @@ class RiftSpace(Cleanable, IRiftSpace):
                 return self._frame_viewer.default_view_frame_name
             raise ValueError("RiftSpace has no default runtime frame.")
 
-    def get_selected_target_link_for_command(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> FrameLink:
-        """
-        Resolve one selected target link for command-side convenience.
-
-        Purpose:
-            Keep selected-target convenience outside `CommandSystem` itself
-            while we decouple explicit-id command behavior from the viewer.
-
-        Args:
-            frame_name:
-                Optional explicit frame name.
-
-        Returns:
-            FrameLink: The selected target link.
-        """
-        self.check_cleaned()
-        with self._lock:
-            viewer = self.get_required_frame_viewer()
-            selected_frame_name = frame_name or viewer.default_view_frame_name
-            if selected_frame_name is None:
-                raise ValueError("RiftSpace has no default selected frame.")
-            selected_target_ids = list(
-                self._selected_target_ids_by_frame_name.get(selected_frame_name, [])
-            )
-            if len(selected_target_ids) == 0:
-                raise ValueError(
-                    "RiftSpace has no selected target in frame '{0}'.".format(
-                        selected_frame_name
-                    )
-                )
-            if len(selected_target_ids) > 1:
-                raise ValueError(
-                    "RiftSpace selected target set is ambiguous in frame '{0}'.".format(
-                        selected_frame_name
-                    )
-                )
-            for frame_link in viewer.execute_method(
-                    "list_targets",
-                    frame_name=selected_frame_name,
-            ):
-                if frame_link.link_id == selected_target_ids[0]:
-                    return frame_link
-            raise ValueError(
-                "Selected target '{0}' was not found in frame '{1}'.".format(
-                    selected_target_ids[0],
-                    selected_frame_name,
-                )
-            )
-
     def _bind_rift_gate_to_frame_viewer(self, frame_viewer: FrameViewer) -> None:
         """
         Bind the room's Rift gate to one attached viewer when supported.
@@ -598,104 +533,6 @@ class RiftSpace(Cleanable, IRiftSpace):
             return
         if hasattr(frame_viewer, "bind_rift_gate"):
             frame_viewer.bind_rift_gate(self._rift_gate)
-
-    def _synthesize_projection_sets_from_viewer(
-            self,
-            frame_viewer: FrameViewer,
-    ) -> Dict[str, FrameProjectionSet]:
-        """
-        Build projection sets from an already-attached viewer.
-
-        Purpose:
-            Allow direct viewer attachment in tests or transitional paths to
-            seed the new projection substrate lazily instead of forcing every
-            caller to build projections first.
-
-        Args:
-            frame_viewer:
-                Attached viewer whose hosted frame state should seed the
-                projection sets.
-
-        Returns:
-            Dict[str, FrameProjectionSet]: Projection sets keyed by frame name.
-        """
-        projection_sets_by_frame_name: Dict[str, FrameProjectionSet] = {}
-        for frame_name, frame_descriptor in frame_viewer.frame_descriptors_by_name.items():
-            source_configuration = frame_viewer.frame_acl_configurations_by_frame_name[
-                frame_name
-            ]
-            source_surface = frame_viewer.compiled_access_surfaces_by_frame_name[
-                frame_name
-            ]
-            projection_sets_by_frame_name[frame_name] = FrameProjectionSet(
-                frame_name=frame_name,
-                view_projection=ViewProjection(
-                    frame_name=frame_name,
-                    frame_descriptor=frame_descriptor,
-                    frame_acl_configuration=self._clone_frame_acl_configuration(
-                        source_configuration,
-                        reason="view_projection_from_viewer",
-                    ),
-                    compiled_access_surface=FrameViewer._clone_compiled_access_surface(
-                        source_surface
-                    ),
-                    metadata={"surface": "view"},
-                ),
-                command_projection=CommandProjection(
-                    frame_name=frame_name,
-                    frame_descriptor=frame_descriptor,
-                    frame_acl_configuration=self._clone_frame_acl_configuration(
-                        source_configuration,
-                        reason="command_projection_from_viewer",
-                    ),
-                    compiled_access_surface=FrameViewer._clone_compiled_access_surface(
-                        source_surface
-                    ),
-                    metadata={"surface": "command"},
-                ),
-                codegen_projection=CodegenProjection(
-                    frame_name=frame_name,
-                    frame_descriptor=frame_descriptor,
-                    frame_acl_configuration=self._clone_frame_acl_configuration(
-                        source_configuration,
-                        reason="codegen_projection_from_viewer",
-                    ),
-                    compiled_access_surface=FrameViewer._clone_compiled_access_surface(
-                        source_surface
-                    ),
-                    metadata={"surface": "codegen"},
-                ),
-                metadata={"source": "viewer_synthesized"},
-            )
-        return projection_sets_by_frame_name
-
-    @staticmethod
-    def _clone_frame_acl_configuration(
-            configuration: FrameACLConfiguration,
-            *,
-            reason: str,
-    ) -> FrameACLConfiguration:
-        """
-        Return a detached ACL configuration clone for synthesized projections.
-
-        Args:
-            configuration:
-                Source ACL configuration.
-            reason:
-                Clone reason.
-
-        Returns:
-            FrameACLConfiguration: Detached ACL configuration clone.
-        """
-        return FrameACLConfiguration.create_from_selected_configurations(
-            frame_name=configuration.frame_name,
-            view_configuration=configuration.view_configuration,
-            command_configuration=configuration.command_configuration,
-            codegen_configuration=configuration.codegen_configuration,
-            reason=reason,
-            locked=True,
-            configuration_id=configuration.configuration_id,
-        )
 
     def list_frame_names(self) -> List[str]:
         """

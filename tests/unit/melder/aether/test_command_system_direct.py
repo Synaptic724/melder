@@ -96,50 +96,20 @@ def _make_command_system(
         bind_attribute=lambda name, value, weak_ref=None: None,
         bind_method=lambda name, value, weak_ref=None: None,
     )
-    selected_target_ids = []
     command_projection = SimpleNamespace(
         frame_descriptor=viewer.descriptor,
         compiled_access_surface=viewer.compiled_access_surface,
     )
 
-    def _get_selected_target_link_for_command(*, frame_name=None):
-        selected_frame_name = frame_name or viewer.default_view_frame_name
-        if selected_frame_name is None:
-            raise ValueError("RiftSpace has no default selected frame.")
-        if len(selected_target_ids) == 0:
-            raise ValueError(
-                "RiftSpace has no selected target in frame '{0}'.".format(
-                    selected_frame_name
-                )
-            )
-        if len(selected_target_ids) > 1:
-            raise ValueError(
-                "RiftSpace selected target set is ambiguous in frame '{0}'.".format(
-                    selected_frame_name
-                )
-            )
-        for frame_link in viewer.frame_links:
-            if frame_link.link_id == selected_target_ids[0]:
-                return frame_link
-        raise ValueError(
-            "Selected target '{0}' was not found in frame '{1}'.".format(
-                selected_target_ids[0],
-                selected_frame_name,
-            )
-        )
-
     space = SimpleNamespace(
         space_id="space-1",
-        get_required_frame_viewer=lambda: viewer,
-        list_selected_target_ids=lambda frame_name: tuple(selected_target_ids),
         get_default_runtime_frame_name=lambda: viewer.default_view_frame_name,
         get_required_command_projection=lambda frame_name: command_projection,
-        get_selected_target_link_for_command=_get_selected_target_link_for_command,
         rift_gate=None,
         memory_system=memory_system,
     )
     command_system = CommandSystem(space=space, workstation=workstation)
-    return command_system, viewer, selected_target_ids
+    return command_system, viewer, workstation
 
 
 def test_command_system_init_cleanup_and_property_guardrails() -> None:
@@ -180,89 +150,6 @@ def test_command_system_cleanup_rechecks_cleaned_inside_lock() -> None:
 
     assert command_system._command_system_id == original_id
     assert command_system._lock is not None
-
-
-def test_command_system_selected_target_guardrails_and_record_runtime_branches(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    command_system, viewer, selected_target_ids = _make_command_system()
-
-    selected_target_ids[:] = ["a", "b"]
-    with pytest.raises(ValueError, match="selected target set is ambiguous"):
-        command_system.get_selected_target_link()
-
-    selected_target_ids[:] = ["missing"]
-    with pytest.raises(ValueError, match="Selected target 'missing' was not found"):
-        command_system.get_selected_target_link()
-
-    frame_link = SimpleNamespace(source_kind="frame", frame_name="ops", source_id="ops-frame")
-    monkeypatch.setattr(
-        type(command_system),
-        "get_selected_target_link",
-        lambda self, *, frame_name=None: frame_link,
-    )
-    viewer.descriptor.frame_overview = None
-    with pytest.raises(ValueError, match="has no published frame overview"):
-        command_system.get_selected_target_record()
-    with pytest.raises(ValueError, match="has no live frame handle"):
-        command_system.get_selected_target_runtime_object()
-
-    viewer.descriptor.conduit_records_by_id["ops-conduit"] = _make_conduit_record()
-    conduit_link = SimpleNamespace(
-        source_kind="conduit",
-        frame_name="ops",
-        source_id="ops-conduit",
-    )
-    monkeypatch.setattr(
-        type(command_system),
-        "get_selected_target_link",
-        lambda self, *, frame_name=None: conduit_link,
-    )
-    viewer.compiled_access_surface.enabled_conduit_ids = ("ops-conduit",)
-    conduit_object = object()
-    monkeypatch.setattr(
-        type(command_system),
-        "get_conduit_by_id",
-        lambda self, conduit_id, *, frame_name=None: conduit_object,
-    )
-    assert command_system.get_selected_target_record() is viewer.descriptor.conduit_records_by_id["ops-conduit"]
-    assert command_system.get_selected_target_runtime_object() is conduit_object
-
-    spell_record = _make_spell_record()
-    viewer.descriptor.spell_records_by_key["ops-spellbook:sha-1"] = spell_record
-    spell_link = SimpleNamespace(
-        source_kind="spell",
-        frame_name="ops",
-        source_id="ops-spellbook:sha-1",
-    )
-    monkeypatch.setattr(
-        type(command_system),
-        "get_selected_target_link",
-        lambda self, *, frame_name=None: spell_link,
-    )
-    viewer.compiled_access_surface.enabled_spell_index_ids = ("lineage-1",)
-    spell_object = object()
-    monkeypatch.setattr(
-        type(command_system),
-        "get_spell_by_source_id",
-        lambda self, spell_source_id, *, frame_name=None: spell_object,
-    )
-    assert command_system.get_selected_target_record() is spell_record
-    assert command_system.get_selected_target_runtime_object() is spell_object
-
-    monkeypatch.setattr(
-        type(command_system),
-        "get_selected_target_link",
-        lambda self, *, frame_name=None: SimpleNamespace(
-            source_kind="mystery",
-            frame_name="ops",
-            source_id="mystery-1",
-        ),
-    )
-    with pytest.raises(ValueError, match="Unsupported selected target kind 'mystery'"):
-        command_system.get_selected_target_record()
-    with pytest.raises(ValueError, match="Unsupported selected target kind 'mystery'"):
-        command_system.get_selected_target_runtime_object()
 
 
 def test_command_system_delete_cluster_and_target_getter_guardrails(
@@ -400,8 +287,6 @@ def test_command_system_internal_helper_validation_paths(
     command_system, viewer, _ = _make_command_system()
 
     viewer.default_view_frame_name = None
-    with pytest.raises(ValueError, match="has no default selected frame"):
-        command_system._resolve_selected_target_ids()
     with pytest.raises(ValueError, match="has no default runtime frame"):
         command_system._resolve_runtime_frame_name(None)
 
@@ -470,20 +355,8 @@ def test_command_system_acl_helper_and_method_store_binding_paths() -> None:
     viewer.compiled_access_surface.enabled_conduit_ids = ("ops-conduit",)
     viewer.compiled_access_surface.enabled_spell_index_ids = ("lineage-1",)
 
-    command_system._assert_selected_target_command_enabled(
-        SimpleNamespace(
-            source_kind="conduit",
-            source_id="ops-conduit",
-            frame_name="ops",
-        )
-    )
-    command_system._assert_selected_target_command_enabled(
-        SimpleNamespace(
-            source_kind="spell",
-            source_id="ops-spellbook:sha-1",
-            frame_name="ops",
-        )
-    )
+    command_system._assert_conduit_command_enabled("ops-conduit", frame_name="ops")
+    command_system._assert_spell_command_enabled("lineage-1", frame_name="ops")
 
     bound_methods = []
     command_system._workstation = SimpleNamespace(

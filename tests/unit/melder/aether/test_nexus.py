@@ -34,6 +34,10 @@ from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
     StaticFrameViewer,
 )
+from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
+from melder.aether.nexus.rift.projection.command_projection import CommandProjection
+from melder.aether.nexus.rift.projection.frame_projection_set import FrameProjectionSet
+from melder.aether.nexus.rift.projection.view_projection import ViewProjection
 from melder.aether.nexus.rift.command_system.capability_command_system import (
     CapabilityCommandSystem,
 )
@@ -302,6 +306,90 @@ def _replace_compiled_access_surface(
             metadata=compiled_access_surface.metadata,
         )
     )
+
+
+def _build_projection_set_from_viewer(
+    viewer: FrameViewer,
+    frame_name: str,
+) -> FrameProjectionSet:
+    """
+    Build one projection set from a descriptor-backed viewer snapshot.
+
+    Args:
+        viewer:
+            Source viewer.
+        frame_name:
+            Hosted frame name.
+
+    Returns:
+        FrameProjectionSet: Detached projection set for the frame.
+    """
+    nexus = Nexus()
+    frame_descriptor = viewer.frame_descriptors_by_name[frame_name]
+    frame_acl_configuration = viewer.frame_acl_configurations_by_frame_name[frame_name]
+    compiled_access_surface = viewer.compiled_access_surfaces_by_frame_name[frame_name]
+    return FrameProjectionSet(
+        frame_name=frame_name,
+        view_projection=ViewProjection(
+            frame_name=frame_name,
+            frame_descriptor=frame_descriptor,
+            frame_acl_configuration=nexus._clone_frame_acl_configuration(
+                frame_acl_configuration,
+                reason="test_view_projection_clone",
+            ),
+            compiled_access_surface=nexus._clone_compiled_access_surface(
+                compiled_access_surface
+            ),
+            metadata={"surface": "view"},
+        ),
+        command_projection=CommandProjection(
+            frame_name=frame_name,
+            frame_descriptor=frame_descriptor,
+            frame_acl_configuration=nexus._clone_frame_acl_configuration(
+                frame_acl_configuration,
+                reason="test_command_projection_clone",
+            ),
+            compiled_access_surface=nexus._clone_compiled_access_surface(
+                compiled_access_surface
+            ),
+            metadata={"surface": "command"},
+        ),
+        codegen_projection=CodegenProjection(
+            frame_name=frame_name,
+            frame_descriptor=frame_descriptor,
+            frame_acl_configuration=nexus._clone_frame_acl_configuration(
+                frame_acl_configuration,
+                reason="test_codegen_projection_clone",
+            ),
+            compiled_access_surface=nexus._clone_compiled_access_surface(
+                compiled_access_surface
+            ),
+            metadata={"surface": "codegen"},
+        ),
+        metadata={"source": "test_viewer_clone"},
+    )
+
+
+def _attach_projection_backed_viewer(space: RiftSpace, viewer: FrameViewer) -> None:
+    """
+    Seed projection sets from a test viewer, then attach that viewer to the room.
+
+    Args:
+        space:
+            Target room.
+        viewer:
+            Source viewer.
+
+    Returns:
+        None.
+    """
+    space.replace_projection_sets(
+        {
+            frame_name: _build_projection_set_from_viewer(viewer, frame_name)
+            for frame_name in viewer.frame_descriptors_by_name.keys()
+        }
+    )
+    space.attach_frame_viewer(viewer)
 
 
 def test_nexus_is_singleton() -> None:
@@ -803,7 +891,7 @@ def test_rift_space_can_attach_and_detach_frame_viewer() -> None:
     space = RiftSpace(owner_rift_id="rift-1", space_name="main")
     viewer = FrameViewer()
 
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
 
     assert space.frame_viewer is viewer
 
@@ -1170,62 +1258,6 @@ def test_codegen_rift_space_composes_codegen_command_system() -> None:
     assert isinstance(space.command_system, CodegenCommandSystem)
 
 
-def test_command_system_can_get_selected_target_link_and_record() -> None:
-    """
-    Verify the command system resolves the single selected viewer target link and record.
-
-    Returns:
-        None.
-    """
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
-    viewer = _build_descriptor_backed_viewer("ops")
-    space.attach_frame_viewer(viewer)
-    frame_link = viewer.execute_method("list_targets")[0]
-    space.select_target(frame_link.link_id)
-
-    selected_link = space.command_system.get_selected_target_link()
-    selected_record = space.command_system.get_selected_target_record()
-
-    assert selected_link.link_id == frame_link.link_id
-    assert selected_link.source_kind == frame_link.source_kind
-    assert selected_link.source_id == frame_link.source_id
-    assert selected_record.frame_name == "ops"
-    assert selected_record.frame_id == "ops-frame"
-
-
-def test_command_system_can_get_selected_target_runtime_object_for_frame() -> None:
-    """
-    Verify the command system can resolve the live frame object for a selected frame target.
-
-    Returns:
-        None.
-    """
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
-    viewer = _build_descriptor_backed_viewer("ops")
-    space.attach_frame_viewer(viewer)
-    frame_link = viewer.execute_method("list_targets")[0]
-    space.select_target(frame_link.link_id)
-
-    frame_handle = space.command_system.get_selected_target_runtime_object()
-
-    assert frame_handle.name == "ops"
-
-
-def test_command_system_selected_target_requires_one_selection() -> None:
-    """
-    Verify selected-target getters fail fast when no target is selected.
-
-    Returns:
-        None.
-    """
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
-    viewer = _build_descriptor_backed_viewer("ops")
-    space.attach_frame_viewer(viewer)
-
-    with pytest.raises(ValueError, match="has no selected target"):
-        space.command_system.get_selected_target_link()
-
-
 def test_command_system_can_get_target_attribute_and_method() -> None:
     """
     Verify the command system reads attributes and methods from the current workstation target.
@@ -1327,7 +1359,7 @@ def test_command_system_can_get_conduit_by_id_with_lesser_fallback(
         command_frame_enabled=True,
         enabled_conduit_ids=("lesser-1",),
     )
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
     sentinel = object()
     root_conduit = SimpleNamespace(
         _conduit_ward=SimpleNamespace(
@@ -1402,7 +1434,7 @@ def test_command_system_can_query_command_enabled_conduits() -> None:
         command_frame_enabled=True,
         enabled_conduit_ids=("ops-conduit",),
     )
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
 
     assert space.command_system.list_conduit_ids(frame_name="ops") == ("ops-conduit",)
     assert space.command_system.list_conduit_names(frame_name="ops") == ("root",)
@@ -1477,7 +1509,7 @@ def test_command_system_can_get_spell_by_id(
         command_frame_enabled=True,
         enabled_spell_index_ids=("lineage-1",),
     )
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
     spell = object()
 
     class _SpellIndex:
@@ -1562,7 +1594,7 @@ def test_command_system_can_get_spell_by_index_id(
         command_frame_enabled=True,
         enabled_spell_index_ids=("lineage-1",),
     )
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
     spell = object()
     owner_conduit = SimpleNamespace(
         get_spell_by_index_id=lambda spell_index_id: (
@@ -1595,12 +1627,9 @@ def test_command_system_denies_selected_target_link_when_frame_command_disabled(
         "ops",
         command_frame_enabled=False,
     )
-    space.attach_frame_viewer(viewer)
-    frame_link = viewer.execute_method("list_targets", frame_name="ops")[0]
-    space.select_target(frame_link.link_id)
-
+    _attach_projection_backed_viewer(space, viewer)
     with pytest.raises(ValueError, match="Command access is disabled for frame 'ops'"):
-        space.command_system.get_selected_target_link()
+        space.command_system.get_conduit_cloud(frame_name="ops")
 
 
 def test_command_system_denies_conduit_object_by_id_when_conduit_acl_disabled(
@@ -1635,7 +1664,7 @@ def test_command_system_denies_conduit_object_by_id_when_conduit_acl_disabled(
         command_frame_enabled=True,
         enabled_conduit_ids=tuple(),
     )
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
     monkeypatch.setattr(
         type(space.command_system),
         "_aether",
@@ -1703,7 +1732,7 @@ def test_command_system_denies_spell_object_by_index_id_when_spell_acl_disabled(
         command_frame_enabled=True,
         enabled_spell_index_ids=tuple(),
     )
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
 
     with pytest.raises(
         ValueError,
@@ -1753,25 +1782,6 @@ def test_frame_viewer_clone_compiled_access_surface_preserves_command_acl_fields
     assert cloned_access_surface.enabled_spell_index_ids == ("lineage-1",)
 
 
-def test_static_room_allows_selected_target_runtime_object_access_for_frame() -> None:
-    """
-    Verify static rooms can still return already-live frame runtime objects.
-
-    Returns:
-        None.
-    """
-    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
-    viewer = _build_descriptor_backed_viewer("ops")
-    descriptor = viewer._get_required_frame_descriptor("ops")
-    frame_handle = object()
-    descriptor.set_frame_handle(frame_handle)
-    space.attach_frame_viewer(viewer)
-    frame_link = viewer.execute_method("list_targets", frame_name="ops")[0]
-    space.select_target(frame_link.link_id)
-
-    assert space.command_system.get_selected_target_runtime_object() is frame_handle
-
-
 def test_static_room_allows_direct_conduit_runtime_object_access(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1804,7 +1814,7 @@ def test_static_room_allows_direct_conduit_runtime_object_access(
         command_frame_enabled=True,
         enabled_conduit_ids=("ops-conduit",),
     )
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
     conduit_object = object()
     monkeypatch.setattr(
         type(space.command_system),
@@ -1879,7 +1889,7 @@ def test_static_room_returns_live_spell_runtime_object_by_index_id(
         enabled_conduit_ids=("ops-conduit",),
         enabled_spell_index_ids=("lineage-1",),
     )
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
     live_spell_object = object()
     owner_conduit = SimpleNamespace(
         meld_existing_spell=lambda *, spell_name=None, spell=None, spellframe=None, binding_name=None: (
@@ -2001,7 +2011,7 @@ def test_static_room_wraps_viewer_and_filters_non_live_spells(
         ),
     )
 
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
 
     assert isinstance(space.frame_viewer, StaticFrameViewer)
     assert space.frame_viewer.list_spell_source_ids_for_frame("ops") == [
@@ -2117,7 +2127,7 @@ def test_static_room_viewer_filters_non_live_spell_targets(
         ),
     )
 
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
     frame_links = space.frame_viewer.execute_method("list_targets", frame_name="ops")
     spell_source_ids = [
         frame_link.source_id
@@ -2227,7 +2237,7 @@ def test_static_room_viewer_hides_many_and_spellspace_spells(
         ),
     )
 
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
 
     assert space.frame_viewer.list_spell_source_ids_for_frame("ops") == []
     frame_links = space.frame_viewer.execute_method("list_targets", frame_name="ops")
@@ -2315,7 +2325,7 @@ def test_static_room_denies_many_and_spellspace_spell_runtime_object_access(
         enabled_conduit_ids=("ops-conduit",),
         enabled_spell_index_ids=("lineage-many", "lineage-spellspace"),
     )
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
     owner_conduit = SimpleNamespace(
         meld_existing_spell=lambda *, spell_name=None, spell=None, spellframe=None, binding_name=None: object()
     )
@@ -2397,7 +2407,7 @@ def test_static_command_system_reports_spell_status_for_live_spell() -> None:
         command_frame_enabled=True,
         enabled_spell_index_ids=("lineage-live",),
     )
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
     owner_conduit = SimpleNamespace(
         has_live_creation=lambda *, spell_name=None, spell=None, spellframe=None, binding_name=None: (
             spell == "live-sha"
@@ -2474,7 +2484,7 @@ def test_static_command_system_reports_spell_status_for_unsupported_spell() -> N
         command_frame_enabled=True,
         enabled_spell_index_ids=("lineage-many",),
     )
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
     owner_conduit = SimpleNamespace(
         has_live_creation=lambda *, spell_name=None, spell=None, spellframe=None, binding_name=None: True
     )
@@ -2552,7 +2562,7 @@ def test_static_room_denies_spell_runtime_object_when_not_live(
         enabled_conduit_ids=("ops-conduit",),
         enabled_spell_index_ids=("lineage-1",),
     )
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
     owner_conduit = SimpleNamespace(
         meld_existing_spell=lambda *, spell_name=None, spell=None, spellframe=None, binding_name=None: (_ for _ in ()).throw(
             ValueError("Spell 'sha-1' is not live.")
@@ -2629,7 +2639,7 @@ def test_capability_room_allows_direct_spell_runtime_object_access() -> None:
         enabled_conduit_ids=("ops-conduit",),
         enabled_spell_index_ids=("lineage-1",),
     )
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
     spell = object()
     owner_conduit = SimpleNamespace(
         get_spell_by_index_id=lambda spell_index_id: (
@@ -2721,7 +2731,7 @@ def test_capability_room_broad_access_still_respects_automatic_runtime_floor() -
             command_frame_enabled=True,
             enabled_conduit_ids=(conduit.id,),
         )
-        space.attach_frame_viewer(viewer)
+        _attach_projection_backed_viewer(space, viewer)
         space.command_system._aether = SimpleNamespace(
             get_conduit_by_id=lambda conduit_id, frame_name: conduit,
         )
@@ -2782,7 +2792,7 @@ def test_capability_room_can_access_conduit_cloud_on_dynamic_frame() -> None:
             command_frame_enabled=True,
             enabled_conduit_ids=(conduit.id,),
         )
-        space.attach_frame_viewer(viewer)
+        _attach_projection_backed_viewer(space, viewer)
         space.command_system._aether = SimpleNamespace(
             get_conduit_cloud=lambda frame_name: conduit.get_conduit_cloud(),
         )
@@ -2837,7 +2847,7 @@ def test_capability_room_can_create_lesser_conduit_on_automatic_frame() -> None:
             command_frame_enabled=True,
             enabled_conduit_ids=(conduit.id,),
         )
-        space.attach_frame_viewer(viewer)
+        _attach_projection_backed_viewer(space, viewer)
         space.command_system._aether = SimpleNamespace(
             get_conduit_by_id=lambda conduit_id, frame_name: conduit,
         )
@@ -2895,7 +2905,7 @@ def test_capability_room_can_manage_clusters_on_dynamic_frame() -> None:
             command_frame_enabled=True,
             enabled_conduit_ids=(conduit.id,),
         )
-        space.attach_frame_viewer(viewer)
+        _attach_projection_backed_viewer(space, viewer)
         space.command_system._aether = SimpleNamespace(
             get_conduit_by_id=lambda conduit_id, frame_name: conduit,
         )
@@ -2982,7 +2992,7 @@ def test_capability_room_can_link_on_dynamic_frame() -> None:
             command_frame_enabled=True,
             enabled_conduit_ids=(left_conduit.id, right_conduit.id),
         )
-        space.attach_frame_viewer(viewer)
+        _attach_projection_backed_viewer(space, viewer)
         space.command_system._aether = SimpleNamespace(
             get_conduit_by_id=lambda conduit_id, frame_name: (
                 left_conduit if conduit_id == left_conduit.id else right_conduit
@@ -3037,7 +3047,7 @@ def test_capability_room_can_meld_through_command_surface() -> None:
         command_frame_enabled=True,
         enabled_conduit_ids=("ops-conduit",),
     )
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
     runtime_object = object()
     owner_conduit = SimpleNamespace(
         meld=lambda **kwargs: runtime_object,
@@ -3085,7 +3095,7 @@ def test_capability_room_can_meld_existing_spell_through_command_surface() -> No
         command_frame_enabled=True,
         enabled_conduit_ids=("ops-conduit",),
     )
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
     runtime_object = object()
     owner_conduit = SimpleNamespace(
         meld_existing_spell=lambda **kwargs: runtime_object,
@@ -3174,7 +3184,7 @@ def test_static_command_system_allows_meld_existing_spell() -> None:
         command_frame_enabled=True,
         enabled_conduit_ids=("ops-conduit",),
     )
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
     runtime_object = object()
     owner_conduit = SimpleNamespace(
         meld_existing_spell=lambda **kwargs: runtime_object,
@@ -3287,7 +3297,7 @@ def test_command_system_can_delegate_conduit_introspection_helpers(
         command_frame_enabled=True,
         enabled_conduit_ids=("ops-conduit",),
     )
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
     lesser = object()
     initiated = object()
     provider = object()
@@ -3408,7 +3418,7 @@ def test_command_system_can_delegate_spell_query_and_snapshot_helpers(
         command_frame_enabled=True,
         enabled_conduit_ids=("ops-conduit",),
     )
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
     spellspace = object()
     snapshot = {"conduit_id": "ops-conduit"}
     owner_conduit = SimpleNamespace(
@@ -3467,7 +3477,7 @@ def test_rift_space_can_delegate_frame_surface_calls_to_attached_viewer() -> Non
     """
     space = RiftSpace(owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
 
     assert space.get_required_frame_viewer() is viewer
     assert space.list_frame_names() == ["ops"]
@@ -3500,7 +3510,7 @@ def test_rift_space_can_select_and_describe_targets_from_attached_viewer() -> No
     """
     space = RiftSpace(owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
 
     frame_link = viewer.execute_method("list_targets")[0]
 
@@ -3527,7 +3537,7 @@ def test_rift_space_selection_helpers_reject_invalid_target_inputs() -> None:
     """
     space = RiftSpace(owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
-    space.attach_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
 
     with pytest.raises(ValueError, match="target_id cannot be empty"):
         space.select_target("")
@@ -4317,3 +4327,4 @@ def test_direct_rift_construction_requires_nexus_argument() -> None:
             configuration=configuration,
             rift_name="manual",
         )
+
