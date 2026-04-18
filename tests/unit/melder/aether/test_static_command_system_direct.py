@@ -56,10 +56,16 @@ class _Viewer:
 def _make_static_command_system() -> tuple[StaticCommandSystem, _Viewer]:
     viewer = _Viewer()
     workstation = SimpleNamespace()
+    command_projection = SimpleNamespace(
+        frame_descriptor=viewer.descriptor,
+        compiled_access_surface=viewer.compiled_access_surface,
+    )
     space = SimpleNamespace(
         space_id="space-1",
-        get_required_frame_viewer=lambda: viewer,
-        list_selected_target_ids=lambda frame_name: tuple(),
+        get_default_runtime_frame_name=lambda: viewer.default_view_frame_name,
+        get_required_command_projection=lambda frame_name: command_projection,
+        rift_gate=None,
+        memory_system=None,
     )
     return StaticCommandSystem(space=space, workstation=workstation), viewer
 
