@@ -5,6 +5,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.rift.frame_link.frame_link_contract import FrameLinkContract
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.aether.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.aether.nexus.rift.rift_space.capability_rift_space import CapabilityRiftSpace
 from melder.aether.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
 from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
@@ -14,6 +15,7 @@ from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.interfaces.interfaces import (
     IAethericFrame,
     INexus,
+    IRiftGate,
     IRift,
     IRiftConfiguration,
     IRiftSpace,
@@ -80,6 +82,7 @@ class Rift(Cleanable, IRift):
         "_logger",
         "_nexus",
         "_configuration",
+        "_rift_gate",
         "_frame_link_contracts_by_frame_name",
         "_space",
         "_is_registered",
@@ -92,6 +95,7 @@ class Rift(Cleanable, IRift):
             nexus: INexus,
             *,
             configuration: IRiftConfiguration,
+            rift_gate: Optional[IRiftGate] = None,
             rift_name: Optional[str] = None,
             rift_id: Optional[str] = None,
             space_id: Optional[str] = None,
@@ -108,6 +112,9 @@ class Rift(Cleanable, IRift):
                 Owning Nexus singleton.
             configuration:
                 Finalized per-Rift configuration snapshot.
+            rift_gate:
+                Optional pre-created Rift gate. When omitted, one standalone
+                gate is created for this Rift instance.
             rift_name:
                 Optional stable Rift name.
             rift_id:
@@ -125,6 +132,7 @@ class Rift(Cleanable, IRift):
 
         Contract:
             - Copies incoming metadata into a Rift-owned mutable dict.
+            - Owns exactly one `RiftGate`.
             - Starts with no engaged target-frame contracts.
             - Programs one primary concrete space from the configuration's
               `space_type` and room/event settings.
@@ -148,6 +156,7 @@ class Rift(Cleanable, IRift):
         self._logger: ISafeLogger = InitHelpers.resolve_safe_logger(None)
         self._nexus: INexus = nexus
         self._configuration: IRiftConfiguration = configuration
+        self._rift_gate: IRiftGate = rift_gate if rift_gate is not None else RiftGate()
         self._frame_link_contracts_by_frame_name: Dict[str, FrameLinkContract] = {}
         self._space: Optional[IRiftSpace] = None
         self._is_registered: bool = False
@@ -226,9 +235,12 @@ class Rift(Cleanable, IRift):
                 self._space.cleanup()
             if self._configuration is not None:
                 self._configuration.cleanup()
+            if self._rift_gate is not None:
+                self._rift_gate.cleanup()
             self._metadata.clear()
             self._nexus = None
             self._configuration = None
+            self._rift_gate = None
             for frame_link_contract in self._frame_link_contracts_by_frame_name.values():
                 frame_link_contract.cleanup()
             self._frame_link_contracts_by_frame_name.clear()
@@ -279,6 +291,18 @@ class Rift(Cleanable, IRift):
         """
         self.check_cleaned()
         return self._configuration
+
+    @property
+    def rift_gate(self) -> IRiftGate:
+        """
+        Purpose:
+            Return the Rift-owned gate for this runtime instance.
+
+        Returns:
+            IRiftGate: Rift-scoped gate.
+        """
+        self.check_cleaned()
+        return self._rift_gate
 
     def list_assigned_frame_names(self) -> Tuple[str, ...]:
         """

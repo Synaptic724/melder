@@ -35,6 +35,9 @@ from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile_builder import (
     FrameViewerProfileBuilder,
 )
+from melder.aether.nexus.rift.rift_gate_controller.rift_gate_controller import (
+    RiftGateController,
+)
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -45,6 +48,8 @@ from melder.utilities.interfaces.interfaces import (
     IConfiguration,
     INexus,
     INexusConfiguration,
+    IRiftGate,
+    IRiftGateController,
     IRift,
     IRiftConfiguration,
     ISafeLogger,
@@ -97,6 +102,7 @@ class Nexus(Cleanable, INexus):
         "_next_default_rift_number",
         "_next_indexed_nexus_frame_number",
         "_rift_profiles_by_name",
+        "_rift_gate_controller",
         "_frame_acl_manager",
         "_frame_descriptor_manager",
         "_projected_frame_viewers_by_cache_key",
@@ -193,6 +199,7 @@ class Nexus(Cleanable, INexus):
             self._next_default_rift_number: int = 1
             self._next_indexed_nexus_frame_number: int = 1
             self._rift_profiles_by_name: Dict[str, IRiftConfiguration] = {}
+            self._rift_gate_controller: RiftGateController = RiftGateController()
             self._frame_acl_manager: Optional[FrameACLManager] = None
             self._frame_descriptor_manager: Optional[FrameDescriptorManager] = None
             self._frame_acl_manager = FrameACLManager(
@@ -251,6 +258,8 @@ class Nexus(Cleanable, INexus):
                 self._configuration.cleanup()
             for profile in self._rift_profiles_by_name.values():
                 profile.cleanup()
+            if self._rift_gate_controller is not None:
+                self._rift_gate_controller.cleanup()
             if self._frame_acl_manager is not None:
                 self._frame_acl_manager.cleanup()
             if self._frame_descriptor_manager is not None:
@@ -273,6 +282,7 @@ class Nexus(Cleanable, INexus):
             self._next_default_rift_number = None
             self._next_indexed_nexus_frame_number = None
             self._rift_profiles_by_name = None
+            self._rift_gate_controller = None
             self._frame_acl_manager = None
             self._frame_descriptor_manager = None
             self._projected_frame_viewers_by_cache_key = None
@@ -463,6 +473,17 @@ class Nexus(Cleanable, INexus):
         """
         self.check_cleaned()
         return self._enabled
+
+    @property
+    def rift_gate_controller(self) -> IRiftGateController:
+        """
+        Return the Nexus-owned Rift gate controller.
+
+        Returns:
+            IRiftGateController: Controller for registered Rift gates.
+        """
+        self.check_cleaned()
+        return self._rift_gate_controller
 
     def create_system_configuration(self) -> INexusConfiguration:
         """
@@ -687,24 +708,35 @@ class Nexus(Cleanable, INexus):
 
         with self._lock:
             canonical_rift_name = rift_name or self._allocate_default_rift_name()
-            rift = Rift(
-                self,
-                configuration=bound_configuration,
-                rift_name=canonical_rift_name,
-                rift_id=canonical_rift_id,
-                space_id=space_id,
-                metadata=metadata,
-                logger=logger,
-            )
-            if bound_configuration.get_property("auto_activate_on_program"):
-                rift.mark_active()
-            self.add_rift(rift)
-            bound_configuration.mark_consumed()
-            self._logger.info(
-                "Created Rift '{0}' (id={1}).".format(rift.rift_name, rift.id),
-                "create_rift",
-            )
-            return rift
+            rift_gate = self._rift_gate_controller.create_rift_gate(canonical_rift_id)
+            rift = None
+            try:
+                rift = Rift(
+                    self,
+                    configuration=bound_configuration,
+                    rift_gate=rift_gate,
+                    rift_name=canonical_rift_name,
+                    rift_id=canonical_rift_id,
+                    space_id=space_id,
+                    metadata=metadata,
+                    logger=logger,
+                )
+                if bound_configuration.get_property("auto_activate_on_program"):
+                    rift.mark_active()
+                self.add_rift(rift)
+                bound_configuration.mark_consumed()
+                self._logger.info(
+                    "Created Rift '{0}' (id={1}).".format(rift.rift_name, rift.id),
+                    "create_rift",
+                )
+                return rift
+            except Exception:
+                self._rift_gate_controller.unregister_rift_gate(canonical_rift_id)
+                if rift is not None:
+                    rift.cleanup()
+                else:
+                    rift_gate.cleanup()
+                raise
 
     def add_rift(self, rift: IRift) -> None:
         """
@@ -738,6 +770,15 @@ class Nexus(Cleanable, INexus):
 
             self._validate_target_frame_budget(rift.list_assigned_frame_names())
             self._validate_active_rift_budget()
+            existing_gate = self._rift_gate_controller.get_rift_gate(rift.id)
+            if existing_gate is None:
+                self._rift_gate_controller.register_rift_gate(rift.id, rift.rift_gate)
+            elif existing_gate is not rift.rift_gate:
+                raise ValueError(
+                    "Rift gate for id '{0}' does not match the registered gate.".format(
+                        rift.id
+                    )
+                )
 
             self._rifts_by_id[rift.id] = rift
             if rift.rift_name:
@@ -859,6 +900,7 @@ class Nexus(Cleanable, INexus):
             rift_name = rift.rift_name
             if rift.rift_name:
                 self._rift_ids_by_name.pop(rift.rift_name, None)
+            self._rift_gate_controller.unregister_rift_gate(rift.id)
             for target_frame_name in rift.list_assigned_frame_names():
                 self._decrement_ref_count(self._target_frame_ref_counts, target_frame_name)
             frame_names_to_cleanup.extend(self._detach_rift_from_nexus_frames(rift.id))
@@ -1068,6 +1110,155 @@ class Nexus(Cleanable, INexus):
         """
         self._require_enabled()
         return list(self._rifts_by_id.keys())
+
+    def get_rift_gate(self, rift_id: str) -> Optional[IRiftGate]:
+        """
+        Return the registered Rift gate for one Rift id, if present.
+
+        Args:
+            rift_id:
+                Canonical Rift id.
+
+        Returns:
+            Optional[IRiftGate]: Registered Rift gate when present.
+        """
+        self.check_cleaned()
+        return self._rift_gate_controller.get_rift_gate(rift_id)
+
+    def enable_rift_gate(self, rift_id: str) -> None:
+        """
+        Open one Rift gate by Rift id.
+
+        Args:
+            rift_id:
+                Canonical Rift id.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        gate = self._rift_gate_controller.get_rift_gate(rift_id)
+        if gate is None:
+            return
+        gate.open()
+
+    def disable_rift_gate(self, rift_id: str) -> None:
+        """
+        Close one Rift gate by Rift id.
+
+        Args:
+            rift_id:
+                Canonical Rift id.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        gate = self._rift_gate_controller.get_rift_gate(rift_id)
+        if gate is None:
+            return
+        gate.close()
+
+    def close_and_wait_rift(
+            self,
+            rift_id: str,
+            timeout: float = 30.0,
+            interval: float = 0.1,
+    ) -> None:
+        """
+        Terminally close and drain one Rift gate.
+
+        Args:
+            rift_id:
+                Canonical Rift id.
+            timeout:
+                Maximum seconds to wait for ticket drain.
+            interval:
+                Poll interval in seconds while draining.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        self._rift_gate_controller.close_and_wait_until_rift_free(
+            rift_id,
+            timeout=timeout,
+            interval=interval,
+        )
+
+    def count_active_rift_threads(self, rift_id: str) -> int:
+        """
+        Return active ticket count for one Rift gate.
+
+        Args:
+            rift_id:
+                Canonical Rift id.
+
+        Returns:
+            int: Active ticket count.
+        """
+        self.check_cleaned()
+        return self._rift_gate_controller.count_active_threads_for_rift(rift_id)
+
+    def count_active_rift_threads_total(self) -> int:
+        """
+        Return active ticket count summed across all Rift gates.
+
+        Returns:
+            int: Total active ticket count.
+        """
+        self.check_cleaned()
+        return self._rift_gate_controller.count_active_threads_total()
+
+    def enable_all_rift_gates(self) -> None:
+        """
+        Open every registered Rift gate.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        self._rift_gate_controller.enable_all_rift_gates()
+
+    def disable_all_rift_gates(self) -> None:
+        """
+        Close every registered Rift gate.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        self._rift_gate_controller.disable_all_rift_gates()
+
+    def set_rift_gate_entry_mode(self, rift_id: str, entry_mode: str) -> None:
+        """
+        Set the admission mode for one registered Rift gate.
+
+        Args:
+            rift_id:
+                Canonical Rift id.
+            entry_mode:
+                Admission mode to apply.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        self._rift_gate_controller.set_rift_gate_entry_mode(rift_id, entry_mode)
+
+    def set_all_rift_gate_entry_mode(self, entry_mode: str) -> None:
+        """
+        Set the admission mode for every registered Rift gate.
+
+        Args:
+            entry_mode:
+                Admission mode to apply.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        self._rift_gate_controller.set_all_rift_gate_entry_mode(entry_mode)
 
     def get_frame_acl_version(self) -> str:
         """

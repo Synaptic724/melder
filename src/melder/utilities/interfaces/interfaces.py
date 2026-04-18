@@ -7653,6 +7653,187 @@ class ICapabilityRiftSpace(IRiftSpace, Protocol):
 
 
 @runtime_checkable
+class IRiftGate(ICleanable, Protocol):
+    """
+    Interface for the Rift-scoped gate primitive.
+    """
+
+    @property
+    def enabled(self) -> bool:
+        """
+        Return whether admission is currently enabled.
+        """
+        ...
+
+    @property
+    def entry_mode(self) -> str:
+        """
+        Return the configured admission mode for this gate.
+        """
+        ...
+
+    def open(self) -> None:
+        """
+        Enable admission and release waiting callers.
+        """
+        ...
+
+    def close(self) -> None:
+        """
+        Disable admission so callers block in wait().
+        """
+        ...
+
+    def wait(self) -> None:
+        """
+        Block until the gate is signalled open or terminally closed.
+        """
+        ...
+
+    def admit(self) -> None:
+        """
+        Attempt to cross the gate using the configured admission mode.
+        """
+        ...
+
+    def set_entry_mode(self, entry_mode: str) -> None:
+        """
+        Set the gate admission mode.
+        """
+        ...
+
+    def register_ticket(self) -> None:
+        """
+        Register one in-flight operation.
+        """
+        ...
+
+    def unregister_ticket(self) -> None:
+        """
+        Unregister one in-flight operation.
+        """
+        ...
+
+    def has_active_tickets(self) -> bool:
+        """
+        Return whether at least one active ticket exists.
+        """
+        ...
+
+    def active_ticket_count(self) -> int:
+        """
+        Return the current active ticket count.
+        """
+        ...
+
+    def is_closed(self) -> bool:
+        """
+        Return whether the gate is terminally closed.
+        """
+        ...
+
+    def close_and_wait_until_free(
+            self,
+            timeout: float = 30.0,
+            interval: float = 0.1,
+    ) -> None:
+        """
+        Terminally close the gate and wait for ticket drain.
+        """
+        ...
+
+
+@runtime_checkable
+class IRiftGateController(ICleanable, Protocol):
+    """
+    Interface for the Nexus-owned Rift-gate controller.
+    """
+
+    def create_rift_gate(self, rift_id: str) -> IRiftGate:
+        """
+        Create and register one Rift gate.
+        """
+        ...
+
+    def register_rift_gate(self, rift_id: str, gate: IRiftGate) -> None:
+        """
+        Register one existing Rift gate by Rift id.
+        """
+        ...
+
+    def unregister_rift_gate(self, rift_id: str) -> None:
+        """
+        Unregister one Rift gate by Rift id.
+        """
+        ...
+
+    def get_rift_gate(self, rift_id: str) -> Optional[IRiftGate]:
+        """
+        Return the registered Rift gate for one Rift id, if present.
+        """
+        ...
+
+    def count_active_threads_for_rift(self, rift_id: str) -> int:
+        """
+        Return active ticket count for one Rift gate.
+        """
+        ...
+
+    def count_active_threads_total(self) -> int:
+        """
+        Return active ticket count summed across all registered Rift gates.
+        """
+        ...
+
+    def close_and_wait_until_rift_free(
+            self,
+            rift_id: str,
+            timeout: float = 30.0,
+            interval: float = 0.1,
+    ) -> None:
+        """
+        Terminally close and drain one Rift gate.
+        """
+        ...
+
+    def enable_all_rift_gates(self) -> None:
+        """
+        Open every registered Rift gate.
+        """
+        ...
+
+    def disable_all_rift_gates(self) -> None:
+        """
+        Close every registered Rift gate.
+        """
+        ...
+
+    def enable_all(self) -> None:
+        """
+        Open every registered Rift gate.
+        """
+        ...
+
+    def disable_all(self) -> None:
+        """
+        Close every registered Rift gate.
+        """
+        ...
+
+    def set_rift_gate_entry_mode(self, rift_id: str, entry_mode: str) -> None:
+        """
+        Set the admission mode for one registered Rift gate.
+        """
+        ...
+
+    def set_all_rift_gate_entry_mode(self, entry_mode: str) -> None:
+        """
+        Set the admission mode for every registered Rift gate.
+        """
+        ...
+
+
+@runtime_checkable
 class IRift(ICleanable, Protocol):
     """
     Interface for the public live Rift runtime object.
@@ -7723,6 +7904,13 @@ class IRift(ICleanable, Protocol):
     def is_active(self) -> bool:
         """
         Return whether this Rift is currently marked active.
+        """
+        ...
+
+    @property
+    def rift_gate(self) -> IRiftGate:
+        """
+        Return the Rift-owned gate for this runtime instance.
         """
         ...
 
@@ -7833,6 +8021,13 @@ class INexus(ICleanable, Protocol):
     def is_enabled(self) -> bool:
         """
         Return whether Nexus is currently enabled for Rift management operations.
+        """
+        ...
+
+    @property
+    def rift_gate_controller(self) -> IRiftGateController:
+        """
+        Return the Nexus-owned Rift gate controller.
         """
         ...
 
@@ -7948,6 +8143,71 @@ class INexus(ICleanable, Protocol):
     def list_rift_ids(self) -> List[str]:
         """
         Return the currently registered Rift identifiers.
+        """
+        ...
+
+    def get_rift_gate(self, rift_id: str) -> Optional[IRiftGate]:
+        """
+        Return the registered Rift gate for one Rift id, if present.
+        """
+        ...
+
+    def enable_rift_gate(self, rift_id: str) -> None:
+        """
+        Open one Rift gate by Rift id.
+        """
+        ...
+
+    def disable_rift_gate(self, rift_id: str) -> None:
+        """
+        Close one Rift gate by Rift id.
+        """
+        ...
+
+    def close_and_wait_rift(
+            self,
+            rift_id: str,
+            timeout: float = 30.0,
+            interval: float = 0.1,
+    ) -> None:
+        """
+        Terminally close and drain one Rift gate.
+        """
+        ...
+
+    def count_active_rift_threads(self, rift_id: str) -> int:
+        """
+        Return active ticket count for one Rift gate.
+        """
+        ...
+
+    def count_active_rift_threads_total(self) -> int:
+        """
+        Return active ticket count summed across all Rift gates.
+        """
+        ...
+
+    def enable_all_rift_gates(self) -> None:
+        """
+        Open every registered Rift gate.
+        """
+        ...
+
+    def disable_all_rift_gates(self) -> None:
+        """
+        Close every registered Rift gate.
+        """
+        ...
+
+    def set_rift_gate_entry_mode(self, rift_id: str, entry_mode: str) -> None:
+        """
+        Set the admission mode for one registered Rift gate.
+        """
+        ...
+
+    def set_all_rift_gate_entry_mode(self, entry_mode: str) -> None:
+        """
+        Set the admission mode for every registered Rift gate.
         """
         ...
 

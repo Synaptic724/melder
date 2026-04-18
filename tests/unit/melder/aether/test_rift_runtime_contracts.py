@@ -14,6 +14,7 @@ from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
 )
 from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.aether.nexus.nexus import Nexus
+from melder.aether.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.rift import Rift
 from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
@@ -409,6 +410,7 @@ def test_rift_exposes_one_primary_space_surface() -> None:
 
     assert isinstance(rift.space, StaticRiftSpace)
     assert rift.space.owner_rift_id == rift.id
+    assert rift.rift_gate is not None
 
 
 def test_rift_starts_without_assigned_frames() -> None:
@@ -443,3 +445,4 @@ def test_rift_create_primary_space_from_configuration_supports_explicit_space_id
 
     assert isinstance(rift.space, StaticRiftSpace)
     assert rift.space.space_id == "space-explicit"
+    assert isinstance(rift.rift_gate, RiftGate)

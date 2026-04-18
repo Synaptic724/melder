@@ -535,10 +535,35 @@ def test_create_rift_registers_live_rift_after_enable() -> None:
     assert nexus.get_rift(rift.id) is rift
     assert nexus.get_rift_by_name("alpha") is rift
     assert nexus.list_rift_ids() == [rift.id]
+    assert nexus.get_rift_gate(rift.id) is rift.rift_gate
 
     rift_id = rift.id
     nexus.remove_rift(rift_id)
     assert nexus.has_rift(rift_id) is False
+    assert nexus.get_rift_gate(rift_id) is None
+
+
+def test_nexus_rift_gate_controls_delegate_to_registered_gate() -> None:
+    nexus = _create_enabled_nexus()
+    rift = nexus.create_rift(rift_name="alpha")
+
+    nexus.disable_rift_gate(rift.id)
+    assert rift.rift_gate.enabled is False
+
+    nexus.enable_rift_gate(rift.id)
+    assert rift.rift_gate.enabled is True
+
+    nexus.disable_all_rift_gates()
+    assert rift.rift_gate.enabled is False
+
+    nexus.enable_all_rift_gates()
+    assert rift.rift_gate.enabled is True
+
+    nexus.set_rift_gate_entry_mode(rift.id, "raise")
+    assert rift.rift_gate.entry_mode == "raise"
+
+    nexus.set_all_rift_gate_entry_mode("wait")
+    assert rift.rift_gate.entry_mode == "wait"
 
 
 def test_create_rift_uses_registered_channel_logger_provider() -> None:
