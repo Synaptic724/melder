@@ -394,9 +394,9 @@ def test_rift_viewer_host_helpers_reject_missing_target_space() -> None:
         rift.get_space_frame_viewer()
 
 
-def test_rift_conduit_discovery_facades_delegate_to_aether() -> None:
+def test_rift_spaces_expose_conduit_discovery_through_command_system() -> None:
     """
-    Verify Rift exposes the conduit-discovery facade over the targeted frame.
+    Verify conduit discovery routes through the room-owned command surface.
 
     Returns:
         None.
@@ -405,72 +405,44 @@ def test_rift_conduit_discovery_facades_delegate_to_aether() -> None:
     _seed_frame_descriptor("ops")
     rift = _create_registered_rift()
     rift.target_frame("ops", set_as_default=True)
+    space = rift.get_space(rift.active_space_id)
+    command = space.command_system
     conduit_cloud = object()
     conduit_object = object()
-    rift._aether = SimpleNamespace(
+    command._aether = SimpleNamespace(
         get_conduit_cloud=lambda frame_name: conduit_cloud,
-        list_conduit_ids=lambda frame_name: ("c1", "c2"),
-        list_conduit_names=lambda frame_name: ("alpha", "beta"),
-        count_conduits=lambda frame_name: 2,
-        has_conduit_id=lambda conduit_id, frame_name: conduit_id == "c1",
-        has_conduit_name=lambda name, frame_name: name == "alpha",
-        find_conduit_id_by_name=lambda name, frame_name: (
-            "c1" if name == "alpha" else None
-        ),
         get_conduit_by_id=lambda conduit_id, frame_name: conduit_object,
         get_conduit_by_name=lambda name, frame_name: conduit_object,
     )
-
-    assert rift.get_conduit_cloud() is conduit_cloud
-    assert rift.list_conduit_ids() == ("c1", "c2")
-    assert rift.list_conduit_names() == ("alpha", "beta")
-    assert rift.count_conduits() == 2
-    assert rift.has_conduit_id("c1") is True
-    assert rift.has_conduit_name("alpha") is True
-    assert rift.find_conduit_id_by_name("alpha") == "c1"
-    assert rift.get_conduit_by_id("c1") is conduit_object
-    assert rift.get_conduit_by_name("alpha") is conduit_object
-
-
-def test_rift_conduit_discovery_target_frame_helper_covers_remaining_branches() -> None:
-    """
-    Verify the private conduit-discovery frame resolver covers explicit-miss and fallback branches.
-
-    Returns:
-        None.
-    """
-    rift = _create_registered_rift()
-    rift._frame_link_contract = SimpleNamespace(
-        has_frame=lambda frame_name: frame_name == "ops",
-        cleanup=lambda: None,
+    command._get_enabled_published_conduit_records = (
+        lambda frame_name: (
+            SimpleNamespace(
+                conduit_id="c1",
+                payload=SimpleNamespace(conduit_name="alpha"),
+            ),
+            SimpleNamespace(
+                conduit_id="c2",
+                payload=SimpleNamespace(conduit_name="beta"),
+            ),
+        )
     )
-    rift._default_target_frame_name = None
-    rift._target_frame_names = ("ops",)
+    command._assert_frame_command_enabled = lambda frame_name: None
+    command._get_required_compiled_access_surface = (
+        lambda frame_name: SimpleNamespace(enabled_conduit_ids=("c1",))
+    )
+    command._get_required_published_conduit_id_by_name = (
+        lambda name, frame_name: "c1" if name == "alpha" else None
+    )
 
-    assert rift._resolve_conduit_frame_name(None) == "ops"
-
-    with pytest.raises(ValueError, match="Rift is not targeting frame 'finance'"):
-        rift._resolve_conduit_frame_name("finance")
-
-    rift._target_frame_names = ("ops", "finance")
-    with pytest.raises(
-        ValueError,
-        match="multiple targeted frames and no default target frame",
-    ):
-        rift._resolve_conduit_frame_name(None)
-
-
-def test_rift_conduit_discovery_requires_targeted_frame() -> None:
-    """
-    Verify Rift conduit discovery fails fast without a targeted frame.
-
-    Returns:
-        None.
-    """
-    rift = _create_registered_rift()
-
-    with pytest.raises(ValueError, match="no targeted frame"):
-        rift.list_conduit_ids()
+    assert command.get_conduit_cloud(frame_name="ops") is conduit_cloud
+    assert command.list_conduit_ids(frame_name="ops") == ("c1", "c2")
+    assert command.list_conduit_names(frame_name="ops") == ("alpha", "beta")
+    assert command.count_conduits(frame_name="ops") == 2
+    assert command.has_conduit_id("c1", frame_name="ops") is True
+    assert command.has_conduit_name("alpha", frame_name="ops") is True
+    assert command.find_conduit_id_by_name("alpha", frame_name="ops") == "c1"
+    assert command.get_conduit_by_id("c1", frame_name="ops") is conduit_object
+    assert command.get_conduit_by_name("alpha", frame_name="ops") is conduit_object
 
 
 def test_rift_exposes_live_metadata_and_active_state_helpers() -> None:

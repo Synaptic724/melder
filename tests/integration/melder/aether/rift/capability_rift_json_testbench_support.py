@@ -347,7 +347,7 @@ class CapabilityRiftJsonBench:
             return self.workstation
         if surface_name == "cloud":
             frame_name = kwargs.pop("frame_name", None)
-            return self.rift.get_conduit_cloud(frame_name=frame_name)
+            return self.command.get_conduit_cloud(frame_name=frame_name)
         raise ValueError("Unsupported surface '{0}'.".format(surface_name))
 
     def _resolve_request_value(self, value: Any) -> Any:

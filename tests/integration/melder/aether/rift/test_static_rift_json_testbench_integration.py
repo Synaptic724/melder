@@ -240,19 +240,25 @@ def _build_discovery_case_matrix() -> List[Dict[str, object]]:
         {
             "name": "rift_list_conduit_ids",
             "request": {
-                "surface": "rift",
+                "surface": "command",
                 "method": "list_conduit_ids",
                 "kwargs": {"frame_name": "@manifest.frame_name"},
             },
             "expected_by_mode": {
-                "automatic": ("@manifest.conduits.root.id",),
-                "dynamic": ("@manifest.conduits.root.id",),
+                "automatic": (
+                    "@manifest.conduits.root.id",
+                    "@manifest.conduits.lesser.id",
+                ),
+                "dynamic": (
+                    "@manifest.conduits.root.id",
+                    "@manifest.conduits.lesser.id",
+                ),
             },
         },
         {
             "name": "rift_list_conduit_names",
             "request": {
-                "surface": "rift",
+                "surface": "command",
                 "method": "list_conduit_names",
                 "kwargs": {"frame_name": "@manifest.frame_name"},
             },
@@ -264,16 +270,16 @@ def _build_discovery_case_matrix() -> List[Dict[str, object]]:
         {
             "name": "rift_count_conduits",
             "request": {
-                "surface": "rift",
+                "surface": "command",
                 "method": "count_conduits",
                 "kwargs": {"frame_name": "@manifest.frame_name"},
             },
-            "expected_by_mode": {"automatic": 1, "dynamic": 1},
+            "expected_by_mode": {"automatic": 2, "dynamic": 2},
         },
         {
             "name": "rift_has_conduit_id",
             "request": {
-                "surface": "rift",
+                "surface": "command",
                 "method": "has_conduit_id",
                 "args": ["@manifest.conduits.root.id"],
                 "kwargs": {"frame_name": "@manifest.frame_name"},
@@ -283,7 +289,7 @@ def _build_discovery_case_matrix() -> List[Dict[str, object]]:
         {
             "name": "rift_find_conduit_id_by_name",
             "request": {
-                "surface": "rift",
+                "surface": "command",
                 "method": "find_conduit_id_by_name",
                 "args": ["@manifest.conduits.root.name"],
                 "kwargs": {"frame_name": "@manifest.frame_name"},
@@ -539,33 +545,33 @@ def _build_turn_script_scenarios() -> List[Dict[str, object]]:
                     "script": {
                         "turns": [
                             {
-                                "surface": "rift",
+                                "surface": "command",
                                 "method": "list_conduit_ids",
                                 "kwargs": {"frame_name": "@manifest.frame_name"},
                                 "save_as": "ids",
                             },
                             {
-                                "surface": "rift",
+                                "surface": "command",
                                 "method": "list_conduit_names",
                                 "kwargs": {"frame_name": "@manifest.frame_name"},
                                 "save_as": "names",
                             },
                             {
-                                "surface": "rift",
+                                "surface": "command",
                                 "method": "find_conduit_id_by_name",
                                 "args": ["@manifest.conduits.root.name"],
                                 "kwargs": {"frame_name": "@manifest.frame_name"},
                                 "save_as": "found_id",
                             },
                             {
-                                "surface": "rift",
+                                "surface": "command",
                                 "method": "has_conduit_id",
                                 "args": ["@turns.found_id"],
                                 "kwargs": {"frame_name": "@manifest.frame_name"},
                                 "save_as": "has_id",
                             },
                             {
-                                "surface": "rift",
+                                "surface": "command",
                                 "method": "get_conduit_by_id",
                                 "args": ["@turns.found_id"],
                                 "kwargs": {"frame_name": "@manifest.frame_name"},
@@ -607,7 +613,7 @@ def _build_turn_script_scenarios() -> List[Dict[str, object]]:
                                 "save_as": "found_id",
                             },
                             {
-                                "surface": "rift",
+                                "surface": "command",
                                 "method": "has_conduit_name",
                                 "args": ["@manifest.conduits.root.name"],
                                 "kwargs": {"frame_name": "@manifest.frame_name"},
@@ -623,7 +629,7 @@ def _build_turn_script_scenarios() -> List[Dict[str, object]]:
                     "script": {
                         "turns": [
                             {
-                                "surface": "rift",
+                                "surface": "command",
                                 "method": "list_conduit_ids",
                                 "kwargs": {"frame_name": "@manifest.frame_name"},
                                 "save_as": "ids",
@@ -1016,7 +1022,10 @@ def _assert_turn_script_result(
             assert "error" in saved_results["fetch"]
         return
     if kind == "rift_discovery_chain":
-        assert saved_results["ids"] == (bench.manifest["conduits"]["root"]["id"],)
+        assert saved_results["ids"] == (
+            bench.manifest["conduits"]["root"]["id"],
+            bench.manifest["conduits"]["lesser"]["id"],
+        )
         assert saved_results["names"] == (bench.manifest["conduits"]["root"]["name"],)
         assert saved_results["found_id"] == bench.manifest["conduits"]["root"]["id"]
         assert saved_results["has_id"] is True
