@@ -16,9 +16,6 @@ from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.aether.nexus.nexus import Nexus
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.rift import Rift
-from melder.aether.nexus.rift.rift_space.rift_event_configuration import (
-    RiftEventConfiguration,
-)
 from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.configuration.system_state import SystemState
@@ -414,28 +411,13 @@ def test_rift_exposes_one_primary_space_surface() -> None:
     assert rift.space.owner_rift_id == rift.id
 
 
-def test_rift_clones_event_configuration_without_eager_nexus_frame_state() -> None:
+def test_rift_starts_without_assigned_frames() -> None:
     """
-    Verify event-config cloning and Nexus-frame-name deduplication helpers work.
+    Verify a newly registered Rift starts without assigned target frames.
 
     Returns:
         None.
     """
-    action_enricher = lambda action: None
-    memory_observer = lambda memory: None
-    event_configuration = RiftEventConfiguration(
-        action_enrichers=[action_enricher],
-        memory_observers=[memory_observer],
-    )
-
-    cloned = Rift._clone_rift_event_configuration(event_configuration)
-
-    assert cloned is not event_configuration
-    assert cloned._action_enrichers is not event_configuration._action_enrichers
-    assert cloned._memory_observers is not event_configuration._memory_observers
-    assert cloned._action_enrichers == [action_enricher]
-    assert cloned._memory_observers == [memory_observer]
-
     rift = _create_registered_rift()
     assert rift.list_assigned_frame_names() == tuple()
 

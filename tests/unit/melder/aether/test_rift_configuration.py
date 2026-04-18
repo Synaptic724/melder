@@ -7,9 +7,6 @@ from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.configuration.rift_validation_mode import (
     RiftValidationMode,
 )
-from melder.aether.nexus.rift.rift_space.rift_event_configuration import (
-    RiftEventConfiguration,
-)
 
 
 def _build_valid_configuration() -> RiftConfiguration:
@@ -92,20 +89,17 @@ def test_rift_configuration_cleanup_rechecks_cleaned_inside_lock() -> None:
     assert configuration._lock is None
 
 
-def test_rift_configuration_set_property_normalizes_enums_and_round_trips_event_configuration() -> None:
+def test_rift_configuration_set_property_normalizes_enums() -> None:
     """
-    Verify property assignment normalizes enum-backed values and stores events.
+    Verify property assignment normalizes enum-backed values.
     """
     configuration = RiftConfiguration()
-    event_configuration = RiftEventConfiguration()
 
     configuration.set_property("space_type", "dynamic")
     configuration.set_property("validation_mode", "strict")
-    configuration.set_property("event_configuration", event_configuration)
 
     assert configuration.get_property("space_type") is RiftSpaceType.codegen
     assert configuration.get_property("validation_mode") is RiftValidationMode.strict
-    assert configuration.get_property("event_configuration") is event_configuration
 
 
 def test_rift_configuration_set_property_rejects_unknown_frozen_consumed_and_wrong_types() -> None:
@@ -117,8 +111,8 @@ def test_rift_configuration_set_property_rejects_unknown_frozen_consumed_and_wro
     with pytest.raises(ValueError, match="Unknown RiftConfiguration property"):
         configuration.set_property("unknown_key", True)
 
-    with pytest.raises(TypeError, match="Invalid type for property 'event_configuration'"):
-        configuration.set_property("event_configuration", object())
+    with pytest.raises(ValueError, match="Expected a string or RiftSpaceType member"):
+        configuration.set_property("space_type", object())
 
     frozen = _build_valid_configuration()
     frozen.freeze()
@@ -140,12 +134,10 @@ def test_rift_configuration_property_helpers_and_defaults_work() -> None:
     configuration = RiftConfiguration().with_defaults()
 
     assert configuration.has_property("space_type") is True
-    assert configuration.has_property("event_configuration") is True
     assert configuration.get_property("space_type") is RiftSpaceType.static
     assert configuration.get_property("space_name") is None
     assert configuration.get_property("auto_activate_on_program") is True
     assert configuration.get_property("validation_mode") is RiftValidationMode.strict
-    assert configuration.get_property("event_configuration") is None
 
     with pytest.raises(KeyError):
         RiftConfiguration().get_property("space_type")
@@ -195,7 +187,6 @@ def test_rift_configuration_fluent_setters_return_self_and_store_values() -> Non
     Verify the fluent `with_*` API stores values and preserves chaining.
     """
     configuration = RiftConfiguration()
-    event_configuration = RiftEventConfiguration()
 
     chained = (
         configuration
@@ -203,7 +194,6 @@ def test_rift_configuration_fluent_setters_return_self_and_store_values() -> Non
         .with_space_name("ops-room")
         .with_auto_activate_on_program(False)
         .with_validation_mode("strict")
-        .with_event_configuration(event_configuration)
     )
 
     assert chained is configuration
@@ -211,7 +201,6 @@ def test_rift_configuration_fluent_setters_return_self_and_store_values() -> Non
     assert configuration.get_property("space_name") == "ops-room"
     assert configuration.get_property("auto_activate_on_program") is False
     assert configuration.get_property("validation_mode") is RiftValidationMode.strict
-    assert configuration.get_property("event_configuration") is event_configuration
 
 
 def test_rift_configuration_mark_consumed_sets_consumed_state() -> None:

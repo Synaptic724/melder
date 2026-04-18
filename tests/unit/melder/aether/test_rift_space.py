@@ -3,12 +3,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
     StaticFrameViewer,
 )
-from melder.aether.nexus.rift.rift_space.rift_event_configuration import (
-    RiftEventConfiguration,
+from melder.aether.nexus.rift.rift_space.event_system.rift_event_system import (
+    RiftEventSystem,
 )
 from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
 from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
@@ -31,20 +30,25 @@ def test_rift_space_rejects_empty_owner_and_invalid_frame_viewer() -> None:
     assert root_space.command_system is not None
 
 
-def test_rift_space_exposes_space_kind_metadata_and_event_configuration() -> None:
-    event_configuration = RiftEventConfiguration()
+def test_rift_space_exposes_space_kind_metadata_and_event_system() -> None:
+    event_system = RiftEventSystem(
+        rift_id="rift-1",
+        space_id="space-custom",
+        space_kind="static",
+    )
     metadata = {"mode": "safe"}
     space = StaticRiftSpace(
         "rift-1",
         space_name="ops",
         metadata=metadata,
-        event_configuration=event_configuration,
+        event_system=event_system,
+        space_id="space-custom",
     )
 
     assert space.space_kind == "static"
     assert space.metadata == {"mode": "safe"}
     assert space.metadata is not metadata
-    assert space.event_configuration is event_configuration
+    assert space.event_system is event_system
 
 
 def test_rift_space_exposes_properties_and_cleanup_cleans_owned_state(monkeypatch) -> None:
@@ -52,12 +56,10 @@ def test_rift_space_exposes_properties_and_cleanup_cleans_owned_state(monkeypatc
     workstation_cleanup = []
     command_cleanup = []
     viewer_cleanup = []
-    event_configuration = RiftEventConfiguration()
     space = StaticRiftSpace(
         "rift-1",
         space_name="ops",
         metadata={"mode": "safe"},
-        event_configuration=event_configuration,
     )
     static_viewer = StaticFrameViewer.__new__(StaticFrameViewer)
 
@@ -69,12 +71,13 @@ def test_rift_space_exposes_properties_and_cleanup_cleans_owned_state(monkeypatc
     space._frame_viewer = static_viewer
     space._workstation = SimpleNamespace(cleanup=lambda: workstation_cleanup.append(True))
     space._command_system = SimpleNamespace(cleanup=lambda: command_cleanup.append(True))
-    space._event_configuration = SimpleNamespace(cleanup=lambda: event_cleanup.append(True))
+    space._event_system = SimpleNamespace(cleanup=lambda: event_cleanup.append(True))
 
     assert space.space_name == "ops"
     assert space.owner_rift_id == "rift-1"
     assert space.frame_viewer is static_viewer
     assert space.memory_system is space._memory_system
+    assert space.event_system is space._event_system
     assert space.workstation is space._workstation
     assert space.command_system is space._command_system
 
@@ -93,10 +96,9 @@ def test_rift_space_exposes_properties_and_cleanup_cleans_owned_state(monkeypatc
     assert space._frame_viewer is None
     assert space._selected_target_ids_by_frame_name is None
     assert space._memory_system is None
-    assert space._event_callbacks_by_subscription_id is None
+    assert space._event_system is None
     assert space._workstation is None
     assert space._command_system is None
-    assert space._event_configuration is None
     assert space._space_id is None
 
 
@@ -201,20 +203,20 @@ def test_rift_space_viewer_and_target_success_paths_work() -> None:
     assert space._selected_target_ids_by_frame_name == {}
 
 
-def test_rift_space_event_callback_registry_and_event_emission_work() -> None:
+def test_rift_space_event_system_registry_and_event_emission_work() -> None:
     space = StaticRiftSpace("rift-1")
     received = []
 
     with pytest.raises(TypeError, match="callback must be callable."):
-        space.register_event_callback(None)
+        space.event_system.register_event_callback(None)
 
     with pytest.raises(ValueError, match="subscription_id cannot be empty."):
-        space.unregister_event_callback("")
+        space.event_system.unregister_event_callback("")
 
-    subscription_id = space.register_event_callback(lambda event: received.append(event))
+    subscription_id = space.event_system.register_event_callback(lambda event: received.append(event))
     assert isinstance(subscription_id, str)
 
-    event = space.create_event(
+    event = space.event_system.create_event(
         "demo",
         payload={"kind": "demo"},
         frame_name="ops",
@@ -228,7 +230,7 @@ def test_rift_space_event_callback_registry_and_event_emission_work() -> None:
     assert event.payload == {"kind": "demo"}
     assert event.metadata == {"scope": "test"}
 
-    emitted_event = space.create_and_emit_event(
+    emitted_event = space.event_system.create_and_emit_event(
         "binding_collected",
         payload={"binding_name": "client"},
     )
@@ -236,15 +238,15 @@ def test_rift_space_event_callback_registry_and_event_emission_work() -> None:
     assert emitted_event.event_type == "binding_collected"
     assert emitted_event.payload == {"binding_name": "client"}
 
-    space.unregister_event_callback(subscription_id)
-    space.create_and_emit_event("ignored", payload={"kind": "ignored"})
+    space.event_system.unregister_event_callback(subscription_id)
+    space.event_system.create_and_emit_event("ignored", payload={"kind": "ignored"})
     assert len(received) == 1
 
 
-def test_rift_space_event_configuration_property_is_live() -> None:
-    space = StaticRiftSpace("rift-1", event_configuration=RiftEventConfiguration())
+def test_rift_space_event_system_property_is_live() -> None:
+    space = StaticRiftSpace("rift-1")
 
-    assert space.event_configuration is not None
+    assert space.event_system is not None
 
 
 def test_rift_space_cleanup_rechecks_cleaned_inside_lock() -> None:

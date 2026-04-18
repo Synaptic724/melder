@@ -46,9 +46,6 @@ from melder.aether.nexus.rift.command_system.codegen_command_system import (
 from melder.aether.nexus.rift.command_system.static_command_system import (
     StaticCommandSystem,
 )
-from melder.aether.nexus.rift.rift_space.rift_event_configuration import (
-    RiftEventConfiguration,
-)
 from melder.aether.nexus.rift.rift_space.capability_rift_space import CapabilityRiftSpace
 from melder.aether.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
 from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
@@ -742,42 +739,6 @@ def test_register_rift_profile_replaces_existing_template_and_cleans_old_clone()
     assert second_stored_template.frozen is True
 
 
-def test_create_rift_configuration_profile_clone_detaches_event_configuration() -> None:
-    """
-    Verify Rift profile clones detach nested room-event configuration objects.
-
-    Returns:
-        None.
-    """
-    nexus = Nexus()
-    configuration = nexus.create_system_configuration()
-    nexus.enable(configuration)
-
-    action_enricher = lambda action: None
-    memory_observer = lambda memory: None
-    event_configuration = RiftEventConfiguration(
-        action_enrichers=[action_enricher],
-        memory_observers=[memory_observer],
-    )
-    profile = nexus.create_rift_configuration().with_event_configuration(
-        event_configuration
-    )
-    nexus.register_rift_profile("ops_profile", profile)
-
-    first_clone = nexus.create_rift_configuration(profile_name="ops_profile")
-    second_clone = nexus.create_rift_configuration(profile_name="ops_profile")
-    first_event_configuration = first_clone.get_property("event_configuration")
-    second_event_configuration = second_clone.get_property("event_configuration")
-
-    assert first_event_configuration is not event_configuration
-    assert second_event_configuration is not event_configuration
-    assert first_event_configuration is not second_event_configuration
-    assert first_event_configuration._action_enrichers is not event_configuration._action_enrichers
-    assert first_event_configuration._memory_observers is not event_configuration._memory_observers
-    assert first_event_configuration._action_enrichers == [action_enricher]
-    assert second_event_configuration._memory_observers == [memory_observer]
-
-
 def test_create_rift_programs_primary_space_from_space_type() -> None:
     """
     Verify Rift creation programs one primary space from the chosen space type.
@@ -1020,7 +981,7 @@ def test_workstation_weak_binding_raises_for_non_weakrefable_value() -> None:
 
 def test_rift_space_emits_weak_binding_collection_events_to_callbacks() -> None:
     """
-    Verify weak binding collection publishes one room-local queue event.
+    Verify weak binding collection publishes one room-local event.
 
     Returns:
         None.
@@ -1030,7 +991,7 @@ def test_rift_space_emits_weak_binding_collection_events_to_callbacks() -> None:
 
     space = RiftSpace(owner_rift_id="rift-1", space_name="main", space_kind="static")
     received_events = []
-    space.register_event_callback(lambda event: received_events.append(event))
+    space.event_system.register_event_callback(lambda event: received_events.append(event))
     workstation = space.workstation
     target = _Target()
 
@@ -1048,7 +1009,7 @@ def test_rift_space_emits_weak_binding_collection_events_to_callbacks() -> None:
 
 def test_rift_space_can_register_and_unregister_event_callbacks() -> None:
     """
-    Verify the optional managed queue consumer drains published weak-binding events.
+    Verify the room-local event system can register and unregister callbacks.
 
     Returns:
         None.
@@ -1058,7 +1019,9 @@ def test_rift_space_can_register_and_unregister_event_callbacks() -> None:
 
     space = RiftSpace(owner_rift_id="rift-1", space_name="main", space_kind="static")
     received_events = []
-    subscription_id = space.register_event_callback(lambda event: received_events.append(event))
+    subscription_id = space.event_system.register_event_callback(
+        lambda event: received_events.append(event)
+    )
     target = _Target()
     space.workstation.bind_object("client", target, weak_ref=True)
     del target
@@ -1067,8 +1030,8 @@ def test_rift_space_can_register_and_unregister_event_callbacks() -> None:
     assert len(received_events) == 1
     assert received_events[0].event_type == "binding_collected"
 
-    space.unregister_event_callback(subscription_id)
-    space.create_and_emit_event("manual", payload={"kind": "ignored"})
+    space.event_system.unregister_event_callback(subscription_id)
+    space.event_system.create_and_emit_event("manual", payload={"kind": "ignored"})
     assert len(received_events) == 1
 
 
