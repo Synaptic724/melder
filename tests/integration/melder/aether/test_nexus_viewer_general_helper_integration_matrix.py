@@ -17,7 +17,7 @@ from melder.spellbook.spellbook import Spellbook
 
 class BasicService:
     """
-    Basic service used to seed one real spell into the Nexus viewer path.
+    Basic service used to seed one real spell into the room-owned viewer path.
     """
 
     def run(self) -> str:
@@ -73,12 +73,12 @@ def _make_rift_publishable_configuration(aetheric_frame: str) -> Configuration:
     return configuration
 
 
-def _build_real_nexus_viewer() -> object:
+def _build_real_room_viewer() -> object:
     """
-    Build one real Nexus-backed viewer for integration checks.
+    Build one real room-owned viewer for integration checks.
 
     Returns:
-        object: Descriptor-driven viewer built from a real Spellbook/Nexus path.
+        object: Viewer built from a real Spellbook/Rift path.
     """
     configuration = _make_rift_publishable_configuration(aetheric_frame="ops")
     spellbook = Spellbook(aetheric_frame="ops", configuration=configuration)
@@ -89,35 +89,58 @@ def _build_real_nexus_viewer() -> object:
     )
     conduit = spellbook.conjure(name="root")
     nexus = Nexus()
-    viewer = nexus.create_frame_viewer(["ops"])
-    return spellbook, conduit, nexus, viewer
-
-
-def _build_real_rift_viewer() -> object:
-    """
-    Build one real Rift-backed frame-specific viewer for integration checks.
-
-    Returns:
-        object: Tuple of live runtime objects plus the Rift-created viewer.
-    """
-    spellbook, conduit, nexus, _ = _build_real_nexus_viewer()
     system_configuration = nexus.create_system_configuration()
     system_configuration.with_rift_creation_enabled(True)
     system_configuration.with_direct_rift_access(True)
     system_configuration.with_target_frame_override(True)
     system_configuration.with_multiple_target_frames(True)
     system_configuration.with_max_target_frame_count(2)
-    system_configuration.with_default_space_type(RiftSpaceType.codegen)
+    system_configuration.with_default_space_type(RiftSpaceType.capability)
+    system_configuration.with_allowed_target_frame_names(("default", "ops"))
+    nexus.enable(system_configuration)
+    rift_configuration = (
+        nexus.create_rift_configuration()
+        .with_space_type(RiftSpaceType.capability)
+    )
+    rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
+    rift.target_frame("ops")
+    viewer = rift.get_frame_viewer()
+    return spellbook, conduit, nexus, viewer
+
+
+def _build_real_rift_viewer() -> object:
+    """
+    Build one real Rift-backed viewer for integration checks.
+
+    Returns:
+        object: Tuple of live runtime objects plus the attached Rift viewer.
+    """
+    configuration = _make_rift_publishable_configuration(aetheric_frame="ops")
+    spellbook = Spellbook(aetheric_frame="ops", configuration=configuration)
+    spellbook.bind(
+        spell=BasicService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    nexus = Nexus()
+    system_configuration = nexus.create_system_configuration()
+    system_configuration.with_rift_creation_enabled(True)
+    system_configuration.with_direct_rift_access(True)
+    system_configuration.with_target_frame_override(True)
+    system_configuration.with_multiple_target_frames(True)
+    system_configuration.with_max_target_frame_count(2)
+    system_configuration.with_default_space_type(RiftSpaceType.capability)
     system_configuration.with_allowed_target_frame_names(("default", "ops"))
     nexus.enable(system_configuration)
 
     rift_configuration = (
         nexus.create_rift_configuration()
-        .with_space_type(RiftSpaceType.static)
+        .with_space_type(RiftSpaceType.capability)
     )
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
     rift.target_frame("ops")
-    viewer = rift.create_new_frame_viewer("ops", viewer_profile_name="general")
+    viewer = rift.get_frame_viewer()
     return spellbook, conduit, nexus, rift, viewer
 
 
@@ -179,7 +202,7 @@ def test_real_nexus_viewer_general_tool_matrix(
         tool_name: str,
         expected_key: Optional[str],
 ) -> None:
-    spellbook, conduit, _, viewer = _build_real_nexus_viewer()
+    spellbook, conduit, _, viewer = _build_real_room_viewer()
     try:
         result = viewer.execute_method(
             tool_name,

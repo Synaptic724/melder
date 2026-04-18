@@ -86,9 +86,15 @@ class StaticFrameViewer(FrameViewer):
             },
             default_profile_name=frame_viewer._default_profile_name,
             frame_descriptors_by_name=dict(frame_viewer._frame_descriptors_by_name),
-            frame_acl_configurations_by_frame_name=dict(
-                frame_viewer._frame_acl_configurations_by_frame_name
-            ),
+            frame_acl_configurations_by_frame_name={
+                frame_name: frame_viewer._clone_frame_acl_configuration(
+                    frame_acl_configuration,
+                    reason="static_frame_viewer_clone",
+                )
+                for frame_name, frame_acl_configuration in (
+                    frame_viewer._frame_acl_configurations_by_frame_name.items()
+                )
+            },
             compiled_access_surfaces_by_frame_name={
                 frame_name: frame_viewer._clone_compiled_access_surface(
                     compiled_access_surface
@@ -101,6 +107,7 @@ class StaticFrameViewer(FrameViewer):
                 frame_viewer.selected_profile_names_by_frame_name
             ),
             default_view_frame_name=frame_viewer._default_view_frame_name,
+            rift_gate=frame_viewer._rift_gate,
             metadata=dict(frame_viewer._metadata),
         )
 

@@ -32,10 +32,6 @@ from melder.aether.nexus.configuration.nexus_frame_mode import (
     NexusFrameMode,
 )
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
-from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
-from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile_builder import (
-    FrameViewerProfileBuilder,
-)
 from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
 from melder.aether.nexus.rift.projection.command_projection import CommandProjection
 from melder.aether.nexus.rift.projection.frame_projection_set import FrameProjectionSet
@@ -110,7 +106,6 @@ class Nexus(Cleanable, INexus):
         "_rift_gate_controller",
         "_frame_acl_manager",
         "_frame_descriptor_manager",
-        "_projected_frame_viewers_by_cache_key",
         "_target_frame_ref_counts",
     ]
 
@@ -210,10 +205,6 @@ class Nexus(Cleanable, INexus):
             self._frame_acl_manager = FrameACLManager(
                 change_callback=self._on_frame_acl_changed,
             )
-            self._projected_frame_viewers_by_cache_key: Dict[
-                Tuple[Tuple[str, ...], Tuple[str, ...], str],
-                FrameViewer,
-            ] = {}
             self._target_frame_ref_counts: Dict[str, int] = {}
 
             self._frame_descriptor_manager = FrameDescriptorManager(aether)
@@ -269,8 +260,6 @@ class Nexus(Cleanable, INexus):
                 self._frame_acl_manager.cleanup()
             if self._frame_descriptor_manager is not None:
                 self._frame_descriptor_manager.cleanup()
-            for projected_frame_viewer in self._projected_frame_viewers_by_cache_key.values():
-                projected_frame_viewer.cleanup()
             self._configuration = None
             self._configured = None
             self._enabled = None
@@ -281,7 +270,6 @@ class Nexus(Cleanable, INexus):
             self._next_indexed_nexus_frame_number = None
             self._rift_profiles_by_name.clear()
             self._target_frame_ref_counts.clear()
-            self._projected_frame_viewers_by_cache_key.clear()
             self._rifts_by_id = None
             self._rift_ids_by_name = None
             self._next_default_rift_number = None
@@ -290,7 +278,6 @@ class Nexus(Cleanable, INexus):
             self._rift_gate_controller = None
             self._frame_acl_manager = None
             self._frame_descriptor_manager = None
-            self._projected_frame_viewers_by_cache_key = None
             self._target_frame_ref_counts = None
             self._id = None
         if self._logger is not None:
@@ -980,7 +967,6 @@ class Nexus(Cleanable, INexus):
         published = self._frame_descriptor_manager._publish_frame_record(spellbook)
         if self._frame_descriptor_manager._has_frame_descriptor(spellbook._aetheric_frame):
             self._ensure_frame_acl_container(spellbook._aetheric_frame)
-            self._invalidate_projected_frame_viewers(spellbook._aetheric_frame)
         return published
 
     def _publish_conduit_record(self, conduit: Any) -> bool:
@@ -1001,7 +987,6 @@ class Nexus(Cleanable, INexus):
         published = self._frame_descriptor_manager._publish_conduit_record(conduit)
         if self._frame_descriptor_manager._has_frame_descriptor(conduit._aetheric_frame):
             self._ensure_frame_acl_container(conduit._aetheric_frame)
-            self._invalidate_projected_frame_viewers(conduit._aetheric_frame)
         return published
 
     def _remove_conduit_record(
@@ -1030,7 +1015,6 @@ class Nexus(Cleanable, INexus):
         )
         if self._frame_descriptor_manager._has_frame_descriptor(frame_name):
             self._ensure_frame_acl_container(frame_name)
-            self._invalidate_projected_frame_viewers(frame_name)
         return removed
 
     def _publish_spell_record(
@@ -1063,7 +1047,6 @@ class Nexus(Cleanable, INexus):
         )
         if self._frame_descriptor_manager._has_frame_descriptor(spellbook._aetheric_frame):
             self._ensure_frame_acl_container(spellbook._aetheric_frame)
-            self._invalidate_projected_frame_viewers(spellbook._aetheric_frame)
         return published
 
     def _remove_spell_record(
@@ -1096,7 +1079,6 @@ class Nexus(Cleanable, INexus):
         )
         if self._frame_descriptor_manager._has_frame_descriptor(frame_name):
             self._ensure_frame_acl_container(frame_name)
-            self._invalidate_projected_frame_viewers(frame_name)
         return removed
 
     def list_rift_ids(self) -> list[str]:
@@ -1812,193 +1794,6 @@ class Nexus(Cleanable, INexus):
         )
         return inserted_configuration
 
-    def create_frame_viewer(
-            self,
-            frame_names: Sequence[str],
-            *,
-            contract_names_by_frame_name: Optional[Dict[str, str]] = None,
-            view_profile_name: str = "general",
-            viewer_profile_name: str = "general",
-    ) -> FrameViewer:
-        """
-        Build one projected `FrameViewer` from one or more frame names.
-
-        Purpose:
-            Provide a thin Nexus facade that assembles projected frame views
-            into one consumer-facing `FrameViewer`.
-
-        Contract:
-            - Every frame name is projected independently from descriptor truth
-              plus compiled ACL output.
-            - The returned viewer is detached and not cached by Nexus.
-
-        Args:
-            frame_names:
-                Frame names to project into the viewer.
-            contract_names_by_frame_name:
-                Optional per-frame selected ACL contract names. Each frame may
-                provide either one same-name string or a dict keyed by `view`,
-                `command`, and `codegen`.
-            view_profile_name:
-                View profile name applied to each projected view.
-            viewer_profile_name:
-                Viewer profile name applied to the projected viewer.
-
-        Returns:
-            FrameViewer:
-                Derived projected frame viewer.
-        """
-        self.check_cleaned()
-        projection_sets_by_frame_name = self.create_frame_projection_sets(
-            frame_names,
-            contract_names_by_frame_name=contract_names_by_frame_name,
-        )
-        viewer_profile_builder = FrameViewerProfileBuilder()
-        viewer_profile = viewer_profile_builder.get_required_profile(
-            viewer_profile_name
-        )
-        active_profiles_by_name = {
-            profile_name: viewer_profile_builder.get_required_profile(profile_name).clone()
-            for profile_name in viewer_profile_builder.list_profile_names()
-        }
-        try:
-            return FrameViewer(
-                profile_builder=FrameViewerProfileBuilder(),
-                active_profiles_by_name=active_profiles_by_name,
-                frame_descriptors_by_name={
-                    frame_name: projection_set.view_projection.frame_descriptor
-                    for frame_name, projection_set in projection_sets_by_frame_name.items()
-                },
-                frame_acl_configurations_by_frame_name=(
-                    {
-                        frame_name: self._clone_frame_acl_configuration(
-                            projection_set.view_projection.frame_acl_configuration,
-                            reason="viewer_projection_clone",
-                        )
-                        for frame_name, projection_set in projection_sets_by_frame_name.items()
-                    }
-                ),
-                compiled_access_surfaces_by_frame_name=(
-                    {
-                        frame_name: self._clone_compiled_access_surface(
-                            projection_set.view_projection.compiled_access_surface
-                        )
-                        for frame_name, projection_set in projection_sets_by_frame_name.items()
-                    }
-                ),
-                default_profile_name=viewer_profile.name,
-                selected_profile_names_by_frame_name={
-                    frame_name: viewer_profile.name
-                    for frame_name in projection_sets_by_frame_name.keys()
-                },
-                metadata={
-                    "frame_count": len(projection_sets_by_frame_name),
-                    "available_view_count": len(projection_sets_by_frame_name),
-                    "assigned_frame_names": tuple(projection_sets_by_frame_name.keys()),
-                    "acl_selection_by_frame_name": {
-                        frame_name: dict(
-                            projection_set.metadata["selected_contract_names"]
-                        )
-                        for frame_name, projection_set in projection_sets_by_frame_name.items()
-                    },
-                    "contract_names_by_frame_name": {
-                        frame_name: dict(
-                            projection_set.metadata["selected_contract_names"]
-                        )
-                        for frame_name, projection_set in projection_sets_by_frame_name.items()
-                    },
-                    "view_profile_name": view_profile_name,
-                    "viewer_profile_name": viewer_profile.name,
-                    "viewer_profile_version": viewer_profile.version,
-                    "default_grouping": viewer_profile.default_grouping,
-                    "default_detail_level": viewer_profile.default_detail_level,
-                    "enabled_helpers": viewer_profile.enabled_helpers,
-                    "tool_names": viewer_profile.list_tool_names(),
-                    "tool_handler_names_by_name": viewer_profile.tool_handler_names_by_name,
-                },
-            )
-        finally:
-            viewer_profile_builder.cleanup()
-
-    def create_frame_viewer_for_rift(
-            self,
-            rift_id: str,
-            *,
-            view_profile_name: str = "general",
-            viewer_profile_name: str = "general",
-    ) -> FrameViewer:
-        """
-        Build one projected `FrameViewer` from a Rift's assigned target frames.
-
-        Contract:
-            - Resolves the live Rift first and projects its currently assigned
-              target frames through `create_frame_viewer(...)`.
-            - Enriches the returned viewer metadata with Rift-specific
-              identifiers and assigned-frame information.
-            - Derives a default view frame only when the Rift currently has
-              exactly one assigned target frame.
-
-        Args:
-            rift_id:
-                Existing Rift id whose assigned target frames should populate
-                the viewer.
-            view_profile_name:
-                View profile name applied to each projected frame view.
-            viewer_profile_name:
-                Viewer profile name applied to the hosted viewer.
-
-        Returns:
-            FrameViewer: Projected viewer populated from the Rift assignment
-            chain.
-        """
-        self.check_cleaned()
-        if not rift_id:
-            raise ValueError("rift_id cannot be empty.")
-        rift = self._get_required_rift(rift_id)
-        assigned_frame_names = rift.list_assigned_frame_names()
-        contract_names_by_frame_name = {
-            frame_name: rift.get_selected_contract_names(frame_name)
-            for frame_name in assigned_frame_names
-        }
-        frame_viewer = self.create_frame_viewer(
-            assigned_frame_names,
-            contract_names_by_frame_name=contract_names_by_frame_name,
-            view_profile_name=view_profile_name,
-            viewer_profile_name=viewer_profile_name,
-        )
-        current_metadata = frame_viewer.metadata
-        current_metadata["rift_id"] = rift.id
-        current_metadata["frame_link_contract_ids_by_frame_name"] = {
-            frame_name: rift.get_frame_link_contract(frame_name).contract_id
-            for frame_name in assigned_frame_names
-        }
-        current_metadata["assigned_frame_names"] = assigned_frame_names
-        current_metadata["selected_contract_names_by_frame_name"] = (
-            contract_names_by_frame_name
-        )
-        default_view_frame_name = None
-        if len(assigned_frame_names) == 1:
-            default_view_frame_name = assigned_frame_names[0]
-        return FrameViewer(
-            profile_builder=FrameViewerProfileBuilder(),
-            active_profiles_by_name={
-                profile_name: frame_viewer_profile.clone()
-                for profile_name, frame_viewer_profile in (
-                    frame_viewer.active_profiles_by_name.items()
-                )
-            },
-            default_profile_name=frame_viewer.profile_name,
-            frame_descriptors_by_name=frame_viewer.frame_descriptors_by_name,
-            frame_acl_configurations_by_frame_name=(
-                frame_viewer.frame_acl_configurations_by_frame_name
-            ),
-            compiled_access_surfaces_by_frame_name=(
-                frame_viewer.compiled_access_surfaces_by_frame_name
-            ),
-            default_view_frame_name=default_view_frame_name,
-            metadata=current_metadata,
-        )
-
     def create_frame_projection_sets_for_rift(
             self,
             rift_id: str,
@@ -2038,286 +1833,6 @@ class Nexus(Cleanable, INexus):
         return self.create_frame_projection_sets(
             assigned_frame_names,
             contract_names_by_frame_name=contract_names_by_frame_name,
-        )
-
-    def create_frame_viewer_for_rift_frame(
-            self,
-            rift_id: str,
-            frame_name: str,
-            *,
-            viewer_profile_name: str = "general",
-    ) -> FrameViewer:
-        """
-        Build one frame-specific viewer transaction for a Rift.
-
-        Args:
-            rift_id:
-                Existing Rift id.
-            frame_name:
-                Target frame name already available to the Rift contract.
-            viewer_profile_name:
-                Viewer profile name selected for the target frame.
-
-        Returns:
-            FrameViewer: Frame-scoped viewer for the requested frame.
-        """
-        self.check_cleaned()
-        if not rift_id:
-            raise ValueError("rift_id cannot be empty.")
-        if not frame_name:
-            raise ValueError("frame_name cannot be empty.")
-        rift = self._get_required_rift(rift_id)
-        frame_link_contract = rift.get_frame_link_contract(frame_name)
-        frame_viewer = self.create_frame_viewer(
-            [frame_name],
-            contract_names_by_frame_name={
-                frame_name: frame_link_contract.get_selected_contract_names()
-            },
-            viewer_profile_name=viewer_profile_name,
-        )
-        current_metadata = frame_viewer.metadata
-        current_metadata["rift_id"] = rift.id
-        current_metadata["frame_link_contract_id"] = frame_link_contract.contract_id
-        current_metadata["assigned_frame_names"] = (frame_name,)
-        current_metadata["selected_contract_names_by_frame_name"] = {
-            frame_name: frame_link_contract.get_selected_contract_names()
-        }
-        return FrameViewer(
-            profile_builder=FrameViewerProfileBuilder(),
-            active_profiles_by_name={
-                profile_key: frame_viewer_profile.clone()
-                for profile_key, frame_viewer_profile in (
-                    frame_viewer.active_profiles_by_name.items()
-                )
-            },
-            default_profile_name=frame_viewer.profile_name,
-            frame_descriptors_by_name=frame_viewer.frame_descriptors_by_name,
-            frame_acl_configurations_by_frame_name=(
-                frame_viewer.frame_acl_configurations_by_frame_name
-            ),
-            compiled_access_surfaces_by_frame_name=(
-                frame_viewer.compiled_access_surfaces_by_frame_name
-            ),
-            selected_profile_names_by_frame_name={frame_name: viewer_profile_name},
-            default_view_frame_name=frame_name,
-            metadata=current_metadata,
-        )
-
-    def create_cached_frame_viewer(
-            self,
-            frame_names: Sequence[str],
-            *,
-            contract_names_by_frame_name: Optional[Dict[str, str]] = None,
-            view_profile_name: str = "general",
-            viewer_profile_name: str = "general",
-    ) -> FrameViewer:
-        """
-        Build or reuse one cached projected `FrameViewer`.
-
-        Purpose:
-            Avoid rebuilding the same projected multi-frame viewer when the
-            underlying frame-view cache inputs have not changed.
-
-        Args:
-            frame_names:
-                Frame names to project into the viewer.
-            contract_names_by_frame_name:
-                Optional per-frame selected ACL contract names. Each frame may
-                provide either one same-name string or a dict keyed by `view`,
-                `command`, and `codegen`.
-            view_profile_name:
-                View profile name applied to each projected view.
-            viewer_profile_name:
-                Viewer profile name applied to the projected viewer.
-
-        Returns:
-            FrameViewer: Detached projected frame viewer.
-        """
-        self.check_cleaned()
-        if isinstance(frame_names, str) or not isinstance(frame_names, Sequence):
-            raise TypeError("frame_names must be a sequence.")
-        normalized_frame_names: List[str] = []
-        frame_configuration_ids: List[str] = []
-        normalized_contract_names_by_frame_name: Dict[str, Dict[str, str]] = {}
-        for frame_name in frame_names:
-            if not isinstance(frame_name, str) or not frame_name:
-                raise ValueError("frame_names must contain non-empty strings.")
-            normalized_frame_names.append(frame_name)
-            normalized_contract_names_by_frame_name[frame_name] = {
-                "view": "default",
-                "command": "default",
-                "codegen": "default",
-            }
-        if contract_names_by_frame_name is not None:
-            if not isinstance(contract_names_by_frame_name, dict):
-                raise TypeError(
-                    "contract_names_by_frame_name must be a dict when provided."
-                )
-            for frame_name, contract_name in contract_names_by_frame_name.items():
-                if frame_name not in normalized_contract_names_by_frame_name:
-                    raise ValueError(
-                        "contract_names_by_frame_name contains unknown frame '{0}'.".format(
-                            frame_name
-                        )
-                    )
-                normalized_contract_names_by_frame_name[frame_name] = (
-                    self._normalize_acl_selection_input(contract_name)
-                )
-        for frame_name in normalized_frame_names:
-            contract_selection = normalized_contract_names_by_frame_name[frame_name]
-            frame_configuration_ids.append(
-                self._frame_acl_manager._get_current_frame_acl_configuration(
-                    frame_name,
-                    view_contract_name=contract_selection["view"],
-                    command_contract_name=contract_selection["command"],
-                    codegen_contract_name=contract_selection["codegen"],
-                ).configuration_id
-            )
-        cache_key = self._make_projected_frame_viewer_cache_key(
-            tuple(sorted(normalized_frame_names)),
-            tuple(
-                configuration_id
-                for _, configuration_id in sorted(
-                    zip(normalized_frame_names, frame_configuration_ids)
-                )
-            ),
-            view_profile_name,
-            viewer_profile_name,
-        )
-        with self._lock:
-            cached_frame_viewer = self._projected_frame_viewers_by_cache_key.get(
-                cache_key
-            )
-        if cached_frame_viewer is not None:
-            return cached_frame_viewer.clone()
-        projected_frame_viewer = self.create_frame_viewer(
-            normalized_frame_names,
-            contract_names_by_frame_name=normalized_contract_names_by_frame_name,
-            view_profile_name=view_profile_name,
-            viewer_profile_name=viewer_profile_name,
-        )
-        with self._lock:
-            existing_frame_viewer = self._projected_frame_viewers_by_cache_key.get(
-                cache_key
-            )
-            if existing_frame_viewer is not None:
-                existing_frame_viewer.cleanup()
-            self._projected_frame_viewers_by_cache_key[cache_key] = (
-                projected_frame_viewer
-            )
-        return projected_frame_viewer.clone()
-
-    def create_cached_frame_viewer_for_rift(
-            self,
-            rift_id: str,
-            *,
-            view_profile_name: str = "general",
-            viewer_profile_name: str = "general",
-    ) -> FrameViewer:
-        """
-        Build or reuse one cached projected viewer for a Rift's assigned
-        target frames.
-
-        Contract:
-            - Resolves the live Rift first and projects its currently assigned
-              target frames through `create_cached_frame_viewer(...)`.
-            - Enriches the returned viewer metadata with Rift-specific
-              identifiers and assigned-frame information.
-            - Derives a default view frame only when the Rift currently has
-              exactly one assigned target frame.
-
-        Args:
-            rift_id:
-                Existing Rift id whose assigned target frames should populate
-                the viewer.
-            view_profile_name:
-                View profile name applied to each projected frame view.
-            viewer_profile_name:
-                Viewer profile name applied to the hosted viewer.
-
-        Returns:
-            FrameViewer: Detached projected viewer for the Rift assignment
-            chain.
-        """
-        self.check_cleaned()
-        if not rift_id:
-            raise ValueError("rift_id cannot be empty.")
-        rift = self._get_required_rift(rift_id)
-        assigned_frame_names = rift.list_assigned_frame_names()
-        contract_names_by_frame_name = {
-            frame_name: rift.get_selected_contract_names(frame_name)
-            for frame_name in assigned_frame_names
-        }
-        frame_viewer = self.create_cached_frame_viewer(
-            assigned_frame_names,
-            contract_names_by_frame_name=contract_names_by_frame_name,
-            view_profile_name=view_profile_name,
-            viewer_profile_name=viewer_profile_name,
-        )
-        current_metadata = frame_viewer.metadata
-        current_metadata["rift_id"] = rift.id
-        current_metadata["frame_link_contract_ids_by_frame_name"] = {
-            frame_name: rift.get_frame_link_contract(frame_name).contract_id
-            for frame_name in assigned_frame_names
-        }
-        current_metadata["assigned_frame_names"] = assigned_frame_names
-        current_metadata["selected_contract_names_by_frame_name"] = (
-            contract_names_by_frame_name
-        )
-        default_view_frame_name = None
-        if len(assigned_frame_names) == 1:
-            default_view_frame_name = assigned_frame_names[0]
-        return FrameViewer(
-            profile_builder=FrameViewerProfileBuilder(),
-            active_profiles_by_name={
-                profile_name: frame_viewer_profile.clone()
-                for profile_name, frame_viewer_profile in (
-                    frame_viewer.active_profiles_by_name.items()
-                )
-            },
-            default_profile_name=frame_viewer.profile_name,
-            frame_descriptors_by_name=frame_viewer.frame_descriptors_by_name,
-            frame_acl_configurations_by_frame_name=(
-                frame_viewer.frame_acl_configurations_by_frame_name
-            ),
-            compiled_access_surfaces_by_frame_name=(
-                frame_viewer.compiled_access_surfaces_by_frame_name
-            ),
-            default_view_frame_name=default_view_frame_name,
-            metadata=current_metadata,
-        )
-
-    @staticmethod
-    def _make_projected_frame_viewer_cache_key(
-            frame_names: Tuple[str, ...],
-            configuration_ids: Tuple[str, ...],
-            view_profile_name: str,
-            viewer_profile_name: str,
-    ) -> Tuple[Tuple[str, ...], Tuple[str, ...], str]:
-        """
-        Build the stable cache key for one projected frame viewer.
-
-        Args:
-            frame_names:
-                Sorted projected frame names.
-            configuration_ids:
-                Sorted current ACL configuration ids aligned to `frame_names`.
-            view_profile_name:
-                Applied view profile name.
-            viewer_profile_name:
-                Applied viewer profile name.
-
-        Returns:
-            Tuple[Tuple[str, ...], Tuple[str, ...], str]:
-                Stable projected-viewer cache key.
-        """
-        return (
-            tuple(
-                "{0}:{1}".format(frame_name, view_profile_name)
-                for frame_name in frame_names
-            ),
-            configuration_ids,
-            "{0}:{1}".format(view_profile_name, viewer_profile_name),
         )
 
     @staticmethod
@@ -2362,41 +1877,6 @@ class Nexus(Cleanable, INexus):
                     )
                 )
         return normalized_selection
-
-    def _invalidate_projected_frame_viewers(
-            self,
-            frame_name: Optional[str] = None,
-    ) -> None:
-        """
-        Invalidate cached projected frame viewers.
-
-        Args:
-            frame_name:
-                Optional single-frame scope. When omitted, every cached viewer
-                is invalidated.
-
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        with self._lock:
-            cache_keys_to_remove: List[Tuple[Tuple[str, ...], Tuple[str, ...], str]] = []
-            for cache_key in self._projected_frame_viewers_by_cache_key.keys():
-                if (
-                        frame_name is None
-                        or any(
-                            cached_frame_name.split(":", 1)[0] == frame_name
-                            for cached_frame_name in cache_key[0]
-                        )
-                ):
-                    cache_keys_to_remove.append(cache_key)
-            for cache_key in cache_keys_to_remove:
-                projected_frame_viewer = self._projected_frame_viewers_by_cache_key.pop(
-                    cache_key,
-                    None,
-                )
-                if projected_frame_viewer is not None:
-                    projected_frame_viewer.cleanup()
 
     def _wait_until_rift_gate_is_idle(
             self,
@@ -2484,36 +1964,6 @@ class Nexus(Cleanable, INexus):
                 except Exception:
                     pass
 
-    def _refresh_attached_rift_viewers_for_frame(self, frame_name: str) -> None:
-        """
-        Reattach live Rift-space viewers affected by one frame ACL change.
-
-        Args:
-            frame_name:
-                Frame name whose selected ACL family revision changed.
-
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        if not frame_name:
-            raise ValueError("frame_name cannot be empty.")
-        with self._lock:
-            rifts = list(self._rifts_by_id.values())
-        for rift in rifts:
-            if frame_name not in rift.list_assigned_frame_names():
-                continue
-            space = rift.space
-            current_viewer = space.frame_viewer
-            if current_viewer is None:
-                continue
-            current_profile_name = current_viewer.profile_name or "general"
-            rift.attach_frame_viewer(
-                cached=False,
-                view_profile_name=current_profile_name,
-                viewer_profile_name=current_profile_name,
-            )
-
     def _on_frame_acl_changed(self, frame_name: str) -> None:
         """
         Handle one frame ACL registry change.
@@ -2525,7 +1975,6 @@ class Nexus(Cleanable, INexus):
         Returns:
             None.
         """
-        self._invalidate_projected_frame_viewers(frame_name)
         self._refresh_rift_projection_sets_for_frame(frame_name)
 
     def get_nexus_frame_for_rift(

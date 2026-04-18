@@ -35,6 +35,7 @@ class FrameViewer(Cleanable):
 
     Contract:
         - Holds non-owned `FrameDescriptor` references keyed by frame name.
+        - Owns detached `FrameACLConfiguration` objects keyed by frame name.
         - Owns detached `CompiledFrameACLAccessSurface` objects keyed by frame
           name.
         - Owns reusable active `FrameViewerProfile` templates and one selected
@@ -110,7 +111,7 @@ class FrameViewer(Cleanable):
             frame_descriptors_by_name:
                 Optional non-owned descriptor references keyed by frame name.
             frame_acl_configurations_by_frame_name:
-                Optional non-owned frame ACL configurations keyed by frame name.
+                Optional detached frame ACL configurations keyed by frame name.
             compiled_access_surfaces_by_frame_name:
                 Optional owned compiled ACL surfaces keyed by frame name.
             selected_profile_names_by_frame_name:
@@ -220,6 +221,10 @@ class FrameViewer(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
+            for frame_acl_configuration in (
+                    self._frame_acl_configurations_by_frame_name.values()
+            ):
+                frame_acl_configuration.cleanup()
             for compiled_access_surface in (
                     self._compiled_access_surfaces_by_frame_name.values()
             ):
@@ -247,21 +252,6 @@ class FrameViewer(Cleanable):
             self._metadata = None
             self._viewer_id = None
         self._lock = None
-
-    def bind_rift_gate(self, rift_gate: Optional[IRiftGate]) -> None:
-        """
-        Bind or replace the optional Rift gate used for viewer admission.
-
-        Args:
-            rift_gate:
-                Optional Rift gate to bind.
-
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        with self._lock:
-            self._rift_gate = rift_gate
 
     @property
     def viewer_id(self) -> str:
@@ -2161,9 +2151,15 @@ class FrameViewer(Cleanable):
                 },
                 default_profile_name=self._default_profile_name,
                 frame_descriptors_by_name=dict(self._frame_descriptors_by_name),
-                frame_acl_configurations_by_frame_name=dict(
-                    self._frame_acl_configurations_by_frame_name
-                ),
+                frame_acl_configurations_by_frame_name={
+                    frame_name: self._clone_frame_acl_configuration(
+                        frame_acl_configuration,
+                        reason="frame_viewer_clone",
+                    )
+                    for frame_name, frame_acl_configuration in (
+                        self._frame_acl_configurations_by_frame_name.items()
+                    )
+                },
                 compiled_access_surfaces_by_frame_name={
                     frame_name: self._clone_compiled_access_surface(
                         compiled_access_surface
@@ -3301,12 +3297,40 @@ class FrameViewer(Cleanable):
         return template_profile.clone_bound_to_frame(
             frame_name=frame_name,
             frame_descriptor=self._get_required_frame_descriptor(frame_name),
-            frame_acl_configuration=self._get_required_frame_acl_configuration(
-                frame_name
-            ),
+                frame_acl_configuration=self._get_required_frame_acl_configuration(
+                    frame_name
+                ),
             compiled_access_surface=self._get_required_compiled_access_surface(
                 frame_name
             ),
+        )
+
+    @staticmethod
+    def _clone_frame_acl_configuration(
+            frame_acl_configuration: FrameACLConfiguration,
+            *,
+            reason: str,
+    ) -> FrameACLConfiguration:
+        """
+        Return a detached frame ACL configuration clone for viewer-owned state.
+
+        Args:
+            frame_acl_configuration:
+                Source ACL configuration to clone.
+            reason:
+                Clone reason recorded on the detached configuration.
+
+        Returns:
+            FrameACLConfiguration: Detached ACL configuration clone.
+        """
+        return FrameACLConfiguration.create_from_selected_configurations(
+            frame_name=frame_acl_configuration.frame_name,
+            view_configuration=frame_acl_configuration.view_configuration,
+            command_configuration=frame_acl_configuration.command_configuration,
+            codegen_configuration=frame_acl_configuration.codegen_configuration,
+            reason=reason,
+            locked=True,
+            configuration_id=frame_acl_configuration.configuration_id,
         )
 
     @staticmethod

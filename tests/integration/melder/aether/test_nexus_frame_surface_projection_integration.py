@@ -83,9 +83,10 @@ def _enable_nexus_for_target_frame(frame_name: str) -> Nexus:
     return nexus
 
 
-def test_integration_nexus_can_project_frame_viewer_after_passive_publish() -> None:
+def test_integration_rift_space_can_attach_room_owned_frame_viewer_after_passive_publish() -> None:
     """
-    Verify Nexus can assemble a `FrameViewer` after real passive publication.
+    Verify Rift attaches a room-owned `FrameViewer` after real passive
+    publication.
 
     Returns:
         None.
@@ -100,18 +101,28 @@ def test_integration_nexus_can_project_frame_viewer_after_passive_publish() -> N
 
     conduit = spellbook.conjure(name="root")
     try:
-        nexus = Nexus()
-        viewer = nexus.create_frame_viewer(["ops"])
+        nexus = _enable_nexus_for_target_frame("ops")
+        rift_configuration = (
+            nexus.create_rift_configuration()
+            .with_space_type(RiftSpaceType.capability)
+        )
+        rift = nexus.create_rift(
+            configuration=rift_configuration,
+            rift_name="ops_rift",
+        )
+        rift.target_frame("ops")
+        viewer = rift.get_frame_viewer()
 
         assert isinstance(viewer, FrameViewer)
         assert viewer.metadata["frame_count"] == 1
+        assert viewer.metadata["rift_id"] == rift.id
         assert viewer.list_frame_names() == ["ops"]
         assert len(viewer.execute_method("list_targets")) >= 3
     finally:
         conduit.cleanup()
 
 
-def test_integration_nexus_can_project_frame_viewer_for_rift_after_passive_publish() -> None:
+def test_integration_rift_get_frame_viewer_exposes_assigned_frame_after_passive_publish() -> None:
     """
     Verify Rift-assigned frames populate available views after real passive
     Nexus publication.
@@ -132,7 +143,7 @@ def test_integration_nexus_can_project_frame_viewer_for_rift_after_passive_publi
         nexus = _enable_nexus_for_target_frame("ops")
         rift_configuration = (
             nexus.create_rift_configuration()
-            .with_space_type(RiftSpaceType.static)
+            .with_space_type(RiftSpaceType.capability)
         )
         rift = nexus.create_rift(
             configuration=rift_configuration,
@@ -140,7 +151,7 @@ def test_integration_nexus_can_project_frame_viewer_for_rift_after_passive_publi
         )
         rift.target_frame("ops")
 
-        viewer = nexus.create_frame_viewer_for_rift(rift.id)
+        viewer = rift.get_frame_viewer()
 
         assert isinstance(viewer, FrameViewer)
         assert viewer.metadata["rift_id"] == rift.id
@@ -152,9 +163,10 @@ def test_integration_nexus_can_project_frame_viewer_for_rift_after_passive_publi
         conduit.cleanup()
 
 
-def test_integration_nexus_can_cache_projected_rift_viewers_after_passive_publish() -> None:
+def test_integration_rift_scoped_refresh_rebuilds_room_owned_viewer_after_passive_publish() -> None:
     """
-    Verify the cached Rift viewer path works against real passive publication.
+    Verify a scoped refresh rebuilds the room-owned viewer after passive
+    publication.
 
     Returns:
         None.
@@ -172,7 +184,7 @@ def test_integration_nexus_can_cache_projected_rift_viewers_after_passive_publis
         nexus = _enable_nexus_for_target_frame("ops")
         rift_configuration = (
             nexus.create_rift_configuration()
-            .with_space_type(RiftSpaceType.static)
+            .with_space_type(RiftSpaceType.capability)
         )
         rift = nexus.create_rift(
             configuration=rift_configuration,
@@ -180,15 +192,17 @@ def test_integration_nexus_can_cache_projected_rift_viewers_after_passive_publis
         )
         rift.target_frame("ops")
 
-        first_viewer = nexus.create_cached_frame_viewer_for_rift(rift.id)
-        second_viewer = nexus.create_cached_frame_viewer_for_rift(rift.id)
+        first_viewer = rift.get_frame_viewer()
+        first_viewer_metadata = first_viewer.metadata
+        first_viewer_frame_names = list(first_viewer.frame_descriptors_by_name.keys())
+        rift.refresh_runtime_projections(frame_name="ops")
+        second_viewer = rift.get_frame_viewer()
 
         assert isinstance(first_viewer, FrameViewer)
         assert isinstance(second_viewer, FrameViewer)
         assert first_viewer is not second_viewer
-        assert first_viewer.metadata["rift_id"] == rift.id
+        assert first_viewer_metadata["rift_id"] == rift.id
         assert second_viewer.metadata["assigned_frame_names"] == ("ops",)
-        assert list(first_viewer.frame_descriptors_by_name.keys()) == ["ops"]
-        assert len(nexus._projected_frame_viewers_by_cache_key) == 1
+        assert first_viewer_frame_names == ["ops"]
     finally:
         conduit.cleanup()

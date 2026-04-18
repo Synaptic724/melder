@@ -103,12 +103,12 @@ def _make_rift_publishable_configuration(aetheric_frame: str) -> Configuration:
     return configuration
 
 
-def _build_real_nexus_viewer() -> object:
+def _build_real_room_viewer() -> object:
     """
-    Build one real Nexus-backed viewer for integration checks.
+    Build one real room-owned viewer for integration checks.
 
     Returns:
-        object: Descriptor-driven viewer built from a real Spellbook/Nexus path.
+        object: Viewer built from a real Spellbook/Rift path.
     """
     configuration = _make_rift_publishable_configuration(aetheric_frame="ops")
     spellbook = Spellbook(aetheric_frame="ops", configuration=configuration)
@@ -119,44 +119,68 @@ def _build_real_nexus_viewer() -> object:
     )
     conduit = spellbook.conjure(name="root")
     nexus = Nexus()
-    viewer = nexus.create_frame_viewer(["ops"])
-    return spellbook, conduit, nexus, viewer
-
-
-def _build_real_rift_viewer() -> object:
-    """
-    Build one real Rift-backed frame-specific viewer for integration checks.
-
-    Returns:
-        object: Tuple of live runtime objects plus the Rift-created viewer.
-    """
-    spellbook, conduit, nexus, _ = _build_real_nexus_viewer()
     system_configuration = nexus.create_system_configuration()
     system_configuration.with_rift_creation_enabled(True)
     system_configuration.with_direct_rift_access(True)
     system_configuration.with_target_frame_override(True)
     system_configuration.with_multiple_target_frames(True)
     system_configuration.with_max_target_frame_count(2)
-    system_configuration.with_default_space_type(RiftSpaceType.codegen)
+    system_configuration.with_default_space_type(RiftSpaceType.capability)
+    system_configuration.with_allowed_target_frame_names(("default", "ops"))
+    nexus.enable(system_configuration)
+    rift_configuration = (
+        nexus.create_rift_configuration()
+        .with_space_type(RiftSpaceType.capability)
+    )
+    rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
+    rift.target_frame("ops")
+    viewer = rift.get_frame_viewer()
+    return spellbook, conduit, nexus, viewer
+
+
+def _build_real_rift_viewer() -> object:
+    """
+    Build one real Rift-backed viewer for integration checks.
+
+    Returns:
+        object: Tuple of live runtime objects plus the attached Rift viewer.
+    """
+    configuration = _make_rift_publishable_configuration(aetheric_frame="ops")
+    spellbook = Spellbook(aetheric_frame="ops", configuration=configuration)
+    spellbook.bind(
+        spell=BasicExtendedService,
+        existence=Existence.unique,
+        permissions="create",
+    )
+    conduit = spellbook.conjure(name="root")
+    nexus = Nexus()
+    system_configuration = nexus.create_system_configuration()
+    system_configuration.with_rift_creation_enabled(True)
+    system_configuration.with_direct_rift_access(True)
+    system_configuration.with_target_frame_override(True)
+    system_configuration.with_multiple_target_frames(True)
+    system_configuration.with_max_target_frame_count(2)
+    system_configuration.with_default_space_type(RiftSpaceType.capability)
     system_configuration.with_allowed_target_frame_names(("default", "ops"))
     nexus.enable(system_configuration)
 
     rift_configuration = (
         nexus.create_rift_configuration()
-        .with_space_type(RiftSpaceType.static)
+        .with_space_type(RiftSpaceType.capability)
     )
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
     rift.target_frame("ops")
-    viewer = rift.create_new_frame_viewer("ops", viewer_profile_name="general")
+    viewer = rift.get_frame_viewer()
     return spellbook, conduit, nexus, rift, viewer
 
 
-def _build_real_multi_frame_nexus_viewer() -> object:
+def _build_real_multi_frame_room_viewer() -> object:
     """
-    Build one real two-frame Nexus viewer with collision and mismatch state.
+    Build one real two-frame room-owned viewer with collision and mismatch
+    state.
 
     Returns:
-        object: Tuple of spellbooks, conduits, Nexus, and viewer.
+        object: Tuple of spellbooks, conduits, Nexus, and attached viewer.
     """
     ops_configuration = _make_rift_publishable_configuration(aetheric_frame="ops")
     finance_configuration = _make_rift_publishable_configuration(
@@ -194,7 +218,23 @@ def _build_real_multi_frame_nexus_viewer() -> object:
     ops_conduit = ops_spellbook.conjure(name="ops_root")
     finance_conduit = finance_spellbook.conjure(name="finance_root")
     nexus = Nexus()
-    viewer = nexus.create_frame_viewer(["ops", "finance"])
+    system_configuration = nexus.create_system_configuration()
+    system_configuration.with_rift_creation_enabled(True)
+    system_configuration.with_direct_rift_access(True)
+    system_configuration.with_target_frame_override(True)
+    system_configuration.with_multiple_target_frames(True)
+    system_configuration.with_max_target_frame_count(3)
+    system_configuration.with_default_space_type(RiftSpaceType.capability)
+    system_configuration.with_allowed_target_frame_names(("default", "ops", "finance"))
+    nexus.enable(system_configuration)
+    rift_configuration = (
+        nexus.create_rift_configuration()
+        .with_space_type(RiftSpaceType.capability)
+    )
+    rift = nexus.create_rift(configuration=rift_configuration, rift_name="dual_rift")
+    rift.target_frame("ops")
+    rift.target_frame("finance")
+    viewer = rift.get_frame_viewer()
     return (
         ops_spellbook,
         finance_spellbook,
@@ -212,33 +252,60 @@ def _build_real_multi_frame_rift_viewer() -> object:
     Returns:
         object: Tuple of spellbooks, conduits, Nexus, Rift, and viewer.
     """
-    (
-        ops_spellbook,
-        finance_spellbook,
-        ops_conduit,
-        finance_conduit,
-        nexus,
-        _,
-    ) = _build_real_multi_frame_nexus_viewer()
+    ops_configuration = _make_rift_publishable_configuration(aetheric_frame="ops")
+    finance_configuration = _make_rift_publishable_configuration(
+        aetheric_frame="finance"
+    )
 
+    ops_spellbook = Spellbook(aetheric_frame="ops", configuration=ops_configuration)
+    finance_spellbook = Spellbook(
+        aetheric_frame="finance",
+        configuration=finance_configuration,
+    )
+
+    ops_spellbook.bind(
+        spell=SharedCollisionService,
+        existence=Existence.unique,
+        permissions="create",
+        binding_name="shared_binding",
+        spellframe="SharedFrame",
+    )
+    ops_spellbook.bind(
+        spell=OpsMismatchService,
+        existence=Existence.many,
+        permissions="read",
+        binding_name="ops_mismatch",
+        spellframe="OpsFrame",
+    )
+    finance_spellbook.bind(
+        spell=SharedCollisionService,
+        existence=Existence.unique,
+        permissions="create",
+        binding_name="shared_binding",
+        spellframe="SharedFrame",
+    )
+
+    ops_conduit = ops_spellbook.conjure(name="ops_root")
+    finance_conduit = finance_spellbook.conjure(name="finance_root")
+    nexus = Nexus()
     system_configuration = nexus.create_system_configuration()
     system_configuration.with_rift_creation_enabled(True)
     system_configuration.with_direct_rift_access(True)
     system_configuration.with_target_frame_override(True)
     system_configuration.with_multiple_target_frames(True)
     system_configuration.with_max_target_frame_count(3)
-    system_configuration.with_default_space_type(RiftSpaceType.codegen)
+    system_configuration.with_default_space_type(RiftSpaceType.capability)
     system_configuration.with_allowed_target_frame_names(("default", "ops", "finance"))
     nexus.enable(system_configuration)
 
     rift_configuration = (
         nexus.create_rift_configuration()
-        .with_space_type(RiftSpaceType.static)
+        .with_space_type(RiftSpaceType.capability)
     )
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="dual_rift")
     rift.target_frame("ops")
     rift.target_frame("finance")
-    viewer = nexus.create_frame_viewer_for_rift(rift.id)
+    viewer = rift.get_frame_viewer()
     return (
         ops_spellbook,
         finance_spellbook,
@@ -348,7 +415,7 @@ def test_real_nexus_viewer_extended_method_matrix(
         method_name: str,
         expected_type: str,
 ) -> None:
-    spellbook, conduit, _, viewer = _build_real_nexus_viewer()
+    spellbook, conduit, _, viewer = _build_real_room_viewer()
     try:
         result = viewer.execute_method(
             method_name,
@@ -400,7 +467,7 @@ def test_real_nexus_viewer_multi_frame_compare_collision_and_filter_helpers() ->
         finance_conduit,
         _,
         viewer,
-    ) = _build_real_multi_frame_nexus_viewer()
+    ) = _build_real_multi_frame_room_viewer()
     try:
         comparison = viewer.compare_frames_brief("ops", "finance")
         binding_collisions = viewer.describe_binding_name_collisions()
@@ -481,7 +548,7 @@ def test_real_nexus_viewer_multi_frame_default_view_routes_general_helpers() -> 
         finance_conduit,
         _,
         viewer,
-    ) = _build_real_multi_frame_nexus_viewer()
+    ) = _build_real_multi_frame_room_viewer()
     try:
         viewer.set_default_view("finance")
         inventory = viewer.execute_method("describe_frame_inventory")

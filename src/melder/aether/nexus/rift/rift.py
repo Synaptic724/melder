@@ -460,154 +460,18 @@ class Rift(Cleanable, IRift):
             )
         self.refresh_runtime_projections()
 
-    def create_frame_viewer(
-            self,
-            *,
-            view_profile_name: str = "general",
-            viewer_profile_name: str = "general",
-    ) -> FrameViewer:
-        """
-        Internal
-
-        Build one frame viewer from this Rift's assigned-frame contract.
-
-        Args:
-            view_profile_name:
-                View profile name applied to each assigned view.
-            viewer_profile_name:
-                Viewer profile name applied to the hosted viewer.
-
-        Contract:
-            Delegates viewer creation to the owning `Nexus` using this Rift's
-            current assigned-frame contract.
-
-        Returns:
-            FrameViewer: Hosted frame viewer for this Rift.
-        """
-        self.check_cleaned()
-        return self._nexus.create_frame_viewer_for_rift(
-            self._id,
-            view_profile_name=view_profile_name,
-            viewer_profile_name=viewer_profile_name,
-        )
-
-    def create_cached_frame_viewer(
-            self,
-            *,
-            view_profile_name: str = "general",
-            viewer_profile_name: str = "general",
-    ) -> FrameViewer:
-        """
-        Internal
-
-        Build or reuse one cached frame viewer from this Rift's assigned-frame
-        contract.
-
-        Args:
-            view_profile_name:
-                View profile name applied to each assigned view.
-            viewer_profile_name:
-                Viewer profile name applied to the hosted viewer.
-
-        Contract:
-            Delegates cached-viewer creation to the owning `Nexus` and may
-            reuse prior cached viewer state for this Rift/profile combination.
-
-        Returns:
-            FrameViewer: Detached cached frame viewer for this Rift.
-        """
-        self.check_cleaned()
-        return self._nexus.create_cached_frame_viewer_for_rift(
-            self._id,
-            view_profile_name=view_profile_name,
-            viewer_profile_name=viewer_profile_name,
-        )
-
-    def create_new_frame_viewer(
-            self,
-            frame_name: str,
-            *,
-            viewer_profile_name: str = "general",
-    ) -> FrameViewer:
-        """
-        Internal
-
-        Build one new frame-specific viewer transaction through this Rift.
-
-        Args:
-            frame_name:
-                Target frame name to materialize for this Rift.
-            viewer_profile_name:
-                Selected viewer profile name for the target frame.
-
-        Returns:
-            FrameViewer: Frame-scoped viewer for the requested frame.
-        """
-        self.check_cleaned()
-        self.get_frame_link_contract(frame_name)
-        return self._nexus.create_frame_viewer_for_rift_frame(
-            self._id,
-            frame_name,
-            viewer_profile_name=viewer_profile_name,
-        )
-
-    def attach_frame_viewer(
-            self,
-            *,
-            cached: bool = False,
-            view_profile_name: str = "general",
-            viewer_profile_name: str = "general",
-    ) -> FrameViewer:
-        """
-        Internal
-
-        Build one frame viewer from this Rift and attach it to the owned space.
-
-        Args:
-            cached:
-                When True, uses the cached viewer creation path.
-            view_profile_name:
-                View profile name applied to each assigned view.
-            viewer_profile_name:
-                Viewer profile name applied to the hosted viewer.
-
-        Returns:
-            FrameViewer: Attached frame viewer.
-        """
-        self.check_cleaned()
-        space = self.space
-        frame_viewer = (
-            self.create_cached_frame_viewer(
-                view_profile_name=view_profile_name,
-                viewer_profile_name=viewer_profile_name,
-            )
-            if cached
-            else self.create_frame_viewer(
-                view_profile_name=view_profile_name,
-                viewer_profile_name=viewer_profile_name,
-            )
-        )
-        space._replace_frame_viewer(frame_viewer)
-        return frame_viewer
-
     def refresh_runtime_projections(
             self,
             *,
             frame_name: Optional[str] = None,
-            cached: bool = False,
-            view_profile_name: str = "general",
             viewer_profile_name: str = "general",
     ) -> Dict[str, FrameProjectionSet]:
         """
-        Build and attach fresh runtime projections for this Rift.
+        Build fresh runtime projections and rebuild the owned room viewer.
 
         Args:
             frame_name:
                 Optional single-frame refresh scope.
-            cached:
-                Whether the viewer side should use the cached builder path.
-            view_profile_name:
-                View profile name applied to the rebuilt viewer.
             viewer_profile_name:
                 Viewer profile name applied to the rebuilt viewer.
 
@@ -615,16 +479,52 @@ class Rift(Cleanable, IRift):
             Dict[str, FrameProjectionSet]: Fresh projection sets keyed by frame name.
         """
         self.check_cleaned()
+        assigned_frame_names = self.list_assigned_frame_names()
         projection_sets_by_frame_name = self._nexus.create_frame_projection_sets_for_rift(
             self._id,
             frame_name=frame_name,
         )
         space = self.space
-        space.replace_projection_sets(projection_sets_by_frame_name)
-        self.attach_frame_viewer(
-            cached=cached,
-            view_profile_name=view_profile_name,
+        current_viewer = space.frame_viewer
+        selected_profile_names_by_frame_name = (
+            current_viewer.selected_profile_names_by_frame_name
+            if current_viewer is not None
+            else None
+        )
+        default_view_frame_name = (
+            current_viewer.default_view_frame_name
+            if current_viewer is not None
+            else (
+                assigned_frame_names[0]
+                if len(assigned_frame_names) == 1
+                else None
+            )
+        )
+        space.replace_projection_sets(
+            projection_sets_by_frame_name,
+            merge=(frame_name is not None),
+        )
+        refreshed_assigned_frame_names = self.list_assigned_frame_names()
+        space._rebuild_frame_viewer(
             viewer_profile_name=viewer_profile_name,
+            selected_profile_names_by_frame_name=selected_profile_names_by_frame_name,
+            default_view_frame_name=default_view_frame_name,
+            metadata={
+                "rift_id": self._id,
+                "frame_link_contract_ids_by_frame_name": {
+                    current_frame_name: self.get_frame_link_contract(
+                        current_frame_name
+                    ).contract_id
+                    for current_frame_name in refreshed_assigned_frame_names
+                },
+                "assigned_frame_names": refreshed_assigned_frame_names,
+                "selected_contract_names_by_frame_name": {
+                    current_frame_name: self.get_selected_contract_names(
+                        current_frame_name
+                    )
+                    for current_frame_name in refreshed_assigned_frame_names
+                },
+            },
         )
         return projection_sets_by_frame_name
 

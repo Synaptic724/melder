@@ -366,7 +366,14 @@ def _build_projection_set_from_viewer(
             ),
             metadata={"surface": "codegen"},
         ),
-        metadata={"source": "test_viewer_clone"},
+        metadata={
+            "source": "test_viewer_clone",
+            "selected_contract_names": {
+                "view": "default",
+                "command": "default",
+                "codegen": "default",
+            },
+        },
     )
 
 
@@ -389,7 +396,13 @@ def _attach_projection_backed_viewer(space: RiftSpace, viewer: FrameViewer) -> N
             for frame_name in viewer.frame_descriptors_by_name.keys()
         }
     )
-    space._replace_frame_viewer(viewer)
+    space._rebuild_frame_viewer(
+        viewer_profile_name=viewer.profile_name or "general",
+        selected_profile_names_by_frame_name=viewer.selected_profile_names_by_frame_name,
+        default_view_frame_name=viewer.default_view_frame_name,
+        metadata=viewer.metadata,
+    )
+    viewer.cleanup()
 
 
 def test_nexus_is_singleton() -> None:
@@ -891,10 +904,10 @@ def test_rift_space_can_replace_and_clear_frame_viewer_internally() -> None:
     space = RiftSpace(owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
 
-    space.replace_projection_sets({"ops": _build_projection_set_from_viewer(viewer, "ops")})
-    space._replace_frame_viewer(viewer)
+    _attach_projection_backed_viewer(space, viewer)
 
-    assert space.frame_viewer is viewer
+    assert isinstance(space.frame_viewer, FrameViewer)
+    assert space.frame_viewer is not viewer
 
     space._clear_frame_viewer()
 
@@ -3500,7 +3513,7 @@ def test_rift_exposes_frame_link_contract_from_assigned_frames() -> None:
     assert rift.list_assigned_frame_names() == ("ops",)
 
 
-def test_rift_can_build_frame_viewer_from_assigned_frame_contract() -> None:
+def test_rift_get_frame_viewer_returns_room_owned_viewer_from_assigned_frame_contract() -> None:
     """
     Verify a Rift can build a viewer directly from its assigned-frame contract.
 
@@ -3528,7 +3541,7 @@ def test_rift_can_build_frame_viewer_from_assigned_frame_contract() -> None:
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
     rift.target_frame("ops")
 
-    viewer = rift.create_frame_viewer()
+    viewer = rift.get_frame_viewer()
 
     assert viewer.metadata["rift_id"] == rift.id
     assert viewer.default_view_frame_name == "ops"
@@ -3651,9 +3664,9 @@ def test_rift_target_frame_uses_selected_named_acl_contract_for_viewer_projectio
     }
 
 
-def test_rift_can_create_new_frame_viewer_for_one_engaged_frame() -> None:
+def test_rift_refresh_runtime_projections_rebuilds_room_owned_viewer_for_one_engaged_frame() -> None:
     """
-    Verify Rift can create one frame-specific viewer transaction.
+    Verify Rift refresh rebuilds the room-owned viewer for one engaged frame.
 
     Returns:
         None.
@@ -3679,18 +3692,22 @@ def test_rift_can_create_new_frame_viewer_for_one_engaged_frame() -> None:
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
     rift.target_frame("ops")
 
-    viewer = rift.create_new_frame_viewer("ops", viewer_profile_name="general")
+    first_viewer = rift.get_frame_viewer()
+    rift.refresh_runtime_projections()
+    viewer = rift.get_frame_viewer()
 
     assert viewer.list_frame_names() == ["ops"]
     assert viewer.selected_profile_names_by_frame_name == {"ops": "general"}
+    assert viewer is not first_viewer
     assert viewer.get_selected_profile_for_frame("ops").frame_descriptor is (
         viewer.frame_descriptors_by_name["ops"]
     )
 
 
-def test_rift_can_attach_frame_viewer_to_active_space_and_read_it_back() -> None:
+def test_rift_attaches_room_owned_viewer_to_active_space_and_reads_it_back() -> None:
     """
-    Verify a Rift can attach its frame viewer chain to the active space.
+    Verify targeting a frame attaches the room-owned viewer to the active
+    space.
 
     Returns:
         None.

@@ -90,31 +90,38 @@ class StaticRiftSpace(RiftSpace, IStaticRiftSpace):
             workstation=self._workstation,
         )
 
-    def _replace_frame_viewer(self, frame_viewer: FrameViewer) -> None:
+    def _build_frame_viewer(
+            self,
+            *,
+            viewer_profile_name: str = "general",
+            selected_profile_names_by_frame_name: Optional[Dict[str, str]] = None,
+            default_view_frame_name: Optional[str] = None,
+            metadata: Optional[Dict[str, object]] = None,
+    ) -> FrameViewer:
         """
-        Replace the room viewer using the static viewer wrapper.
+        Build the room viewer using the static viewer wrapper.
 
         Purpose:
-            Ensure static rooms always store a `StaticFrameViewer` even when the
-            incoming viewer was created as a generic `FrameViewer`.
+            Ensure static rooms always assemble and return a
+            `StaticFrameViewer` while the generic builder remains in the base
+            room.
 
         Contract:
-            - Reuses an incoming `StaticFrameViewer` as-is.
-            - Wraps any non-static viewer through
-              `StaticFrameViewer.from_frame_viewer(...)` before replacing the
-              room's current viewer.
-            - Delegates the actual replacement lifecycle to the base room's
-              internal viewer replacement helper.
-
-        Args:
-            frame_viewer:
-                Incoming viewer to normalize and replace on this room.
+            - Builds the generic viewer through the base room builder.
+            - Wraps that generic viewer through
+              `StaticFrameViewer.from_frame_viewer(...)`.
+            - Cleans the intermediate generic viewer before returning the
+              static overlay.
 
         Returns:
-            None.
+            FrameViewer: Static viewer for this room.
         """
-        if isinstance(frame_viewer, StaticFrameViewer):
-            static_frame_viewer = frame_viewer
-        else:
-            static_frame_viewer = StaticFrameViewer.from_frame_viewer(frame_viewer)
-        super()._replace_frame_viewer(static_frame_viewer)
+        frame_viewer = super()._build_frame_viewer(
+            viewer_profile_name=viewer_profile_name,
+            selected_profile_names_by_frame_name=selected_profile_names_by_frame_name,
+            default_view_frame_name=default_view_frame_name,
+            metadata=metadata,
+        )
+        static_frame_viewer = StaticFrameViewer.from_frame_viewer(frame_viewer)
+        frame_viewer.cleanup()
+        return static_frame_viewer

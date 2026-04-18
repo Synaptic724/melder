@@ -248,9 +248,9 @@ def test_rift_target_frame_rejects_empty_inputs() -> None:
         rift.target_frame("ops", contract_name="")
 
 
-def test_rift_engage_frame_alias_and_cached_viewer_path_work() -> None:
+def test_rift_target_frame_attaches_room_owned_viewer_path() -> None:
     """
-    Verify the engage-frame alias and cached viewer wrapper both work.
+    Verify targeting a frame attaches the room-owned viewer path.
 
     Returns:
         None.
@@ -260,24 +260,24 @@ def test_rift_engage_frame_alias_and_cached_viewer_path_work() -> None:
     rift = _create_registered_rift()
 
     rift.target_frame("ops")
-    viewer = rift.create_cached_frame_viewer()
+    viewer = rift.get_frame_viewer()
 
     assert rift.get_frame_link_contract("ops").frame_name == "ops"
     assert isinstance(viewer, FrameViewer)
     assert viewer.default_view_frame_name == "ops"
 
 
-def test_rift_create_new_frame_viewer_rejects_unengaged_frame() -> None:
+def test_rift_get_frame_viewer_rejects_when_no_viewer_is_attached() -> None:
     """
-    Verify frame-specific viewer creation fails when the frame is not engaged.
+    Verify `get_frame_viewer()` fails when no viewer is attached.
 
     Returns:
         None.
     """
     rift = _create_registered_rift()
 
-    with pytest.raises(ValueError, match="is not engaged with frame"):
-        rift.create_new_frame_viewer("ops")
+    with pytest.raises(ValueError, match="has no attached frame viewer"):
+        rift.get_frame_viewer()
 
 
 def test_rift_frame_viewer_helpers_fail_fast_without_attached_viewer() -> None:
