@@ -5,6 +5,9 @@ import pytest
 from melder.aether.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
+from melder.aether.nexus.rift.rift_space.memory_system.rift_memory_system import (
+    RiftMemorySystem,
+)
 
 
 def _make_conduit_record(
@@ -81,7 +84,11 @@ class _Viewer:
         return self.compiled_access_surface
 
 
-def _make_command_system(*, target: object = None) -> tuple[CommandSystem, _Viewer, object]:
+def _make_command_system(
+    *,
+    target: object = None,
+    memory_system: object = None,
+) -> tuple[CommandSystem, _Viewer, object]:
     viewer = _Viewer()
     workstation = SimpleNamespace(
         get_target=lambda: target,
@@ -94,6 +101,7 @@ def _make_command_system(*, target: object = None) -> tuple[CommandSystem, _View
         space_id="space-1",
         get_required_frame_viewer=lambda: viewer,
         list_selected_target_ids=lambda frame_name: tuple(selected_target_ids),
+        memory_system=memory_system,
     )
     command_system = CommandSystem(space=space, workstation=workstation)
     return command_system, viewer, selected_target_ids
@@ -464,3 +472,50 @@ def test_command_system_acl_helper_and_method_store_binding_paths() -> None:
             bind_as_store="unknown",
             value="sentinel",
         )
+
+
+def test_command_system_emits_one_memory_for_top_level_public_calls(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    memory_system = RiftMemorySystem(rift_id="rift-1", space_type="static")
+    received_memories = []
+    memory_system.register_memory_callback(lambda memory: received_memories.append(memory))
+    command_system, viewer, _ = _make_command_system(memory_system=memory_system)
+    conduit = SimpleNamespace(create_cluster=lambda cluster_name: None)
+
+    viewer.descriptor.conduit_records_by_id["ops-conduit"] = _make_conduit_record()
+    viewer.compiled_access_surface.enabled_conduit_ids = ("ops-conduit",)
+    monkeypatch.setattr(
+        type(command_system),
+        "_aether",
+        SimpleNamespace(
+            get_conduit_by_id=lambda conduit_id, frame_name: conduit,
+        ),
+    )
+
+    command_system.create_cluster("ops-conduit", "ops-cluster", frame_name="ops")
+
+    assert len(received_memories) == 1
+    assert received_memories[0].frame_name == "ops"
+    assert received_memories[0].action_name == "create_cluster"
+    assert received_memories[0].step_counter == 1
+    assert received_memories[0].metadata["surface"] == "command"
+    assert received_memories[0].metadata["command_system_id"] == command_system.command_system_id
+
+
+def test_command_system_emits_memory_for_target_method_execution() -> None:
+    memory_system = RiftMemorySystem(rift_id="rift-1", space_type="static")
+    received_memories = []
+    memory_system.register_memory_callback(lambda memory: received_memories.append(memory))
+    target = SimpleNamespace(run=lambda value: "done:{0}".format(value))
+    command_system, viewer, _ = _make_command_system(
+        target=target,
+        memory_system=memory_system,
+    )
+
+    result = command_system.execute_target_method("run", "job-1")
+
+    assert result == "done:job-1"
+    assert len(received_memories) == 1
+    assert received_memories[0].frame_name == "ops"
+    assert received_memories[0].action_name == "execute_target_method"

@@ -6311,6 +6311,11 @@ class IRiftMemorySystem(ICleanable, Protocol):
         """Return the current epoch counter."""
         ...
 
+    @property
+    def memory_enabled(self) -> bool:
+        """Return whether memory emission is currently enabled."""
+        ...
+
     def increment_step(self) -> int:
         """Increment and return the step counter."""
         ...
@@ -6357,6 +6362,32 @@ class IRiftMemorySystem(ICleanable, Protocol):
             increment_step: bool = True,
     ) -> IRiftMemory:
         """Create one immutable Rift memory record."""
+        ...
+
+    def register_memory_callback(
+            self,
+            callback: Callable[[IRiftMemory], None],
+    ) -> str:
+        """Register one memory callback and return its subscription id."""
+        ...
+
+    def unregister_memory_callback(self, subscription_id: str) -> None:
+        """Remove one memory callback subscription by id."""
+        ...
+
+    def emit_memory(self, memory: IRiftMemory) -> None:
+        """Emit one memory record to all registered callbacks."""
+        ...
+
+    def create_and_emit_memory(
+            self,
+            *,
+            frame_name: str,
+            action_name: str,
+            metadata: Optional[Dict[str, object]] = None,
+            increment_step: bool = True,
+    ) -> IRiftMemory:
+        """Create one memory record and emit it immediately."""
         ...
 
 

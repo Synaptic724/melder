@@ -93,6 +93,33 @@ def test_rift_memory_system_requires_frame_and_action_names() -> None:
         system.create_memory(frame_name="ops", action_name="")
 
 
+def test_rift_memory_system_emits_memory_when_callbacks_are_registered() -> None:
+    system = RiftMemorySystem(rift_id="rift-1", space_type="static")
+    received = []
+
+    assert system.memory_enabled is False
+
+    subscription_id = system.register_memory_callback(lambda memory: received.append(memory))
+    assert system.memory_enabled is True
+
+    memory = system.create_and_emit_memory(
+        frame_name="ops",
+        action_name="command.invoke",
+        metadata={"target_id": "t-1"},
+    )
+
+    assert received == [memory]
+
+    system.unregister_memory_callback(subscription_id)
+    assert system.memory_enabled is False
+
+    with pytest.raises(TypeError, match="callback must be callable."):
+        system.register_memory_callback(None)
+
+    with pytest.raises(ValueError, match="subscription_id cannot be empty."):
+        system.unregister_memory_callback("")
+
+
 def test_rift_memory_system_cleanup_is_idempotent() -> None:
     system = RiftMemorySystem(rift_id="rift-1", space_type="static")
 

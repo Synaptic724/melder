@@ -1,4 +1,5 @@
 import threading
+from functools import wraps
 from typing import Any, Dict, List, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -45,7 +46,61 @@ class CommandSystem(Cleanable):
         "_lock",
         "_space",
         "_workstation",
+        "_command_memory_call_depth",
     ]
+    _MEMORY_EMISSION_METHOD_NAMES = frozenset(
+        (
+            "get_selected_target_link",
+            "get_selected_target_record",
+            "get_selected_target_runtime_object",
+            "get_conduit_cloud",
+            "get_conduit_by_id",
+            "get_conduit_by_name",
+            "create_lesser_conduit",
+            "create_cluster",
+            "delete_cluster",
+            "join_cluster",
+            "leave_cluster",
+            "list_clusters",
+            "link",
+            "sever_link",
+            "get_links",
+            "get_lesser_conduit",
+            "get_initiated_conduit",
+            "get_provider_conduit",
+            "get_initiated_conduits",
+            "get_provider_conduits",
+            "get_contracted_conduits",
+            "get_spell_in_contracts",
+            "get_spells_in_contract_by_conduit",
+            "get_spells_in_contract_by_conduit_name",
+            "describe_spells_in_conduit",
+            "get_resolution_state",
+            "get_active_spellspace",
+            "find_spell_id",
+            "find_spell_key",
+            "get_spell_permissions",
+            "snapshot_state",
+            "list_conduit_ids",
+            "list_conduit_names",
+            "count_conduits",
+            "has_conduit_id",
+            "has_conduit_name",
+            "find_conduit_id_by_name",
+            "get_spell_by_source_id",
+            "get_spell_by_index_id",
+            "get_spell_by_id",
+            "meld",
+            "meld_existing_spell",
+            "get_target_attribute",
+            "get_target_method",
+            "execute_target_method",
+            "list_supported_command_methods",
+            "describe_spell_status_by_source_id",
+            "describe_spell_status_by_id",
+            "describe_spell_status_by_index_id",
+        )
+    )
     _aether = Aether()
 
     def __init__(self, *, space: Any, workstation: Any) -> None:
@@ -77,6 +132,40 @@ class CommandSystem(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._space: Any = space
         self._workstation: Any = workstation
+        self._command_memory_call_depth: int = 0
+
+    def __getattribute__(self, name: str) -> Any:
+        """
+        Return attributes and wrap top-level public command methods for memory emission.
+
+        Contract:
+            - Leaves non-command attributes untouched.
+            - Wraps supported public command methods so one successful top-level
+              invocation emits at most one command memory record.
+            - Suppresses nested public-command emission so internal calls do not
+              double-record memories.
+
+        Args:
+            name:
+                Attribute name being resolved.
+
+        Returns:
+            Any: Requested attribute or one wrapped public command method.
+        """
+        attribute = super().__getattribute__(name)
+        if name not in type(self)._MEMORY_EMISSION_METHOD_NAMES or not callable(attribute):
+            return attribute
+
+        @wraps(attribute)
+        def _memory_wrapped_command(*args: Any, **kwargs: Any) -> Any:
+            return self._invoke_memory_wrapped_command(
+                action_name=name,
+                bound_method=attribute,
+                args=args,
+                kwargs=kwargs,
+            )
+
+        return _memory_wrapped_command
 
     def cleanup(self) -> None:
         """
@@ -102,6 +191,7 @@ class CommandSystem(Cleanable):
             self._owner_space_id = None
             self._space = None
             self._workstation = None
+            self._command_memory_call_depth = None
             self._command_system_id = None
         self._lock = None
 
@@ -1641,6 +1731,112 @@ class CommandSystem(Cleanable):
             "get_target_method",
             "execute_target_method",
         )
+
+    def _invoke_memory_wrapped_command(
+            self,
+            *,
+            action_name: str,
+            bound_method: Any,
+            args: Tuple[Any, ...],
+            kwargs: Dict[str, Any],
+    ) -> Any:
+        """
+        Invoke one public command method under top-level memory emission control.
+
+        Args:
+            action_name:
+                Stable public command method name.
+            bound_method:
+                Bound public method object to invoke.
+            args:
+                Positional arguments for the command call.
+            kwargs:
+                Keyword arguments for the command call.
+
+        Returns:
+            Any: Command method result.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._command_memory_call_depth = self._command_memory_call_depth + 1
+            is_top_level_call = self._command_memory_call_depth == 1
+        try:
+            result = bound_method(*args, **kwargs)
+        finally:
+            with self._lock:
+                self._command_memory_call_depth = self._command_memory_call_depth - 1
+        if is_top_level_call:
+            self._emit_command_memory_if_enabled(
+                action_name=action_name,
+                frame_name=kwargs.get("frame_name"),
+            )
+        return result
+
+    def _emit_command_memory_if_enabled(
+            self,
+            *,
+            action_name: str,
+            frame_name: Optional[str],
+    ) -> None:
+        """
+        Emit one command memory record when the owning room enables memory output.
+
+        Args:
+            action_name:
+                Stable public command method name.
+            frame_name:
+                Optional caller-supplied frame name.
+
+        Returns:
+            None.
+        """
+        memory_system = self._get_memory_system_if_available()
+        if memory_system is None or not memory_system.memory_enabled:
+            return
+        resolved_frame_name = self._resolve_memory_frame_name(frame_name)
+        if resolved_frame_name is None:
+            return
+        memory_system.create_and_emit_memory(
+            frame_name=resolved_frame_name,
+            action_name=action_name,
+            metadata={
+                "surface": "command",
+                "command_system_id": self._command_system_id,
+                "owner_space_id": self._owner_space_id,
+            },
+        )
+
+    def _get_memory_system_if_available(self) -> Optional[Any]:
+        """
+        Return the owning room's memory system when one is available.
+
+        Returns:
+            Optional[Any]: Room-local memory system, or None when unavailable.
+        """
+        try:
+            return self._space.memory_system
+        except AttributeError:
+            return None
+
+    def _resolve_memory_frame_name(
+            self,
+            frame_name: Optional[str],
+    ) -> Optional[str]:
+        """
+        Resolve the frame name that should be recorded in emitted command memories.
+
+        Args:
+            frame_name:
+                Optional caller-supplied frame name.
+
+        Returns:
+            Optional[str]: Concrete frame name for memory emission, or None when
+                the command has no resolvable frame context.
+        """
+        try:
+            return self._resolve_runtime_frame_name(frame_name)
+        except Exception:
+            return None
 
     def _resolve_selected_target_ids(
             self,
