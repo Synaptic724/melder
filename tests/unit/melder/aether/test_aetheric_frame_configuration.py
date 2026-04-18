@@ -112,7 +112,6 @@ def test_nexus_runtime_posture_accepts_bound_frame_configuration() -> None:
     nexus = Nexus()
     configuration = nexus.create_system_configuration()
     configuration.with_rift_creation_enabled(True)
-    configuration.with_default_target_frame_name("ops")
     configuration.with_allowed_target_frame_names(("ops",))
     nexus.enable(configuration)
     descriptor = nexus._get_or_create_frame_descriptor("ops")
@@ -138,13 +137,11 @@ def test_nexus_runtime_posture_accepts_bound_frame_configuration() -> None:
 
     rift = nexus.create_rift()
 
-    assert rift.default_target_frame_name is None
-    assert rift.target_frame_names == tuple()
+    assert rift.list_assigned_frame_names() == tuple()
 
-    rift.target_frame("ops", set_as_default=True)
+    rift.target_frame("ops")
 
-    assert rift.default_target_frame_name == "ops"
-    assert rift.target_frame_names == ("ops",)
+    assert rift.list_assigned_frame_names() == ("ops",)
 
 
 def test_aetheric_frame_configuration_rejects_non_bool_ai_native_flag() -> None:

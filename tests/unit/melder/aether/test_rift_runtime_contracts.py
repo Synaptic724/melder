@@ -24,51 +24,6 @@ from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.helpers.init_helpers import InitHelpers
 
-
-class _RiftSpaceDouble:
-    """
-    Minimal cleanup-capable room double for Rift registry tests.
-
-    Contract:
-        - Mirrors the small subset of room attributes `Rift.register_space(...)`
-          and `Rift.cleanup()` use directly.
-        - Provides an idempotent `cleanup()` method so the owning Rift teardown
-          can exercise its real ownership contract.
-    """
-
-    def __init__(
-            self,
-            *,
-            owner_rift_id: str,
-            space_id: str,
-            space_name: Optional[str],
-    ) -> None:
-        """
-        Build one minimal cleanup-capable room double.
-
-        Args:
-            owner_rift_id:
-                Owning Rift id exposed to registration logic.
-            space_id:
-                Stable room id.
-            space_name:
-                Optional stable room name.
-        """
-        self.owner_rift_id: str = owner_rift_id
-        self.space_id: str = space_id
-        self.space_name: Optional[str] = space_name
-        self.cleaned: bool = False
-
-    def cleanup(self) -> None:
-        """
-        Idempotently mark this room double cleaned.
-
-        Returns:
-            None.
-        """
-        self.cleaned = True
-
-
 @pytest.fixture(autouse=True)
 def fresh_singletons() -> None:
     """
@@ -211,10 +166,6 @@ def test_rift_constructor_rejects_invalid_nexus_and_configuration_inputs() -> No
         Rift(
             object(),
             configuration=configuration,
-            nexus_frame_names=("aetheric_frame_system",),
-            default_nexus_frame_name="aetheric_frame_system",
-            target_frame_names=tuple(),
-            default_target_frame_name=None,
         )
 
     Aether()
@@ -223,10 +174,6 @@ def test_rift_constructor_rejects_invalid_nexus_and_configuration_inputs() -> No
         Rift(
             configured_only_nexus,
             configuration=configuration,
-            nexus_frame_names=("aetheric_frame_system",),
-            default_nexus_frame_name="aetheric_frame_system",
-            target_frame_names=tuple(),
-            default_target_frame_name=None,
         )
 
     system_configuration = configured_only_nexus.create_system_configuration()
@@ -236,10 +183,6 @@ def test_rift_constructor_rejects_invalid_nexus_and_configuration_inputs() -> No
         Rift(
             configured_only_nexus,
             configuration=configuration,
-            nexus_frame_names=("aetheric_frame_system",),
-            default_nexus_frame_name="aetheric_frame_system",
-            target_frame_names=tuple(),
-            default_target_frame_name=None,
         )
 
     enabled_nexus = _create_enabled_nexus()
@@ -249,40 +192,6 @@ def test_rift_constructor_rejects_invalid_nexus_and_configuration_inputs() -> No
         Rift(
             enabled_nexus,
             configuration=unfrozen_configuration,
-            nexus_frame_names=("aetheric_frame_system",),
-            default_nexus_frame_name="aetheric_frame_system",
-            target_frame_names=tuple(),
-            default_target_frame_name=None,
-        )
-
-    with pytest.raises(ValueError, match="nexus_frame_names cannot be empty"):
-        Rift(
-            enabled_nexus,
-            configuration=configuration,
-            nexus_frame_names=tuple(),
-            default_nexus_frame_name="aetheric_frame_system",
-            target_frame_names=tuple(),
-            default_target_frame_name=None,
-        )
-
-    with pytest.raises(ValueError, match="default_nexus_frame_name must be present"):
-        Rift(
-            enabled_nexus,
-            configuration=configuration,
-            nexus_frame_names=("other",),
-            default_nexus_frame_name="aetheric_frame_system",
-            target_frame_names=tuple(),
-            default_target_frame_name=None,
-        )
-
-    with pytest.raises(ValueError, match="default_target_frame_name must be present"):
-        Rift(
-            enabled_nexus,
-            configuration=configuration,
-            nexus_frame_names=("aetheric_frame_system",),
-            default_nexus_frame_name="aetheric_frame_system",
-            target_frame_names=tuple(),
-            default_target_frame_name="ops",
         )
 
 
@@ -317,10 +226,6 @@ def test_rift_logger_falls_back_when_channel_resolution_fails(
     rift = Rift(
         nexus,
         configuration=configuration,
-        nexus_frame_names=("aetheric_frame_system",),
-        default_nexus_frame_name="aetheric_frame_system",
-        target_frame_names=tuple(),
-        default_target_frame_name=None,
     )
 
     assert rift._logger is fallback_logger
@@ -356,10 +261,10 @@ def test_rift_engage_frame_alias_and_cached_viewer_path_work() -> None:
     _seed_frame_descriptor("ops")
     rift = _create_registered_rift()
 
-    rift.engage_frame("ops", set_as_default=True)
+    rift.target_frame("ops")
     viewer = rift.create_cached_frame_viewer()
 
-    assert rift.frame_link_contract.has_frame("ops") is True
+    assert rift.get_frame_link_contract("ops").frame_name == "ops"
     assert isinstance(viewer, FrameViewer)
     assert viewer.default_view_frame_name == "ops"
 
@@ -377,21 +282,17 @@ def test_rift_create_new_frame_viewer_rejects_unengaged_frame() -> None:
         rift.create_new_frame_viewer("ops")
 
 
-def test_rift_viewer_host_helpers_reject_missing_target_space() -> None:
+def test_rift_frame_viewer_helpers_fail_fast_without_attached_viewer() -> None:
     """
-    Verify viewer host helpers fail fast when no target space is available.
+    Verify singular Rift viewer helpers fail fast when no viewer is attached.
 
     Returns:
         None.
     """
     rift = _create_registered_rift()
-    rift._active_space_id = None
 
-    with pytest.raises(ValueError, match="has no target space for frame viewer attachment"):
-        rift.attach_frame_viewer_to_space()
-
-    with pytest.raises(ValueError, match="has no target space for frame viewer access"):
-        rift.get_space_frame_viewer()
+    with pytest.raises(ValueError, match="has no attached frame viewer"):
+        rift.get_frame_viewer()
 
 
 def test_rift_spaces_expose_conduit_discovery_through_command_system() -> None:
@@ -404,8 +305,8 @@ def test_rift_spaces_expose_conduit_discovery_through_command_system() -> None:
     _bind_target_frame_configuration("ops", rift_enabled=True)
     _seed_frame_descriptor("ops")
     rift = _create_registered_rift()
-    rift.target_frame("ops", set_as_default=True)
-    space = rift.get_space(rift.active_space_id)
+    rift.target_frame("ops")
+    space = rift.space
     command = space.command_system
     conduit_cloud = object()
     conduit_object = object()
@@ -459,7 +360,6 @@ def test_rift_exposes_live_metadata_and_active_state_helpers() -> None:
     rift.mark_inactive()
 
     assert rift.metadata["note"] == "live"
-    assert rift.local_conduit_id is None
     assert rift.is_active is False
 
 
@@ -501,94 +401,20 @@ def test_rift_cleanup_is_idempotent_and_rechecks_cleaned_state_under_lock() -> N
 
     assert rift.cleaned is True
 
-
-def test_rift_register_space_rejects_wrong_owner_and_duplicates() -> None:
+def test_rift_exposes_one_primary_space_surface() -> None:
     """
-    Verify space registration rejects wrong-owner and duplicate room state.
+    Verify Rift exposes exactly one owned primary space.
 
     Returns:
         None.
     """
     rift = _create_registered_rift()
 
-    with pytest.raises(ValueError, match="must match the owning Rift id"):
-        rift.register_space(
-            _RiftSpaceDouble(
-                owner_rift_id="other",
-                space_id="space-1",
-                space_name="ops",
-            )
-        )
-
-    rift.register_space(
-        _RiftSpaceDouble(
-            owner_rift_id=rift.id,
-            space_id="space-1",
-            space_name="ops",
-        )
-    )
-
-    with pytest.raises(ValueError, match="Space with id 'space-1' already exists"):
-        rift.register_space(
-            _RiftSpaceDouble(
-                owner_rift_id=rift.id,
-                space_id="space-1",
-                space_name="other",
-            )
-        )
-
-    with pytest.raises(ValueError, match="Space name 'ops' already exists"):
-        rift.register_space(
-            _RiftSpaceDouble(
-                owner_rift_id=rift.id,
-                space_id="space-2",
-                space_name="ops",
-            )
-        )
+    assert isinstance(rift.space, StaticRiftSpace)
+    assert rift.space.owner_rift_id == rift.id
 
 
-def test_rift_space_lookup_and_active_space_errors_are_explicit() -> None:
-    """
-    Verify space lookup and active-space mutation errors are explicit.
-
-    Returns:
-        None.
-    """
-    rift = _create_registered_rift()
-
-    with pytest.raises(ValueError, match="Space with id 'missing' was not found"):
-        rift.get_space("missing")
-
-    with pytest.raises(ValueError, match="Space with name 'missing' was not found"):
-        rift.get_space_by_name("missing")
-
-    with pytest.raises(ValueError, match="Space with id 'missing' was not found"):
-        rift.set_active_space("missing")
-
-
-def test_rift_space_lookup_and_active_space_success_paths_use_live_registry() -> None:
-    """
-    Verify named lookup and active-space updates use the live room registry.
-
-    Returns:
-        None.
-    """
-    rift = _create_registered_rift()
-    room = _RiftSpaceDouble(
-        owner_rift_id=rift.id,
-        space_id="space-2",
-        space_name="ops",
-    )
-    rift.register_space(room)
-
-    assert rift.get_space_by_name("ops") is room
-
-    rift.set_active_space("space-2")
-
-    assert rift.active_space_id == "space-2"
-
-
-def test_rift_clones_event_configuration_and_deduplicates_nexus_frame_names() -> None:
+def test_rift_clones_event_configuration_without_eager_nexus_frame_state() -> None:
     """
     Verify event-config cloning and Nexus-frame-name deduplication helpers work.
 
@@ -611,10 +437,7 @@ def test_rift_clones_event_configuration_and_deduplicates_nexus_frame_names() ->
     assert cloned._memory_observers == [memory_observer]
 
     rift = _create_registered_rift()
-    original_names = rift.nexus_frame_names
-    rift._attach_nexus_frame_name(original_names[0])
-
-    assert rift.nexus_frame_names == original_names
+    assert rift.list_assigned_frame_names() == tuple()
 
 
 def test_rift_create_primary_space_from_configuration_supports_explicit_space_id() -> None:
@@ -633,11 +456,8 @@ def test_rift_create_primary_space_from_configuration_supports_explicit_space_id
     rift = Rift(
         nexus,
         configuration=configuration,
-        nexus_frame_names=("aetheric_frame_system",),
-        default_nexus_frame_name="aetheric_frame_system",
-        target_frame_names=tuple(),
-        default_target_frame_name=None,
-        active_space_id="space-explicit",
+        space_id="space-explicit",
     )
 
-    assert isinstance(rift.get_space("space-explicit"), StaticRiftSpace)
+    assert isinstance(rift.space, StaticRiftSpace)
+    assert rift.space.space_id == "space-explicit"

@@ -138,7 +138,7 @@ def test_integration_nexus_can_project_frame_viewer_for_rift_after_passive_publi
             configuration=rift_configuration,
             rift_name="ops_rift",
         )
-        rift.target_frame("ops", set_as_default=True)
+        rift.target_frame("ops")
 
         viewer = nexus.create_frame_viewer_for_rift(rift.id)
 
@@ -178,7 +178,7 @@ def test_integration_nexus_can_cache_projected_rift_viewers_after_passive_publis
             configuration=rift_configuration,
             rift_name="ops_rift",
         )
-        rift.target_frame("ops", set_as_default=True)
+        rift.target_frame("ops")
 
         first_viewer = nexus.create_cached_frame_viewer_for_rift(rift.id)
         second_viewer = nexus.create_cached_frame_viewer_for_rift(rift.id)

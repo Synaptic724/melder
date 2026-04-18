@@ -73,7 +73,6 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
             "default_nexus_frame_name": str,
             "auto_create_nexus_frames": bool,
             "max_nexus_frame_count": int,
-            "default_target_frame_name": str,
             "allowed_target_frame_names": tuple,
             "denied_target_frame_names": tuple,
             "allow_target_frame_override": bool,
@@ -255,7 +254,6 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
             "default_nexus_frame_name": "aetheric_frame_system",
             "auto_create_nexus_frames": True,
             "max_nexus_frame_count": 1,
-            "default_target_frame_name": "default",
             "allowed_target_frame_names": ("default",),
             "denied_target_frame_names": tuple(),
             "allow_target_frame_override": False,
@@ -297,7 +295,6 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
         max_active_rift_count = self.get_property("max_active_rift_count")
         nexus_frame_mode = self.get_property("nexus_frame_mode")
         default_nexus_frame_name = self.get_property("default_nexus_frame_name")
-        default_target_frame_name = self.get_property("default_target_frame_name")
         allowed_target_frame_names = self.get_property("allowed_target_frame_names")
         denied_target_frame_names = self.get_property("denied_target_frame_names")
         max_nexus_frame_count = self.get_property("max_nexus_frame_count")
@@ -308,8 +305,6 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
             raise ValueError("max_active_rift_count must be >= 0.")
         if not default_nexus_frame_name:
             raise ValueError("default_nexus_frame_name cannot be empty.")
-        if not default_target_frame_name:
-            raise ValueError("default_target_frame_name cannot be empty.")
         if max_nexus_frame_count < 1:
             raise ValueError("max_nexus_frame_count must be >= 1.")
         if max_target_frame_count < 1:
@@ -318,10 +313,6 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
             raise ValueError("max_nexus_frame_count must be 1 when nexus_frame_mode is single.")
         if not allow_multiple_target_frames and max_target_frame_count != 1:
             raise ValueError("max_target_frame_count must be 1 when allow_multiple_target_frames is False.")
-        if default_target_frame_name in denied_target_frame_names:
-            raise ValueError("default_target_frame_name cannot also be denied.")
-        if allowed_target_frame_names and default_target_frame_name not in allowed_target_frame_names:
-            raise ValueError("default_target_frame_name must be present in allowed_target_frame_names.")
         return True
 
     def freeze(self) -> None:
@@ -646,25 +637,6 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
         self.set_property("max_nexus_frame_count", count)
         return self
 
-    def with_default_target_frame_name(
-            self,
-            frame_name: str,
-    ) -> "INexusConfiguration":
-        """
-        Fluent
-
-        Set the default external target frame for new Rifts.
-
-        Args:
-            frame_name:
-                Default target `AethericFrame` name.
-
-        Returns:
-            INexusConfiguration: This configuration instance.
-        """
-        self.set_property("default_target_frame_name", frame_name)
-        return self
-
     def with_allowed_target_frame_names(
             self,
             frame_names: Sequence[str],
@@ -710,7 +682,7 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
         """
         Fluent
 
-        Set whether callers may override the default target frame.
+        Set whether callers may override the allowed target-frame selection.
 
         Args:
             enabled:

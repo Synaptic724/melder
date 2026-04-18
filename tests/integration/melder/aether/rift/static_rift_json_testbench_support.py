@@ -180,7 +180,7 @@ class StaticRiftJsonBench:
         self._materialize_live_objects()
         self.nexus = self._build_nexus()
         self.rift = self._build_rift()
-        self.space = self.rift.get_space(self.rift.active_space_id)
+        self.space = self.rift.space
         if not isinstance(self.space, StaticRiftSpace):
             raise RuntimeError("Static Rift bench did not create a static room.")
         self.viewer = self.space.get_required_frame_viewer()
@@ -400,7 +400,7 @@ class StaticRiftJsonBench:
             configuration=configuration,
             rift_name="{0}_rift".format(self.frame_name),
         )
-        rift.target_frame(self.frame_name, set_as_default=True)
+        rift.target_frame(self.frame_name)
         return rift
 
     def _materialize_live_objects(self) -> None:

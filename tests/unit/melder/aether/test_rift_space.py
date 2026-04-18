@@ -1,5 +1,4 @@
 import threading
-from collections import deque
 from types import SimpleNamespace
 
 import pytest
@@ -92,9 +91,7 @@ def test_rift_space_exposes_properties_and_cleanup_cleans_owned_state(monkeypatc
     assert space._metadata is None
     assert space._frame_viewer is None
     assert space._selected_target_ids_by_frame_name is None
-    assert space._event_queue is None
-    assert space._event_queue_thread is None
-    assert space._event_queue_stop_event is None
+    assert space._event_callbacks_by_subscription_id is None
     assert space._workstation is None
     assert space._command_system is None
     assert space._event_configuration is None
@@ -202,104 +199,49 @@ def test_rift_space_viewer_and_target_success_paths_work() -> None:
     assert space._selected_target_ids_by_frame_name == {}
 
 
-def test_rift_space_event_queue_controls_and_cleanup_paths_work(monkeypatch) -> None:
+def test_rift_space_event_callback_registry_and_event_emission_work() -> None:
     space = StaticRiftSpace("rift-1")
-    published = []
-    waited = []
+    received = []
 
-    space._event_queue = deque([{"kind": "a"}, {"kind": "b"}])
-    assert [event["kind"] for event in space._drain_event_queue(max_items=1)] == ["a"]
-    assert [event["kind"] for event in space._drain_event_queue(max_items=None)] == ["b"]
-    with pytest.raises(ValueError, match="max_items must be >= 1 when provided."):
-        space._drain_event_queue(max_items=0)
+    with pytest.raises(TypeError, match="callback must be callable."):
+        space.register_event_callback(None)
 
-    with pytest.raises(TypeError, match="handler must be callable."):
-        space.manage_event_queue(handler=None)
+    with pytest.raises(ValueError, match="subscription_id cannot be empty."):
+        space.unregister_event_callback("")
 
-    with pytest.raises(ValueError, match="poll_interval_seconds cannot be negative."):
-        space.manage_event_queue(handler=lambda payload: None, poll_interval_seconds=-1)
+    subscription_id = space.register_event_callback(lambda event: received.append(event))
+    assert isinstance(subscription_id, str)
 
-    with pytest.raises(ValueError, match="drain_batch_size must be >= 1."):
-        space.manage_event_queue(handler=lambda payload: None, drain_batch_size=0)
-
-    space._event_queue_thread = SimpleNamespace(is_alive=lambda: True)
-    space.manage_event_queue(handler=lambda payload: None)
-
-    with pytest.raises(ValueError, match="join_timeout_seconds cannot be negative."):
-        space.stop_managing_event_queue(join_timeout_seconds=-1)
-
-    stop_calls = []
-    joined = []
-    space._event_queue_stop_event = SimpleNamespace(set=lambda: stop_calls.append(True))
-    space._event_queue_thread = SimpleNamespace(
-        is_alive=lambda: True,
-        join=lambda timeout: joined.append(timeout),
+    event = space.create_event(
+        "demo",
+        payload={"kind": "demo"},
+        frame_name="ops",
+        metadata={"scope": "test"},
     )
-    space.stop_managing_event_queue(join_timeout_seconds=0.5)
-    assert stop_calls == [True]
-    assert joined == [0.5]
+    assert event.event_type == "demo"
+    assert event.rift_id == "rift-1"
+    assert event.space_id == space.space_id
+    assert event.space_kind == "static"
+    assert event.frame_name == "ops"
+    assert event.payload == {"kind": "demo"}
+    assert event.metadata == {"scope": "test"}
 
-    space._event_queue_stop_event = None
-    space.stop_managing_event_queue()
-
-    space._publish_runtime_event({"kind": "demo"})
-    queued = list(space.describe_event_queue())
-    assert queued[0]["kind"] == "demo"
-    assert queued[0]["space_kind"] == "static"
-
-    space._cleaned = True
-    space._publish_runtime_event({"kind": "ignored"})
-
-    class _Waiter:
-        def __init__(self) -> None:
-            self._set = False
-
-        def is_set(self):
-            return self._set
-
-        def wait(self, value):
-            waited.append(value)
-            self._set = True
-
-    handled = []
-    space._cleaned = False
-    space._event_queue_stop_event = _Waiter()
-    space._event_queue = deque([{"kind": "ok"}])
-    space._manage_event_queue_loop(lambda event: handled.append(event["kind"]), 0.25, 2)
-    assert handled == ["ok"]
-    assert waited == [0.25]
-
-    waited.clear()
-    space._event_queue = deque([{"kind": "boom"}])
-    space._event_queue_stop_event = _Waiter()
-    space._manage_event_queue_loop(lambda event: (_ for _ in ()).throw(RuntimeError("boom")), 0.25, 2)
-
-
-def test_rift_space_manage_event_queue_starts_thread_and_event_configuration_property_is_live(monkeypatch) -> None:
-    started = []
-
-    class _Thread:
-        def __init__(self, *args, **kwargs) -> None:
-            self.kwargs = kwargs
-
-        def start(self) -> None:
-            started.append(self.kwargs["name"])
-
-        def is_alive(self) -> bool:
-            return False
-
-        def join(self, timeout: float) -> None:
-            return None
-
-    monkeypatch.setattr(
-        "melder.aether.nexus.rift.rift_space.rift_space.threading.Thread",
-        _Thread,
+    emitted_event = space.create_and_emit_event(
+        "binding_collected",
+        payload={"binding_name": "client"},
     )
+    assert emitted_event is received[0]
+    assert emitted_event.event_type == "binding_collected"
+    assert emitted_event.payload == {"binding_name": "client"}
+
+    space.unregister_event_callback(subscription_id)
+    space.create_and_emit_event("ignored", payload={"kind": "ignored"})
+    assert len(received) == 1
+
+
+def test_rift_space_event_configuration_property_is_live() -> None:
     space = StaticRiftSpace("rift-1", event_configuration=RiftEventConfiguration())
 
-    space.manage_event_queue(handler=lambda payload: None, poll_interval_seconds=0.1, drain_batch_size=2)
-
-    assert started == ["RiftSpaceEventQueue-{0}".format(space.space_id)]
     assert space.event_configuration is not None
 
 

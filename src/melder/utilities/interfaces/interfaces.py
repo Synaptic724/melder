@@ -6265,6 +6265,35 @@ class IAethericFrame(ICleanable, Protocol):
     _conduit_clusters: 'Dict[str, List[str]]'
 
 @runtime_checkable
+class IRiftEvent(Protocol):
+    """
+    Interface for one emitted Rift-space runtime event.
+    """
+
+    event_id: str
+    event_type: str
+    emitted_at: str
+    rift_id: str
+    space_id: str
+    space_kind: str
+    frame_name: Optional[str]
+
+    @property
+    def payload(self) -> Dict[str, object]:
+        """
+        Return the event payload mapping.
+        """
+        ...
+
+    @property
+    def metadata(self) -> Dict[str, object]:
+        """
+        Return the event metadata mapping.
+        """
+        ...
+
+
+@runtime_checkable
 class IRiftEventConfiguration(ICleanable, Protocol):
     """
     Interface for room-level event configuration.
@@ -6471,12 +6500,6 @@ class INexusConfiguration(ICleanable, Protocol):
         """
         ...
 
-    def with_default_target_frame_name(self, frame_name: str) -> "INexusConfiguration":
-        """
-        Set the default target frame name assigned to newly created Rifts.
-        """
-        ...
-
     def with_allowed_target_frame_names(self, frame_names: Sequence[str]) -> "INexusConfiguration":
         """
         Set the allow-list of target frame names Rifts may select under this configuration.
@@ -6491,7 +6514,7 @@ class INexusConfiguration(ICleanable, Protocol):
 
     def with_target_frame_override(self, enabled: bool = True) -> "INexusConfiguration":
         """
-        Set whether callers may override the configured default target frame selection.
+        Set whether callers may override the configured target-frame selection policy.
         """
         ...
 
@@ -7355,31 +7378,50 @@ class IRiftSpace(ICleanable, Protocol):
         """
         ...
 
-    def describe_event_queue(self) -> List[Dict[str, object]]:
+    def register_event_callback(
+            self,
+            callback: Callable[[IRiftEvent], None],
+    ) -> str:
         """
-        Return a detached snapshot of the room-local event queue.
+        Register one room-local event callback and return its subscription id.
         """
         ...
 
-    def manage_event_queue(
-            self,
-            handler: Callable[[Dict[str, object]], None],
-            *,
-            poll_interval_seconds: float = 0.1,
-            drain_batch_size: int = 16,
-    ) -> None:
+    def unregister_event_callback(self, subscription_id: str) -> None:
         """
-        Start one optional managed queue-consumer thread for this space.
+        Remove one room-local event callback subscription by id.
         """
         ...
 
-    def stop_managing_event_queue(
+    def create_event(
             self,
+            event_type: str,
             *,
-            join_timeout_seconds: float = 1.0,
-    ) -> None:
+            payload: Optional[Dict[str, object]] = None,
+            frame_name: Optional[str] = None,
+            metadata: Optional[Dict[str, object]] = None,
+    ) -> IRiftEvent:
         """
-        Stop the optional managed queue-consumer thread.
+        Create one Rift-space runtime event without emitting it.
+        """
+        ...
+
+    def emit_event(self, event: IRiftEvent) -> None:
+        """
+        Emit one Rift-space runtime event to all registered callbacks.
+        """
+        ...
+
+    def create_and_emit_event(
+            self,
+            event_type: str,
+            *,
+            payload: Optional[Dict[str, object]] = None,
+            frame_name: Optional[str] = None,
+            metadata: Optional[Dict[str, object]] = None,
+    ) -> IRiftEvent:
+        """
+        Create one Rift-space runtime event and emit it immediately.
         """
         ...
 
@@ -7530,46 +7572,29 @@ class IRift(ICleanable, Protocol):
         """
         ...
 
-    @property
-    def nexus_frame_names(self) -> Tuple[str, ...]:
+    def list_assigned_frame_names(self) -> Tuple[str, ...]:
         """
-        Return the Nexus frame names currently accessible to this Rift.
+        Return the frame names currently assigned to this Rift.
+        """
+        ...
+
+    def get_frame_link_contract(self, frame_name: str) -> object:
+        """
+        Return the per-frame contract object for one engaged target frame.
+        """
+        ...
+
+    def get_selected_contract_names(self, frame_name: str) -> Dict[str, str]:
+        """
+        Return the selected view/command/codegen contract names for one engaged
+        target frame.
         """
         ...
 
     @property
-    def default_nexus_frame_name(self) -> str:
+    def space(self) -> IRiftSpace:
         """
-        Return the default Nexus frame name used when callers do not specify one.
-        """
-        ...
-
-    @property
-    def target_frame_names(self) -> Tuple[str, ...]:
-        """
-        Return the target frame names this Rift is currently engaged with.
-        """
-        ...
-
-    @property
-    def default_target_frame_name(self) -> Optional[str]:
-        """
-        Return the default target frame name used for Rift-scoped operations,
-        if one has been selected.
-        """
-        ...
-
-    @property
-    def local_conduit_id(self) -> Optional[str]:
-        """
-        Return the local conduit identifier bound to this Rift, if present.
-        """
-        ...
-
-    @property
-    def active_space_id(self) -> Optional[str]:
-        """
-        Return the identifier of the currently active RiftSpace, if any.
+        Return the one owned RiftSpace for this Rift.
         """
         ...
 
@@ -7621,54 +7646,20 @@ class IRift(ICleanable, Protocol):
         """
         ...
 
-    def register_space(self, space: IRiftSpace) -> None:
-        """
-        Register one RiftSpace with this Rift.
-
-        Returns:
-            None.
-        """
-        ...
-
-    def get_space(self, space_id: str) -> IRiftSpace:
-        """
-        Return one registered RiftSpace by its stable identifier.
-        """
-        ...
-
-    def get_space_by_name(self, space_name: str) -> IRiftSpace:
-        """
-        Return one registered RiftSpace by its human-readable name.
-        """
-        ...
-
-    def set_active_space(self, space_id: str) -> None:
-        """
-        Mark one registered RiftSpace as the active working space for this Rift.
-
-        Returns:
-            None.
-        """
-        ...
-
-    def list_space_ids(self) -> List[str]:
-        """
-        Return the identifiers of all spaces currently registered with this Rift.
-        """
-        ...
-
     def target_frame(
             self,
             frame_name: str,
             *,
             contract_name: str = "default",
-            set_as_default: bool = False,
+            view_contract_name: Optional[str] = None,
+            command_contract_name: Optional[str] = None,
+            codegen_contract_name: Optional[str] = None,
     ) -> None:
         """
         Validate and engage one target frame for this Rift.
 
         A successful target operation updates the Rift-local frame contract and
-        may refresh the attached viewer for the active space.
+        may refresh the attached viewer for the owned space.
         """
         ...
 
@@ -7793,8 +7784,7 @@ class INexus(ICleanable, Protocol):
             configuration: Optional[IRiftConfiguration] = None,
             rift_name: Optional[str] = None,
             rift_id: Optional[str] = None,
-            local_conduit_id: Optional[str] = None,
-            active_space_id: Optional[str] = None,
+            space_id: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
             creation_token: Optional[str] = None,
             logger: Optional[Any] = None,
@@ -7860,7 +7850,7 @@ class INexus(ICleanable, Protocol):
             frame_name: Optional[str] = None,
     ) -> "IAethericFrame":
         """
-        Return one accessible Nexus frame for the specified Rift.
+        Return one existing accessible Nexus frame for the specified Rift.
         """
         ...
 

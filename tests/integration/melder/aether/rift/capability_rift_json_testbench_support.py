@@ -116,7 +116,7 @@ class CapabilityRiftJsonBench:
 
         self.nexus = self._build_nexus()
         self.rift = self._build_rift()
-        self.space = self.rift.get_space(self.rift.active_space_id)
+        self.space = self.rift.space
         if not isinstance(self.space, CapabilityRiftSpace):
             raise RuntimeError("Capability Rift bench did not create a capability room.")
         self.viewer = self.space.get_required_frame_viewer()
@@ -281,7 +281,7 @@ class CapabilityRiftJsonBench:
             configuration=configuration,
             rift_name="{0}_capability_rift".format(self.frame_name),
         )
-        rift.target_frame(self.frame_name, set_as_default=True)
+        rift.target_frame(self.frame_name)
         return rift
 
     def _build_manifest(self) -> Dict[str, object]:

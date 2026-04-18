@@ -633,8 +633,7 @@ class Nexus(Cleanable, INexus):
             configuration: Optional[IRiftConfiguration] = None,
             rift_name: Optional[str] = None,
             rift_id: Optional[str] = None,
-            local_conduit_id: Optional[str] = None,
-            active_space_id: Optional[str] = None,
+            space_id: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
             creation_token: Optional[str] = None,
             logger: Optional[Any] = None,
@@ -665,10 +664,8 @@ class Nexus(Cleanable, INexus):
                 Optional stable Rift name.
             rift_id:
                 Optional explicit Rift id.
-            local_conduit_id:
-                Optional live local conduit id to seed on the Rift.
-            active_space_id:
-                Optional active room id to seed on the Rift.
+            space_id:
+                Optional explicit primary-space id to seed on the Rift.
             metadata:
                 Optional Rift-level metadata.
             creation_token:
@@ -692,18 +689,12 @@ class Nexus(Cleanable, INexus):
 
         with self._lock:
             canonical_rift_name = rift_name or self._allocate_default_rift_name()
-            nexus_frame_name = self._determine_nexus_frame_name(canonical_rift_id)
             rift = Rift(
                 self,
                 configuration=bound_configuration,
-                nexus_frame_names=(nexus_frame_name,),
-                default_nexus_frame_name=nexus_frame_name,
-                target_frame_names=tuple(),
-                default_target_frame_name=None,
                 rift_name=canonical_rift_name,
                 rift_id=canonical_rift_id,
-                local_conduit_id=local_conduit_id,
-                active_space_id=active_space_id,
+                space_id=space_id,
                 metadata=metadata,
                 logger=logger,
             )
@@ -747,16 +738,14 @@ class Nexus(Cleanable, INexus):
             if rift.rift_name and rift.rift_name in self._rift_ids_by_name:
                 raise ValueError("Rift name '{0}' already exists.".format(rift.rift_name))
 
-            self._validate_target_frame_budget(rift.target_frame_names)
-            self._validate_nexus_frame_budget(rift.nexus_frame_names)
+            self._validate_target_frame_budget(rift.list_assigned_frame_names())
             self._validate_active_rift_budget()
 
             self._rifts_by_id[rift.id] = rift
             if rift.rift_name:
                 self._rift_ids_by_name[rift.rift_name] = rift.id
-            for target_frame_name in rift.target_frame_names:
+            for target_frame_name in rift.list_assigned_frame_names():
                 self._increment_ref_count(self._target_frame_ref_counts, target_frame_name)
-            self._attach_rift_to_nexus_frames(rift)
             rift.mark_registered()
 
     def get_rift(
@@ -872,9 +861,9 @@ class Nexus(Cleanable, INexus):
             rift_name = rift.rift_name
             if rift.rift_name:
                 self._rift_ids_by_name.pop(rift.rift_name, None)
-            for target_frame_name in rift.target_frame_names:
+            for target_frame_name in rift.list_assigned_frame_names():
                 self._decrement_ref_count(self._target_frame_ref_counts, target_frame_name)
-            frame_names_to_cleanup.extend(self._detach_rift_from_nexus_frames(rift))
+            frame_names_to_cleanup.extend(self._detach_rift_from_nexus_frames(rift.id))
 
         for frame_name in frame_names_to_cleanup:
             self._dispose_nexus_frame(frame_name)
@@ -1581,8 +1570,8 @@ class Nexus(Cleanable, INexus):
               target frames through `create_frame_viewer(...)`.
             - Enriches the returned viewer metadata with Rift-specific
               identifiers and assigned-frame information.
-            - Sets the returned viewer's default frame from the Rift's current
-              frame-link contract.
+            - Derives a default view frame only when the Rift currently has
+              exactly one assigned target frame.
 
         Args:
             rift_id:
@@ -1601,22 +1590,30 @@ class Nexus(Cleanable, INexus):
         if not rift_id:
             raise ValueError("rift_id cannot be empty.")
         rift = self._get_required_rift(rift_id)
+        assigned_frame_names = rift.list_assigned_frame_names()
+        contract_names_by_frame_name = {
+            frame_name: rift.get_selected_contract_names(frame_name)
+            for frame_name in assigned_frame_names
+        }
         frame_viewer = self.create_frame_viewer(
-            rift.frame_link_contract.list_frame_names(),
-            contract_names_by_frame_name=(
-                rift.frame_link_contract.selected_contract_names_by_frame_name
-            ),
+            assigned_frame_names,
+            contract_names_by_frame_name=contract_names_by_frame_name,
             view_profile_name=view_profile_name,
             viewer_profile_name=viewer_profile_name,
         )
         current_metadata = frame_viewer.metadata
         current_metadata["rift_id"] = rift.id
-        current_metadata["frame_link_contract_id"] = rift.frame_link_contract.contract_id
-        current_metadata["assigned_frame_names"] = rift.frame_link_contract.assigned_frame_names
-        current_metadata["default_target_frame_name"] = rift.default_target_frame_name
+        current_metadata["frame_link_contract_ids_by_frame_name"] = {
+            frame_name: rift.get_frame_link_contract(frame_name).contract_id
+            for frame_name in assigned_frame_names
+        }
+        current_metadata["assigned_frame_names"] = assigned_frame_names
         current_metadata["selected_contract_names_by_frame_name"] = (
-            rift.frame_link_contract.selected_contract_names_by_frame_name
+            contract_names_by_frame_name
         )
+        default_view_frame_name = None
+        if len(assigned_frame_names) == 1:
+            default_view_frame_name = assigned_frame_names[0]
         return FrameViewer(
             profile_builder=FrameViewerProfileBuilder(),
             active_profiles_by_name={
@@ -1633,7 +1630,7 @@ class Nexus(Cleanable, INexus):
             compiled_access_surfaces_by_frame_name=(
                 frame_viewer.compiled_access_surfaces_by_frame_name
             ),
-            default_view_frame_name=rift.frame_link_contract.default_frame_name,
+            default_view_frame_name=default_view_frame_name,
             metadata=current_metadata,
         )
 
@@ -1664,31 +1661,20 @@ class Nexus(Cleanable, INexus):
         if not frame_name:
             raise ValueError("frame_name cannot be empty.")
         rift = self._get_required_rift(rift_id)
-        if not rift.frame_link_contract.has_frame(frame_name):
-            raise ValueError(
-                "Rift '{0}' is not engaged with frame '{1}'.".format(
-                    rift_id,
-                    frame_name,
-                )
-            )
+        frame_link_contract = rift.get_frame_link_contract(frame_name)
         frame_viewer = self.create_frame_viewer(
             [frame_name],
             contract_names_by_frame_name={
-                frame_name: rift.frame_link_contract.get_selected_contract_names(
-                    frame_name
-                )
+                frame_name: frame_link_contract.get_selected_contract_names()
             },
             viewer_profile_name=viewer_profile_name,
         )
         current_metadata = frame_viewer.metadata
         current_metadata["rift_id"] = rift.id
-        current_metadata["frame_link_contract_id"] = rift.frame_link_contract.contract_id
+        current_metadata["frame_link_contract_id"] = frame_link_contract.contract_id
         current_metadata["assigned_frame_names"] = (frame_name,)
-        current_metadata["default_target_frame_name"] = frame_name
         current_metadata["selected_contract_names_by_frame_name"] = {
-            frame_name: rift.frame_link_contract.get_selected_contract_names(
-                frame_name
-            )
+            frame_name: frame_link_contract.get_selected_contract_names()
         }
         return FrameViewer(
             profile_builder=FrameViewerProfileBuilder(),
@@ -1831,8 +1817,8 @@ class Nexus(Cleanable, INexus):
               target frames through `create_cached_frame_viewer(...)`.
             - Enriches the returned viewer metadata with Rift-specific
               identifiers and assigned-frame information.
-            - Sets the returned viewer's default frame from the Rift's current
-              frame-link contract.
+            - Derives a default view frame only when the Rift currently has
+              exactly one assigned target frame.
 
         Args:
             rift_id:
@@ -1851,19 +1837,30 @@ class Nexus(Cleanable, INexus):
         if not rift_id:
             raise ValueError("rift_id cannot be empty.")
         rift = self._get_required_rift(rift_id)
+        assigned_frame_names = rift.list_assigned_frame_names()
+        contract_names_by_frame_name = {
+            frame_name: rift.get_selected_contract_names(frame_name)
+            for frame_name in assigned_frame_names
+        }
         frame_viewer = self.create_cached_frame_viewer(
-            rift.frame_link_contract.list_frame_names(),
-            contract_names_by_frame_name=(
-                rift.frame_link_contract.selected_contract_names_by_frame_name
-            ),
+            assigned_frame_names,
+            contract_names_by_frame_name=contract_names_by_frame_name,
             view_profile_name=view_profile_name,
             viewer_profile_name=viewer_profile_name,
         )
         current_metadata = frame_viewer.metadata
         current_metadata["rift_id"] = rift.id
-        current_metadata["frame_link_contract_id"] = rift.frame_link_contract.contract_id
-        current_metadata["assigned_frame_names"] = rift.frame_link_contract.assigned_frame_names
-        current_metadata["default_target_frame_name"] = rift.default_target_frame_name
+        current_metadata["frame_link_contract_ids_by_frame_name"] = {
+            frame_name: rift.get_frame_link_contract(frame_name).contract_id
+            for frame_name in assigned_frame_names
+        }
+        current_metadata["assigned_frame_names"] = assigned_frame_names
+        current_metadata["selected_contract_names_by_frame_name"] = (
+            contract_names_by_frame_name
+        )
+        default_view_frame_name = None
+        if len(assigned_frame_names) == 1:
+            default_view_frame_name = assigned_frame_names[0]
         return FrameViewer(
             profile_builder=FrameViewerProfileBuilder(),
             active_profiles_by_name={
@@ -1880,7 +1877,7 @@ class Nexus(Cleanable, INexus):
             compiled_access_surfaces_by_frame_name=(
                 frame_viewer.compiled_access_surfaces_by_frame_name
             ),
-            default_view_frame_name=rift.frame_link_contract.default_frame_name,
+            default_view_frame_name=default_view_frame_name,
             metadata=current_metadata,
         )
 
@@ -2012,20 +2009,18 @@ class Nexus(Cleanable, INexus):
         with self._lock:
             rifts = list(self._rifts_by_id.values())
         for rift in rifts:
-            if frame_name not in rift.frame_link_contract.list_frame_names():
+            if frame_name not in rift.list_assigned_frame_names():
                 continue
-            for space_id in rift.list_space_ids():
-                space = rift.get_space(space_id)
-                current_viewer = space.frame_viewer
-                if current_viewer is None:
-                    continue
-                current_profile_name = current_viewer.profile_name or "general"
-                rift.attach_frame_viewer_to_space(
-                    space_id=space_id,
-                    cached=False,
-                    view_profile_name=current_profile_name,
-                    viewer_profile_name=current_profile_name,
-                )
+            space = rift.space
+            current_viewer = space.frame_viewer
+            if current_viewer is None:
+                continue
+            current_profile_name = current_viewer.profile_name or "general"
+            rift.attach_frame_viewer(
+                cached=False,
+                view_profile_name=current_profile_name,
+                viewer_profile_name=current_profile_name,
+            )
 
     def _on_frame_acl_changed(self, frame_name: str) -> None:
         """
@@ -2056,8 +2051,8 @@ class Nexus(Cleanable, INexus):
             rift_id:
                 Requesting Rift id.
             frame_name:
-                Optional explicit Nexus frame name. When omitted, the Rift's
-                current default Nexus frame name is used.
+                Optional explicit Nexus frame name. When omitted, `Nexus`
+                derives the requested frame from the current topology mode.
 
         Returns:
             IAethericFrame: Resolved Nexus frame.
@@ -2069,25 +2064,32 @@ class Nexus(Cleanable, INexus):
         self._require_enabled()
         with self._lock:
             rift = self._get_required_rift(rift_id)
-            requested_frame_name = frame_name or rift.default_nexus_frame_name
             nexus_frame_mode = self._configuration.get_property("nexus_frame_mode")
 
             if nexus_frame_mode == NexusFrameMode.single:
+                requested_frame_name = frame_name or self._configuration.get_property(
+                    "default_nexus_frame_name"
+                )
                 if requested_frame_name != self._configuration.get_property("default_nexus_frame_name"):
                     raise ValueError("Shared Nexus mode only exposes the shared frame.")
                 nexus_frame_record = self._get_required_nexus_frame_record(requested_frame_name)
                 return nexus_frame_record.frame
 
             if nexus_frame_mode == NexusFrameMode.one_per_workspace:
-                if requested_frame_name not in rift.nexus_frame_names:
+                requested_frame_name = frame_name or self._determine_nexus_frame_name(rift.id)
+                if requested_frame_name != self._determine_nexus_frame_name(rift.id):
                     raise ValueError("Rift can only access its own private Nexus frame.")
                 nexus_frame_record = self._get_required_nexus_frame_record(requested_frame_name)
+                if rift.id not in nexus_frame_record.attached_rift_ids:
+                    raise ValueError("Rift is not attached to the requested private Nexus frame.")
                 return nexus_frame_record.frame
 
+            if frame_name is None:
+                raise ValueError("Indexed Nexus mode requires an explicit frame_name for access.")
+            requested_frame_name = frame_name
             nexus_frame_record = self._get_required_nexus_frame_record(requested_frame_name)
             if rift.id not in nexus_frame_record.attached_rift_ids:
                 nexus_frame_record.attach_rift_id(rift.id)
-                rift._attach_nexus_frame_name(requested_frame_name)
             return nexus_frame_record.frame
 
     def create_nexus_frame_for_rift(
@@ -2132,7 +2134,6 @@ class Nexus(Cleanable, INexus):
                 )
                 if rift.id not in nexus_frame_record.attached_rift_ids:
                     nexus_frame_record.attach_rift_id(rift.id)
-                    rift._attach_nexus_frame_name(shared_frame_name)
                 frame = nexus_frame_record.frame
                 self._logger.info(
                     "Resolved Nexus frame '{0}' for Rift id={1}.".format(frame.name, rift_id),
@@ -2143,8 +2144,8 @@ class Nexus(Cleanable, INexus):
             if nexus_frame_mode == NexusFrameMode.one_per_workspace:
                 if immutable:
                     raise ValueError("one_per_workspace frames cannot be immutable.")
-                private_frame_name = frame_name or rift.default_nexus_frame_name
-                if private_frame_name != rift.default_nexus_frame_name:
+                private_frame_name = frame_name or self._determine_nexus_frame_name(rift.id)
+                if private_frame_name != self._determine_nexus_frame_name(rift.id):
                     raise ValueError("Rift can only create or recover its own private Nexus frame.")
                 nexus_frame_record = self._get_or_create_nexus_frame_record(
                     private_frame_name,
@@ -2170,7 +2171,6 @@ class Nexus(Cleanable, INexus):
                 immutable=immutable,
             )
             nexus_frame_record.attach_rift_id(rift.id)
-            rift._attach_nexus_frame_name(new_frame_name)
             frame = nexus_frame_record.frame
             self._logger.info(
                 "Resolved Nexus frame '{0}' for Rift id={1}.".format(frame.name, rift_id),
@@ -2207,8 +2207,17 @@ class Nexus(Cleanable, INexus):
                     return (shared_frame_name,)
                 return tuple()
             if nexus_frame_mode == NexusFrameMode.one_per_workspace:
-                return rift.nexus_frame_names
-            return tuple(sorted(self._list_nexus_frame_names()))
+                private_frame_name = self._determine_nexus_frame_name(rift.id)
+                if self._get_nexus_frame_record(private_frame_name) is not None:
+                    return (private_frame_name,)
+                return tuple()
+            return tuple(
+                sorted(
+                    frame_name
+                    for frame_name in self._list_nexus_frame_names()
+                    if rift.id in self._get_required_nexus_frame_record(frame_name).attached_rift_ids
+                )
+            )
 
     def check_for_aetheric_frame(self, frame_name: str) -> None:
         """
@@ -2682,7 +2691,7 @@ class Nexus(Cleanable, INexus):
                 `one_per_workspace`.
 
         Contract:
-            - Returns the shared default frame name in `single` mode.
+            - Returns the shared configured frame name in `single` mode.
             - Returns a per-Rift derived name in `one_per_workspace` mode.
             - Allocates the next indexed name in `indexed` mode.
 
@@ -2755,33 +2764,7 @@ class Nexus(Cleanable, INexus):
         self._next_indexed_nexus_frame_number = self._next_indexed_nexus_frame_number + 1
         return indexed_frame_name
 
-    def _attach_rift_to_nexus_frames(self, rift: IRift) -> None:
-        """
-        Internal
-
-        Attach one Rift to its realized Nexus-frame records.
-
-        Args:
-            rift:
-                Rift being registered.
-
-        Contract:
-            Ensures every currently assigned Nexus frame record marks the Rift
-            as attached.
-
-        Returns:
-            None.
-        """
-        with self._lock:
-            for nexus_frame_name in rift.nexus_frame_names:
-                nexus_frame_record = self._get_or_create_nexus_frame_record(
-                    nexus_frame_name,
-                    creator_rift_id=rift.id,
-                    immutable=False,
-                )
-                nexus_frame_record.attach_rift_id(rift.id)
-
-    def _detach_rift_from_nexus_frames(self, rift: IRift) -> List[str]:
+    def _detach_rift_from_nexus_frames(self, rift_id: str) -> List[str]:
         """
         Internal
 
@@ -2803,11 +2786,24 @@ class Nexus(Cleanable, INexus):
         """
         with self._lock:
             frame_names_to_cleanup = []
-            for nexus_frame_name in rift.nexus_frame_names:
+            nexus_frame_mode = self._configuration.get_property("nexus_frame_mode")
+            if nexus_frame_mode == NexusFrameMode.single:
+                candidate_frame_names = [
+                    self._configuration.get_property("default_nexus_frame_name")
+                ]
+            elif nexus_frame_mode == NexusFrameMode.one_per_workspace:
+                candidate_frame_names = [
+                    self._determine_nexus_frame_name(rift_id)
+                ]
+            else:
+                candidate_frame_names = self._list_nexus_frame_names()
+            for nexus_frame_name in candidate_frame_names:
                 nexus_frame_record = self._get_nexus_frame_record(nexus_frame_name)
                 if nexus_frame_record is None:
                     continue
-                nexus_frame_record.detach_rift_id(rift.id)
+                if rift_id not in nexus_frame_record.attached_rift_ids:
+                    continue
+                nexus_frame_record.detach_rift_id(rift_id)
                 if nexus_frame_record.has_attached_rifts():
                     continue
                 if nexus_frame_record.immutable:

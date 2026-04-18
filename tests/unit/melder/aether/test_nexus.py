@@ -533,12 +533,8 @@ def test_create_rift_registers_live_rift_after_enable() -> None:
     assert nexus.has_rift(rift.id) is True
     assert rift.is_registered is True
     assert rift.is_active is True
-    assert rift.default_nexus_frame_name == "aetheric_frame_system"
-    assert rift.nexus_frame_names == ("aetheric_frame_system",)
-    assert rift.target_frame_names == tuple()
-    assert rift.default_target_frame_name is None
-    assert len(rift.list_space_ids()) == 1
-    assert isinstance(rift.get_space(rift.active_space_id), StaticRiftSpace)
+    assert rift.list_assigned_frame_names() == tuple()
+    assert isinstance(rift.space, StaticRiftSpace)
     assert nexus.get_rift(rift.id) is rift
     assert nexus.get_rift_by_name("alpha") is rift
     assert nexus.list_rift_ids() == [rift.id]
@@ -806,15 +802,9 @@ def test_create_rift_programs_primary_space_from_space_type() -> None:
         rift_name="beta",
     )
 
-    assert len(static_rift.list_space_ids()) == 1
-    assert isinstance(static_rift.get_space(static_rift.active_space_id), StaticRiftSpace)
-    assert len(capability_rift.list_space_ids()) == 1
-    assert isinstance(
-        capability_rift.get_space(capability_rift.active_space_id),
-        CapabilityRiftSpace,
-    )
-    assert len(codegen_rift.list_space_ids()) == 1
-    assert isinstance(codegen_rift.get_space(codegen_rift.active_space_id), CodegenRiftSpace)
+    assert isinstance(static_rift.space, StaticRiftSpace)
+    assert isinstance(capability_rift.space, CapabilityRiftSpace)
+    assert isinstance(codegen_rift.space, CodegenRiftSpace)
 
 
 def test_rift_space_can_attach_and_detach_frame_viewer() -> None:
@@ -1028,7 +1018,7 @@ def test_workstation_weak_binding_raises_for_non_weakrefable_value() -> None:
         space.workstation.bind_attribute("count", 3, weak_ref=True)
 
 
-def test_rift_space_queues_weak_binding_collection_events() -> None:
+def test_rift_space_emits_weak_binding_collection_events_to_callbacks() -> None:
     """
     Verify weak binding collection publishes one room-local queue event.
 
@@ -1039,6 +1029,8 @@ def test_rift_space_queues_weak_binding_collection_events() -> None:
         pass
 
     space = RiftSpace(owner_rift_id="rift-1", space_name="main", space_kind="static")
+    received_events = []
+    space.register_event_callback(lambda event: received_events.append(event))
     workstation = space.workstation
     target = _Target()
 
@@ -1046,17 +1038,15 @@ def test_rift_space_queues_weak_binding_collection_events() -> None:
     del target
     gc.collect()
 
-    queued_events = space.describe_event_queue()
-
-    assert len(queued_events) == 1
-    assert queued_events[0]["event_type"] == "binding_collected"
-    assert queued_events[0]["binding_name"] == "client"
-    assert queued_events[0]["binding_store"] == "objects"
-    assert queued_events[0]["space_id"] == space.space_id
-    assert queued_events[0]["space_kind"] == "static"
+    assert len(received_events) == 1
+    assert received_events[0].event_type == "binding_collected"
+    assert received_events[0].payload["binding_name"] == "client"
+    assert received_events[0].payload["binding_store"] == "objects"
+    assert received_events[0].space_id == space.space_id
+    assert received_events[0].space_kind == "static"
 
 
-def test_rift_space_can_manage_event_queue_with_optional_thread() -> None:
+def test_rift_space_can_register_and_unregister_event_callbacks() -> None:
     """
     Verify the optional managed queue consumer drains published weak-binding events.
 
@@ -1068,38 +1058,18 @@ def test_rift_space_can_manage_event_queue_with_optional_thread() -> None:
 
     space = RiftSpace(owner_rift_id="rift-1", space_name="main", space_kind="static")
     received_events = []
-    handled_event = threading.Event()
-
-    def _handler(event_payload: Dict[str, object]) -> None:
-        received_events.append(event_payload)
-        handled_event.set()
-
-    space.manage_event_queue(_handler, poll_interval_seconds=0.01, drain_batch_size=4)
+    subscription_id = space.register_event_callback(lambda event: received_events.append(event))
     target = _Target()
     space.workstation.bind_object("client", target, weak_ref=True)
     del target
     gc.collect()
 
-    assert handled_event.wait(1.0) is True
-    space.stop_managing_event_queue()
-
     assert len(received_events) == 1
-    assert received_events[0]["event_type"] == "binding_collected"
+    assert received_events[0].event_type == "binding_collected"
 
-
-def test_rift_space_stop_managing_event_queue_is_idempotent() -> None:
-    """
-    Verify stopping the managed queue thread is safe when no thread is active.
-
-    Returns:
-        None.
-    """
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
-
-    space.stop_managing_event_queue()
-    space.stop_managing_event_queue()
-
-    assert space.describe_event_queue() == []
+    space.unregister_event_callback(subscription_id)
+    space.create_and_emit_event("manual", payload={"kind": "ignored"})
+    assert len(received_events) == 1
 
 
 def test_workstation_cleanup_target_calls_methods_then_clears_target() -> None:
@@ -2715,13 +2685,9 @@ def test_capability_rift_can_attach_to_automatic_target_frame_when_rift_enabled(
         RiftSpaceType.capability
     )
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops-capability")
-    rift.target_frame("ops", set_as_default=True)
+    rift.target_frame("ops")
 
-    assert isinstance(
-        rift.get_space(rift.active_space_id),
-        CapabilityRiftSpace,
-    )
-    assert rift.default_target_frame_name == "ops"
+    assert isinstance(rift.space, CapabilityRiftSpace)
 
 
 def test_capability_room_broad_access_still_respects_automatic_runtime_floor() -> None:
@@ -3608,10 +3574,9 @@ def test_rift_exposes_frame_link_contract_from_assigned_frames() -> None:
 
     rift_configuration = nexus.create_rift_configuration()
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
-    rift.target_frame("ops", set_as_default=True)
+    rift.target_frame("ops")
 
     assert rift.list_assigned_frame_names() == ("ops",)
-    assert rift.frame_link_contract.default_frame_name == "ops"
 
 
 def test_rift_can_build_frame_viewer_from_assigned_frame_contract() -> None:
@@ -3640,7 +3605,7 @@ def test_rift_can_build_frame_viewer_from_assigned_frame_contract() -> None:
 
     rift_configuration = nexus.create_rift_configuration()
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
-    rift.target_frame("ops", set_as_default=True)
+    rift.target_frame("ops")
 
     viewer = rift.create_frame_viewer()
 
@@ -3676,11 +3641,9 @@ def test_rift_can_target_frame_through_contract_after_nexus_validation() -> None
     rift_configuration = nexus.create_rift_configuration()
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
 
-    rift.target_frame("ops", set_as_default=True)
+    rift.target_frame("ops")
 
-    assert rift.frame_link_contract.has_frame("ops") is True
-    assert rift.frame_link_contract.default_frame_name == "ops"
-    assert rift.default_target_frame_name == "ops"
+    assert rift.get_frame_link_contract("ops").frame_name == "ops"
 
 
 def test_nexus_can_register_and_list_named_frame_acl_configurations() -> None:
@@ -3750,11 +3713,11 @@ def test_rift_target_frame_uses_selected_named_acl_contract_for_viewer_projectio
     )
 
     rift = nexus.create_rift(rift_name="ops_rift")
-    rift.target_frame("ops", contract_name="ops_contract", set_as_default=True)
+    rift.target_frame("ops", contract_name="ops_contract")
 
-    viewer = rift.get_space_frame_viewer()
+    viewer = rift.get_frame_viewer()
 
-    assert rift.frame_link_contract.get_selected_contract_name("ops") == "ops_contract"
+    assert rift.get_frame_link_contract("ops").get_selected_contract_name() == "ops_contract"
     assert viewer.frame_acl_configurations_by_frame_name["ops"].to_json_dict() == (
         named_configuration.to_json_dict()
     )
@@ -3793,7 +3756,7 @@ def test_rift_can_create_new_frame_viewer_for_one_engaged_frame() -> None:
 
     rift_configuration = nexus.create_rift_configuration()
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
-    rift.target_frame("ops", set_as_default=True)
+    rift.target_frame("ops")
 
     viewer = rift.create_new_frame_viewer("ops", viewer_profile_name="general")
 
@@ -3828,12 +3791,12 @@ def test_rift_can_attach_frame_viewer_to_active_space_and_read_it_back() -> None
 
     rift_configuration = nexus.create_rift_configuration().with_space_name("main")
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
-    rift.target_frame("ops", set_as_default=True)
-    space = rift.get_space(rift.active_space_id)
-    viewer = rift.get_space_frame_viewer()
+    rift.target_frame("ops")
+    space = rift.space
+    viewer = rift.get_frame_viewer()
 
     assert viewer is space.frame_viewer
-    assert rift.get_space_frame_viewer() is viewer
+    assert rift.get_frame_viewer() is viewer
     assert viewer.default_view_frame_name == "ops"
 
 
@@ -3848,10 +3811,10 @@ def test_rift_space_frame_viewer_helpers_fail_fast_without_target_space_or_attac
     rift = nexus.create_rift(rift_name="alpha")
 
     with pytest.raises(ValueError, match="has no attached frame viewer"):
-        rift.get_space_frame_viewer()
+        rift.get_frame_viewer()
 
     with pytest.raises(ValueError, match="has no attached frame viewer"):
-        rift.get_space_frame_viewer()
+        rift.get_frame_viewer()
 
 
 def test_direct_rift_access_can_be_token_gated() -> None:
@@ -3912,10 +3875,9 @@ def test_target_frame_allow_and_deny_lists_are_enforced() -> None:
     nexus.enable(replacement_configuration)
     _seed_frame_descriptor("ops")
     rift = nexus.create_rift(rift_name="allowed")
-    rift.target_frame("ops", set_as_default=True)
+    rift.target_frame("ops")
 
-    assert rift.target_frame_names == ("ops",)
-    assert rift.default_target_frame_name == "ops"
+    assert rift.list_assigned_frame_names() == ("ops",)
 
 
 def test_static_rift_requires_target_frame_ai_profiles() -> None:
@@ -4026,9 +3988,9 @@ def test_codegen_rift_can_attach_to_dynamic_ai_native_target_frame() -> None:
         RiftSpaceType.codegen
     )
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops-codegen")
-    rift.target_frame("ops", set_as_default=True)
+    rift.target_frame("ops")
 
-    assert rift.target_frame_names == ("ops",)
+    assert rift.list_assigned_frame_names() == ("ops",)
     assert rift.configuration.get_property("space_type") == RiftSpaceType.codegen
 
 
@@ -4058,9 +4020,9 @@ def test_static_rift_can_attach_to_automatic_target_frame_when_rift_enabled() ->
         RiftSpaceType.static
     )
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops-static")
-    rift.target_frame("ops", set_as_default=True)
+    rift.target_frame("ops")
 
-    assert rift.target_frame_names == ("ops",)
+    assert rift.list_assigned_frame_names() == ("ops",)
     assert rift.configuration.get_property("space_type") == RiftSpaceType.static
 
 
@@ -4090,17 +4052,19 @@ def test_target_frame_requires_existing_descriptor_truth() -> None:
         rift.target_frame("ops")
 
 
-def test_shared_and_isolated_nexus_frame_names_are_assigned() -> None:
+def test_shared_and_private_nexus_frames_are_realized_only_on_request() -> None:
     """
-    Verify Nexus-frame topology settings shape the Rift's assigned internal
-    frame names correctly.
+    Verify shared and one-per-workspace Nexus frames are realized only on
+    explicit request.
 
     Returns:
         None.
     """
     shared_nexus = _create_enabled_nexus()
     shared_rift = shared_nexus.create_rift(rift_name="shared")
-    assert shared_rift.default_nexus_frame_name == "aetheric_frame_system"
+    assert "aetheric_frame_system" not in Aether()._aetheric_frames
+    shared_frame = shared_rift.create_nexus_frame()
+    assert shared_frame.name == "aetheric_frame_system"
     assert shared_rift.get_nexus_frame() is shared_nexus.get_nexus_frame_for_rift(shared_rift.id)
 
     isolated_nexus = Nexus()
@@ -4112,9 +4076,10 @@ def test_shared_and_isolated_nexus_frame_names_are_assigned() -> None:
     isolated_nexus.enable(configuration)
 
     isolated_rift = isolated_nexus.create_rift(rift_name="isolated")
-    assert isolated_rift.default_nexus_frame_name.startswith("aetheric_frame_system:")
-    assert isolated_rift.default_nexus_frame_name.endswith(isolated_rift.id)
-    assert isolated_rift.nexus_frame_names == (isolated_rift.default_nexus_frame_name,)
+    private_frame_name = "aetheric_frame_system:{0}".format(isolated_rift.id)
+    assert private_frame_name not in Aether()._aetheric_frames
+    private_frame = isolated_rift.create_nexus_frame()
+    assert private_frame.name == private_frame_name
 
 
 def test_shared_nexus_frame_survives_until_last_rift_is_removed() -> None:
@@ -4129,9 +4094,12 @@ def test_shared_nexus_frame_survives_until_last_rift_is_removed() -> None:
     aether = Aether()
     first = nexus.create_rift(rift_name="first")
     second = nexus.create_rift(rift_name="second")
-    shared_frame_name = second.default_nexus_frame_name
+    shared_frame_name = "aetheric_frame_system"
 
-    assert first.default_nexus_frame_name in aether._aetheric_frames
+    first.create_nexus_frame()
+    second.create_nexus_frame()
+
+    assert shared_frame_name in aether._aetheric_frames
 
     nexus.remove_rift(first.id)
     assert shared_frame_name in aether._aetheric_frames
@@ -4158,7 +4126,7 @@ def test_one_per_workspace_nexus_frame_is_removed_with_its_rift() -> None:
     nexus.enable(configuration)
 
     rift = nexus.create_rift(rift_name="isolated")
-    frame_name = rift.default_nexus_frame_name
+    frame_name = rift.create_nexus_frame().name
 
     assert frame_name in Aether()._aetheric_frames
 
@@ -4178,7 +4146,7 @@ def test_external_aether_frame_cleanup_clears_nexus_frame_record() -> None:
     """
     nexus = _create_enabled_nexus()
     rift = nexus.create_rift(rift_name="alpha")
-    frame_name = rift.default_nexus_frame_name
+    frame_name = rift.create_nexus_frame().name
 
     assert nexus._get_nexus_frame_record(frame_name) is not None
 
@@ -4198,7 +4166,7 @@ def test_shared_mode_returns_the_same_frame_to_any_rift() -> None:
     first = nexus.create_rift(rift_name="first")
     second = nexus.create_rift(rift_name="second")
 
-    assert first.get_nexus_frame() is second.get_nexus_frame()
+    assert first.create_nexus_frame() is second.create_nexus_frame()
 
 
 def test_one_per_workspace_mode_rejects_other_rift_frame_access() -> None:
@@ -4219,9 +4187,10 @@ def test_one_per_workspace_mode_rejects_other_rift_frame_access() -> None:
 
     first = nexus.create_rift(rift_name="first")
     second = nexus.create_rift(rift_name="second")
+    second_frame = second.create_nexus_frame()
 
     with pytest.raises(ValueError, match="private Nexus frame"):
-        nexus.get_nexus_frame_for_rift(first.id, frame_name=second.default_nexus_frame_name)
+        nexus.get_nexus_frame_for_rift(first.id, frame_name=second_frame.name)
 
 
 def test_one_per_workspace_mode_rejects_immutable_private_frame_creation() -> None:
@@ -4263,11 +4232,14 @@ def test_indexed_mode_allows_shared_lookup_by_explicit_name() -> None:
     first = nexus.create_rift(rift_name="first")
     second = nexus.create_rift(rift_name="second")
 
-    shared_frame = first.get_nexus_frame()
-    looked_up_frame = second.get_nexus_frame(frame_name=first.default_nexus_frame_name)
+    with pytest.raises(ValueError, match="explicit frame_name"):
+        first.get_nexus_frame()
+
+    shared_frame = first.create_nexus_frame(frame_name="ops")
+    looked_up_frame = second.get_nexus_frame(frame_name="ops")
 
     assert looked_up_frame is shared_frame
-    assert first.default_nexus_frame_name in second.nexus_frame_names
+    assert "ops" in second.list_accessible_nexus_frame_names()
 
 
 def test_indexed_mode_can_create_explicit_new_frame() -> None:
@@ -4306,10 +4278,6 @@ def test_direct_rift_construction_is_not_the_normal_registry_path() -> None:
     rift = Rift(
         nexus,
         configuration=configuration,
-        nexus_frame_names=("aetheric_frame_system",),
-        default_nexus_frame_name="aetheric_frame_system",
-        target_frame_names=tuple(),
-        default_target_frame_name=None,
         rift_name="manual",
     )
 
@@ -4333,10 +4301,6 @@ def test_direct_rift_construction_requires_configured_enabled_nexus() -> None:
         Rift(
             nexus,
             configuration=rift_configuration,
-            nexus_frame_names=("aetheric_frame_system",),
-            default_nexus_frame_name="aetheric_frame_system",
-            target_frame_names=tuple(),
-            default_target_frame_name=None,
             rift_name="manual",
         )
 
@@ -4346,10 +4310,6 @@ def test_direct_rift_construction_requires_configured_enabled_nexus() -> None:
         Rift(
             nexus,
             configuration=rift_configuration,
-            nexus_frame_names=("aetheric_frame_system",),
-            default_nexus_frame_name="aetheric_frame_system",
-            target_frame_names=tuple(),
-            default_target_frame_name=None,
             rift_name="manual",
         )
 
@@ -4367,9 +4327,5 @@ def test_direct_rift_construction_requires_nexus_argument() -> None:
         Rift(
             None,
             configuration=configuration,
-            nexus_frame_names=("aetheric_frame_system",),
-            default_nexus_frame_name="aetheric_frame_system",
-            target_frame_names=tuple(),
-            default_target_frame_name=None,
             rift_name="manual",
         )

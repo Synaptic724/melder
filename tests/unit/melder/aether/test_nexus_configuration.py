@@ -170,7 +170,6 @@ def test_nexus_configuration_property_helpers_and_defaults_work() -> None:
     assert configuration.has_property("allow_rift_creation") is True
     assert configuration.get_property("allow_rift_creation") is True
     assert configuration.get_property("nexus_frame_mode") is NexusFrameMode.single
-    assert configuration.get_property("default_target_frame_name") == "default"
     assert configuration.get_property("allowed_target_frame_names") == ("default",)
 
     with pytest.raises(KeyError):
@@ -211,21 +210,9 @@ def test_nexus_configuration_validate_rejects_missing_properties_and_invalid_inv
     bad_multiple_target.set_property("max_target_frame_count", 2)
     invalid_cases.append((bad_multiple_target, "max_target_frame_count must be 1 when allow_multiple_target_frames is False"))
 
-    denied_default = _build_valid_configuration()
-    denied_default.set_property("denied_target_frame_names", ("default",))
-    invalid_cases.append((denied_default, "default_target_frame_name cannot also be denied"))
-
-    missing_default_in_allow = _build_valid_configuration()
-    missing_default_in_allow.set_property("allowed_target_frame_names", ("ops",))
-    invalid_cases.append((missing_default_in_allow, "default_target_frame_name must be present in allowed_target_frame_names"))
-
     empty_default_nexus = _build_valid_configuration()
     empty_default_nexus.set_property("default_nexus_frame_name", "")
     invalid_cases.append((empty_default_nexus, "default_nexus_frame_name cannot be empty"))
-
-    empty_default_target = _build_valid_configuration()
-    empty_default_target.set_property("default_target_frame_name", "")
-    invalid_cases.append((empty_default_target, "default_target_frame_name cannot be empty"))
 
     for invalid_configuration, message in invalid_cases:
         with pytest.raises(ValueError, match=message):
@@ -288,7 +275,6 @@ def test_nexus_configuration_fluent_setters_return_self_and_store_values() -> No
         .with_default_nexus_frame_name("nexus-main")
         .with_auto_create_nexus_frames(False)
         .with_max_nexus_frame_count(3)
-        .with_default_target_frame_name("ops")
         .with_allowed_target_frame_names(("ops", "default"))
         .with_denied_target_frame_names(("archive",))
         .with_target_frame_override(True)
@@ -314,7 +300,6 @@ def test_nexus_configuration_fluent_setters_return_self_and_store_values() -> No
     assert configuration.get_property("default_nexus_frame_name") == "nexus-main"
     assert configuration.get_property("auto_create_nexus_frames") is False
     assert configuration.get_property("max_nexus_frame_count") == 3
-    assert configuration.get_property("default_target_frame_name") == "ops"
     assert configuration.get_property("allowed_target_frame_names") == ("ops", "default")
     assert configuration.get_property("denied_target_frame_names") == ("archive",)
     assert configuration.get_property("allow_target_frame_override") is True

@@ -146,7 +146,7 @@ def _build_real_rift_viewer() -> object:
         .with_space_type(RiftSpaceType.static)
     )
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
-    rift.target_frame("ops", set_as_default=True)
+    rift.target_frame("ops")
     viewer = rift.create_new_frame_viewer("ops", viewer_profile_name="general")
     return spellbook, conduit, nexus, rift, viewer
 
@@ -236,7 +236,7 @@ def _build_real_multi_frame_rift_viewer() -> object:
         .with_space_type(RiftSpaceType.static)
     )
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="dual_rift")
-    rift.target_frame("ops", set_as_default=True)
+    rift.target_frame("ops")
     rift.target_frame("finance")
     viewer = nexus.create_frame_viewer_for_rift(rift.id)
     return (
