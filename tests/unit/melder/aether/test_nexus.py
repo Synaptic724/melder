@@ -389,7 +389,7 @@ def _attach_projection_backed_viewer(space: RiftSpace, viewer: FrameViewer) -> N
             for frame_name in viewer.frame_descriptors_by_name.keys()
         }
     )
-    space.attach_frame_viewer(viewer)
+    space._replace_frame_viewer(viewer)
 
 
 def test_nexus_is_singleton() -> None:
@@ -881,7 +881,7 @@ def test_create_rift_programs_primary_space_from_space_type() -> None:
     assert isinstance(codegen_rift.space, CodegenRiftSpace)
 
 
-def test_rift_space_can_attach_and_detach_frame_viewer() -> None:
+def test_rift_space_can_replace_and_clear_frame_viewer_internally() -> None:
     """
     Verify a RiftSpace can own an attached frame viewer.
 
@@ -889,13 +889,14 @@ def test_rift_space_can_attach_and_detach_frame_viewer() -> None:
         None.
     """
     space = RiftSpace(owner_rift_id="rift-1", space_name="main")
-    viewer = FrameViewer()
+    viewer = _build_descriptor_backed_viewer("ops")
 
-    _attach_projection_backed_viewer(space, viewer)
+    space.replace_projection_sets({"ops": _build_projection_set_from_viewer(viewer, "ops")})
+    space._replace_frame_viewer(viewer)
 
     assert space.frame_viewer is viewer
 
-    space.detach_frame_viewer()
+    space._clear_frame_viewer()
 
     assert viewer.cleaned is True
     assert space.frame_viewer is None

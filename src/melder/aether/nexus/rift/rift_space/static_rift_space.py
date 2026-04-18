@@ -90,13 +90,25 @@ class StaticRiftSpace(RiftSpace, IStaticRiftSpace):
             workstation=self._workstation,
         )
 
-    def attach_frame_viewer(self, frame_viewer: FrameViewer) -> None:
+    def _replace_frame_viewer(self, frame_viewer: FrameViewer) -> None:
         """
-        Attach the static viewer variant for this room.
+        Replace the room viewer using the static viewer wrapper.
+
+        Purpose:
+            Ensure static rooms always store a `StaticFrameViewer` even when the
+            incoming viewer was created as a generic `FrameViewer`.
+
+        Contract:
+            - Reuses an incoming `StaticFrameViewer` as-is.
+            - Wraps any non-static viewer through
+              `StaticFrameViewer.from_frame_viewer(...)` before replacing the
+              room's current viewer.
+            - Delegates the actual replacement lifecycle to the base room's
+              internal viewer replacement helper.
 
         Args:
             frame_viewer:
-                Viewer to attach to this space.
+                Incoming viewer to normalize and replace on this room.
 
         Returns:
             None.
@@ -105,4 +117,4 @@ class StaticRiftSpace(RiftSpace, IStaticRiftSpace):
             static_frame_viewer = frame_viewer
         else:
             static_frame_viewer = StaticFrameViewer.from_frame_viewer(frame_viewer)
-        super().attach_frame_viewer(static_frame_viewer)
+        super()._replace_frame_viewer(static_frame_viewer)

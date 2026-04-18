@@ -587,7 +587,7 @@ class Rift(Cleanable, IRift):
                 viewer_profile_name=viewer_profile_name,
             )
         )
-        space.attach_frame_viewer(frame_viewer)
+        space._replace_frame_viewer(frame_viewer)
         return frame_viewer
 
     def refresh_runtime_projections(

@@ -93,7 +93,7 @@ def test_rift_space_exposes_properties_and_cleanup_cleans_owned_state(monkeypatc
     assert space._space_id is None
 
 
-def test_rift_space_attach_detach_and_selected_target_guardrails_work(monkeypatch) -> None:
+def test_rift_space_internal_viewer_replacement_and_target_guardrails_work(monkeypatch) -> None:
     class _BaseSpace(RiftSpace):
         def _create_command_system(self):
             return SimpleNamespace(cleanup=lambda: None)
@@ -111,15 +111,15 @@ def test_rift_space_attach_detach_and_selected_target_guardrails_work(monkeypatc
     )
 
     with pytest.raises(TypeError, match="frame_viewer must be a FrameViewer."):
-        base_space.attach_frame_viewer(object())
+        base_space._replace_frame_viewer(object())
 
-    space.attach_frame_viewer(first_viewer)
-    space.attach_frame_viewer(second_viewer)
+    space._replace_frame_viewer(first_viewer)
+    space._replace_frame_viewer(second_viewer)
     assert cleaned == [first_viewer]
 
-    space.detach_frame_viewer()
+    space._clear_frame_viewer()
     assert cleaned == [first_viewer, second_viewer]
-    space.detach_frame_viewer()
+    space._clear_frame_viewer()
 
     space._frame_viewer = SimpleNamespace(default_view_frame_name=None)
     with pytest.raises(ValueError, match="RiftSpace has no default selected frame."):

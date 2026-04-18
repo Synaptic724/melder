@@ -367,15 +367,26 @@ class RiftSpace(Cleanable, IRiftSpace):
             workstation=self._workstation,
         )
 
-    def attach_frame_viewer(self, frame_viewer: FrameViewer) -> None:
+    def _replace_frame_viewer(self, frame_viewer: FrameViewer) -> None:
         """
         Internal
 
-        Attach or replace the frame-surface viewer for this space.
+        Replace the currently attached frame-surface viewer for this room.
+
+        Purpose:
+            Apply one newly built viewer object to the room's live state without
+            exposing viewer replacement as a public room API seam.
+
+        Contract:
+            - Requires a concrete `FrameViewer` instance.
+            - Cleans the previously attached viewer when the replacement object
+              is different.
+            - Binds the room's `RiftGate` into the new viewer before storing it.
+            - Stores the replacement viewer as the room's current viewer.
 
         Args:
             frame_viewer:
-                Viewer to attach to this space.
+                Replacement viewer to store on this room.
 
         Returns:
             None.
@@ -389,11 +400,21 @@ class RiftSpace(Cleanable, IRiftSpace):
             self._bind_rift_gate_to_frame_viewer(frame_viewer)
             self._frame_viewer = frame_viewer
 
-    def detach_frame_viewer(self) -> None:
+    def _clear_frame_viewer(self) -> None:
         """
         Internal
 
-        Remove and cleanup the attached frame-surface viewer when present.
+        Clear and cleanup the currently attached frame-surface viewer.
+
+        Purpose:
+            Remove the room's current viewer as part of internal room lifecycle
+            management without exposing a public detach seam.
+
+        Contract:
+            - Safe to call when no viewer is attached.
+            - Cleans the currently attached viewer before dropping the
+              reference.
+            - Leaves the room with no attached viewer afterwards.
 
         Returns:
             None.
