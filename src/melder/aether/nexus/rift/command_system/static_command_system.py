@@ -25,57 +25,24 @@ class StaticCommandSystem(CommandSystem):
           the generic spell getters.
         - Leaves already-bound workstation objects outside post-bind policing.
     """
-
-    def _assert_topology_mutation_allowed(
-            self,
-            method_name: str,
-    ) -> None:
-        """
-        Deny runtime topology mutation through the static command surface.
-
-        Args:
-            method_name:
-                Public topology-mutation command being attempted.
-
-        Returns:
-            None.
-
-        Raises:
-            ValueError:
-                Always, because static rooms do not allow runtime structure
-                creation or rewiring through the command surface.
-        """
-        raise ValueError(
-            "Static command surface does not allow topology mutation method '{0}'.".format(
-                method_name
-            )
+    _DENIED_TOPOLOGY_MUTATION_METHOD_NAMES: frozenset[str] = frozenset(
+        (
+            "create_lesser_conduit",
+            "create_cluster",
+            "delete_cluster",
+            "join_cluster",
+            "leave_cluster",
+            "link",
+            "sever_link",
         )
-
-    def _assert_spell_activation_allowed(
-            self,
-            method_name: str,
-    ) -> None:
-        """
-        Deny direct conduit-level spell activation in static rooms.
-
-        Args:
-            method_name:
-                Public spell-activation command being attempted.
-
-        Returns:
-            None.
-
-        Raises:
-            ValueError:
-                When the requested spell-activation command is not allowed in
-                static rooms.
-        """
-        if method_name == "meld":
-            raise ValueError(
-                "Static command surface does not allow spell activation method '{0}'.".format(
-                    method_name
-                )
-            )
+    )
+    _DENIED_SPELL_ACTIVATION_METHOD_NAMES: frozenset[str] = frozenset(("meld",))
+    _TOPOLOGY_MUTATION_DENIED_MESSAGE_TEMPLATE: str = (
+        "Static command surface does not allow topology mutation method '{0}'."
+    )
+    _SPELL_ACTIVATION_DENIED_MESSAGE_TEMPLATE: str = (
+        "Static command surface does not allow spell activation method '{0}'."
+    )
 
     def _get_spell_by_index_id_locked(
             self,

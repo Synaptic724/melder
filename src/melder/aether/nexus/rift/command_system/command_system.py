@@ -46,6 +46,18 @@ class CommandSystem(Cleanable):
         "_space",
         "_workstation",
     ]
+    _DENIED_RAW_RUNTIME_OBJECT_ACCESS_METHOD_NAMES: frozenset[str] = frozenset()
+    _DENIED_TOPOLOGY_MUTATION_METHOD_NAMES: frozenset[str] = frozenset()
+    _DENIED_SPELL_ACTIVATION_METHOD_NAMES: frozenset[str] = frozenset()
+    _RAW_RUNTIME_OBJECT_ACCESS_DENIED_MESSAGE_TEMPLATE: str = (
+        "Command surface does not allow raw runtime-object access method '{0}'."
+    )
+    _TOPOLOGY_MUTATION_DENIED_MESSAGE_TEMPLATE: str = (
+        "Command surface does not allow topology mutation method '{0}'."
+    )
+    _SPELL_ACTIVATION_DENIED_MESSAGE_TEMPLATE: str = (
+        "Command surface does not allow spell activation method '{0}'."
+    )
     _aether = Aether()
 
     def __init__(self, *, space: Any, workstation: Any) -> None:
@@ -840,6 +852,32 @@ class CommandSystem(Cleanable):
     ) -> object:
         """
         Return one outbound linked conduit from a source conduit.
+
+        Purpose:
+            Expose the lower conduit-to-peer initiation lookup through the
+            shared command surface without forcing callers to fetch the conduit
+            first and then navigate it manually.
+
+        Contract:
+            - Resolves the source conduit through the command projection and
+              command ACL before touching runtime conduit state.
+            - Returns the concrete linked conduit object chosen by the lower
+              conduit runtime.
+            - Uses one top-level command action boundary for gate admission and
+              memory emission.
+
+        Args:
+            conduit_id:
+                Source conduit id whose outbound link set should be queried.
+            peer_conduit_id:
+                Peer conduit id to resolve from the source conduit's initiated
+                links.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            object: Matching outbound linked conduit object.
         """
         self.check_cleaned()
         with self._entered_command_action(
@@ -862,6 +900,31 @@ class CommandSystem(Cleanable):
     ) -> object:
         """
         Return one inbound provider conduit for a source conduit.
+
+        Purpose:
+            Expose the lower provider-link lookup through the shared command
+            surface for callers that need the inbound peer object directly.
+
+        Contract:
+            - Resolves the source conduit through the command projection and
+              command ACL before touching runtime conduit state.
+            - Returns the provider conduit chosen by the lower conduit runtime.
+            - Uses one top-level command action boundary for gate admission and
+              memory emission.
+
+        Args:
+            conduit_id:
+                Source conduit id whose inbound provider link set should be
+                queried.
+            peer_conduit_id:
+                Peer conduit id to resolve from the source conduit's provider
+                links.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            object: Matching inbound provider conduit object.
         """
         self.check_cleaned()
         with self._entered_command_action(
@@ -883,6 +946,28 @@ class CommandSystem(Cleanable):
     ) -> Tuple[object, ...]:
         """
         Return the outbound linked conduits for one conduit.
+
+        Purpose:
+            Provide the full outbound link set for one conduit through the
+            shared command surface.
+
+        Contract:
+            - Resolves the source conduit through command ACL and descriptor
+              truth before touching runtime conduit state.
+            - Returns a detached tuple preserving the lower conduit runtime's
+              current outbound links.
+            - Uses one top-level command action boundary for gate admission and
+              memory emission.
+
+        Args:
+            conduit_id:
+                Source conduit id whose outbound links should be returned.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            Tuple[object, ...]: Outbound linked conduit objects.
         """
         self.check_cleaned()
         with self._entered_command_action(
@@ -904,6 +989,29 @@ class CommandSystem(Cleanable):
     ) -> Tuple[object, ...]:
         """
         Return the inbound provider conduits for one conduit.
+
+        Purpose:
+            Provide the full inbound provider-link set for one conduit through
+            the shared command surface.
+
+        Contract:
+            - Resolves the source conduit through command ACL and descriptor
+              truth before touching runtime conduit state.
+            - Returns a detached tuple preserving the lower conduit runtime's
+              current provider links.
+            - Uses one top-level command action boundary for gate admission and
+              memory emission.
+
+        Args:
+            conduit_id:
+                Source conduit id whose inbound provider links should be
+                returned.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            Tuple[object, ...]: Inbound provider conduit objects.
         """
         self.check_cleaned()
         with self._entered_command_action(
@@ -925,6 +1033,28 @@ class CommandSystem(Cleanable):
     ) -> object:
         """
         Return the contracted peer conduits for one conduit.
+
+        Purpose:
+            Expose the lower conduit contract view directly on the shared
+            command surface for callers that need the current contracted peers.
+
+        Contract:
+            - Resolves the source conduit through command ACL and descriptor
+              truth before touching runtime conduit state.
+            - Returns whatever contract collection object the lower conduit
+              runtime exposes without rebinding or snapshotting it.
+            - Uses one top-level command action boundary for gate admission and
+              memory emission.
+
+        Args:
+            conduit_id:
+                Source conduit id whose contracted peers should be returned.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            object: Lower-runtime contracted conduit collection.
         """
         self.check_cleaned()
         with self._entered_command_action(
@@ -947,6 +1077,30 @@ class CommandSystem(Cleanable):
     ) -> object:
         """
         Return one contracted spell lookup result from a conduit.
+
+        Purpose:
+            Mirror the lower conduit spell-in-contract lookup on the shared
+            command surface.
+
+        Contract:
+            - Resolves the conduit through command ACL and descriptor truth
+              before touching runtime conduit state.
+            - Defers spell-specific contract semantics to the lower conduit
+              runtime instead of re-implementing them in the command surface.
+            - Uses one top-level command action boundary for gate admission and
+              memory emission.
+
+        Args:
+            conduit_id:
+                Source conduit id whose contract view should be queried.
+            spell_id:
+                Current spell id to resolve inside the conduit's contract set.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            object: Lower-runtime spell-in-contract lookup result.
         """
         self.check_cleaned()
         with self._entered_command_action(
@@ -969,6 +1123,30 @@ class CommandSystem(Cleanable):
     ) -> object:
         """
         Return contracted spell data keyed by peer conduit id.
+
+        Purpose:
+            Expose conduit-to-peer contract spell data through the shared
+            command surface without requiring callers to walk the runtime
+            conduit object manually.
+
+        Contract:
+            - Resolves the source conduit through command ACL and descriptor
+              truth before touching runtime conduit state.
+            - Defers contract payload shape to the lower conduit runtime.
+            - Uses one top-level command action boundary for gate admission and
+              memory emission.
+
+        Args:
+            conduit_id:
+                Source conduit id whose contract table should be queried.
+            peer_conduit_id:
+                Peer conduit id whose contract spell data should be returned.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            object: Lower-runtime contract spell payload for the peer conduit.
         """
         self.check_cleaned()
         with self._entered_command_action(
@@ -991,6 +1169,30 @@ class CommandSystem(Cleanable):
     ) -> object:
         """
         Return contracted spell data keyed by peer conduit name.
+
+        Purpose:
+            Expose conduit-to-peer-name contract spell data through the shared
+            command surface.
+
+        Contract:
+            - Resolves the source conduit through command ACL and descriptor
+              truth before touching runtime conduit state.
+            - Defers payload shape and peer-name resolution semantics to the
+              lower conduit runtime.
+            - Uses one top-level command action boundary for gate admission and
+              memory emission.
+
+        Args:
+            conduit_id:
+                Source conduit id whose contract table should be queried.
+            conduit_name:
+                Peer conduit name whose contract spell data should be returned.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            object: Lower-runtime contract spell payload for the peer name.
         """
         self.check_cleaned()
         with self._entered_command_action(
@@ -1012,6 +1214,29 @@ class CommandSystem(Cleanable):
     ) -> List[dict[str, Any]]:
         """
         Return the spell description payloads exposed by one conduit.
+
+        Purpose:
+            Provide a structured spell-description surface for one runtime
+            conduit through the shared command API.
+
+        Contract:
+            - Resolves the conduit through command ACL and descriptor truth
+              before touching runtime conduit state.
+            - Returns the lower conduit runtime's current spell description
+              payloads as a list without additional filtering.
+            - Uses one top-level command action boundary for gate admission and
+              memory emission.
+
+        Args:
+            conduit_id:
+                Conduit id whose spell descriptions should be returned.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            List[dict[str, Any]]: Runtime spell description payloads for the
+            conduit.
         """
         self.check_cleaned()
         with self._entered_command_action(
@@ -1033,6 +1258,27 @@ class CommandSystem(Cleanable):
     ) -> object:
         """
         Return the conduit-scoped resolution state for one conduit.
+
+        Purpose:
+            Expose the lower conduit runtime's current resolution-state object
+            through the shared command surface.
+
+        Contract:
+            - Resolves the conduit through command ACL and descriptor truth
+              before touching runtime conduit state.
+            - Returns the live lower-runtime resolution-state object directly.
+            - Uses one top-level command action boundary for gate admission and
+              memory emission.
+
+        Args:
+            conduit_id:
+                Conduit id whose resolution state should be returned.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            object: Live conduit-scoped resolution-state object.
         """
         self.check_cleaned()
         with self._entered_command_action(
@@ -1054,6 +1300,28 @@ class CommandSystem(Cleanable):
     ) -> object:
         """
         Return the active spellspace for one conduit, if any.
+
+        Purpose:
+            Expose the lower conduit runtime's active spellspace surface
+            through the shared command API.
+
+        Contract:
+            - Resolves the conduit through command ACL and descriptor truth
+              before touching runtime conduit state.
+            - Returns the currently active spellspace object or whatever the
+              lower runtime exposes for the no-active-spellspace case.
+            - Uses one top-level command action boundary for gate admission and
+              memory emission.
+
+        Args:
+            conduit_id:
+                Conduit id whose active spellspace should be returned.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            object: Active spellspace object or lower-runtime sentinel value.
         """
         self.check_cleaned()
         with self._entered_command_action(
@@ -1078,6 +1346,34 @@ class CommandSystem(Cleanable):
     ) -> object:
         """
         Return the current spell id resolved from logical spell identifiers.
+
+        Purpose:
+            Mirror the lower conduit spell-id lookup on the shared command
+            surface using logical spell identity fields.
+
+        Contract:
+            - Resolves the conduit through command ACL and descriptor truth
+              before touching runtime conduit state.
+            - Defers lookup semantics to the lower conduit runtime instead of
+              re-implementing spell identity matching in the command layer.
+            - Uses one top-level command action boundary for gate admission and
+              memory emission.
+
+        Args:
+            conduit_id:
+                Conduit id whose spell inventory should be queried.
+            spellframe:
+                Logical spellframe key.
+            spell_name:
+                Logical spell name.
+            binding_name:
+                Logical binding name.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            object: Current spell id resolved by the lower conduit runtime.
         """
         self.check_cleaned()
         with self._entered_command_action(
@@ -1102,6 +1398,34 @@ class CommandSystem(Cleanable):
     ) -> object:
         """
         Return the spellbook key resolved from logical spell identifiers.
+
+        Purpose:
+            Mirror the lower conduit spellbook-key lookup on the shared command
+            surface using logical spell identity fields.
+
+        Contract:
+            - Resolves the conduit through command ACL and descriptor truth
+              before touching runtime conduit state.
+            - Defers lookup semantics to the lower conduit runtime instead of
+              re-implementing spell identity matching in the command layer.
+            - Uses one top-level command action boundary for gate admission and
+              memory emission.
+
+        Args:
+            conduit_id:
+                Conduit id whose spell inventory should be queried.
+            spellframe:
+                Logical spellframe key.
+            spell_name:
+                Logical spell name.
+            binding_name:
+                Logical binding name.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            object: Spellbook key resolved by the lower conduit runtime.
         """
         self.check_cleaned()
         with self._entered_command_action(
@@ -1124,6 +1448,30 @@ class CommandSystem(Cleanable):
     ) -> object:
         """
         Return the permissions string for one spell inside one conduit.
+
+        Purpose:
+            Expose one lower-runtime spell-permissions lookup through the
+            shared command surface.
+
+        Contract:
+            - Resolves the conduit through command ACL and descriptor truth
+              before touching runtime conduit state.
+            - Returns the exact permissions value exposed by the lower conduit
+              runtime.
+            - Uses one top-level command action boundary for gate admission and
+              memory emission.
+
+        Args:
+            conduit_id:
+                Conduit id whose spell permissions should be queried.
+            spell_id:
+                Current spell id to inspect.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            object: Lower-runtime permissions value for the spell.
         """
         self.check_cleaned()
         with self._entered_command_action(
@@ -1145,6 +1493,27 @@ class CommandSystem(Cleanable):
     ) -> Dict[str, Any]:
         """
         Return a detached snapshot of one conduit state payload.
+
+        Purpose:
+            Expose one lower-runtime conduit state snapshot through the shared
+            command surface.
+
+        Contract:
+            - Resolves the conduit through command ACL and descriptor truth
+              before touching runtime conduit state.
+            - Returns the lower conduit runtime's detached snapshot payload.
+            - Uses one top-level command action boundary for gate admission and
+              memory emission.
+
+        Args:
+            conduit_id:
+                Conduit id whose state snapshot should be returned.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            Dict[str, Any]: Detached conduit state snapshot payload.
         """
         self.check_cleaned()
         with self._entered_command_action(
@@ -1888,43 +2257,21 @@ class CommandSystem(Cleanable):
         except Exception:
             return None
 
-    def _allows_raw_runtime_object_access(
-            self,
-            method_name: str,
-    ) -> bool:
-        """
-        Return whether this room mode allows raw runtime-object access.
-
-        Contract:
-            - Base `CommandSystem` allows raw runtime-object access.
-            - Room-specific subclasses may return False for selected methods
-              while still keeping the shared public vocabulary intact.
-
-        Args:
-            method_name:
-                Public command method requesting raw runtime-object access.
-
-        Returns:
-            bool: True when the requesting method is allowed to return raw
-            runtime objects in the current room mode.
-        """
-        _ = method_name
-        return True
-
     def _assert_raw_runtime_object_access_allowed(
             self,
             method_name: str,
     ) -> None:
         """
-        Enforce raw runtime-object access policy for this command system.
+        Enforce raw runtime-object access policy for this command surface.
 
         Contract:
-            - Shared base implementation allows raw runtime-object access.
-            - Mode-specific command-system subclasses may override this hook
-              to restrict raw runtime-object exposure without changing the
-              public command method names.
-            - Does not affect descriptor/record getters or already-bound
-              workstation targets.
+            - Base `CommandSystem` owns the shared raw-runtime getter
+              vocabulary and defaults to allowing it.
+            - Denials are represented explicitly through the class-level
+              `_DENIED_RAW_RUNTIME_OBJECT_ACCESS_METHOD_NAMES` set instead of
+              hidden no-op hook overrides.
+            - Subclasses that need room-specific wording may override the class
+              message template without replacing the assertion method itself.
 
         Args:
             method_name:
@@ -1936,51 +2283,32 @@ class CommandSystem(Cleanable):
 
         Raises:
             ValueError:
-                If the current command-system mode does not allow raw
-                runtime-object access.
+                If the requesting method is denied raw runtime-object access in
+                the current command-surface mode.
         """
-        if self._allows_raw_runtime_object_access(method_name):
+        if method_name not in type(self)._DENIED_RAW_RUNTIME_OBJECT_ACCESS_METHOD_NAMES:
             return
         raise ValueError(
-            "Command surface does not allow raw runtime-object access method '{0}'.".format(
+            type(self)._RAW_RUNTIME_OBJECT_ACCESS_DENIED_MESSAGE_TEMPLATE.format(
                 method_name
             )
         )
-
-    def _allows_topology_mutation(
-            self,
-            method_name: str,
-    ) -> bool:
-        """
-        Return whether this room mode allows topology-mutation commands.
-
-        Contract:
-            - Base `CommandSystem` allows topology mutation.
-            - Room-specific subclasses may return False for all or part of the
-              shared topology-mutation vocabulary.
-
-        Args:
-            method_name:
-                Public topology-mutation command being attempted.
-
-        Returns:
-            bool: True when the command is allowed in the current room mode.
-        """
-        _ = method_name
-        return True
 
     def _assert_topology_mutation_allowed(
             self,
             method_name: str,
     ) -> None:
         """
-        Enforce room-level topology-mutation policy for shared command methods.
+        Enforce topology-mutation policy for this command surface.
 
         Contract:
-            - Shared base implementation allows topology mutation.
-            - Room-specific command systems may override this helper to deny
-              runtime structure creation or rewiring while keeping the shared
-              method vocabulary intact.
+            - Base `CommandSystem` owns the shared topology-mutation
+              vocabulary and defaults to allowing it.
+            - Denials are represented explicitly through the class-level
+              `_DENIED_TOPOLOGY_MUTATION_METHOD_NAMES` set instead of hidden
+              no-op hook overrides.
+            - Subclasses that need room-specific wording may override the class
+              message template without replacing the assertion method itself.
 
         Args:
             method_name:
@@ -1991,51 +2319,32 @@ class CommandSystem(Cleanable):
 
         Raises:
             ValueError:
-                If the current room mode does not allow the requested topology
-                mutation command.
+                If the requesting topology-mutation command is denied in the
+                current command-surface mode.
         """
-        if self._allows_topology_mutation(method_name):
+        if method_name not in type(self)._DENIED_TOPOLOGY_MUTATION_METHOD_NAMES:
             return
         raise ValueError(
-            "Command surface does not allow topology mutation method '{0}'.".format(
+            type(self)._TOPOLOGY_MUTATION_DENIED_MESSAGE_TEMPLATE.format(
                 method_name
             )
         )
-
-    def _allows_spell_activation(
-            self,
-            method_name: str,
-    ) -> bool:
-        """
-        Return whether this room mode allows direct spell-activation commands.
-
-        Contract:
-            - Base `CommandSystem` allows direct spell activation.
-            - Room-specific subclasses may return False for selected activation
-              methods while keeping the shared public vocabulary intact.
-
-        Args:
-            method_name:
-                Public spell-activation command being attempted.
-
-        Returns:
-            bool: True when the activation command is allowed in the current
-            room mode.
-        """
-        _ = method_name
-        return True
 
     def _assert_spell_activation_allowed(
             self,
             method_name: str,
     ) -> None:
         """
-        Enforce room-level direct spell-activation policy for shared commands.
+        Enforce direct spell-activation policy for this command surface.
 
         Contract:
-            - Shared base implementation allows direct spell activation.
-            - Room-specific command systems may override this helper to deny
-              raw activation paths while keeping the shared vocabulary intact.
+            - Base `CommandSystem` owns the shared spell-activation
+              vocabulary and defaults to allowing it.
+            - Denials are represented explicitly through the class-level
+              `_DENIED_SPELL_ACTIVATION_METHOD_NAMES` set instead of hidden
+              no-op hook overrides.
+            - Subclasses that need room-specific wording may override the class
+              message template without replacing the assertion method itself.
 
         Args:
             method_name:
@@ -2046,13 +2355,13 @@ class CommandSystem(Cleanable):
 
         Raises:
             ValueError:
-                If the current room mode does not allow the requested direct
-                spell-activation command.
+                If the requesting spell-activation command is denied in the
+                current command-surface mode.
         """
-        if self._allows_spell_activation(method_name):
+        if method_name not in type(self)._DENIED_SPELL_ACTIVATION_METHOD_NAMES:
             return
         raise ValueError(
-            "Command surface does not allow spell activation method '{0}'.".format(
+            type(self)._SPELL_ACTIVATION_DENIED_MESSAGE_TEMPLATE.format(
                 method_name
             )
         )
