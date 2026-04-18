@@ -7,7 +7,7 @@ from melder.aether.nexus.configuration.rift_validation_mode import RiftValidatio
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.general_helpers import EnumHelpers
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import IRiftConfiguration, IRiftEventConfiguration
+from melder.utilities.interfaces.interfaces import IRiftConfiguration
 
 
 class RiftConfiguration(Cleanable, IRiftConfiguration):
@@ -59,7 +59,6 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
             "space_name": (str, type(None)),
             "auto_activate_on_program": bool,
             "validation_mode": RiftValidationMode,
-            "event_configuration": (IRiftEventConfiguration, type(None)),
         }
 
     def cleanup(self) -> None:
@@ -215,7 +214,6 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
             "space_name": None,
             "auto_activate_on_program": True,
             "validation_mode": RiftValidationMode.strict,
-            "event_configuration": None,
         }
         for key, value in defaults.items():
             self.set_property(key, value)
@@ -405,25 +403,6 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
             IRiftConfiguration: This configuration instance.
         """
         self.set_property("validation_mode", mode)
-        return self
-
-    def with_event_configuration(
-            self,
-            event_configuration: Optional[IRiftEventConfiguration],
-    ) -> "IRiftConfiguration":
-        """
-        Fluent
-
-        Set the room-level event configuration to attach to this Rift.
-
-        Args:
-            event_configuration:
-                Optional event configuration object for the room layer.
-
-        Returns:
-            IRiftConfiguration: This configuration instance.
-        """
-        self.set_property("event_configuration", event_configuration)
         return self
 
     def _convert_enum_if_needed(self, key: str, value: object) -> object:

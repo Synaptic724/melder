@@ -6265,6 +6265,102 @@ class IAethericFrame(ICleanable, Protocol):
     _conduit_clusters: 'Dict[str, List[str]]'
 
 @runtime_checkable
+class IRiftMemory(Protocol):
+    """
+    Interface for one immutable Rift execution memory record.
+    """
+
+    memory_id: str
+    created_at: str
+    frame_name: str
+    action_name: str
+    step_counter: int
+    epoch_counter: int
+
+    @property
+    def metadata(self) -> Dict[str, object]:
+        """
+        Return the memory metadata mapping.
+        """
+        ...
+
+
+@runtime_checkable
+class IRiftMemorySystem(ICleanable, Protocol):
+    """
+    Interface for the RiftSpace-owned memory sequencing and context system.
+    """
+
+    @property
+    def rift_id(self) -> str:
+        """Return the owning Rift id."""
+        ...
+
+    @property
+    def space_type(self) -> str:
+        """Return the owning space type."""
+        ...
+
+    @property
+    def step_counter(self) -> int:
+        """Return the current step counter."""
+        ...
+
+    @property
+    def epoch_counter(self) -> int:
+        """Return the current epoch counter."""
+        ...
+
+    def increment_step(self) -> int:
+        """Increment and return the step counter."""
+        ...
+
+    def reset_step(self) -> None:
+        """Reset the step counter."""
+        ...
+
+    def increment_epoch(self, *, reset_step: bool = True) -> int:
+        """Increment and return the epoch counter."""
+        ...
+
+    def reset_epoch(self) -> None:
+        """Reset the epoch counter."""
+        ...
+
+    def update_context(
+            self,
+            *,
+            task_name: Optional[str] = None,
+            activity_name: Optional[str] = None,
+            mission_name: Optional[str] = None,
+            agent_name: Optional[str] = None,
+            agent_id: Optional[str] = None,
+            metadata: Optional[Dict[str, object]] = None,
+    ) -> None:
+        """Update shared memory context."""
+        ...
+
+    def clear_context(self) -> None:
+        """Clear shared memory context."""
+        ...
+
+    def describe_state(self) -> Dict[str, object]:
+        """Return a detached memory-system state snapshot."""
+        ...
+
+    def create_memory(
+            self,
+            *,
+            frame_name: str,
+            action_name: str,
+            metadata: Optional[Dict[str, object]] = None,
+            increment_step: bool = True,
+    ) -> IRiftMemory:
+        """Create one immutable Rift memory record."""
+        ...
+
+
+@runtime_checkable
 class IRiftEvent(Protocol):
     """
     Interface for one emitted Rift-space runtime event.
@@ -6294,47 +6390,76 @@ class IRiftEvent(Protocol):
 
 
 @runtime_checkable
-class IRiftEventConfiguration(ICleanable, Protocol):
+class IRiftEventSystem(ICleanable, Protocol):
     """
-    Interface for room-level event configuration.
+    Interface for the room-local Rift event system.
     """
-
-    _action_enrichers: List[Callable[["IRiftAction"], None]]
-    _memory_enrichers: List[Callable[["IRiftMemory"], None]]
-    _action_observers: List[Callable[["IRiftAction"], None]]
-    _memory_observers: List[Callable[["IRiftMemory"], None]]
-
-
-@runtime_checkable
-class IRiftAction(ICleanable, Protocol):
-    """
-    Interface placeholder for RiftAction event objects.
-    """
-
-    action_index: int
-    action_id: str
 
     @property
-    def metadata(self) -> Dict[str, object]:
+    def rift_id(self) -> str:
         """
-        Return the metadata mapping attached to this RiftAction event object.
+        Return the owning Rift id.
         """
         ...
 
-
-@runtime_checkable
-class IRiftMemory(ICleanable, Protocol):
-    """
-    Interface placeholder for RiftMemory event objects.
-    """
-
-    memory_index: int
-    memory_id: str
+    @property
+    def space_id(self) -> str:
+        """
+        Return the owning space id.
+        """
+        ...
 
     @property
-    def metadata(self) -> Dict[str, object]:
+    def space_kind(self) -> str:
         """
-        Return the metadata mapping attached to this RiftMemory event object.
+        Return the owning space kind.
+        """
+        ...
+
+    def register_event_callback(
+            self,
+            callback: Callable[[IRiftEvent], None],
+    ) -> str:
+        """
+        Register one room-local event callback and return its subscription id.
+        """
+        ...
+
+    def unregister_event_callback(self, subscription_id: str) -> None:
+        """
+        Remove one room-local event callback subscription by id.
+        """
+        ...
+
+    def create_event(
+            self,
+            event_type: str,
+            *,
+            payload: Optional[Dict[str, object]] = None,
+            frame_name: Optional[str] = None,
+            metadata: Optional[Dict[str, object]] = None,
+    ) -> IRiftEvent:
+        """
+        Create one Rift-space runtime event without emitting it.
+        """
+        ...
+
+    def emit_event(self, event: IRiftEvent) -> None:
+        """
+        Emit one Rift-space runtime event to all registered callbacks.
+        """
+        ...
+
+    def create_and_emit_event(
+            self,
+            event_type: str,
+            *,
+            payload: Optional[Dict[str, object]] = None,
+            frame_name: Optional[str] = None,
+            metadata: Optional[Dict[str, object]] = None,
+    ) -> IRiftEvent:
+        """
+        Create one Rift-space runtime event and emit it immediately.
         """
         ...
 
@@ -6661,15 +6786,6 @@ class IRiftConfiguration(ICleanable, Protocol):
     def with_validation_mode(self, mode: object) -> "IRiftConfiguration":
         """
         Set the validation posture for this Rift configuration.
-        """
-        ...
-
-    def with_event_configuration(
-            self,
-            event_configuration: Optional["IRiftEventConfiguration"],
-    ) -> "IRiftConfiguration":
-        """
-        Set the primary-space event configuration for this Rift configuration.
         """
         ...
 
@@ -7372,56 +7488,16 @@ class IRiftSpace(ICleanable, Protocol):
         ...
 
     @property
-    def event_configuration(self) -> IRiftEventConfiguration:
+    def event_system(self) -> IRiftEventSystem:
         """
-        Return the event configuration that governs this space's local event behavior.
-        """
-        ...
-
-    def register_event_callback(
-            self,
-            callback: Callable[[IRiftEvent], None],
-    ) -> str:
-        """
-        Register one room-local event callback and return its subscription id.
+        Return the room-local event system.
         """
         ...
 
-    def unregister_event_callback(self, subscription_id: str) -> None:
+    @property
+    def memory_system(self) -> IRiftMemorySystem:
         """
-        Remove one room-local event callback subscription by id.
-        """
-        ...
-
-    def create_event(
-            self,
-            event_type: str,
-            *,
-            payload: Optional[Dict[str, object]] = None,
-            frame_name: Optional[str] = None,
-            metadata: Optional[Dict[str, object]] = None,
-    ) -> IRiftEvent:
-        """
-        Create one Rift-space runtime event without emitting it.
-        """
-        ...
-
-    def emit_event(self, event: IRiftEvent) -> None:
-        """
-        Emit one Rift-space runtime event to all registered callbacks.
-        """
-        ...
-
-    def create_and_emit_event(
-            self,
-            event_type: str,
-            *,
-            payload: Optional[Dict[str, object]] = None,
-            frame_name: Optional[str] = None,
-            metadata: Optional[Dict[str, object]] = None,
-    ) -> IRiftEvent:
-        """
-        Create one Rift-space runtime event and emit it immediately.
+        Return the room-local memory sequencing system.
         """
         ...
 

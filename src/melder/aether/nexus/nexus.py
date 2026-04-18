@@ -35,7 +35,6 @@ from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile_builder import (
     FrameViewerProfileBuilder,
 )
-from melder.aether.nexus.rift.rift_space.rift_event_configuration import RiftEventConfiguration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -46,7 +45,6 @@ from melder.utilities.interfaces.interfaces import (
     IConfiguration,
     INexus,
     INexusConfiguration,
-    IRiftEventConfiguration,
     IRift,
     IRiftConfiguration,
     ISafeLogger,
@@ -3104,30 +3102,5 @@ class Nexus(Cleanable, INexus):
             if not configuration.has_property(key):
                 continue
             value = configuration.get_property(key)
-            if key == "event_configuration" and value is not None:
-                value = self._clone_rift_event_configuration(value)
             cloned_configuration.set_property(key, value)
         return cloned_configuration
-
-    def _clone_rift_event_configuration(
-            self,
-            event_configuration: IRiftEventConfiguration,
-    ) -> RiftEventConfiguration:
-        """
-        Internal
-
-        Clone one `RiftEventConfiguration` into a fresh room-event config.
-
-        Args:
-            event_configuration:
-                Source event configuration.
-
-        Returns:
-            RiftEventConfiguration: Fresh cloned event configuration.
-        """
-        return RiftEventConfiguration(
-            action_enrichers=list(event_configuration._action_enrichers),
-            memory_enrichers=list(event_configuration._memory_enrichers),
-            action_observers=list(event_configuration._action_observers),
-            memory_observers=list(event_configuration._memory_observers),
-        )

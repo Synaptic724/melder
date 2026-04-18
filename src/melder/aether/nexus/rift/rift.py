@@ -7,7 +7,6 @@ from melder.aether.nexus.rift.frame_link.frame_link_contract import FrameLinkCon
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.rift_space.capability_rift_space import CapabilityRiftSpace
 from melder.aether.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
-from melder.aether.nexus.rift.rift_space.rift_event_configuration import RiftEventConfiguration
 from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -704,7 +703,7 @@ class Rift(Cleanable, IRift):
         Contract:
             - Instantiates exactly one primary room from the configured
               `space_type`.
-            - Uses the configured space name and a cloned event configuration.
+            - Uses the configured space name.
             - Returns the resulting room so the Rift can own it directly as its
               immutable primary space.
             - Current mapping is:
@@ -722,59 +721,25 @@ class Rift(Cleanable, IRift):
         self.check_cleaned()
         configured_space_type = self._configuration.get_property("space_type")
         configured_space_name = self._configuration.get_property("space_name")
-        configured_event_configuration = self._configuration.get_property(
-            "event_configuration"
-        )
-        cloned_event_configuration = self._clone_rift_event_configuration(
-            configured_event_configuration
-        )
         if configured_space_type == RiftSpaceType.codegen:
             primary_space = CodegenRiftSpace(
                 owner_rift_id=self._id,
                 space_name=configured_space_name,
-                event_configuration=cloned_event_configuration,
                 space_id=space_id,
             )
         elif configured_space_type == RiftSpaceType.capability:
             primary_space = CapabilityRiftSpace(
                 owner_rift_id=self._id,
                 space_name=configured_space_name,
-                event_configuration=cloned_event_configuration,
                 space_id=space_id,
             )
         else:
             primary_space = StaticRiftSpace(
                 owner_rift_id=self._id,
                 space_name=configured_space_name,
-                event_configuration=cloned_event_configuration,
                 space_id=space_id,
             )
         return primary_space
-
-    @staticmethod
-    def _clone_rift_event_configuration(
-            event_configuration: Optional[object],
-    ) -> RiftEventConfiguration:
-        """
-        Internal
-
-        Clone the configured primary-space event configuration.
-
-        Args:
-            event_configuration:
-                Optional source room-event configuration.
-
-        Returns:
-            RiftEventConfiguration: Detached room-event configuration.
-        """
-        if event_configuration is None:
-            return RiftEventConfiguration()
-        return RiftEventConfiguration(
-            action_enrichers=list(event_configuration._action_enrichers),
-            memory_enrichers=list(event_configuration._memory_enrichers),
-            action_observers=list(event_configuration._action_observers),
-            memory_observers=list(event_configuration._memory_observers),
-        )
     def get_nexus_frame(self, frame_name: Optional[str] = None) -> IAethericFrame:
         """
         Internal

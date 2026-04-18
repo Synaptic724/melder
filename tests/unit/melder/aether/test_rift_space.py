@@ -74,6 +74,7 @@ def test_rift_space_exposes_properties_and_cleanup_cleans_owned_state(monkeypatc
     assert space.space_name == "ops"
     assert space.owner_rift_id == "rift-1"
     assert space.frame_viewer is static_viewer
+    assert space.memory_system is space._memory_system
     assert space.workstation is space._workstation
     assert space.command_system is space._command_system
 
@@ -91,6 +92,7 @@ def test_rift_space_exposes_properties_and_cleanup_cleans_owned_state(monkeypatc
     assert space._metadata is None
     assert space._frame_viewer is None
     assert space._selected_target_ids_by_frame_name is None
+    assert space._memory_system is None
     assert space._event_callbacks_by_subscription_id is None
     assert space._workstation is None
     assert space._command_system is None
