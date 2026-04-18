@@ -119,7 +119,9 @@ class CapabilityRiftJsonBench:
         self.space = self.rift.space
         if not isinstance(self.space, CapabilityRiftSpace):
             raise RuntimeError("Capability Rift bench did not create a capability room.")
-        self.viewer = self.space.get_required_frame_viewer()
+        self.viewer = self.space.frame_viewer
+        if self.viewer is None:
+            raise RuntimeError("Capability Rift bench room has no attached viewer.")
         self.command = self.space.command_system
         self.workstation = self.space.workstation
         self.manifest = self._build_manifest()

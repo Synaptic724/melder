@@ -93,7 +93,6 @@ class RiftSpace(Cleanable, IRiftSpace):
         "_frame_viewer",
         "_rift_gate",
         "_projection_sets_by_frame_name",
-        "_selected_target_ids_by_frame_name",
         "_memory_system",
         "_event_system",
         "_workstation",
@@ -152,7 +151,6 @@ class RiftSpace(Cleanable, IRiftSpace):
         self._frame_viewer: Optional[FrameViewer] = None
         self._rift_gate: Optional[IRiftGate] = rift_gate
         self._projection_sets_by_frame_name: Dict[str, FrameProjectionSet] = {}
-        self._selected_target_ids_by_frame_name: Dict[str, List[str]] = {}
         self._memory_system: IRiftMemorySystem = RiftMemorySystem(
             rift_id=self._owner_rift_id,
             space_type=self._space_kind,
@@ -208,8 +206,6 @@ class RiftSpace(Cleanable, IRiftSpace):
                 projection_set.cleanup()
             self._projection_sets_by_frame_name.clear()
             self._projection_sets_by_frame_name = None
-            self._selected_target_ids_by_frame_name.clear()
-            self._selected_target_ids_by_frame_name = None
             self._memory_system.cleanup()
             self._memory_system = None
             self._event_system = None
@@ -504,27 +500,6 @@ class RiftSpace(Cleanable, IRiftSpace):
         """
         return self.get_required_frame_projection_set(frame_name).codegen_projection
 
-    def get_default_runtime_frame_name(self) -> str:
-        """
-        Return the default runtime frame name for explicit-id room operations.
-
-        Contract:
-            - Uses the sole projection-set key when exactly one frame is
-              targeted.
-            - Falls back to the viewer default frame when multiple projections
-              exist and the viewer is attached.
-
-        Returns:
-            str: Default runtime frame name.
-        """
-        self.check_cleaned()
-        with self._lock:
-            if len(self._projection_sets_by_frame_name) == 1:
-                return next(iter(self._projection_sets_by_frame_name.keys()))
-            if self._frame_viewer is not None and self._frame_viewer.default_view_frame_name is not None:
-                return self._frame_viewer.default_view_frame_name
-            raise ValueError("RiftSpace has no default runtime frame.")
-
     def _bind_rift_gate_to_frame_viewer(self, frame_viewer: FrameViewer) -> None:
         """
         Bind the room's Rift gate to one attached viewer when supported.
@@ -538,262 +513,7 @@ class RiftSpace(Cleanable, IRiftSpace):
         """
         if self._rift_gate is None:
             return
-        if hasattr(frame_viewer, "bind_rift_gate"):
-            frame_viewer.bind_rift_gate(self._rift_gate)
-
-    def list_frame_names(self) -> List[str]:
-        """
-        Internal
-
-        Return the assigned frame names visible through the attached viewer.
-
-        Returns:
-            List[str]: Assigned frame names.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self.get_required_frame_viewer().list_frame_names()
-
-    def list_available_targets(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-            profile_name: Optional[str] = None,
-            source_kind: Optional[str] = None,
-    ) -> List[object]:
-        """
-        Internal
-
-        Return available targets from the attached viewer.
-
-        Args:
-            frame_name:
-                Optional assigned frame name. When omitted, the default
-                assigned view is used.
-            profile_name:
-                Optional active local view profile name.
-            source_kind:
-                Optional target-kind filter.
-
-        Returns:
-            List[object]: Available targets from the attached viewer.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self.get_required_frame_viewer().execute_method(
-                "list_targets",
-                frame_name=frame_name,
-                profile_name=profile_name,
-                source_kind=source_kind,
-            )
-
-    def describe_available_targets(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-            profile_name: Optional[str] = None,
-            source_kind: Optional[str] = None,
-    ) -> List[Dict[str, object]]:
-        """
-        Internal
-
-        Return profile-shaped target descriptions from the attached viewer.
-
-        Args:
-            frame_name:
-                Optional assigned frame name. When omitted, the default
-                assigned view is used.
-            profile_name:
-                Optional active local view profile name.
-            source_kind:
-                Optional target-kind filter.
-
-        Returns:
-            List[Dict[str, object]]: Available target descriptions.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self.get_required_frame_viewer().execute_method(
-                "describe_targets",
-                frame_name=frame_name,
-                profile_name=profile_name,
-                source_kind=source_kind,
-            )
-
-    def get_required_frame_viewer(self) -> FrameViewer:
-        """
-        Internal
-
-        Return the attached frame viewer or raise.
-
-        Returns:
-            FrameViewer: Attached frame viewer.
-        """
-        self.check_cleaned()
-        with self._lock:
-            if self._frame_viewer is None:
-                raise ValueError(
-                    "RiftSpace '{0}' has no attached frame viewer.".format(self._space_id)
-                )
-            return self._frame_viewer
-
-    def list_selected_target_ids(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> List[str]:
-        """
-        Internal
-
-        Return selected target ids for one frame or for the default view frame.
-
-        Args:
-            frame_name:
-                Optional assigned frame name. When omitted, the default viewer
-                frame is used.
-
-        Returns:
-            List[str]: Selected target ids.
-        """
-        self.check_cleaned()
-        with self._lock:
-            selected_frame_name = (
-                frame_name
-                if frame_name is not None
-                else self.get_required_frame_viewer().default_view_frame_name
-            )
-            if selected_frame_name is None:
-                raise ValueError("RiftSpace has no default selected frame.")
-            return list(self._selected_target_ids_by_frame_name.get(selected_frame_name, []))
-
-    def select_target(
-            self,
-            target_id: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> None:
-        """
-        Internal
-
-        Select one available target through the attached viewer.
-
-        Args:
-            target_id:
-                Available target id to select.
-            frame_name:
-                Optional assigned frame name. When omitted, the default viewer
-                frame is used.
-
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        with self._lock:
-            if not target_id:
-                raise ValueError("target_id cannot be empty.")
-            viewer = self.get_required_frame_viewer()
-            selected_frame_name = frame_name or viewer.default_view_frame_name
-            if selected_frame_name is None:
-                raise ValueError("RiftSpace has no default selected frame.")
-            target_ids = [
-                frame_link.link_id
-                for frame_link in viewer.execute_method(
-                    "list_targets",
-                    frame_name=selected_frame_name
-                )
-            ]
-            if target_id not in target_ids:
-                raise ValueError(
-                    "Target '{0}' was not found in frame '{1}'.".format(
-                        target_id,
-                        selected_frame_name,
-                    )
-                )
-            selected_target_ids = self._selected_target_ids_by_frame_name.setdefault(
-                selected_frame_name,
-                [],
-            )
-            if target_id in selected_target_ids:
-                return
-            selected_target_ids.append(target_id)
-
-    def clear_selected_targets(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> None:
-        """
-        Internal
-
-        Clear selected target ids for one frame or for every frame.
-
-        Args:
-            frame_name:
-                Optional assigned frame name. When omitted, clears every frame's
-                selected target ids.
-
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        with self._lock:
-            if frame_name is None:
-                self._selected_target_ids_by_frame_name.clear()
-                return
-            self._selected_target_ids_by_frame_name.pop(frame_name, None)
-
-    def describe_selected_targets(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> List[Dict[str, object]]:
-        """
-        Internal
-
-        Return descriptions for the currently selected targets.
-
-        Args:
-            frame_name:
-                Optional assigned frame name. When omitted, the default viewer
-                frame is used.
-
-        Returns:
-            List[Dict[str, object]]: Selected target descriptions.
-        """
-        self.check_cleaned()
-        with self._lock:
-            viewer = self.get_required_frame_viewer()
-            selected_frame_name = frame_name or viewer.default_view_frame_name
-            if selected_frame_name is None:
-                raise ValueError("RiftSpace has no default selected frame.")
-            target_descriptions_by_id = {
-                description["target_id"]: description
-                for description in viewer.execute_method(
-                    "describe_targets",
-                    frame_name=selected_frame_name,
-                )
-            }
-            selected_descriptions: List[Dict[str, object]] = []
-            for target_id in self._selected_target_ids_by_frame_name.get(selected_frame_name, []):
-                try:
-                    description = target_descriptions_by_id[target_id]
-                except KeyError as exc:
-                    raise ValueError(
-                        "Target '{0}' was not found in frame '{1}'.".format(
-                            target_id,
-                            selected_frame_name,
-                        )
-                    ) from exc
-                selected_descriptions.append(
-                    {
-                        "frame_name": selected_frame_name,
-                        "target_id": description["target_id"],
-                        "source_kind": description["source_kind"],
-                        "source_id": description["source_id"],
-                        "display_name": description["display_name"],
-                    }
-                )
-            return selected_descriptions
+        frame_viewer.bind_rift_gate(self._rift_gate)
 
     @property
     def event_system(self) -> IRiftEventSystem:

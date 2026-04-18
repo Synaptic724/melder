@@ -85,7 +85,6 @@ def test_rift_space_exposes_properties_and_cleanup_cleans_owned_state(monkeypatc
     assert space._space_kind is None
     assert space._metadata is None
     assert space._frame_viewer is None
-    assert space._selected_target_ids_by_frame_name is None
     assert space._memory_system is None
     assert space._event_system is None
     assert space._workstation is None
@@ -93,7 +92,7 @@ def test_rift_space_exposes_properties_and_cleanup_cleans_owned_state(monkeypatc
     assert space._space_id is None
 
 
-def test_rift_space_internal_viewer_replacement_and_target_guardrails_work(monkeypatch) -> None:
+def test_rift_space_internal_viewer_replacement_guardrails_work(monkeypatch) -> None:
     class _BaseSpace(RiftSpace):
         def _create_command_system(self):
             return SimpleNamespace(cleanup=lambda: None)
@@ -120,78 +119,6 @@ def test_rift_space_internal_viewer_replacement_and_target_guardrails_work(monke
     space._clear_frame_viewer()
     assert cleaned == [first_viewer, second_viewer]
     space._clear_frame_viewer()
-
-    space._frame_viewer = SimpleNamespace(default_view_frame_name=None)
-    with pytest.raises(ValueError, match="RiftSpace has no default selected frame."):
-        space.list_selected_target_ids()
-
-    with pytest.raises(ValueError, match="RiftSpace has no default selected frame."):
-        space.select_target("target-1")
-
-    space._selected_target_ids_by_frame_name = {"ops": ["missing"]}
-    space._frame_viewer = SimpleNamespace(
-        default_view_frame_name="ops",
-        execute_method=lambda *args, **kwargs: [],
-    )
-    with pytest.raises(ValueError, match="RiftSpace '"):
-        StaticRiftSpace("rift-2").get_required_frame_viewer()
-    with pytest.raises(ValueError, match="target_id cannot be empty."):
-        space.select_target("")
-    with pytest.raises(ValueError, match="Target 'target-1' was not found in frame 'ops'."):
-        space.select_target("target-1")
-    with pytest.raises(ValueError, match="Target 'missing' was not found in frame 'ops'."):
-        space.describe_selected_targets()
-    space._frame_viewer = SimpleNamespace(default_view_frame_name=None, execute_method=lambda *args, **kwargs: [])
-    with pytest.raises(ValueError, match="RiftSpace has no default selected frame."):
-        space.describe_selected_targets()
-
-
-def test_rift_space_viewer_and_target_success_paths_work() -> None:
-    space = StaticRiftSpace("rift-1")
-    available_targets = [
-        SimpleNamespace(link_id="target-1", source_kind="spell", source_id="spell-1"),
-        SimpleNamespace(link_id="target-2", source_kind="conduit", source_id="conduit-1"),
-    ]
-    described_targets = [
-        {
-            "target_id": "target-1",
-            "source_kind": "spell",
-            "source_id": "spell-1",
-            "display_name": "spell_one",
-        }
-    ]
-    fake_viewer = SimpleNamespace(
-        default_view_frame_name="ops",
-        list_frame_names=lambda: ["ops"],
-        execute_method=lambda method_name, **kwargs: (
-            available_targets if method_name == "list_targets" else described_targets
-        ),
-    )
-    space._frame_viewer = fake_viewer
-
-    assert space.list_frame_names() == ["ops"]
-    assert space.list_available_targets() == available_targets
-    assert space.describe_available_targets() == described_targets
-    assert space.get_required_frame_viewer() is fake_viewer
-
-    space.select_target("target-1")
-    space.select_target("target-1")
-    assert space.list_selected_target_ids() == ["target-1"]
-    assert space.describe_selected_targets() == [
-        {
-            "frame_name": "ops",
-            "target_id": "target-1",
-            "source_kind": "spell",
-            "source_id": "spell-1",
-            "display_name": "spell_one",
-        }
-    ]
-
-    space.clear_selected_targets(frame_name="ops")
-    assert space.list_selected_target_ids() == []
-    space._selected_target_ids_by_frame_name = {"ops": ["target-1"], "finance": ["target-2"]}
-    space.clear_selected_targets()
-    assert space._selected_target_ids_by_frame_name == {}
 
 
 def test_rift_space_event_system_registry_and_event_emission_work() -> None:
