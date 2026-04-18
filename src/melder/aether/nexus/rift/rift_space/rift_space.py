@@ -109,7 +109,6 @@ class RiftSpace(Cleanable, IRiftSpace):
             metadata: Optional[Dict[str, object]] = None,
             frame_viewer: Optional[FrameViewer] = None,
             rift_gate: Optional[IRiftGate] = None,
-            event_system: Optional[IRiftEventSystem] = None,
             space_id: Optional[str] = None,
     ) -> None:
         """
@@ -130,8 +129,6 @@ class RiftSpace(Cleanable, IRiftSpace):
                 Optional attached frame-surface viewer for this space.
             rift_gate:
                 Optional Rift-owned gate for room-local admission control.
-            event_system:
-                Optional room-local event system.
             space_id:
                 Optional explicit room id. When omitted a new id is created.
 
@@ -140,9 +137,7 @@ class RiftSpace(Cleanable, IRiftSpace):
 
         Contract:
             - Copies incoming metadata into a room-owned mutable dict.
-            - Uses the supplied event system when provided.
-            - Creates and owns a default `RiftEventSystem` when none is
-              supplied.
+            - Creates and owns one room-local `RiftEventSystem`.
 
         Raises:
             ValueError: If `owner_rift_id` is empty.
@@ -167,14 +162,10 @@ class RiftSpace(Cleanable, IRiftSpace):
             rift_id=self._owner_rift_id,
             space_type=self._space_kind,
         )
-        self._event_system: IRiftEventSystem = (
-            event_system
-            if event_system is not None
-            else RiftEventSystem(
-                rift_id=self._owner_rift_id,
-                space_id=self._space_id,
-                space_kind=self._space_kind,
-            )
+        self._event_system: IRiftEventSystem = RiftEventSystem(
+            rift_id=self._owner_rift_id,
+            space_id=self._space_id,
+            space_kind=self._space_kind,
         )
         self._workstation: Workstation = Workstation(
             self._space_id,

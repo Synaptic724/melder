@@ -6,9 +6,6 @@ import pytest
 from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
     StaticFrameViewer,
 )
-from melder.aether.nexus.rift.rift_space.event_system.rift_event_system import (
-    RiftEventSystem,
-)
 from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
 from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
 
@@ -31,24 +28,21 @@ def test_rift_space_rejects_empty_owner_and_invalid_frame_viewer() -> None:
 
 
 def test_rift_space_exposes_space_kind_metadata_and_event_system() -> None:
-    event_system = RiftEventSystem(
-        rift_id="rift-1",
-        space_id="space-custom",
-        space_kind="static",
-    )
     metadata = {"mode": "safe"}
     space = StaticRiftSpace(
         "rift-1",
         space_name="ops",
         metadata=metadata,
-        event_system=event_system,
         space_id="space-custom",
     )
 
     assert space.space_kind == "static"
     assert space.metadata == {"mode": "safe"}
     assert space.metadata is not metadata
-    assert space.event_system is event_system
+    assert space.event_system is space._event_system
+    assert space.event_system.rift_id == "rift-1"
+    assert space.event_system.space_id == "space-custom"
+    assert space.event_system.space_kind == "static"
 
 
 def test_rift_space_exposes_properties_and_cleanup_cleans_owned_state(monkeypatch) -> None:

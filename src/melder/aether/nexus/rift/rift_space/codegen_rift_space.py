@@ -7,7 +7,7 @@ from melder.aether.nexus.rift.command_system.codegen_command_system import (
     CodegenCommandSystem,
 )
 from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
-from melder.utilities.interfaces.interfaces import ICodegenRiftSpace, IRiftEventSystem, IRiftGate
+from melder.utilities.interfaces.interfaces import ICodegenRiftSpace, IRiftGate
 
 
 class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
@@ -36,7 +36,6 @@ class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
             space_name: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
             rift_gate: Optional[IRiftGate] = None,
-            event_system: Optional[IRiftEventSystem] = None,
             space_id: Optional[str] = None,
     ) -> None:
         """
@@ -53,8 +52,6 @@ class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
                 Extensible room metadata.
             rift_gate:
                 Optional Rift-owned gate bound to this room.
-            event_system:
-                Optional room-local event system.
             space_id:
                 Optional explicit room id.
 
@@ -72,7 +69,6 @@ class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
             space_kind="codegen",
             metadata=metadata,
             rift_gate=rift_gate,
-            event_system=event_system,
             space_id=space_id,
         )
 
