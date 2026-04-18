@@ -5,6 +5,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.rift.frame_link.frame_link_contract import FrameLinkContract
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
+from melder.aether.nexus.rift.projection.frame_projection_set import FrameProjectionSet
 from melder.aether.nexus.rift.rift_gate.rift_gate import RiftGate
 from melder.aether.nexus.rift.rift_space.capability_rift_space import CapabilityRiftSpace
 from melder.aether.nexus.rift.rift_space.codegen_rift_space import CodegenRiftSpace
@@ -457,7 +458,7 @@ class Rift(Cleanable, IRift):
                 self._nexus._target_frame_ref_counts,
                 frame_name,
             )
-        self.attach_frame_viewer()
+        self.refresh_runtime_projections()
 
     def create_frame_viewer(
             self,
@@ -588,6 +589,44 @@ class Rift(Cleanable, IRift):
         )
         space.attach_frame_viewer(frame_viewer)
         return frame_viewer
+
+    def refresh_runtime_projections(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+            cached: bool = False,
+            view_profile_name: str = "general",
+            viewer_profile_name: str = "general",
+    ) -> Dict[str, FrameProjectionSet]:
+        """
+        Build and attach fresh runtime projections for this Rift.
+
+        Args:
+            frame_name:
+                Optional single-frame refresh scope.
+            cached:
+                Whether the viewer side should use the cached builder path.
+            view_profile_name:
+                View profile name applied to the rebuilt viewer.
+            viewer_profile_name:
+                Viewer profile name applied to the rebuilt viewer.
+
+        Returns:
+            Dict[str, FrameProjectionSet]: Fresh projection sets keyed by frame name.
+        """
+        self.check_cleaned()
+        projection_sets_by_frame_name = self._nexus.create_frame_projection_sets_for_rift(
+            self._id,
+            frame_name=frame_name,
+        )
+        space = self.space
+        space.replace_projection_sets(projection_sets_by_frame_name)
+        self.attach_frame_viewer(
+            cached=cached,
+            view_profile_name=view_profile_name,
+            viewer_profile_name=viewer_profile_name,
+        )
+        return projection_sets_by_frame_name
 
     def get_frame_viewer(self) -> FrameViewer:
         """
@@ -749,18 +788,21 @@ class Rift(Cleanable, IRift):
             primary_space = CodegenRiftSpace(
                 owner_rift_id=self._id,
                 space_name=configured_space_name,
+                rift_gate=self._rift_gate,
                 space_id=space_id,
             )
         elif configured_space_type == RiftSpaceType.capability:
             primary_space = CapabilityRiftSpace(
                 owner_rift_id=self._id,
                 space_name=configured_space_name,
+                rift_gate=self._rift_gate,
                 space_id=space_id,
             )
         else:
             primary_space = StaticRiftSpace(
                 owner_rift_id=self._id,
                 space_name=configured_space_name,
+                rift_gate=self._rift_gate,
                 space_id=space_id,
             )
         return primary_space

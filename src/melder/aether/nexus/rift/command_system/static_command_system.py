@@ -146,10 +146,10 @@ class StaticCommandSystem(CommandSystem):
                 If the spell is not published in the selected frame or is not
                 currently live.
         """
-        viewer = self._space.get_required_frame_viewer()
-        resolved_frame_name, spell_record = viewer._get_required_spell_record(
+        resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+        spell_record = self._get_required_published_spell_record_by_source_id(
             spell_source_id,
-            frame_name=frame_name,
+            frame_name=resolved_frame_name,
         )
         return self.get_spell_by_index_id(
             spell_record.spell_index_id,
@@ -179,8 +179,9 @@ class StaticCommandSystem(CommandSystem):
         if not spell_source_id:
             raise ValueError("spell_source_id cannot be empty.")
         spellbook_id, spell_id = spell_source_id.split(":", 1)
-        viewer = self._space.get_required_frame_viewer()
-        descriptor = viewer._get_required_frame_descriptor(resolved_frame_name)
+        descriptor = self._space.get_required_command_projection(
+            resolved_frame_name
+        ).frame_descriptor
         matching_spell_records = [
             spell_record
             for spell_record in descriptor.spell_records_by_key.values()
@@ -236,8 +237,9 @@ class StaticCommandSystem(CommandSystem):
             dict: Static spell status payload.
         """
         resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-        viewer = self._space.get_required_frame_viewer()
-        descriptor = viewer._get_required_frame_descriptor(resolved_frame_name)
+        descriptor = self._space.get_required_command_projection(
+            resolved_frame_name
+        ).frame_descriptor
         matching_spell_records = [
             spell_record
             for spell_record in descriptor.spell_records_by_key.values()
@@ -290,8 +292,9 @@ class StaticCommandSystem(CommandSystem):
             dict: Static spell status payload.
         """
         resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-        viewer = self._space.get_required_frame_viewer()
-        descriptor = viewer._get_required_frame_descriptor(resolved_frame_name)
+        descriptor = self._space.get_required_command_projection(
+            resolved_frame_name
+        ).frame_descriptor
         matching_spell_records = [
             spell_record
             for spell_record in descriptor.spell_records_by_key.values()
@@ -357,8 +360,9 @@ class StaticCommandSystem(CommandSystem):
             spell_index_id,
             frame_name=resolved_frame_name,
         )
-        viewer = self._space.get_required_frame_viewer()
-        descriptor = viewer._get_required_frame_descriptor(resolved_frame_name)
+        descriptor = self._space.get_required_command_projection(
+            resolved_frame_name
+        ).frame_descriptor
         matching_spell_records = [
             spell_record
             for spell_record in descriptor.spell_records_by_key.values()

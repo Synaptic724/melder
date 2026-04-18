@@ -1,4 +1,5 @@
 import threading
+import time
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -35,6 +36,10 @@ from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile_builder import (
     FrameViewerProfileBuilder,
 )
+from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
+from melder.aether.nexus.rift.projection.command_projection import CommandProjection
+from melder.aether.nexus.rift.projection.frame_projection_set import FrameProjectionSet
+from melder.aether.nexus.rift.projection.view_projection import ViewProjection
 from melder.aether.nexus.rift.rift_gate_controller.rift_gate_controller import (
     RiftGateController,
 )
@@ -1556,6 +1561,216 @@ class Nexus(Cleanable, INexus):
         )
         return registered_configuration
 
+    @staticmethod
+    def _clone_frame_acl_configuration(
+            configuration: FrameACLConfiguration,
+            *,
+            reason: str,
+    ) -> FrameACLConfiguration:
+        """
+        Return a detached ACL configuration clone for projection-owned state.
+
+        Args:
+            configuration:
+                Source ACL configuration.
+            reason:
+                Clone reason recorded on the detached bundle.
+
+        Returns:
+            FrameACLConfiguration: Detached ACL configuration clone.
+        """
+        return FrameACLConfiguration.create_from_selected_configurations(
+            frame_name=configuration.frame_name,
+            view_configuration=configuration.view_configuration,
+            command_configuration=configuration.command_configuration,
+            codegen_configuration=configuration.codegen_configuration,
+            reason=reason,
+            locked=True,
+            configuration_id=configuration.configuration_id,
+        )
+
+    @staticmethod
+    def _clone_compiled_access_surface(
+            compiled_access_surface: CompiledFrameACLAccessSurface,
+    ) -> CompiledFrameACLAccessSurface:
+        """
+        Return a detached compiled ACL surface clone for projection-owned state.
+
+        Args:
+            compiled_access_surface:
+                Source compiled ACL access surface.
+
+        Returns:
+            CompiledFrameACLAccessSurface: Detached compiled ACL surface clone.
+        """
+        return CompiledFrameACLAccessSurface(
+            frame_name=compiled_access_surface.frame_name,
+            configuration_id=compiled_access_surface.configuration_id,
+            view_profile_name=compiled_access_surface.view_profile_name,
+            view_profile_version=compiled_access_surface.view_profile_version,
+            codegen_profile_name=compiled_access_surface.codegen_profile_name,
+            codegen_profile_version=compiled_access_surface.codegen_profile_version,
+            command_frame_enabled=compiled_access_surface.command_frame_enabled,
+            allowed_kinds=compiled_access_surface.allowed_kinds,
+            allowed_commands=compiled_access_surface.allowed_commands,
+            frame_payload_fields=compiled_access_surface.frame_payload_fields,
+            visible_conduit_ids=compiled_access_surface.visible_conduit_ids,
+            visible_spell_keys=compiled_access_surface.visible_spell_keys,
+            visible_spell_index_ids=compiled_access_surface.visible_spell_index_ids,
+            enabled_conduit_ids=compiled_access_surface.enabled_conduit_ids,
+            enabled_spell_index_ids=compiled_access_surface.enabled_spell_index_ids,
+            conduit_payload_sections_by_id=(
+                compiled_access_surface.conduit_payload_sections_by_id
+            ),
+            spell_payload_sections_by_key=(
+                compiled_access_surface.spell_payload_sections_by_key
+            ),
+            metadata=compiled_access_surface.metadata,
+        )
+
+    def _create_frame_projection_set(
+            self,
+            *,
+            frame_name: str,
+            contract_selection: Dict[str, str],
+    ) -> FrameProjectionSet:
+        """
+        Build one detached projection set for a targeted frame.
+
+        Args:
+            frame_name:
+                Target frame name.
+            contract_selection:
+                Selected contract names for `view`, `command`, and `codegen`.
+
+        Returns:
+            FrameProjectionSet: Fresh projection set for the frame.
+        """
+        descriptor = self._get_required_frame_descriptor(frame_name)
+        configuration = self._frame_acl_manager._get_current_frame_acl_configuration(
+            frame_name,
+            view_contract_name=contract_selection["view"],
+            command_contract_name=contract_selection["command"],
+            codegen_contract_name=contract_selection["codegen"],
+        )
+        self._frame_acl_manager._validate_frame_acl_configuration_against_descriptor(
+            frame_name,
+            configuration,
+            descriptor,
+        )
+        compiler = FrameACLCompiler(self._frame_acl_manager.frame_acl_profile_builder)
+        compiled_access_surface: Optional[CompiledFrameACLAccessSurface] = None
+        try:
+            compiled_access_surface = compiler.compile_frame_access_surface(
+                descriptor,
+                configuration,
+            )
+            view_projection = ViewProjection(
+                frame_name=frame_name,
+                frame_descriptor=descriptor,
+                frame_acl_configuration=self._clone_frame_acl_configuration(
+                    configuration,
+                    reason="view_projection_clone",
+                ),
+                compiled_access_surface=self._clone_compiled_access_surface(
+                    compiled_access_surface
+                ),
+                metadata={"surface": "view"},
+            )
+            command_projection = CommandProjection(
+                frame_name=frame_name,
+                frame_descriptor=descriptor,
+                frame_acl_configuration=self._clone_frame_acl_configuration(
+                    configuration,
+                    reason="command_projection_clone",
+                ),
+                compiled_access_surface=self._clone_compiled_access_surface(
+                    compiled_access_surface
+                ),
+                metadata={"surface": "command"},
+            )
+            codegen_projection = CodegenProjection(
+                frame_name=frame_name,
+                frame_descriptor=descriptor,
+                frame_acl_configuration=self._clone_frame_acl_configuration(
+                    configuration,
+                    reason="codegen_projection_clone",
+                ),
+                compiled_access_surface=self._clone_compiled_access_surface(
+                    compiled_access_surface
+                ),
+                metadata={"surface": "codegen"},
+            )
+        finally:
+            compiler.cleanup()
+            if compiled_access_surface is not None:
+                compiled_access_surface.cleanup()
+            configuration.cleanup()
+        return FrameProjectionSet(
+            frame_name=frame_name,
+            view_projection=view_projection,
+            command_projection=command_projection,
+            codegen_projection=codegen_projection,
+            metadata={
+                "selected_contract_names": dict(contract_selection),
+            },
+        )
+
+    def create_frame_projection_sets(
+            self,
+            frame_names: Sequence[str],
+            *,
+            contract_names_by_frame_name: Optional[Dict[str, str]] = None,
+    ) -> Dict[str, FrameProjectionSet]:
+        """
+        Build projection sets for the requested frame names.
+
+        Args:
+            frame_names:
+                Frame names to project.
+            contract_names_by_frame_name:
+                Optional per-frame selected ACL contract names.
+
+        Returns:
+            Dict[str, FrameProjectionSet]: Fresh projection sets keyed by frame name.
+        """
+        self.check_cleaned()
+        if isinstance(frame_names, str) or not isinstance(frame_names, Sequence):
+            raise TypeError("frame_names must be a sequence.")
+        normalized_frame_names: List[str] = []
+        normalized_contract_names_by_frame_name: Dict[str, Dict[str, str]] = {}
+        for frame_name in frame_names:
+            if not isinstance(frame_name, str) or not frame_name:
+                raise ValueError("frame_names must contain non-empty strings.")
+            normalized_frame_names.append(frame_name)
+            normalized_contract_names_by_frame_name[frame_name] = {
+                "view": "default",
+                "command": "default",
+                "codegen": "default",
+            }
+        if contract_names_by_frame_name is not None:
+            if not isinstance(contract_names_by_frame_name, dict):
+                raise TypeError(
+                    "contract_names_by_frame_name must be a dict when provided."
+                )
+            for frame_name, contract_name in contract_names_by_frame_name.items():
+                if frame_name not in normalized_contract_names_by_frame_name:
+                    raise ValueError(
+                        "contract_names_by_frame_name contains unknown frame '{0}'.".format(
+                            frame_name
+                        )
+                    )
+                normalized_contract_names_by_frame_name[frame_name] = (
+                    self._normalize_acl_selection_input(contract_name)
+                )
+        return {
+            frame_name: self._create_frame_projection_set(
+                frame_name=frame_name,
+                contract_selection=normalized_contract_names_by_frame_name[frame_name],
+            )
+            for frame_name in normalized_frame_names
+        }
+
     def insert_head_frame_acl_configuration(
             self,
             frame_name: str,
@@ -1634,33 +1849,10 @@ class Nexus(Cleanable, INexus):
                 Derived projected frame viewer.
         """
         self.check_cleaned()
-        if isinstance(frame_names, str) or not isinstance(frame_names, Sequence):
-            raise TypeError("frame_names must be a sequence.")
-        for frame_name in frame_names:
-            if not isinstance(frame_name, str) or not frame_name:
-                raise ValueError("frame_names must contain non-empty strings.")
-        normalized_contract_names_by_frame_name: Dict[str, Dict[str, str]] = {}
-        for frame_name in frame_names:
-            normalized_contract_names_by_frame_name[frame_name] = {
-                "view": "default",
-                "command": "default",
-                "codegen": "default",
-            }
-        if contract_names_by_frame_name is not None:
-            if not isinstance(contract_names_by_frame_name, dict):
-                raise TypeError(
-                    "contract_names_by_frame_name must be a dict when provided."
-                )
-            for frame_name, contract_name in contract_names_by_frame_name.items():
-                if frame_name not in normalized_contract_names_by_frame_name:
-                    raise ValueError(
-                        "contract_names_by_frame_name contains unknown frame '{0}'.".format(
-                            frame_name
-                        )
-                    )
-                normalized_contract_names_by_frame_name[frame_name] = (
-                    self._normalize_acl_selection_input(contract_name)
-                )
+        projection_sets_by_frame_name = self.create_frame_projection_sets(
+            frame_names,
+            contract_names_by_frame_name=contract_names_by_frame_name,
+        )
         viewer_profile_builder = FrameViewerProfileBuilder()
         viewer_profile = viewer_profile_builder.get_required_profile(
             viewer_profile_name
@@ -1669,66 +1861,51 @@ class Nexus(Cleanable, INexus):
             profile_name: viewer_profile_builder.get_required_profile(profile_name).clone()
             for profile_name in viewer_profile_builder.list_profile_names()
         }
-        frame_descriptors_by_name: Dict[str, FrameDescriptor] = {}
-        frame_acl_configurations_by_frame_name: Dict[str, FrameACLConfiguration] = {}
-        compiled_access_surfaces_by_frame_name: Dict[
-            str,
-            CompiledFrameACLAccessSurface,
-        ] = {}
-        compiler = FrameACLCompiler(self._frame_acl_manager.frame_acl_profile_builder)
         try:
-            for frame_name in frame_names:
-                descriptor = self._get_required_frame_descriptor(frame_name)
-                contract_selection = normalized_contract_names_by_frame_name[frame_name]
-                configuration = self._frame_acl_manager._get_current_frame_acl_configuration(
-                    frame_name,
-                    view_contract_name=contract_selection["view"],
-                    command_contract_name=contract_selection["command"],
-                    codegen_contract_name=contract_selection["codegen"],
-                )
-                self._frame_acl_manager._validate_frame_acl_configuration_against_descriptor(
-                    frame_name,
-                    configuration,
-                    descriptor,
-                )
-                compiled_access_surfaces_by_frame_name[frame_name] = (
-                    compiler.compile_frame_access_surface(
-                        descriptor,
-                        configuration,
-                    )
-                )
-                frame_descriptors_by_name[frame_name] = descriptor
-                frame_acl_configurations_by_frame_name[frame_name] = configuration
             return FrameViewer(
                 profile_builder=FrameViewerProfileBuilder(),
                 active_profiles_by_name=active_profiles_by_name,
-                frame_descriptors_by_name=frame_descriptors_by_name,
+                frame_descriptors_by_name={
+                    frame_name: projection_set.view_projection.frame_descriptor
+                    for frame_name, projection_set in projection_sets_by_frame_name.items()
+                },
                 frame_acl_configurations_by_frame_name=(
-                    frame_acl_configurations_by_frame_name
+                    {
+                        frame_name: self._clone_frame_acl_configuration(
+                            projection_set.view_projection.frame_acl_configuration,
+                            reason="viewer_projection_clone",
+                        )
+                        for frame_name, projection_set in projection_sets_by_frame_name.items()
+                    }
                 ),
                 compiled_access_surfaces_by_frame_name=(
-                    compiled_access_surfaces_by_frame_name
+                    {
+                        frame_name: self._clone_compiled_access_surface(
+                            projection_set.view_projection.compiled_access_surface
+                        )
+                        for frame_name, projection_set in projection_sets_by_frame_name.items()
+                    }
                 ),
                 default_profile_name=viewer_profile.name,
                 selected_profile_names_by_frame_name={
                     frame_name: viewer_profile.name
-                    for frame_name in frame_descriptors_by_name.keys()
+                    for frame_name in projection_sets_by_frame_name.keys()
                 },
                 metadata={
-                    "frame_count": len(frame_descriptors_by_name),
-                    "available_view_count": len(frame_descriptors_by_name),
-                    "assigned_frame_names": tuple(frame_names),
+                    "frame_count": len(projection_sets_by_frame_name),
+                    "available_view_count": len(projection_sets_by_frame_name),
+                    "assigned_frame_names": tuple(projection_sets_by_frame_name.keys()),
                     "acl_selection_by_frame_name": {
-                        frame_name: dict(contract_selection)
-                        for frame_name, contract_selection in (
-                            normalized_contract_names_by_frame_name.items()
+                        frame_name: dict(
+                            projection_set.metadata["selected_contract_names"]
                         )
+                        for frame_name, projection_set in projection_sets_by_frame_name.items()
                     },
                     "contract_names_by_frame_name": {
-                        frame_name: dict(contract_selection)
-                        for frame_name, contract_selection in (
-                            normalized_contract_names_by_frame_name.items()
+                        frame_name: dict(
+                            projection_set.metadata["selected_contract_names"]
                         )
+                        for frame_name, projection_set in projection_sets_by_frame_name.items()
                     },
                     "view_profile_name": view_profile_name,
                     "viewer_profile_name": viewer_profile.name,
@@ -1741,7 +1918,6 @@ class Nexus(Cleanable, INexus):
                 },
             )
         finally:
-            compiler.cleanup()
             viewer_profile_builder.cleanup()
 
     def create_frame_viewer_for_rift(
@@ -1821,6 +1997,47 @@ class Nexus(Cleanable, INexus):
             ),
             default_view_frame_name=default_view_frame_name,
             metadata=current_metadata,
+        )
+
+    def create_frame_projection_sets_for_rift(
+            self,
+            rift_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, FrameProjectionSet]:
+        """
+        Build projection sets from one Rift's current frame contracts.
+
+        Args:
+            rift_id:
+                Existing Rift id whose frame contracts should be projected.
+            frame_name:
+                Optional single-frame scope.
+
+        Returns:
+            Dict[str, FrameProjectionSet]: Projection sets keyed by frame name.
+        """
+        self.check_cleaned()
+        if not rift_id:
+            raise ValueError("rift_id cannot be empty.")
+        rift = self._get_required_rift(rift_id)
+        assigned_frame_names = rift.list_assigned_frame_names()
+        if frame_name is not None:
+            if frame_name not in assigned_frame_names:
+                raise ValueError(
+                    "Frame '{0}' is not assigned to Rift '{1}'.".format(
+                        frame_name,
+                        rift_id,
+                    )
+                )
+            assigned_frame_names = (frame_name,)
+        contract_names_by_frame_name = {
+            assigned_frame_name: rift.get_selected_contract_names(assigned_frame_name)
+            for assigned_frame_name in assigned_frame_names
+        }
+        return self.create_frame_projection_sets(
+            assigned_frame_names,
+            contract_names_by_frame_name=contract_names_by_frame_name,
         )
 
     def create_frame_viewer_for_rift_frame(
@@ -2181,6 +2398,92 @@ class Nexus(Cleanable, INexus):
                 if projected_frame_viewer is not None:
                     projected_frame_viewer.cleanup()
 
+    def _wait_until_rift_gate_is_idle(
+            self,
+            rift_id: str,
+            *,
+            timeout: float = 30.0,
+            interval: float = 0.1,
+    ) -> None:
+        """
+        Wait for one Rift gate to drain active tickets without terminal closure.
+
+        Args:
+            rift_id:
+                Existing Rift id.
+            timeout:
+                Maximum seconds to wait for ticket drain.
+            interval:
+                Poll interval in seconds while draining.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        gate = self.get_rift_gate(rift_id)
+        if gate is None:
+            return
+        deadline = time.monotonic() + timeout
+        while gate.has_active_tickets():
+            if time.monotonic() >= deadline:
+                raise RuntimeError(
+                    "Timeout waiting for Rift gate '{0}' to drain.".format(rift_id)
+                )
+            time.sleep(interval)
+
+    def _refresh_rift_projection_sets_for_frame(
+            self,
+            frame_name: str,
+            *,
+            timeout: float = 30.0,
+            interval: float = 0.1,
+    ) -> None:
+        """
+        Synchronously refresh projection sets for all Rifts targeting one frame.
+
+        Args:
+            frame_name:
+                Target frame whose ACL-driven projections changed.
+            timeout:
+                Maximum seconds to wait per impacted Rift for gate drain.
+            interval:
+                Poll interval while waiting for drain.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if not frame_name:
+            raise ValueError("frame_name cannot be empty.")
+        with self._lock:
+            rifts = list(self._rifts_by_id.values())
+        impacted_rifts = [
+            rift
+            for rift in rifts
+            if frame_name in rift.list_assigned_frame_names()
+        ]
+        disabled_rift_ids: List[str] = []
+        try:
+            for rift in impacted_rifts:
+                self.disable_rift_gate(rift.id)
+                disabled_rift_ids.append(rift.id)
+            for rift in impacted_rifts:
+                self._wait_until_rift_gate_is_idle(
+                    rift.id,
+                    timeout=timeout,
+                    interval=interval,
+                )
+            for rift in impacted_rifts:
+                rift.refresh_runtime_projections(frame_name=frame_name)
+        except Exception:
+            raise
+        finally:
+            for rift_id in disabled_rift_ids:
+                try:
+                    self.enable_rift_gate(rift_id)
+                except Exception:
+                    pass
+
     def _refresh_attached_rift_viewers_for_frame(self, frame_name: str) -> None:
         """
         Reattach live Rift-space viewers affected by one frame ACL change.
@@ -2223,7 +2526,7 @@ class Nexus(Cleanable, INexus):
             None.
         """
         self._invalidate_projected_frame_viewers(frame_name)
-        self._refresh_attached_rift_viewers_for_frame(frame_name)
+        self._refresh_rift_projection_sets_for_frame(frame_name)
 
     def get_nexus_frame_for_rift(
             self,

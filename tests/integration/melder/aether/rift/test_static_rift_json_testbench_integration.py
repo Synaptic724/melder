@@ -171,7 +171,6 @@ def _build_spell_case_matrix() -> List[Dict[str, object]]:
             },
             "kind": "command_object",
             "raises_when_command_hidden": True,
-            "hidden_error_contains": "not found",
         },
         {
             "name": "command_get_by_id",

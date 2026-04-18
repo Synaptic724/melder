@@ -10,6 +10,7 @@ from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
 from melder.utilities.interfaces.interfaces import (
     ICapabilityRiftSpace,
     IRiftEventSystem,
+    IRiftGate,
 )
 
 
@@ -41,6 +42,7 @@ class CapabilityRiftSpace(RiftSpace, ICapabilityRiftSpace):
             *,
             space_name: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
+            rift_gate: Optional[IRiftGate] = None,
             event_system: Optional[IRiftEventSystem] = None,
             space_id: Optional[str] = None,
     ) -> None:
@@ -60,6 +62,8 @@ class CapabilityRiftSpace(RiftSpace, ICapabilityRiftSpace):
                 Optional stable room name.
             metadata:
                 Extensible room metadata.
+            rift_gate:
+                Optional Rift-owned gate bound to this room.
             event_system:
                 Optional room-local event system.
             space_id:
@@ -81,6 +85,7 @@ class CapabilityRiftSpace(RiftSpace, ICapabilityRiftSpace):
             space_name=space_name,
             space_kind="capability",
             metadata=metadata,
+            rift_gate=rift_gate,
             event_system=event_system,
             space_id=space_id,
         )

@@ -23,6 +23,7 @@ from melder.utilities.helpers.class_surface_ast_describer import (
     ClassSurfaceAstDescriber,
 )
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.interfaces.interfaces import IRiftGate
 
 
 class FrameViewer(Cleanable):
@@ -74,6 +75,7 @@ class FrameViewer(Cleanable):
         "_compiled_access_surfaces_by_frame_name",
         "_selected_profiles_by_frame_name",
         "_default_view_frame_name",
+        "_rift_gate",
         "_metadata",
     ]
 
@@ -92,6 +94,7 @@ class FrameViewer(Cleanable):
             ] = None,
             selected_profile_names_by_frame_name: Optional[Dict[str, str]] = None,
             default_view_frame_name: Optional[str] = None,
+            rift_gate: Optional[IRiftGate] = None,
             metadata: Optional[Dict[str, object]] = None,
     ) -> None:
         """
@@ -114,6 +117,8 @@ class FrameViewer(Cleanable):
                 Optional selected profile names keyed by frame name.
             default_view_frame_name:
                 Optional default selected frame name.
+            rift_gate:
+                Optional Rift gate used to coordinate viewer admission.
             metadata:
                 Optional viewer-local metadata.
         """
@@ -164,6 +169,7 @@ class FrameViewer(Cleanable):
                 else None
             )
         )
+        self._rift_gate: Optional[IRiftGate] = rift_gate
         if active_profiles_by_name is not None:
             self._active_profiles_by_name: Dict[str, FrameViewerProfile] = dict(
                 active_profiles_by_name
@@ -237,9 +243,25 @@ class FrameViewer(Cleanable):
             self._selected_profiles_by_frame_name = None
             self._default_profile_name = None
             self._default_view_frame_name = None
+            self._rift_gate = None
             self._metadata = None
             self._viewer_id = None
         self._lock = None
+
+    def bind_rift_gate(self, rift_gate: Optional[IRiftGate]) -> None:
+        """
+        Bind or replace the optional Rift gate used for viewer admission.
+
+        Args:
+            rift_gate:
+                Optional Rift gate to bind.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._rift_gate = rift_gate
 
     @property
     def viewer_id(self) -> str:
@@ -2152,6 +2174,7 @@ class FrameViewer(Cleanable):
                 },
                 selected_profile_names_by_frame_name=self.selected_profile_names_by_frame_name,
                 default_view_frame_name=self._default_view_frame_name,
+                rift_gate=self._rift_gate,
                 metadata=dict(self._metadata),
             )
 
@@ -2690,7 +2713,14 @@ class FrameViewer(Cleanable):
                     handler_name,
                 )
             )
-        return handler(**kwargs)
+        if self._rift_gate is None:
+            return handler(**kwargs)
+        self._rift_gate.admit()
+        self._rift_gate.register_ticket()
+        try:
+            return handler(**kwargs)
+        finally:
+            self._rift_gate.unregister_ticket()
 
     def get_required_active_profile(self, profile_name: str) -> FrameViewerProfile:
         """

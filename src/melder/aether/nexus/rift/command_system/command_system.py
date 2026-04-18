@@ -248,35 +248,11 @@ class CommandSystem(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            selected_frame_name, selected_target_ids = self._resolve_selected_target_ids(
+            frame_link = self._space.get_selected_target_link_for_command(
                 frame_name=frame_name
             )
-            if len(selected_target_ids) == 0:
-                raise ValueError(
-                    "RiftSpace has no selected target in frame '{0}'.".format(
-                        selected_frame_name
-                    )
-                )
-            if len(selected_target_ids) > 1:
-                raise ValueError(
-                    "RiftSpace selected target set is ambiguous in frame '{0}'.".format(
-                        selected_frame_name
-                    )
-                )
-            viewer = self._space.get_required_frame_viewer()
-            for frame_link in viewer.execute_method(
-                    "list_targets",
-                    frame_name=selected_frame_name,
-            ):
-                if frame_link.link_id == selected_target_ids[0]:
-                    self._assert_selected_target_command_enabled(frame_link)
-                    return frame_link
-            raise ValueError(
-                "Selected target '{0}' was not found in frame '{1}'.".format(
-                    selected_target_ids[0],
-                    selected_frame_name,
-                )
-            )
+            self._assert_selected_target_command_enabled(frame_link)
+            return frame_link
 
     def get_selected_target_record(
             self,
@@ -309,11 +285,10 @@ class CommandSystem(Cleanable):
         self.check_cleaned()
         with self._lock:
             selected_target = self.get_selected_target_link(frame_name=frame_name)
-            viewer = self._space.get_required_frame_viewer()
+            descriptor = self._space.get_required_command_projection(
+                selected_target.frame_name
+            ).frame_descriptor
             if selected_target.source_kind == "frame":
-                descriptor = viewer._get_required_frame_descriptor(
-                    selected_target.frame_name
-                )
                 if descriptor.frame_overview is None:
                     raise ValueError(
                         "Frame '{0}' has no published frame overview.".format(
@@ -322,17 +297,20 @@ class CommandSystem(Cleanable):
                     )
                 return descriptor.frame_overview
             if selected_target.source_kind == "conduit":
-                _, conduit_record = viewer._get_required_conduit_record(
-                    selected_target.source_id,
-                    frame_name=selected_target.frame_name,
-                )
-                return conduit_record
+                try:
+                    return descriptor.conduit_records_by_id[selected_target.source_id]
+                except KeyError as exc:
+                    raise ValueError(
+                        "Conduit '{0}' was not found in frame '{1}'.".format(
+                            selected_target.source_id,
+                            selected_target.frame_name,
+                        )
+                    ) from exc
             if selected_target.source_kind == "spell":
-                _, spell_record = viewer._get_required_spell_record(
+                return self._get_required_published_spell_record_by_source_id(
                     selected_target.source_id,
                     frame_name=selected_target.frame_name,
                 )
-                return spell_record
             raise ValueError(
                 "Unsupported selected target kind '{0}'.".format(
                     selected_target.source_kind
@@ -367,9 +345,9 @@ class CommandSystem(Cleanable):
                 "get_selected_target_runtime_object"
             )
             if selected_target.source_kind == "frame":
-                descriptor = self._space.get_required_frame_viewer()._get_required_frame_descriptor(
+                descriptor = self._space.get_required_command_projection(
                     selected_target.frame_name
-                )
+                ).frame_descriptor
                 if descriptor.frame_handle is None:
                     raise ValueError(
                         "Frame '{0}' has no live frame handle.".format(
@@ -1332,10 +1310,13 @@ class CommandSystem(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            viewer = self._space.get_required_frame_viewer()
-            resolved_frame_name, spell_record = viewer._get_required_spell_record(
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            descriptor = self._space.get_required_command_projection(
+                resolved_frame_name
+            ).frame_descriptor
+            spell_record = self._get_required_published_spell_record_by_source_id(
                 spell_source_id,
-                frame_name=frame_name,
+                frame_name=resolved_frame_name,
             )
             self._assert_raw_runtime_object_access_allowed(
                 "get_spell_by_source_id"
@@ -1382,8 +1363,9 @@ class CommandSystem(Cleanable):
                 spell_index_id,
                 frame_name=resolved_frame_name,
             )
-            viewer = self._space.get_required_frame_viewer()
-            descriptor = viewer._get_required_frame_descriptor(resolved_frame_name)
+            descriptor = self._space.get_required_command_projection(
+                resolved_frame_name
+            ).frame_descriptor
             matching_spell_records = [
                 spell_record
                 for spell_record in descriptor.spell_records_by_key.values()
@@ -1760,9 +1742,15 @@ class CommandSystem(Cleanable):
         with self._lock:
             self._command_memory_call_depth = self._command_memory_call_depth + 1
             is_top_level_call = self._command_memory_call_depth == 1
+            rift_gate = self._get_rift_gate_if_available()
         try:
+            if is_top_level_call and rift_gate is not None:
+                rift_gate.admit()
+                rift_gate.register_ticket()
             result = bound_method(*args, **kwargs)
         finally:
+            if is_top_level_call and rift_gate is not None:
+                rift_gate.unregister_ticket()
             with self._lock:
                 self._command_memory_call_depth = self._command_memory_call_depth - 1
         if is_top_level_call:
@@ -1818,6 +1806,18 @@ class CommandSystem(Cleanable):
         except AttributeError:
             return None
 
+    def _get_rift_gate_if_available(self) -> Optional[Any]:
+        """
+        Return the owning room's Rift gate when one is available.
+
+        Returns:
+            Optional[Any]: Room-local Rift gate, or None when unavailable.
+        """
+        try:
+            return self._space.rift_gate
+        except AttributeError:
+            return None
+
     def _resolve_memory_frame_name(
             self,
             frame_name: Optional[str],
@@ -1853,8 +1853,11 @@ class CommandSystem(Cleanable):
         Returns:
             Tuple[str, Tuple[str, ...]]: Resolved frame name and selected ids.
         """
-        viewer = self._space.get_required_frame_viewer()
-        selected_frame_name = frame_name or viewer.default_view_frame_name
+        selected_frame_name = (
+            frame_name
+            if frame_name is not None
+            else self._space.get_default_runtime_frame_name()
+        )
         if selected_frame_name is None:
             raise ValueError("RiftSpace has no default selected frame.")
         return (
@@ -1900,8 +1903,10 @@ class CommandSystem(Cleanable):
             return
         if frame_link.source_kind == "spell":
             self._assert_frame_command_enabled(frame_link.frame_name)
-            viewer = self._space.get_required_frame_viewer()
-            _, spell_record = viewer._get_required_spell_record(
+            descriptor = self._space.get_required_command_projection(
+                frame_link.frame_name
+            ).frame_descriptor
+            spell_record = self._get_required_published_spell_record_by_source_id(
                 frame_link.source_id,
                 frame_name=frame_link.frame_name,
             )
@@ -2093,8 +2098,9 @@ class CommandSystem(Cleanable):
         self._assert_frame_command_enabled(frame_name)
         compiled_access_surface = self._get_required_compiled_access_surface(frame_name)
         enabled_conduit_ids = set(compiled_access_surface.enabled_conduit_ids)
-        viewer = self._space.get_required_frame_viewer()
-        descriptor = viewer._get_required_frame_descriptor(frame_name)
+        descriptor = self._space.get_required_command_projection(
+            frame_name
+        ).frame_descriptor
         return tuple(
             conduit_record
             for conduit_record in descriptor.conduit_records_by_id.values()
@@ -2130,8 +2136,9 @@ class CommandSystem(Cleanable):
         """
         if not conduit_name:
             raise ValueError("conduit_name cannot be empty.")
-        viewer = self._space.get_required_frame_viewer()
-        descriptor = viewer._get_required_frame_descriptor(frame_name)
+        descriptor = self._space.get_required_command_projection(
+            frame_name
+        ).frame_descriptor
         matching_conduit_ids = [
             conduit_record.conduit_id
             for conduit_record in descriptor.conduit_records_by_id.values()
@@ -2184,8 +2191,9 @@ class CommandSystem(Cleanable):
         """
         if not spell_id:
             raise ValueError("spell_id cannot be empty.")
-        viewer = self._space.get_required_frame_viewer()
-        descriptor = viewer._get_required_frame_descriptor(frame_name)
+        descriptor = self._space.get_required_command_projection(
+            frame_name
+        ).frame_descriptor
         matching_spell_index_ids = {
             spell_record.spell_index_id
             for spell_record in descriptor.spell_records_by_key.values()
@@ -2207,6 +2215,58 @@ class CommandSystem(Cleanable):
             )
         return next(iter(matching_spell_index_ids))
 
+    def _get_required_published_spell_record_by_source_id(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: str,
+    ) -> Any:
+        """
+        Return the published spell record matching one spell source id.
+
+        Args:
+            spell_source_id:
+                Published spell source id in `spellbook_id:spell_id` form.
+            frame_name:
+                Hosted frame to query.
+
+        Returns:
+            Any: Matching published spell record.
+        """
+        if not spell_source_id:
+            raise ValueError("spell_source_id cannot be empty.")
+        if ":" not in spell_source_id:
+            raise ValueError(
+                "spell_source_id must be in 'spellbook_id:spell_id' form."
+            )
+        origin_spellbook_id, spell_id = spell_source_id.split(":", 1)
+        descriptor = self._space.get_required_command_projection(
+            frame_name
+        ).frame_descriptor
+        matching_spell_records = [
+            spell_record
+            for spell_record in descriptor.spell_records_by_key.values()
+            if (
+                spell_record.origin_spellbook_id == origin_spellbook_id
+                and spell_record.spell_id == spell_id
+            )
+        ]
+        if len(matching_spell_records) == 0:
+            raise ValueError(
+                "Spell '{0}' was not found in frame '{1}'.".format(
+                    spell_source_id,
+                    frame_name,
+                )
+            )
+        if len(matching_spell_records) > 1:
+            raise ValueError(
+                "Spell '{0}' is ambiguous in frame '{1}'.".format(
+                    spell_source_id,
+                    frame_name,
+                )
+            )
+        return matching_spell_records[0]
+
     def _get_required_compiled_access_surface(
             self,
             frame_name: str,
@@ -2226,8 +2286,9 @@ class CommandSystem(Cleanable):
             ValueError:
                 If the attached viewer does not host the requested frame.
         """
-        viewer = self._space.get_required_frame_viewer()
-        return viewer._get_required_compiled_access_surface(frame_name)
+        return self._space.get_required_command_projection(
+            frame_name
+        ).compiled_access_surface
 
     def _bind_result(
             self,
@@ -2298,10 +2359,13 @@ class CommandSystem(Cleanable):
         Returns:
             str: Resolved runtime frame name.
         """
-        viewer = self._space.get_required_frame_viewer()
-        resolved_frame_name = frame_name or viewer.default_view_frame_name
+        resolved_frame_name = (
+            frame_name
+            if frame_name is not None
+            else self._space.get_default_runtime_frame_name()
+        )
         if resolved_frame_name is None:
-            raise ValueError("RiftSpace has no default selected frame.")
+            raise ValueError("RiftSpace has no default runtime frame.")
         return resolved_frame_name
 
     def _get_required_runtime_frame(self, frame_name: str) -> object:

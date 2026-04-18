@@ -97,10 +97,45 @@ def _make_command_system(
         bind_method=lambda name, value, weak_ref=None: None,
     )
     selected_target_ids = []
+    command_projection = SimpleNamespace(
+        frame_descriptor=viewer.descriptor,
+        compiled_access_surface=viewer.compiled_access_surface,
+    )
+
+    def _get_selected_target_link_for_command(*, frame_name=None):
+        selected_frame_name = frame_name or viewer.default_view_frame_name
+        if selected_frame_name is None:
+            raise ValueError("RiftSpace has no default selected frame.")
+        if len(selected_target_ids) == 0:
+            raise ValueError(
+                "RiftSpace has no selected target in frame '{0}'.".format(
+                    selected_frame_name
+                )
+            )
+        if len(selected_target_ids) > 1:
+            raise ValueError(
+                "RiftSpace selected target set is ambiguous in frame '{0}'.".format(
+                    selected_frame_name
+                )
+            )
+        for frame_link in viewer.frame_links:
+            if frame_link.link_id == selected_target_ids[0]:
+                return frame_link
+        raise ValueError(
+            "Selected target '{0}' was not found in frame '{1}'.".format(
+                selected_target_ids[0],
+                selected_frame_name,
+            )
+        )
+
     space = SimpleNamespace(
         space_id="space-1",
         get_required_frame_viewer=lambda: viewer,
         list_selected_target_ids=lambda frame_name: tuple(selected_target_ids),
+        get_default_runtime_frame_name=lambda: viewer.default_view_frame_name,
+        get_required_command_projection=lambda frame_name: command_projection,
+        get_selected_target_link_for_command=_get_selected_target_link_for_command,
+        rift_gate=None,
         memory_system=memory_system,
     )
     command_system = CommandSystem(space=space, workstation=workstation)
@@ -367,7 +402,7 @@ def test_command_system_internal_helper_validation_paths(
     viewer.default_view_frame_name = None
     with pytest.raises(ValueError, match="has no default selected frame"):
         command_system._resolve_selected_target_ids()
-    with pytest.raises(ValueError, match="has no default selected frame"):
+    with pytest.raises(ValueError, match="has no default runtime frame"):
         command_system._resolve_runtime_frame_name(None)
 
     viewer.default_view_frame_name = "ops"
