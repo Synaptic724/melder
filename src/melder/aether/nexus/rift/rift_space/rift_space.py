@@ -107,7 +107,6 @@ class RiftSpace(Cleanable, IRiftSpace):
             space_name: Optional[str] = None,
             space_kind: str = "base",
             metadata: Optional[Dict[str, object]] = None,
-            frame_viewer: Optional[FrameViewer] = None,
             rift_gate: Optional[IRiftGate] = None,
             space_id: Optional[str] = None,
     ) -> None:
@@ -125,8 +124,6 @@ class RiftSpace(Cleanable, IRiftSpace):
                 Room-kind discriminator.
             metadata:
                 Extensible room-local metadata.
-            frame_viewer:
-                Optional attached frame-surface viewer for this space.
             rift_gate:
                 Optional Rift-owned gate for room-local admission control.
             space_id:
@@ -152,9 +149,7 @@ class RiftSpace(Cleanable, IRiftSpace):
         self._lock: threading.RLock = threading.RLock()
         self._space_kind: str = space_kind
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
-        if frame_viewer is not None and not isinstance(frame_viewer, FrameViewer):
-            raise TypeError("frame_viewer must be a FrameViewer when provided.")
-        self._frame_viewer: Optional[FrameViewer] = frame_viewer
+        self._frame_viewer: Optional[FrameViewer] = None
         self._rift_gate: Optional[IRiftGate] = rift_gate
         self._projection_sets_by_frame_name: Dict[str, FrameProjectionSet] = {}
         self._selected_target_ids_by_frame_name: Dict[str, List[str]] = {}

@@ -18,9 +18,6 @@ def test_rift_space_rejects_empty_owner_and_invalid_frame_viewer() -> None:
     with pytest.raises(ValueError, match="owner_rift_id cannot be empty."):
         StaticRiftSpace("")
 
-    with pytest.raises(TypeError, match="frame_viewer must be a FrameViewer when provided."):
-        _BaseSpace("rift-1", frame_viewer=object())
-
     base_space = _BaseSpace("rift-1")
     assert base_space.command_system is not None
     root_space = RiftSpace("rift-2")
