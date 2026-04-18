@@ -156,14 +156,15 @@ def test_command_system_delete_cluster_and_target_getter_guardrails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     target = SimpleNamespace(status="ready", not_callable="value")
-    command_system, _, _ = _make_command_system(target=target)
+    command_system, viewer, _ = _make_command_system(target=target)
     deleted_cluster_names = []
     conduit = SimpleNamespace(
         delete_cluster=lambda cluster_name: deleted_cluster_names.append(cluster_name)
     )
+    viewer.compiled_access_surface.enabled_conduit_ids = ("ops-conduit",)
     monkeypatch.setattr(
         type(command_system),
-        "get_conduit_by_id",
+        "_get_conduit_by_id_locked",
         lambda self, conduit_id, *, frame_name=None: conduit,
     )
 

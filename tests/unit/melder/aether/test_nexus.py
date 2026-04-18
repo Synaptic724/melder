@@ -1603,7 +1603,7 @@ def test_command_system_can_get_spell_by_index_id(
     )
     monkeypatch.setattr(
         type(space.command_system),
-        "get_conduit_by_id",
+        "_get_conduit_by_id_locked",
         lambda self, conduit_id, *, frame_name=None: owner_conduit,
     )
 
@@ -3322,7 +3322,7 @@ def test_command_system_can_delegate_conduit_introspection_helpers(
     )
     monkeypatch.setattr(
         type(space.command_system),
-        "get_conduit_by_id",
+        "_get_conduit_by_id_locked",
         lambda self, conduit_id, *, frame_name=None: owner_conduit,
     )
 
@@ -3433,7 +3433,7 @@ def test_command_system_can_delegate_spell_query_and_snapshot_helpers(
     )
     monkeypatch.setattr(
         type(space.command_system),
-        "get_conduit_by_id",
+        "_get_conduit_by_id_locked",
         lambda self, conduit_id, *, frame_name=None: owner_conduit,
     )
 

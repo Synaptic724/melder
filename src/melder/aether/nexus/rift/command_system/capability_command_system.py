@@ -10,34 +10,14 @@ class CapabilityCommandSystem(CommandSystem):
     Capability-room command surface.
 
     Purpose:
-        Keep the shared command API while opening broad manual runtime access
-        for `CapabilityRiftSpace`.
+        Preserve the shared broad runtime command behavior for
+        `CapabilityRiftSpace`.
 
     Contract:
-        - Inherits all shared selected-target, ACL, and workstation behavior
-          from `CommandSystem`.
-        - Allows the shared broad runtime-object getters and manual object
-          work surface.
-        - Does not add codegen behavior; it only stops denying the existing
-          manual runtime surface.
-        - Still relies on the underlying Melder frame/runtime to reject
-          dynamic-only operations when the target frame is automatic.
-        - Leaves already-bound workstation objects outside post-bind policing.
+        - Inherits the shared command surface directly without adding new
+          runtime-policy overrides.
+        - Leaves raw runtime-object access, topology mutation, and spell
+          activation enabled under the base command policy.
+        - Exists to keep the capability room type explicit even though the
+          current behavior matches the base command surface.
     """
-
-    def _assert_raw_runtime_object_access_allowed(
-            self,
-            method_name: str,
-    ) -> None:
-        """
-        Allow raw runtime-object access in capability rooms.
-
-        Args:
-            method_name:
-                Public command-system method attempting raw runtime-object
-                exposure.
-
-        Returns:
-            None.
-        """
-        _ = method_name

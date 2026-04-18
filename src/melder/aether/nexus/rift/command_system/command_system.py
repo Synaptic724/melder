@@ -1,5 +1,5 @@
 import threading
-from functools import wraps
+from contextlib import contextmanager
 from typing import Any, Dict, List, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
@@ -45,58 +45,7 @@ class CommandSystem(Cleanable):
         "_lock",
         "_space",
         "_workstation",
-        "_command_memory_call_depth",
     ]
-    _MEMORY_EMISSION_METHOD_NAMES = frozenset(
-        (
-            "get_conduit_cloud",
-            "get_conduit_by_id",
-            "get_conduit_by_name",
-            "create_lesser_conduit",
-            "create_cluster",
-            "delete_cluster",
-            "join_cluster",
-            "leave_cluster",
-            "list_clusters",
-            "link",
-            "sever_link",
-            "get_links",
-            "get_lesser_conduit",
-            "get_initiated_conduit",
-            "get_provider_conduit",
-            "get_initiated_conduits",
-            "get_provider_conduits",
-            "get_contracted_conduits",
-            "get_spell_in_contracts",
-            "get_spells_in_contract_by_conduit",
-            "get_spells_in_contract_by_conduit_name",
-            "describe_spells_in_conduit",
-            "get_resolution_state",
-            "get_active_spellspace",
-            "find_spell_id",
-            "find_spell_key",
-            "get_spell_permissions",
-            "snapshot_state",
-            "list_conduit_ids",
-            "list_conduit_names",
-            "count_conduits",
-            "has_conduit_id",
-            "has_conduit_name",
-            "find_conduit_id_by_name",
-            "get_spell_by_source_id",
-            "get_spell_by_index_id",
-            "get_spell_by_id",
-            "meld",
-            "meld_existing_spell",
-            "get_target_attribute",
-            "get_target_method",
-            "execute_target_method",
-            "list_supported_command_methods",
-            "describe_spell_status_by_source_id",
-            "describe_spell_status_by_id",
-            "describe_spell_status_by_index_id",
-        )
-    )
     _aether = Aether()
 
     def __init__(self, *, space: Any, workstation: Any) -> None:
@@ -128,40 +77,6 @@ class CommandSystem(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._space: Any = space
         self._workstation: Any = workstation
-        self._command_memory_call_depth: int = 0
-
-    def __getattribute__(self, name: str) -> Any:
-        """
-        Return attributes and wrap top-level public command methods for memory emission.
-
-        Contract:
-            - Leaves non-command attributes untouched.
-            - Wraps supported public command methods so one successful top-level
-              invocation emits at most one command memory record.
-            - Suppresses nested public-command emission so internal calls do not
-              double-record memories.
-
-        Args:
-            name:
-                Attribute name being resolved.
-
-        Returns:
-            Any: Requested attribute or one wrapped public command method.
-        """
-        attribute = super().__getattribute__(name)
-        if name not in type(self)._MEMORY_EMISSION_METHOD_NAMES or not callable(attribute):
-            return attribute
-
-        @wraps(attribute)
-        def _memory_wrapped_command(*args: Any, **kwargs: Any) -> Any:
-            return self._invoke_memory_wrapped_command(
-                action_name=name,
-                bound_method=attribute,
-                args=args,
-                kwargs=kwargs,
-            )
-
-        return _memory_wrapped_command
 
     def cleanup(self) -> None:
         """
@@ -187,7 +102,6 @@ class CommandSystem(Cleanable):
             self._owner_space_id = None
             self._space = None
             self._workstation = None
-            self._command_memory_call_depth = None
             self._command_system_id = None
         self._lock = None
 
@@ -214,6 +128,231 @@ class CommandSystem(Cleanable):
         self.check_cleaned()
         with self._lock:
             return self._owner_space_id
+
+    def _get_conduit_by_id_locked(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: str,
+    ) -> object:
+        """
+        Resolve one conduit object while the command lock is already held.
+
+        Contract:
+            - Enforces raw-runtime access, frame command enablement, and
+              conduit-level ACL checks before touching Aether runtime state.
+            - Falls back through lesser-conduit lineage traversal when the root
+              conduit lookup misses.
+            - Requires the caller to hold `self._lock`.
+
+        Args:
+            conduit_id:
+                Conduit id to resolve.
+            frame_name:
+                Resolved hosted frame name.
+
+        Returns:
+            object: Live conduit object or matching lesser conduit object.
+
+        Raises:
+            ValueError:
+                If runtime-object access is denied, the frame/conduit ACL gate
+                fails, or the conduit cannot be found in the frame.
+        """
+        self._assert_raw_runtime_object_access_allowed("get_conduit_by_id")
+        self._assert_frame_command_enabled(frame_name)
+        self._assert_conduit_command_enabled(
+            conduit_id,
+            frame_name=frame_name,
+        )
+        try:
+            return self._aether.get_conduit_by_id(
+                conduit_id,
+                frame_name,
+            )
+        except ValueError:
+            frame = self._get_required_runtime_frame(frame_name)
+            for root_conduit in frame._conduits.values():
+                conduit_ward = root_conduit._conduit_ward
+                if conduit_ward is None:
+                    continue
+                lesser_conduit = conduit_ward._get_lesser_conduit(conduit_id)
+                if lesser_conduit is not None:
+                    return lesser_conduit
+            raise ValueError(
+                "Conduit id '{0}' was not found in frame '{1}'.".format(
+                    conduit_id,
+                    frame_name,
+                )
+            )
+
+    def _get_spell_by_index_id_locked(
+            self,
+            spell_index_id: str,
+            *,
+            frame_name: str,
+    ) -> object:
+        """
+        Resolve one spell runtime object by stable lineage id while the command
+        lock is already held.
+
+        Contract:
+            - Enforces raw-runtime access plus frame/spell command ACL checks
+              before touching runtime conduit state.
+            - Resolves through the command projection descriptor truth rather
+              than viewer state.
+            - Requires the caller to hold `self._lock`.
+
+        Args:
+            spell_index_id:
+                Stable SpellIndex lineage id to resolve.
+            frame_name:
+                Resolved hosted frame name.
+
+        Returns:
+            object: Live spell runtime object.
+
+        Raises:
+            ValueError:
+                If the lineage id is empty, unpublished, command-disabled, or
+                not found in the owner spellbooks for the frame.
+        """
+        if not spell_index_id:
+            raise ValueError("spell_index_id cannot be empty.")
+        self._assert_raw_runtime_object_access_allowed(
+            "get_spell_by_index_id"
+        )
+        self._assert_frame_command_enabled(frame_name)
+        self._assert_spell_command_enabled(
+            spell_index_id,
+            frame_name=frame_name,
+        )
+        descriptor = self._space.get_required_command_projection(
+            frame_name
+        ).frame_descriptor
+        matching_spell_records = [
+            spell_record
+            for spell_record in descriptor.spell_records_by_key.values()
+            if spell_record.spell_index_id == spell_index_id
+        ]
+        if len(matching_spell_records) == 0:
+            raise ValueError(
+                "Spell index id '{0}' was not found in frame '{1}'.".format(
+                    spell_index_id,
+                    frame_name,
+                )
+            )
+        for spell_record in matching_spell_records:
+            owner_conduit_id = spell_record.owner_conduit_id
+            if not owner_conduit_id:
+                continue
+            owner_conduit = self._get_conduit_by_id_locked(
+                owner_conduit_id,
+                frame_name=frame_name,
+            )
+            spell = owner_conduit.get_spell_by_index_id(spell_index_id)
+            if spell is not None:
+                return spell
+        raise ValueError(
+            "Spell index id '{0}' was not found in the owner spellbooks for frame '{1}'.".format(
+                spell_index_id,
+                frame_name,
+            )
+        )
+
+    def _get_target_method_locked(self, method_name: str) -> object:
+        """
+        Resolve one callable from the current workstation target while the
+        command lock is already held.
+
+        Contract:
+            - Requires the caller to hold `self._lock`.
+            - Enforces the same validation contract as
+              `get_target_method(...)`.
+
+        Args:
+            method_name:
+                Method name to resolve from the active workstation target.
+
+        Returns:
+            object: Bound callable from the current target.
+
+        Raises:
+            ValueError:
+                If `method_name` is empty.
+            AttributeError:
+                If the current target does not expose the requested attribute.
+            RuntimeError:
+                If the resolved attribute is not callable.
+        """
+        if not method_name:
+            raise ValueError("method_name cannot be empty.")
+        target = self._workstation.get_target()
+        method = getattr(target, method_name)
+        if not callable(method):
+            raise RuntimeError(
+                "Target attribute '{0}' is not callable.".format(method_name)
+            )
+        return method
+
+    def _list_supported_command_methods_tuple(self) -> Tuple[str, ...]:
+        """
+        Return the shared stable command-method vocabulary without any gate or
+        room-policy filtering.
+
+        Contract:
+            - Acts as the single source of truth for the base command surface.
+            - Returns stable presentation order for discovery/reporting.
+            - Does not perform gating, memory emission, or room-specific
+              filtering.
+
+        Returns:
+            Tuple[str, ...]: Shared base command-method names in stable order.
+        """
+        return (
+            "get_conduit_cloud",
+            "get_conduit_by_id",
+            "get_conduit_by_name",
+            "list_conduit_ids",
+            "list_conduit_names",
+            "count_conduits",
+            "has_conduit_id",
+            "has_conduit_name",
+            "find_conduit_id_by_name",
+            "create_lesser_conduit",
+            "create_cluster",
+            "delete_cluster",
+            "join_cluster",
+            "leave_cluster",
+            "list_clusters",
+            "link",
+            "sever_link",
+            "get_links",
+            "get_lesser_conduit",
+            "get_initiated_conduit",
+            "get_provider_conduit",
+            "get_initiated_conduits",
+            "get_provider_conduits",
+            "get_contracted_conduits",
+            "get_spell_in_contracts",
+            "get_spells_in_contract_by_conduit",
+            "get_spells_in_contract_by_conduit_name",
+            "describe_spells_in_conduit",
+            "get_resolution_state",
+            "get_active_spellspace",
+            "find_spell_id",
+            "find_spell_key",
+            "get_spell_permissions",
+            "snapshot_state",
+            "get_spell_by_source_id",
+            "get_spell_by_index_id",
+            "get_spell_by_id",
+            "meld",
+            "meld_existing_spell",
+            "get_target_attribute",
+            "get_target_method",
+            "execute_target_method",
+        )
 
     def get_conduit_cloud(
             self,
@@ -242,7 +381,10 @@ class CommandSystem(Cleanable):
                 blocks raw runtime-object access.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="get_conduit_cloud",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
             self._assert_raw_runtime_object_access_allowed("get_conduit_cloud")
             self._assert_frame_command_enabled(resolved_frame_name)
@@ -273,34 +415,15 @@ class CommandSystem(Cleanable):
                 command ACL denies conduit access.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="get_conduit_by_id",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            self._assert_raw_runtime_object_access_allowed("get_conduit_by_id")
-            self._assert_frame_command_enabled(resolved_frame_name)
-            self._assert_conduit_command_enabled(
+            return self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
-            try:
-                return self._aether.get_conduit_by_id(
-                    conduit_id,
-                    resolved_frame_name,
-                )
-            except ValueError:
-                frame = self._get_required_runtime_frame(resolved_frame_name)
-                for root_conduit in frame._conduits.values():
-                    conduit_ward = root_conduit._conduit_ward
-                    if conduit_ward is None:
-                        continue
-                    lesser_conduit = conduit_ward._get_lesser_conduit(conduit_id)
-                    if lesser_conduit is not None:
-                        return lesser_conduit
-                raise ValueError(
-                    "Conduit id '{0}' was not found in frame '{1}'.".format(
-                        conduit_id,
-                        resolved_frame_name,
-                    )
-                )
 
     def get_conduit_by_name(
             self,
@@ -327,7 +450,10 @@ class CommandSystem(Cleanable):
                 resolves ambiguously, or command ACL denies access.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="get_conduit_by_name",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
             self._assert_raw_runtime_object_access_allowed("get_conduit_by_name")
             self._assert_frame_command_enabled(resolved_frame_name)
@@ -374,10 +500,13 @@ class CommandSystem(Cleanable):
                 conduit cannot be resolved through the command surface.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="create_lesser_conduit",
+                frame_name=frame_name,
+        ), self._lock:
             self._assert_topology_mutation_allowed("create_lesser_conduit")
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -411,10 +540,13 @@ class CommandSystem(Cleanable):
                 conduit cannot be resolved through the command surface.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="create_cluster",
+                frame_name=frame_name,
+        ), self._lock:
             self._assert_topology_mutation_allowed("create_cluster")
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -443,10 +575,13 @@ class CommandSystem(Cleanable):
             None.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="delete_cluster",
+                frame_name=frame_name,
+        ), self._lock:
             self._assert_topology_mutation_allowed("delete_cluster")
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -475,10 +610,13 @@ class CommandSystem(Cleanable):
             None.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="join_cluster",
+                frame_name=frame_name,
+        ), self._lock:
             self._assert_topology_mutation_allowed("join_cluster")
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -507,10 +645,13 @@ class CommandSystem(Cleanable):
             None.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="leave_cluster",
+                frame_name=frame_name,
+        ), self._lock:
             self._assert_topology_mutation_allowed("leave_cluster")
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -536,9 +677,12 @@ class CommandSystem(Cleanable):
             Tuple[str, ...]: Cluster names visible from the conduit.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="list_clusters",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -567,14 +711,17 @@ class CommandSystem(Cleanable):
             bool: True when the link succeeds.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="link",
+                frame_name=frame_name,
+        ), self._lock:
             self._assert_topology_mutation_allowed("link")
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            source_conduit = self.get_conduit_by_id(
+            source_conduit = self._get_conduit_by_id_locked(
                 source_conduit_id,
                 frame_name=resolved_frame_name,
             )
-            target_conduit = self.get_conduit_by_id(
+            target_conduit = self._get_conduit_by_id_locked(
                 target_conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -603,14 +750,17 @@ class CommandSystem(Cleanable):
             bool: True when the link is removed.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="sever_link",
+                frame_name=frame_name,
+        ), self._lock:
             self._assert_topology_mutation_allowed("sever_link")
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            source_conduit = self.get_conduit_by_id(
+            source_conduit = self._get_conduit_by_id_locked(
                 source_conduit_id,
                 frame_name=resolved_frame_name,
             )
-            target_conduit = self.get_conduit_by_id(
+            target_conduit = self._get_conduit_by_id_locked(
                 target_conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -636,9 +786,12 @@ class CommandSystem(Cleanable):
             Tuple[object, ...]: Linked conduit objects.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="get_links",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -667,9 +820,12 @@ class CommandSystem(Cleanable):
             object: Matching lesser conduit object, or None when missing.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="get_lesser_conduit",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 parent_conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -686,9 +842,12 @@ class CommandSystem(Cleanable):
         Return one outbound linked conduit from a source conduit.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="get_initiated_conduit",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -705,9 +864,12 @@ class CommandSystem(Cleanable):
         Return one inbound provider conduit for a source conduit.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="get_provider_conduit",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -723,9 +885,12 @@ class CommandSystem(Cleanable):
         Return the outbound linked conduits for one conduit.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="get_initiated_conduits",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -741,9 +906,12 @@ class CommandSystem(Cleanable):
         Return the inbound provider conduits for one conduit.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="get_provider_conduits",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -759,9 +927,12 @@ class CommandSystem(Cleanable):
         Return the contracted peer conduits for one conduit.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="get_contracted_conduits",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -778,9 +949,12 @@ class CommandSystem(Cleanable):
         Return one contracted spell lookup result from a conduit.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="get_spell_in_contracts",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -797,9 +971,12 @@ class CommandSystem(Cleanable):
         Return contracted spell data keyed by peer conduit id.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="get_spells_in_contract_by_conduit",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -816,9 +993,12 @@ class CommandSystem(Cleanable):
         Return contracted spell data keyed by peer conduit name.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="get_spells_in_contract_by_conduit_name",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -834,9 +1014,12 @@ class CommandSystem(Cleanable):
         Return the spell description payloads exposed by one conduit.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="describe_spells_in_conduit",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -852,9 +1035,12 @@ class CommandSystem(Cleanable):
         Return the conduit-scoped resolution state for one conduit.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="get_resolution_state",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -870,9 +1056,12 @@ class CommandSystem(Cleanable):
         Return the active spellspace for one conduit, if any.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="get_active_spellspace",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -891,9 +1080,12 @@ class CommandSystem(Cleanable):
         Return the current spell id resolved from logical spell identifiers.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="find_spell_id",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -912,9 +1104,12 @@ class CommandSystem(Cleanable):
         Return the spellbook key resolved from logical spell identifiers.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="find_spell_key",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -931,9 +1126,12 @@ class CommandSystem(Cleanable):
         Return the permissions string for one spell inside one conduit.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="get_spell_permissions",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -949,9 +1147,12 @@ class CommandSystem(Cleanable):
         Return a detached snapshot of one conduit state payload.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="snapshot_state",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -974,7 +1175,10 @@ class CommandSystem(Cleanable):
             Tuple[str, ...]: Published command-enabled conduit ids.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="list_conduit_ids",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
             conduit_records = self._get_enabled_published_conduit_records(
                 resolved_frame_name
@@ -998,7 +1202,10 @@ class CommandSystem(Cleanable):
             Tuple[str, ...]: Published command-enabled conduit names.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="list_conduit_names",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
             conduit_records = self._get_enabled_published_conduit_records(
                 resolved_frame_name
@@ -1026,8 +1233,15 @@ class CommandSystem(Cleanable):
             int: Number of published command-enabled conduits.
         """
         self.check_cleaned()
-        with self._lock:
-            return len(self.list_conduit_ids(frame_name=frame_name))
+        with self._entered_command_action(
+                action_name="count_conduits",
+                frame_name=frame_name,
+        ), self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit_records = self._get_enabled_published_conduit_records(
+                resolved_frame_name
+            )
+            return len(conduit_records)
 
     def has_conduit_id(
             self,
@@ -1049,7 +1263,10 @@ class CommandSystem(Cleanable):
             bool: True when the conduit id is published and command-enabled.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="has_conduit_id",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
             conduit_records = self._get_enabled_published_conduit_records(
                 resolved_frame_name
@@ -1076,7 +1293,10 @@ class CommandSystem(Cleanable):
             bool: True when the conduit name is published and command-enabled.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="has_conduit_name",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
             conduit_records = self._get_enabled_published_conduit_records(
                 resolved_frame_name
@@ -1109,7 +1329,10 @@ class CommandSystem(Cleanable):
             ValueError: If the conduit name resolves ambiguously.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="find_conduit_id_by_name",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
             self._assert_frame_command_enabled(resolved_frame_name)
             try:
@@ -1153,11 +1376,11 @@ class CommandSystem(Cleanable):
                 or command ACL denies spell access.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="get_spell_by_source_id",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            descriptor = self._space.get_required_command_projection(
-                resolved_frame_name
-            ).frame_descriptor
             spell_record = self._get_required_published_spell_record_by_source_id(
                 spell_source_id,
                 frame_name=resolved_frame_name,
@@ -1165,7 +1388,7 @@ class CommandSystem(Cleanable):
             self._assert_raw_runtime_object_access_allowed(
                 "get_spell_by_source_id"
             )
-            return self.get_spell_by_index_id(
+            return self._get_spell_by_index_id_locked(
                 spell_record.spell_index_id,
                 frame_name=resolved_frame_name,
             )
@@ -1195,49 +1418,14 @@ class CommandSystem(Cleanable):
                 command ACL denies spell access.
         """
         self.check_cleaned()
-        with self._lock:
-            if not spell_index_id:
-                raise ValueError("spell_index_id cannot be empty.")
+        with self._entered_command_action(
+                action_name="get_spell_by_index_id",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            self._assert_raw_runtime_object_access_allowed(
-                "get_spell_by_index_id"
-            )
-            self._assert_frame_command_enabled(resolved_frame_name)
-            self._assert_spell_command_enabled(
+            return self._get_spell_by_index_id_locked(
                 spell_index_id,
                 frame_name=resolved_frame_name,
-            )
-            descriptor = self._space.get_required_command_projection(
-                resolved_frame_name
-            ).frame_descriptor
-            matching_spell_records = [
-                spell_record
-                for spell_record in descriptor.spell_records_by_key.values()
-                if spell_record.spell_index_id == spell_index_id
-            ]
-            if len(matching_spell_records) == 0:
-                raise ValueError(
-                    "Spell index id '{0}' was not found in frame '{1}'.".format(
-                        spell_index_id,
-                        resolved_frame_name,
-                    )
-                )
-            for spell_record in matching_spell_records:
-                owner_conduit_id = spell_record.owner_conduit_id
-                if not owner_conduit_id:
-                    continue
-                owner_conduit = self.get_conduit_by_id(
-                    owner_conduit_id,
-                    frame_name=resolved_frame_name,
-                )
-                spell = owner_conduit.get_spell_by_index_id(spell_index_id)
-                if spell is not None:
-                    return spell
-            raise ValueError(
-                "Spell index id '{0}' was not found in the owner spellbooks for frame '{1}'.".format(
-                    spell_index_id,
-                    resolved_frame_name,
-                )
             )
 
     def get_spell_by_id(
@@ -1265,7 +1453,10 @@ class CommandSystem(Cleanable):
                 ACL denies spell access.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="get_spell_by_id",
+                frame_name=frame_name,
+        ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
             self._assert_raw_runtime_object_access_allowed("get_spell_by_id")
             self._assert_frame_command_enabled(resolved_frame_name)
@@ -1332,10 +1523,13 @@ class CommandSystem(Cleanable):
             object: Activated runtime object returned by the conduit meld path.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="meld",
+                frame_name=frame_name,
+        ), self._lock:
             self._assert_spell_activation_allowed("meld")
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -1383,10 +1577,13 @@ class CommandSystem(Cleanable):
             object: Already-live runtime object returned by the conduit.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="meld_existing_spell",
+                frame_name=frame_name,
+        ), self._lock:
             self._assert_spell_activation_allowed("meld_existing_spell")
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            conduit = self.get_conduit_by_id(
+            conduit = self._get_conduit_by_id_locked(
                 conduit_id,
                 frame_name=resolved_frame_name,
             )
@@ -1415,7 +1612,10 @@ class CommandSystem(Cleanable):
                 If the target does not expose the requested attribute.
         """
         self.check_cleaned()
-        with self._lock:
+        with self._entered_command_action(
+                action_name="get_target_attribute",
+                frame_name=None,
+        ), self._lock:
             if not attribute_name:
                 raise ValueError("attribute_name cannot be empty.")
             target = self._workstation.get_target()
@@ -1441,16 +1641,11 @@ class CommandSystem(Cleanable):
                 If the resolved attribute is not callable.
         """
         self.check_cleaned()
-        with self._lock:
-            if not method_name:
-                raise ValueError("method_name cannot be empty.")
-            target = self._workstation.get_target()
-            method = getattr(target, method_name)
-            if not callable(method):
-                raise RuntimeError(
-                    "Target attribute '{0}' is not callable.".format(method_name)
-                )
-            return method
+        with self._entered_command_action(
+                action_name="get_target_method",
+                frame_name=None,
+        ), self._lock:
+            return self._get_target_method_locked(method_name)
 
     def execute_target_method(
             self,
@@ -1484,8 +1679,11 @@ class CommandSystem(Cleanable):
             object: Method return value.
         """
         self.check_cleaned()
-        with self._lock:
-            method = self.get_target_method(method_name)
+        with self._entered_command_action(
+                action_name="execute_target_method",
+                frame_name=None,
+        ), self._lock:
+            method = self._get_target_method_locked(method_name)
             result = method(*args, **kwargs)
             if bind_as_name is not None:
                 self._bind_result(
@@ -1510,96 +1708,107 @@ class CommandSystem(Cleanable):
                 presentation order.
         """
         self.check_cleaned()
-        return (
-            "get_conduit_cloud",
-            "get_conduit_by_id",
-            "get_conduit_by_name",
-            "list_conduit_ids",
-            "list_conduit_names",
-            "count_conduits",
-            "has_conduit_id",
-            "has_conduit_name",
-            "find_conduit_id_by_name",
-            "create_lesser_conduit",
-            "create_cluster",
-            "delete_cluster",
-            "join_cluster",
-            "leave_cluster",
-            "list_clusters",
-            "link",
-            "sever_link",
-            "get_links",
-            "get_lesser_conduit",
-            "get_initiated_conduit",
-            "get_provider_conduit",
-            "get_initiated_conduits",
-            "get_provider_conduits",
-            "get_contracted_conduits",
-            "get_spell_in_contracts",
-            "get_spells_in_contract_by_conduit",
-            "get_spells_in_contract_by_conduit_name",
-            "describe_spells_in_conduit",
-            "get_resolution_state",
-            "get_active_spellspace",
-            "find_spell_id",
-            "find_spell_key",
-            "get_spell_permissions",
-            "snapshot_state",
-            "get_spell_by_source_id",
-            "get_spell_by_index_id",
-            "get_spell_by_id",
-            "meld",
-            "meld_existing_spell",
-            "get_target_attribute",
-            "get_target_method",
-            "execute_target_method",
-        )
+        with self._entered_command_action(
+                action_name="list_supported_command_methods",
+                frame_name=None,
+        ):
+            return self._list_supported_command_methods_tuple()
 
-    def _invoke_memory_wrapped_command(
+    @contextmanager
+    def _entered_command_action(
             self,
             *,
             action_name: str,
-            bound_method: Any,
-            args: Tuple[Any, ...],
-            kwargs: Dict[str, Any],
+            frame_name: Optional[str],
     ) -> Any:
         """
-        Invoke one public command method under top-level memory emission control.
+        Enter one explicit top-level public command action.
 
         Args:
             action_name:
-                Stable public command method name.
-            bound_method:
-                Bound public method object to invoke.
-            args:
-                Positional arguments for the command call.
-            kwargs:
-                Keyword arguments for the command call.
+                Stable public command method name that completed successfully.
+            frame_name:
+                Optional caller-supplied frame name associated with the action.
 
         Returns:
-            Any: Command method result.
+            Any: Context manager that guarantees symmetric RiftGate release and
+            successful top-level memory emission.
+        """
+        rift_gate = self._begin_command_action()
+        command_succeeded = False
+        try:
+            yield
+            command_succeeded = True
+        finally:
+            self._finish_command_action(
+                rift_gate=rift_gate,
+                action_name=action_name,
+                frame_name=frame_name,
+                emit_memory=command_succeeded,
+            )
+
+    def _begin_command_action(self) -> Optional[Any]:
+        """
+        Enter one top-level command action under RiftGate control.
+
+        Contract:
+            - Verifies that the command system is still live.
+            - Resolves the owning room Rift gate when one is available.
+            - Calls `admit()` before registering one active ticket.
+            - Returns the gate object so the caller can guarantee symmetric
+              release in a `finally` block.
+
+        Returns:
+            Optional[Any]: Owning room Rift gate, or None when no gate is bound
+            to the room.
         """
         self.check_cleaned()
-        with self._lock:
-            self._command_memory_call_depth = self._command_memory_call_depth + 1
-            is_top_level_call = self._command_memory_call_depth == 1
-            rift_gate = self._get_rift_gate_if_available()
-        try:
-            if is_top_level_call and rift_gate is not None:
-                rift_gate.admit()
-                rift_gate.register_ticket()
-            result = bound_method(*args, **kwargs)
-        finally:
-            if is_top_level_call and rift_gate is not None:
-                rift_gate.unregister_ticket()
-            with self._lock:
-                self._command_memory_call_depth = self._command_memory_call_depth - 1
-        if is_top_level_call:
+        rift_gate = self._get_rift_gate_if_available()
+        if rift_gate is None:
+            return None
+        rift_gate.admit()
+        rift_gate.register_ticket()
+        return rift_gate
+
+    def _finish_command_action(
+            self,
+            *,
+            rift_gate: Optional[Any],
+            action_name: str,
+            frame_name: Optional[str],
+            emit_memory: bool,
+    ) -> None:
+        """
+        Exit one top-level command action and optionally emit command memory.
+
+        Contract:
+            - Releases the RiftGate ticket before emitting memory so the gate
+              never stays held across memory callbacks.
+            - Emits command memory only when the caller marks the command as a
+              successful top-level action.
+            - Never suppresses gate-release failures.
+
+        Args:
+            rift_gate:
+                Rift gate returned by `_begin_command_action(...)`.
+            action_name:
+                Stable public command method name.
+            frame_name:
+                Optional caller-supplied frame name.
+            emit_memory:
+                True when the command completed successfully and should emit one
+                memory record.
+
+        Returns:
+            None.
+        """
+        if rift_gate is not None:
+            rift_gate.unregister_ticket()
+        if emit_memory:
             self._emit_command_memory_if_enabled(
                 action_name=action_name,
-                frame_name=kwargs.get("frame_name"),
+                frame_name=frame_name,
             )
-        return result
 
     def _emit_command_memory_if_enabled(
             self,
@@ -1679,6 +1888,29 @@ class CommandSystem(Cleanable):
         except Exception:
             return None
 
+    def _allows_raw_runtime_object_access(
+            self,
+            method_name: str,
+    ) -> bool:
+        """
+        Return whether this room mode allows raw runtime-object access.
+
+        Contract:
+            - Base `CommandSystem` allows raw runtime-object access.
+            - Room-specific subclasses may return False for selected methods
+              while still keeping the shared public vocabulary intact.
+
+        Args:
+            method_name:
+                Public command method requesting raw runtime-object access.
+
+        Returns:
+            bool: True when the requesting method is allowed to return raw
+            runtime objects in the current room mode.
+        """
+        _ = method_name
+        return True
+
     def _assert_raw_runtime_object_access_allowed(
             self,
             method_name: str,
@@ -1705,10 +1937,37 @@ class CommandSystem(Cleanable):
         Raises:
             ValueError:
                 If the current command-system mode does not allow raw
-                runtime-object
-                access.
+                runtime-object access.
+        """
+        if self._allows_raw_runtime_object_access(method_name):
+            return
+        raise ValueError(
+            "Command surface does not allow raw runtime-object access method '{0}'.".format(
+                method_name
+            )
+        )
+
+    def _allows_topology_mutation(
+            self,
+            method_name: str,
+    ) -> bool:
+        """
+        Return whether this room mode allows topology-mutation commands.
+
+        Contract:
+            - Base `CommandSystem` allows topology mutation.
+            - Room-specific subclasses may return False for all or part of the
+              shared topology-mutation vocabulary.
+
+        Args:
+            method_name:
+                Public topology-mutation command being attempted.
+
+        Returns:
+            bool: True when the command is allowed in the current room mode.
         """
         _ = method_name
+        return True
 
     def _assert_topology_mutation_allowed(
             self,
@@ -1729,8 +1988,42 @@ class CommandSystem(Cleanable):
 
         Returns:
             None.
+
+        Raises:
+            ValueError:
+                If the current room mode does not allow the requested topology
+                mutation command.
+        """
+        if self._allows_topology_mutation(method_name):
+            return
+        raise ValueError(
+            "Command surface does not allow topology mutation method '{0}'.".format(
+                method_name
+            )
+        )
+
+    def _allows_spell_activation(
+            self,
+            method_name: str,
+    ) -> bool:
+        """
+        Return whether this room mode allows direct spell-activation commands.
+
+        Contract:
+            - Base `CommandSystem` allows direct spell activation.
+            - Room-specific subclasses may return False for selected activation
+              methods while keeping the shared public vocabulary intact.
+
+        Args:
+            method_name:
+                Public spell-activation command being attempted.
+
+        Returns:
+            bool: True when the activation command is allowed in the current
+            room mode.
         """
         _ = method_name
+        return True
 
     def _assert_spell_activation_allowed(
             self,
@@ -1750,8 +2043,19 @@ class CommandSystem(Cleanable):
 
         Returns:
             None.
+
+        Raises:
+            ValueError:
+                If the current room mode does not allow the requested direct
+                spell-activation command.
         """
-        _ = method_name
+        if self._allows_spell_activation(method_name):
+            return
+        raise ValueError(
+            "Command surface does not allow spell activation method '{0}'.".format(
+                method_name
+            )
+        )
 
     def _assert_frame_command_enabled(self, frame_name: str) -> None:
         """
