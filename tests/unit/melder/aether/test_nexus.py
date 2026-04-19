@@ -62,6 +62,7 @@ from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
+from tests._nexus_viewer_matrix_support import ViewerProjectionRiftDouble
 
 
 @pytest.fixture(autouse=True)
@@ -257,7 +258,7 @@ def _build_descriptor_backed_viewer(
         metadata={"source": "test_descriptor_backed_viewer"},
     )
     return FrameViewer(
-        projection_sets_by_frame_name={frame_name: projection_set},
+        rift=ViewerProjectionRiftDouble({frame_name: projection_set}),
         default_view_frame_name=frame_name,
     )
 
@@ -334,11 +335,10 @@ def _replace_compiled_access_surface(
         ),
         metadata=compiled_access_surface.metadata,
     )
-    projection_set = viewer._get_required_frame_projection_set(frame_name)
+    projection_set = viewer._rift._get_required_frame_projection_set(frame_name)
     projection_set.view_projection._compiled_access_surface = replacement_surface
     projection_set.command_projection._compiled_access_surface = replacement_surface
     projection_set.codegen_projection._compiled_access_surface = replacement_surface
-    viewer._clear_bound_profile_cache()
 
 
 def _build_projection_set_from_viewer(
@@ -365,11 +365,11 @@ def _build_projection_set_from_viewer(
         view_projection=ViewProjection(
             frame_name=frame_name,
             frame_descriptor=frame_descriptor,
-            frame_acl_configuration=FrameViewer._clone_frame_acl_configuration(
+            frame_acl_configuration=Nexus._clone_frame_acl_configuration(
                 frame_acl_configuration,
                 reason="test_view_projection_clone",
             ),
-            compiled_access_surface=FrameViewer._clone_compiled_access_surface(
+            compiled_access_surface=Nexus._clone_compiled_access_surface(
                 compiled_access_surface
             ),
             metadata={"surface": "view"},
@@ -377,11 +377,11 @@ def _build_projection_set_from_viewer(
         command_projection=CommandProjection(
             frame_name=frame_name,
             frame_descriptor=frame_descriptor,
-            frame_acl_configuration=FrameViewer._clone_frame_acl_configuration(
+            frame_acl_configuration=Nexus._clone_frame_acl_configuration(
                 frame_acl_configuration,
                 reason="test_command_projection_clone",
             ),
-            compiled_access_surface=FrameViewer._clone_compiled_access_surface(
+            compiled_access_surface=Nexus._clone_compiled_access_surface(
                 compiled_access_surface
             ),
             metadata={"surface": "command"},
@@ -389,11 +389,11 @@ def _build_projection_set_from_viewer(
         codegen_projection=CodegenProjection(
             frame_name=frame_name,
             frame_descriptor=frame_descriptor,
-            frame_acl_configuration=FrameViewer._clone_frame_acl_configuration(
+            frame_acl_configuration=Nexus._clone_frame_acl_configuration(
                 frame_acl_configuration,
                 reason="test_codegen_projection_clone",
             ),
-            compiled_access_surface=FrameViewer._clone_compiled_access_surface(
+            compiled_access_surface=Nexus._clone_compiled_access_surface(
                 compiled_access_surface
             ),
             metadata={"surface": "codegen"},
@@ -429,11 +429,8 @@ def _attach_projection_backed_viewer(space: RiftSpace, viewer: FrameViewer) -> N
             for frame_name in viewer.frame_descriptors_by_name.keys()
         }
     )
-    space.frame_viewer.sync_from_projection_sets(
-        detached_rift._projection_sets_by_frame_name,
-        default_view_frame_name=viewer.default_view_frame_name,
-        metadata=viewer.metadata,
-    )
+    if viewer.default_view_frame_name is not None:
+        space.frame_viewer.set_default_view(viewer.default_view_frame_name)
     viewer.cleanup()
 
 
@@ -441,6 +438,7 @@ def _make_detached_rift_projection_owner() -> object:
     class _DetachedRiftProjectionOwner:
         def __init__(self) -> None:
             self._projection_sets_by_frame_name = {}
+            self._id = "detached-rift"
 
         def _apply_projection_sets(
                 self,
@@ -473,10 +471,47 @@ def _make_detached_rift_projection_owner() -> object:
         def _get_required_command_projection(self, frame_name: str):
             return self._projection_sets_by_frame_name[frame_name].command_projection
 
+        def _get_required_frame_projection_set(self, frame_name: str):
+            return self._projection_sets_by_frame_name[frame_name]
+
+        def _get_required_view_projection(self, frame_name: str):
+            return self._projection_sets_by_frame_name[frame_name].view_projection
+
+        def list_assigned_frame_names(self):
+            return tuple(sorted(self._projection_sets_by_frame_name.keys()))
+
         def _get_default_runtime_frame_name(self):
             if len(self._projection_sets_by_frame_name) == 1:
                 return next(iter(self._projection_sets_by_frame_name.keys()))
             return None
+
+        def _build_frame_viewer_metadata(self):
+            assigned_frame_names = self.list_assigned_frame_names()
+            selected_contract_names_by_frame_name = {
+                frame_name: {
+                    "view": "default",
+                    "command": "default",
+                    "codegen": "default",
+                }
+                for frame_name in assigned_frame_names
+            }
+            return {
+                "frame_count": len(assigned_frame_names),
+                "available_view_count": len(assigned_frame_names),
+                "rift_id": self._id,
+                "frame_link_contract_ids_by_frame_name": {
+                    frame_name: "{0}-contract".format(frame_name)
+                    for frame_name in assigned_frame_names
+                },
+                "assigned_frame_names": assigned_frame_names,
+                "selected_contract_names_by_frame_name": (
+                    selected_contract_names_by_frame_name
+                ),
+                "acl_selection_by_frame_name": selected_contract_names_by_frame_name,
+                "contract_names_by_frame_name": selected_contract_names_by_frame_name,
+                "default_grouping": "frame",
+                "default_detail_level": "detailed",
+            }
 
     return _DetachedRiftProjectionOwner()
 
@@ -2053,7 +2088,7 @@ def test_frame_viewer_clone_compiled_access_surface_preserves_command_acl_fields
         },
     )
 
-    cloned_access_surface = FrameViewer._clone_compiled_access_surface(
+    cloned_access_surface = Nexus._clone_compiled_access_surface(
         compiled_access_surface
     )
 

@@ -30,6 +30,87 @@ from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 
 
+class ViewerProjectionRiftDouble:
+    """
+    Minimal Rift-like projection owner for direct viewer tests.
+
+    Purpose:
+        Let direct `FrameViewer` fixtures follow the live ownership model
+        without requiring a full `Rift` runtime object.
+    """
+
+    def __init__(
+            self,
+            projection_sets_by_frame_name: Dict[str, FrameProjectionSet],
+            *,
+            rift_id: str = "test-rift",
+            selected_contract_names_by_frame_name: Optional[
+                Dict[str, Dict[str, str]]
+            ] = None,
+    ) -> None:
+        self._projection_sets_by_frame_name = dict(projection_sets_by_frame_name)
+        self._id = rift_id
+        self._selected_contract_names_by_frame_name = (
+            dict(selected_contract_names_by_frame_name)
+            if selected_contract_names_by_frame_name is not None
+            else {
+                frame_name: {
+                    "view": "default",
+                    "command": "default",
+                    "codegen": "default",
+                }
+                for frame_name in self._projection_sets_by_frame_name.keys()
+            }
+        )
+
+    @property
+    def id(self) -> str:
+        return self._id
+
+    def list_assigned_frame_names(self) -> Tuple[str, ...]:
+        return tuple(sorted(self._projection_sets_by_frame_name.keys()))
+
+    def _get_required_frame_projection_set(self, frame_name: str) -> FrameProjectionSet:
+        try:
+            return self._projection_sets_by_frame_name[frame_name]
+        except KeyError as exc:
+            raise ValueError(
+                "Frame '{0}' was not found.".format(frame_name)
+            ) from exc
+
+    def _get_required_view_projection(self, frame_name: str) -> ViewProjection:
+        return self._get_required_frame_projection_set(frame_name).view_projection
+
+    def _get_required_command_projection(self, frame_name: str) -> CommandProjection:
+        return self._get_required_frame_projection_set(frame_name).command_projection
+
+    def _get_required_codegen_projection(self, frame_name: str) -> CodegenProjection:
+        return self._get_required_frame_projection_set(frame_name).codegen_projection
+
+    def _build_frame_viewer_metadata(self) -> Dict[str, object]:
+        assigned_frame_names = self.list_assigned_frame_names()
+        selected_contract_names_by_frame_name = dict(
+            self._selected_contract_names_by_frame_name
+        )
+        return {
+            "frame_count": len(assigned_frame_names),
+            "available_view_count": len(assigned_frame_names),
+            "rift_id": self._id,
+            "frame_link_contract_ids_by_frame_name": {
+                frame_name: "{0}-contract".format(frame_name)
+                for frame_name in assigned_frame_names
+            },
+            "assigned_frame_names": assigned_frame_names,
+            "selected_contract_names_by_frame_name": (
+                selected_contract_names_by_frame_name
+            ),
+            "acl_selection_by_frame_name": selected_contract_names_by_frame_name,
+            "contract_names_by_frame_name": selected_contract_names_by_frame_name,
+            "default_grouping": "frame",
+            "default_detail_level": "detailed",
+        }
+
+
 def build_spell_record_key(frame_name: str, spell_index: int) -> Tuple[str, str]:
     """
     Build the canonical spell record key for one matrix spell.
@@ -411,7 +492,7 @@ def build_viewer(
         metadata={"source": "test_build_viewer"},
     )
     return FrameViewer(
-        projection_sets_by_frame_name={frame_name: projection_set},
+        rift=ViewerProjectionRiftDouble({frame_name: projection_set}),
         default_view_frame_name=frame_name,
     )
 
@@ -474,7 +555,7 @@ def build_projection_backed_viewer_from_state(
         metadata={"source": "test_projection_backed_viewer_from_state"},
     )
     return FrameViewer(
-        projection_sets_by_frame_name={frame_name: projection_set},
+        rift=ViewerProjectionRiftDouble({frame_name: projection_set}),
         default_view_frame_name=frame_name,
     )
 
@@ -557,6 +638,6 @@ def build_multi_frame_viewer(
             metadata={"source": "test_build_multi_frame_viewer"},
         )
     return FrameViewer(
-        projection_sets_by_frame_name=projection_sets_by_frame_name,
+        rift=ViewerProjectionRiftDouble(projection_sets_by_frame_name),
         default_view_frame_name=frame_names[0] if len(frame_names) > 0 else None,
     )

@@ -251,8 +251,7 @@ class FrameViewer(Cleanable):
         if not frame_name:
             raise ValueError("frame_name cannot be empty.")
         with self._lock:
-            if frame_name not in self._projection_sets_by_frame_name:
-                raise ValueError("Frame '{0}' was not found.".format(frame_name))
+            self._get_required_frame_descriptor(frame_name)
             self._default_view_frame_name = frame_name
 
     def describe_available_views(self) -> List[Dict[str, object]]:
@@ -1413,8 +1412,8 @@ class FrameViewer(Cleanable):
         Return a detached copy of the viewer host.
 
         Purpose:
-            Preserve the non-owned projection-set references and metadata while
-            starting with an empty helper cache in the clone.
+            Preserve the borrowed Rift reference and current default-frame
+            routing state while creating a detached viewer object.
 
         Returns:
             FrameViewer: Detached viewer clone.
@@ -1422,10 +1421,8 @@ class FrameViewer(Cleanable):
         self.check_cleaned()
         with self._lock:
             return FrameViewer(
-                projection_sets_by_frame_name=dict(self._projection_sets_by_frame_name),
+                rift=self._rift,
                 default_view_frame_name=self._default_view_frame_name,
-                rift_gate=self._rift_gate,
-                metadata=dict(self._metadata),
             )
 
 
@@ -1733,6 +1730,22 @@ class FrameViewer(Cleanable):
         return str(spellframe)
 
     @staticmethod
+    def _normalize_policy_name(policy: object) -> Optional[str]:
+        """
+        Return one stable string view of a conduit policy value.
+
+        Args:
+            policy:
+                Raw conduit policy value.
+
+        Returns:
+            Optional[str]: Normalized conduit policy name when present.
+        """
+        if policy is None:
+            return None
+        return policy.name
+
+    @staticmethod
     def _parse_spell_source_id(spell_source_id: str) -> Tuple[str, str]:
         """
         Parse one published spell source id into its canonical record key.
@@ -1793,6 +1806,68 @@ class FrameViewer(Cleanable):
                 )
             )
         return matching_records[0]
+
+    def _get_required_conduit_record(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one descriptor-owned conduit record or raise.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional hosted frame name to constrain the lookup.
+
+        Returns:
+            object: Descriptor-owned conduit record.
+        """
+        if not conduit_id:
+            raise ValueError("conduit_id cannot be empty.")
+        matching_records: List[object] = []
+        for current_frame_name in self._get_frame_names_for_query(frame_name):
+            descriptor = self._get_required_frame_descriptor(current_frame_name)
+            conduit_record = descriptor.conduit_records_by_id.get(conduit_id)
+            if conduit_record is None:
+                continue
+            matching_records.append(conduit_record)
+        if len(matching_records) == 0:
+            raise ValueError("Conduit id '{0}' was not found.".format(conduit_id))
+        if len(matching_records) > 1:
+            raise ValueError(
+                "Conduit id '{0}' is ambiguous across hosted frames.".format(
+                    conduit_id
+                )
+            )
+        return matching_records[0]
+
+    def _describe_spell_value_groups(
+            self,
+            *,
+            frame_name: Optional[str],
+            value_getter: Callable[[object], Optional[object]],
+    ) -> Dict[str, Tuple[str, ...]]:
+        """
+        Group spell source ids by one normalized spell-record value.
+
+        Args:
+            frame_name:
+                Optional hosted frame name filter.
+            value_getter:
+                Callable that extracts the grouping value from one spell
+                record.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Grouping value mapped to spell source
+            ids.
+        """
+        return self.get_view_multiframe()._describe_spell_value_groups(
+            frame_name=frame_name,
+            value_getter=value_getter,
+        )
 
     def describe_visible_surface(
             self,
@@ -3025,6 +3100,190 @@ class FrameViewer(Cleanable):
             frame_name=frame_name,
         )
 
+    def list_peer_conduit_ids(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return visible peer conduit ids for one conduit.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Tuple[str, ...]: Visible peer conduit ids in deterministic order.
+        """
+        return self.get_view_conduit(frame_name=frame_name).list_peer_conduit_ids(
+            conduit_id,
+            frame_name=frame_name,
+        )
+
+    def list_spell_source_ids_for_conduit(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return visible spell source ids owned by one conduit.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Tuple[str, ...]: Visible spell source ids owned by the conduit.
+        """
+        return self.get_view_conduit(
+            frame_name=frame_name,
+        ).list_spell_source_ids_for_conduit(conduit_id, frame_name=frame_name)
+
+    def list_binding_names_for_conduit(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return visible spell binding names owned by one conduit.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Tuple[str, ...]: Visible binding names owned by the conduit.
+        """
+        return self.get_view_conduit(
+            frame_name=frame_name,
+        ).list_binding_names_for_conduit(conduit_id, frame_name=frame_name)
+
+    def list_spell_names_for_conduit(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return visible spell names owned by one conduit.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Tuple[str, ...]: Visible spell names owned by the conduit.
+        """
+        return self.get_view_conduit(
+            frame_name=frame_name,
+        ).list_spell_names_for_conduit(conduit_id, frame_name=frame_name)
+
+    def describe_conduit_access_summary(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return one compact access/inventory summary for a conduit.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Compact conduit access summary.
+        """
+        return self.get_view_conduit(
+            frame_name=frame_name,
+        ).describe_conduit_access_summary(conduit_id, frame_name=frame_name)
+
+    def find_conduit_by_name(
+            self,
+            conduit_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[IFrameLink]:
+        """
+        Return visible conduits whose display name matches exactly.
+
+        Args:
+            conduit_name:
+                Exact conduit display name.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[IFrameLink]: Matching visible conduit links.
+        """
+        return self.get_view_conduit(frame_name=frame_name).find_conduit_by_name(
+            conduit_name,
+            frame_name=frame_name,
+        )
+
+    def explain_conduit_access(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Explain the effective ACL access posture for one conduit.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Conduit visibility and section explanation.
+        """
+        return self.get_view_conduit(frame_name=frame_name).explain_conduit_access(
+            conduit_id,
+            frame_name=frame_name,
+        )
+
+    def get_conduit_payload_field(
+            self,
+            conduit_id: str,
+            field_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one ACL-visible conduit payload field or raise.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            field_name:
+                Required conduit payload field name.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            object: ACL-visible conduit payload field value.
+        """
+        return self.get_view_conduit(frame_name=frame_name).get_conduit_payload_field(
+            conduit_id,
+            field_name,
+            frame_name=frame_name,
+        )
+
     def list_spells(
             self,
             *,
@@ -3242,6 +3501,464 @@ class FrameViewer(Cleanable):
             frame_name=frame_name,
         )
 
+    def describe_spell_detail(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the richer detail posture for one spell when available.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Rich detail status and payload.
+        """
+        return self.get_view_spell(frame_name=frame_name).describe_spell_detail(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+
+    def describe_spell_identity(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the stable identity fields for one visible spell.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Stable identity fields for the visible spell.
+        """
+        return self.get_view_spell(frame_name=frame_name).describe_spell_identity(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+
+    def describe_spell_binding(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the binding-facing summary for one visible spell.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Binding-facing spell summary.
+        """
+        return self.get_view_spell(frame_name=frame_name).describe_spell_binding(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+
+    def describe_spell_resolution(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the resolution-facing summary for one visible spell.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Resolution-facing spell summary.
+        """
+        return self.get_view_spell(frame_name=frame_name).describe_spell_resolution(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+
+    def describe_spell_metadata(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the metadata-facing summary for one visible spell.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Metadata-facing spell summary.
+        """
+        return self.get_view_spell(frame_name=frame_name).describe_spell_metadata(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+
+    def describe_spell_class_profile(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the class-profile summary for one visible detailed spell.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Class-profile summary.
+        """
+        return self.get_view_spell(
+            frame_name=frame_name,
+        ).describe_spell_class_profile(spell_source_id, frame_name=frame_name)
+
+    def describe_spell_callable_profile(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the callable-profile summary for one visible detailed spell.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Callable-profile summary.
+        """
+        return self.get_view_spell(
+            frame_name=frame_name,
+        ).describe_spell_callable_profile(spell_source_id, frame_name=frame_name)
+
+    def describe_spell_instance_members(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the instance-member summary for one visible detailed spell.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Instance-member summary.
+        """
+        return self.get_view_spell(
+            frame_name=frame_name,
+        ).describe_spell_instance_members(spell_source_id, frame_name=frame_name)
+
+    def describe_spell_dynamic_access(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the dynamic-access summary for one visible detailed spell.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Dynamic-access availability and normalized data.
+        """
+        return self.get_view_spell(
+            frame_name=frame_name,
+        ).describe_spell_dynamic_access(spell_source_id, frame_name=frame_name)
+
+    def list_spell_dunder_member_names(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return dunder member names visible in detailed spell data.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Tuple[str, ...]: Visible dunder member names.
+        """
+        return self.get_view_spell(
+            frame_name=frame_name,
+        ).list_spell_dunder_member_names(spell_source_id, frame_name=frame_name)
+
+    def describe_spell_dunder_members(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the visible dunder members surfaced by detailed spell data.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Visible dunder member summary.
+        """
+        return self.get_view_spell(
+            frame_name=frame_name,
+        ).describe_spell_dunder_members(spell_source_id, frame_name=frame_name)
+
+    def list_spells_by_payload_type(
+            self,
+            payload_type: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[IFrameLink]:
+        """
+        Return visible spells whose published payload type matches exactly.
+
+        Args:
+            payload_type:
+                Required spell payload type.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[IFrameLink]: Matching visible spell links.
+        """
+        return self.get_view_spell(frame_name=frame_name).list_spells_by_payload_type(
+            payload_type,
+            frame_name=frame_name,
+        )
+
+    def find_spell_by_binding_name(
+            self,
+            binding_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[IFrameLink]:
+        """
+        Return visible spells whose binding name matches exactly.
+
+        Args:
+            binding_name:
+                Exact published binding name.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[IFrameLink]: Matching visible spell links.
+        """
+        return self.get_view_spell(frame_name=frame_name).find_spell_by_binding_name(
+            binding_name,
+            frame_name=frame_name,
+        )
+
+    def list_spells_by_lineage_id(
+            self,
+            lineage_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[IFrameLink]:
+        """
+        Return visible spells sharing one lineage id.
+
+        Args:
+            lineage_id:
+                Required lineage id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[IFrameLink]: Matching visible spell links.
+        """
+        return self.get_view_spell(frame_name=frame_name).list_spells_by_lineage_id(
+            lineage_id,
+            frame_name=frame_name,
+        )
+
+    def list_spells_by_spell_name(
+            self,
+            spell_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[IFrameLink]:
+        """
+        Return visible spells whose spell name matches exactly.
+
+        Args:
+            spell_name:
+                Required spell name.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[IFrameLink]: Matching visible spell links.
+        """
+        return self.get_view_spell(frame_name=frame_name).list_spells_by_spell_name(
+            spell_name,
+            frame_name=frame_name,
+        )
+
+    def search_spells_contains(
+            self,
+            text: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[IFrameLink]:
+        """
+        Return visible spells whose identity contains one text fragment.
+
+        Args:
+            text:
+                Case-insensitive text fragment to match.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[IFrameLink]: Matching visible spell links.
+        """
+        return self.get_view_spell(frame_name=frame_name).search_spells_contains(
+            text,
+            frame_name=frame_name,
+        )
+
+    def search_spells_prefix(
+            self,
+            prefix: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[IFrameLink]:
+        """
+        Return visible spells whose identity starts with one prefix.
+
+        Args:
+            prefix:
+                Case-insensitive prefix to match.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[IFrameLink]: Matching visible spell links.
+        """
+        return self.get_view_spell(frame_name=frame_name).search_spells_prefix(
+            prefix,
+            frame_name=frame_name,
+        )
+
+    def explain_spell_access(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Explain the effective ACL access posture for one spell.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Spell visibility, section, and detail posture
+            explanation.
+        """
+        return self.get_view_spell(frame_name=frame_name).explain_spell_access(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+
+    def describe_spell_access_summary(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return one compact access/identity/detail summary for a spell.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Compact spell access summary.
+        """
+        return self.get_view_spell(
+            frame_name=frame_name,
+        ).describe_spell_access_summary(spell_source_id, frame_name=frame_name)
+
+    def get_spell_payload_section(
+            self,
+            spell_source_id: str,
+            section_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one ACL-visible spell payload section or raise.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            section_name:
+                Required spell payload section name.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            object: ACL-visible spell payload section value.
+        """
+        return self.get_view_spell(frame_name=frame_name).get_spell_payload_section(
+            spell_source_id,
+            section_name,
+            frame_name=frame_name,
+        )
+
     def describe_spell_missing_sections(
             self,
             spell_source_id: str,
@@ -3331,13 +4048,27 @@ class FrameViewer(Cleanable):
             self,
             frame_name: str,
     ) -> CompiledFrameACLAccessSurface:
-        return self._get_required_view_projection(frame_name).compiled_access_surface
+        try:
+            return self._get_required_view_projection(frame_name).compiled_access_surface
+        except ValueError as exc:
+            raise ValueError(
+                "Compiled access surface for frame '{0}' was not found.".format(
+                    frame_name
+                )
+            ) from exc
 
     def _get_required_frame_acl_configuration(
             self,
             frame_name: str,
     ) -> FrameACLConfiguration:
-        return self._get_required_view_projection(frame_name).frame_acl_configuration
+        try:
+            return self._get_required_view_projection(frame_name).frame_acl_configuration
+        except ValueError as exc:
+            raise ValueError(
+                "Frame ACL configuration for frame '{0}' was not found.".format(
+                    frame_name
+                )
+            ) from exc
 
     def _get_required_view_projection(self, frame_name: str) -> ViewProjection:
         """

@@ -509,11 +509,6 @@ class Rift(Cleanable, IRift):
             projection_sets_by_frame_name,
             merge=merge,
         )
-        space = self.space
-        space.frame_viewer.sync_from_projection_sets(
-            self._projection_sets_by_frame_name,
-            metadata=self._build_frame_viewer_metadata(),
-        )
         return projection_sets_by_frame_name
 
     def _apply_projection_sets(

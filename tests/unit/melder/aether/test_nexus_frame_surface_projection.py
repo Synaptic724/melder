@@ -298,8 +298,6 @@ def test_rift_refresh_runtime_projections_for_multiple_frames_uses_one_projectio
         nexus.create_frame_projection_sets_for_rift
     )
     original_apply_projection_sets = rift._apply_projection_sets
-    original_sync_from_projection_sets = rift.space.frame_viewer.sync_from_projection_sets
-
     def wrapped_create_frame_projection_sets_for_rift(
             rift_id: str,
             *,
@@ -332,20 +330,6 @@ def test_rift_refresh_runtime_projections_for_multiple_frames_uses_one_projectio
             merge=merge,
         )
 
-    def wrapped_sync_from_projection_sets(
-            self,
-            projection_sets_by_frame_name,
-            *,
-            default_view_frame_name=None,
-            metadata=None,
-    ):
-        sync_calls.append(metadata["assigned_frame_names"])
-        return original_sync_from_projection_sets(
-            projection_sets_by_frame_name,
-            default_view_frame_name=default_view_frame_name,
-            metadata=metadata,
-        )
-
     monkeypatch.setattr(
         nexus,
         "create_frame_projection_sets_for_rift",
@@ -356,12 +340,6 @@ def test_rift_refresh_runtime_projections_for_multiple_frames_uses_one_projectio
         "_apply_projection_sets",
         wrapped_apply_projection_sets,
     )
-    monkeypatch.setattr(
-        type(rift.space.frame_viewer),
-        "sync_from_projection_sets",
-        wrapped_sync_from_projection_sets,
-    )
-
     rift.refresh_runtime_projections(frame_names=("ops", "finance"))
 
     assert create_calls == [
@@ -370,9 +348,11 @@ def test_rift_refresh_runtime_projections_for_multiple_frames_uses_one_projectio
     assert apply_calls == [
         (("finance", "ops"), True),
     ]
-    assert sync_calls == [
-        ("ops", "finance"),
-    ]
+    assert sync_calls == []
+    assert rift.space.frame_viewer.metadata["assigned_frame_names"] == (
+        "ops",
+        "finance",
+    )
 
 
 def test_rift_target_frame_populates_room_owned_viewer_metadata_from_assigned_frames() -> None:

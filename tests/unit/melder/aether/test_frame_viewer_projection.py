@@ -49,6 +49,7 @@ from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_pr
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 from tests._nexus_viewer_matrix_support import (
+    ViewerProjectionRiftDouble,
     build_multi_frame_viewer,
     build_spell_record_key,
     build_viewer,
@@ -247,7 +248,7 @@ def _build_single_frame_viewer(
         metadata={"source": "test_frame_viewer_projection"},
     )
     return FrameViewer(
-        projection_sets_by_frame_name={frame_name: projection_set},
+        rift=ViewerProjectionRiftDouble({frame_name: projection_set}),
         default_view_frame_name=(
             frame_name if default_view_frame_name is None else default_view_frame_name
         ),
@@ -296,7 +297,7 @@ def _build_viewer(frame_names: tuple[str, ...]) -> FrameViewer:
             metadata={"source": "test_frame_viewer_projection"},
         )
     return FrameViewer(
-        projection_sets_by_frame_name=projection_sets_by_frame_name,
+        rift=ViewerProjectionRiftDouble(projection_sets_by_frame_name),
         default_view_frame_name=frame_names[0] if len(frame_names) > 0 else None,
     )
 
@@ -1207,7 +1208,12 @@ def test_frame_viewer_brief_and_compare_methods_report_expected_shapes() -> None
             "describe_spell_records",
             "describe_spell_record",
         ),
-        "frame_local_method_entrypoint": "execute_method",
+        "frame_local_method_entrypoints": (
+            "describe_visible_surface",
+            "list_targets",
+            "describe_conduits",
+            "describe_spells",
+        ),
     }
     assert viewer.describe_frame_brief("ops") == {
         "frame_name": "ops",
@@ -2184,7 +2190,12 @@ def test_execute_method_routes_new_brief_and_compare_methods() -> None:
     assert host_inventory["frame_count"] == 2
     assert frame_compare["left_frame_name"] == "ops"
     assert frame_compare_brief["left_only_spell_count"] == 1
-    assert method_surface["frame_local_method_entrypoint"] == "execute_method"
+    assert method_surface["frame_local_method_entrypoints"] == (
+        "describe_visible_surface",
+        "list_targets",
+        "describe_conduits",
+        "describe_spells",
+    )
     assert frame_view_brief["visible_target_count"] == 3
     assert "hidden_frame_payload_fields" in missing_surface
     assert conduit_brief["conduit_id"] == "ops-conduit"
@@ -2775,13 +2786,5 @@ def test_frame_viewer_cleanup_is_idempotent_and_rechecks_cleaned_state_under_loc
 def test_frame_viewer_execute_guardrails_are_explicit() -> None:
     viewer = _build_viewer(("ops",))
 
-    with pytest.raises(ValueError, match="helper_name cannot be empty"):
-        viewer.has_enabled_helper("")
-
-    with pytest.raises(
-            ValueError,
-            match="surface method 'ghost_tool' was not found",
-    ):
-        viewer.ghost_tool(
-            frame_name="ops",
-        )
+    with pytest.raises(AttributeError):
+        viewer.ghost_tool(frame_name="ops")

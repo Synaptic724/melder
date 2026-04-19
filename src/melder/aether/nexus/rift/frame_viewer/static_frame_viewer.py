@@ -14,50 +14,22 @@ class StaticFrameViewer(FrameViewer):
     Static-room viewer overlay that filters spell-facing surfaces to live-only.
 
     Purpose:
-        Preserve the generic descriptor-backed viewer host while narrowing the
+        Preserve the generic Rift-backed viewer host while narrowing the
         static-room spell surface down to already-live spells.
 
     Contract:
+        - Inherits the same Rift-backed projection ownership model as
+          `FrameViewer`.
         - Keeps frame and conduit visibility structural.
-        - Filters spell-facing queries and spell target projection to
+        - Filters spell-facing visibility and spell-record iteration down to
           already-live spells only.
         - Uses the existing no-create live probe/runtime truth and never
           mutates descriptor publication.
-        - Rebuilds frame-local helper state after each live refresh so the
-          shipped general viewer surface stays aligned with the filtered
-          spell surface.
     """
 
     __melder_internal__ = _mrg.sentinel
-    __slots__ = [
-        "_base_compiled_access_surfaces_by_frame_name",
-        "_filtered_compiled_access_surfaces_by_frame_name",
-    ]
+    __slots__ = []
     _aether = Aether()
-
-    def __init__(self, **kwargs: Any) -> None:
-        """
-        Initialize one static viewer overlay.
-
-        Args:
-            **kwargs:
-                Forwarded to `FrameViewer`.
-        """
-        super().__init__(**kwargs)
-        self._base_compiled_access_surfaces_by_frame_name: Dict[
-            str,
-            CompiledFrameACLAccessSurface,
-        ] = {
-            frame_name: self._clone_compiled_access_surface(compiled_access_surface)
-            for frame_name, compiled_access_surface in (
-                super().compiled_access_surfaces_by_frame_name.items()
-            )
-        }
-        self._filtered_compiled_access_surfaces_by_frame_name: Dict[
-            str,
-            CompiledFrameACLAccessSurface,
-        ] = {}
-        self.refresh_live_spell_projection()
 
     @classmethod
     def from_frame_viewer(cls, frame_viewer: FrameViewer) -> "StaticFrameViewer":
@@ -72,132 +44,9 @@ class StaticFrameViewer(FrameViewer):
             StaticFrameViewer: Static viewer overlay.
         """
         frame_viewer.check_cleaned()
-        if isinstance(frame_viewer, StaticFrameViewer):
-            source_projection_sets_by_frame_name = dict(
-                frame_viewer._projection_sets_by_frame_name
-            )
-        else:
-            source_projection_sets_by_frame_name = dict(
-                frame_viewer._projection_sets_by_frame_name
-            )
         return cls(
-            projection_sets_by_frame_name=source_projection_sets_by_frame_name,
-            default_view_frame_name=frame_viewer._default_view_frame_name,
-            rift_gate=frame_viewer._rift_gate,
-            metadata=dict(frame_viewer._metadata),
-        )
-
-    def sync_from_projection_sets(
-            self,
-            projection_sets_by_frame_name: Dict[str, "FrameProjectionSet"],
-            *,
-            default_view_frame_name: Optional[str] = None,
-            metadata: Optional[Dict[str, object]] = None,
-    ) -> None:
-        """
-        Synchronize the static viewer in place from room-owned projections.
-
-        Purpose:
-            Keep one durable static viewer asset alive while refreshing its base
-            compiled access surfaces and then reapplying the live-only spell
-            filter.
-
-        Args:
-            projection_sets_by_frame_name:
-                Current room-owned projection sets keyed by frame name.
-            default_view_frame_name:
-                Optional explicit default hosted frame name.
-            metadata:
-                Optional replacement viewer metadata payload.
-
-        Returns:
-            None.
-        """
-        super().sync_from_projection_sets(
-            projection_sets_by_frame_name,
-            default_view_frame_name=default_view_frame_name,
-            metadata=metadata,
-        )
-        with self._lock:
-            for compiled_access_surface in (
-                    self._base_compiled_access_surfaces_by_frame_name.values()
-            ):
-                compiled_access_surface.cleanup()
-            for compiled_access_surface in (
-                    self._filtered_compiled_access_surfaces_by_frame_name.values()
-            ):
-                compiled_access_surface.cleanup()
-            self._base_compiled_access_surfaces_by_frame_name = {
-                frame_name: self._clone_compiled_access_surface(
-                    compiled_access_surface
-                )
-                for frame_name, compiled_access_surface in (
-                    super().compiled_access_surfaces_by_frame_name.items()
-                )
-            }
-            self._filtered_compiled_access_surfaces_by_frame_name.clear()
-        self.refresh_live_spell_projection()
-
-    def cleanup(self) -> None:
-        """
-        Idempotently clear static-viewer-owned overlay state.
-        """
-        if self._cleaned:
-            return
-        with self._lock:
-            if self._cleaned:
-                return
-            for compiled_access_surface in (
-                    self._filtered_compiled_access_surfaces_by_frame_name.values()
-            ):
-                compiled_access_surface.cleanup()
-            for compiled_access_surface in (
-                    self._base_compiled_access_surfaces_by_frame_name.values()
-            ):
-                compiled_access_surface.cleanup()
-            self._filtered_compiled_access_surfaces_by_frame_name.clear()
-            self._base_compiled_access_surfaces_by_frame_name.clear()
-            self._filtered_compiled_access_surfaces_by_frame_name = None
-            self._base_compiled_access_surfaces_by_frame_name = None
-        super().cleanup()
-
-    @staticmethod
-    def _clone_compiled_access_surface(
-            compiled_access_surface: CompiledFrameACLAccessSurface,
-    ) -> CompiledFrameACLAccessSurface:
-        """
-        Return a detached compiled ACL surface clone for static-viewer state.
-
-        Args:
-            compiled_access_surface:
-                Source compiled ACL access surface to clone.
-
-        Returns:
-            CompiledFrameACLAccessSurface: Detached compiled ACL surface copy.
-        """
-        return CompiledFrameACLAccessSurface(
-            frame_name=compiled_access_surface.frame_name,
-            configuration_id=compiled_access_surface.configuration_id,
-            view_profile_name=compiled_access_surface.view_profile_name,
-            view_profile_version=compiled_access_surface.view_profile_version,
-            codegen_profile_name=compiled_access_surface.codegen_profile_name,
-            codegen_profile_version=compiled_access_surface.codegen_profile_version,
-            command_frame_enabled=compiled_access_surface.command_frame_enabled,
-            allowed_kinds=compiled_access_surface.allowed_kinds,
-            allowed_commands=compiled_access_surface.allowed_commands,
-            frame_payload_fields=compiled_access_surface.frame_payload_fields,
-            visible_conduit_ids=compiled_access_surface.visible_conduit_ids,
-            visible_spell_keys=compiled_access_surface.visible_spell_keys,
-            visible_spell_index_ids=compiled_access_surface.visible_spell_index_ids,
-            enabled_conduit_ids=compiled_access_surface.enabled_conduit_ids,
-            enabled_spell_index_ids=compiled_access_surface.enabled_spell_index_ids,
-            conduit_payload_sections_by_id=(
-                compiled_access_surface.conduit_payload_sections_by_id
-            ),
-            spell_payload_sections_by_key=(
-                compiled_access_surface.spell_payload_sections_by_key
-            ),
-            metadata=compiled_access_surface.metadata,
+            rift=frame_viewer._rift,
+            default_view_frame_name=frame_viewer.default_view_frame_name,
         )
 
     def clone(self) -> "StaticFrameViewer":
@@ -211,32 +60,26 @@ class StaticFrameViewer(FrameViewer):
         with self._lock:
             return StaticFrameViewer.from_frame_viewer(self)
 
-    def get_view_frame(
+    def _iter_spell_records(
             self,
             *,
             frame_name: Optional[str] = None,
-    ):
-        """Refresh live spell projection before returning the frame helper."""
-        self.refresh_live_spell_projection(frame_name)
-        return super().get_view_frame(frame_name=frame_name)
+    ) -> Iterator[object]:
+        """
+        Yield live-only spell records in deterministic hosted order.
 
-    def get_view_conduit(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ):
-        """Refresh live spell projection before returning the conduit helper."""
-        self.refresh_live_spell_projection(frame_name)
-        return super().get_view_conduit(frame_name=frame_name)
+        Args:
+            frame_name:
+                Optional hosted frame name filter.
 
-    def get_view_spell(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ):
-        """Refresh live spell projection before returning the spell helper."""
-        self.refresh_live_spell_projection(frame_name)
-        return super().get_view_spell(frame_name=frame_name)
+        Yields:
+            object: Live-only spell records.
+        """
+        for current_frame_name in self._get_frame_names_for_query(frame_name):
+            for spell_record in self._iter_live_spell_records_for_frame(
+                    current_frame_name
+            ):
+                yield spell_record
 
     def list_spell_source_ids_for_frame(self, frame_name: str) -> List[str]:
         """
@@ -249,33 +92,10 @@ class StaticFrameViewer(FrameViewer):
         Returns:
             List[str]: Live-only spell source ids.
         """
-        self.refresh_live_spell_projection(frame_name)
         return [
             self._build_spell_source_id(spell_record)
             for spell_record in self._iter_live_spell_records_for_frame(frame_name)
         ]
-
-    def _iter_spell_records(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> Iterator[object]:
-        """
-        Yield live-only spell records in deterministic hosted order.
-
-        Args:
-            frame_name:
-                Optional hosted frame name.
-
-        Yields:
-            object: Live-only spell records.
-        """
-        self.refresh_live_spell_projection(frame_name)
-        for current_frame_name in self._get_frame_names_for_query(frame_name):
-            for spell_record in self._iter_live_spell_records_for_frame(
-                    current_frame_name
-            ):
-                yield spell_record
 
     def _get_required_spell_record(
             self,
@@ -296,7 +116,6 @@ class StaticFrameViewer(FrameViewer):
             Tuple[str, object]: `(frame_name, spell_record)` for the resolved
             live spell.
         """
-        self.refresh_live_spell_projection(frame_name)
         if not spell_source_id:
             raise ValueError("spell_source_id cannot be empty.")
         spellbook_id, spell_id = self._parse_spell_source_id(spell_source_id)
@@ -322,82 +141,81 @@ class StaticFrameViewer(FrameViewer):
             )
         return matching_records[0]
 
-    def refresh_live_spell_projection(
+    @property
+    def compiled_access_surfaces_by_frame_name(
             self,
-            frame_name: Optional[str] = None,
-    ) -> None:
+    ) -> Dict[str, CompiledFrameACLAccessSurface]:
         """
-        Refresh the live-only spell overlay for one frame or all hosted frames.
-
-        Args:
-            frame_name:
-                Optional hosted frame name.
+        Return the current filtered compiled access surfaces keyed by frame.
 
         Returns:
-            None.
+            Dict[str, CompiledFrameACLAccessSurface]: Live-only filtered
+            static-viewer surfaces.
         """
         self.check_cleaned()
         with self._lock:
-            for current_frame_name in self._get_frame_names_for_query(frame_name):
-                base_compiled_access_surface = (
-                    self._base_compiled_access_surfaces_by_frame_name[
-                        current_frame_name
-                    ]
-                )
-                live_spell_records = self._iter_live_spell_records_for_frame(
-                    current_frame_name
-                )
-                live_record_keys = {spell_record.record_key for spell_record in live_spell_records}
-                filtered_visible_spell_keys = tuple(
-                    record_key
-                    for record_key in base_compiled_access_surface.visible_spell_keys
-                    if record_key in live_record_keys
-                )
-                live_spell_index_ids = {
-                    spell_record.spell_index_id for spell_record in live_spell_records
-                }
-                filtered_visible_spell_index_ids = tuple(
-                    spell_index_id
-                    for spell_index_id in (
-                        base_compiled_access_surface.visible_spell_index_ids
-                    )
-                    if spell_index_id in live_spell_index_ids
-                )
-                filtered_compiled_access_surface = CompiledFrameACLAccessSurface(
-                    frame_name=base_compiled_access_surface.frame_name,
-                    configuration_id=base_compiled_access_surface.configuration_id,
-                    view_profile_name=base_compiled_access_surface.view_profile_name,
-                    view_profile_version=base_compiled_access_surface.view_profile_version,
-                    codegen_profile_name=base_compiled_access_surface.codegen_profile_name,
-                    codegen_profile_version=base_compiled_access_surface.codegen_profile_version,
-                    command_frame_enabled=base_compiled_access_surface.command_frame_enabled,
-                    allowed_kinds=base_compiled_access_surface.allowed_kinds,
-                    allowed_commands=base_compiled_access_surface.allowed_commands,
-                    frame_payload_fields=base_compiled_access_surface.frame_payload_fields,
-                    visible_conduit_ids=base_compiled_access_surface.visible_conduit_ids,
-                    visible_spell_keys=filtered_visible_spell_keys,
-                    visible_spell_index_ids=filtered_visible_spell_index_ids,
-                    enabled_conduit_ids=base_compiled_access_surface.enabled_conduit_ids,
-                    enabled_spell_index_ids=base_compiled_access_surface.enabled_spell_index_ids,
-                    conduit_payload_sections_by_id=(
-                        base_compiled_access_surface.conduit_payload_sections_by_id
-                    ),
-                    spell_payload_sections_by_key=(
-                        base_compiled_access_surface.spell_payload_sections_by_key
-                    ),
-                    metadata=base_compiled_access_surface.metadata,
-                )
-                current_compiled_access_surface = (
-                    self._filtered_compiled_access_surfaces_by_frame_name.get(
-                        current_frame_name
-                    )
-                )
-                if current_compiled_access_surface is not None:
-                    current_compiled_access_surface.cleanup()
-                self._filtered_compiled_access_surfaces_by_frame_name[
-                    current_frame_name
-                ] = filtered_compiled_access_surface
-            self._clear_helper_cache()
+            return {
+                frame_name: self._get_required_compiled_access_surface(frame_name)
+                for frame_name in self.list_frame_names()
+            }
+
+    def _get_required_compiled_access_surface(
+            self,
+            frame_name: str,
+    ) -> CompiledFrameACLAccessSurface:
+        """
+        Return the filtered compiled access surface for one frame.
+
+        Args:
+            frame_name:
+                Hosted frame name.
+
+        Returns:
+            CompiledFrameACLAccessSurface: Live-only filtered static-viewer
+            surface.
+        """
+        base_compiled_access_surface = super()._get_required_compiled_access_surface(
+            frame_name
+        )
+        live_spell_records = self._iter_live_spell_records_for_frame(frame_name)
+        live_record_keys = {spell_record.record_key for spell_record in live_spell_records}
+        filtered_visible_spell_keys = tuple(
+            record_key
+            for record_key in base_compiled_access_surface.visible_spell_keys
+            if record_key in live_record_keys
+        )
+        live_spell_index_ids = {
+            spell_record.spell_index_id for spell_record in live_spell_records
+        }
+        filtered_visible_spell_index_ids = tuple(
+            spell_index_id
+            for spell_index_id in base_compiled_access_surface.visible_spell_index_ids
+            if spell_index_id in live_spell_index_ids
+        )
+        return CompiledFrameACLAccessSurface(
+            frame_name=base_compiled_access_surface.frame_name,
+            configuration_id=base_compiled_access_surface.configuration_id,
+            view_profile_name=base_compiled_access_surface.view_profile_name,
+            view_profile_version=base_compiled_access_surface.view_profile_version,
+            codegen_profile_name=base_compiled_access_surface.codegen_profile_name,
+            codegen_profile_version=base_compiled_access_surface.codegen_profile_version,
+            command_frame_enabled=base_compiled_access_surface.command_frame_enabled,
+            allowed_kinds=base_compiled_access_surface.allowed_kinds,
+            allowed_commands=base_compiled_access_surface.allowed_commands,
+            frame_payload_fields=base_compiled_access_surface.frame_payload_fields,
+            visible_conduit_ids=base_compiled_access_surface.visible_conduit_ids,
+            visible_spell_keys=filtered_visible_spell_keys,
+            visible_spell_index_ids=filtered_visible_spell_index_ids,
+            enabled_conduit_ids=base_compiled_access_surface.enabled_conduit_ids,
+            enabled_spell_index_ids=base_compiled_access_surface.enabled_spell_index_ids,
+            conduit_payload_sections_by_id=(
+                base_compiled_access_surface.conduit_payload_sections_by_id
+            ),
+            spell_payload_sections_by_key=(
+                base_compiled_access_surface.spell_payload_sections_by_key
+            ),
+            metadata=base_compiled_access_surface.metadata,
+        )
 
     def _iter_live_spell_records_for_frame(self, frame_name: str) -> List[object]:
         """
@@ -411,9 +229,9 @@ class StaticFrameViewer(FrameViewer):
             List[object]: Live visible spell records in deterministic order.
         """
         descriptor = self._get_required_frame_descriptor(frame_name)
-        base_compiled_access_surface = self._base_compiled_access_surfaces_by_frame_name[
+        base_compiled_access_surface = super()._get_required_compiled_access_surface(
             frame_name
-        ]
+        )
         live_spell_records: List[object] = []
         for record_key in base_compiled_access_surface.visible_spell_keys:
             spell_record = descriptor.spell_records_by_key.get(record_key)
@@ -422,40 +240,6 @@ class StaticFrameViewer(FrameViewer):
             if self._is_spell_record_live(frame_name, spell_record):
                 live_spell_records.append(spell_record)
         return live_spell_records
-
-    @property
-    def compiled_access_surfaces_by_frame_name(
-            self,
-    ) -> Dict[str, CompiledFrameACLAccessSurface]:
-        """
-        Return the filtered compiled access surfaces keyed by frame.
-
-        Returns:
-            Dict[str, CompiledFrameACLAccessSurface]: Filtered static-viewer
-            surfaces.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return dict(self._filtered_compiled_access_surfaces_by_frame_name)
-
-    def _get_required_compiled_access_surface(
-            self,
-            frame_name: str,
-    ) -> CompiledFrameACLAccessSurface:
-        """
-        Return the filtered compiled access surface for one frame.
-
-        Returns:
-            CompiledFrameACLAccessSurface: Filtered static-viewer surface.
-        """
-        try:
-            return self._filtered_compiled_access_surfaces_by_frame_name[frame_name]
-        except KeyError as exc:
-            raise ValueError(
-                "Compiled access surface for frame '{0}' was not found.".format(
-                    frame_name
-                )
-            ) from exc
 
     def _is_spell_record_live(self, frame_name: str, spell_record: object) -> bool:
         """

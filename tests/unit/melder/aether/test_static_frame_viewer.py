@@ -46,34 +46,19 @@ def test_static_frame_viewer_from_frame_viewer_handles_plain_and_static_sources(
     static_viewer = StaticFrameViewer.from_frame_viewer(viewer)
     cloned_static_viewer = StaticFrameViewer.from_frame_viewer(static_viewer)
 
-    assert static_viewer._base_compiled_access_surfaces_by_frame_name["ops"] is not viewer.compiled_access_surfaces_by_frame_name["ops"]
-    assert cloned_static_viewer._base_compiled_access_surfaces_by_frame_name["ops"] is not static_viewer._base_compiled_access_surfaces_by_frame_name["ops"]
+    assert static_viewer._rift is viewer._rift
+    assert static_viewer.default_view_frame_name == viewer.default_view_frame_name
+    assert cloned_static_viewer._rift is static_viewer._rift
+    assert cloned_static_viewer.default_view_frame_name == static_viewer.default_view_frame_name
 
 
-def test_static_frame_viewer_cleanup_clone_and_dispatch_paths_work(monkeypatch) -> None:
+def test_static_frame_viewer_cleanup_clone_and_dispatch_paths_work() -> None:
     viewer = _build_viewer(("ops",))
     static_viewer = StaticFrameViewer.from_frame_viewer(viewer)
-    refreshed = []
+    targets = static_viewer.list_targets(frame_name="ops")
 
-    monkeypatch.setattr(
-        StaticFrameViewer,
-        "refresh_live_spell_projection",
-        lambda self, frame_name=None: refreshed.append(frame_name),
-    )
-    monkeypatch.setattr(
-        FrameViewer,
-        "execute_method",
-        lambda self, method_name, **kwargs: {
-            "method_name": method_name,
-            "frame_name": kwargs.get("frame_name"),
-        },
-    )
-
-    assert static_viewer.list_targets( frame_name="ops") == {
-        "method_name": "list_targets",
-        "frame_name": "ops",
-    }
-    assert refreshed == ["ops"]
+    assert len(targets) == 2
+    assert {link.source_kind for link in targets} == {"frame", "conduit"}
 
     clone = static_viewer.clone()
     assert isinstance(clone, StaticFrameViewer)
@@ -82,7 +67,6 @@ def test_static_frame_viewer_cleanup_clone_and_dispatch_paths_work(monkeypatch) 
     static_viewer.cleanup()
     static_viewer.cleanup()
     assert static_viewer.cleaned is True
-    assert static_viewer._base_compiled_access_surfaces_by_frame_name is None
 
 
 def test_static_frame_viewer_cleanup_rechecks_cleaned_inside_lock() -> None:
@@ -111,11 +95,6 @@ def test_static_frame_viewer_cleanup_rechecks_cleaned_inside_lock() -> None:
 def test_static_frame_viewer_live_spell_helpers_cover_record_and_probe_paths(monkeypatch) -> None:
     viewer = StaticFrameViewer.from_frame_viewer(_build_viewer(("ops",)))
 
-    monkeypatch.setattr(
-        StaticFrameViewer,
-        "refresh_live_spell_projection",
-        lambda self, frame_name=None: None,
-    )
     monkeypatch.setattr(
         StaticFrameViewer,
         "_iter_live_spell_records_for_frame",
@@ -180,9 +159,11 @@ def test_static_frame_viewer_live_projection_filters_and_owner_resolution_work(m
         spell_payload_sections_by_key={},
         metadata={},
     )
-    current_surface = SimpleNamespace(cleanup=lambda: None)
-    viewer._base_compiled_access_surfaces_by_frame_name = {"ops": base_surface}
-    viewer._filtered_compiled_access_surfaces_by_frame_name = {"ops": current_surface}
+    monkeypatch.setattr(
+        FrameViewer,
+        "_get_required_compiled_access_surface",
+        lambda self, frame_name: base_surface,
+    )
 
     monkeypatch.setattr(
         StaticFrameViewer,
