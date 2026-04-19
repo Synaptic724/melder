@@ -267,30 +267,35 @@ def test_rift_target_frame_attaches_room_owned_viewer_path() -> None:
     assert viewer.default_view_frame_name == "ops"
 
 
-def test_rift_get_frame_viewer_rejects_when_no_viewer_is_attached() -> None:
+def test_rift_get_frame_viewer_returns_durable_viewer_before_targeting() -> None:
     """
-    Verify `get_frame_viewer()` fails when no viewer is attached.
+    Verify `get_frame_viewer()` returns the durable viewer asset even before
+    any frame is targeted.
 
     Returns:
         None.
     """
     rift = _create_registered_rift()
+    viewer = rift.get_frame_viewer()
 
-    with pytest.raises(ValueError, match="has no attached frame viewer"):
-        rift.get_frame_viewer()
+    assert isinstance(viewer, FrameViewer)
+    assert viewer.count_frames() == 0
+    assert viewer.default_view_frame_name is None
 
 
-def test_rift_frame_viewer_helpers_fail_fast_without_attached_viewer() -> None:
+def test_rift_frame_viewer_asset_is_stable_before_targeting() -> None:
     """
-    Verify singular Rift viewer helpers fail fast when no viewer is attached.
+    Verify repeated Rift viewer reads return the same durable asset before any
+    frame is targeted.
 
     Returns:
         None.
     """
     rift = _create_registered_rift()
+    first_viewer = rift.get_frame_viewer()
+    second_viewer = rift.get_frame_viewer()
 
-    with pytest.raises(ValueError, match="has no attached frame viewer"):
-        rift.get_frame_viewer()
+    assert first_viewer is second_viewer
 
 
 def test_rift_spaces_expose_conduit_discovery_through_command_system() -> None:

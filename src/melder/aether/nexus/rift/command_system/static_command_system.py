@@ -75,7 +75,7 @@ class StaticCommandSystem(CommandSystem):
             spell_index_id,
             frame_name=frame_name,
         )
-        descriptor = self._space.get_required_command_projection(
+        descriptor = self._rift._get_required_command_projection(
             frame_name
         ).frame_descriptor
         matching_spell_records = [
@@ -230,7 +230,7 @@ class StaticCommandSystem(CommandSystem):
             if not spell_source_id:
                 raise ValueError("spell_source_id cannot be empty.")
             spellbook_id, spell_id = spell_source_id.split(":", 1)
-            descriptor = self._space.get_required_command_projection(
+            descriptor = self._rift._get_required_command_projection(
                 resolved_frame_name
             ).frame_descriptor
             matching_spell_records = [
@@ -292,7 +292,7 @@ class StaticCommandSystem(CommandSystem):
                 frame_name=frame_name,
         ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            descriptor = self._space.get_required_command_projection(
+            descriptor = self._rift._get_required_command_projection(
                 resolved_frame_name
             ).frame_descriptor
             matching_spell_records = [
@@ -351,7 +351,7 @@ class StaticCommandSystem(CommandSystem):
                 frame_name=frame_name,
         ), self._lock:
             resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
-            descriptor = self._space.get_required_command_projection(
+            descriptor = self._rift._get_required_command_projection(
                 resolved_frame_name
             ).frame_descriptor
             matching_spell_records = [

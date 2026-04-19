@@ -22,7 +22,7 @@ class CommandSystem(Cleanable):
         split without owning discovery or persistence itself.
 
     Contract:
-        - Uses the owning `RiftSpace` command projections as the command
+        - Uses the owning `Rift` command projections as the command
           substrate.
         - Enforces compiled command ACL state on direct fetch paths before
           exposing frame/conduit/spell runtime objects.
@@ -43,6 +43,7 @@ class CommandSystem(Cleanable):
         "_command_system_id",
         "_owner_space_id",
         "_lock",
+        "_rift",
         "_space",
         "_workstation",
     ]
@@ -60,13 +61,15 @@ class CommandSystem(Cleanable):
     )
     _aether = Aether()
 
-    def __init__(self, *, space: Any, workstation: Any) -> None:
+    def __init__(self, *, rift: Any, space: Any, workstation: Any) -> None:
         """
         Internal
 
         Initialize one room-local command system.
 
         Args:
+            rift:
+                Owning `Rift` that manages applied projection state.
             space:
                 Owning `RiftSpace`.
             workstation:
@@ -80,6 +83,8 @@ class CommandSystem(Cleanable):
                 If `space` or `workstation` is None.
         """
         super().__init__()
+        if rift is None:
+            raise TypeError("rift cannot be None.")
         if space is None:
             raise TypeError("space cannot be None.")
         if workstation is None:
@@ -87,6 +92,7 @@ class CommandSystem(Cleanable):
         self._command_system_id: str = IDBuilder.create_id()
         self._owner_space_id: str = space.space_id
         self._lock: threading.RLock = threading.RLock()
+        self._rift: Any = rift
         self._space: Any = space
         self._workstation: Any = workstation
 
@@ -112,6 +118,7 @@ class CommandSystem(Cleanable):
                 return
             self._cleaned = True
             self._owner_space_id = None
+            self._rift = None
             self._space = None
             self._workstation = None
             self._command_system_id = None
@@ -239,7 +246,7 @@ class CommandSystem(Cleanable):
             spell_index_id,
             frame_name=frame_name,
         )
-        descriptor = self._space.get_required_command_projection(
+        descriptor = self._rift._get_required_command_projection(
             frame_name
         ).frame_descriptor
         matching_spell_records = [
@@ -2475,7 +2482,7 @@ class CommandSystem(Cleanable):
         self._assert_frame_command_enabled(frame_name)
         compiled_access_surface = self._get_required_compiled_access_surface(frame_name)
         enabled_conduit_ids = set(compiled_access_surface.enabled_conduit_ids)
-        descriptor = self._space.get_required_command_projection(
+        descriptor = self._rift._get_required_command_projection(
             frame_name
         ).frame_descriptor
         return tuple(
@@ -2513,7 +2520,7 @@ class CommandSystem(Cleanable):
         """
         if not conduit_name:
             raise ValueError("conduit_name cannot be empty.")
-        descriptor = self._space.get_required_command_projection(
+        descriptor = self._rift._get_required_command_projection(
             frame_name
         ).frame_descriptor
         matching_conduit_ids = [
@@ -2568,7 +2575,7 @@ class CommandSystem(Cleanable):
         """
         if not spell_id:
             raise ValueError("spell_id cannot be empty.")
-        descriptor = self._space.get_required_command_projection(
+        descriptor = self._rift._get_required_command_projection(
             frame_name
         ).frame_descriptor
         matching_spell_index_ids = {
@@ -2617,7 +2624,7 @@ class CommandSystem(Cleanable):
                 "spell_source_id must be in 'spellbook_id:spell_id' form."
             )
         origin_spellbook_id, spell_id = spell_source_id.split(":", 1)
-        descriptor = self._space.get_required_command_projection(
+        descriptor = self._rift._get_required_command_projection(
             frame_name
         ).frame_descriptor
         matching_spell_records = [
@@ -2663,7 +2670,7 @@ class CommandSystem(Cleanable):
             ValueError:
                 If the room has no command projection for the requested frame.
         """
-        return self._space.get_required_command_projection(
+        return self._rift._get_required_command_projection(
             frame_name
         ).compiled_access_surface
 
@@ -2739,10 +2746,10 @@ class CommandSystem(Cleanable):
         resolved_frame_name = (
             frame_name
             if frame_name is not None
-            else self._space.get_default_runtime_frame_name()
+            else self._rift._get_default_runtime_frame_name()
         )
         if resolved_frame_name is None:
-            raise ValueError("RiftSpace has no default runtime frame.")
+            raise ValueError("Rift has no default runtime frame.")
         return resolved_frame_name
 
     def _get_required_runtime_frame(self, frame_name: str) -> object:

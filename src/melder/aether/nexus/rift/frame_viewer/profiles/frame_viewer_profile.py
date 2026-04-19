@@ -7,6 +7,7 @@ from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
 )
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
+from melder.aether.nexus.rift.projection.view_projection import ViewProjection
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.class_surface_ast_describer import (
     ClassSurfaceAstDescriber,
@@ -740,6 +741,53 @@ class FrameViewerProfile(Cleanable):
             frame_acl_configuration=frame_acl_configuration,
             compiled_access_surface=compiled_access_surface,
         )
+        return cloned_profile
+
+    def bind_to_projection(
+            self,
+            view_projection: ViewProjection,
+    ) -> None:
+        """
+        Bind this profile by reference to one view projection.
+
+        Purpose:
+            Let the viewer bind profiles directly from the projection-owned
+            median bundle instead of routing through a second decomposed local
+            snapshot layer.
+
+        Args:
+            view_projection:
+                Projection-owned view bundle for one frame.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if not isinstance(view_projection, ViewProjection):
+            raise TypeError("view_projection must be a ViewProjection.")
+        self.bind_to_frame(
+            frame_name=view_projection.frame_name,
+            frame_descriptor=view_projection.frame_descriptor,
+            frame_acl_configuration=view_projection.frame_acl_configuration,
+            compiled_access_surface=view_projection.compiled_access_surface,
+        )
+
+    def clone_bound_to_projection(
+            self,
+            view_projection: ViewProjection,
+    ) -> "FrameViewerProfile":
+        """
+        Return a detached profile copy already bound to one view projection.
+
+        Args:
+            view_projection:
+                Projection-owned view bundle for one frame.
+
+        Returns:
+            FrameViewerProfile: Detached bound profile copy.
+        """
+        cloned_profile = self.clone()
+        cloned_profile.bind_to_projection(view_projection)
         return cloned_profile
 
     def clone(self) -> "FrameViewerProfile":

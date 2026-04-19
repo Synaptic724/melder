@@ -1,40 +1,44 @@
-from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
     StaticFrameViewer,
 )
 from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
 
 
-def test_static_rift_space_internal_viewer_replacement_keeps_static_viewer_instance(monkeypatch) -> None:
-    space = StaticRiftSpace.__new__(StaticRiftSpace)
-    attached = []
-    static_viewer = StaticFrameViewer.__new__(StaticFrameViewer)
-
-    monkeypatch.setattr(
-        "melder.aether.nexus.rift.rift_space.rift_space.RiftSpace._replace_frame_viewer",
-        lambda self, frame_viewer: attached.append(frame_viewer),
-    )
-
-    space._replace_frame_viewer(static_viewer)
-
-    assert attached == [static_viewer]
+def _make_detached_rift_projection_owner() -> object:
+    return type(
+        "_DetachedRiftProjectionOwner",
+        (),
+        {
+            "_get_default_runtime_frame_name": staticmethod(lambda: None),
+            "_get_required_command_projection": staticmethod(
+                lambda frame_name: None
+            ),
+        },
+    )()
 
 
-def test_static_rift_space_internal_viewer_replacement_wraps_non_static_viewer(monkeypatch) -> None:
-    space = StaticRiftSpace.__new__(StaticRiftSpace)
-    attached = []
-    plain_viewer = FrameViewer.__new__(FrameViewer)
-    wrapped_viewer = StaticFrameViewer.__new__(StaticFrameViewer)
+def test_static_rift_space_starts_with_durable_static_viewer_asset() -> None:
+    """
+    Verify static rooms create a static viewer asset during room init.
 
-    monkeypatch.setattr(
-        "melder.aether.nexus.rift.frame_viewer.static_frame_viewer.StaticFrameViewer.from_frame_viewer",
-        lambda frame_viewer: wrapped_viewer,
-    )
-    monkeypatch.setattr(
-        "melder.aether.nexus.rift.rift_space.rift_space.RiftSpace._replace_frame_viewer",
-        lambda self, frame_viewer: attached.append(frame_viewer),
-    )
+    Returns:
+        None.
+    """
+    space = StaticRiftSpace("rift-1", rift=_make_detached_rift_projection_owner())
 
-    space._replace_frame_viewer(plain_viewer)
+    assert isinstance(space.frame_viewer, StaticFrameViewer)
+    assert space.frame_viewer.count_frames() == 0
 
-    assert attached == [wrapped_viewer]
+
+def test_static_rift_space_keeps_same_static_viewer_asset() -> None:
+    """
+    Verify static rooms keep the same static viewer asset while syncing.
+
+    Returns:
+        None.
+    """
+    space = StaticRiftSpace("rift-1", rift=_make_detached_rift_projection_owner())
+    first_viewer = space.frame_viewer
+
+    assert isinstance(space.frame_viewer, StaticFrameViewer)
+    assert space.frame_viewer is first_viewer

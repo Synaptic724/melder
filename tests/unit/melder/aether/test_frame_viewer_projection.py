@@ -2759,7 +2759,7 @@ def test_frame_viewer_cleanup_cascades_to_owned_surfaces_and_profiles_only() -> 
     viewer.cleanup()
 
     assert viewer.cleaned is True
-    assert surface.cleaned is True
+    assert surface.cleaned is False
     assert descriptor.cleaned is False
 
 
@@ -2771,7 +2771,7 @@ def test_frame_viewer_clone_detaches_owned_surfaces_and_metadata() -> None:
     assert cloned.frame_descriptors_by_name["ops"] is viewer.frame_descriptors_by_name["ops"]
     assert (
         cloned.compiled_access_surfaces_by_frame_name["ops"]
-        is not viewer.compiled_access_surfaces_by_frame_name["ops"]
+        is viewer.compiled_access_surfaces_by_frame_name["ops"]
     )
 
 
@@ -2858,8 +2858,8 @@ def test_frame_viewer_empty_defaults_and_selected_profile_fallbacks_are_explicit
     )
 
     assert detached_selection_viewer.profile_name == "general"
-    assert detached_selection_viewer.profile is None
-    assert detached_selection_viewer.selected_profile_names_by_frame_name == {}
+    assert detached_selection_viewer.profile is not None
+    assert detached_selection_viewer.selected_profile_names_by_frame_name == {"ops": "general"}
 
 
 def test_frame_viewer_rejects_invalid_frame_and_profile_inputs() -> None:
@@ -3004,11 +3004,10 @@ def test_frame_viewer_profile_and_execute_guardrails_are_explicit() -> None:
     with pytest.raises(ValueError, match="frame_name cannot be empty"):
         viewer.get_selected_profile_for_frame("")
 
-    viewer._selected_profiles_by_frame_name.clear()
-    with pytest.raises(ValueError, match="has no selected profile for frame 'ops'"):
+    viewer._default_profile_name = None
+    with pytest.raises(ValueError, match="FrameViewer has no default active profile."):
         viewer.get_selected_profile_for_frame("ops")
-
-    viewer._selected_profiles_by_frame_name["ops"] = original_selected
+    viewer._default_profile_name = "general"
 
     with pytest.raises(ValueError, match="frame_name cannot be empty"):
         viewer.set_selected_profile_for_frame("", "general")

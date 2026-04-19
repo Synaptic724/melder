@@ -46,7 +46,7 @@ def test_static_frame_viewer_from_frame_viewer_handles_plain_and_static_sources(
     static_viewer = StaticFrameViewer.from_frame_viewer(viewer)
     cloned_static_viewer = StaticFrameViewer.from_frame_viewer(static_viewer)
 
-    assert static_viewer._base_compiled_access_surfaces_by_frame_name["ops"] is not viewer._compiled_access_surfaces_by_frame_name["ops"]
+    assert static_viewer._base_compiled_access_surfaces_by_frame_name["ops"] is not viewer.compiled_access_surfaces_by_frame_name["ops"]
     assert cloned_static_viewer._base_compiled_access_surfaces_by_frame_name["ops"] is not static_viewer._base_compiled_access_surfaces_by_frame_name["ops"]
 
 
@@ -182,7 +182,7 @@ def test_static_frame_viewer_live_projection_filters_and_owner_resolution_work(m
     )
     current_surface = SimpleNamespace(cleanup=lambda: None)
     viewer._base_compiled_access_surfaces_by_frame_name = {"ops": base_surface}
-    viewer._compiled_access_surfaces_by_frame_name = {"ops": current_surface}
+    viewer._filtered_compiled_access_surfaces_by_frame_name = {"ops": current_surface}
 
     monkeypatch.setattr(
         StaticFrameViewer,

@@ -25,7 +25,7 @@ class CapabilityRiftSpace(RiftSpace, ICapabilityRiftSpace):
         - Inherits all base room behavior.
         - Fixes `space_kind` to `capability`.
         - Exists as the non-codegen manual runtime posture between strict
-          static and later codegen-oriented dynamic work.
+          static and later codegen-oriented work.
         - Allows broad manual object/runtime work through the composed command
           surface.
         - Does not override underlying Melder frame/runtime truth.
@@ -39,6 +39,7 @@ class CapabilityRiftSpace(RiftSpace, ICapabilityRiftSpace):
             self,
             owner_rift_id: str,
             *,
+            rift: object,
             space_name: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
             rift_gate: Optional[IRiftGate] = None,
@@ -56,6 +57,8 @@ class CapabilityRiftSpace(RiftSpace, ICapabilityRiftSpace):
         Args:
             owner_rift_id:
                 Canonical owning Rift id.
+            rift:
+                Owning `Rift` that manages projection-driven asset updates.
             space_name:
                 Optional stable room name.
             metadata:
@@ -72,12 +75,13 @@ class CapabilityRiftSpace(RiftSpace, ICapabilityRiftSpace):
             - Delegates all storage and lifecycle behavior to `RiftSpace`.
             - Fixes the persisted room kind to `capability` so later room
               selection and serialization can distinguish it from `static` and
-              `dynamic` rooms.
+              `codegen` rooms.
             - Composes the broad manual capability command surface for this
               room.
         """
         super().__init__(
             owner_rift_id,
+            rift=rift,
             space_name=space_name,
             space_kind="capability",
             metadata=metadata,
@@ -85,7 +89,7 @@ class CapabilityRiftSpace(RiftSpace, ICapabilityRiftSpace):
             space_id=space_id,
         )
 
-    def _create_command_system(self) -> CommandSystem:
+    def _create_command_system(self, rift: object) -> CommandSystem:
         """
         Build the capability room's command system.
 
@@ -93,6 +97,7 @@ class CapabilityRiftSpace(RiftSpace, ICapabilityRiftSpace):
             CommandSystem: Capability-room command surface.
         """
         return CapabilityCommandSystem(
+            rift=rift,
             space=self,
             workstation=self._workstation,
         )

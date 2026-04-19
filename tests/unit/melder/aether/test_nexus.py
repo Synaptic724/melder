@@ -379,7 +379,7 @@ def _build_projection_set_from_viewer(
 
 def _attach_projection_backed_viewer(space: RiftSpace, viewer: FrameViewer) -> None:
     """
-    Seed projection sets from a test viewer, then attach that viewer to the room.
+    Seed projection sets from a test viewer, then sync the room-owned viewer.
 
     Args:
         space:
@@ -390,19 +390,65 @@ def _attach_projection_backed_viewer(space: RiftSpace, viewer: FrameViewer) -> N
     Returns:
         None.
     """
-    space.replace_projection_sets(
+    detached_rift = space.command_system._rift
+    detached_rift._apply_projection_sets(
         {
             frame_name: _build_projection_set_from_viewer(viewer, frame_name)
             for frame_name in viewer.frame_descriptors_by_name.keys()
         }
     )
-    space._rebuild_frame_viewer(
+    space.frame_viewer.sync_from_projection_sets(
+        detached_rift._projection_sets_by_frame_name,
         viewer_profile_name=viewer.profile_name or "general",
         selected_profile_names_by_frame_name=viewer.selected_profile_names_by_frame_name,
         default_view_frame_name=viewer.default_view_frame_name,
         metadata=viewer.metadata,
     )
     viewer.cleanup()
+
+
+def _make_detached_rift_projection_owner() -> object:
+    class _DetachedRiftProjectionOwner:
+        def __init__(self) -> None:
+            self._projection_sets_by_frame_name = {}
+
+        def _apply_projection_sets(
+                self,
+                projection_sets_by_frame_name,
+                *,
+                merge: bool = False,
+        ) -> None:
+            if merge:
+                merged_projection_sets_by_frame_name = dict(
+                    self._projection_sets_by_frame_name
+                )
+                for frame_name, projection_set in projection_sets_by_frame_name.items():
+                    current_projection_set = merged_projection_sets_by_frame_name.get(
+                        frame_name
+                    )
+                    if (
+                            current_projection_set is not None
+                            and current_projection_set is not projection_set
+                    ):
+                        current_projection_set.cleanup()
+                    merged_projection_sets_by_frame_name[frame_name] = projection_set
+                self._projection_sets_by_frame_name = (
+                    merged_projection_sets_by_frame_name
+                )
+                return
+            for projection_set in self._projection_sets_by_frame_name.values():
+                projection_set.cleanup()
+            self._projection_sets_by_frame_name = dict(projection_sets_by_frame_name)
+
+        def _get_required_command_projection(self, frame_name: str):
+            return self._projection_sets_by_frame_name[frame_name].command_projection
+
+        def _get_default_runtime_frame_name(self):
+            if len(self._projection_sets_by_frame_name) == 1:
+                return next(iter(self._projection_sets_by_frame_name.keys()))
+            return None
+
+    return _DetachedRiftProjectionOwner()
 
 
 def test_nexus_is_singleton() -> None:
@@ -1092,25 +1138,17 @@ def test_create_rift_programs_primary_space_from_space_type() -> None:
     assert isinstance(codegen_rift.space, CodegenRiftSpace)
 
 
-def test_rift_space_can_replace_and_clear_frame_viewer_internally() -> None:
+def test_rift_space_starts_with_durable_room_owned_viewer_asset() -> None:
     """
-    Verify a RiftSpace can own an attached frame viewer.
+    Verify a RiftSpace starts with one durable room-owned viewer asset.
 
     Returns:
         None.
     """
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
-    viewer = _build_descriptor_backed_viewer("ops")
-
-    _attach_projection_backed_viewer(space, viewer)
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
 
     assert isinstance(space.frame_viewer, FrameViewer)
-    assert space.frame_viewer is not viewer
-
-    space._clear_frame_viewer()
-
-    assert viewer.cleaned is True
-    assert space.frame_viewer is None
+    assert space.frame_viewer.count_frames() == 0
 
 
 def test_rift_space_owns_workstation_canvas() -> None:
@@ -1120,7 +1158,7 @@ def test_rift_space_owns_workstation_canvas() -> None:
     Returns:
         None.
     """
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
 
     assert space.workstation.owner_space_id == space.space_id
     assert space.workstation.describe_bindings() == {
@@ -1139,7 +1177,7 @@ def test_workstation_can_bind_select_release_and_describe() -> None:
     Returns:
         None.
     """
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     workstation = space.workstation
     marker = object()
 
@@ -1177,7 +1215,7 @@ def test_workstation_call_target_can_bind_return_value() -> None:
     Returns:
         None.
     """
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     workstation = space.workstation
 
     workstation.bind_method("builder", lambda prefix: {"value": prefix})
@@ -1203,7 +1241,7 @@ def test_workstation_explicit_strong_binding_keeps_object_alive() -> None:
     class _Target:
         pass
 
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main", space_kind="static")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main", space_kind="static")
     workstation = space.workstation
     target = _Target()
     target_ref = weakref.ref(target)
@@ -1226,7 +1264,7 @@ def test_workstation_explicit_weak_binding_releases_object_after_collection() ->
     class _Target:
         pass
 
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main", space_kind="capability")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main", space_kind="capability")
     workstation = space.workstation
     target = _Target()
     target_ref = weakref.ref(target)
@@ -1250,7 +1288,7 @@ def test_workstation_static_room_defaults_none_to_weak_binding() -> None:
     class _Target:
         pass
 
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main", space_kind="static")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main", space_kind="static")
     workstation = space.workstation
     target = _Target()
     target_ref = weakref.ref(target)
@@ -1274,7 +1312,7 @@ def test_workstation_capability_room_defaults_none_to_strong_binding() -> None:
     class _Target:
         pass
 
-    space = RiftSpace(
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), 
         owner_rift_id="rift-1",
         space_name="main",
         space_kind="capability",
@@ -1298,7 +1336,7 @@ def test_workstation_weak_binding_raises_for_non_weakrefable_value() -> None:
     Returns:
         None.
     """
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main", space_kind="static")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main", space_kind="static")
 
     with pytest.raises(TypeError, match="support weak references"):
         space.workstation.bind_attribute("count", 3, weak_ref=True)
@@ -1314,7 +1352,7 @@ def test_rift_space_emits_weak_binding_collection_events_to_callbacks() -> None:
     class _Target:
         pass
 
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main", space_kind="static")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main", space_kind="static")
     received_events = []
     space.event_system.register_event_callback(lambda event: received_events.append(event))
     workstation = space.workstation
@@ -1342,7 +1380,7 @@ def test_rift_space_can_register_and_unregister_event_callbacks() -> None:
     class _Target:
         pass
 
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main", space_kind="static")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main", space_kind="static")
     received_events = []
     subscription_id = space.event_system.register_event_callback(
         lambda event: received_events.append(event)
@@ -1377,7 +1415,7 @@ def test_workstation_cleanup_target_calls_methods_then_clears_target() -> None:
         def cleanup(self) -> None:
             self.calls.append("cleanup")
 
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     workstation = space.workstation
     disposable = _Disposable()
 
@@ -1396,7 +1434,7 @@ def test_workstation_and_space_cleanup_are_integrated() -> None:
     Returns:
         None.
     """
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     workstation = space.workstation
     command_system = space.command_system
     workstation.bind_attribute("status", "ready")
@@ -1414,7 +1452,7 @@ def test_rift_space_owns_command_system() -> None:
     Returns:
         None.
     """
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
 
     assert space.command_system.owner_space_id == space.space_id
 
@@ -1426,7 +1464,7 @@ def test_base_rift_space_composes_generic_command_system() -> None:
     Returns:
         None.
     """
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
 
     assert isinstance(space.command_system, CommandSystem)
     assert not isinstance(space.command_system, StaticCommandSystem)
@@ -1441,7 +1479,7 @@ def test_static_rift_space_composes_static_command_system() -> None:
     Returns:
         None.
     """
-    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = StaticRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
 
     assert isinstance(space.command_system, StaticCommandSystem)
 
@@ -1453,7 +1491,7 @@ def test_capability_rift_space_composes_capability_command_system() -> None:
     Returns:
         None.
     """
-    space = CapabilityRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
 
     assert isinstance(space.command_system, CapabilityCommandSystem)
 
@@ -1465,7 +1503,7 @@ def test_codegen_rift_space_composes_codegen_command_system() -> None:
     Returns:
         None.
     """
-    space = CodegenRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = CodegenRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
 
     assert isinstance(space.command_system, CodegenCommandSystem)
 
@@ -1484,7 +1522,7 @@ def test_command_system_can_get_target_attribute_and_method() -> None:
         def run(self) -> str:
             return "ok"
 
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     workstation = space.workstation
     target = _Target()
     workstation.bind_object("target", target)
@@ -1508,7 +1546,7 @@ def test_command_system_execute_target_method_can_bind_result() -> None:
         def run(self, prefix: str) -> str:
             return "{0}-done".format(prefix)
 
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     workstation = space.workstation
     target = _Target()
     workstation.bind_object("target", target)
@@ -1536,7 +1574,7 @@ def test_command_system_execute_target_method_can_force_strong_result_binding() 
         def run(self, prefix: str) -> str:
             return "{0}-done".format(prefix)
 
-    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = StaticRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     workstation = space.workstation
     target = _Target()
     workstation.bind_object("target", target, weak_ref=False)
@@ -1563,7 +1601,7 @@ def test_command_system_can_get_conduit_by_id_with_lesser_fallback(
     Returns:
         None.
     """
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     _replace_compiled_access_surface(
         viewer,
@@ -1609,7 +1647,7 @@ def test_command_system_can_query_command_enabled_conduits() -> None:
     Returns:
         None.
     """
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -1674,7 +1712,7 @@ def test_command_system_can_get_spell_by_id(
     Returns:
         None.
     """
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -1759,7 +1797,7 @@ def test_command_system_can_get_spell_by_index_id(
     Returns:
         None.
     """
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -1834,7 +1872,7 @@ def test_command_system_denies_selected_target_link_when_frame_command_disabled(
     Returns:
         None.
     """
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer(
         "ops",
         command_frame_enabled=False,
@@ -1853,7 +1891,7 @@ def test_command_system_denies_conduit_object_by_id_when_conduit_acl_disabled(
     Returns:
         None.
     """
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -1897,7 +1935,7 @@ def test_command_system_denies_spell_object_by_index_id_when_spell_acl_disabled(
     Returns:
         None.
     """
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -2003,7 +2041,7 @@ def test_static_room_allows_direct_conduit_runtime_object_access(
     Returns:
         None.
     """
-    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = StaticRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -2053,7 +2091,7 @@ def test_static_room_returns_live_spell_runtime_object_by_index_id(
     Returns:
         None.
     """
-    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = StaticRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -2131,7 +2169,7 @@ def test_static_room_wraps_viewer_and_filters_non_live_spells(
     Returns:
         None.
     """
-    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = StaticRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -2247,7 +2285,7 @@ def test_static_room_viewer_filters_non_live_spell_targets(
     Returns:
         None.
     """
-    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = StaticRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -2359,7 +2397,7 @@ def test_static_room_viewer_hides_many_and_spellspace_spells(
     Returns:
         None.
     """
-    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = StaticRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -2465,7 +2503,7 @@ def test_static_room_denies_many_and_spellspace_spell_runtime_object_access(
     Returns:
         None.
     """
-    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = StaticRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -2572,7 +2610,7 @@ def test_static_command_system_reports_spell_status_for_live_spell() -> None:
     Returns:
         None.
     """
-    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = StaticRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -2649,7 +2687,7 @@ def test_static_command_system_reports_spell_status_for_unsupported_spell() -> N
     Returns:
         None.
     """
-    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = StaticRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -2726,7 +2764,7 @@ def test_static_room_denies_spell_runtime_object_when_not_live(
     Returns:
         None.
     """
-    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = StaticRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -2803,7 +2841,7 @@ def test_capability_room_allows_direct_spell_runtime_object_access() -> None:
     Returns:
         None.
     """
-    space = CapabilityRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -2920,7 +2958,7 @@ def test_capability_room_broad_access_still_respects_automatic_runtime_floor() -
     )
     conduit = spellbook.conjure(name="root")
     try:
-        space = CapabilityRiftSpace(owner_rift_id="rift-1", space_name="main")
+        space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
         viewer = _build_descriptor_backed_viewer("ops")
         descriptor = viewer._get_required_frame_descriptor("ops")
         descriptor.upsert_conduit_record(
@@ -2981,7 +3019,7 @@ def test_capability_room_can_access_conduit_cloud_on_dynamic_frame() -> None:
     )
     conduit = spellbook.conjure(name="root", automatic=False)
     try:
-        space = CapabilityRiftSpace(owner_rift_id="rift-1", space_name="main")
+        space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
         viewer = _build_descriptor_backed_viewer("ops")
         descriptor = viewer._get_required_frame_descriptor("ops")
         descriptor.upsert_conduit_record(
@@ -3036,7 +3074,7 @@ def test_capability_room_can_create_lesser_conduit_on_automatic_frame() -> None:
     )
     conduit = spellbook.conjure(name="root")
     try:
-        space = CapabilityRiftSpace(owner_rift_id="rift-1", space_name="main")
+        space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
         viewer = _build_descriptor_backed_viewer("ops")
         descriptor = viewer._get_required_frame_descriptor("ops")
         descriptor.upsert_conduit_record(
@@ -3094,7 +3132,7 @@ def test_capability_room_can_manage_clusters_on_dynamic_frame() -> None:
     )
     conduit = spellbook.conjure(name="root", automatic=False)
     try:
-        space = CapabilityRiftSpace(owner_rift_id="rift-1", space_name="main")
+        space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
         viewer = _build_descriptor_backed_viewer("ops")
         descriptor = viewer._get_required_frame_descriptor("ops")
         descriptor.upsert_conduit_record(
@@ -3177,7 +3215,7 @@ def test_capability_room_can_link_on_dynamic_frame() -> None:
     left_conduit = left_spellbook.conjure(name="left", automatic=False)
     right_conduit = right_spellbook.conjure(name="right", automatic=False)
     try:
-        space = CapabilityRiftSpace(owner_rift_id="rift-1", space_name="main")
+        space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
         viewer = _build_descriptor_backed_viewer("ops")
         descriptor = viewer._get_required_frame_descriptor("ops")
         for current_conduit, spellbook in (
@@ -3236,7 +3274,7 @@ def test_capability_room_can_meld_through_command_surface() -> None:
     Returns:
         None.
     """
-    space = CapabilityRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -3284,7 +3322,7 @@ def test_capability_room_can_meld_existing_spell_through_command_surface() -> No
     Returns:
         None.
     """
-    space = CapabilityRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -3332,7 +3370,7 @@ def test_static_command_system_denies_shared_topology_mutation_methods() -> None
     Returns:
         None.
     """
-    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = StaticRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     denied_calls = (
         lambda: space.command_system.create_lesser_conduit("conduit-1"),
         lambda: space.command_system.create_cluster("conduit-1", "alpha"),
@@ -3358,7 +3396,7 @@ def test_static_command_system_denies_direct_spell_activation_methods() -> None:
     Returns:
         None.
     """
-    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = StaticRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     with pytest.raises(
             ValueError,
             match="Static command surface does not allow spell activation method 'meld'",
@@ -3373,7 +3411,7 @@ def test_static_command_system_allows_meld_existing_spell() -> None:
     Returns:
         None.
     """
-    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = StaticRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -3421,7 +3459,7 @@ def test_static_command_system_denies_list_clusters() -> None:
     Returns:
         None.
     """
-    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = StaticRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
 
     with pytest.raises(
             ValueError,
@@ -3437,7 +3475,7 @@ def test_static_command_system_lists_only_supported_methods() -> None:
     Returns:
         None.
     """
-    space = StaticRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = StaticRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
 
     supported_methods = space.command_system.list_supported_command_methods()
 
@@ -3459,7 +3497,7 @@ def test_capability_command_system_lists_shared_manual_runtime_methods() -> None
     Returns:
         None.
     """
-    space = CapabilityRiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
 
     supported_methods = space.command_system.list_supported_command_methods()
 
@@ -3486,7 +3524,7 @@ def test_command_system_can_delegate_conduit_introspection_helpers(
     Returns:
         None.
     """
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -3607,7 +3645,7 @@ def test_command_system_can_delegate_spell_query_and_snapshot_helpers(
     Returns:
         None.
     """
-    space = RiftSpace(owner_rift_id="rift-1", space_name="main")
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -3896,7 +3934,7 @@ def test_rift_refresh_runtime_projections_rebuilds_room_owned_viewer_for_one_eng
 
     assert viewer.list_frame_names() == ["ops"]
     assert viewer.selected_profile_names_by_frame_name == {"ops": "general"}
-    assert viewer is not first_viewer
+    assert viewer is first_viewer
     assert viewer.get_selected_profile_for_frame("ops").frame_descriptor is (
         viewer.frame_descriptors_by_name["ops"]
     )
@@ -3936,21 +3974,20 @@ def test_rift_attaches_room_owned_viewer_to_active_space_and_reads_it_back() -> 
     assert viewer.default_view_frame_name == "ops"
 
 
-def test_rift_space_frame_viewer_helpers_fail_fast_without_target_space_or_attached_viewer() -> None:
+def test_rift_space_frame_viewer_asset_exists_before_targeting() -> None:
     """
-    Verify Rift viewer host helpers fail fast when the space/viewer is missing.
+    Verify Rift exposes the durable viewer asset before any frame is targeted.
 
     Returns:
         None.
     """
     nexus = _create_enabled_nexus()
     rift = nexus.create_rift(rift_name="alpha")
+    viewer = rift.get_frame_viewer()
 
-    with pytest.raises(ValueError, match="has no attached frame viewer"):
-        rift.get_frame_viewer()
-
-    with pytest.raises(ValueError, match="has no attached frame viewer"):
-        rift.get_frame_viewer()
+    assert isinstance(viewer, FrameViewer)
+    assert viewer.count_frames() == 0
+    assert rift.get_frame_viewer() is viewer
 
 
 def test_direct_rift_access_can_be_token_gated() -> None:
@@ -4465,4 +4502,6 @@ def test_direct_rift_construction_requires_nexus_argument() -> None:
             configuration=configuration,
             rift_name="manual",
         )
+
+
 

@@ -200,7 +200,7 @@ def test_integration_rift_scoped_refresh_rebuilds_room_owned_viewer_after_passiv
 
         assert isinstance(first_viewer, FrameViewer)
         assert isinstance(second_viewer, FrameViewer)
-        assert first_viewer is not second_viewer
+        assert first_viewer is second_viewer
         assert first_viewer_metadata["rift_id"] == rift.id
         assert second_viewer.metadata["assigned_frame_names"] == ("ops",)
         assert first_viewer_frame_names == ["ops"]

@@ -85,6 +85,7 @@ class Rift(Cleanable, IRift):
         "_configuration",
         "_rift_gate",
         "_frame_link_contracts_by_frame_name",
+        "_projection_sets_by_frame_name",
         "_space",
         "_is_registered",
         "_is_active",
@@ -159,6 +160,7 @@ class Rift(Cleanable, IRift):
         self._configuration: IRiftConfiguration = configuration
         self._rift_gate: IRiftGate = rift_gate if rift_gate is not None else RiftGate()
         self._frame_link_contracts_by_frame_name: Dict[str, FrameLinkContract] = {}
+        self._projection_sets_by_frame_name: Dict[str, FrameProjectionSet] = {}
         self._space: Optional[IRiftSpace] = None
         self._is_registered: bool = False
         self._is_active: bool = False
@@ -242,6 +244,10 @@ class Rift(Cleanable, IRift):
             self._nexus = None
             self._configuration = None
             self._rift_gate = None
+            for projection_set in self._projection_sets_by_frame_name.values():
+                projection_set.cleanup()
+            self._projection_sets_by_frame_name.clear()
+            self._projection_sets_by_frame_name = None
             for frame_link_contract in self._frame_link_contracts_by_frame_name.values():
                 frame_link_contract.cleanup()
             self._frame_link_contracts_by_frame_name.clear()
@@ -464,16 +470,20 @@ class Rift(Cleanable, IRift):
             self,
             *,
             frame_names: Optional[Sequence[str]] = None,
-            viewer_profile_name: str = "general",
+            viewer_profile_name: Optional[str] = None,
     ) -> Dict[str, FrameProjectionSet]:
         """
-        Build fresh runtime projections and rebuild the owned room viewer.
+        Build fresh runtime projections and sync the hosted room assets.
+
+        Purpose:
+            Refresh the owned room's projection sets and synchronize the
+            existing durable viewer asset in place.
 
         Args:
             frame_names:
                 Optional explicit multi-frame refresh scope.
             viewer_profile_name:
-                Viewer profile name applied to the rebuilt viewer.
+                Viewer profile name applied to the synced viewer.
 
         Returns:
             Dict[str, FrameProjectionSet]: Fresh projection sets keyed by frame name.
@@ -493,53 +503,199 @@ class Rift(Cleanable, IRift):
                             self._id,
                         )
                     )
+        resolved_viewer_profile_name = (
+            viewer_profile_name
+            or self._configuration.get_property("viewer_profile_name")
+        )
         projection_sets_by_frame_name = self._nexus.create_frame_projection_sets_for_rift(
             self._id,
             frame_names=selected_frame_names if frame_names is not None else None,
         )
-        space = self.space
-        current_viewer = space.frame_viewer
-        selected_profile_names_by_frame_name = (
-            current_viewer.selected_profile_names_by_frame_name
-            if current_viewer is not None
-            else None
-        )
-        default_view_frame_name = (
-            current_viewer.default_view_frame_name
-            if current_viewer is not None
-            else (
-                assigned_frame_names[0]
-                if len(assigned_frame_names) == 1
-                else None
-            )
-        )
-        space.replace_projection_sets(
+        merge = frame_names is not None
+        self._apply_projection_sets(
             projection_sets_by_frame_name,
-            merge=(frame_names is not None),
+            merge=merge,
         )
-        refreshed_assigned_frame_names = self.list_assigned_frame_names()
-        space._rebuild_frame_viewer(
-            viewer_profile_name=viewer_profile_name,
-            selected_profile_names_by_frame_name=selected_profile_names_by_frame_name,
-            default_view_frame_name=default_view_frame_name,
-            metadata={
-                "rift_id": self._id,
-                "frame_link_contract_ids_by_frame_name": {
-                    current_frame_name: self.get_frame_link_contract(
-                        current_frame_name
-                    ).contract_id
-                    for current_frame_name in refreshed_assigned_frame_names
-                },
-                "assigned_frame_names": refreshed_assigned_frame_names,
-                "selected_contract_names_by_frame_name": {
-                    current_frame_name: self.get_selected_contract_names(
-                        current_frame_name
-                    )
-                    for current_frame_name in refreshed_assigned_frame_names
-                },
-            },
+        space = self.space
+        space.frame_viewer.sync_from_projection_sets(
+            self._projection_sets_by_frame_name,
+            viewer_profile_name=resolved_viewer_profile_name,
+            metadata=self._build_frame_viewer_metadata(),
         )
         return projection_sets_by_frame_name
+
+    def _apply_projection_sets(
+            self,
+            projection_sets_by_frame_name: Dict[str, FrameProjectionSet],
+            *,
+            merge: bool = False,
+    ) -> None:
+        """
+        Apply fresh projection sets to this Rift's internal projection registry.
+
+        Purpose:
+            Keep projection ownership on the Rift so room assets can consume the
+            current compiled state without the room managing projection
+            lifecycles directly.
+
+        Args:
+            projection_sets_by_frame_name:
+                Fresh projection sets keyed by frame name.
+            merge:
+                When True, replace only the named incoming projection sets and
+                preserve unaffected installed sets.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if merge:
+                merged_projection_sets_by_frame_name = dict(
+                    self._projection_sets_by_frame_name
+                )
+                for frame_name, projection_set in projection_sets_by_frame_name.items():
+                    current_projection_set = merged_projection_sets_by_frame_name.get(
+                        frame_name
+                    )
+                    if (
+                            current_projection_set is not None
+                            and current_projection_set is not projection_set
+                    ):
+                        current_projection_set.cleanup()
+                    merged_projection_sets_by_frame_name[frame_name] = projection_set
+                self._projection_sets_by_frame_name = (
+                    merged_projection_sets_by_frame_name
+                )
+                return
+            for projection_set in self._projection_sets_by_frame_name.values():
+                projection_set.cleanup()
+            self._projection_sets_by_frame_name = dict(projection_sets_by_frame_name)
+
+    def _get_required_frame_projection_set(self, frame_name: str) -> FrameProjectionSet:
+        """
+        Return one required projection set by frame name.
+
+        Args:
+            frame_name:
+                Target frame name.
+
+        Returns:
+            FrameProjectionSet: Required projection set.
+        """
+        self.check_cleaned()
+        try:
+            return self._projection_sets_by_frame_name[frame_name]
+        except KeyError as exc:
+            raise ValueError(
+                "Projection set for frame '{0}' was not found.".format(frame_name)
+            ) from exc
+
+    def _build_selected_contract_names_by_frame_name(self) -> Dict[str, Dict[str, str]]:
+        """
+        Return the current selected ACL contract names keyed by frame.
+
+        Returns:
+            Dict[str, Dict[str, str]]: Selected contract names by frame.
+        """
+        return {
+            frame_name: self.get_selected_contract_names(frame_name)
+            for frame_name in self.list_assigned_frame_names()
+        }
+
+    def _build_frame_viewer_metadata(self) -> Dict[str, object]:
+        """
+        Build the Rift-managed metadata payload for the hosted viewer asset.
+
+        Returns:
+            Dict[str, object]: Viewer metadata derived from current Rift-owned
+            contracts.
+        """
+        refreshed_assigned_frame_names = self.list_assigned_frame_names()
+        selected_contract_names_by_frame_name = (
+            self._build_selected_contract_names_by_frame_name()
+        )
+        frame_viewer = self.space.frame_viewer
+        default_profile = frame_viewer.get_required_active_profile(
+            frame_viewer.profile_name or "general"
+        )
+        return {
+            "frame_count": len(refreshed_assigned_frame_names),
+            "available_view_count": len(refreshed_assigned_frame_names),
+            "rift_id": self._id,
+            "frame_link_contract_ids_by_frame_name": {
+                current_frame_name: self.get_frame_link_contract(
+                    current_frame_name
+                ).contract_id
+                for current_frame_name in refreshed_assigned_frame_names
+            },
+            "assigned_frame_names": refreshed_assigned_frame_names,
+            "selected_contract_names_by_frame_name": (
+                selected_contract_names_by_frame_name
+            ),
+            "acl_selection_by_frame_name": selected_contract_names_by_frame_name,
+            "contract_names_by_frame_name": selected_contract_names_by_frame_name,
+            "viewer_profile_name": frame_viewer.profile_name,
+            "viewer_profile_version": frame_viewer.profile_version,
+            "default_grouping": frame_viewer.default_grouping,
+            "default_detail_level": frame_viewer.default_detail_level,
+            "enabled_helpers": frame_viewer.enabled_helpers,
+            "tool_names": frame_viewer.list_available_tools(),
+            "tool_handler_names_by_name": default_profile.tool_handler_names_by_name,
+        }
+
+    def _get_required_view_projection(self, frame_name: str):
+        """
+        Return one required view projection.
+
+        Args:
+            frame_name:
+                Target frame name.
+
+        Returns:
+            ViewProjection: Required view projection.
+        """
+        return self._get_required_frame_projection_set(frame_name).view_projection
+
+    def _get_required_command_projection(self, frame_name: str):
+        """
+        Return one required command projection.
+
+        Args:
+            frame_name:
+                Target frame name.
+
+        Returns:
+            CommandProjection: Required command projection.
+        """
+        return self._get_required_frame_projection_set(frame_name).command_projection
+
+    def _get_required_codegen_projection(self, frame_name: str):
+        """
+        Return one required codegen projection.
+
+        Args:
+            frame_name:
+                Target frame name.
+
+        Returns:
+            CodegenProjection: Required codegen projection.
+        """
+        return self._get_required_frame_projection_set(frame_name).codegen_projection
+
+    def _get_default_runtime_frame_name(self) -> Optional[str]:
+        """
+        Return the default runtime frame name for internal asset consumers.
+
+        Returns:
+            Optional[str]: Default frame name, or None when no hosted frame is
+            available.
+        """
+        self.check_cleaned()
+        assigned_frame_names = self.list_assigned_frame_names()
+        if len(assigned_frame_names) == 1:
+            return assigned_frame_names[0]
+        return self.get_frame_viewer().default_view_frame_name
 
     @staticmethod
     def _normalize_refresh_frame_names(
@@ -587,13 +743,7 @@ class Rift(Cleanable, IRift):
             FrameViewer: Attached frame viewer for the owned space.
         """
         self.check_cleaned()
-        space = self.space
-        frame_viewer = space.frame_viewer
-        if frame_viewer is None:
-            raise ValueError(
-                "RiftSpace '{0}' has no attached frame viewer.".format(space.space_id)
-            )
-        return frame_viewer
+        return self.space.frame_viewer
 
     @property
     def space(self) -> IRiftSpace:
@@ -736,6 +886,7 @@ class Rift(Cleanable, IRift):
         if configured_space_type == RiftSpaceType.codegen:
             primary_space = CodegenRiftSpace(
                 owner_rift_id=self._id,
+                rift=self,
                 space_name=configured_space_name,
                 rift_gate=self._rift_gate,
                 space_id=space_id,
@@ -743,6 +894,7 @@ class Rift(Cleanable, IRift):
         elif configured_space_type == RiftSpaceType.capability:
             primary_space = CapabilityRiftSpace(
                 owner_rift_id=self._id,
+                rift=self,
                 space_name=configured_space_name,
                 rift_gate=self._rift_gate,
                 space_id=space_id,
@@ -750,6 +902,7 @@ class Rift(Cleanable, IRift):
         else:
             primary_space = StaticRiftSpace(
                 owner_rift_id=self._id,
+                rift=self,
                 space_name=configured_space_name,
                 rift_gate=self._rift_gate,
                 space_id=space_id,

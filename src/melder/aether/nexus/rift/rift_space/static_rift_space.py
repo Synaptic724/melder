@@ -1,9 +1,5 @@
 from typing import Dict, Optional
 
-from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
-from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
-    StaticFrameViewer,
-)
 from melder.aether.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
@@ -26,7 +22,7 @@ class StaticRiftSpace(RiftSpace, IStaticRiftSpace):
         - Fixes `space_kind` to `static`.
         - Represents the lower-risk room surface where declared targets and a
           more stable local structure are the primary operational model.
-        - Wraps attached viewers into `StaticFrameViewer`.
+        - Owns one durable `StaticFrameViewer` asset.
         - Uses the static command posture:
           - live-only spell retrieval
           - no topology mutation
@@ -39,6 +35,7 @@ class StaticRiftSpace(RiftSpace, IStaticRiftSpace):
             self,
             owner_rift_id: str,
             *,
+            rift: object,
             space_name: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
             rift_gate: Optional[IRiftGate] = None,
@@ -52,6 +49,8 @@ class StaticRiftSpace(RiftSpace, IStaticRiftSpace):
         Args:
             owner_rift_id:
                 Canonical owning Rift id.
+            rift:
+                Owning `Rift` that manages projection-driven asset updates.
             space_name:
                 Optional stable room name.
             metadata:
@@ -71,6 +70,7 @@ class StaticRiftSpace(RiftSpace, IStaticRiftSpace):
         """
         super().__init__(
             owner_rift_id,
+            rift=rift,
             space_name=space_name,
             space_kind="static",
             metadata=metadata,
@@ -78,7 +78,7 @@ class StaticRiftSpace(RiftSpace, IStaticRiftSpace):
             space_id=space_id,
         )
 
-    def _create_command_system(self) -> CommandSystem:
+    def _create_command_system(self, rift: object) -> CommandSystem:
         """
         Build the static room's command system.
 
@@ -86,42 +86,8 @@ class StaticRiftSpace(RiftSpace, IStaticRiftSpace):
             CommandSystem: Static-room command surface.
         """
         return StaticCommandSystem(
+            rift=rift,
             space=self,
             workstation=self._workstation,
         )
 
-    def _build_frame_viewer(
-            self,
-            *,
-            viewer_profile_name: str = "general",
-            selected_profile_names_by_frame_name: Optional[Dict[str, str]] = None,
-            default_view_frame_name: Optional[str] = None,
-            metadata: Optional[Dict[str, object]] = None,
-    ) -> FrameViewer:
-        """
-        Build the room viewer using the static viewer wrapper.
-
-        Purpose:
-            Ensure static rooms always assemble and return a
-            `StaticFrameViewer` while the generic builder remains in the base
-            room.
-
-        Contract:
-            - Builds the generic viewer through the base room builder.
-            - Wraps that generic viewer through
-              `StaticFrameViewer.from_frame_viewer(...)`.
-            - Cleans the intermediate generic viewer before returning the
-              static overlay.
-
-        Returns:
-            FrameViewer: Static viewer for this room.
-        """
-        frame_viewer = super()._build_frame_viewer(
-            viewer_profile_name=viewer_profile_name,
-            selected_profile_names_by_frame_name=selected_profile_names_by_frame_name,
-            default_view_frame_name=default_view_frame_name,
-            metadata=metadata,
-        )
-        static_frame_viewer = StaticFrameViewer.from_frame_viewer(frame_viewer)
-        frame_viewer.cleanup()
-        return static_frame_viewer

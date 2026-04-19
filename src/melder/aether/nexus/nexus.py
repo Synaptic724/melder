@@ -200,14 +200,12 @@ class Nexus(Cleanable, INexus):
             self._next_indexed_nexus_frame_number: int = 1
             self._rift_profiles_by_name: Dict[str, IRiftConfiguration] = {}
             self._rift_gate_controller: RiftGateController = RiftGateController()
-            self._frame_acl_manager: Optional[FrameACLManager] = None
-            self._frame_descriptor_manager: Optional[FrameDescriptorManager] = None
-            self._frame_acl_manager = FrameACLManager(
+            self._frame_acl_manager: Optional[FrameACLManager] = FrameACLManager(
                 change_callback=self._on_frame_acl_changed,
             )
             self._target_frame_ref_counts: Dict[str, int] = {}
 
-            self._frame_descriptor_manager = FrameDescriptorManager(aether)
+            self._frame_descriptor_manager: Optional[FrameDescriptorManager] = FrameDescriptorManager(aether)
             self._initialize_logging(logger)
             Nexus._initialized = True
         except Exception:

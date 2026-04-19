@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
     StaticFrameViewer,
 )
@@ -10,24 +11,44 @@ from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
 from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpace
 
 
+def _make_detached_rift_projection_owner() -> object:
+    return SimpleNamespace(
+        _get_default_runtime_frame_name=lambda: None,
+        _get_required_command_projection=lambda frame_name: SimpleNamespace(
+            frame_descriptor=SimpleNamespace(
+                conduit_records_by_id={},
+                spell_records_by_key={},
+            ),
+            compiled_access_surface=SimpleNamespace(
+                command_frame_enabled=True,
+                enabled_conduit_ids=tuple(),
+                enabled_spell_index_ids=tuple(),
+            ),
+        ),
+    )
+
+
 def test_rift_space_rejects_empty_owner_and_invalid_frame_viewer() -> None:
     class _BaseSpace(RiftSpace):
-        def _create_command_system(self):
+        def _create_command_system(self, rift):
             return SimpleNamespace(cleanup=lambda: None)
 
     with pytest.raises(ValueError, match="owner_rift_id cannot be empty."):
-        StaticRiftSpace("")
+        StaticRiftSpace("", rift=_make_detached_rift_projection_owner())
 
-    base_space = _BaseSpace("rift-1")
+    base_space = _BaseSpace("rift-1", rift=_make_detached_rift_projection_owner())
     assert base_space.command_system is not None
-    root_space = RiftSpace("rift-2")
+    root_space = RiftSpace("rift-2", rift=_make_detached_rift_projection_owner())
     assert root_space.command_system is not None
+    assert isinstance(root_space.frame_viewer, FrameViewer)
+    assert root_space.frame_viewer.count_frames() == 0
 
 
 def test_rift_space_exposes_space_kind_metadata_and_event_system() -> None:
     metadata = {"mode": "safe"}
     space = StaticRiftSpace(
         "rift-1",
+        rift=_make_detached_rift_projection_owner(),
         space_name="ops",
         metadata=metadata,
         space_id="space-custom",
@@ -49,17 +70,17 @@ def test_rift_space_exposes_properties_and_cleanup_cleans_owned_state(monkeypatc
     viewer_cleanup = []
     space = StaticRiftSpace(
         "rift-1",
+        rift=_make_detached_rift_projection_owner(),
         space_name="ops",
         metadata={"mode": "safe"},
     )
-    static_viewer = StaticFrameViewer.__new__(StaticFrameViewer)
+    static_viewer = space.frame_viewer
 
     monkeypatch.setattr(
         StaticFrameViewer,
         "cleanup",
         lambda self: viewer_cleanup.append(self),
     )
-    space._frame_viewer = static_viewer
     space._workstation = SimpleNamespace(cleanup=lambda: workstation_cleanup.append(True))
     space._command_system = SimpleNamespace(cleanup=lambda: command_cleanup.append(True))
     space._event_system = SimpleNamespace(cleanup=lambda: event_cleanup.append(True))
@@ -92,37 +113,23 @@ def test_rift_space_exposes_properties_and_cleanup_cleans_owned_state(monkeypatc
     assert space._space_id is None
 
 
-def test_rift_space_internal_viewer_replacement_guardrails_work(monkeypatch) -> None:
-    class _BaseSpace(RiftSpace):
-        def _create_command_system(self):
-            return SimpleNamespace(cleanup=lambda: None)
+def test_rift_space_keeps_same_viewer_asset_without_projection_management() -> None:
+    """
+    Verify the room keeps one durable viewer asset instead of replacing it.
 
-    base_space = _BaseSpace("rift-1")
-    space = StaticRiftSpace("rift-1")
-    first_viewer = StaticFrameViewer.__new__(StaticFrameViewer)
-    second_viewer = StaticFrameViewer.__new__(StaticFrameViewer)
-    cleaned = []
+    Returns:
+        None.
+    """
+    space = RiftSpace("rift-1", rift=_make_detached_rift_projection_owner())
+    first_viewer = space.frame_viewer
 
-    monkeypatch.setattr(
-        StaticFrameViewer,
-        "cleanup",
-        lambda self: cleaned.append(self),
-    )
-
-    with pytest.raises(TypeError, match="frame_viewer must be a FrameViewer."):
-        base_space._replace_frame_viewer(object())
-
-    space._replace_frame_viewer(first_viewer)
-    space._replace_frame_viewer(second_viewer)
-    assert cleaned == [first_viewer]
-
-    space._clear_frame_viewer()
-    assert cleaned == [first_viewer, second_viewer]
-    space._clear_frame_viewer()
+    assert space.frame_viewer is first_viewer
+    assert space.frame_viewer.count_frames() == 0
+    assert not hasattr(space, "_sync_frame_viewer_from_projection_sets")
 
 
 def test_rift_space_event_system_registry_and_event_emission_work() -> None:
-    space = StaticRiftSpace("rift-1")
+    space = StaticRiftSpace("rift-1", rift=_make_detached_rift_projection_owner())
     received = []
 
     with pytest.raises(TypeError, match="callback must be callable."):
@@ -162,7 +169,7 @@ def test_rift_space_event_system_registry_and_event_emission_work() -> None:
 
 
 def test_rift_space_event_system_property_is_live() -> None:
-    space = StaticRiftSpace("rift-1")
+    space = StaticRiftSpace("rift-1", rift=_make_detached_rift_projection_owner())
 
     assert space.event_system is not None
 
@@ -179,7 +186,7 @@ def test_rift_space_cleanup_rechecks_cleaned_inside_lock() -> None:
         def __exit__(self, exc_type, exc, tb) -> bool:
             return False
 
-    space = StaticRiftSpace("rift-1")
+    space = StaticRiftSpace("rift-1", rift=_make_detached_rift_projection_owner())
     original_lock = space._lock
     space._lock = _FlipCleanedOnEnter(space)
     try:

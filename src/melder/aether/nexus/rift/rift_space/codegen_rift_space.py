@@ -33,6 +33,7 @@ class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
             self,
             owner_rift_id: str,
             *,
+            rift: object,
             space_name: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
             rift_gate: Optional[IRiftGate] = None,
@@ -46,6 +47,8 @@ class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
         Args:
             owner_rift_id:
                 Canonical owning Rift id.
+            rift:
+                Owning `Rift` that manages projection-driven asset updates.
             space_name:
                 Optional stable room name.
             metadata:
@@ -65,6 +68,7 @@ class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
         """
         super().__init__(
             owner_rift_id,
+            rift=rift,
             space_name=space_name,
             space_kind="codegen",
             metadata=metadata,
@@ -72,7 +76,7 @@ class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
             space_id=space_id,
         )
 
-    def _create_command_system(self) -> CommandSystem:
+    def _create_command_system(self, rift: object) -> CommandSystem:
         """
         Build the codegen room's command system.
 
@@ -80,6 +84,7 @@ class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
             CommandSystem: Codegen-room command surface.
         """
         return CodegenCommandSystem(
+            rift=rift,
             space=self,
             workstation=self._workstation,
         )

@@ -32,7 +32,10 @@ class StaticFrameViewer(FrameViewer):
     """
 
     __melder_internal__ = _mrg.sentinel
-    __slots__ = ["_base_compiled_access_surfaces_by_frame_name"]
+    __slots__ = [
+        "_base_compiled_access_surfaces_by_frame_name",
+        "_filtered_compiled_access_surfaces_by_frame_name",
+    ]
     _aether = Aether()
 
     def __init__(self, **kwargs: Any) -> None:
@@ -50,9 +53,13 @@ class StaticFrameViewer(FrameViewer):
         ] = {
             frame_name: self._clone_compiled_access_surface(compiled_access_surface)
             for frame_name, compiled_access_surface in (
-                self._compiled_access_surfaces_by_frame_name.items()
+                super().compiled_access_surfaces_by_frame_name.items()
             )
         }
+        self._filtered_compiled_access_surfaces_by_frame_name: Dict[
+            str,
+            CompiledFrameACLAccessSurface,
+        ] = {}
         self.refresh_live_spell_projection()
 
     @classmethod
@@ -69,12 +76,12 @@ class StaticFrameViewer(FrameViewer):
         """
         frame_viewer.check_cleaned()
         if isinstance(frame_viewer, StaticFrameViewer):
-            source_compiled_access_surfaces = (
-                frame_viewer._base_compiled_access_surfaces_by_frame_name
+            source_projection_sets_by_frame_name = dict(
+                frame_viewer._projection_sets_by_frame_name
             )
         else:
-            source_compiled_access_surfaces = (
-                frame_viewer._compiled_access_surfaces_by_frame_name
+            source_projection_sets_by_frame_name = dict(
+                frame_viewer._projection_sets_by_frame_name
             )
         return cls(
             profile_builder=FrameViewerProfileBuilder(),
@@ -85,24 +92,7 @@ class StaticFrameViewer(FrameViewer):
                 )
             },
             default_profile_name=frame_viewer._default_profile_name,
-            frame_descriptors_by_name=dict(frame_viewer._frame_descriptors_by_name),
-            frame_acl_configurations_by_frame_name={
-                frame_name: frame_viewer._clone_frame_acl_configuration(
-                    frame_acl_configuration,
-                    reason="static_frame_viewer_clone",
-                )
-                for frame_name, frame_acl_configuration in (
-                    frame_viewer._frame_acl_configurations_by_frame_name.items()
-                )
-            },
-            compiled_access_surfaces_by_frame_name={
-                frame_name: frame_viewer._clone_compiled_access_surface(
-                    compiled_access_surface
-                )
-                for frame_name, compiled_access_surface in (
-                    source_compiled_access_surfaces.items()
-                )
-            },
+            projection_sets_by_frame_name=source_projection_sets_by_frame_name,
             selected_profile_names_by_frame_name=(
                 frame_viewer.selected_profile_names_by_frame_name
             ),
@@ -110,6 +100,65 @@ class StaticFrameViewer(FrameViewer):
             rift_gate=frame_viewer._rift_gate,
             metadata=dict(frame_viewer._metadata),
         )
+
+    def sync_from_projection_sets(
+            self,
+            projection_sets_by_frame_name: Dict[str, "FrameProjectionSet"],
+            *,
+            viewer_profile_name: Optional[str] = None,
+            selected_profile_names_by_frame_name: Optional[Dict[str, str]] = None,
+            default_view_frame_name: Optional[str] = None,
+            metadata: Optional[Dict[str, object]] = None,
+    ) -> None:
+        """
+        Synchronize the static viewer in place from room-owned projections.
+
+        Purpose:
+            Keep one durable static viewer asset alive while refreshing its base
+            compiled access surfaces and then reapplying the live-only spell
+            filter.
+
+        Args:
+            projection_sets_by_frame_name:
+                Current room-owned projection sets keyed by frame name.
+            viewer_profile_name:
+                Optional fallback viewer profile name for newly hosted frames.
+            selected_profile_names_by_frame_name:
+                Optional explicit selected profile names keyed by frame name.
+            default_view_frame_name:
+                Optional explicit default hosted frame name.
+            metadata:
+                Optional replacement viewer metadata payload.
+
+        Returns:
+            None.
+        """
+        super().sync_from_projection_sets(
+            projection_sets_by_frame_name,
+            viewer_profile_name=viewer_profile_name,
+            selected_profile_names_by_frame_name=selected_profile_names_by_frame_name,
+            default_view_frame_name=default_view_frame_name,
+            metadata=metadata,
+        )
+        with self._lock:
+            for compiled_access_surface in (
+                    self._base_compiled_access_surfaces_by_frame_name.values()
+            ):
+                compiled_access_surface.cleanup()
+            for compiled_access_surface in (
+                    self._filtered_compiled_access_surfaces_by_frame_name.values()
+            ):
+                compiled_access_surface.cleanup()
+            self._base_compiled_access_surfaces_by_frame_name = {
+                frame_name: self._clone_compiled_access_surface(
+                    compiled_access_surface
+                )
+                for frame_name, compiled_access_surface in (
+                    super().compiled_access_surfaces_by_frame_name.items()
+                )
+            }
+            self._filtered_compiled_access_surfaces_by_frame_name.clear()
+        self.refresh_live_spell_projection()
 
     def cleanup(self) -> None:
         """
@@ -121,10 +170,16 @@ class StaticFrameViewer(FrameViewer):
             if self._cleaned:
                 return
             for compiled_access_surface in (
+                    self._filtered_compiled_access_surfaces_by_frame_name.values()
+            ):
+                compiled_access_surface.cleanup()
+            for compiled_access_surface in (
                     self._base_compiled_access_surfaces_by_frame_name.values()
             ):
                 compiled_access_surface.cleanup()
+            self._filtered_compiled_access_surfaces_by_frame_name.clear()
             self._base_compiled_access_surfaces_by_frame_name.clear()
+            self._filtered_compiled_access_surfaces_by_frame_name = None
             self._base_compiled_access_surfaces_by_frame_name = None
         super().cleanup()
 
@@ -317,28 +372,16 @@ class StaticFrameViewer(FrameViewer):
                     metadata=base_compiled_access_surface.metadata,
                 )
                 current_compiled_access_surface = (
-                    self._compiled_access_surfaces_by_frame_name[current_frame_name]
-                )
-                current_compiled_access_surface.cleanup()
-                self._compiled_access_surfaces_by_frame_name[current_frame_name] = (
-                    filtered_compiled_access_surface
-                )
-                selected_profile_name = self.selected_profile_names_by_frame_name.get(
-                    current_frame_name,
-                    self._default_profile_name,
-                )
-                current_selected_profile = self._selected_profiles_by_frame_name.get(
-                    current_frame_name
-                )
-                if current_selected_profile is not None:
-                    current_selected_profile.cleanup()
-                if selected_profile_name is not None:
-                    self._selected_profiles_by_frame_name[current_frame_name] = (
-                        self._create_bound_profile_for_frame(
-                            current_frame_name,
-                            selected_profile_name,
-                        )
+                    self._filtered_compiled_access_surfaces_by_frame_name.get(
+                        current_frame_name
                     )
+                )
+                if current_compiled_access_surface is not None:
+                    current_compiled_access_surface.cleanup()
+                self._filtered_compiled_access_surfaces_by_frame_name[
+                    current_frame_name
+                ] = filtered_compiled_access_surface
+            self._clear_bound_profile_cache()
 
     def _iter_live_spell_records_for_frame(self, frame_name: str) -> List[object]:
         """
@@ -363,6 +406,40 @@ class StaticFrameViewer(FrameViewer):
             if self._is_spell_record_live(frame_name, spell_record):
                 live_spell_records.append(spell_record)
         return live_spell_records
+
+    @property
+    def compiled_access_surfaces_by_frame_name(
+            self,
+    ) -> Dict[str, CompiledFrameACLAccessSurface]:
+        """
+        Return the filtered compiled access surfaces keyed by frame.
+
+        Returns:
+            Dict[str, CompiledFrameACLAccessSurface]: Filtered static-viewer
+            surfaces.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._filtered_compiled_access_surfaces_by_frame_name)
+
+    def _get_required_compiled_access_surface(
+            self,
+            frame_name: str,
+    ) -> CompiledFrameACLAccessSurface:
+        """
+        Return the filtered compiled access surface for one frame.
+
+        Returns:
+            CompiledFrameACLAccessSurface: Filtered static-viewer surface.
+        """
+        try:
+            return self._filtered_compiled_access_surfaces_by_frame_name[frame_name]
+        except KeyError as exc:
+            raise ValueError(
+                "Compiled access surface for frame '{0}' was not found.".format(
+                    frame_name
+                )
+            ) from exc
 
     def _is_spell_record_live(self, frame_name: str, spell_record: object) -> bool:
         """

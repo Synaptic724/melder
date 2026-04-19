@@ -63,11 +63,18 @@ def _make_static_command_system() -> tuple[StaticCommandSystem, _Viewer]:
     space = SimpleNamespace(
         space_id="space-1",
         get_default_runtime_frame_name=lambda: viewer.default_view_frame_name,
-        get_required_command_projection=lambda frame_name: command_projection,
         rift_gate=None,
         memory_system=None,
     )
-    return StaticCommandSystem(space=space, workstation=workstation), viewer
+    rift = SimpleNamespace(
+        _get_required_command_projection=lambda frame_name: command_projection,
+        _get_default_runtime_frame_name=lambda: viewer.default_view_frame_name,
+    )
+    return StaticCommandSystem(
+        rift=rift,
+        space=space,
+        workstation=workstation,
+    ), viewer
 
 
 def test_static_command_system_status_reports_missing_and_ambiguous_publication() -> None:

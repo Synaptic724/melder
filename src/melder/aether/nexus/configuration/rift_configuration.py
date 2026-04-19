@@ -57,6 +57,7 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
         self.available_properties: Dict[str, Union[Type, Tuple[Type, ...]]] = {
             "space_type": RiftSpaceType,
             "space_name": (str, type(None)),
+            "viewer_profile_name": str,
             "auto_activate_on_program": bool,
             "validation_mode": RiftValidationMode,
         }
@@ -212,6 +213,7 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
         defaults = {
             "space_type": RiftSpaceType.static,
             "space_name": None,
+            "viewer_profile_name": "general",
             "auto_activate_on_program": True,
             "validation_mode": RiftValidationMode.strict,
         }
@@ -365,6 +367,25 @@ class RiftConfiguration(Cleanable, IRiftConfiguration):
             IRiftConfiguration: This configuration instance.
         """
         self.set_property("space_name", space_name)
+        return self
+
+    def with_viewer_profile_name(
+            self,
+            profile_name: str,
+    ) -> "IRiftConfiguration":
+        """
+        Fluent
+
+        Set the viewer-profile name used by the hosted `FrameViewer`.
+
+        Args:
+            profile_name:
+                Stable viewer-profile name.
+
+        Returns:
+            IRiftConfiguration: This configuration instance.
+        """
+        self.set_property("viewer_profile_name", profile_name)
         return self
 
     def with_auto_activate_on_program(

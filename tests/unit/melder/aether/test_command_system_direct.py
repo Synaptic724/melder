@@ -104,20 +104,34 @@ def _make_command_system(
     space = SimpleNamespace(
         space_id="space-1",
         get_default_runtime_frame_name=lambda: viewer.default_view_frame_name,
-        get_required_command_projection=lambda frame_name: command_projection,
         rift_gate=None,
         memory_system=memory_system,
     )
-    command_system = CommandSystem(space=space, workstation=workstation)
+    rift = SimpleNamespace(
+        _get_required_command_projection=lambda frame_name: command_projection,
+        _get_default_runtime_frame_name=lambda: viewer.default_view_frame_name,
+    )
+    command_system = CommandSystem(
+        rift=rift,
+        space=space,
+        workstation=workstation,
+    )
     return command_system, viewer, workstation
 
 
 def test_command_system_init_cleanup_and_property_guardrails() -> None:
+    with pytest.raises(TypeError, match="rift cannot be None"):
+        CommandSystem(rift=None, space=object(), workstation=object())
+
     with pytest.raises(TypeError, match="space cannot be None"):
-        CommandSystem(space=None, workstation=object())
+        CommandSystem(rift=object(), space=None, workstation=object())
 
     with pytest.raises(TypeError, match="workstation cannot be None"):
-        CommandSystem(space=SimpleNamespace(space_id="space-1"), workstation=None)
+        CommandSystem(
+            rift=object(),
+            space=SimpleNamespace(space_id="space-1"),
+            workstation=None,
+        )
 
     command_system, _, _ = _make_command_system()
 

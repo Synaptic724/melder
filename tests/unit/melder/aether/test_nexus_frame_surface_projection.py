@@ -264,18 +264,18 @@ def test_rift_refresh_runtime_projections_for_one_frame_preserves_other_room_pro
 
     second_viewer = rift.get_frame_viewer()
 
-    assert second_viewer is not first_viewer
+    assert second_viewer is first_viewer
     assert second_viewer.list_frame_names() == ["finance", "ops"]
-    assert rift.space.get_required_frame_projection_set("finance").frame_name == "finance"
-    assert rift.space.get_required_frame_projection_set("ops").frame_name == "ops"
+    assert rift._get_required_frame_projection_set("finance").frame_name == "finance"
+    assert rift._get_required_frame_projection_set("ops").frame_name == "ops"
 
 
-def test_rift_refresh_runtime_projections_for_multiple_frames_uses_one_projection_build_and_rebuild(
+def test_rift_refresh_runtime_projections_for_multiple_frames_uses_one_projection_build_and_sync(
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
     Verify explicit multi-frame refresh uses one projection-build call, one
-    merge call, and one viewer rebuild.
+    merge call, and one viewer sync.
 
     Args:
         monkeypatch:
@@ -294,13 +294,13 @@ def test_rift_refresh_runtime_projections_for_multiple_frames_uses_one_projectio
     rift.target_frame("finance")
 
     create_calls = []
-    replace_calls = []
-    rebuild_calls = []
+    apply_calls = []
+    sync_calls = []
     original_create_frame_projection_sets_for_rift = (
         nexus.create_frame_projection_sets_for_rift
     )
-    original_replace_projection_sets = rift.space.replace_projection_sets
-    original_rebuild_frame_viewer = rift.space._rebuild_frame_viewer
+    original_apply_projection_sets = rift._apply_projection_sets
+    original_sync_from_projection_sets = rift.space.frame_viewer.sync_from_projection_sets
 
     def wrapped_create_frame_projection_sets_for_rift(
             rift_id: str,
@@ -318,31 +318,34 @@ def test_rift_refresh_runtime_projections_for_multiple_frames_uses_one_projectio
             frame_names=frame_names,
         )
 
-    def wrapped_replace_projection_sets(
+    def wrapped_apply_projection_sets(
             projection_sets_by_frame_name,
             *,
             merge: bool = False,
     ) -> None:
-        replace_calls.append(
+        apply_calls.append(
             (
                 tuple(sorted(projection_sets_by_frame_name.keys())),
                 merge,
             )
         )
-        return original_replace_projection_sets(
+        return original_apply_projection_sets(
             projection_sets_by_frame_name,
             merge=merge,
         )
 
-    def wrapped_rebuild_frame_viewer(
+    def wrapped_sync_from_projection_sets(
+            self,
+            projection_sets_by_frame_name,
             *,
-            viewer_profile_name: str = "general",
+            viewer_profile_name=None,
             selected_profile_names_by_frame_name=None,
             default_view_frame_name=None,
             metadata=None,
     ):
-        rebuild_calls.append(metadata["assigned_frame_names"])
-        return original_rebuild_frame_viewer(
+        sync_calls.append(metadata["assigned_frame_names"])
+        return original_sync_from_projection_sets(
+            projection_sets_by_frame_name,
             viewer_profile_name=viewer_profile_name,
             selected_profile_names_by_frame_name=selected_profile_names_by_frame_name,
             default_view_frame_name=default_view_frame_name,
@@ -355,14 +358,14 @@ def test_rift_refresh_runtime_projections_for_multiple_frames_uses_one_projectio
         wrapped_create_frame_projection_sets_for_rift,
     )
     monkeypatch.setattr(
-        rift.space,
-        "replace_projection_sets",
-        wrapped_replace_projection_sets,
+        rift,
+        "_apply_projection_sets",
+        wrapped_apply_projection_sets,
     )
     monkeypatch.setattr(
-        rift.space,
-        "_rebuild_frame_viewer",
-        wrapped_rebuild_frame_viewer,
+        type(rift.space.frame_viewer),
+        "sync_from_projection_sets",
+        wrapped_sync_from_projection_sets,
     )
 
     rift.refresh_runtime_projections(frame_names=("ops", "finance"))
@@ -370,10 +373,10 @@ def test_rift_refresh_runtime_projections_for_multiple_frames_uses_one_projectio
     assert create_calls == [
         (rift.id, ("ops", "finance")),
     ]
-    assert replace_calls == [
+    assert apply_calls == [
         (("finance", "ops"), True),
     ]
-    assert rebuild_calls == [
+    assert sync_calls == [
         ("ops", "finance"),
     ]
 
