@@ -24,6 +24,7 @@ from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
 )
 from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
+from melder.aether.nexus.nexus import Nexus
 from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
 from melder.aether.nexus.rift.projection.command_projection import CommandProjection
 from melder.aether.nexus.rift.projection.frame_projection_set import FrameProjectionSet
@@ -222,11 +223,11 @@ def _build_single_frame_viewer(
         command_projection=CommandProjection(
             frame_name=frame_name,
             frame_descriptor=descriptor,
-            frame_acl_configuration=FrameViewer._clone_frame_acl_configuration(
+            frame_acl_configuration=Nexus._clone_frame_acl_configuration(
                 configuration,
                 reason="test_command_projection_clone",
             ),
-            compiled_access_surface=FrameViewer._clone_compiled_access_surface(
+            compiled_access_surface=Nexus._clone_compiled_access_surface(
                 compiled_surface
             ),
             metadata={"surface": "command"},
@@ -234,11 +235,11 @@ def _build_single_frame_viewer(
         codegen_projection=CodegenProjection(
             frame_name=frame_name,
             frame_descriptor=descriptor,
-            frame_acl_configuration=FrameViewer._clone_frame_acl_configuration(
+            frame_acl_configuration=Nexus._clone_frame_acl_configuration(
                 configuration,
                 reason="test_codegen_projection_clone",
             ),
-            compiled_access_surface=FrameViewer._clone_compiled_access_surface(
+            compiled_access_surface=Nexus._clone_compiled_access_surface(
                 compiled_surface
             ),
             metadata={"surface": "codegen"},
@@ -271,11 +272,11 @@ def _build_viewer(frame_names: tuple[str, ...]) -> FrameViewer:
             command_projection=CommandProjection(
                 frame_name=frame_name,
                 frame_descriptor=descriptor,
-                frame_acl_configuration=FrameViewer._clone_frame_acl_configuration(
+                frame_acl_configuration=Nexus._clone_frame_acl_configuration(
                     configuration,
                     reason="test_command_projection_clone",
                 ),
-                compiled_access_surface=FrameViewer._clone_compiled_access_surface(
+                compiled_access_surface=Nexus._clone_compiled_access_surface(
                     compiled_surface
                 ),
                 metadata={"surface": "command"},
@@ -283,11 +284,11 @@ def _build_viewer(frame_names: tuple[str, ...]) -> FrameViewer:
             codegen_projection=CodegenProjection(
                 frame_name=frame_name,
                 frame_descriptor=descriptor,
-                frame_acl_configuration=FrameViewer._clone_frame_acl_configuration(
+                frame_acl_configuration=Nexus._clone_frame_acl_configuration(
                     configuration,
                     reason="test_codegen_projection_clone",
                 ),
-                compiled_access_surface=FrameViewer._clone_compiled_access_surface(
+                compiled_access_surface=Nexus._clone_compiled_access_surface(
                     compiled_surface
                 ),
                 metadata={"surface": "codegen"},

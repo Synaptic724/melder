@@ -1785,326 +1785,1534 @@ class FrameViewer(Cleanable):
             self._helper_surfaces_by_frame_name[selected_frame_name] = helper_bundle
             return helper_bundle
 
-    def list_frames(self) -> List[str]:
-        """Direct facade for `list_frame_names` on the shipped viewer surface."""
-        return self.list_frame_names()
-
-    def list_spells_by_owner_conduit_record(self, conduit_id: str, *, frame_name: Optional[str] = None) -> List[str]:
-        """Direct facade for `list_spells_by_owner_conduit` on the shipped viewer surface."""
-        return self.list_spells_by_owner_conduit(conduit_id)
-
-    def list_spells_by_spellbook_id_record(self, spellbook_id: str, *, frame_name: Optional[str] = None) -> List[str]:
-        """Direct facade for `list_spells_by_spellbook_id` on the shipped viewer surface."""
-        return self.list_spells_by_spellbook_id(spellbook_id)
-
-    def list_spells_by_permission_record(self, permission: str, *, frame_name: Optional[str] = None) -> List[str]:
-        """Direct facade for `list_spells_by_permission` on the shipped viewer surface."""
-        return self.list_spells_by_permission(permission)
-
-    def list_spells_by_existence_record(self, existence: str, *, frame_name: Optional[str] = None) -> List[str]:
-        """Direct facade for `list_spells_by_existence` on the shipped viewer surface."""
-        return self.list_spells_by_existence(existence)
-
-    def list_spells_by_spellframe_record(self, spellframe_name: str, *, frame_name: Optional[str] = None) -> List[str]:
-        """Direct facade for `list_spells_by_spellframe` on the shipped viewer surface."""
-        return self.list_spells_by_spellframe(spellframe_name)
-
-    def describe_visible_surface(self, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_frame.describe_visible_surface` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_visible_surface(frame_name=frame_name)
-
-    def describe_missing_surface(self, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_frame.describe_missing_surface` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_missing_surface(frame_name=frame_name)
-
-    def describe_frame_brief_local(self, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_frame.describe_frame_brief` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_frame_brief(frame_name=frame_name)
-
-    def describe_visible_inventory_by_kind(self, *, frame_name: Optional[str] = None) -> Dict[str, Dict[str, object]]:
-        """Direct facade for `view_frame.describe_visible_inventory_by_kind` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_visible_inventory_by_kind(frame_name=frame_name)
-
-    def describe_frame_topology(self, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_frame.describe_frame_topology` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_frame_topology(frame_name=frame_name)
-
-    def list_visible_target_ids(self, *, frame_name: Optional[str] = None, source_kind: Optional[str] = None) -> List[str]:
-        """Direct facade for `view_frame.list_visible_target_ids` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).list_visible_target_ids(frame_name=frame_name, source_kind=source_kind)
-
-    def list_visible_target_ids_by_kind(self, *, frame_name: Optional[str] = None) -> Dict[str, Tuple[str, ...]]:
-        """Direct facade for `view_frame.list_visible_target_ids_by_kind` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).list_visible_target_ids_by_kind(frame_name=frame_name)
-
-    def list_visible_conduit_ids(self, *, frame_name: Optional[str] = None) -> List[str]:
-        """Direct facade for `view_frame.list_visible_conduit_ids` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).list_visible_conduit_ids(frame_name=frame_name)
-
-    def list_visible_spell_source_ids(self, *, frame_name: Optional[str] = None) -> List[str]:
-        """Direct facade for `view_frame.list_visible_spell_source_ids` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).list_visible_spell_source_ids(frame_name=frame_name)
-
-    def list_visible_root_conduits(self, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
-        """Direct facade for `view_frame.list_visible_root_conduits` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).list_visible_root_conduits(frame_name=frame_name)
-
-    def list_visible_binding_names(self, *, frame_name: Optional[str] = None) -> List[str]:
-        """Direct facade for `view_frame.list_visible_binding_names` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).list_visible_binding_names(frame_name=frame_name)
-
-    def list_visible_spell_names(self, *, frame_name: Optional[str] = None) -> List[str]:
-        """Direct facade for `view_frame.list_visible_spell_names` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).list_visible_spell_names(frame_name=frame_name)
-
-    def list_visible_spellframes(self, *, frame_name: Optional[str] = None) -> List[str]:
-        """Direct facade for `view_frame.list_visible_spellframes` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).list_visible_spellframes(frame_name=frame_name)
-
-    def list_visible_lineage_ids(self, *, frame_name: Optional[str] = None) -> List[str]:
-        """Direct facade for `view_frame.list_visible_lineage_ids` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).list_visible_lineage_ids(frame_name=frame_name)
-
-    def describe_visible_spell_ownership(self, *, frame_name: Optional[str] = None) -> Dict[str, Tuple[str, ...]]:
-        """Direct facade for `view_frame.describe_visible_spell_ownership` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_visible_spell_ownership(frame_name=frame_name)
-
-    def describe_visible_conduit_tree(self, *, frame_name: Optional[str] = None) -> Dict[str, Tuple[str, ...]]:
-        """Direct facade for `view_frame.describe_visible_conduit_tree` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_visible_conduit_tree(frame_name=frame_name)
-
-    def search_targets_contains(self, text: str, *, frame_name: Optional[str] = None, source_kind: Optional[str] = None) -> List[IFrameLink]:
-        """Direct facade for `view_frame.search_targets_contains` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).search_targets_contains(text, frame_name=frame_name, source_kind=source_kind)
-
-    def search_targets_prefix(self, prefix: str, *, frame_name: Optional[str] = None, source_kind: Optional[str] = None) -> List[IFrameLink]:
-        """Direct facade for `view_frame.search_targets_prefix` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).search_targets_prefix(prefix, frame_name=frame_name, source_kind=source_kind)
-
-    def group_targets_by_kind(self, *, frame_name: Optional[str] = None) -> Dict[str, List[IFrameLink]]:
-        """Direct facade for `view_frame.group_targets_by_kind` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).group_targets_by_kind(frame_name=frame_name)
-
-    def describe_target_brief(self, *, source_kind: str, source_id: str, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_frame.describe_target_brief` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_target_brief(frame_name=frame_name, source_kind=source_kind, source_id=source_id)
-
-    def describe_target_identity(self, *, source_kind: str, source_id: str, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_frame.describe_target_identity` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_target_identity(frame_name=frame_name, source_kind=source_kind, source_id=source_id)
-
-    def describe_visible_collisions(self, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_frame.describe_visible_collisions` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_visible_collisions(frame_name=frame_name)
-
-    def describe_frame_payload(self, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_frame.describe_frame_payload` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_frame_payload(frame_name=frame_name)
-
-    def describe_frame_inventory(self, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_frame.describe_frame_inventory` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_frame_inventory(frame_name=frame_name)
-
-    def describe_frame_access_contract(self, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_frame.describe_frame_access_contract` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_frame_access_contract(frame_name=frame_name)
-
-    def get_frame_payload_field(self, field_name: str, *, frame_name: Optional[str] = None) -> object:
-        """Direct facade for `view_frame.get_frame_payload_field` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).get_frame_payload_field(field_name, frame_name=frame_name)
-
-    def find_target_by_display_name(self, display_name: str, *, frame_name: Optional[str] = None, source_kind: Optional[str] = None) -> List[IFrameLink]:
-        """Direct facade for `view_frame.find_target_by_display_name` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).find_target_by_display_name(display_name, frame_name=frame_name, source_kind=source_kind)
-
-    def explain_target_access(self, *, source_kind: str, source_id: str, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_frame.explain_target_access` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).explain_target_access(frame_name=frame_name, source_kind=source_kind, source_id=source_id)
-
-    def list_targets(self, *, frame_name: Optional[str] = None, source_kind: Optional[str] = None) -> List[IFrameLink]:
-        """Direct facade for `view_frame.list_targets` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).list_targets(frame_name=frame_name, source_kind=source_kind)
-
-    def describe_targets(self, *, frame_name: Optional[str] = None, source_kind: Optional[str] = None) -> List[Dict[str, object]]:
-        """Direct facade for `view_frame.describe_targets` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_targets(frame_name=frame_name, source_kind=source_kind)
-
-    def list_conduits(self, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
-        """Direct facade for `view_conduit.list_conduits` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).list_conduits(frame_name=frame_name)
-
-    def list_root_conduits(self, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
-        """Direct facade for `view_conduit.list_root_conduits` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).list_root_conduits(frame_name=frame_name)
-
-    def describe_conduits(self, *, frame_name: Optional[str] = None) -> List[Dict[str, object]]:
-        """Direct facade for `view_conduit.describe_conduits` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).describe_conduits(frame_name=frame_name)
-
-    def get_conduit(self, conduit_id: str, *, frame_name: Optional[str] = None) -> IFrameLink:
-        """Direct facade for `view_conduit.get_required_conduit` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).get_required_conduit(conduit_id, frame_name=frame_name)
-
-    def describe_conduit(self, conduit_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_conduit.describe_conduit` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).describe_conduit(conduit_id, frame_name=frame_name)
-
-    def describe_conduit_brief(self, conduit_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_conduit.describe_conduit_brief` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).describe_conduit_brief(conduit_id, frame_name=frame_name)
-
-    def describe_conduit_inventory(self, conduit_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_conduit.describe_conduit_inventory` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).describe_conduit_inventory(conduit_id, frame_name=frame_name)
-
-    def describe_conduit_relationships(self, conduit_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_conduit.describe_conduit_relationships` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).describe_conduit_relationships(conduit_id, frame_name=frame_name)
-
-    def describe_conduit_missing_sections(self, conduit_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_conduit.describe_conduit_missing_sections` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).describe_conduit_missing_sections(conduit_id, frame_name=frame_name)
-
-    def describe_conduit_crosswalk(self, conduit_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_conduit.describe_conduit_crosswalk` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).describe_conduit_crosswalk(conduit_id, frame_name=frame_name)
-
-    def list_conduit_spells(self, conduit_id: str, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
-        """Direct facade for `view_conduit.list_conduit_spells` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).list_conduit_spells(conduit_id, frame_name=frame_name)
-
-    def describe_conduit_topology(self, conduit_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_conduit.describe_conduit_topology` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).describe_conduit_topology(conduit_id, frame_name=frame_name)
-
-    def compare_conduits(self, left_conduit_id: str, right_conduit_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_conduit.compare_conduits` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).compare_conduits(left_conduit_id, right_conduit_id, frame_name=frame_name)
-
-    def is_root_conduit(self, conduit_id: str, *, frame_name: Optional[str] = None) -> bool:
-        """Direct facade for `view_conduit.is_root_conduit` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).is_root_conduit(conduit_id, frame_name=frame_name)
-
-    def get_root_conduit_id(self, conduit_id: str, *, frame_name: Optional[str] = None) -> str:
-        """Direct facade for `view_conduit.get_root_conduit_id` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).get_root_conduit_id(conduit_id, frame_name=frame_name)
-
-    def list_conduits_by_root_id(self, root_conduit_id: str, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
-        """Direct facade for `view_conduit.list_conduits_by_root_id` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).list_conduits_by_root_id(root_conduit_id, frame_name=frame_name)
-
-    def list_conduits_by_policy(self, policy_name: str, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
-        """Direct facade for `view_conduit.list_conduits_by_policy` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).list_conduits_by_policy(policy_name, frame_name=frame_name)
-
-    def list_conduits_by_state(self, state_name: str, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
-        """Direct facade for `view_conduit.list_conduits_by_state` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).list_conduits_by_state(state_name, frame_name=frame_name)
-
-    def list_peer_conduits(self, conduit_id: str, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
-        """Direct facade for `view_conduit.list_peer_conduits` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).list_peer_conduits(conduit_id, frame_name=frame_name)
-
-    def list_spells(self, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
-        """Direct facade for `view_spell.list_spells` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).list_spells(frame_name=frame_name)
-
-    def describe_spells(self, *, frame_name: Optional[str] = None) -> List[Dict[str, object]]:
-        """Direct facade for `view_spell.describe_spells` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).describe_spells(frame_name=frame_name)
-
-    def get_spell(self, spell_source_id: str, *, frame_name: Optional[str] = None) -> IFrameLink:
-        """Direct facade for `view_spell.get_required_spell` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).get_required_spell(spell_source_id, frame_name=frame_name)
-
-    def describe_spell(self, spell_source_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_spell.describe_spell` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).describe_spell(spell_source_id, frame_name=frame_name)
-
-    def describe_spell_brief(self, spell_source_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_spell.describe_spell_brief` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).describe_spell_brief(spell_source_id, frame_name=frame_name)
-
-    def describe_spell_origin(self, spell_source_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_spell.describe_spell_origin` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).describe_spell_origin(spell_source_id, frame_name=frame_name)
-
-    def describe_spell_lineage(self, spell_source_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_spell.describe_spell_lineage` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).describe_spell_lineage(spell_source_id, frame_name=frame_name)
-
-    def describe_spell_payload(self, spell_source_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_spell.describe_spell_payload` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).describe_spell_payload(spell_source_id, frame_name=frame_name)
-
-    def describe_spell_missing_sections(self, spell_source_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_spell.describe_spell_missing_sections` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).describe_spell_missing_sections(spell_source_id, frame_name=frame_name)
-
-    def describe_spell_crosswalk(self, spell_source_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_spell.describe_spell_crosswalk` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).describe_spell_crosswalk(spell_source_id, frame_name=frame_name)
-
-    def compare_spells(self, left_spell_source_id: str, right_spell_source_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
-        """Direct facade for `view_spell.compare_spells` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).compare_spells(left_spell_source_id, right_spell_source_id, frame_name=frame_name)
-
-    def list_spells_by_owner_conduit(self, conduit_id: str, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
-        """Direct facade for `view_spell.list_spells_by_owner_conduit` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).list_spells_by_owner_conduit(conduit_id, frame_name=frame_name)
-
-    def list_spells_by_spellbook_id(self, spellbook_id: str, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
-        """Direct facade for `view_spell.list_spells_by_spellbook_id` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).list_spells_by_spellbook_id(spellbook_id, frame_name=frame_name)
-
-    def list_spells_by_permission(self, permission_name: str, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
-        """Direct facade for `view_spell.list_spells_by_permission` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).list_spells_by_permission(permission_name, frame_name=frame_name)
-
-    def list_spells_by_existence(self, existence_name: str, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
-        """Direct facade for `view_spell.list_spells_by_existence` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).list_spells_by_existence(existence_name, frame_name=frame_name)
-
-    def list_spells_by_spellframe(self, spellframe_name: str, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
-        """Direct facade for `view_spell.list_spells_by_spellframe` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).list_spells_by_spellframe(spellframe_name, frame_name=frame_name)
-
-    def list_viewer_method_names_ast_json(
+    def describe_visible_surface(
             self,
             *,
-            include_private: bool = False,
-            include_dunder: bool = False,
-    ) -> str:
-        """Return a minified JSON list of `FrameViewer` class method names."""
-        self.check_cleaned()
-        return ClassSurfaceAstDescriber.list_class_method_names_ast_json(
-            self,
-            include_private=include_private,
-            include_dunder=include_dunder,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the current visible frame-local surface in one summary.
+
+        Purpose:
+            Give the operator a single "what can I actually see right now?"
+            entry point over the selected frame without making them manually
+            merge inventory, topology, and access-contract calls.
+
+        Contract:
+            - Uses only the selected frame descriptor plus the compiled ACL
+              surface.
+            - Summarizes the currently visible target ids, grouped inventory,
+              visible topology, and access contract.
+            - Remains frame-local; it never spans multiple hosted frames.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Summary of the currently visible frame-local
+            surface.
+        """
+        return self.get_view_frame(frame_name=frame_name).describe_visible_surface(
+            frame_name=frame_name,
         )
 
-    def describe_agent_onboarding_json(self) -> str:
-        """Return the shared first-time onboarding hint for Melder agents."""
-        self.check_cleaned()
-        return ClassSurfaceAstDescriber.describe_agent_onboarding_json()
-
-    def describe_viewer_agent_purpose_json(self) -> str:
-        """Return the minified JSON agent-purpose surface for the viewer host."""
-        self.check_cleaned()
-        return ClassSurfaceAstDescriber.describe_agent_purpose_json(self)
-
-    def describe_viewer_class_surface_ast_json(
+    def describe_missing_surface(
             self,
             *,
-            include_private: bool = False,
-            include_dunder: bool = False,
-    ) -> str:
-        """Return a minified JSON description of the `FrameViewer` class surface."""
-        self.check_cleaned()
-        return ClassSurfaceAstDescriber.describe_class_surface_ast_json(
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return what is currently hidden or absent from the selected frame
+        surface.
+
+        Purpose:
+            Help the operator answer "what am I not seeing right now?" by
+            comparing descriptor-owned records and payload fields against the
+            currently visible ACL-shaped surface.
+
+        Contract:
+            - Uses descriptor truth plus the compiled ACL surface only.
+            - Distinguishes hidden frame payload fields, hidden conduit/spell
+              records, and payload sections not currently visible.
+            - Does not expose hidden payload bodies.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Missing/hidden surface summary.
+        """
+        return self.get_view_frame(frame_name=frame_name).describe_missing_surface(
+            frame_name=frame_name,
+        )
+
+    def describe_frame_brief_local(
             self,
-            include_private=include_private,
-            include_dunder=include_dunder,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return one compact operator-oriented frame summary.
+
+        Purpose:
+            Give the operator a smaller "start here" summary than the richer
+            frame surface methods while still reflecting visible inventory and
+            ACL posture.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Compact frame-local summary.
+        """
+        return self.get_view_frame(frame_name=frame_name).describe_frame_brief(
+            frame_name=frame_name,
+        )
+
+    def describe_visible_inventory_by_kind(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, Dict[str, object]]:
+        """
+        Return visible inventory grouped by target kind.
+
+        Purpose:
+            Provide a frame-local grouped inventory over visible targets so the
+            operator can see counts, source ids, and names without manually
+            regrouping raw links.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, Dict[str, object]]: Inventory grouped by target kind.
+        """
+        return self.get_view_frame(
+            frame_name=frame_name,
+        ).describe_visible_inventory_by_kind(frame_name=frame_name)
+
+    def describe_frame_topology(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the visible conduit/spell topology for the selected frame.
+
+        Purpose:
+            Summarize how the currently visible conduits and spells relate to
+            each other so the operator can navigate the frame structure without
+            reading each target individually first.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Visible frame-local topology summary.
+        """
+        return self.get_view_frame(frame_name=frame_name).describe_frame_topology(
+            frame_name=frame_name,
+        )
+
+    def list_visible_target_ids(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+            source_kind: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return visible target ids for the selected frame.
+
+        Purpose:
+            Provide a compact id-only view over the currently visible target
+            surface.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+            source_kind:
+                Optional target-kind filter.
+
+        Returns:
+            List[str]: Visible target ids in deterministic order.
+        """
+        return self.get_view_frame(frame_name=frame_name).list_visible_target_ids(
+            frame_name=frame_name,
+            source_kind=source_kind,
+        )
+
+    def list_visible_target_ids_by_kind(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, Tuple[str, ...]]:
+        """
+        Return visible target ids grouped by target kind.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Visible target ids grouped by kind.
+        """
+        return self.get_view_frame(
+            frame_name=frame_name,
+        ).list_visible_target_ids_by_kind(frame_name=frame_name)
+
+    def list_visible_conduit_ids(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return visible conduit ids for the selected frame.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[str]: Visible conduit ids in deterministic order.
+        """
+        return self.get_view_frame(frame_name=frame_name).list_visible_conduit_ids(
+            frame_name=frame_name,
+        )
+
+    def list_visible_spell_source_ids(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return visible spell source ids for the selected frame.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[str]: Visible spell source ids in deterministic order.
+        """
+        return self.get_view_frame(
+            frame_name=frame_name,
+        ).list_visible_spell_source_ids(frame_name=frame_name)
+
+    def list_visible_root_conduits(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[IFrameLink]:
+        """
+        Return visible conduit links that are also root conduits.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[IFrameLink]: Visible root conduit links.
+        """
+        return self.get_view_frame(frame_name=frame_name).list_visible_root_conduits(
+            frame_name=frame_name,
+        )
+
+    def list_visible_binding_names(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return visible spell binding names for the selected frame.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[str]: Visible binding names in deterministic spell order.
+        """
+        return self.get_view_frame(frame_name=frame_name).list_visible_binding_names(
+            frame_name=frame_name,
+        )
+
+    def list_visible_spell_names(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return visible spell names for the selected frame.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[str]: Visible spell names in deterministic spell order.
+        """
+        return self.get_view_frame(frame_name=frame_name).list_visible_spell_names(
+            frame_name=frame_name,
+        )
+
+    def list_visible_spellframes(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return visible normalized spellframe values for the selected frame.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[str]: Distinct visible spellframe values in deterministic
+            order.
+        """
+        return self.get_view_frame(frame_name=frame_name).list_visible_spellframes(
+            frame_name=frame_name,
+        )
+
+    def list_visible_lineage_ids(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[str]:
+        """
+        Return visible lineage ids for the selected frame.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[str]: Visible lineage ids in deterministic spell order.
+        """
+        return self.get_view_frame(frame_name=frame_name).list_visible_lineage_ids(
+            frame_name=frame_name,
+        )
+
+    def describe_visible_spell_ownership(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, Tuple[str, ...]]:
+        """
+        Return visible spell ownership grouped by conduit id.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Visible spell source ids grouped by
+            owner conduit id.
+        """
+        return self.get_view_frame(frame_name=frame_name).describe_visible_spell_ownership(
+            frame_name=frame_name,
+        )
+
+    def describe_visible_conduit_tree(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, Tuple[str, ...]]:
+        """
+        Return visible conduit ids grouped by root conduit id.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Visible conduit ids grouped by root
+            conduit id.
+        """
+        return self.get_view_frame(frame_name=frame_name).describe_visible_conduit_tree(
+            frame_name=frame_name,
+        )
+
+    def search_targets_contains(
+            self,
+            text: str,
+            *,
+            frame_name: Optional[str] = None,
+            source_kind: Optional[str] = None,
+    ) -> List[IFrameLink]:
+        """
+        Return visible targets whose identity contains one text fragment.
+
+        Purpose:
+            Provide a forgiving search path over visible target display names
+            and source ids.
+
+        Args:
+            text:
+                Case-insensitive text fragment to search for.
+            frame_name:
+                Optional hosted frame name override.
+            source_kind:
+                Optional target-kind filter.
+
+        Returns:
+            List[IFrameLink]: Matching visible targets in deterministic order.
+        """
+        return self.get_view_frame(frame_name=frame_name).search_targets_contains(
+            text,
+            frame_name=frame_name,
+            source_kind=source_kind,
+        )
+
+    def search_targets_prefix(
+            self,
+            prefix: str,
+            *,
+            frame_name: Optional[str] = None,
+            source_kind: Optional[str] = None,
+    ) -> List[IFrameLink]:
+        """
+        Return visible targets whose identity starts with one prefix.
+
+        Args:
+            prefix:
+                Case-insensitive prefix to match against display names and
+                source ids.
+            frame_name:
+                Optional hosted frame name override.
+            source_kind:
+                Optional target-kind filter.
+
+        Returns:
+            List[IFrameLink]: Matching visible targets in deterministic order.
+        """
+        return self.get_view_frame(frame_name=frame_name).search_targets_prefix(
+            prefix,
+            frame_name=frame_name,
+            source_kind=source_kind,
+        )
+
+    def group_targets_by_kind(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, List[IFrameLink]]:
+        """
+        Return visible targets grouped by target kind.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, List[IFrameLink]]: Visible targets grouped by source kind.
+        """
+        return self.get_view_frame(frame_name=frame_name).group_targets_by_kind(
+            frame_name=frame_name,
+        )
+
+    def describe_target_brief(
+            self,
+            *,
+            source_kind: str,
+            source_id: str,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return one compact summary for a visible target.
+
+        Purpose:
+            Give the operator a quick identity/access snapshot for one visible
+            target without forcing the richer identity or payload-specific
+            methods immediately.
+
+        Args:
+            source_kind:
+                Required target kind.
+            source_id:
+                Required target source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Compact visible target summary.
+        """
+        return self.get_view_frame(frame_name=frame_name).describe_target_brief(
+            frame_name=frame_name,
+            source_kind=source_kind,
+            source_id=source_id,
+        )
+
+    def describe_target_identity(
+            self,
+            *,
+            source_kind: str,
+            source_id: str,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return a compact identity summary for one visible target.
+
+        Purpose:
+            Give the operator a stable identity/provenance snapshot for one
+            currently visible target without forcing a wider payload dump.
+
+        Args:
+            source_kind:
+                Required target kind.
+            source_id:
+                Required target source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Visible target identity summary.
+        """
+        return self.get_view_frame(frame_name=frame_name).describe_target_identity(
+            frame_name=frame_name,
+            source_kind=source_kind,
+            source_id=source_id,
+        )
+
+    def describe_visible_collisions(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return visible identity collisions for the selected frame.
+
+        Purpose:
+            Make visible ambiguity explicit at the frame-local surface so the
+            operator can see where multiple visible spells share the same
+            binding name, spell name, lineage, or spellframe.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Visible collision and grouping summary.
+        """
+        return self.get_view_frame(frame_name=frame_name).describe_visible_collisions(
+            frame_name=frame_name,
+        )
+
+    def describe_frame_payload(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the ACL-filtered frame payload for the selected frame.
+
+        Purpose:
+            Surface the real `FrameRecord.payload` content the viewer can use
+            after the compiled ACL surface has already reduced it to the
+            currently visible frame fields.
+
+        Contract:
+            - Uses the selected `FrameDescriptor` and compiled ACL surface
+              only.
+            - Returns only fields present in
+              `CompiledFrameACLAccessSurface.frame_payload_fields`.
+            - Raises when the selected frame does not expose `frame_overview`.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: ACL-filtered frame payload description.
+        """
+        return self.get_view_frame(frame_name=frame_name).describe_frame_payload(
+            frame_name=frame_name,
+        )
+
+    def describe_frame_inventory(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return a compact inventory of the selected frame surface.
+
+        Purpose:
+            Give the main viewer operator a fast answer to "what is in this
+            frame right now?" without forcing a full target dump first.
+
+        Contract:
+            - Counts only ACL-visible conduits and spells.
+            - Preserves the currently visible target ids and source ids.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Compact frame inventory summary.
+        """
+        return self.get_view_frame(frame_name=frame_name).describe_frame_inventory(
+            frame_name=frame_name,
+        )
+
+    def describe_frame_access_contract(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the selected ACL access contract for the frame surface.
+
+        Purpose:
+            Surface the effective view/codegen posture and visible frame
+            payload fields so the viewer operator can understand why certain
+            data is or is not available.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Effective ACL access contract summary.
+        """
+        return self.get_view_frame(
+            frame_name=frame_name,
+        ).describe_frame_access_contract(frame_name=frame_name)
+
+    def get_frame_payload_field(
+            self,
+            field_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one ACL-visible frame payload field or raise.
+
+        Purpose:
+            Provide a fail-fast, field-level access path for agent use when the
+            caller needs one specific frame payload field instead of the whole
+            filtered payload map.
+
+        Contract:
+            - Requires the field to be visible in the compiled ACL surface.
+            - Returns the normalized field value from the selected frame
+              payload.
+
+        Args:
+            field_name:
+                Required frame payload field name.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            object: ACL-visible frame payload field value.
+        """
+        return self.get_view_frame(frame_name=frame_name).get_frame_payload_field(
+            field_name,
+            frame_name=frame_name,
+        )
+
+    def find_target_by_display_name(
+            self,
+            display_name: str,
+            *,
+            frame_name: Optional[str] = None,
+            source_kind: Optional[str] = None,
+    ) -> List[IFrameLink]:
+        """
+        Return visible targets whose display name matches exactly.
+
+        Purpose:
+            Give the operator a fast exact-name lookup path over the currently
+            visible target surface without forcing a manual target scan.
+
+        Args:
+            display_name:
+                Exact display name to match.
+            frame_name:
+                Optional hosted frame name override.
+            source_kind:
+                Optional target-kind filter.
+
+        Returns:
+            List[IFrameLink]: Matching visible targets.
+        """
+        return self.get_view_frame(frame_name=frame_name).find_target_by_display_name(
+            display_name,
+            frame_name=frame_name,
+            source_kind=source_kind,
+        )
+
+    def explain_target_access(
+            self,
+            *,
+            source_kind: str,
+            source_id: str,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Explain whether one target is visible and what ACL data is exposed.
+
+        Purpose:
+            Make the effective access posture explicit for one frame, conduit,
+            or spell target instead of forcing the operator to infer it from
+            missing results or partial payloads.
+
+        Args:
+            source_kind:
+                Target kind to inspect.
+            source_id:
+                Target source id to inspect.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Visibility and section/field explanation for the
+            requested target.
+        """
+        return self.get_view_frame(frame_name=frame_name).explain_target_access(
+            frame_name=frame_name,
+            source_kind=source_kind,
+            source_id=source_id,
+        )
+
+    def list_targets(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+            source_kind: Optional[str] = None,
+    ) -> List[IFrameLink]:
+        """
+        Return the currently visible targets for the selected frame.
+
+        Contract:
+            - Builds links from the selected descriptor plus compiled ACL
+              surface.
+            - Optionally filters that visible set down to one source kind.
+            - Returns a fresh snapshot for this call.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+            source_kind:
+                Optional target-kind filter (`frame`, `conduit`, or `spell`).
+
+        Returns:
+            List[IFrameLink]: Ordered ACL-filtered targets.
+        """
+        return self.get_view_frame(frame_name=frame_name).list_targets(
+            frame_name=frame_name,
+            source_kind=source_kind,
+        )
+
+    def describe_targets(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+            source_kind: Optional[str] = None,
+    ) -> List[Dict[str, object]]:
+        """
+        Return summary descriptions for the current visible target snapshot.
+
+        Contract:
+            - Preserves the same target visibility as `list_targets(...)`.
+            - Includes link metadata only when the helper is in `detailed`
+              posture.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+            source_kind:
+                Optional target-kind filter.
+
+        Returns:
+            List[Dict[str, object]]: ACL-filtered target descriptions.
+        """
+        return self.get_view_frame(frame_name=frame_name).describe_targets(
+            frame_name=frame_name,
+            source_kind=source_kind,
+        )
+
+    def list_conduits(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[IFrameLink]:
+        """
+        Return the currently visible conduit links for the selected frame.
+
+        Contract:
+            - Delegates visibility decisions to the shared frame helper and its
+              compiled ACL surface.
+            - Returns a fresh link snapshot for this call.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[IFrameLink]: Conduit links for the selected frame.
+        """
+        return self.get_view_conduit(frame_name=frame_name).list_conduits(
+            frame_name=frame_name,
+        )
+
+    def list_root_conduits(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[IFrameLink]:
+        """
+        Return visible conduit links that are root conduits.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[IFrameLink]: Visible root conduit links.
+        """
+        return self.get_view_conduit(frame_name=frame_name).list_root_conduits(
+            frame_name=frame_name,
+        )
+
+    def describe_conduits(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[Dict[str, object]]:
+        """
+        Return record-aware descriptions for every visible conduit.
+
+        Contract:
+            - Materializes one `describe_conduit(...)` result per currently
+              visible conduit.
+            - Preserves the active ACL filtering on payload sections.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[Dict[str, object]]: Conduit descriptions.
+        """
+        return self.get_view_conduit(frame_name=frame_name).describe_conduits(
+            frame_name=frame_name,
+        )
+
+    def get_conduit(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> IFrameLink:
+        """
+        Return one conduit link by conduit id or raise.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            IFrameLink: Matching conduit link.
+        """
+        return self.get_view_conduit(frame_name=frame_name).get_required_conduit(
+            conduit_id,
+            frame_name=frame_name,
+        )
+
+    def describe_conduit(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return a record-aware conduit description for one conduit.
+
+        Purpose:
+            Surface one `ConduitRecord` through the currently active ACL
+            sections instead of only returning the flattened `FrameLink`
+            metadata view.
+
+        Contract:
+            - Requires the conduit to be visible in the compiled ACL surface.
+            - Returns only the conduit payload sections currently visible for
+              that conduit id.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: ACL-filtered conduit description.
+        """
+        return self.get_view_conduit(frame_name=frame_name).describe_conduit(
+            conduit_id,
+            frame_name=frame_name,
+        )
+
+    def describe_conduit_brief(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return one compact operator-oriented conduit summary.
+
+        Purpose:
+            Give the operator a smaller "start here" conduit summary than the
+            richer inventory and relationship methods.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Compact conduit summary.
+        """
+        return self.get_view_conduit(frame_name=frame_name).describe_conduit_brief(
+            conduit_id,
+            frame_name=frame_name,
+        )
+
+    def describe_conduit_inventory(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return a compact inventory summary for one conduit.
+
+        Purpose:
+            Give the operator one quick conduit-local inventory view covering
+            owned spells, peer links, and visible payload sections.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Compact conduit inventory summary.
+        """
+        return self.get_view_conduit(frame_name=frame_name).describe_conduit_inventory(
+            conduit_id,
+            frame_name=frame_name,
+        )
+
+    def describe_conduit_relationships(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the visible relationship posture for one conduit.
+
+        Purpose:
+            Make the conduit root grouping, peer links, and owned visible
+            spells explicit in one relationship-oriented view.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Visible conduit relationship summary.
+        """
+        return self.get_view_conduit(
+            frame_name=frame_name,
+        ).describe_conduit_relationships(conduit_id, frame_name=frame_name)
+
+    def describe_conduit_missing_sections(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the conduit payload sections not currently visible.
+
+        Purpose:
+            Make the conduit-local "what is hidden?" answer explicit instead of
+            forcing the operator to infer it from missing payload keys.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Missing conduit-section summary.
+        """
+        return self.get_view_conduit(
+            frame_name=frame_name,
+        ).describe_conduit_missing_sections(conduit_id, frame_name=frame_name)
+
+    def describe_conduit_crosswalk(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the related visible objects around one conduit.
+
+        Purpose:
+            Give the operator one direct conduit crosswalk from the conduit to
+            its root, peers, owned spells, and frame context.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Conduit crosswalk summary.
+        """
+        return self.get_view_conduit(frame_name=frame_name).describe_conduit_crosswalk(
+            conduit_id,
+            frame_name=frame_name,
+        )
+
+    def list_conduit_spells(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[IFrameLink]:
+        """
+        Return the ACL-visible spells owned by one conduit.
+
+        Purpose:
+            Give the viewer operator a direct conduit-to-spell traversal path
+            instead of forcing a full spell scan and manual filtering.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[IFrameLink]: ACL-visible spells owned by the conduit.
+        """
+        return self.get_view_conduit(frame_name=frame_name).list_conduit_spells(
+            conduit_id,
+            frame_name=frame_name,
+        )
+
+    def describe_conduit_topology(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the visible topology around one conduit.
+
+        Purpose:
+            Show the conduit peer links plus the visible spells currently owned
+            by that conduit in one compact description.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Visible conduit topology summary.
+        """
+        return self.get_view_conduit(frame_name=frame_name).describe_conduit_topology(
+            conduit_id,
+            frame_name=frame_name,
+        )
+
+    def compare_conduits(
+            self,
+            left_conduit_id: str,
+            right_conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Compare two visible conduits inside the selected frame.
+
+        Args:
+            left_conduit_id:
+                Left visible conduit id.
+            right_conduit_id:
+                Right visible conduit id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Visible conduit comparison summary.
+        """
+        return self.get_view_conduit(frame_name=frame_name).compare_conduits(
+            left_conduit_id,
+            right_conduit_id,
+            frame_name=frame_name,
+        )
+
+    def is_root_conduit(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> bool:
+        """
+        Return whether one visible conduit is its own root.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            bool: True when the conduit is a root conduit.
+        """
+        return self.get_view_conduit(frame_name=frame_name).is_root_conduit(
+            conduit_id,
+            frame_name=frame_name,
+        )
+
+    def get_root_conduit_id(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> str:
+        """
+        Return the root conduit id for one visible conduit.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            str: Root conduit id for the conduit.
+        """
+        return self.get_view_conduit(frame_name=frame_name).get_root_conduit_id(
+            conduit_id,
+            frame_name=frame_name,
+        )
+
+    def list_conduits_by_root_id(
+            self,
+            root_conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[IFrameLink]:
+        """
+        Return visible conduits grouped under one root conduit id.
+
+        Args:
+            root_conduit_id:
+                Required root conduit id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[IFrameLink]: Visible conduits whose root lineage matches.
+        """
+        return self.get_view_conduit(frame_name=frame_name).list_conduits_by_root_id(
+            root_conduit_id,
+            frame_name=frame_name,
+        )
+
+    def list_conduits_by_policy(
+            self,
+            policy_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[IFrameLink]:
+        """
+        Return visible conduits with one conduit policy value.
+
+        Args:
+            policy_name:
+                Required conduit policy name.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[IFrameLink]: Visible conduits whose payload policy matches.
+        """
+        return self.get_view_conduit(frame_name=frame_name).list_conduits_by_policy(
+            policy_name,
+            frame_name=frame_name,
+        )
+
+    def list_conduits_by_state(
+            self,
+            state_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[IFrameLink]:
+        """
+        Return visible conduits with one conduit-state value.
+
+        Args:
+            state_name:
+                Required conduit-state name.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[IFrameLink]: Visible conduits whose payload state matches.
+        """
+        return self.get_view_conduit(frame_name=frame_name).list_conduits_by_state(
+            state_name,
+            frame_name=frame_name,
+        )
+
+    def list_peer_conduits(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[IFrameLink]:
+        """
+        Return visible peer conduit links for one conduit.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[IFrameLink]: Visible peer conduit links.
+        """
+        return self.get_view_conduit(frame_name=frame_name).list_peer_conduits(
+            conduit_id,
+            frame_name=frame_name,
+        )
+
+    def list_spells(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[IFrameLink]:
+        """
+        Return the currently visible spell links for the selected frame.
+
+        Contract:
+            - Delegates visibility decisions to the shared frame helper and its
+              compiled ACL surface.
+            - Returns a fresh link snapshot for this call.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[IFrameLink]: Spell links for the selected frame.
+        """
+        return self.get_view_spell(frame_name=frame_name).list_spells(
+            frame_name=frame_name,
+        )
+
+    def describe_spells(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> List[Dict[str, object]]:
+        """
+        Return record-aware descriptions for every visible spell.
+
+        Contract:
+            - Materializes one `describe_spell(...)` result per currently
+              visible spell link.
+            - Preserves the active ACL filtering and payload-type degradation
+              semantics of the spell helper.
+
+        Args:
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            List[Dict[str, object]]: Spell descriptions.
+        """
+        return self.get_view_spell(frame_name=frame_name).describe_spells(
+            frame_name=frame_name,
+        )
+
+    def get_spell(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> IFrameLink:
+        """
+        Return one spell link by published source id or raise.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            IFrameLink: Matching spell link.
+        """
+        return self.get_view_spell(frame_name=frame_name).get_required_spell(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+
+    def describe_spell(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return a record-aware spell description for one spell.
+
+        Purpose:
+            Surface one `SpellRecord` through the currently active ACL sections
+            while gracefully degrading when the published spell payload is only
+            `general` and therefore lacks richer `detailed` payload content.
+
+        Contract:
+            - Requires the spell to be visible in the compiled ACL surface.
+            - Returns only the spell payload sections currently visible for the
+              spell record key.
+            - Omits richer fields when the payload does not actually publish
+              them, even if a more permissive ACL would have allowed them.
+
+        Args:
+            spell_source_id:
+                Published spell source id in `spellbook_id:spell_id` form.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: ACL-filtered spell description.
+        """
+        return self.get_view_spell(frame_name=frame_name).describe_spell(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+
+    def describe_spell_brief(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return one compact operator-oriented spell summary.
+
+        Purpose:
+            Give the operator a smaller spell summary than the richer identity,
+            access, and detail methods when they just need the essentials.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Compact spell summary.
+        """
+        return self.get_view_spell(frame_name=frame_name).describe_spell_brief(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+
+    def describe_spell_origin(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the publication-origin fields for one visible spell.
+
+        Purpose:
+            Surface where the spell came from in frame/spellbook/conduit terms
+            so the operator can reason about provenance before reading payload
+            sections.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Publication-origin fields for the visible spell.
+        """
+        return self.get_view_spell(frame_name=frame_name).describe_spell_origin(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+
+    def describe_spell_lineage(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return lineage grouping information for one visible spell.
+
+        Purpose:
+            Expose all visible and descriptor-local siblings that share the
+            same lineage id so the operator can understand the spell lineage
+            context inside the current frame.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Lineage grouping summary for the spell.
+        """
+        return self.get_view_spell(frame_name=frame_name).describe_spell_lineage(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+
+    def describe_spell_payload(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return only the ACL-filtered spell payload body.
+
+        Purpose:
+            Give the main viewer operator a stable, payload-focused spell read
+            surface without the wider record wrapper.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Spell payload summary.
+        """
+        return self.get_view_spell(frame_name=frame_name).describe_spell_payload(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+
+    def describe_spell_missing_sections(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the spell payload sections not currently visible or published.
+
+        Purpose:
+            Make the spell-local "what is missing and why?" answer explicit
+            instead of forcing the operator to infer it from absent detail
+            fields.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Missing spell-section summary.
+        """
+        return self.get_view_spell(
+            frame_name=frame_name,
+        ).describe_spell_missing_sections(spell_source_id, frame_name=frame_name)
+
+    def describe_spell_crosswalk(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Return the related visible objects around one spell.
+
+        Purpose:
+            Give the operator one direct spell crosswalk from the spell to its
+            conduit, root conduit, peer conduits, spellbook, lineage, and
+            visible sibling spells.
+
+        Args:
+            spell_source_id:
+                Published spell source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Spell crosswalk summary.
+        """
+        return self.get_view_spell(frame_name=frame_name).describe_spell_crosswalk(
+            spell_source_id,
+            frame_name=frame_name,
+        )
+
+    def compare_spells(
+            self,
+            left_spell_source_id: str,
+            right_spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Dict[str, object]:
+        """
+        Compare two visible spells inside the selected frame.
+
+        Args:
+            left_spell_source_id:
+                Left visible spell source id.
+            right_spell_source_id:
+                Right visible spell source id.
+            frame_name:
+                Optional hosted frame name override.
+
+        Returns:
+            Dict[str, object]: Visible spell comparison summary.
+        """
+        return self.get_view_spell(frame_name=frame_name).compare_spells(
+            left_spell_source_id,
+            right_spell_source_id,
+            frame_name=frame_name,
         )
 
     def _get_required_frame_descriptor(self, frame_name: str) -> FrameDescriptor:
