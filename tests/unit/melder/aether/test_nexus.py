@@ -357,7 +357,6 @@ def _build_projection_set_from_viewer(
     Returns:
         FrameProjectionSet: Detached projection set for the frame.
     """
-    nexus = Nexus()
     frame_descriptor = viewer.frame_descriptors_by_name[frame_name]
     frame_acl_configuration = viewer.frame_acl_configurations_by_frame_name[frame_name]
     compiled_access_surface = viewer.compiled_access_surfaces_by_frame_name[frame_name]
@@ -366,11 +365,11 @@ def _build_projection_set_from_viewer(
         view_projection=ViewProjection(
             frame_name=frame_name,
             frame_descriptor=frame_descriptor,
-            frame_acl_configuration=nexus._clone_frame_acl_configuration(
+            frame_acl_configuration=FrameViewer._clone_frame_acl_configuration(
                 frame_acl_configuration,
                 reason="test_view_projection_clone",
             ),
-            compiled_access_surface=nexus._clone_compiled_access_surface(
+            compiled_access_surface=FrameViewer._clone_compiled_access_surface(
                 compiled_access_surface
             ),
             metadata={"surface": "view"},
@@ -378,11 +377,11 @@ def _build_projection_set_from_viewer(
         command_projection=CommandProjection(
             frame_name=frame_name,
             frame_descriptor=frame_descriptor,
-            frame_acl_configuration=nexus._clone_frame_acl_configuration(
+            frame_acl_configuration=FrameViewer._clone_frame_acl_configuration(
                 frame_acl_configuration,
                 reason="test_command_projection_clone",
             ),
-            compiled_access_surface=nexus._clone_compiled_access_surface(
+            compiled_access_surface=FrameViewer._clone_compiled_access_surface(
                 compiled_access_surface
             ),
             metadata={"surface": "command"},
@@ -390,11 +389,11 @@ def _build_projection_set_from_viewer(
         codegen_projection=CodegenProjection(
             frame_name=frame_name,
             frame_descriptor=frame_descriptor,
-            frame_acl_configuration=nexus._clone_frame_acl_configuration(
+            frame_acl_configuration=FrameViewer._clone_frame_acl_configuration(
                 frame_acl_configuration,
                 reason="test_codegen_projection_clone",
             ),
-            compiled_access_surface=nexus._clone_compiled_access_surface(
+            compiled_access_surface=FrameViewer._clone_compiled_access_surface(
                 compiled_access_surface
             ),
             metadata={"surface": "codegen"},

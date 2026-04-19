@@ -1990,6 +1990,8 @@ class Nexus(Cleanable, INexus):
             None.
         """
         self.check_cleaned()
+        if not self._configured or self._configuration is None or not self._enabled:
+            return
         normalized_frame_names = self._normalize_requested_frame_name_batch(
             frame_names,
             argument_name="frame_names",

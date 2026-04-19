@@ -14,7 +14,10 @@ from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile
 )
 from melder.aether.nexus.frame_acl_manager import FrameACLManager
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
-from tests._nexus_viewer_matrix_support import build_descriptor
+from tests._nexus_viewer_matrix_support import (
+    build_descriptor,
+    build_projection_backed_viewer_from_state,
+)
 
 
 def _profile_by_name(profile_name: str) -> FrameACLViewProfile:
@@ -80,11 +83,11 @@ def _build_compiled_viewer(
         descriptor,
         configuration,
     )
-    return FrameViewer(
-        frame_descriptors_by_name={"ops": descriptor},
-        frame_acl_configurations_by_frame_name={"ops": configuration},
-        compiled_access_surfaces_by_frame_name={"ops": compiled_surface},
-        default_view_frame_name="ops",
+    return build_projection_backed_viewer_from_state(
+        "ops",
+        descriptor,
+        configuration,
+        compiled_surface,
     )
 
 
