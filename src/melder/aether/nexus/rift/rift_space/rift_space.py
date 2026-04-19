@@ -42,7 +42,8 @@ class RiftSpace(Cleanable, IRiftSpace):
     Contract:
         - Owns stable room identity and room-local metadata.
         - Keeps a room name for paired lookup through the owning Rift.
-        - Carries a room-kind marker (`base`, `static`, `dynamic`).
+        - Carries a room-kind marker (`base`, `static`, `capability`,
+          `codegen`).
         - Owns a room-local workstation canvas for saved bindings and active
           target state.
         - Owns a room-local command system for controlled getter/execute
@@ -50,6 +51,9 @@ class RiftSpace(Cleanable, IRiftSpace):
         - Builds the command system through a room-owned factory seam so room
           subclasses can compose a mode-specific command surface without
           changing the public `space.command_system` access pattern.
+        - Owns the installed `FrameProjectionSet` objects keyed by frame name.
+        - Builds and replaces the attached `FrameViewer` from those installed
+          projections.
         - Owns a room-local `RiftMemorySystem` for sequencing and shared memory
           context.
         - Owns one room-local `RiftEventSystem` for outbound runtime-event
@@ -74,14 +78,15 @@ class RiftSpace(Cleanable, IRiftSpace):
         - Workstation defaults strong when binds omit `weak_ref`.
         - No codegen distinction is added here.
 
-        `dynamic`:
+        `codegen`:
         - Currently uses the same broad manual runtime command surface as
           capability.
         - Intended to be the later codegen-oriented room.
 
     Lifecycle:
-        Owned by a `Rift`. Cleanup clears room-local fields and cleans
-        the owned event system plus the owned workstation.
+        Owned by a `Rift`. Cleanup clears room-local fields, installed
+        projection/viewer state, and the owned workstation, memory system, and
+        event system.
     """
 
     __melder_internal__ = _mrg.sentinel
