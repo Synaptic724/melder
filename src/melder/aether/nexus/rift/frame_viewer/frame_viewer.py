@@ -16,11 +16,14 @@ from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjec
 from melder.aether.nexus.rift.projection.command_projection import CommandProjection
 from melder.aether.nexus.rift.projection.frame_projection_set import FrameProjectionSet
 from melder.aether.nexus.rift.projection.view_projection import ViewProjection
-from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile import (
-    FrameViewerProfile,
+from melder.aether.nexus.rift.frame_viewer.profiles.general.view_conduit import (
+    GeneralViewConduit,
 )
-from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile_builder import (
-    FrameViewerProfileBuilder,
+from melder.aether.nexus.rift.frame_viewer.profiles.general.view_frame import (
+    GeneralViewFrame,
+)
+from melder.aether.nexus.rift.frame_viewer.profiles.general.view_spell import (
+    GeneralViewSpell,
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.class_surface_ast_describer import (
@@ -34,50 +37,177 @@ class FrameViewer(Cleanable):
     """
     Purpose:
         Hold one durable viewer asset that reads current frame truth from the
-        Rift-owned projection bundle plus the selected profile/runtime context
-        used to inspect that surface.
+        Rift-owned projection bundle plus the shipped general helper surface
+        used to inspect that state.
 
     Contract:
         - Holds the current per-frame `FrameProjectionSet` references keyed by
           frame name.
         - Treats descriptor/config/surface state as projection-owned, not
           viewer-owned.
-        - Owns reusable active `FrameViewerProfile` templates and a small
-          per-frame bound-profile cache for the current viewer-wide profile
-          choice.
+        - Owns the shipped `general` viewer feature surface directly.
+        - Owns one small per-frame helper cache for the `general`
+          view/frame/conduit/spell surfaces.
         - Exposes descriptor-only multi-frame host methods directly on the
           viewer.
-        - Exposes frame-local ACL/payload-aware behavior only through the
-          selected bound profile surface.
+        - Exposes frame-local ACL/payload-aware behavior through the viewer's
+          internal helper surfaces without a separate profile layer.
         - Does not expose raw runtime objects or any direct code-execution
           behavior.
 
     Threading:
         Uses one instance `threading.RLock` to serialize cleanup and multi-step
-        profile/selection mutations.
+        helper/cache mutations.
 
     Lifecycle:
-        Cleanup cascades into owned compiled ACL surfaces, active profile
-        templates, and selected bound profiles before clearing viewer-owned
-        maps and metadata.
+        Cleanup cascades into the viewer-owned helper cache before clearing
+        viewer-owned maps and metadata.
     """
 
     __melder_internal__ = _mrg.sentinel
     _ast_helper_access: str = "public"
     __agent_purpose__: str = (
-        "access: public. Multi-frame descriptor host and selected-profile "
-        "router for the Rift viewer surface. Use this object to inspect hosted "
-        "frames, compare descriptor records, and reach the selected profile "
+        "access: public. Multi-frame descriptor host and defaulted shipped "
+        "general viewer surface for the Rift viewer path. Use this object to inspect hosted "
+        "frames, compare descriptor records, and reach the built-in helper "
         "surface for frame-local methods."
     )
+    _SURFACE_NAME: str = "general"
+    _SURFACE_VERSION: str = "0.0.1"
+    _DEFAULT_GROUPING: str = "frame"
+    _DEFAULT_DETAIL_LEVEL: str = "detailed"
+    _TOOL_HANDLER_NAMES_BY_NAME: Dict[str, str] = {
+        "list_frames": "list_frame_names",
+        "list_frame_ids": "list_frame_ids",
+        "describe_viewer": "describe_viewer",
+        "describe_current_frame": "describe_current_frame",
+        "describe_frames_inventory": "describe_frames_inventory",
+        "list_nexus_contracts": "list_nexus_contracts",
+        "describe_frame_brief": "describe_frame_brief",
+        "describe_host_inventory": "describe_host_inventory",
+        "compare_frames_brief": "compare_frames_brief",
+        "describe_viewer_method_surface": "describe_viewer_method_surface",
+        "describe_agent_onboarding_json": "describe_agent_onboarding_json",
+        "describe_viewer_agent_purpose_json": "describe_viewer_agent_purpose_json",
+        "list_viewer_method_names_ast_json": "list_viewer_method_names_ast_json",
+        "describe_viewer_class_surface_ast_json": "describe_viewer_class_surface_ast_json",
+        "describe_frame": "describe_frame",
+        "describe_frames": "describe_frames",
+        "count_frames": "count_frames",
+        "count_conduit_records": "count_conduit_records",
+        "count_root_conduits": "count_root_conduits",
+        "count_spell_records": "count_spell_records",
+        "count_spellbooks": "count_spellbooks",
+        "list_conduit_record_ids": "list_conduit_record_ids",
+        "list_root_conduit_ids": "list_root_conduit_ids",
+        "list_origin_spellbook_ids": "list_origin_spellbook_ids",
+        "list_spell_record_ids": "list_spell_record_ids",
+        "list_spell_record_keys": "list_spell_record_keys",
+        "list_spell_names": "list_spell_names",
+        "list_binding_names": "list_binding_names",
+        "list_lineage_ids": "list_lineage_ids",
+        "list_spellframes": "list_spellframes",
+        "list_permissions": "list_permissions",
+        "list_existence_kinds": "list_existence_kinds",
+        "describe_descriptor_inventory": "describe_descriptor_inventory",
+        "describe_descriptor_topology": "describe_descriptor_topology",
+        "describe_conduit_records": "describe_conduit_records",
+        "describe_spell_records": "describe_spell_records",
+        "describe_spell_record": "describe_spell_record",
+        "list_spells_by_owner_conduit_record": "list_spells_by_owner_conduit",
+        "list_spells_by_spellbook_id_record": "list_spells_by_spellbook_id",
+        "list_spells_by_permission_record": "list_spells_by_permission",
+        "list_spells_by_existence_record": "list_spells_by_existence",
+        "list_spells_by_spellframe_record": "list_spells_by_spellframe",
+        "compare_frames": "compare_frames",
+        "compare_frame_conduits": "compare_frame_conduits",
+        "compare_frame_spells": "compare_frame_spells",
+        "describe_binding_name_collisions": "describe_binding_name_collisions",
+        "describe_spell_name_collisions": "describe_spell_name_collisions",
+        "describe_lineage_groups": "describe_lineage_groups",
+        "describe_spellframe_groups": "describe_spellframe_groups",
+        "describe_spellbook_permission_mismatches": "describe_spellbook_permission_mismatches",
+        "describe_spellbook_existence_mismatches": "describe_spellbook_existence_mismatches",
+        "compare_spell_records": "compare_spell_records",
+        "compare_conduit_records": "compare_conduit_records",
+        "describe_visible_surface": "view_frame.describe_visible_surface",
+        "describe_missing_surface": "view_frame.describe_missing_surface",
+        "describe_frame_brief_local": "view_frame.describe_frame_brief",
+        "describe_visible_inventory_by_kind": "view_frame.describe_visible_inventory_by_kind",
+        "describe_frame_topology": "view_frame.describe_frame_topology",
+        "list_visible_target_ids": "view_frame.list_visible_target_ids",
+        "list_visible_target_ids_by_kind": "view_frame.list_visible_target_ids_by_kind",
+        "list_visible_conduit_ids": "view_frame.list_visible_conduit_ids",
+        "list_visible_spell_source_ids": "view_frame.list_visible_spell_source_ids",
+        "list_visible_root_conduits": "view_frame.list_visible_root_conduits",
+        "list_visible_binding_names": "view_frame.list_visible_binding_names",
+        "list_visible_spell_names": "view_frame.list_visible_spell_names",
+        "list_visible_spellframes": "view_frame.list_visible_spellframes",
+        "list_visible_lineage_ids": "view_frame.list_visible_lineage_ids",
+        "describe_visible_spell_ownership": "view_frame.describe_visible_spell_ownership",
+        "describe_visible_conduit_tree": "view_frame.describe_visible_conduit_tree",
+        "search_targets_contains": "view_frame.search_targets_contains",
+        "search_targets_prefix": "view_frame.search_targets_prefix",
+        "group_targets_by_kind": "view_frame.group_targets_by_kind",
+        "describe_target_brief": "view_frame.describe_target_brief",
+        "describe_target_identity": "view_frame.describe_target_identity",
+        "describe_visible_collisions": "view_frame.describe_visible_collisions",
+        "describe_frame_payload": "view_frame.describe_frame_payload",
+        "describe_frame_inventory": "view_frame.describe_frame_inventory",
+        "describe_frame_access_contract": "view_frame.describe_frame_access_contract",
+        "get_frame_payload_field": "view_frame.get_frame_payload_field",
+        "find_target_by_display_name": "view_frame.find_target_by_display_name",
+        "explain_target_access": "view_frame.explain_target_access",
+        "list_targets": "view_frame.list_targets",
+        "describe_targets": "view_frame.describe_targets",
+        "list_conduits": "view_conduit.list_conduits",
+        "list_root_conduits": "view_conduit.list_root_conduits",
+        "describe_conduits": "view_conduit.describe_conduits",
+        "get_conduit": "view_conduit.get_required_conduit",
+        "describe_conduit": "view_conduit.describe_conduit",
+        "describe_conduit_brief": "view_conduit.describe_conduit_brief",
+        "describe_conduit_inventory": "view_conduit.describe_conduit_inventory",
+        "describe_conduit_relationships": "view_conduit.describe_conduit_relationships",
+        "describe_conduit_missing_sections": "view_conduit.describe_conduit_missing_sections",
+        "describe_conduit_crosswalk": "view_conduit.describe_conduit_crosswalk",
+        "list_conduit_spells": "view_conduit.list_conduit_spells",
+        "describe_conduit_topology": "view_conduit.describe_conduit_topology",
+        "compare_conduits": "view_conduit.compare_conduits",
+        "is_root_conduit": "view_conduit.is_root_conduit",
+        "get_root_conduit_id": "view_conduit.get_root_conduit_id",
+        "list_conduits_by_root_id": "view_conduit.list_conduits_by_root_id",
+        "list_conduits_by_policy": "view_conduit.list_conduits_by_policy",
+        "list_conduits_by_state": "view_conduit.list_conduits_by_state",
+        "list_peer_conduits": "view_conduit.list_peer_conduits",
+        "list_child_conduits": "view_conduit.list_child_conduits",
+        "list_parent_conduit": "view_conduit.get_parent_conduit_id",
+        "describe_root_conduit_inventory": "view_conduit.describe_root_conduit_inventory",
+        "list_spells": "view_spell.list_spells",
+        "describe_spells": "view_spell.describe_spells",
+        "get_spell": "view_spell.get_required_spell",
+        "describe_spell": "view_spell.describe_spell",
+        "describe_spell_brief": "view_spell.describe_spell_brief",
+        "describe_spell_inventory": "view_spell.describe_spell_inventory",
+        "describe_spell_origin": "view_spell.describe_spell_origin",
+        "describe_spell_lineage": "view_spell.describe_spell_lineage",
+        "describe_spell_payload": "view_spell.describe_spell_payload",
+        "describe_spell_methods": "view_spell.describe_spell_methods",
+        "describe_spell_attributes": "view_spell.describe_spell_attributes",
+        "describe_spell_dunder_surface": "view_spell.describe_spell_dunder_surface",
+        "describe_spell_missing_sections": "view_spell.describe_spell_missing_sections",
+        "describe_spell_crosswalk": "view_spell.describe_spell_crosswalk",
+        "compare_spells": "view_spell.compare_spells",
+        "list_spells_by_owner_conduit": "view_spell.list_spells_by_owner_conduit",
+        "list_spells_by_spellbook_id": "view_spell.list_spells_by_spellbook_id",
+        "list_spells_by_permission": "view_spell.list_spells_by_permission",
+        "list_spells_by_existence": "view_spell.list_spells_by_existence",
+        "list_spells_by_spellframe": "view_spell.list_spells_by_spellframe",
+    }
     __slots__ = Cleanable.__slots__ + [
         "_viewer_id",
         "_lock",
-        "_profile_builder",
-        "_active_profiles_by_name",
-        "_default_profile_name",
         "_projection_sets_by_frame_name",
-        "_bound_profiles_by_frame_name",
+        "_helper_surfaces_by_frame_name",
         "_default_view_frame_name",
         "_rift_gate",
         "_metadata",
@@ -86,9 +216,6 @@ class FrameViewer(Cleanable):
     def __init__(
             self,
             *,
-            profile_builder: Optional[FrameViewerProfileBuilder] = None,
-            active_profiles_by_name: Optional[Dict[str, FrameViewerProfile]] = None,
-            default_profile_name: Optional[str] = None,
             projection_sets_by_frame_name: Optional[Dict[str, FrameProjectionSet]] = None,
             default_view_frame_name: Optional[str] = None,
             rift_gate: Optional[IRiftGate] = None,
@@ -98,12 +225,6 @@ class FrameViewer(Cleanable):
         Initialize one descriptor-driven frame viewer.
 
         Args:
-            profile_builder:
-                Optional local viewer-profile builder/registry.
-            active_profiles_by_name:
-                Optional active local viewer profiles.
-            default_profile_name:
-                Optional default active viewer profile name.
             projection_sets_by_frame_name:
                 Optional borrowed projection bundles keyed by frame name.
             default_view_frame_name:
@@ -116,14 +237,6 @@ class FrameViewer(Cleanable):
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
         self._viewer_id: str = IDBuilder.create_id()
-        if profile_builder is not None and not isinstance(
-                profile_builder,
-                FrameViewerProfileBuilder,
-        ):
-            raise TypeError("profile_builder must be a FrameViewerProfileBuilder.")
-        self._profile_builder = (
-            profile_builder if profile_builder is not None else FrameViewerProfileBuilder()
-        )
         self._projection_sets_by_frame_name: Dict[str, FrameProjectionSet] = dict(
             projection_sets_by_frame_name or {}
         )
@@ -144,30 +257,10 @@ class FrameViewer(Cleanable):
             )
         )
         self._rift_gate: Optional[IRiftGate] = rift_gate
-        if active_profiles_by_name is not None:
-            self._active_profiles_by_name: Dict[str, FrameViewerProfile] = dict(
-                active_profiles_by_name
-            )
-        else:
-            default_profile = self._profile_builder.get_required_profile("general").clone()
-            self._active_profiles_by_name = {default_profile.name: default_profile}
-        if default_profile_name is not None:
-            if not default_profile_name:
-                raise ValueError("default_profile_name cannot be empty.")
-            if default_profile_name not in self._active_profiles_by_name:
-                raise ValueError(
-                    "default_profile_name must be present in active_profiles_by_name."
-                )
-        self._default_profile_name: Optional[str] = (
-            default_profile_name
-            if default_profile_name is not None
-            else (
-                next(iter(self._active_profiles_by_name.keys()))
-                if len(self._active_profiles_by_name) > 0
-                else None
-            )
-        )
-        self._bound_profiles_by_frame_name: Dict[str, FrameViewerProfile] = {}
+        self._helper_surfaces_by_frame_name: Dict[
+            str,
+            Tuple[GeneralViewFrame, GeneralViewConduit, GeneralViewSpell],
+        ] = {}
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
 
     def cleanup(self) -> None:
@@ -180,20 +273,11 @@ class FrameViewer(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            for frame_viewer_profile in self._active_profiles_by_name.values():
-                frame_viewer_profile.cleanup()
-            for bound_profile in self._bound_profiles_by_frame_name.values():
-                bound_profile.cleanup()
-            self._profile_builder.cleanup()
+            self._clear_helper_cache()
             self._projection_sets_by_frame_name.clear()
-            self._active_profiles_by_name.clear()
-            self._bound_profiles_by_frame_name.clear()
             self._metadata.clear()
-            self._profile_builder = None
             self._projection_sets_by_frame_name = None
-            self._active_profiles_by_name = None
-            self._bound_profiles_by_frame_name = None
-            self._default_profile_name = None
+            self._helper_surfaces_by_frame_name = None
             self._default_view_frame_name = None
             self._rift_gate = None
             self._metadata = None
@@ -249,78 +333,34 @@ class FrameViewer(Cleanable):
         return self._default_view_frame_name
 
     @property
-    def profile_name(self) -> Optional[str]:
+    def surface_name(self) -> str:
         self.check_cleaned()
-        return self._default_profile_name
+        return self._SURFACE_NAME
 
     @property
-    def profile_version(self) -> Optional[str]:
+    def surface_version(self) -> str:
         self.check_cleaned()
-        if self._default_profile_name is None:
-            return None
-        return self._active_profiles_by_name[self._default_profile_name].version
+        return self._SURFACE_VERSION
 
     @property
     def enabled_helpers(self) -> Tuple[str, ...]:
         self.check_cleaned()
-        if self._default_profile_name is None:
-            return tuple()
-        return self._active_profiles_by_name[
-            self._default_profile_name
-        ].enabled_helpers
+        return tuple(self._TOOL_HANDLER_NAMES_BY_NAME.keys())
 
     @property
-    def default_grouping(self) -> Optional[str]:
+    def default_grouping(self) -> str:
         self.check_cleaned()
-        if self._default_profile_name is None:
-            return None
-        return self._active_profiles_by_name[
-            self._default_profile_name
-        ].default_grouping
+        return self._DEFAULT_GROUPING
 
     @property
-    def default_detail_level(self) -> Optional[str]:
+    def default_detail_level(self) -> str:
         self.check_cleaned()
-        if self._default_profile_name is None:
-            return None
-        return self._active_profiles_by_name[
-            self._default_profile_name
-        ].default_detail_level
+        return self._DEFAULT_DETAIL_LEVEL
 
     @property
-    def profile(self) -> Optional[FrameViewerProfile]:
+    def tool_handler_names_by_name(self) -> Dict[str, str]:
         self.check_cleaned()
-        if self._default_view_frame_name is not None:
-            try:
-                return self.get_selected_profile_for_frame(self._default_view_frame_name)
-            except ValueError:
-                return None
-        if self._default_profile_name is None:
-            return None
-        return self._active_profiles_by_name[self._default_profile_name]
-
-    @property
-    def active_profiles_by_name(self) -> Dict[str, FrameViewerProfile]:
-        self.check_cleaned()
-        with self._lock:
-            return dict(self._active_profiles_by_name)
-
-    @property
-    def selected_profile_names_by_frame_name(self) -> Dict[str, str]:
-        """
-        Return the selected viewer-profile names keyed by frame name.
-
-        Returns:
-            Dict[str, str]: Selected viewer-profile names by frame.
-        """
-        self.check_cleaned()
-        with self._lock:
-            if self._default_profile_name is None:
-                return {}
-            return {
-                frame_name: self._default_profile_name
-                for frame_name in self._projection_sets_by_frame_name.keys()
-            }
+        return dict(self._TOOL_HANDLER_NAMES_BY_NAME)
 
     @property
     def metadata(self) -> Dict[str, object]:
@@ -348,11 +388,10 @@ class FrameViewer(Cleanable):
             - Stores only borrowed `FrameProjectionSet` references from the
               owning Rift instead of cloning descriptor/config/surface state
               into a second median layer.
-            - Resolves one viewer-level profile name for the whole viewer
-              instead of keeping per-frame profile selection.
+            - Supports only the shipped `general` viewer surface.
             - Preserves the current default frame when it still exists and no
               explicit default override is provided.
-            - Clears the bound-profile cache so later calls bind against the
+            - Clears the helper cache so later calls bind against the
               refreshed projection-owned state.
 
         Args:
@@ -370,15 +409,21 @@ class FrameViewer(Cleanable):
 
         Raises:
             ValueError:
-                If `viewer_profile_name` or one requested selected profile name
-                is invalid, or if `default_view_frame_name` is not hosted by
+                If `viewer_profile_name` is not `general`, or if
+                `default_view_frame_name` is not hosted by
                 the refreshed viewer state.
         """
         self.check_cleaned()
+        if (
+                viewer_profile_name is not None
+                and viewer_profile_name != self._SURFACE_NAME
+        ):
+            raise ValueError(
+                "FrameViewer only supports viewer surface '{0}'.".format(
+                    self._SURFACE_NAME
+                )
+            )
         normalized_projection_sets_by_frame_name = dict(projection_sets_by_frame_name)
-        resolved_profile_name = viewer_profile_name or self._default_profile_name
-        if resolved_profile_name is not None:
-            self.get_required_active_profile(resolved_profile_name)
         refreshed_frame_names = tuple(normalized_projection_sets_by_frame_name.keys())
         with self._lock:
             previous_default_view_frame_name = self._default_view_frame_name
@@ -389,7 +434,6 @@ class FrameViewer(Cleanable):
             )
             self._cleanup_hosted_frame_state()
             self._projection_sets_by_frame_name = normalized_projection_sets_by_frame_name
-            self._default_profile_name = resolved_profile_name
             self._default_view_frame_name = refreshed_default_view_frame_name
             self._metadata = dict(metadata) if metadata is not None else {}
 
@@ -404,19 +448,20 @@ class FrameViewer(Cleanable):
         Returns:
             None.
         """
-        self._clear_bound_profile_cache()
+        self._clear_helper_cache()
         self._projection_sets_by_frame_name.clear()
 
-    def _clear_bound_profile_cache(self) -> None:
+    def _clear_helper_cache(self) -> None:
         """
-        Cleanup and clear the bound-profile cache.
+        Cleanup and clear the helper cache.
 
         Returns:
             None.
         """
-        for bound_profile in self._bound_profiles_by_frame_name.values():
-            bound_profile.cleanup()
-        self._bound_profiles_by_frame_name.clear()
+        for helper_bundle in self._helper_surfaces_by_frame_name.values():
+            for helper in helper_bundle:
+                helper.cleanup()
+        self._helper_surfaces_by_frame_name.clear()
 
     @staticmethod
     def _resolve_synced_default_view_frame_name(
@@ -458,56 +503,6 @@ class FrameViewer(Cleanable):
         if len(refreshed_frame_names) == 0:
             return None
         return refreshed_frame_names[0]
-
-    def _resolve_synced_selected_profile_names_by_frame_name(
-            self,
-            refreshed_frame_names: Tuple[str, ...],
-            *,
-            requested_profile_names_by_frame_name: Optional[Dict[str, str]],
-            previous_profile_names_by_frame_name: Dict[str, str],
-            fallback_profile_name: Optional[str],
-    ) -> Dict[str, str]:
-        """
-        Resolve the selected profile names for one sync operation.
-
-        Args:
-            refreshed_frame_names:
-                Hosted frame names after the sync.
-            requested_profile_names_by_frame_name:
-                Optional explicit selected profile names keyed by frame.
-            previous_profile_names_by_frame_name:
-                Previously selected profile names keyed by frame.
-            fallback_profile_name:
-                Fallback profile name for new frames.
-
-        Returns:
-            Dict[str, str]: Selected profile names keyed by frame.
-
-        Raises:
-            ValueError:
-                If one resolved profile name is empty or unknown.
-        """
-        resolved_profile_names_by_frame_name: Dict[str, str] = {}
-        for frame_name in refreshed_frame_names:
-            profile_name = None
-            if (
-                    requested_profile_names_by_frame_name is not None
-                    and frame_name in requested_profile_names_by_frame_name
-            ):
-                profile_name = requested_profile_names_by_frame_name[frame_name]
-            elif frame_name in previous_profile_names_by_frame_name:
-                profile_name = previous_profile_names_by_frame_name[frame_name]
-            else:
-                profile_name = fallback_profile_name
-            if profile_name is None:
-                continue
-            if not profile_name:
-                raise ValueError(
-                    "selected_profile_names_by_frame_name must contain non-empty profile names."
-                )
-            self.get_required_active_profile(profile_name)
-            resolved_profile_names_by_frame_name[frame_name] = profile_name
-        return resolved_profile_names_by_frame_name
 
     def list_frame_names(self) -> List[str]:
         """
@@ -777,8 +772,8 @@ class FrameViewer(Cleanable):
             "viewer_id": self.viewer_id,
             "frame_count": self.count_frames(),
             "default_view_frame_name": self._default_view_frame_name,
-            "default_profile_name": self.profile_name,
-            "default_profile_version": self.profile_version,
+            "surface_name": self.surface_name,
+            "surface_version": self.surface_version,
             "frame_names": tuple(self.list_frame_names()),
             "host_boundary": "descriptor_only",
         }
@@ -2229,45 +2224,13 @@ class FrameViewer(Cleanable):
                 matching_source_ids.append(self._build_spell_source_id(spell_record))
         return matching_source_ids
 
-    def list_view_profile_names(self) -> List[str]:
-        """
-        Return the reusable profile names registered on this viewer host.
-
-        Returns:
-            List[str]: Sorted reusable profile names.
-        """
-        self.check_cleaned()
-        return self.list_active_profile_names()
-
-    def set_default_view_profile(
-            self,
-            profile_name: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> None:
-        """
-        Set the selected viewer profile for one frame.
-
-        Args:
-            profile_name:
-                Active viewer profile name.
-            frame_name:
-                Optional target frame. When omitted, uses the default frame.
-
-        Returns:
-            None.
-        """
-        target_frame_name = frame_name or self._get_required_default_frame_name()
-        self.set_selected_profile_for_frame(target_frame_name, profile_name)
-
     def clone(self) -> "FrameViewer":
         """
         Return a detached copy of the viewer host.
 
         Purpose:
-            Preserve the non-owned descriptor references while cloning the
-            owned compiled ACL surfaces, reusable profiles, selected profile
-            bindings, and metadata into a new viewer instance.
+            Preserve the non-owned projection-set references and metadata while
+            starting with an empty helper cache in the clone.
 
         Returns:
             FrameViewer: Detached viewer clone.
@@ -2275,14 +2238,6 @@ class FrameViewer(Cleanable):
         self.check_cleaned()
         with self._lock:
             return FrameViewer(
-                profile_builder=FrameViewerProfileBuilder(),
-                active_profiles_by_name={
-                    profile_name: frame_viewer_profile.clone()
-                    for profile_name, frame_viewer_profile in (
-                        self._active_profiles_by_name.items()
-                    )
-                },
-                default_profile_name=self._default_profile_name,
                 projection_sets_by_frame_name=dict(self._projection_sets_by_frame_name),
                 default_view_frame_name=self._default_view_frame_name,
                 rift_gate=self._rift_gate,
@@ -2291,44 +2246,89 @@ class FrameViewer(Cleanable):
 
     def list_enabled_helpers(self) -> Tuple[str, ...]:
         """
-        Return the exposed method names for the default reusable profile.
+        Return the exposed method names for the shipped viewer surface.
 
         Returns:
-            Tuple[str, ...]: Exposed method names for the default profile.
+            Tuple[str, ...]: Exposed method names for the shipped viewer surface.
         """
         self.check_cleaned()
         return self.enabled_helpers
 
     def list_available_tools(self) -> Tuple[str, ...]:
         """
-        Return the exposed profile-method names for the default profile.
-
-        Purpose:
-            Preserve the older helper-surface inventory method while the
-            underlying semantics are now method-oriented rather than
-            tool-oriented.
+        Return the exposed viewer-surface method names.
 
         Returns:
-            Tuple[str, ...]: Exposed profile-method names for the default
-            profile.
+            Tuple[str, ...]: Exposed viewer-surface method names.
         """
         self.check_cleaned()
-        if self._default_profile_name is None:
-            return tuple()
-        return self._active_profiles_by_name[
-            self._default_profile_name
-        ].list_tool_names()
+        return tuple(self._TOOL_HANDLER_NAMES_BY_NAME.keys())
 
-    def list_active_profile_names(self) -> List[str]:
+    def get_view_frame(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> GeneralViewFrame:
         """
-        Return the reusable profile names registered on the viewer.
+        Return the viewer-owned frame helper for one hosted frame.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, the default frame is used.
 
         Returns:
-            List[str]: Sorted reusable profile names.
+            GeneralViewFrame: Bound frame helper.
         """
-        self.check_cleaned()
-        with self._lock:
-            return list(sorted(self._active_profiles_by_name.keys()))
+        return self._get_helper_surface_bundle(frame_name=frame_name)[0]
+
+    def get_view_conduit(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> GeneralViewConduit:
+        """
+        Return the viewer-owned conduit helper for one hosted frame.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, the default frame is used.
+
+        Returns:
+            GeneralViewConduit: Bound conduit helper.
+        """
+        return self._get_helper_surface_bundle(frame_name=frame_name)[1]
+
+    def get_view_spell(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> GeneralViewSpell:
+        """
+        Return the viewer-owned spell helper for one hosted frame.
+
+        Args:
+            frame_name:
+                Optional hosted frame name. When omitted, the default frame is used.
+
+        Returns:
+            GeneralViewSpell: Bound spell helper.
+        """
+        return self._get_helper_surface_bundle(frame_name=frame_name)[2]
+
+    @property
+    def view_frame(self) -> GeneralViewFrame:
+        """Return the frame helper for the current default frame."""
+        return self.get_view_frame()
+
+    @property
+    def view_conduit(self) -> GeneralViewConduit:
+        """Return the conduit helper for the current default frame."""
+        return self.get_view_conduit()
+
+    @property
+    def view_spell(self) -> GeneralViewSpell:
+        """Return the spell helper for the current default frame."""
+        return self.get_view_spell()
 
     def list_viewer_method_names_ast_json(
             self,
@@ -2410,398 +2410,57 @@ class FrameViewer(Cleanable):
             include_dunder=include_dunder,
         )
 
-    def list_selected_profile_method_names_ast_json(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-            include_private: bool = False,
-            include_dunder: bool = False,
-    ) -> str:
-        """
-        Return a minified JSON list of selected-profile class method names.
-
-        Args:
-            frame_name:
-                Optional hosted frame name whose selected profile should be
-                described. When omitted, uses the default frame.
-            include_private:
-                Whether `_private` methods should be included.
-            include_dunder:
-                Whether `__dunder__` methods should be included.
-
-        Returns:
-            str: Minified JSON list of selected-profile class method names.
-        """
-        self.check_cleaned()
-        selected_profile = self._get_required_selected_profile(frame_name=frame_name)
-        return selected_profile.list_class_method_names_ast_json(
-            include_private=include_private,
-            include_dunder=include_dunder,
-        )
-
-    def describe_selected_profile_class_surface_ast_json(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-            include_private: bool = False,
-            include_dunder: bool = False,
-    ) -> str:
-        """
-        Return a minified JSON description of the selected profile class.
-
-        Args:
-            frame_name:
-                Optional hosted frame name whose selected profile should be
-                described. When omitted, uses the default frame.
-            include_private:
-                Whether `_private` members should be included.
-            include_dunder:
-                Whether `__dunder__` members should be included.
-
-        Returns:
-            str: Minified JSON description of the selected profile class
-            surface.
-        """
-        self.check_cleaned()
-        selected_profile = self._get_required_selected_profile(frame_name=frame_name)
-        return selected_profile.describe_class_surface_ast_json(
-            include_private=include_private,
-            include_dunder=include_dunder,
-        )
-
-    def describe_selected_profile_agent_purpose_json(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> str:
-        """
-        Return the minified JSON agent-purpose surface for the selected profile.
-
-        Args:
-            frame_name:
-                Optional hosted frame name whose selected profile should be
-                described. When omitted, uses the default frame.
-
-        Returns:
-            str: Minified JSON agent-purpose surface for the selected profile.
-        """
-        self.check_cleaned()
-        selected_profile = self._get_required_selected_profile(frame_name=frame_name)
-        return selected_profile.describe_agent_purpose_json()
-
-    def describe_selected_profile_helper_class_surfaces_ast_json(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-            include_private: bool = False,
-            include_dunder: bool = False,
-    ) -> str:
-        """
-        Return minified JSON descriptions for the selected profile's helpers.
-
-        Args:
-            frame_name:
-                Optional hosted frame name whose selected profile helpers
-                should be described. When omitted, uses the default frame.
-            include_private:
-                Whether `_private` helper members should be included.
-            include_dunder:
-                Whether `__dunder__` helper members should be included.
-
-        Returns:
-            str: Minified JSON mapping of helper names to class-surface
-            descriptions.
-        """
-        self.check_cleaned()
-        selected_profile = self._get_required_selected_profile(frame_name=frame_name)
-        return selected_profile.describe_helper_class_surfaces_ast_json(
-            include_private=include_private,
-            include_dunder=include_dunder,
-        )
-
-    def describe_selected_profile_helper_agent_purposes_json(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> str:
-        """
-        Return minified JSON agent-purpose surfaces for the selected helpers.
-
-        Args:
-            frame_name:
-                Optional hosted frame name whose selected profile helpers
-                should be described. When omitted, uses the default frame.
-
-        Returns:
-            str: Minified JSON mapping of helper names to agent-purpose
-            surfaces.
-        """
-        self.check_cleaned()
-        selected_profile = self._get_required_selected_profile(frame_name=frame_name)
-        helper_purposes = {
-            helper_object_name: json.loads(
-                ClassSurfaceAstDescriber.describe_agent_purpose_json(
-                    getattr(selected_profile, helper_object_name)
-                )
-            )
-            for helper_object_name in selected_profile.list_helper_object_names()
-        }
-        return json.dumps(helper_purposes, separators=(",", ":"))
-
-    def describe_selected_ast_surface_json(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-            include_private: bool = False,
-            include_dunder: bool = False,
-    ) -> str:
-        """
-        Return one minified JSON bundle describing the active AST surfaces.
-
-        Purpose:
-            Give the agent one compact JSON payload containing the active
-            viewer, selected profile, and helper class surfaces plus the basic
-            runtime asset identity for the current frame context.
-
-        Args:
-            frame_name:
-                Optional hosted frame name whose selected profile should be
-                described. When omitted, uses the default frame.
-            include_private:
-                Whether `_private` class members should be included.
-            include_dunder:
-                Whether `__dunder__` class members should be included.
-
-        Returns:
-            str: Minified JSON bundle for the active AST-described surfaces.
-        """
-        self.check_cleaned()
-        selected_frame_name = self._get_required_selected_frame_name(frame_name)
-        selected_profile = self.get_selected_profile_for_frame(selected_frame_name)
-        return json.dumps(
-            {
-                "frame_name": selected_frame_name,
-                "profile_name": selected_profile.name,
-                "profile_version": selected_profile.version,
-                "helper_names": selected_profile.list_helper_object_names(),
-                "viewer": json.loads(
-                    self.describe_viewer_class_surface_ast_json(
-                        include_private=include_private,
-                        include_dunder=include_dunder,
-                    )
-                ),
-                "profile": json.loads(
-                    selected_profile.describe_class_surface_ast_json(
-                        include_private=include_private,
-                        include_dunder=include_dunder,
-                    )
-                ),
-                "helpers": json.loads(
-                    selected_profile.describe_helper_class_surfaces_ast_json(
-                        include_private=include_private,
-                        include_dunder=include_dunder,
-                    )
-                ),
-            },
-            separators=(",", ":"),
-        )
-
-    def register_active_profile(self, profile: FrameViewerProfile) -> None:
-        """
-        Register or replace one reusable viewer profile template.
-
-        Purpose:
-            Add a reusable profile template to the viewer host and refresh any
-            currently selected frame bindings that pointed at the same profile
-            name.
-
-        Args:
-            profile:
-                Reusable viewer profile template to register.
-
-        Returns:
-            None.
-
-        Raises:
-            TypeError:
-                Raised when `profile` is not a `FrameViewerProfile`.
-        """
-        self.check_cleaned()
-        if not isinstance(profile, FrameViewerProfile):
-            raise TypeError("profile must be a FrameViewerProfile.")
-        with self._lock:
-            existing_profile = self._active_profiles_by_name.get(profile.name)
-            if existing_profile is not None and existing_profile is not profile:
-                existing_profile.cleanup()
-            self._active_profiles_by_name[profile.name] = profile
-            if self._default_profile_name is None:
-                self._default_profile_name = profile.name
-            self._clear_bound_profile_cache()
-
-    def set_default_profile(self, profile_name: str) -> None:
-        """
-        Select the default reusable profile template for the viewer host.
-
-        Purpose:
-            Change the viewer's default profile template and immediately rebind
-            the current default frame to that same profile name.
-
-        Args:
-            profile_name:
-                Registered reusable profile name.
-
-        Returns:
-            None.
-
-        Raises:
-            ValueError:
-                Raised when `profile_name` is empty or unregistered.
-        """
-        self.check_cleaned()
-        if not profile_name:
-            raise ValueError("profile_name cannot be empty.")
-        with self._lock:
-            if profile_name not in self._active_profiles_by_name:
-                raise ValueError(
-                    "FrameViewer profile '{0}' was not found.".format(profile_name)
-                )
-            self._default_profile_name = profile_name
-            self._clear_bound_profile_cache()
-
-    def get_selected_profile_for_frame(self, frame_name: str) -> FrameViewerProfile:
-        """
-        Return the selected bound profile for one frame or raise.
-
-        Args:
-            frame_name:
-                Hosted frame name.
-
-        Returns:
-            FrameViewerProfile: Selected bound profile for the frame.
-        """
-        self.check_cleaned()
-        if not frame_name:
-            raise ValueError("frame_name cannot be empty.")
-        self._get_required_frame_projection_set(frame_name)
-        if self._default_profile_name is None:
-            raise ValueError("FrameViewer has no default active profile.")
-        with self._lock:
-            cached_profile = self._bound_profiles_by_frame_name.get(frame_name)
-            if cached_profile is not None and cached_profile.name == self._default_profile_name:
-                return cached_profile
-            self._clear_bound_profile_cache()
-            bound_profile = self._create_bound_profile_for_frame(
-                frame_name,
-                self._default_profile_name,
-            )
-            self._bound_profiles_by_frame_name[frame_name] = bound_profile
-            return bound_profile
-
-    def set_selected_profile_for_frame(
-            self,
-            frame_name: str,
-            profile_name: str,
-    ) -> None:
-        """
-        Select and bind one profile for one hosted frame.
-
-        Args:
-            frame_name:
-                Hosted frame name.
-            profile_name:
-                Active viewer profile name to bind.
-
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        if not frame_name:
-            raise ValueError("frame_name cannot be empty.")
-        if not profile_name:
-            raise ValueError("profile_name cannot be empty.")
-        self._get_required_frame_descriptor(frame_name)
-        self._create_bound_profile_for_frame(frame_name, profile_name).cleanup()
-        self.set_default_profile(profile_name)
-
     def has_enabled_helper(self, helper_name: str) -> bool:
         """
-        Return whether the default reusable profile exposes one method name.
+        Return whether the shipped viewer surface exposes one method name.
 
         Args:
             helper_name:
-                Exposed profile-method name to inspect.
+                Exposed viewer method name to inspect.
 
         Returns:
-            bool: True when the default profile exposes the method.
+            bool: True when the shipped viewer surface exposes the method.
         """
         self.check_cleaned()
         if not helper_name:
             raise ValueError("helper_name cannot be empty.")
-        if self._default_profile_name is None:
-            return False
-        return self._active_profiles_by_name[self._default_profile_name].has_tool(
-            helper_name
-        )
+        return helper_name in self._TOOL_HANDLER_NAMES_BY_NAME
 
     def execute_method(
             self,
             method_name: str,
-            *,
-            profile_name: Optional[str] = None,
             **kwargs,
     ) -> Any:
         """
-        Execute one selected-profile method for the target frame context.
-
-        Purpose:
-            Provide one narrow dispatch seam for profile-owned method surfaces
-            without re-exposing ACL/payload methods directly on the
-            `FrameViewer` host.
-
-        Contract:
-            - Resolves the selected bound profile for the requested frame.
-            - Looks up the exposed profile method name on that profile.
-            - Allows the profile mapping to target either bound helper methods
-              or simple host descriptor methods on `FrameViewer`.
-            - Raises when the requested profile method is not exposed or when
-              the mapped handler cannot be resolved.
+        Execute one shipped viewer-surface method for the target frame context.
 
         Args:
             method_name:
-                Exposed profile method name to execute.
-            profile_name:
-                Optional explicit profile name override.
+                Exposed viewer method name to execute.
             **kwargs:
                 Arguments forwarded to the resolved handler.
 
-        Returns:
-            Any: Handler return value.
-
         Raises:
             ValueError:
-                Raised when `method_name` is empty, no active profiles exist,
-                the requested profile method is not exposed, or the mapped
-                handler cannot be resolved.
+                Raised when `method_name` is empty or when the mapped handler
+                cannot be resolved.
         """
         self.check_cleaned()
         if not method_name:
             raise ValueError("method_name cannot be empty.")
-        if len(self._active_profiles_by_name) == 0:
-            raise ValueError("FrameViewer has no active profiles.")
-        selected_frame_name = kwargs.get("frame_name") or self._default_view_frame_name
-        selected_profile = self._resolve_profile(
-            profile_name,
-            selected_frame_name,
-        )
-        handler_name = selected_profile.get_required_tool_handler_name(method_name)
+        handler_name = self._TOOL_HANDLER_NAMES_BY_NAME.get(method_name)
+        if not handler_name:
+            raise ValueError(
+                "FrameViewer surface method '{0}' was not found.".format(method_name)
+            )
+        selected_frame_name = kwargs.get("frame_name")
         handler = self._resolve_tool_handler(
-            selected_profile,
             handler_name,
-            viewer=self,
+            frame_name=selected_frame_name,
         )
         if handler is None or not callable(handler):
             raise ValueError(
-                "FrameViewer profile method '{0}' targets missing handler '{1}'.".format(
+                "FrameViewer surface method '{0}' targets missing handler '{1}'.".format(
                     method_name,
                     handler_name,
                 )
@@ -2815,111 +2474,38 @@ class FrameViewer(Cleanable):
         finally:
             self._rift_gate.unregister_ticket()
 
-    def get_required_active_profile(self, profile_name: str) -> FrameViewerProfile:
-        """
-        Return one registered reusable profile template or raise.
-
-        Args:
-            profile_name:
-                Registered reusable profile name.
-
-        Returns:
-            FrameViewerProfile: Reusable profile template.
-
-        Raises:
-            ValueError:
-                Raised when `profile_name` is empty or unregistered.
-        """
-        self.check_cleaned()
-        if not profile_name:
-            raise ValueError("profile_name cannot be empty.")
-        with self._lock:
-            try:
-                return self._active_profiles_by_name[profile_name]
-            except KeyError as exc:
-                raise ValueError(
-                    "FrameViewer profile '{0}' was not found.".format(profile_name)
-                ) from exc
-
-    def _require_helper_enabled(self, helper_name: str) -> None:
-        if self._default_profile_name is None:
-            return
-        default_profile = self._active_profiles_by_name[self._default_profile_name]
-        if default_profile.has_tool(helper_name):
-            return
-        if helper_name in default_profile.tool_handler_names_by_name.values():
-            return
-        raise ValueError(
-            "FrameViewer helper '{0}' is not enabled by profile '{1}'.".format(
-                helper_name,
-                default_profile.name,
-            )
-        )
-
-    @staticmethod
     def _resolve_tool_handler(
-            selected_profile: FrameViewerProfile,
+            self,
             handler_name: str,
-            viewer: Optional["FrameViewer"] = None,
+            *,
+            frame_name: Optional[str] = None,
     ) -> Optional[Any]:
         """
-        Resolve one profile-method handler against the bound profile first, then
-        the viewer host.
+        Resolve one viewer-surface handler.
 
         Args:
-            selected_profile:
-                Bound selected profile for the current frame.
             handler_name:
-                Profile-method handler name or dotted helper path.
-            viewer:
-                Optional viewer host fallback.
+                Host method name or dotted helper-path target.
+            frame_name:
+                Optional hosted frame name for helper-surface methods.
 
         Returns:
             Optional[Any]: Resolved callable when found.
         """
-        resolved = FrameViewer._resolve_callable_path(selected_profile, handler_name)
-        if resolved is not None:
-            return resolved
-        if viewer is None:
-            return None
-        return FrameViewer._resolve_callable_path(viewer, handler_name)
-
-    @staticmethod
-    def _resolve_callable_path(root_object: Any, handler_name: str) -> Optional[Any]:
-        """
-        Resolve one callable path from a root object.
-
-        Args:
-            root_object:
-                Root object to traverse.
-            handler_name:
-                Method name or dotted helper path.
-
-        Returns:
-            Optional[Any]: Resolved callable when found.
-        """
-        current_object = root_object
-        for current_part in handler_name.split("."):
-            current_object = getattr(current_object, current_part, None)
-            if current_object is None:
-                return None
-        return current_object
-
-    def _resolve_profile(
-            self,
-            profile_name: Optional[str],
-            frame_name: Optional[str],
-    ) -> FrameViewerProfile:
-        if len(self._active_profiles_by_name) == 0:
-            raise ValueError("FrameViewer has no active profiles.")
-        if frame_name is not None:
-            if profile_name is None:
-                return self.get_selected_profile_for_frame(frame_name)
-            return self._create_bound_profile_for_frame(frame_name, profile_name)
-        selected_profile_name = profile_name or self._default_profile_name
-        if selected_profile_name is None:
-            raise ValueError("FrameViewer has no default active profile.")
-        return self.get_required_active_profile(selected_profile_name)
+        if "." not in handler_name:
+            return getattr(self, handler_name, None)
+        helper_name, method_name = handler_name.split(".", 1)
+        if helper_name == "view_frame":
+            return getattr(self.get_view_frame(frame_name=frame_name), method_name, None)
+        if helper_name == "view_conduit":
+            return getattr(
+                self.get_view_conduit(frame_name=frame_name),
+                method_name,
+                None,
+            )
+        if helper_name == "view_spell":
+            return getattr(self.get_view_spell(frame_name=frame_name), method_name, None)
+        return None
 
     def _get_required_default_frame_name(self) -> str:
         if self._default_view_frame_name is None:
@@ -2947,23 +2533,32 @@ class FrameViewer(Cleanable):
             return frame_name
         return self._get_required_default_frame_name()
 
-    def _get_required_selected_profile(
+    def _get_helper_surface_bundle(
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> FrameViewerProfile:
+    ) -> Tuple[GeneralViewFrame, GeneralViewConduit, GeneralViewSpell]:
         """
-        Return the selected bound profile for the requested frame context.
+        Return the helper bundle for one hosted frame, creating it on demand.
 
         Args:
             frame_name:
                 Optional hosted frame name override.
 
         Returns:
-            FrameViewerProfile: Selected bound profile for the frame.
+            Tuple[GeneralViewFrame, GeneralViewConduit, GeneralViewSpell]:
+                Helper bundle for the selected frame.
         """
         selected_frame_name = self._get_required_selected_frame_name(frame_name)
-        return self.get_selected_profile_for_frame(selected_frame_name)
+        with self._lock:
+            cached_bundle = self._helper_surfaces_by_frame_name.get(selected_frame_name)
+            if cached_bundle is not None:
+                return cached_bundle
+            helper_bundle = self._create_helper_surface_bundle_for_frame(
+                selected_frame_name
+            )
+            self._helper_surfaces_by_frame_name[selected_frame_name] = helper_bundle
+            return helper_bundle
 
     def _get_required_frame_descriptor(self, frame_name: str) -> FrameDescriptor:
         return self._get_required_view_projection(frame_name).frame_descriptor
@@ -3394,25 +2989,23 @@ class FrameViewer(Cleanable):
             return None
         return policy.name
 
-    def _create_bound_profile_for_frame(
+    def _create_helper_surface_bundle_for_frame(
             self,
             frame_name: str,
-            profile_name: str,
-    ) -> FrameViewerProfile:
+    ) -> Tuple[GeneralViewFrame, GeneralViewConduit, GeneralViewSpell]:
         """
-        Create one bound profile clone for one hosted frame.
+        Create one helper bundle for one hosted frame.
 
         Args:
             frame_name:
                 Hosted frame name.
-            profile_name:
-                Active viewer profile name to clone and bind.
 
         Returns:
-            FrameViewerProfile: Bound profile clone.
+            Tuple[GeneralViewFrame, GeneralViewConduit, GeneralViewSpell]:
+                Helper bundle bound to the hosted frame's projection-owned
+                descriptor and ACL state.
         """
-        template_profile = self.get_required_active_profile(profile_name)
-        return template_profile.clone_bound_to_frame(
+        view_frame = GeneralViewFrame(
             frame_name=frame_name,
             frame_descriptor=self._get_required_frame_descriptor(frame_name),
             frame_acl_configuration=self._get_required_frame_acl_configuration(
@@ -3421,36 +3014,11 @@ class FrameViewer(Cleanable):
             compiled_access_surface=self._get_required_compiled_access_surface(
                 frame_name
             ),
+            default_detail_level=self.default_detail_level,
         )
-
-
-    @staticmethod
-    def _clone_frame_acl_configuration(
-            frame_acl_configuration: FrameACLConfiguration,
-            *,
-            reason: str,
-    ) -> FrameACLConfiguration:
-        """
-        Return a detached frame ACL configuration clone for viewer-owned state.
-
-        Args:
-            frame_acl_configuration:
-                Source ACL configuration to clone.
-            reason:
-                Clone reason recorded on the detached configuration.
-
-        Returns:
-            FrameACLConfiguration: Detached ACL configuration clone.
-        """
-        return FrameACLConfiguration.create_from_selected_configurations(
-            frame_name=frame_acl_configuration.frame_name,
-            view_configuration=frame_acl_configuration.view_configuration,
-            command_configuration=frame_acl_configuration.command_configuration,
-            codegen_configuration=frame_acl_configuration.codegen_configuration,
-            reason=reason,
-            locked=True,
-            configuration_id=frame_acl_configuration.configuration_id,
-        )
+        view_conduit = GeneralViewConduit(frame_view=view_frame)
+        view_spell = GeneralViewSpell(frame_view=view_frame)
+        return view_frame, view_conduit, view_spell
 
     @staticmethod
     def _clone_compiled_access_surface(

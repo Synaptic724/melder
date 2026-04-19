@@ -63,7 +63,7 @@ def test_static_frame_viewer_cleanup_clone_and_dispatch_paths_work(monkeypatch) 
     monkeypatch.setattr(
         FrameViewer,
         "execute_method",
-        lambda self, method_name, profile_name=None, **kwargs: {
+        lambda self, method_name, **kwargs: {
             "method_name": method_name,
             "frame_name": kwargs.get("frame_name"),
         },

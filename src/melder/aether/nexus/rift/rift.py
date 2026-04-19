@@ -616,9 +616,6 @@ class Rift(Cleanable, IRift):
             self._build_selected_contract_names_by_frame_name()
         )
         frame_viewer = self.space.frame_viewer
-        default_profile = frame_viewer.get_required_active_profile(
-            frame_viewer.profile_name or "general"
-        )
         return {
             "frame_count": len(refreshed_assigned_frame_names),
             "available_view_count": len(refreshed_assigned_frame_names),
@@ -635,13 +632,13 @@ class Rift(Cleanable, IRift):
             ),
             "acl_selection_by_frame_name": selected_contract_names_by_frame_name,
             "contract_names_by_frame_name": selected_contract_names_by_frame_name,
-            "viewer_profile_name": frame_viewer.profile_name,
-            "viewer_profile_version": frame_viewer.profile_version,
+            "viewer_surface_name": frame_viewer.surface_name,
+            "viewer_surface_version": frame_viewer.surface_version,
             "default_grouping": frame_viewer.default_grouping,
             "default_detail_level": frame_viewer.default_detail_level,
             "enabled_helpers": frame_viewer.enabled_helpers,
             "tool_names": frame_viewer.list_available_tools(),
-            "tool_handler_names_by_name": default_profile.tool_handler_names_by_name,
+            "tool_handler_names_by_name": frame_viewer.tool_handler_names_by_name,
         }
 
     def _get_required_view_projection(self, frame_name: str):

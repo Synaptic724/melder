@@ -6,9 +6,6 @@ from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
     CompiledFrameACLAccessSurface,
 )
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
-from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile_builder import (
-    FrameViewerProfileBuilder,
-)
 from melder.spellbook.existence.existence import Existence
 
 
@@ -26,8 +23,8 @@ class StaticFrameViewer(FrameViewer):
           already-live spells only.
         - Uses the existing no-create live probe/runtime truth and never
           mutates descriptor publication.
-        - Rebuilds frame-local selected profiles after each live refresh so
-          profile-driven spell target lists stay aligned with the filtered
+        - Rebuilds frame-local helper state after each live refresh so the
+          shipped general viewer surface stays aligned with the filtered
           spell surface.
     """
 
@@ -84,14 +81,6 @@ class StaticFrameViewer(FrameViewer):
                 frame_viewer._projection_sets_by_frame_name
             )
         return cls(
-            profile_builder=FrameViewerProfileBuilder(),
-            active_profiles_by_name={
-                profile_name: frame_viewer_profile.clone()
-                for profile_name, frame_viewer_profile in (
-                    frame_viewer._active_profiles_by_name.items()
-                )
-            },
-            default_profile_name=frame_viewer._default_profile_name,
             projection_sets_by_frame_name=source_projection_sets_by_frame_name,
             default_view_frame_name=frame_viewer._default_view_frame_name,
             rift_gate=frame_viewer._rift_gate,
@@ -190,18 +179,14 @@ class StaticFrameViewer(FrameViewer):
     def execute_method(
             self,
             method_name: str,
-            *,
-            profile_name: Optional[str] = None,
             **kwargs: Any
     ) -> Any:
         """
-        Refresh live spell projection before executing one profile/viewer method.
+        Refresh live spell projection before executing one viewer method.
 
         Args:
             method_name:
-                Exposed profile method name to execute.
-            profile_name:
-                Optional profile override.
+                Exposed viewer method name to execute.
             **kwargs:
                 Arguments forwarded to the resolved handler.
 
@@ -209,11 +194,7 @@ class StaticFrameViewer(FrameViewer):
             Any: Handler return value.
         """
         self.refresh_live_spell_projection(kwargs.get("frame_name"))
-        return super().execute_method(
-            method_name,
-            profile_name=profile_name,
-            **kwargs
-        )
+        return super().execute_method(method_name, **kwargs)
 
     def list_spell_source_ids_for_frame(self, frame_name: str) -> List[str]:
         """
@@ -374,7 +355,7 @@ class StaticFrameViewer(FrameViewer):
                 self._filtered_compiled_access_surfaces_by_frame_name[
                     current_frame_name
                 ] = filtered_compiled_access_surface
-            self._clear_bound_profile_cache()
+            self._clear_helper_cache()
 
     def _iter_live_spell_records_for_frame(self, frame_name: str) -> List[object]:
         """
