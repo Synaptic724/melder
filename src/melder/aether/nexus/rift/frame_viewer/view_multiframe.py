@@ -50,10 +50,6 @@ class ViewMultiFrame(Cleanable):
     def _default_view_frame_name(self):
         return self._viewer._default_view_frame_name
 
-    @property
-    def _projection_sets_by_frame_name(self):
-        return self._viewer._projection_sets_by_frame_name
-
     def _get_required_default_frame_name(self):
         return self._viewer._get_required_default_frame_name()
 
@@ -61,62 +57,25 @@ class ViewMultiFrame(Cleanable):
         return self._viewer._get_required_frame_descriptor(frame_name)
 
     def _get_frame_names_for_query(self, frame_name: Optional[str] = None):
-        if frame_name is not None:
-            if not frame_name:
-                raise ValueError("frame_name cannot be empty.")
-            self._get_required_frame_descriptor(frame_name)
-            return (frame_name,)
-        return tuple(self.list_frame_names())
+        return self._viewer._get_frame_names_for_query(frame_name)
 
     def _iter_conduit_records(self, *, frame_name: Optional[str] = None) -> Iterator[object]:
-        for current_frame_name in self._get_frame_names_for_query(frame_name):
-            descriptor = self._get_required_frame_descriptor(current_frame_name)
-            for conduit_id in sorted(descriptor.conduit_records_by_id.keys()):
-                yield descriptor.conduit_records_by_id[conduit_id]
+        yield from self._viewer._iter_conduit_records(frame_name=frame_name)
 
     def _iter_spell_records(self, *, frame_name: Optional[str] = None) -> Iterator[object]:
-        for current_frame_name in self._get_frame_names_for_query(frame_name):
-            descriptor = self._get_required_frame_descriptor(current_frame_name)
-            for record_key in sorted(descriptor.spell_records_by_key.keys()):
-                yield descriptor.spell_records_by_key[record_key]
+        yield from self._viewer._iter_spell_records(frame_name=frame_name)
 
     def _build_spell_source_id(self, spell_record: object) -> str:
-        return "{0}:{1}".format(
-            spell_record.origin_spellbook_id,
-            spell_record.spell_id,
-        )
+        return self._viewer._build_spell_source_id(spell_record)
 
     def _normalize_spellframe_value(self, spellframe: object):
-        if spellframe is None:
-            return None
-        if isinstance(spellframe, str):
-            return spellframe
-        if isinstance(spellframe, type):
-            return spellframe.__name__
-        return str(spellframe)
+        return self._viewer._normalize_spellframe_value(spellframe)
 
     def _get_required_spell_record(self, spell_source_id: str, *, frame_name: Optional[str] = None):
-        if not spell_source_id:
-            raise ValueError("spell_source_id cannot be empty.")
-        spellbook_id, spell_id = self._parse_spell_source_id(spell_source_id)
-        matching_records: List[Tuple[str, object]] = []
-        for current_frame_name in self._get_frame_names_for_query(frame_name):
-            descriptor = self._get_required_frame_descriptor(current_frame_name)
-            record = descriptor.spell_records_by_key.get((spellbook_id, spell_id))
-            if record is None:
-                continue
-            matching_records.append((current_frame_name, record))
-        if len(matching_records) == 0:
-            raise ValueError(
-                "Spell source id '{0}' was not found.".format(spell_source_id)
-            )
-        if len(matching_records) > 1:
-            raise ValueError(
-                "Spell source id '{0}' is ambiguous across hosted frames.".format(
-                    spell_source_id
-                )
-            )
-        return matching_records[0]
+        return self._viewer._get_required_spell_record(
+            spell_source_id,
+            frame_name=frame_name,
+        )
 
     def _get_required_conduit_record(self, conduit_id: str, *, frame_name: Optional[str] = None):
         if not conduit_id:
@@ -238,7 +197,7 @@ class ViewMultiFrame(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            return list(sorted(self._projection_sets_by_frame_name.keys()))
+            return list(sorted(self._viewer._rift.list_assigned_frame_names()))
 
     def count_frames(self) -> int:
         """

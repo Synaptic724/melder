@@ -175,11 +175,11 @@ class RiftSpace(Cleanable, IRiftSpace):
                 StaticFrameViewer,
             )
             self._frame_viewer = StaticFrameViewer(
-                rift_gate=self._rift_gate,
+                rift=rift,
             )
         else:
             self._frame_viewer = FrameViewer(
-                rift_gate=self._rift_gate,
+                rift=rift,
             )
 
     def cleanup(self) -> None:

@@ -10,7 +10,6 @@ from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
 )
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
-from melder.aether.nexus.rift.projection.frame_projection_set import FrameProjectionSet
 from melder.aether.nexus.rift.projection.view_projection import ViewProjection
 from melder.aether.nexus.rift.frame_viewer.view_conduit import (
     ViewConduit,
@@ -29,7 +28,7 @@ from melder.utilities.helpers.class_surface_ast_describer import (
     ClassSurfaceAstDescriber,
 )
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import IFrameLink, IRiftGate
+from melder.utilities.interfaces.interfaces import IFrameLink
 
 
 class FrameViewer(Cleanable):
@@ -40,13 +39,13 @@ class FrameViewer(Cleanable):
         used to inspect that state.
 
     Contract:
-        - Holds the current per-frame `FrameProjectionSet` references keyed by
-          frame name.
-        - Treats descriptor/config/surface state as projection-owned, not
+        - Holds one borrowed `Rift` reference and reads current view
+          projections from that owner on demand.
+        - Treats descriptor/config/surface state as Rift-owned, not
           viewer-owned.
         - Owns the shipped `general` viewer feature surface directly.
-        - Owns one small per-frame helper cache for the `general`
-          view/frame/conduit/spell surfaces.
+        - Owns shared viewer-backed helper surfaces for the `general`
+          view/frame/conduit/spell families.
         - Exposes descriptor-only multi-frame host methods directly on the
           viewer.
         - Exposes frame-local ACL/payload-aware behavior through the viewer's
@@ -56,12 +55,12 @@ class FrameViewer(Cleanable):
           behavior.
 
     Threading:
-        Uses one instance `threading.RLock` to serialize cleanup and multi-step
-        helper/cache mutations.
+        Uses one instance `threading.RLock` to serialize cleanup and
+        multi-step viewer-state mutation.
 
     Lifecycle:
-        Cleanup cascades into the viewer-owned helper cache before clearing
-        viewer-owned maps and metadata.
+        Cleanup cascades into the viewer-owned helper surfaces before clearing
+        viewer-owned references.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -73,66 +72,46 @@ class FrameViewer(Cleanable):
     __slots__ = Cleanable.__slots__ + [
         "_viewer_id",
         "_lock",
-        "_projection_sets_by_frame_name",
+        "_rift",
         "_view_multiframe",
-        "_helper_surfaces_by_frame_name",
         "_default_view_frame_name",
-        "_rift_gate",
-        "_metadata",
     ]
 
     def __init__(
             self,
             *,
-            projection_sets_by_frame_name: Optional[Dict[str, FrameProjectionSet]] = None,
+            rift: Any,
             default_view_frame_name: Optional[str] = None,
-            rift_gate: Optional[IRiftGate] = None,
-            metadata: Optional[Dict[str, object]] = None,
     ) -> None:
         """
-        Initialize one descriptor-driven frame viewer.
+        Initialize one Rift-backed projection-native frame viewer.
 
         Args:
-            projection_sets_by_frame_name:
-                Optional borrowed projection bundles keyed by frame name.
+            rift:
+                Owning `Rift` that exposes the current view projections.
             default_view_frame_name:
                 Optional default selected frame name.
-            rift_gate:
-                Optional Rift gate used to coordinate viewer admission.
-            metadata:
-                Optional viewer-local metadata.
         """
         super().__init__()
+        if rift is None:
+            raise TypeError("rift cannot be None.")
         self._lock: threading.RLock = threading.RLock()
         self._viewer_id: str = IDBuilder.create_id()
-        self._projection_sets_by_frame_name: Dict[str, FrameProjectionSet] = dict(
-            projection_sets_by_frame_name or {}
-        )
+        self._rift: Any = rift
         if default_view_frame_name is not None:
             if not default_view_frame_name:
                 raise ValueError("default_view_frame_name cannot be empty.")
-            if default_view_frame_name not in self._projection_sets_by_frame_name:
+            if default_view_frame_name not in self._rift.list_assigned_frame_names():
                 raise ValueError(
-                    "default_view_frame_name must be present in projection_sets_by_frame_name."
+                    "default_view_frame_name must be present in the Rift assigned frame set."
                 )
         self._default_view_frame_name: Optional[str] = (
             default_view_frame_name
-            if default_view_frame_name is not None
-            else (
-                next(iter(self._projection_sets_by_frame_name.keys()))
-                if len(self._projection_sets_by_frame_name) > 0
-                else None
-            )
+            if default_view_frame_name is not None else None
         )
-        self._rift_gate: Optional[IRiftGate] = rift_gate
         self._view_multiframe: ViewMultiFrame = ViewMultiFrame(
             viewer=self,
         )
-        self._helper_surfaces_by_frame_name: Dict[
-            str,
-            Tuple[ViewFrame, ViewConduit, ViewSpell],
-        ] = {}
-        self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
 
     def cleanup(self) -> None:
         """
@@ -145,15 +124,9 @@ class FrameViewer(Cleanable):
                 return
             self._cleaned = True
             self._view_multiframe.cleanup()
-            self._clear_helper_cache()
-            self._projection_sets_by_frame_name.clear()
-            self._metadata.clear()
-            self._projection_sets_by_frame_name = None
+            self._rift = None
             self._view_multiframe = None
-            self._helper_surfaces_by_frame_name = None
             self._default_view_frame_name = None
-            self._rift_gate = None
-            self._metadata = None
             self._viewer_id = None
         self._lock = None
 
@@ -167,8 +140,10 @@ class FrameViewer(Cleanable):
         self.check_cleaned()
         with self._lock:
             return {
-                frame_name: projection_set.view_projection.frame_descriptor
-                for frame_name, projection_set in self._projection_sets_by_frame_name.items()
+                frame_name: self._rift._get_required_view_projection(
+                    frame_name
+                ).frame_descriptor
+                for frame_name in self.list_frame_names()
             }
 
     @property
@@ -178,8 +153,10 @@ class FrameViewer(Cleanable):
         self.check_cleaned()
         with self._lock:
             return {
-                frame_name: projection_set.view_projection.compiled_access_surface
-                for frame_name, projection_set in self._projection_sets_by_frame_name.items()
+                frame_name: self._rift._get_required_view_projection(
+                    frame_name
+                ).compiled_access_surface
+                for frame_name in self.list_frame_names()
             }
 
     @property
@@ -196,14 +173,23 @@ class FrameViewer(Cleanable):
         self.check_cleaned()
         with self._lock:
             return {
-                frame_name: projection_set.view_projection.frame_acl_configuration
-                for frame_name, projection_set in self._projection_sets_by_frame_name.items()
+                frame_name: self._rift._get_required_view_projection(
+                    frame_name
+                ).frame_acl_configuration
+                for frame_name in self.list_frame_names()
             }
 
     @property
     def default_view_frame_name(self) -> Optional[str]:
         self.check_cleaned()
-        return self._default_view_frame_name
+        assigned_frame_names = self.list_frame_names()
+        if len(assigned_frame_names) == 0:
+            return None
+        if self._default_view_frame_name in assigned_frame_names:
+            return self._default_view_frame_name
+        if len(assigned_frame_names) == 1:
+            return assigned_frame_names[0]
+        return assigned_frame_names[0]
 
     @property
     def default_grouping(self) -> str:
@@ -218,131 +204,7 @@ class FrameViewer(Cleanable):
     @property
     def metadata(self) -> Dict[str, object]:
         self.check_cleaned()
-        with self._lock:
-            return dict(self._metadata)
-
-    def sync_from_projection_sets(
-            self,
-            projection_sets_by_frame_name: Dict[str, FrameProjectionSet],
-            *,
-            default_view_frame_name: Optional[str] = None,
-            metadata: Optional[Dict[str, object]] = None,
-    ) -> None:
-        """
-        Synchronize hosted frame state in place from room-owned projections.
-
-        Purpose:
-            Let one durable viewer asset stay alive while the owning room
-            updates its current frame targets and compiled access state.
-
-        Contract:
-            - Accepts an empty projection-set map and leaves the viewer valid.
-            - Stores only borrowed `FrameProjectionSet` references from the
-              owning Rift instead of cloning descriptor/config/surface state
-              into a second median layer.
-            - Supports only the shipped `general` viewer surface.
-            - Preserves the current default frame when it still exists and no
-              explicit default override is provided.
-            - Clears the helper cache so later calls bind against the
-              refreshed projection-owned state.
-
-        Args:
-            projection_sets_by_frame_name:
-                Current room-owned projection sets keyed by frame name.
-            default_view_frame_name:
-                Optional explicit default hosted frame name.
-            metadata:
-                Optional replacement viewer metadata payload.
-
-        Returns:
-            None.
-
-        Raises:
-            ValueError:
-                If `default_view_frame_name` is not hosted by the refreshed
-                viewer state.
-        """
-        self.check_cleaned()
-        normalized_projection_sets_by_frame_name = dict(projection_sets_by_frame_name)
-        refreshed_frame_names = tuple(normalized_projection_sets_by_frame_name.keys())
-        with self._lock:
-            previous_default_view_frame_name = self._default_view_frame_name
-            refreshed_default_view_frame_name = self._resolve_synced_default_view_frame_name(
-                refreshed_frame_names,
-                requested_default_view_frame_name=default_view_frame_name,
-                previous_default_view_frame_name=previous_default_view_frame_name,
-            )
-            self._cleanup_hosted_frame_state()
-            self._projection_sets_by_frame_name = normalized_projection_sets_by_frame_name
-            self._default_view_frame_name = refreshed_default_view_frame_name
-            self._metadata = dict(metadata) if metadata is not None else {}
-
-    def _cleanup_hosted_frame_state(self) -> None:
-        """
-        Cleanup and clear the hosted frame-specific viewer snapshot state.
-
-        Purpose:
-            Support in-place viewer synchronization without recreating the
-            viewer asset itself.
-
-        Returns:
-            None.
-        """
-        self._clear_helper_cache()
-        self._projection_sets_by_frame_name.clear()
-
-    def _clear_helper_cache(self) -> None:
-        """
-        Cleanup and clear the helper cache.
-
-        Returns:
-            None.
-        """
-        for helper_bundle in self._helper_surfaces_by_frame_name.values():
-            for helper in helper_bundle:
-                helper.cleanup()
-        self._helper_surfaces_by_frame_name.clear()
-
-    @staticmethod
-    def _resolve_synced_default_view_frame_name(
-            refreshed_frame_names: Tuple[str, ...],
-            *,
-            requested_default_view_frame_name: Optional[str],
-            previous_default_view_frame_name: Optional[str],
-    ) -> Optional[str]:
-        """
-        Resolve the default hosted frame after one sync operation.
-
-        Args:
-            refreshed_frame_names:
-                Hosted frame names after the sync.
-            requested_default_view_frame_name:
-                Optional explicit default frame override.
-            previous_default_view_frame_name:
-                Current default frame before sync.
-
-        Returns:
-            Optional[str]: Default frame name after sync, or None when no
-            frames are hosted.
-
-        Raises:
-            ValueError:
-                If the explicit requested default frame is empty or not hosted
-                by the refreshed frame set.
-        """
-        if requested_default_view_frame_name is not None:
-            if not requested_default_view_frame_name:
-                raise ValueError("default_view_frame_name cannot be empty.")
-            if requested_default_view_frame_name not in refreshed_frame_names:
-                raise ValueError(
-                    "default_view_frame_name must be present in synced frame names."
-                )
-            return requested_default_view_frame_name
-        if previous_default_view_frame_name in refreshed_frame_names:
-            return previous_default_view_frame_name
-        if len(refreshed_frame_names) == 0:
-            return None
-        return refreshed_frame_names[0]
+        return self._rift._build_frame_viewer_metadata()
 
     def list_frame_names(self) -> List[str]:
         """
@@ -1574,16 +1436,28 @@ class FrameViewer(Cleanable):
             frame_name: Optional[str] = None,
     ) -> ViewFrame:
         """
-        Return the viewer-owned frame helper for one hosted frame.
+        Return one frame helper bound to the current selected frame.
 
         Args:
             frame_name:
-                Optional hosted frame name. When omitted, the default frame is used.
+                Optional hosted frame name override.
 
         Returns:
-            ViewFrame: Bound frame helper.
+            ViewFrame: Bound frame helper surface.
         """
-        return self._get_helper_surface_bundle(frame_name=frame_name)[0]
+        self.check_cleaned()
+        selected_frame_name = self._get_required_selected_frame_name(frame_name)
+        return ViewFrame(
+            frame_name=selected_frame_name,
+            frame_descriptor=self._get_required_frame_descriptor(selected_frame_name),
+            frame_acl_configuration=self._get_required_frame_acl_configuration(
+                selected_frame_name
+            ),
+            compiled_access_surface=self._get_required_compiled_access_surface(
+                selected_frame_name
+            ),
+            default_detail_level=self.default_detail_level,
+        )
 
     def get_view_conduit(
             self,
@@ -1591,16 +1465,18 @@ class FrameViewer(Cleanable):
             frame_name: Optional[str] = None,
     ) -> ViewConduit:
         """
-        Return the viewer-owned conduit helper for one hosted frame.
+        Return one conduit helper bound to the current selected frame.
 
         Args:
             frame_name:
-                Optional hosted frame name. When omitted, the default frame is used.
+                Optional hosted frame name override.
 
         Returns:
-            ViewConduit: Bound conduit helper.
+            ViewConduit: Bound conduit helper surface.
         """
-        return self._get_helper_surface_bundle(frame_name=frame_name)[1]
+        return ViewConduit(
+            frame_view=self.get_view_frame(frame_name=frame_name),
+        )
 
     def get_view_spell(
             self,
@@ -1608,16 +1484,18 @@ class FrameViewer(Cleanable):
             frame_name: Optional[str] = None,
     ) -> ViewSpell:
         """
-        Return the viewer-owned spell helper for one hosted frame.
+        Return one spell helper bound to the current selected frame.
 
         Args:
             frame_name:
-                Optional hosted frame name. When omitted, the default frame is used.
+                Optional hosted frame name override.
 
         Returns:
-            ViewSpell: Bound spell helper.
+            ViewSpell: Bound spell helper surface.
         """
-        return self._get_helper_surface_bundle(frame_name=frame_name)[2]
+        return ViewSpell(
+            frame_view=self.get_view_frame(frame_name=frame_name),
+        )
 
     def get_view_multiframe(self) -> ViewMultiFrame:
         """
@@ -1733,9 +1611,10 @@ class FrameViewer(Cleanable):
 
 
     def _get_required_default_frame_name(self) -> str:
-        if self._default_view_frame_name is None:
+        default_view_frame_name = self.default_view_frame_name
+        if default_view_frame_name is None:
             raise ValueError("FrameViewer has no default selected frame.")
-        return self._default_view_frame_name
+        return default_view_frame_name
 
     def _get_required_selected_frame_name(
             self,
@@ -1758,32 +1637,162 @@ class FrameViewer(Cleanable):
             return frame_name
         return self._get_required_default_frame_name()
 
-    def _get_helper_surface_bundle(
+    def _get_frame_names_for_query(
             self,
-            *,
             frame_name: Optional[str] = None,
-    ) -> Tuple[ViewFrame, ViewConduit, ViewSpell]:
+    ) -> Tuple[str, ...]:
         """
-        Return the helper bundle for one hosted frame, creating it on demand.
+        Return the concrete hosted frame names for one query.
 
         Args:
             frame_name:
-                Optional hosted frame name override.
+                Optional hosted frame name filter.
 
         Returns:
-            Tuple[ViewFrame, ViewConduit, ViewSpell]:
-                Helper bundle for the selected frame.
+            Tuple[str, ...]: Hosted frame names for the query.
         """
-        selected_frame_name = self._get_required_selected_frame_name(frame_name)
-        with self._lock:
-            cached_bundle = self._helper_surfaces_by_frame_name.get(selected_frame_name)
-            if cached_bundle is not None:
-                return cached_bundle
-            helper_bundle = self._create_helper_surface_bundle_for_frame(
-                selected_frame_name
+        if frame_name is not None:
+            return (self._get_required_selected_frame_name(frame_name),)
+        return tuple(self.list_frame_names())
+
+    def _iter_conduit_records(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Iterator[object]:
+        """
+        Yield descriptor-owned conduit records for the selected frame scope.
+
+        Args:
+            frame_name:
+                Optional hosted frame name filter.
+
+        Yields:
+            object: Descriptor-owned conduit records.
+        """
+        for current_frame_name in self._get_frame_names_for_query(frame_name):
+            descriptor = self._get_required_frame_descriptor(current_frame_name)
+            for conduit_id in sorted(descriptor.conduit_records_by_id.keys()):
+                yield descriptor.conduit_records_by_id[conduit_id]
+
+    def _iter_spell_records(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Iterator[object]:
+        """
+        Yield descriptor-owned spell records for the selected frame scope.
+
+        Args:
+            frame_name:
+                Optional hosted frame name filter.
+
+        Yields:
+            object: Descriptor-owned spell records.
+        """
+        for current_frame_name in self._get_frame_names_for_query(frame_name):
+            descriptor = self._get_required_frame_descriptor(current_frame_name)
+            for record_key in sorted(descriptor.spell_records_by_key.keys()):
+                yield descriptor.spell_records_by_key[record_key]
+
+    @staticmethod
+    def _build_spell_source_id(spell_record: object) -> str:
+        """
+        Build the published spell source id for one spell record.
+
+        Args:
+            spell_record:
+                Descriptor-owned spell record.
+
+        Returns:
+            str: Published spell source id in `spellbook_id:spell_id` form.
+        """
+        return "{0}:{1}".format(
+            spell_record.origin_spellbook_id,
+            spell_record.spell_id,
+        )
+
+    @staticmethod
+    def _normalize_spellframe_value(spellframe: object) -> Optional[str]:
+        """
+        Return one stable string view of a spellframe value.
+
+        Args:
+            spellframe:
+                Raw spellframe value.
+
+        Returns:
+            Optional[str]: Normalized spellframe name when present.
+        """
+        if spellframe is None:
+            return None
+        if isinstance(spellframe, str):
+            return spellframe
+        if isinstance(spellframe, type):
+            return spellframe.__name__
+        return str(spellframe)
+
+    @staticmethod
+    def _parse_spell_source_id(spell_source_id: str) -> Tuple[str, str]:
+        """
+        Parse one published spell source id into its canonical record key.
+
+        Args:
+            spell_source_id:
+                Published spell source id in `spellbook_id:spell_id` form.
+
+        Returns:
+            Tuple[str, str]: `(spellbook_id, spell_id)` key.
+        """
+        parts = spell_source_id.split(":", 1)
+        if len(parts) != 2:
+            raise ValueError(
+                "spell_source_id '{0}' must be in 'spellbook_id:spell_id' form.".format(
+                    spell_source_id
+                )
             )
-            self._helper_surfaces_by_frame_name[selected_frame_name] = helper_bundle
-            return helper_bundle
+        return parts[0], parts[1]
+
+    def _get_required_spell_record(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, object]:
+        """
+        Return one descriptor-owned spell record plus its hosted frame.
+
+        Args:
+            spell_source_id:
+                Published spell source id in `spellbook_id:spell_id` form.
+            frame_name:
+                Optional hosted frame name to constrain the lookup.
+
+        Returns:
+            Tuple[str, object]: `(frame_name, spell_record)` for the resolved
+            record.
+        """
+        if not spell_source_id:
+            raise ValueError("spell_source_id cannot be empty.")
+        spellbook_id, spell_id = self._parse_spell_source_id(spell_source_id)
+        matching_records: List[Tuple[str, object]] = []
+        for current_frame_name in self._get_frame_names_for_query(frame_name):
+            descriptor = self._get_required_frame_descriptor(current_frame_name)
+            record = descriptor.spell_records_by_key.get((spellbook_id, spell_id))
+            if record is None:
+                continue
+            matching_records.append((current_frame_name, record))
+        if len(matching_records) == 0:
+            raise ValueError(
+                "Spell source id '{0}' was not found.".format(spell_source_id)
+            )
+        if len(matching_records) > 1:
+            raise ValueError(
+                "Spell source id '{0}' is ambiguous across hosted frames.".format(
+                    spell_source_id
+                )
+            )
+        return matching_records[0]
 
     def describe_visible_surface(
             self,
@@ -3322,44 +3331,13 @@ class FrameViewer(Cleanable):
             self,
             frame_name: str,
     ) -> CompiledFrameACLAccessSurface:
-        projection_set = self._projection_sets_by_frame_name.get(frame_name)
-        if projection_set is None:
-            raise ValueError(
-                "Compiled access surface for frame '{0}' was not found.".format(
-                    frame_name
-                )
-            )
-        return projection_set.view_projection.compiled_access_surface
+        return self._get_required_view_projection(frame_name).compiled_access_surface
 
     def _get_required_frame_acl_configuration(
             self,
             frame_name: str,
     ) -> FrameACLConfiguration:
-        projection_set = self._projection_sets_by_frame_name.get(frame_name)
-        if projection_set is None:
-            raise ValueError(
-                "Frame ACL configuration for frame '{0}' was not found.".format(
-                    frame_name
-                )
-            )
-        return projection_set.view_projection.frame_acl_configuration
-
-    def _get_required_frame_projection_set(
-            self,
-            frame_name: str,
-    ) -> FrameProjectionSet:
-        """
-        Return one projection set by frame name or raise.
-
-        Returns:
-            FrameProjectionSet: Projection bundle for the frame.
-        """
-        try:
-            return self._projection_sets_by_frame_name[frame_name]
-        except KeyError as exc:
-            raise ValueError(
-                "Frame '{0}' was not found.".format(frame_name)
-            ) from exc
+        return self._get_required_view_projection(frame_name).frame_acl_configuration
 
     def _get_required_view_projection(self, frame_name: str) -> ViewProjection:
         """
@@ -3368,35 +3346,4 @@ class FrameViewer(Cleanable):
         Returns:
             ViewProjection: View projection for the frame.
         """
-        return self._get_required_frame_projection_set(frame_name).view_projection
-
-    def _create_helper_surface_bundle_for_frame(
-            self,
-            frame_name: str,
-    ) -> Tuple[ViewFrame, ViewConduit, ViewSpell]:
-        """
-        Create one helper bundle for one hosted frame.
-
-        Args:
-            frame_name:
-                Hosted frame name.
-
-        Returns:
-            Tuple[ViewFrame, ViewConduit, ViewSpell]:
-                Helper bundle bound to the hosted frame's projection-owned
-                descriptor and ACL state.
-        """
-        view_frame = ViewFrame(
-            frame_name=frame_name,
-            frame_descriptor=self._get_required_frame_descriptor(frame_name),
-            frame_acl_configuration=self._get_required_frame_acl_configuration(
-                frame_name
-            ),
-            compiled_access_surface=self._get_required_compiled_access_surface(
-                frame_name
-            ),
-            default_detail_level=self.default_detail_level,
-        )
-        view_conduit = ViewConduit(frame_view=view_frame)
-        view_spell = ViewSpell(frame_view=view_frame)
-        return view_frame, view_conduit, view_spell
+        return self._rift._get_required_view_projection(frame_name)
