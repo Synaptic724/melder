@@ -93,9 +93,6 @@ class StaticFrameViewer(FrameViewer):
             },
             default_profile_name=frame_viewer._default_profile_name,
             projection_sets_by_frame_name=source_projection_sets_by_frame_name,
-            selected_profile_names_by_frame_name=(
-                frame_viewer.selected_profile_names_by_frame_name
-            ),
             default_view_frame_name=frame_viewer._default_view_frame_name,
             rift_gate=frame_viewer._rift_gate,
             metadata=dict(frame_viewer._metadata),
@@ -106,7 +103,6 @@ class StaticFrameViewer(FrameViewer):
             projection_sets_by_frame_name: Dict[str, "FrameProjectionSet"],
             *,
             viewer_profile_name: Optional[str] = None,
-            selected_profile_names_by_frame_name: Optional[Dict[str, str]] = None,
             default_view_frame_name: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
     ) -> None:
@@ -123,8 +119,6 @@ class StaticFrameViewer(FrameViewer):
                 Current room-owned projection sets keyed by frame name.
             viewer_profile_name:
                 Optional fallback viewer profile name for newly hosted frames.
-            selected_profile_names_by_frame_name:
-                Optional explicit selected profile names keyed by frame name.
             default_view_frame_name:
                 Optional explicit default hosted frame name.
             metadata:
@@ -136,7 +130,6 @@ class StaticFrameViewer(FrameViewer):
         super().sync_from_projection_sets(
             projection_sets_by_frame_name,
             viewer_profile_name=viewer_profile_name,
-            selected_profile_names_by_frame_name=selected_profile_names_by_frame_name,
             default_view_frame_name=default_view_frame_name,
             metadata=metadata,
         )

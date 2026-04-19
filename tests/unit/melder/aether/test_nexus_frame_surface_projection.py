@@ -339,7 +339,6 @@ def test_rift_refresh_runtime_projections_for_multiple_frames_uses_one_projectio
             projection_sets_by_frame_name,
             *,
             viewer_profile_name=None,
-            selected_profile_names_by_frame_name=None,
             default_view_frame_name=None,
             metadata=None,
     ):
@@ -347,7 +346,6 @@ def test_rift_refresh_runtime_projections_for_multiple_frames_uses_one_projectio
         return original_sync_from_projection_sets(
             projection_sets_by_frame_name,
             viewer_profile_name=viewer_profile_name,
-            selected_profile_names_by_frame_name=selected_profile_names_by_frame_name,
             default_view_frame_name=default_view_frame_name,
             metadata=metadata,
         )

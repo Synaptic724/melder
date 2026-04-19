@@ -24,6 +24,10 @@ from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
 )
 from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
+from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
+from melder.aether.nexus.rift.projection.command_projection import CommandProjection
+from melder.aether.nexus.rift.projection.frame_projection_set import FrameProjectionSet
+from melder.aether.nexus.rift.projection.view_projection import ViewProjection
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile import (
     FrameViewerProfile,
@@ -202,19 +206,48 @@ def _build_surface(
 
 
 def _build_viewer(frame_names: tuple[str, ...]) -> FrameViewer:
-    descriptors = {name: _build_descriptor(name) for name in frame_names}
-    configurations = {
-        name: FrameACLConfiguration.create_default(name)
-        for name in frame_names
-    }
-    surfaces = {
-        name: _build_surface(name, configurations[name])
-        for name in frame_names
-    }
+    projection_sets_by_frame_name = {}
+    for frame_name in frame_names:
+        descriptor = _build_descriptor(frame_name)
+        configuration = FrameACLConfiguration.create_default(frame_name)
+        compiled_surface = _build_surface(frame_name, configuration)
+        projection_sets_by_frame_name[frame_name] = FrameProjectionSet(
+            frame_name=frame_name,
+            view_projection=ViewProjection(
+                frame_name=frame_name,
+                frame_descriptor=descriptor,
+                frame_acl_configuration=configuration,
+                compiled_access_surface=compiled_surface,
+                metadata={"surface": "view"},
+            ),
+            command_projection=CommandProjection(
+                frame_name=frame_name,
+                frame_descriptor=descriptor,
+                frame_acl_configuration=FrameViewer._clone_frame_acl_configuration(
+                    configuration,
+                    reason="test_command_projection_clone",
+                ),
+                compiled_access_surface=FrameViewer._clone_compiled_access_surface(
+                    compiled_surface
+                ),
+                metadata={"surface": "command"},
+            ),
+            codegen_projection=CodegenProjection(
+                frame_name=frame_name,
+                frame_descriptor=descriptor,
+                frame_acl_configuration=FrameViewer._clone_frame_acl_configuration(
+                    configuration,
+                    reason="test_codegen_projection_clone",
+                ),
+                compiled_access_surface=FrameViewer._clone_compiled_access_surface(
+                    compiled_surface
+                ),
+                metadata={"surface": "codegen"},
+            ),
+            metadata={"source": "test_frame_viewer_projection"},
+        )
     return FrameViewer(
-        frame_descriptors_by_name=descriptors,
-        frame_acl_configurations_by_frame_name=configurations,
-        compiled_access_surfaces_by_frame_name=surfaces,
+        projection_sets_by_frame_name=projection_sets_by_frame_name,
         default_view_frame_name=frame_names[0] if len(frame_names) > 0 else None,
     )
 

@@ -20,6 +20,11 @@ from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
     SpellDescriptorPayload,
 )
 from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
+from melder.aether.nexus.nexus import Nexus
+from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
+from melder.aether.nexus.rift.projection.command_projection import CommandProjection
+from melder.aether.nexus.rift.projection.frame_projection_set import FrameProjectionSet
+from melder.aether.nexus.rift.projection.view_projection import ViewProjection
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
@@ -370,10 +375,44 @@ def build_viewer(
         conduit_sections_by_id=conduit_sections_by_id,
         spell_sections_by_key=spell_sections_by_key,
     )
+    nexus = Nexus()
+    projection_set = FrameProjectionSet(
+        frame_name=frame_name,
+        view_projection=ViewProjection(
+            frame_name=frame_name,
+            frame_descriptor=descriptor,
+            frame_acl_configuration=configuration,
+            compiled_access_surface=compiled_surface,
+            metadata={"surface": "view"},
+        ),
+        command_projection=CommandProjection(
+            frame_name=frame_name,
+            frame_descriptor=descriptor,
+            frame_acl_configuration=nexus._clone_frame_acl_configuration(
+                configuration,
+                reason="test_command_projection_clone",
+            ),
+            compiled_access_surface=nexus._clone_compiled_access_surface(
+                compiled_surface
+            ),
+            metadata={"surface": "command"},
+        ),
+        codegen_projection=CodegenProjection(
+            frame_name=frame_name,
+            frame_descriptor=descriptor,
+            frame_acl_configuration=nexus._clone_frame_acl_configuration(
+                configuration,
+                reason="test_codegen_projection_clone",
+            ),
+            compiled_access_surface=nexus._clone_compiled_access_surface(
+                compiled_surface
+            ),
+            metadata={"surface": "codegen"},
+        ),
+        metadata={"source": "test_build_viewer"},
+    )
     return FrameViewer(
-        frame_descriptors_by_name={frame_name: descriptor},
-        frame_acl_configurations_by_frame_name={frame_name: configuration},
-        compiled_access_surfaces_by_frame_name={frame_name: compiled_surface},
+        projection_sets_by_frame_name={frame_name: projection_set},
         default_view_frame_name=frame_name,
     )
 
@@ -398,33 +437,65 @@ def build_multi_frame_viewer(
     Returns:
         FrameViewer: Multi-frame viewer fixture.
     """
-    descriptors = {}
-    configurations = {}
-    compiled_surfaces = {}
+    projection_sets_by_frame_name = {}
+    nexus = Nexus()
     for frame_name in frame_names:
         descriptor_kwargs = (
             descriptor_kwargs_by_frame_name.get(frame_name, {})
             if descriptor_kwargs_by_frame_name is not None
             else {}
         )
-        descriptors[frame_name] = build_descriptor(
+        descriptor = build_descriptor(
             frame_name,
             **descriptor_kwargs,
         )
-        configurations[frame_name] = FrameACLConfiguration.create_default(frame_name)
+        configuration = FrameACLConfiguration.create_default(frame_name)
         surface_kwargs = (
             surface_kwargs_by_frame_name.get(frame_name, {})
             if surface_kwargs_by_frame_name is not None
             else {}
         )
-        compiled_surfaces[frame_name] = build_surface(
+        compiled_surface = build_surface(
             frame_name,
-            configurations[frame_name],
+            configuration,
             **surface_kwargs,
         )
+        projection_sets_by_frame_name[frame_name] = FrameProjectionSet(
+            frame_name=frame_name,
+            view_projection=ViewProjection(
+                frame_name=frame_name,
+                frame_descriptor=descriptor,
+                frame_acl_configuration=configuration,
+                compiled_access_surface=compiled_surface,
+                metadata={"surface": "view"},
+            ),
+            command_projection=CommandProjection(
+                frame_name=frame_name,
+                frame_descriptor=descriptor,
+                frame_acl_configuration=nexus._clone_frame_acl_configuration(
+                    configuration,
+                    reason="test_command_projection_clone",
+                ),
+                compiled_access_surface=nexus._clone_compiled_access_surface(
+                    compiled_surface
+                ),
+                metadata={"surface": "command"},
+            ),
+            codegen_projection=CodegenProjection(
+                frame_name=frame_name,
+                frame_descriptor=descriptor,
+                frame_acl_configuration=nexus._clone_frame_acl_configuration(
+                    configuration,
+                    reason="test_codegen_projection_clone",
+                ),
+                compiled_access_surface=nexus._clone_compiled_access_surface(
+                    compiled_surface
+                ),
+                metadata={"surface": "codegen"},
+            ),
+            metadata={"source": "test_build_multi_frame_viewer"},
+        )
     return FrameViewer(
-        frame_descriptors_by_name=descriptors,
-        frame_acl_configurations_by_frame_name=configurations,
-        compiled_access_surfaces_by_frame_name=compiled_surfaces,
+        projection_sets_by_frame_name=projection_sets_by_frame_name,
         default_view_frame_name=frame_names[0] if len(frame_names) > 0 else None,
     )

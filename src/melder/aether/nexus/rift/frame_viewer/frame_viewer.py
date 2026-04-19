@@ -90,14 +90,6 @@ class FrameViewer(Cleanable):
             active_profiles_by_name: Optional[Dict[str, FrameViewerProfile]] = None,
             default_profile_name: Optional[str] = None,
             projection_sets_by_frame_name: Optional[Dict[str, FrameProjectionSet]] = None,
-            frame_descriptors_by_name: Optional[Dict[str, FrameDescriptor]] = None,
-            frame_acl_configurations_by_frame_name: Optional[
-                Dict[str, FrameACLConfiguration]
-            ] = None,
-            compiled_access_surfaces_by_frame_name: Optional[
-                Dict[str, CompiledFrameACLAccessSurface]
-            ] = None,
-            selected_profile_names_by_frame_name: Optional[Dict[str, str]] = None,
             default_view_frame_name: Optional[str] = None,
             rift_gate: Optional[IRiftGate] = None,
             metadata: Optional[Dict[str, object]] = None,
@@ -114,14 +106,6 @@ class FrameViewer(Cleanable):
                 Optional default active viewer profile name.
             projection_sets_by_frame_name:
                 Optional borrowed projection bundles keyed by frame name.
-            frame_descriptors_by_name:
-                Optional legacy descriptor references keyed by frame name.
-            frame_acl_configurations_by_frame_name:
-                Optional legacy frame ACL configurations keyed by frame name.
-            compiled_access_surfaces_by_frame_name:
-                Optional legacy compiled ACL surfaces keyed by frame name.
-            selected_profile_names_by_frame_name:
-                Optional legacy selected profile names keyed by frame name.
             default_view_frame_name:
                 Optional default selected frame name.
             rift_gate:
@@ -140,13 +124,8 @@ class FrameViewer(Cleanable):
         self._profile_builder = (
             profile_builder if profile_builder is not None else FrameViewerProfileBuilder()
         )
-        self._projection_sets_by_frame_name: Dict[str, FrameProjectionSet] = (
-            self._normalize_projection_sets_by_frame_name(
-                projection_sets_by_frame_name=projection_sets_by_frame_name,
-                frame_descriptors_by_name=frame_descriptors_by_name,
-                frame_acl_configurations_by_frame_name=frame_acl_configurations_by_frame_name,
-                compiled_access_surfaces_by_frame_name=compiled_access_surfaces_by_frame_name,
-            )
+        self._projection_sets_by_frame_name: Dict[str, FrameProjectionSet] = dict(
+            projection_sets_by_frame_name or {}
         )
         if default_view_frame_name is not None:
             if not default_view_frame_name:
@@ -188,11 +167,6 @@ class FrameViewer(Cleanable):
                 else None
             )
         )
-        resolved_profile_name = self._resolve_synced_viewer_profile_name(
-            requested_profile_name=self._default_profile_name,
-            requested_profile_names_by_frame_name=selected_profile_names_by_frame_name,
-        )
-        self._default_profile_name = resolved_profile_name
         self._bound_profiles_by_frame_name: Dict[str, FrameViewerProfile] = {}
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
 
@@ -359,7 +333,6 @@ class FrameViewer(Cleanable):
             projection_sets_by_frame_name: Dict[str, FrameProjectionSet],
             *,
             viewer_profile_name: Optional[str] = None,
-            selected_profile_names_by_frame_name: Optional[Dict[str, str]] = None,
             default_view_frame_name: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
     ) -> None:
@@ -387,8 +360,6 @@ class FrameViewer(Cleanable):
                 Current room-owned projection sets keyed by frame name.
             viewer_profile_name:
                 Optional fallback viewer profile name for newly hosted frames.
-            selected_profile_names_by_frame_name:
-                Optional explicit selected profile names keyed by frame name.
             default_view_frame_name:
                 Optional explicit default hosted frame name.
             metadata:
@@ -405,10 +376,7 @@ class FrameViewer(Cleanable):
         """
         self.check_cleaned()
         normalized_projection_sets_by_frame_name = dict(projection_sets_by_frame_name)
-        resolved_profile_name = self._resolve_synced_viewer_profile_name(
-            requested_profile_name=viewer_profile_name or self._default_profile_name,
-            requested_profile_names_by_frame_name=selected_profile_names_by_frame_name,
-        )
+        resolved_profile_name = viewer_profile_name or self._default_profile_name
         if resolved_profile_name is not None:
             self.get_required_active_profile(resolved_profile_name)
         refreshed_frame_names = tuple(normalized_projection_sets_by_frame_name.keys())
@@ -540,45 +508,6 @@ class FrameViewer(Cleanable):
             self.get_required_active_profile(profile_name)
             resolved_profile_names_by_frame_name[frame_name] = profile_name
         return resolved_profile_names_by_frame_name
-
-    def _resolve_synced_viewer_profile_name(
-            self,
-            *,
-            requested_profile_name: Optional[str],
-            requested_profile_names_by_frame_name: Optional[Dict[str, str]],
-    ) -> Optional[str]:
-        """
-        Resolve the one viewer-level profile name for one sync/init operation.
-
-        Contract:
-            - Accepts the legacy per-frame profile payload only when all
-              non-None entries collapse to one unique name.
-            - Raises when callers try to preserve divergent per-frame profile
-              selection under the new one-profile-per-viewer model.
-
-        Returns:
-            Optional[str]: Resolved viewer-level profile name.
-        """
-        resolved_profile_name = requested_profile_name
-        if requested_profile_names_by_frame_name is None:
-            return resolved_profile_name
-        unique_profile_names = {
-            current_profile_name
-            for current_profile_name in requested_profile_names_by_frame_name.values()
-            if current_profile_name is not None
-        }
-        if len(unique_profile_names) > 1:
-            raise ValueError(
-                "FrameViewer no longer supports multiple per-frame selected profiles."
-            )
-        if len(unique_profile_names) == 0:
-            return resolved_profile_name
-        selected_profile_name = next(iter(unique_profile_names))
-        if resolved_profile_name is not None and selected_profile_name != resolved_profile_name:
-            raise ValueError(
-                "viewer_profile_name and selected_profile_names_by_frame_name must agree."
-            )
-        return selected_profile_name
 
     def list_frame_names(self) -> List[str]:
         """
@@ -3483,97 +3412,17 @@ class FrameViewer(Cleanable):
             FrameViewerProfile: Bound profile clone.
         """
         template_profile = self.get_required_active_profile(profile_name)
-        return template_profile.clone_bound_to_projection(
-            self._get_required_view_projection(frame_name)
+        return template_profile.clone_bound_to_frame(
+            frame_name=frame_name,
+            frame_descriptor=self._get_required_frame_descriptor(frame_name),
+            frame_acl_configuration=self._get_required_frame_acl_configuration(
+                frame_name
+            ),
+            compiled_access_surface=self._get_required_compiled_access_surface(
+                frame_name
+            ),
         )
 
-    @classmethod
-    def _normalize_projection_sets_by_frame_name(
-            cls,
-            *,
-            projection_sets_by_frame_name: Optional[Dict[str, FrameProjectionSet]],
-            frame_descriptors_by_name: Optional[Dict[str, FrameDescriptor]],
-            frame_acl_configurations_by_frame_name: Optional[
-                Dict[str, FrameACLConfiguration]
-            ],
-            compiled_access_surfaces_by_frame_name: Optional[
-                Dict[str, CompiledFrameACLAccessSurface]
-            ],
-    ) -> Dict[str, FrameProjectionSet]:
-        """
-        Normalize modern or legacy constructor inputs into projection bundles.
-
-        Returns:
-            Dict[str, FrameProjectionSet]: Projection bundles keyed by frame.
-        """
-        if projection_sets_by_frame_name is not None:
-            return dict(projection_sets_by_frame_name)
-        normalized_frame_descriptors_by_name = dict(frame_descriptors_by_name or {})
-        normalized_frame_acl_configurations_by_frame_name = dict(
-            frame_acl_configurations_by_frame_name or {}
-        )
-        normalized_compiled_access_surfaces_by_frame_name = dict(
-            compiled_access_surfaces_by_frame_name or {}
-        )
-        if (
-                len(normalized_frame_descriptors_by_name) == 0
-                and len(normalized_frame_acl_configurations_by_frame_name) == 0
-                and len(normalized_compiled_access_surfaces_by_frame_name) == 0
-        ):
-            return {}
-        if (
-                set(normalized_frame_descriptors_by_name.keys())
-                != set(normalized_frame_acl_configurations_by_frame_name.keys())
-                or set(normalized_frame_descriptors_by_name.keys())
-                != set(normalized_compiled_access_surfaces_by_frame_name.keys())
-        ):
-            raise ValueError(
-                "frame descriptor, ACL configuration, and compiled access surface maps must have matching keys."
-            )
-        normalized_projection_sets_by_frame_name: Dict[str, FrameProjectionSet] = {}
-        for frame_name, frame_descriptor in normalized_frame_descriptors_by_name.items():
-            frame_acl_configuration = normalized_frame_acl_configurations_by_frame_name[
-                frame_name
-            ]
-            compiled_access_surface = normalized_compiled_access_surfaces_by_frame_name[
-                frame_name
-            ]
-            normalized_projection_sets_by_frame_name[frame_name] = FrameProjectionSet(
-                frame_name=frame_name,
-                view_projection=ViewProjection(
-                    frame_name=frame_name,
-                    frame_descriptor=frame_descriptor,
-                    frame_acl_configuration=frame_acl_configuration,
-                    compiled_access_surface=compiled_access_surface,
-                    metadata={"surface": "view", "source": "frame_viewer_legacy"},
-                ),
-                command_projection=CommandProjection(
-                    frame_name=frame_name,
-                    frame_descriptor=frame_descriptor,
-                    frame_acl_configuration=cls._clone_frame_acl_configuration(
-                        frame_acl_configuration,
-                        reason="frame_viewer_legacy_command_projection",
-                    ),
-                    compiled_access_surface=cls._clone_compiled_access_surface(
-                        compiled_access_surface
-                    ),
-                    metadata={"surface": "command", "source": "frame_viewer_legacy"},
-                ),
-                codegen_projection=CodegenProjection(
-                    frame_name=frame_name,
-                    frame_descriptor=frame_descriptor,
-                    frame_acl_configuration=cls._clone_frame_acl_configuration(
-                        frame_acl_configuration,
-                        reason="frame_viewer_legacy_codegen_projection",
-                    ),
-                    compiled_access_surface=cls._clone_compiled_access_surface(
-                        compiled_access_surface
-                    ),
-                    metadata={"surface": "codegen", "source": "frame_viewer_legacy"},
-                ),
-                metadata={"source": "frame_viewer_legacy"},
-            )
-        return normalized_projection_sets_by_frame_name
 
     @staticmethod
     def _clone_frame_acl_configuration(

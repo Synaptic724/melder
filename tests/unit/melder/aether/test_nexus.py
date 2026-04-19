@@ -220,14 +220,44 @@ def _build_descriptor_backed_viewer(
         spell_payload_sections_by_key={},
         metadata={"visible_spell_count": 0},
     )
+    nexus = Nexus()
+    projection_set = FrameProjectionSet(
+        frame_name=frame_name,
+        view_projection=ViewProjection(
+            frame_name=frame_name,
+            frame_descriptor=descriptor,
+            frame_acl_configuration=frame_acl_configuration,
+            compiled_access_surface=compiled_access_surface,
+            metadata={"surface": "view"},
+        ),
+        command_projection=CommandProjection(
+            frame_name=frame_name,
+            frame_descriptor=descriptor,
+            frame_acl_configuration=nexus._clone_frame_acl_configuration(
+                frame_acl_configuration,
+                reason="test_command_projection_clone",
+            ),
+            compiled_access_surface=nexus._clone_compiled_access_surface(
+                compiled_access_surface
+            ),
+            metadata={"surface": "command"},
+        ),
+        codegen_projection=CodegenProjection(
+            frame_name=frame_name,
+            frame_descriptor=descriptor,
+            frame_acl_configuration=nexus._clone_frame_acl_configuration(
+                frame_acl_configuration,
+                reason="test_codegen_projection_clone",
+            ),
+            compiled_access_surface=nexus._clone_compiled_access_surface(
+                compiled_access_surface
+            ),
+            metadata={"surface": "codegen"},
+        ),
+        metadata={"source": "test_descriptor_backed_viewer"},
+    )
     return FrameViewer(
-        frame_descriptors_by_name={frame_name: descriptor},
-        frame_acl_configurations_by_frame_name={
-            frame_name: frame_acl_configuration,
-        },
-        compiled_access_surfaces_by_frame_name={
-            frame_name: compiled_access_surface,
-        },
+        projection_sets_by_frame_name={frame_name: projection_set},
         default_view_frame_name=frame_name,
     )
 
@@ -268,44 +298,47 @@ def _replace_compiled_access_surface(
         None.
     """
     compiled_access_surface = viewer._get_required_compiled_access_surface(frame_name)
-    viewer._compiled_access_surfaces_by_frame_name[frame_name] = (
-        CompiledFrameACLAccessSurface(
-            frame_name=compiled_access_surface.frame_name,
-            configuration_id=compiled_access_surface.configuration_id,
-            view_profile_name=compiled_access_surface.view_profile_name,
-            view_profile_version=compiled_access_surface.view_profile_version,
-            codegen_profile_name=compiled_access_surface.codegen_profile_name,
-            codegen_profile_version=compiled_access_surface.codegen_profile_version,
-            command_frame_enabled=command_frame_enabled,
-            allowed_kinds=(
-                allowed_kinds
-                if allowed_kinds is not None
-                else compiled_access_surface.allowed_kinds
-            ),
-            allowed_commands=compiled_access_surface.allowed_commands,
-            frame_payload_fields=compiled_access_surface.frame_payload_fields,
-            visible_conduit_ids=compiled_access_surface.visible_conduit_ids,
-            visible_spell_keys=(
-                visible_spell_keys
-                if visible_spell_keys is not None
-                else compiled_access_surface.visible_spell_keys
-            ),
-            visible_spell_index_ids=(
-                visible_spell_index_ids
-                if visible_spell_index_ids is not None
-                else compiled_access_surface.visible_spell_index_ids
-            ),
-            enabled_conduit_ids=enabled_conduit_ids,
-            enabled_spell_index_ids=enabled_spell_index_ids,
-            conduit_payload_sections_by_id=(
-                compiled_access_surface.conduit_payload_sections_by_id
-            ),
-            spell_payload_sections_by_key=(
-                compiled_access_surface.spell_payload_sections_by_key
-            ),
-            metadata=compiled_access_surface.metadata,
-        )
+    replacement_surface = CompiledFrameACLAccessSurface(
+        frame_name=compiled_access_surface.frame_name,
+        configuration_id=compiled_access_surface.configuration_id,
+        view_profile_name=compiled_access_surface.view_profile_name,
+        view_profile_version=compiled_access_surface.view_profile_version,
+        codegen_profile_name=compiled_access_surface.codegen_profile_name,
+        codegen_profile_version=compiled_access_surface.codegen_profile_version,
+        command_frame_enabled=command_frame_enabled,
+        allowed_kinds=(
+            allowed_kinds
+            if allowed_kinds is not None
+            else compiled_access_surface.allowed_kinds
+        ),
+        allowed_commands=compiled_access_surface.allowed_commands,
+        frame_payload_fields=compiled_access_surface.frame_payload_fields,
+        visible_conduit_ids=compiled_access_surface.visible_conduit_ids,
+        visible_spell_keys=(
+            visible_spell_keys
+            if visible_spell_keys is not None
+            else compiled_access_surface.visible_spell_keys
+        ),
+        visible_spell_index_ids=(
+            visible_spell_index_ids
+            if visible_spell_index_ids is not None
+            else compiled_access_surface.visible_spell_index_ids
+        ),
+        enabled_conduit_ids=enabled_conduit_ids,
+        enabled_spell_index_ids=enabled_spell_index_ids,
+        conduit_payload_sections_by_id=(
+            compiled_access_surface.conduit_payload_sections_by_id
+        ),
+        spell_payload_sections_by_key=(
+            compiled_access_surface.spell_payload_sections_by_key
+        ),
+        metadata=compiled_access_surface.metadata,
     )
+    projection_set = viewer._get_required_frame_projection_set(frame_name)
+    projection_set.view_projection._compiled_access_surface = replacement_surface
+    projection_set.command_projection._compiled_access_surface = replacement_surface
+    projection_set.codegen_projection._compiled_access_surface = replacement_surface
+    viewer._clear_bound_profile_cache()
 
 
 def _build_projection_set_from_viewer(
@@ -400,7 +433,6 @@ def _attach_projection_backed_viewer(space: RiftSpace, viewer: FrameViewer) -> N
     space.frame_viewer.sync_from_projection_sets(
         detached_rift._projection_sets_by_frame_name,
         viewer_profile_name=viewer.profile_name or "general",
-        selected_profile_names_by_frame_name=viewer.selected_profile_names_by_frame_name,
         default_view_frame_name=viewer.default_view_frame_name,
         metadata=viewer.metadata,
     )
