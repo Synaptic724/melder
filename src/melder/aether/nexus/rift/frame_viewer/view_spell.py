@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
-from melder.aether.nexus.rift.frame_viewer.profiles.general.view_frame import (
+from melder.aether.nexus.rift.frame_viewer.view_frame import (
     GeneralViewFrame,
 )
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.class_profile import (

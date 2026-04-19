@@ -29,13 +29,10 @@ from melder.aether.nexus.rift.projection.command_projection import CommandProjec
 from melder.aether.nexus.rift.projection.frame_projection_set import FrameProjectionSet
 from melder.aether.nexus.rift.projection.view_projection import ViewProjection
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
-from melder.aether.nexus.rift.frame_viewer.profiles.frame_viewer_profile import (
-    FrameViewerProfile,
-)
-from melder.aether.nexus.rift.frame_viewer.profiles.general.view_frame import (
+from melder.aether.nexus.rift.frame_viewer.view_frame import (
     GeneralViewFrame,
 )
-from melder.aether.nexus.rift.frame_viewer.profiles.general.view_spell import (
+from melder.aether.nexus.rift.frame_viewer.view_spell import (
     GeneralViewSpell,
 )
 from melder.utilities.helpers.class_surface_ast_describer import (
@@ -211,8 +208,6 @@ def _build_single_frame_viewer(
         configuration: FrameACLConfiguration,
         compiled_surface: CompiledFrameACLAccessSurface,
         *,
-        active_profiles_by_name: Optional[dict[str, FrameViewerProfile]] = None,
-        default_profile_name: Optional[str] = None,
         default_view_frame_name: Optional[str] = None,
 ) -> FrameViewer:
     projection_set = FrameProjectionSet(
@@ -251,8 +246,6 @@ def _build_single_frame_viewer(
         metadata={"source": "test_frame_viewer_projection"},
     )
     return FrameViewer(
-        active_profiles_by_name=active_profiles_by_name,
-        default_profile_name=default_profile_name,
         projection_sets_by_frame_name={frame_name: projection_set},
         default_view_frame_name=(
             frame_name if default_view_frame_name is None else default_view_frame_name
@@ -466,14 +459,12 @@ def test_frame_viewer_profile_describe_targets_adds_metadata_for_detailed_profil
     assert "metadata" in descriptions[0]
 
 
-def test_frame_viewer_can_list_active_viewer_profiles_and_set_default() -> None:
+def test_frame_viewer_exposes_the_shipped_general_surface() -> None:
     viewer = _build_viewer(("ops",))
 
-    assert viewer.list_view_profile_names() == ["general"]
-
-    viewer.set_default_view_profile("general")
-
-    assert viewer.profile_name == "general"
+    assert viewer.surface_name == "general"
+    assert viewer.surface_version == "0.0.1"
+    assert "describe_targets" in viewer.list_available_tools()
 
 
 def test_frame_viewer_execute_method_routes_through_profile_mapping() -> None:
@@ -490,7 +481,7 @@ def test_frame_viewer_execute_method_routes_through_profile_mapping() -> None:
 def test_frame_viewer_bound_view_frame_can_get_required_target_by_source() -> None:
     viewer = _build_viewer(("ops",))
 
-    link = viewer.get_selected_profile_for_frame("ops").view_frame.get_required_target_by_source(
+    link = viewer.get_view_frame(frame_name="ops").get_required_target_by_source(
         source_kind="spell",
         source_id="ops-spellbook:ops-spell",
     )
@@ -975,51 +966,6 @@ def test_frame_viewer_descriptor_host_methods_report_record_level_inventory() ->
     assert viewer.list_existence_kinds() == ["unique"]
 
 
-def test_frame_viewer_host_property_and_default_profile_helper_paths_work() -> None:
-    profile = FrameViewerProfile.create_general()
-    empty_viewer = FrameViewer(
-        active_profiles_by_name={},
-        projection_sets_by_frame_name={},
-    )
-
-    empty_viewer.register_active_profile(profile)
-
-    assert empty_viewer._default_profile_name == "general"
-    assert empty_viewer.enabled_helpers == profile.enabled_helpers
-    assert empty_viewer.default_grouping == profile.default_grouping
-    assert empty_viewer.default_detail_level == profile.default_detail_level
-    assert empty_viewer.profile is profile
-    assert empty_viewer.list_enabled_helpers() == profile.enabled_helpers
-    assert empty_viewer.list_available_tools() == profile.list_tool_names()
-    assert empty_viewer.has_enabled_helper("list_frames") is True
-
-    empty_viewer._require_helper_enabled("list_frames")
-    empty_viewer._require_helper_enabled("list_frame_names")
-    assert FrameViewer._resolve_tool_handler(profile, "missing.handler", viewer=None) is None
-
-    with pytest.raises(ValueError, match="FrameViewer helper 'missing' is not enabled"):
-        empty_viewer._require_helper_enabled("missing")
-
-    empty_viewer._default_profile_name = None
-    assert empty_viewer.list_available_tools() == tuple()
-    assert empty_viewer.profile is None
-    empty_viewer._require_helper_enabled("anything")
-
-    with pytest.raises(ValueError, match="FrameViewer has no default active profile."):
-        empty_viewer._resolve_profile(None, None)
-
-    empty_viewer._default_profile_name = "general"
-    with pytest.raises(ValueError, match="FrameViewer has no default selected frame."):
-        empty_viewer._get_required_default_frame_name()
-    assert empty_viewer._resolve_profile("general", None) is profile
-
-    viewer = _build_viewer(("ops",))
-    original_selected = viewer.get_selected_profile_for_frame("ops")
-    viewer.set_default_profile("general")
-    assert original_selected.cleaned is True
-    assert viewer.get_selected_profile_for_frame("ops") is not original_selected
-
-
 def test_frame_viewer_host_skip_guard_and_internal_resolver_paths_work() -> None:
     viewer = _build_viewer(("ops", "finance"))
     viewer.frame_descriptors_by_name["finance"]._frame_overview = None
@@ -1047,12 +993,6 @@ def test_frame_viewer_host_skip_guard_and_internal_resolver_paths_work() -> None
 
     with pytest.raises(ValueError, match="spellframe_name cannot be empty."):
         viewer.list_spells_by_spellframe("")
-
-    with pytest.raises(ValueError, match="FrameViewer has no active profiles."):
-        FrameViewer(
-            active_profiles_by_name={},
-            projection_sets_by_frame_name={},
-        )._resolve_profile(None, None)
 
     with pytest.raises(ValueError, match="frame_name cannot be empty."):
         viewer._get_required_selected_frame_name("")
@@ -1227,8 +1167,8 @@ def test_frame_viewer_brief_and_compare_methods_report_expected_shapes() -> None
         "viewer_id": viewer.viewer_id,
         "frame_count": 2,
         "default_view_frame_name": "ops",
-        "default_profile_name": "general",
-        "default_profile_version": "0.0.1",
+        "surface_name": "general",
+        "surface_version": "0.0.1",
         "frame_names": ("finance", "ops"),
         "host_boundary": "descriptor_only",
     }
@@ -1371,7 +1311,7 @@ def test_frame_viewer_brief_and_compare_methods_report_expected_shapes() -> None
 
 def test_view_frame_visible_surface_methods_report_inventory_and_topology() -> None:
     viewer = _build_viewer(("ops",))
-    view_frame = viewer.get_selected_profile_for_frame("ops").view_frame
+    view_frame = viewer.get_view_frame(frame_name="ops")
 
     assert view_frame.list_visible_target_ids() == [
         "ops:frame:ops-frame",
@@ -1432,7 +1372,7 @@ def test_view_frame_visible_surface_methods_report_inventory_and_topology() -> N
 
 def test_view_frame_brief_and_missing_surface_methods_work() -> None:
     viewer = _build_viewer(("ops",))
-    view_frame = viewer.get_selected_profile_for_frame("ops").view_frame
+    view_frame = viewer.get_view_frame(frame_name="ops")
 
     assert view_frame.describe_frame_brief() == {
         "frame_name": "ops",
@@ -1493,7 +1433,7 @@ def test_view_frame_brief_and_missing_surface_methods_work() -> None:
 
 def test_view_frame_search_and_identity_helpers_work() -> None:
     viewer = _build_viewer(("ops",))
-    view_frame = viewer.get_selected_profile_for_frame("ops").view_frame
+    view_frame = viewer.get_view_frame(frame_name="ops")
 
     contains_hits = view_frame.search_targets_contains("spell")
     prefix_hits = view_frame.search_targets_prefix("ops")
@@ -1539,7 +1479,7 @@ def test_view_frame_guardrails_and_missing_record_paths_work() -> None:
         )
 
     viewer = _build_viewer(("ops",))
-    view_frame = viewer.get_selected_profile_for_frame("ops").view_frame
+    view_frame = viewer.get_view_frame(frame_name="ops")
     descriptor = viewer.frame_descriptors_by_name["ops"]
     spell_record = descriptor.spell_records_by_key[("ops-spellbook", "ops-spell")]
 
@@ -1589,14 +1529,14 @@ def test_view_frame_guardrails_and_missing_record_paths_work() -> None:
         view_frame.describe_frame_payload()
 
     viewer = _build_viewer(("ops",))
-    view_frame = viewer.get_selected_profile_for_frame("ops").view_frame
+    view_frame = viewer.get_view_frame(frame_name="ops")
     descriptor = viewer.frame_descriptors_by_name["ops"]
     descriptor._conduit_records_by_id.pop("ops-conduit")
     with pytest.raises(ValueError, match="Missing ConduitRecord for compiled conduit id 'ops-conduit'."):
         view_frame.list_targets(source_kind="conduit")
 
     viewer = _build_viewer(("ops",))
-    view_frame = viewer.get_selected_profile_for_frame("ops").view_frame
+    view_frame = viewer.get_view_frame(frame_name="ops")
     descriptor = viewer.frame_descriptors_by_name["ops"]
     descriptor._spell_records_by_key.pop(("ops-spellbook", "ops-spell"))
     with pytest.raises(ValueError, match="Missing SpellRecord for compiled spell key"):
@@ -1629,12 +1569,12 @@ def test_view_frame_guardrails_and_missing_record_paths_work() -> None:
     with pytest.raises(ValueError, match="frame_name cannot be empty."):
         unbound._assert_optional_frame_name("")
     with pytest.raises(ValueError, match="bound to frame 'ops', not 'finance'"):
-        viewer.get_selected_profile_for_frame("ops").view_frame._assert_optional_frame_name("finance")
+        viewer.get_view_frame(frame_name="ops")._assert_optional_frame_name("finance")
 
 
 def test_view_frame_cleanup_and_frame_identity_branches_work() -> None:
     viewer = _build_viewer(("ops",))
-    view_frame = viewer.get_selected_profile_for_frame("ops").view_frame
+    view_frame = viewer.get_view_frame(frame_name="ops")
     descriptor = viewer.frame_descriptors_by_name["ops"]
 
     frame_identity = view_frame.describe_target_identity(
@@ -1683,7 +1623,7 @@ def test_view_frame_cleanup_rechecks_cleaned_inside_lock() -> None:
         def __exit__(self, exc_type, exc, tb) -> bool:
             return False
 
-    view_frame = _build_viewer(("ops",)).get_selected_profile_for_frame("ops").view_frame
+    view_frame = _build_viewer(("ops",)).get_view_frame(frame_name="ops")
     original_lock = view_frame._lock
     view_frame._lock = _FlipCleanedOnEnter(view_frame)
     try:
@@ -1696,7 +1636,7 @@ def test_view_frame_cleanup_rechecks_cleaned_inside_lock() -> None:
 
 def test_view_conduit_extended_methods_report_inventory_and_relationships() -> None:
     viewer = _build_viewer(("ops",))
-    view_conduit = viewer.get_selected_profile_for_frame("ops").view_conduit
+    view_conduit = viewer.get_view_conduit(frame_name="ops")
 
     assert [link.source_id for link in view_conduit.list_root_conduits()] == [
         "ops-conduit"
@@ -1744,7 +1684,7 @@ def test_view_conduit_extended_methods_report_inventory_and_relationships() -> N
 
 def test_view_conduit_brief_and_missing_section_methods_work() -> None:
     viewer = _build_viewer(("ops",))
-    view_conduit = viewer.get_selected_profile_for_frame("ops").view_conduit
+    view_conduit = viewer.get_view_conduit(frame_name="ops")
 
     assert view_conduit.describe_conduit_brief("ops-conduit") == {
         "conduit_id": "ops-conduit",
@@ -1767,7 +1707,7 @@ def test_view_conduit_brief_and_missing_section_methods_work() -> None:
 
 def test_view_conduit_guardrails_and_optional_paths_work() -> None:
     viewer = _build_viewer(("ops",))
-    view_conduit = viewer.get_selected_profile_for_frame("ops").view_conduit
+    view_conduit = viewer.get_view_conduit(frame_name="ops")
     descriptor = viewer.frame_descriptors_by_name["ops"]
     conduit_record = descriptor.conduit_records_by_id["ops-conduit"]
     spell_record = descriptor.spell_records_by_key[("ops-spellbook", "ops-spell")]
@@ -1811,7 +1751,7 @@ def test_view_conduit_guardrails_and_optional_paths_work() -> None:
 
 def test_view_spell_extended_identity_origin_and_filter_methods_work() -> None:
     viewer = _build_viewer(("ops",))
-    view_spell = viewer.get_selected_profile_for_frame("ops").view_spell
+    view_spell = viewer.get_view_spell(frame_name="ops")
 
     assert view_spell.describe_spell_identity("ops-spellbook:ops-spell") == {
         "source_id": "ops-spellbook:ops-spell",
@@ -1892,7 +1832,7 @@ def test_view_spell_extended_identity_origin_and_filter_methods_work() -> None:
 
 def test_view_spell_brief_and_missing_section_methods_work() -> None:
     viewer = _build_viewer(("ops",))
-    view_spell = viewer.get_selected_profile_for_frame("ops").view_spell
+    view_spell = viewer.get_view_spell(frame_name="ops")
 
     assert view_spell.describe_spell_brief("ops-spellbook:ops-spell") == {
         "source_id": "ops-spellbook:ops-spell",
@@ -1925,7 +1865,7 @@ def test_view_spell_brief_and_missing_section_methods_work() -> None:
 
 def test_view_spell_guardrails_and_detail_normalizers_work() -> None:
     viewer = _build_viewer(("ops",))
-    view_spell = viewer.get_selected_profile_for_frame("ops").view_spell
+    view_spell = viewer.get_view_spell(frame_name="ops")
 
     with pytest.raises(ValueError, match="payload_type cannot be empty."):
         view_spell.list_spells_by_payload_type("")
@@ -1986,7 +1926,7 @@ def test_view_spell_guardrails_and_detail_normalizers_work() -> None:
         detailed_configuration,
         restricted_surface,
     )
-    restricted_view_spell = restricted_viewer.get_selected_profile_for_frame("ops").view_spell
+    restricted_view_spell = restricted_viewer.get_view_spell(frame_name="ops")
     assert restricted_view_spell.describe_spell_class_profile("ops-spellbook:ops-spell") == {
         "source_id": "ops-spellbook:ops-spell",
         "payload_type": "detailed",
@@ -2016,7 +1956,7 @@ def test_view_spell_guardrails_and_detail_normalizers_work() -> None:
         detailed_configuration,
         published_surface,
     )
-    not_published_view_spell = not_published_viewer.get_selected_profile_for_frame("ops").view_spell
+    not_published_view_spell = not_published_viewer.get_view_spell(frame_name="ops")
     assert not_published_view_spell.describe_spell_class_profile("ops-spellbook:ops-spell") == {
         "source_id": "ops-spellbook:ops-spell",
         "payload_type": "detailed",
@@ -2102,7 +2042,7 @@ def test_view_spell_guardrails_and_detail_normalizers_work() -> None:
 def test_view_spell_remaining_lineage_payload_and_fallback_paths_work() -> None:
     viewer = _build_visible_collision_viewer()
     descriptor = viewer.frame_descriptors_by_name["ops"]
-    view_spell = viewer.get_selected_profile_for_frame("ops").view_spell
+    view_spell = viewer.get_view_spell(frame_name="ops")
 
     descriptor.upsert_spell_record(
         SpellRecord(
@@ -2136,7 +2076,7 @@ def test_view_spell_remaining_lineage_payload_and_fallback_paths_work() -> None:
             ValueError,
             match="Spell payload section 'class_profile' is not visible for spell 'ops-spellbook:ops-spell'.",
     ):
-        _build_viewer(("ops",)).get_selected_profile_for_frame("ops").view_spell.get_spell_payload_section(
+        _build_viewer(("ops",)).get_view_spell(frame_name="ops").get_spell_payload_section(
             "ops-spellbook:ops-spell",
             "class_profile",
         )
@@ -2162,7 +2102,7 @@ def test_view_spell_remaining_lineage_payload_and_fallback_paths_work() -> None:
         dynamic_configuration,
         dynamic_surface,
     )
-    dynamic_view_spell = dynamic_viewer.get_selected_profile_for_frame("ops").view_spell
+    dynamic_view_spell = dynamic_viewer.get_view_spell(frame_name="ops")
     assert dynamic_view_spell.describe_spell_dynamic_access("ops-spellbook:ops-spell") == {
         "source_id": "ops-spellbook:ops-spell",
         "payload_type": "detailed",
@@ -2193,7 +2133,7 @@ def test_view_spell_remaining_lineage_payload_and_fallback_paths_work() -> None:
         restricted_payload_configuration,
         restricted_payload_surface,
     )
-    restricted_payload_view_spell = restricted_payload_viewer.get_selected_profile_for_frame("ops").view_spell
+    restricted_payload_view_spell = restricted_payload_viewer.get_view_spell(frame_name="ops")
     with pytest.raises(
             ValueError,
             match="Spell payload section 'class_profile' is not available in the published payload",
@@ -2375,7 +2315,7 @@ def test_frame_viewer_host_record_compare_methods_work() -> None:
 
 def test_view_frame_visible_collision_method_reports_expected_groups() -> None:
     viewer = _build_visible_collision_viewer()
-    view_frame = viewer.get_selected_profile_for_frame("ops").view_frame
+    view_frame = viewer.get_view_frame(frame_name="ops")
 
     assert view_frame.describe_visible_collisions() == {
         "binding_name_collisions": {
@@ -2407,7 +2347,7 @@ def test_view_frame_visible_collision_method_reports_expected_groups() -> None:
 
 def test_view_conduit_crosswalk_and_compare_methods_work() -> None:
     viewer = _build_visible_collision_viewer()
-    view_conduit = viewer.get_selected_profile_for_frame("ops").view_conduit
+    view_conduit = viewer.get_view_conduit(frame_name="ops")
 
     crosswalk = view_conduit.describe_conduit_crosswalk("ops-conduit-1")
     comparison = view_conduit.compare_conduits(
@@ -2432,7 +2372,7 @@ def test_view_conduit_crosswalk_and_compare_methods_work() -> None:
 
 def test_view_conduit_cleanup_is_idempotent() -> None:
     viewer = _build_viewer(("ops",))
-    view_conduit = viewer.get_selected_profile_for_frame("ops").view_conduit
+    view_conduit = viewer.get_view_conduit(frame_name="ops")
 
     view_conduit.cleanup()
     view_conduit.cleanup()
@@ -2442,7 +2382,7 @@ def test_view_conduit_cleanup_is_idempotent() -> None:
 
 def test_view_spell_crosswalk_and_compare_methods_work() -> None:
     viewer = _build_visible_collision_viewer()
-    view_spell = viewer.get_selected_profile_for_frame("ops").view_spell
+    view_spell = viewer.get_view_spell(frame_name="ops")
 
     crosswalk = view_spell.describe_spell_crosswalk("ops-spellbook:ops-spell-1")
     comparison = view_spell.compare_spells(
@@ -2530,32 +2470,12 @@ def test_frame_viewer_ast_surface_methods_return_minified_json() -> None:
 
     method_names_json = viewer.list_viewer_method_names_ast_json()
     class_surface_json = viewer.describe_viewer_class_surface_ast_json()
-    profile_method_names_json = viewer.list_selected_profile_method_names_ast_json(
-        frame_name="ops"
-    )
-    profile_surface_json = viewer.describe_selected_profile_class_surface_ast_json(
-        frame_name="ops"
-    )
-    helper_surfaces_json = viewer.describe_selected_profile_helper_class_surfaces_ast_json(
-        frame_name="ops"
-    )
-    selected_surface_json = viewer.describe_selected_ast_surface_json(
-        frame_name="ops"
-    )
 
     assert "\n" not in method_names_json
     assert "\n" not in class_surface_json
-    assert "\n" not in profile_method_names_json
-    assert "\n" not in profile_surface_json
-    assert "\n" not in helper_surfaces_json
-    assert "\n" not in selected_surface_json
 
     method_names = json.loads(method_names_json)
     class_surface = json.loads(class_surface_json)
-    profile_method_names = json.loads(profile_method_names_json)
-    profile_surface = json.loads(profile_surface_json)
-    helper_surfaces = json.loads(helper_surfaces_json)
-    selected_surface = json.loads(selected_surface_json)
 
     assert method_names["class_name"] == "FrameViewer"
     assert "describe_frame" in method_names["method_names"]
@@ -2568,51 +2488,9 @@ def test_frame_viewer_ast_surface_methods_return_minified_json() -> None:
         for current_method in class_surface["methods"]
     )
     assert any(
-        current_property["method_name"] == "profile"
+        current_property["method_name"] == "view_frame"
         for current_property in class_surface["properties"]
     )
-
-    assert profile_method_names["class_name"] == "GeneralFrameViewerProfile"
-    assert "bind_to_frame" in profile_method_names["method_names"]
-    assert "view_frame" not in profile_method_names["method_names"]
-
-    assert profile_surface["class_name"] == "GeneralFrameViewerProfile"
-    assert any(
-        current_property["method_name"] == "view_frame"
-        for current_property in profile_surface["properties"]
-    )
-    assert any(
-        current_property["method_name"] == "view_conduit"
-        for current_property in profile_surface["properties"]
-    )
-    assert any(
-        current_property["method_name"] == "view_spell"
-        for current_property in profile_surface["properties"]
-    )
-
-    assert set(helper_surfaces.keys()) == {"view_frame", "view_conduit", "view_spell"}
-    assert helper_surfaces["view_frame"]["class_name"] == "GeneralViewFrame"
-    assert any(
-        current_method["method_name"] == "describe_frame"
-        for current_method in helper_surfaces["view_frame"]["methods"]
-    )
-    assert helper_surfaces["view_conduit"]["class_name"] == "GeneralViewConduit"
-    assert any(
-        current_method["method_name"] == "describe_conduit"
-        for current_method in helper_surfaces["view_conduit"]["methods"]
-    )
-    assert helper_surfaces["view_spell"]["class_name"] == "GeneralViewSpell"
-    assert any(
-        current_method["method_name"] == "describe_spell"
-        for current_method in helper_surfaces["view_spell"]["methods"]
-    )
-
-    assert selected_surface["frame_name"] == "ops"
-    assert selected_surface["profile_name"] == "general"
-    assert selected_surface["helper_names"] == ["view_conduit", "view_frame", "view_spell"]
-    assert selected_surface["viewer"]["class_name"] == "FrameViewer"
-    assert selected_surface["profile"]["class_name"] == "GeneralFrameViewerProfile"
-    assert set(selected_surface["helpers"].keys()) == {"view_frame", "view_conduit", "view_spell"}
 
 
 def test_frame_viewer_ast_surface_methods_can_include_dunders() -> None:
@@ -2630,14 +2508,6 @@ def test_ast_describer_onboarding_and_agent_purpose_json_are_minified() -> None:
 
     onboarding = json.loads(viewer.describe_agent_onboarding_json())
     viewer_purpose = json.loads(viewer.describe_viewer_agent_purpose_json())
-    profile_purpose = json.loads(
-        viewer.describe_selected_profile_agent_purpose_json(frame_name="ops")
-    )
-    helper_purposes = json.loads(
-        viewer.describe_selected_profile_helper_agent_purposes_json(
-            frame_name="ops"
-        )
-    )
 
     assert onboarding["recommended_system_objects"] == [
         "__architecture__",
@@ -2647,9 +2517,6 @@ def test_ast_describer_onboarding_and_agent_purpose_json_are_minified() -> None:
     ]
     assert viewer_purpose["access"] == "public"
     assert "access: public" in viewer_purpose["agent_purpose"]
-    assert profile_purpose["access"] == "public"
-    assert set(helper_purposes.keys()) == {"view_frame", "view_conduit", "view_spell"}
-    assert helper_purposes["view_frame"]["access"] == "public"
 
 
 class _PrivateAstTarget:
@@ -2800,7 +2667,7 @@ def test_view_spell_detailed_methods_surface_profile_sections_and_dunders() -> N
         configuration,
         surface,
     )
-    view_spell = viewer.get_selected_profile_for_frame("ops").view_spell
+    view_spell = viewer.get_view_spell(frame_name="ops")
 
     class_profile = view_spell.describe_spell_class_profile("ops-spellbook:ops-spell")
     callable_profile = view_spell.describe_spell_callable_profile("ops-spellbook:ops-spell")
@@ -2859,9 +2726,6 @@ def test_frame_viewer_constructor_rejects_invalid_registry_and_default_inputs() 
     configuration = FrameACLConfiguration.create_default("ops")
     surface = _build_surface("ops", configuration)
 
-    with pytest.raises(TypeError, match="profile_builder must be a FrameViewerProfileBuilder"):
-        FrameViewer(profile_builder=object())
-
     with pytest.raises(TypeError, match="unexpected keyword argument 'frame_descriptors_by_name'"):
         FrameViewer(
             frame_descriptors_by_name={"ops": descriptor},
@@ -2887,56 +2751,18 @@ def test_frame_viewer_constructor_rejects_invalid_registry_and_default_inputs() 
             default_view_frame_name="finance",
         )
 
-    inspection_profile = FrameViewerProfile(
-        "inspection",
-        default_grouping="frame",
-        default_detail_level="detailed",
-        enabled_helpers=("list_frames",),
-    )
 
-    with pytest.raises(ValueError, match="default_profile_name cannot be empty"):
-        _build_single_frame_viewer(
-            "ops",
-            descriptor,
-            configuration,
-            surface,
-            active_profiles_by_name={"inspection": inspection_profile},
-            default_profile_name="",
-        )
-
-    with pytest.raises(ValueError, match="default_profile_name must be present"):
-        _build_single_frame_viewer(
-            "ops",
-            descriptor,
-            configuration,
-            surface,
-            active_profiles_by_name={"inspection": inspection_profile},
-            default_profile_name="general",
-        )
-
-
-def test_frame_viewer_empty_defaults_and_selected_profile_fallbacks_are_explicit() -> None:
-    empty_viewer = FrameViewer(
-        active_profiles_by_name={},
-        projection_sets_by_frame_name={},
-    )
-
-    assert empty_viewer.default_view_frame_name is None
-    assert empty_viewer.profile_name is None
-    assert empty_viewer.profile_version is None
-    assert empty_viewer.enabled_helpers == tuple()
-    assert empty_viewer.default_grouping is None
-    assert empty_viewer.default_detail_level is None
-    assert empty_viewer.profile is None
-
+def test_frame_viewer_surface_defaults_are_explicit() -> None:
     viewer = _build_viewer(("ops",))
 
-    assert viewer.profile_name == "general"
-    assert viewer.profile is not None
-    assert viewer.selected_profile_names_by_frame_name == {"ops": "general"}
+    assert viewer.default_view_frame_name == "ops"
+    assert viewer.surface_name == "general"
+    assert viewer.surface_version == "0.0.1"
+    assert viewer.default_grouping == "frame"
+    assert viewer.default_detail_level == "detailed"
 
 
-def test_frame_viewer_rejects_invalid_frame_and_profile_inputs() -> None:
+def test_frame_viewer_rejects_invalid_frame_inputs() -> None:
     viewer = _build_viewer(("ops",))
 
     with pytest.raises(ValueError, match="frame_name cannot be empty"):
@@ -2944,12 +2770,6 @@ def test_frame_viewer_rejects_invalid_frame_and_profile_inputs() -> None:
 
     with pytest.raises(ValueError, match="Frame 'finance' was not found"):
         viewer.set_default_view("finance")
-
-    with pytest.raises(ValueError, match="profile_name cannot be empty"):
-        viewer.set_default_profile("")
-
-    with pytest.raises(ValueError, match="FrameViewer profile 'missing' was not found"):
-        viewer.set_default_profile("missing")
 
 
 def test_frame_viewer_rejects_empty_tool_and_kind_inputs() -> None:
@@ -2960,64 +2780,6 @@ def test_frame_viewer_rejects_empty_tool_and_kind_inputs() -> None:
 
     with pytest.raises(ValueError, match="source_kind cannot be empty"):
         viewer.execute_method("list_targets", source_kind="")
-
-
-def test_frame_viewer_selected_profile_is_bound_to_frame_context() -> None:
-    viewer = _build_viewer(("ops",))
-
-    selected_profile = viewer.get_selected_profile_for_frame("ops")
-
-    assert selected_profile.is_bound is True
-    assert selected_profile.bound_frame_name == "ops"
-    assert selected_profile.frame_descriptor is viewer.frame_descriptors_by_name["ops"]
-    assert (
-        selected_profile.frame_acl_configuration
-        is viewer.frame_acl_configurations_by_frame_name["ops"]
-    )
-    assert (
-        selected_profile.compiled_access_surface
-        is viewer.compiled_access_surfaces_by_frame_name["ops"]
-    )
-
-
-def test_frame_viewer_can_set_selected_profile_for_frame() -> None:
-    viewer = _build_viewer(("ops",))
-
-    viewer.set_selected_profile_for_frame("ops", "general")
-
-    assert viewer.selected_profile_names_by_frame_name == {"ops": "general"}
-    assert viewer.get_selected_profile_for_frame("ops").name == "general"
-
-
-def test_frame_viewer_selected_profile_for_frame_shapes_execution() -> None:
-    viewer = _build_viewer(("ops",))
-    viewer.set_selected_profile_for_frame("ops", "general")
-
-    descriptions = viewer.execute_method(
-        "describe_spells",
-        frame_name="ops",
-    )
-
-    assert len(descriptions) == 1
-    assert descriptions[0]["source_kind"] == "spell"
-    assert "payload" in descriptions[0]
-
-
-def test_frame_viewer_profile_binding_rejects_acl_view_profile_requirement_mismatch() -> None:
-    viewer = _build_viewer(("ops",))
-    constrained_profile = FrameViewerProfile(
-        "hybrid_only",
-        required_acl_view_profile_name="hybrid",
-        required_acl_view_profile_version="0.0.1",
-        tool_handler_names_by_name={"list_frames": "list_frame_names"},
-    )
-    viewer.register_active_profile(constrained_profile)
-
-    with pytest.raises(
-            ValueError,
-            match="requires ACL view profile 'hybrid:0.0.1', got 'safe:0.0.1'",
-    ):
-        viewer.set_selected_profile_for_frame("ops", "hybrid_only")
 
 
 def test_frame_viewer_cleanup_is_idempotent_and_rechecks_cleaned_state_under_lock() -> None:
@@ -3048,84 +2810,17 @@ def test_frame_viewer_cleanup_is_idempotent_and_rechecks_cleaned_state_under_loc
     assert viewer.cleaned is True
 
 
-def test_frame_viewer_profile_registration_replaces_templates_and_rebinds_frames() -> None:
+def test_frame_viewer_execute_guardrails_are_explicit() -> None:
     viewer = _build_viewer(("ops",))
-    original_template = viewer.get_required_active_profile("general")
-    original_selected = viewer.get_selected_profile_for_frame("ops")
-    replacement = FrameViewerProfile(
-        "general",
-        default_grouping="frame",
-        default_detail_level="detailed",
-        enabled_helpers=("list_frames", "describe_frame"),
-    )
-
-    with pytest.raises(TypeError, match="profile must be a FrameViewerProfile"):
-        viewer.register_active_profile(None)
-
-    viewer.register_active_profile(replacement)
-
-    assert original_template.cleaned is True
-    assert original_selected.cleaned is True
-    assert viewer.get_required_active_profile("general") is replacement
-    assert viewer.get_selected_profile_for_frame("ops") is not original_selected
-    assert viewer.get_selected_profile_for_frame("ops").name == "general"
-
-
-def test_frame_viewer_profile_and_execute_guardrails_are_explicit() -> None:
-    viewer = _build_viewer(("ops",))
-    original_selected = viewer.get_selected_profile_for_frame("ops")
-
-    with pytest.raises(ValueError, match="frame_name cannot be empty"):
-        viewer.get_selected_profile_for_frame("")
-
-    viewer._default_profile_name = None
-    with pytest.raises(ValueError, match="FrameViewer has no default active profile."):
-        viewer.get_selected_profile_for_frame("ops")
-    viewer._default_profile_name = "general"
-
-    with pytest.raises(ValueError, match="frame_name cannot be empty"):
-        viewer.set_selected_profile_for_frame("", "general")
-
-    with pytest.raises(ValueError, match="profile_name cannot be empty"):
-        viewer.set_selected_profile_for_frame("ops", "")
-
-    viewer.set_selected_profile_for_frame("ops", "general")
-
-    assert original_selected.cleaned is True
 
     with pytest.raises(ValueError, match="helper_name cannot be empty"):
         viewer.has_enabled_helper("")
 
-    empty_profiles_viewer = FrameViewer(
-        active_profiles_by_name={},
-        projection_sets_by_frame_name={},
-    )
-
-    assert empty_profiles_viewer.has_enabled_helper("list_frames") is False
-
-    with pytest.raises(ValueError, match="FrameViewer has no active profiles"):
-        empty_profiles_viewer.execute_method("list_targets")
-
-    with pytest.raises(ValueError, match="profile_name cannot be empty"):
-        viewer.get_required_active_profile("")
-
-    with pytest.raises(ValueError, match="FrameViewer profile 'missing' was not found"):
-        viewer.get_required_active_profile("missing")
-
-    ghost_profile = FrameViewerProfile(
-        "ghost",
-        default_grouping="frame",
-        default_detail_level="detailed",
-        tool_handler_names_by_name={"ghost_tool": "missing.handler"},
-    )
-    viewer.register_active_profile(ghost_profile)
-
     with pytest.raises(
             ValueError,
-            match="targets missing handler 'missing.handler'",
+            match="surface method 'ghost_tool' was not found",
     ):
         viewer.execute_method(
             "ghost_tool",
             frame_name="ops",
-            profile_name="ghost",
         )

@@ -470,7 +470,6 @@ class Rift(Cleanable, IRift):
             self,
             *,
             frame_names: Optional[Sequence[str]] = None,
-            viewer_profile_name: Optional[str] = None,
     ) -> Dict[str, FrameProjectionSet]:
         """
         Build fresh runtime projections and sync the hosted room assets.
@@ -482,8 +481,6 @@ class Rift(Cleanable, IRift):
         Args:
             frame_names:
                 Optional explicit multi-frame refresh scope.
-            viewer_profile_name:
-                Viewer profile name applied to the synced viewer.
 
         Returns:
             Dict[str, FrameProjectionSet]: Fresh projection sets keyed by frame name.
@@ -503,10 +500,6 @@ class Rift(Cleanable, IRift):
                             self._id,
                         )
                     )
-        resolved_viewer_profile_name = (
-            viewer_profile_name
-            or self._configuration.get_property("viewer_profile_name")
-        )
         projection_sets_by_frame_name = self._nexus.create_frame_projection_sets_for_rift(
             self._id,
             frame_names=selected_frame_names if frame_names is not None else None,
@@ -519,7 +512,6 @@ class Rift(Cleanable, IRift):
         space = self.space
         space.frame_viewer.sync_from_projection_sets(
             self._projection_sets_by_frame_name,
-            viewer_profile_name=resolved_viewer_profile_name,
             metadata=self._build_frame_viewer_metadata(),
         )
         return projection_sets_by_frame_name

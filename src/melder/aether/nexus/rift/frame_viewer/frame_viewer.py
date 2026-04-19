@@ -16,13 +16,13 @@ from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjec
 from melder.aether.nexus.rift.projection.command_projection import CommandProjection
 from melder.aether.nexus.rift.projection.frame_projection_set import FrameProjectionSet
 from melder.aether.nexus.rift.projection.view_projection import ViewProjection
-from melder.aether.nexus.rift.frame_viewer.profiles.general.view_conduit import (
+from melder.aether.nexus.rift.frame_viewer.view_conduit import (
     GeneralViewConduit,
 )
-from melder.aether.nexus.rift.frame_viewer.profiles.general.view_frame import (
+from melder.aether.nexus.rift.frame_viewer.view_frame import (
     GeneralViewFrame,
 )
-from melder.aether.nexus.rift.frame_viewer.profiles.general.view_spell import (
+from melder.aether.nexus.rift.frame_viewer.view_spell import (
     GeneralViewSpell,
 )
 from melder.utilities.general_base.cleanable import Cleanable
@@ -372,7 +372,6 @@ class FrameViewer(Cleanable):
             self,
             projection_sets_by_frame_name: Dict[str, FrameProjectionSet],
             *,
-            viewer_profile_name: Optional[str] = None,
             default_view_frame_name: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
     ) -> None:
@@ -397,8 +396,6 @@ class FrameViewer(Cleanable):
         Args:
             projection_sets_by_frame_name:
                 Current room-owned projection sets keyed by frame name.
-            viewer_profile_name:
-                Optional fallback viewer profile name for newly hosted frames.
             default_view_frame_name:
                 Optional explicit default hosted frame name.
             metadata:
@@ -409,20 +406,10 @@ class FrameViewer(Cleanable):
 
         Raises:
             ValueError:
-                If `viewer_profile_name` is not `general`, or if
-                `default_view_frame_name` is not hosted by
-                the refreshed viewer state.
+                If `default_view_frame_name` is not hosted by the refreshed
+                viewer state.
         """
         self.check_cleaned()
-        if (
-                viewer_profile_name is not None
-                and viewer_profile_name != self._SURFACE_NAME
-        ):
-            raise ValueError(
-                "FrameViewer only supports viewer surface '{0}'.".format(
-                    self._SURFACE_NAME
-                )
-            )
         normalized_projection_sets_by_frame_name = dict(projection_sets_by_frame_name)
         refreshed_frame_names = tuple(normalized_projection_sets_by_frame_name.keys())
         with self._lock:
@@ -2329,6 +2316,298 @@ class FrameViewer(Cleanable):
     def view_spell(self) -> GeneralViewSpell:
         """Return the spell helper for the current default frame."""
         return self.get_view_spell()
+
+    def list_frames(self, *args, **kwargs) -> Any:
+        """Direct facade for `list_frame_names` on the shipped viewer surface."""
+        return self.list_frame_names(*args, **kwargs)
+
+    def list_spells_by_owner_conduit_record(self, *args, **kwargs) -> Any:
+        """Direct facade for `list_spells_by_owner_conduit` on the shipped viewer surface."""
+        return self.list_spells_by_owner_conduit(*args, **kwargs)
+
+    def list_spells_by_spellbook_id_record(self, *args, **kwargs) -> Any:
+        """Direct facade for `list_spells_by_spellbook_id` on the shipped viewer surface."""
+        return self.list_spells_by_spellbook_id(*args, **kwargs)
+
+    def list_spells_by_permission_record(self, *args, **kwargs) -> Any:
+        """Direct facade for `list_spells_by_permission` on the shipped viewer surface."""
+        return self.list_spells_by_permission(*args, **kwargs)
+
+    def list_spells_by_existence_record(self, *args, **kwargs) -> Any:
+        """Direct facade for `list_spells_by_existence` on the shipped viewer surface."""
+        return self.list_spells_by_existence(*args, **kwargs)
+
+    def list_spells_by_spellframe_record(self, *args, **kwargs) -> Any:
+        """Direct facade for `list_spells_by_spellframe` on the shipped viewer surface."""
+        return self.list_spells_by_spellframe(*args, **kwargs)
+
+    def describe_visible_surface(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.describe_visible_surface` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_visible_surface(*args, **kwargs)
+
+    def describe_missing_surface(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.describe_missing_surface` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_missing_surface(*args, **kwargs)
+
+    def describe_frame_brief_local(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.describe_frame_brief` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_frame_brief(*args, **kwargs)
+
+    def describe_visible_inventory_by_kind(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.describe_visible_inventory_by_kind` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_visible_inventory_by_kind(*args, **kwargs)
+
+    def describe_frame_topology(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.describe_frame_topology` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_frame_topology(*args, **kwargs)
+
+    def list_visible_target_ids(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.list_visible_target_ids` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).list_visible_target_ids(*args, **kwargs)
+
+    def list_visible_target_ids_by_kind(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.list_visible_target_ids_by_kind` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).list_visible_target_ids_by_kind(*args, **kwargs)
+
+    def list_visible_conduit_ids(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.list_visible_conduit_ids` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).list_visible_conduit_ids(*args, **kwargs)
+
+    def list_visible_spell_source_ids(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.list_visible_spell_source_ids` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).list_visible_spell_source_ids(*args, **kwargs)
+
+    def list_visible_root_conduits(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.list_visible_root_conduits` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).list_visible_root_conduits(*args, **kwargs)
+
+    def list_visible_binding_names(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.list_visible_binding_names` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).list_visible_binding_names(*args, **kwargs)
+
+    def list_visible_spell_names(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.list_visible_spell_names` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).list_visible_spell_names(*args, **kwargs)
+
+    def list_visible_spellframes(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.list_visible_spellframes` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).list_visible_spellframes(*args, **kwargs)
+
+    def list_visible_lineage_ids(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.list_visible_lineage_ids` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).list_visible_lineage_ids(*args, **kwargs)
+
+    def describe_visible_spell_ownership(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.describe_visible_spell_ownership` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_visible_spell_ownership(*args, **kwargs)
+
+    def describe_visible_conduit_tree(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.describe_visible_conduit_tree` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_visible_conduit_tree(*args, **kwargs)
+
+    def search_targets_contains(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.search_targets_contains` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).search_targets_contains(*args, **kwargs)
+
+    def search_targets_prefix(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.search_targets_prefix` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).search_targets_prefix(*args, **kwargs)
+
+    def group_targets_by_kind(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.group_targets_by_kind` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).group_targets_by_kind(*args, **kwargs)
+
+    def describe_target_brief(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.describe_target_brief` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_target_brief(*args, **kwargs)
+
+    def describe_target_identity(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.describe_target_identity` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_target_identity(*args, **kwargs)
+
+    def describe_visible_collisions(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.describe_visible_collisions` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_visible_collisions(*args, **kwargs)
+
+    def describe_frame_payload(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.describe_frame_payload` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_frame_payload(*args, **kwargs)
+
+    def describe_frame_inventory(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.describe_frame_inventory` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_frame_inventory(*args, **kwargs)
+
+    def describe_frame_access_contract(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.describe_frame_access_contract` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_frame_access_contract(*args, **kwargs)
+
+    def get_frame_payload_field(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.get_frame_payload_field` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).get_frame_payload_field(*args, **kwargs)
+
+    def find_target_by_display_name(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.find_target_by_display_name` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).find_target_by_display_name(*args, **kwargs)
+
+    def explain_target_access(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.explain_target_access` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).explain_target_access(*args, **kwargs)
+
+    def list_targets(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.list_targets` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).list_targets(*args, **kwargs)
+
+    def describe_targets(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_frame.describe_targets` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_targets(*args, **kwargs)
+
+    def list_conduits(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.list_conduits` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).list_conduits(*args, **kwargs)
+
+    def list_root_conduits(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.list_root_conduits` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).list_root_conduits(*args, **kwargs)
+
+    def describe_conduits(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.describe_conduits` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).describe_conduits(*args, **kwargs)
+
+    def get_conduit(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.get_required_conduit` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).get_required_conduit(*args, **kwargs)
+
+    def describe_conduit(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.describe_conduit` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).describe_conduit(*args, **kwargs)
+
+    def describe_conduit_brief(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.describe_conduit_brief` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).describe_conduit_brief(*args, **kwargs)
+
+    def describe_conduit_inventory(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.describe_conduit_inventory` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).describe_conduit_inventory(*args, **kwargs)
+
+    def describe_conduit_relationships(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.describe_conduit_relationships` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).describe_conduit_relationships(*args, **kwargs)
+
+    def describe_conduit_missing_sections(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.describe_conduit_missing_sections` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).describe_conduit_missing_sections(*args, **kwargs)
+
+    def describe_conduit_crosswalk(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.describe_conduit_crosswalk` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).describe_conduit_crosswalk(*args, **kwargs)
+
+    def list_conduit_spells(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.list_conduit_spells` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).list_conduit_spells(*args, **kwargs)
+
+    def describe_conduit_topology(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.describe_conduit_topology` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).describe_conduit_topology(*args, **kwargs)
+
+    def compare_conduits(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.compare_conduits` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).compare_conduits(*args, **kwargs)
+
+    def is_root_conduit(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.is_root_conduit` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).is_root_conduit(*args, **kwargs)
+
+    def get_root_conduit_id(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.get_root_conduit_id` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).get_root_conduit_id(*args, **kwargs)
+
+    def list_conduits_by_root_id(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.list_conduits_by_root_id` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).list_conduits_by_root_id(*args, **kwargs)
+
+    def list_conduits_by_policy(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.list_conduits_by_policy` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).list_conduits_by_policy(*args, **kwargs)
+
+    def list_conduits_by_state(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.list_conduits_by_state` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).list_conduits_by_state(*args, **kwargs)
+
+    def list_peer_conduits(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.list_peer_conduits` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).list_peer_conduits(*args, **kwargs)
+
+    def list_child_conduits(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.list_child_conduits` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).list_child_conduits(*args, **kwargs)
+
+    def list_parent_conduit(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.get_parent_conduit_id` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).get_parent_conduit_id(*args, **kwargs)
+
+    def describe_root_conduit_inventory(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_conduit.describe_root_conduit_inventory` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).describe_root_conduit_inventory(*args, **kwargs)
+
+    def list_spells(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_spell.list_spells` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).list_spells(*args, **kwargs)
+
+    def describe_spells(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_spell.describe_spells` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).describe_spells(*args, **kwargs)
+
+    def get_spell(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_spell.get_required_spell` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).get_required_spell(*args, **kwargs)
+
+    def describe_spell(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_spell.describe_spell` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).describe_spell(*args, **kwargs)
+
+    def describe_spell_brief(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_spell.describe_spell_brief` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).describe_spell_brief(*args, **kwargs)
+
+    def describe_spell_inventory(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_spell.describe_spell_inventory` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).describe_spell_inventory(*args, **kwargs)
+
+    def describe_spell_origin(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_spell.describe_spell_origin` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).describe_spell_origin(*args, **kwargs)
+
+    def describe_spell_lineage(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_spell.describe_spell_lineage` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).describe_spell_lineage(*args, **kwargs)
+
+    def describe_spell_payload(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_spell.describe_spell_payload` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).describe_spell_payload(*args, **kwargs)
+
+    def describe_spell_methods(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_spell.describe_spell_methods` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).describe_spell_methods(*args, **kwargs)
+
+    def describe_spell_attributes(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_spell.describe_spell_attributes` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).describe_spell_attributes(*args, **kwargs)
+
+    def describe_spell_dunder_surface(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_spell.describe_spell_dunder_surface` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).describe_spell_dunder_surface(*args, **kwargs)
+
+    def describe_spell_missing_sections(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_spell.describe_spell_missing_sections` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).describe_spell_missing_sections(*args, **kwargs)
+
+    def describe_spell_crosswalk(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_spell.describe_spell_crosswalk` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).describe_spell_crosswalk(*args, **kwargs)
+
+    def compare_spells(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
+        """Direct facade for `view_spell.compare_spells` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).compare_spells(*args, **kwargs)
 
     def list_viewer_method_names_ast_json(
             self,

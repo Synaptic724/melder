@@ -431,7 +431,6 @@ def _attach_projection_backed_viewer(space: RiftSpace, viewer: FrameViewer) -> N
     )
     space.frame_viewer.sync_from_projection_sets(
         detached_rift._projection_sets_by_frame_name,
-        viewer_profile_name=viewer.profile_name or "general",
         default_view_frame_name=viewer.default_view_frame_name,
         metadata=viewer.metadata,
     )
@@ -3964,9 +3963,8 @@ def test_rift_refresh_runtime_projections_rebuilds_room_owned_viewer_for_one_eng
     viewer = rift.get_frame_viewer()
 
     assert viewer.list_frame_names() == ["ops"]
-    assert viewer.selected_profile_names_by_frame_name == {"ops": "general"}
     assert viewer is first_viewer
-    assert viewer.get_selected_profile_for_frame("ops").frame_descriptor is (
+    assert viewer.get_view_frame(frame_name="ops")._get_required_frame_descriptor() is (
         viewer.frame_descriptors_by_name["ops"]
     )
 

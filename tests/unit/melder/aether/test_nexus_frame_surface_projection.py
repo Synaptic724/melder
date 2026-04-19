@@ -209,9 +209,9 @@ def test_rift_get_frame_viewer_projects_multiple_assigned_frames() -> None:
     viewer = rift.get_frame_viewer()
 
     assert isinstance(viewer, FrameViewer)
-    assert viewer.profile_name == "general"
+    assert viewer.surface_name == "general"
     assert viewer.metadata["frame_count"] == 2
-    assert viewer.metadata["viewer_profile_name"] == "general"
+    assert viewer.metadata["viewer_surface_name"] == "general"
     assert viewer.list_frame_names() == ["finance", "ops"]
 
 
@@ -338,14 +338,12 @@ def test_rift_refresh_runtime_projections_for_multiple_frames_uses_one_projectio
             self,
             projection_sets_by_frame_name,
             *,
-            viewer_profile_name=None,
             default_view_frame_name=None,
             metadata=None,
     ):
         sync_calls.append(metadata["assigned_frame_names"])
         return original_sync_from_projection_sets(
             projection_sets_by_frame_name,
-            viewer_profile_name=viewer_profile_name,
             default_view_frame_name=default_view_frame_name,
             metadata=metadata,
         )

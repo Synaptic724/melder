@@ -75,7 +75,7 @@ FRAME_COLLECTION_CASES = [
 
 @pytest.mark.parametrize(("method_name", "args", "expected"), FRAME_COLLECTION_CASES)
 def test_view_frame_collection_matrix(method_name, args, expected) -> None:
-    view_frame = _visible_viewer().get_selected_profile_for_frame("ops").view_frame
+    view_frame = _visible_viewer().get_view_frame(frame_name="ops")
 
     result = getattr(view_frame, method_name)(source_kind=args[0]) if method_name == "list_visible_target_ids" and len(args) == 1 else getattr(view_frame, method_name)()
 
@@ -113,7 +113,7 @@ FRAME_DICT_CASES = [
 
 @pytest.mark.parametrize(("method_name", "expected"), FRAME_DICT_CASES)
 def test_view_frame_dict_methods_matrix(method_name, expected) -> None:
-    view_frame = _visible_viewer().get_selected_profile_for_frame("ops").view_frame
+    view_frame = _visible_viewer().get_view_frame(frame_name="ops")
 
     assert getattr(view_frame, method_name)() == expected
 
@@ -136,7 +136,7 @@ FRAME_SEARCH_CASES = [
 
 @pytest.mark.parametrize(("method_name", "kwargs", "expected_kinds"), FRAME_SEARCH_CASES)
 def test_view_frame_search_matrix(method_name, kwargs, expected_kinds) -> None:
-    view_frame = _visible_viewer().get_selected_profile_for_frame("ops").view_frame
+    view_frame = _visible_viewer().get_view_frame(frame_name="ops")
 
     results = getattr(view_frame, method_name)(**kwargs)
 
@@ -159,7 +159,7 @@ FRAME_SEARCH_FILTER_CASES = [
 
 @pytest.mark.parametrize(("method_name", "kwargs", "expected_kinds"), FRAME_SEARCH_FILTER_CASES)
 def test_view_frame_search_filtered_matrix(method_name, kwargs, expected_kinds) -> None:
-    view_frame = _visible_viewer().get_selected_profile_for_frame("ops").view_frame
+    view_frame = _visible_viewer().get_view_frame(frame_name="ops")
 
     results = getattr(view_frame, method_name)(**kwargs)
 
@@ -177,7 +177,7 @@ FRAME_IDENTITY_CASES = [
 
 @pytest.mark.parametrize(("source_kind", "source_id", "display_name", "payload_type"), FRAME_IDENTITY_CASES)
 def test_view_frame_identity_matrix(source_kind, source_id, display_name, payload_type) -> None:
-    view_frame = _visible_viewer(include_dunders=True).get_selected_profile_for_frame("ops").view_frame
+    view_frame = _visible_viewer(include_dunders=True).get_view_frame(frame_name="ops")
 
     identity = view_frame.describe_target_identity(
         source_kind=source_kind,
@@ -205,7 +205,7 @@ FRAME_SUMMARY_CASES = [
 
 @pytest.mark.parametrize(("method_name", "key", "expected"), FRAME_SUMMARY_CASES)
 def test_view_frame_summary_matrix(method_name, key, expected) -> None:
-    view_frame = _visible_viewer().get_selected_profile_for_frame("ops").view_frame
+    view_frame = _visible_viewer().get_view_frame(frame_name="ops")
     result = getattr(view_frame, method_name)()
 
     if expected == "dict":
@@ -239,7 +239,7 @@ CONDUIT_CASES = [
 
 @pytest.mark.parametrize(("method_name", "args", "expected"), CONDUIT_CASES)
 def test_view_conduit_collection_matrix(method_name, args, expected) -> None:
-    view_conduit = _visible_viewer().get_selected_profile_for_frame("ops").view_conduit
+    view_conduit = _visible_viewer().get_view_conduit(frame_name="ops")
 
     result = getattr(view_conduit, method_name)(*args)
 
@@ -265,7 +265,7 @@ CONDUIT_SUMMARY_CASES = [
 
 @pytest.mark.parametrize(("method_name", "conduit_id", "key", "expected"), CONDUIT_SUMMARY_CASES)
 def test_view_conduit_summary_matrix(method_name, conduit_id, key, expected) -> None:
-    view_conduit = _visible_viewer().get_selected_profile_for_frame("ops").view_conduit
+    view_conduit = _visible_viewer().get_view_conduit(frame_name="ops")
 
     result = getattr(view_conduit, method_name)(conduit_id)
 
@@ -286,7 +286,7 @@ CONDUIT_EXTRA_CASES = [
 
 @pytest.mark.parametrize(("method_name", "arg", "expected"), CONDUIT_EXTRA_CASES)
 def test_view_conduit_extra_matrix(method_name, arg, expected) -> None:
-    view_conduit = _visible_viewer().get_selected_profile_for_frame("ops").view_conduit
+    view_conduit = _visible_viewer().get_view_conduit(frame_name="ops")
 
     result = getattr(view_conduit, method_name)(arg)
 
@@ -314,7 +314,7 @@ SPELL_SIMPLE_CASES = [
 
 @pytest.mark.parametrize(("method_name", "spell_source_id", "key", "expected"), SPELL_SIMPLE_CASES)
 def test_view_spell_identity_origin_matrix(method_name, spell_source_id, key, expected) -> None:
-    view_spell = _visible_viewer(include_dunders=True).get_selected_profile_for_frame("ops").view_spell
+    view_spell = _visible_viewer(include_dunders=True).get_view_spell(frame_name="ops")
 
     result = getattr(view_spell, method_name)(spell_source_id)
 
@@ -347,7 +347,7 @@ SPELL_FILTER_CASES = [
 
 @pytest.mark.parametrize(("method_name", "args", "expected_source_ids"), SPELL_FILTER_CASES)
 def test_view_spell_filter_matrix(method_name, args, expected_source_ids) -> None:
-    view_spell = _visible_viewer(include_dunders=True).get_selected_profile_for_frame("ops").view_spell
+    view_spell = _visible_viewer(include_dunders=True).get_view_spell(frame_name="ops")
 
     results = getattr(view_spell, method_name)(*args)
 
@@ -370,7 +370,7 @@ SPELL_DETAIL_CASES = [
 
 @pytest.mark.parametrize(("method_name", "spell_source_id", "key", "expected"), SPELL_DETAIL_CASES)
 def test_view_spell_detail_matrix(method_name, spell_source_id, key, expected) -> None:
-    view_spell = _visible_viewer(include_dunders=True).get_selected_profile_for_frame("ops").view_spell
+    view_spell = _visible_viewer(include_dunders=True).get_view_spell(frame_name="ops")
 
     result = getattr(view_spell, method_name)(spell_source_id)
 
@@ -381,7 +381,7 @@ def test_view_spell_detail_matrix(method_name, spell_source_id, key, expected) -
 
 
 def test_view_spell_dunder_methods_surface_visible_dunders() -> None:
-    view_spell = _visible_viewer(include_dunders=True).get_selected_profile_for_frame("ops").view_spell
+    view_spell = _visible_viewer(include_dunders=True).get_view_spell(frame_name="ops")
 
     assert view_spell.describe_spell_dunder_members("ops-spellbook:ops-spell-2") == {
         "source_id": "ops-spellbook:ops-spell-2",
@@ -410,7 +410,7 @@ SPELL_SECTION_CASES = [
 
 @pytest.mark.parametrize(("method_name", "spell_source_id", "section_name", "field_name", "expected"), SPELL_SECTION_CASES)
 def test_view_spell_detail_section_matrix(method_name, spell_source_id, section_name, field_name, expected) -> None:
-    view_spell = _visible_viewer(include_dunders=True).get_selected_profile_for_frame("ops").view_spell
+    view_spell = _visible_viewer(include_dunders=True).get_view_spell(frame_name="ops")
 
     result = getattr(view_spell, method_name)(spell_source_id)
 

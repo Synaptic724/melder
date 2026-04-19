@@ -6832,12 +6832,6 @@ class IRiftConfiguration(ICleanable, Protocol):
         """
         ...
 
-    def with_viewer_profile_name(self, profile_name: str) -> "IRiftConfiguration":
-        """
-        Set the viewer-profile name for this Rift configuration.
-        """
-        ...
-
     def with_auto_activate_on_program(self, enabled: bool = True) -> "IRiftConfiguration":
         """
         Set whether the Rift should be marked active during programming.
