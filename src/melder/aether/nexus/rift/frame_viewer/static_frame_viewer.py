@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Iterator, List, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aether import Aether
@@ -139,24 +139,6 @@ class StaticFrameViewer(FrameViewer):
                 )
             )
         return matching_records[0]
-
-    @property
-    def compiled_access_surfaces_by_frame_name(
-            self,
-    ) -> Dict[str, CompiledFrameACLAccessSurface]:
-        """
-        Return the current filtered compiled access surfaces keyed by frame.
-
-        Returns:
-            Dict[str, CompiledFrameACLAccessSurface]: Live-only filtered
-            static-viewer surfaces.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return {
-                frame_name: self._get_required_compiled_access_surface(frame_name)
-                for frame_name in self.list_frame_names()
-            }
 
     def _get_required_compiled_access_surface(
             self,

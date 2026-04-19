@@ -12,20 +12,34 @@ from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpac
 
 
 def _make_detached_rift_projection_owner() -> object:
-    return SimpleNamespace(
-        _get_default_runtime_frame_name=lambda: None,
-        _get_required_command_projection=lambda frame_name: SimpleNamespace(
-            frame_descriptor=SimpleNamespace(
-                conduit_records_by_id={},
-                spell_records_by_key={},
-            ),
-            compiled_access_surface=SimpleNamespace(
-                command_frame_enabled=True,
-                enabled_conduit_ids=tuple(),
-                enabled_spell_index_ids=tuple(),
-            ),
-        ),
-    )
+    class _DetachedRiftProjectionOwner:
+        def _get_default_runtime_frame_name(self):
+            return None
+
+        def list_assigned_frame_names(self):
+            return tuple()
+
+        def _get_required_view_projection(self, frame_name):
+            raise ValueError(
+                "View projection for frame '{0}' was not found.".format(
+                    frame_name
+                )
+            )
+
+        def _get_required_command_projection(self, frame_name):
+            return SimpleNamespace(
+                frame_descriptor=SimpleNamespace(
+                    conduit_records_by_id={},
+                    spell_records_by_key={},
+                ),
+                compiled_access_surface=SimpleNamespace(
+                    command_frame_enabled=True,
+                    enabled_conduit_ids=tuple(),
+                    enabled_spell_index_ids=tuple(),
+                ),
+            )
+
+    return _DetachedRiftProjectionOwner()
 
 
 def test_rift_space_rejects_empty_owner_and_invalid_frame_viewer() -> None:
@@ -110,7 +124,7 @@ def test_rift_space_exposes_properties_and_cleanup_cleans_owned_state(monkeypatc
     assert space._event_system is None
     assert space._workstation is None
     assert space._command_system is None
-    assert space._space_id is None
+    assert space._id is None
 
 
 def test_rift_space_keeps_same_viewer_asset_without_projection_management() -> None:

@@ -264,7 +264,7 @@ def test_rift_target_frame_attaches_room_owned_viewer_path() -> None:
 
     assert rift.get_frame_link_contract("ops").frame_name == "ops"
     assert isinstance(viewer, FrameViewer)
-    assert viewer.default_view_frame_name == "ops"
+    assert viewer.list_frame_names() == ["ops"]
 
 
 def test_rift_get_frame_viewer_returns_durable_viewer_before_targeting() -> None:
@@ -280,7 +280,6 @@ def test_rift_get_frame_viewer_returns_durable_viewer_before_targeting() -> None
 
     assert isinstance(viewer, FrameViewer)
     assert viewer.count_frames() == 0
-    assert viewer.default_view_frame_name is None
 
 
 def test_rift_frame_viewer_asset_is_stable_before_targeting() -> None:

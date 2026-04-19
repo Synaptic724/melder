@@ -25,7 +25,7 @@ class RiftMemory:
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = [
-        "_memory_id",
+        "_id",
         "_created_at",
         "_frame_name",
         "_action_name",
@@ -65,7 +65,7 @@ class RiftMemory:
             raise ValueError("frame_name cannot be empty.")
         if not action_name:
             raise ValueError("action_name cannot be empty.")
-        self._memory_id: str = IDBuilder.create_id()
+        self._id: str = IDBuilder.create_id()
         self._created_at: str = datetime.now(timezone.utc).strftime(
             "%Y-%m-%dT%H:%M:%SZ"
         )
@@ -78,7 +78,7 @@ class RiftMemory:
     @property
     def memory_id(self) -> str:
         """Return the stable memory id."""
-        return self._memory_id
+        return self._id
 
     @property
     def created_at(self) -> str:

@@ -23,7 +23,7 @@ class CompiledFrameACLAccessSurface(Cleanable):
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
-        "_surface_id",
+        "_id",
         "_lock",
         "_frame_name",
         "_configuration_id",
@@ -117,7 +117,7 @@ class CompiledFrameACLAccessSurface(Cleanable):
               compiled answers.
         """
         super().__init__()
-        self._surface_id: str = IDBuilder.create_id()
+        self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
         self._configuration_id: str = configuration_id
@@ -189,7 +189,7 @@ class CompiledFrameACLAccessSurface(Cleanable):
             self._conduit_payload_sections_by_id = None
             self._spell_payload_sections_by_key = None
             self._metadata = None
-            self._surface_id = None
+            self._id = None
         self._lock = None
 
     @property

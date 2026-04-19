@@ -30,7 +30,6 @@ class FrameACLCodegenConfiguration(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
-        "_configuration_id",
         "_source_configuration_id",
         "_previous_configuration_id",
         "_created_at",
@@ -108,7 +107,6 @@ class FrameACLCodegenConfiguration(Cleanable):
             raise ValueError("reason cannot be empty.")
 
         self._id: str = IDBuilder.create_id()
-        self._configuration_id: str = IDBuilder.create_id()
         self._source_configuration_id: Optional[str] = source_configuration_id
         self._previous_configuration_id: Optional[str] = previous_configuration_id
         self._created_at: str = datetime.now(timezone.utc).strftime(
@@ -284,7 +282,6 @@ class FrameACLCodegenConfiguration(Cleanable):
             self._conduit_override_ruleset = None
             self._spell_override_ruleset = None
             self._capability_override_ruleset = None
-            self._configuration_id = None
             self._source_configuration_id = None
             self._previous_configuration_id = None
             self._created_at = None
@@ -307,7 +304,7 @@ class FrameACLCodegenConfiguration(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            return self._configuration_id
+            return self._id
 
     @property
     def source_configuration_id(self) -> Optional[str]:

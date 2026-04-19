@@ -464,7 +464,7 @@ def test_frame_acl_configuration_cleanup_clears_fields() -> None:
     assert view_configuration.cleaned is True
     assert command_configuration.cleaned is True
     assert codegen_configuration.cleaned is True
-    assert configuration._configuration_id is None
+    assert configuration._id is None
     assert configuration._frame_name is None
     assert configuration._source_configuration_id is None
     assert configuration._previous_configuration_id is None

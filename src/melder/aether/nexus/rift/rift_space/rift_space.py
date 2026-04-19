@@ -83,7 +83,7 @@ class RiftSpace(Cleanable, IRiftSpace):
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
-        "_space_id",
+        "_id",
         "_space_name",
         "_owner_rift_id",
         "_lock",
@@ -146,7 +146,7 @@ class RiftSpace(Cleanable, IRiftSpace):
         if rift is None:
             raise TypeError("rift cannot be None.")
 
-        self._space_id: str = space_id or IDBuilder.create_id()
+        self._id: str = space_id or IDBuilder.create_id()
         self._space_name: Optional[str] = space_name
         self._owner_rift_id: str = owner_rift_id
         self._lock: threading.RLock = threading.RLock()
@@ -159,11 +159,11 @@ class RiftSpace(Cleanable, IRiftSpace):
         )
         self._event_system: IRiftEventSystem = RiftEventSystem(
             rift_id=self._owner_rift_id,
-            space_id=self._space_id,
+            space_id=self._id,
             space_kind=self._space_kind,
         )
         self._workstation: Workstation = Workstation(
-            self._space_id,
+            self._id,
             default_weak_ref_bindings=(
                 space_kind == RiftSpaceType.static.value
             ),
@@ -223,7 +223,7 @@ class RiftSpace(Cleanable, IRiftSpace):
             self._event_system = None
             self._workstation = None
             self._command_system = None
-            self._space_id = None
+            self._id = None
         self._lock = None
 
     @property
@@ -237,7 +237,7 @@ class RiftSpace(Cleanable, IRiftSpace):
         """
         self.check_cleaned()
         with self._lock:
-            return self._space_id
+            return self._id
 
     @property
     def space_name(self) -> Optional[str]:

@@ -251,10 +251,10 @@ def test_integration_runtime_compiled_surface_projects_directly_into_frame_viewe
             compiled_surface,
         )
 
-        assert len(viewer.list_targets()) >= 1
+        assert len(viewer.list_targets(frame_name="ops")) >= 1
         assert "frame" in {
             link.source_kind
-            for link in viewer.list_targets()
+            for link in viewer.list_targets(frame_name="ops")
         }
     finally:
         conduit.cleanup()

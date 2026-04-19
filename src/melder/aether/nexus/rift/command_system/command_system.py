@@ -40,7 +40,7 @@ class CommandSystem(Cleanable):
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
-        "_command_system_id",
+        "_id",
         "_owner_space_id",
         "_lock",
         "_rift",
@@ -89,7 +89,7 @@ class CommandSystem(Cleanable):
             raise TypeError("space cannot be None.")
         if workstation is None:
             raise TypeError("workstation cannot be None.")
-        self._command_system_id: str = IDBuilder.create_id()
+        self._id: str = IDBuilder.create_id()
         self._owner_space_id: str = space.space_id
         self._lock: threading.RLock = threading.RLock()
         self._rift: Any = rift
@@ -121,7 +121,7 @@ class CommandSystem(Cleanable):
             self._rift = None
             self._space = None
             self._workstation = None
-            self._command_system_id = None
+            self._id = None
         self._lock = None
 
     @property
@@ -134,7 +134,7 @@ class CommandSystem(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            return self._command_system_id
+            return self._id
 
     @property
     def owner_space_id(self) -> str:
@@ -2215,7 +2215,7 @@ class CommandSystem(Cleanable):
             action_name=action_name,
             metadata={
                 "surface": "command",
-                "command_system_id": self._command_system_id,
+                "command_system_id": self._id,
                 "owner_space_id": self._owner_space_id,
             },
         )

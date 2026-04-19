@@ -5,16 +5,24 @@ from melder.aether.nexus.rift.rift_space.static_rift_space import StaticRiftSpac
 
 
 def _make_detached_rift_projection_owner() -> object:
-    return type(
-        "_DetachedRiftProjectionOwner",
-        (),
-        {
-            "_get_default_runtime_frame_name": staticmethod(lambda: None),
-            "_get_required_command_projection": staticmethod(
-                lambda frame_name: None
-            ),
-        },
-    )()
+    class _DetachedRiftProjectionOwner:
+        def _get_default_runtime_frame_name(self):
+            return None
+
+        def list_assigned_frame_names(self):
+            return tuple()
+
+        def _get_required_view_projection(self, frame_name):
+            raise ValueError(
+                "View projection for frame '{0}' was not found.".format(
+                    frame_name
+                )
+            )
+
+        def _get_required_command_projection(self, frame_name):
+            return None
+
+    return _DetachedRiftProjectionOwner()
 
 
 def test_static_rift_space_starts_with_durable_static_viewer_asset() -> None:

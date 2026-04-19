@@ -224,7 +224,7 @@ def test_workstation_cleanup_and_node_none_callback_paths_work(monkeypatch) -> N
     assert workstation._target_name is None
     assert workstation._target_store is None
     assert workstation._owner_space_id is None
-    assert workstation._workstation_id is None
+    assert workstation._id is None
 
 
 def test_workstation_internal_helpers_cover_weak_binding_callbacks() -> None:

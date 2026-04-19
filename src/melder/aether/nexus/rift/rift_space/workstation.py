@@ -47,7 +47,7 @@ class Workstation(Cleanable):
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
-        "_workstation_id",
+        "_id",
         "_owner_space_id",
         "_lock",
         "_default_weak_ref_bindings",
@@ -96,7 +96,7 @@ class Workstation(Cleanable):
         super().__init__()
         if not owner_space_id:
             raise ValueError("owner_space_id cannot be empty.")
-        self._workstation_id: str = IDBuilder.create_id()
+        self._id: str = IDBuilder.create_id()
         self._owner_space_id: str = owner_space_id
         self._lock: threading.RLock = threading.RLock()
         self._default_weak_ref_bindings: bool = bool(default_weak_ref_bindings)
@@ -158,7 +158,7 @@ class Workstation(Cleanable):
             self._target_name = None
             self._target_store = None
             self._owner_space_id = None
-            self._workstation_id = None
+            self._id = None
         self._lock = None
 
     @property
@@ -171,7 +171,7 @@ class Workstation(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
-            return self._workstation_id
+            return self._id
 
     @property
     def owner_space_id(self) -> str:
@@ -798,7 +798,7 @@ class Workstation(Cleanable):
                     "event_type": "binding_collected",
                     "binding_name": name,
                     "binding_store": store,
-                    "workstation_id": self._workstation_id,
+                    "workstation_id": self._id,
                     "owner_space_id": self._owner_space_id,
                 }
             )

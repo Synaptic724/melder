@@ -35,7 +35,7 @@ class FrameLinkContract(Cleanable):
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
-        "_contract_id",
+        "_id",
         "_lock",
         "_rift_id",
         "_frame_name",
@@ -81,7 +81,7 @@ class FrameLinkContract(Cleanable):
             raise ValueError("rift_id cannot be empty.")
         if not frame_name:
             raise ValueError("frame_name cannot be empty.")
-        self._contract_id: str = IDBuilder.create_id()
+        self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._rift_id: str = rift_id
         self._frame_name: str = frame_name
@@ -119,14 +119,14 @@ class FrameLinkContract(Cleanable):
             self._metadata = None
             self._frame_name = None
             self._rift_id = None
-            self._contract_id = None
+            self._id = None
         self._lock = None
 
     @property
     def contract_id(self) -> str:
         """Return the canonical contract id for this Rift-local frame contract."""
         self.check_cleaned()
-        return self._contract_id
+        return self._id
 
     @property
     def rift_id(self) -> str:

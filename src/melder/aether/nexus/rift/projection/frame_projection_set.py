@@ -24,7 +24,7 @@ class FrameProjectionSet(Cleanable):
 
     __slots__ = Cleanable.__slots__ + [
         "_frame_name",
-        "_generation",
+        "_id",
         "_view_projection",
         "_command_projection",
         "_codegen_projection",
@@ -45,7 +45,7 @@ class FrameProjectionSet(Cleanable):
         if not frame_name:
             raise ValueError("frame_name cannot be empty.")
         self._frame_name: str = frame_name
-        self._generation: str = generation or IDBuilder.create_id()
+        self._id: str = generation or IDBuilder.create_id()
         self._view_projection: ViewProjection = view_projection
         self._command_projection: CommandProjection = command_projection
         self._codegen_projection: CodegenProjection = codegen_projection
@@ -60,7 +60,7 @@ class FrameProjectionSet(Cleanable):
         self._command_projection.cleanup()
         self._codegen_projection.cleanup()
         self._frame_name = None
-        self._generation = None
+        self._id = None
         self._view_projection = None
         self._command_projection = None
         self._codegen_projection = None
@@ -77,7 +77,7 @@ class FrameProjectionSet(Cleanable):
     def generation(self) -> str:
         """Return the generation token for this projection set."""
         self.check_cleaned()
-        return self._generation
+        return self._id
 
     @property
     def view_projection(self) -> ViewProjection:

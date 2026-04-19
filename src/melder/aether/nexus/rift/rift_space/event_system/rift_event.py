@@ -43,7 +43,7 @@ class RiftEvent:
 
     __melder_internal__ = _mrg.sentinel
     __slots__ = [
-        "_event_id",
+        "_id",
         "_event_type",
         "_emitted_at",
         "_rift_id",
@@ -84,7 +84,7 @@ class RiftEvent:
             raise ValueError("space_id cannot be empty.")
         if not space_kind:
             raise ValueError("space_kind cannot be empty.")
-        self._event_id: str = event_id or IDBuilder.create_id()
+        self._id: str = event_id or IDBuilder.create_id()
         self._event_type: str = event_type
         self._emitted_at: str = emitted_at or datetime.now(timezone.utc).strftime(
             "%Y-%m-%dT%H:%M:%SZ"
@@ -99,7 +99,7 @@ class RiftEvent:
     @property
     def event_id(self) -> str:
         """Return the stable event id."""
-        return self._event_id
+        return self._id
 
     @property
     def event_type(self) -> str:

@@ -112,12 +112,13 @@ def test_integration_rift_space_can_attach_room_owned_frame_viewer_after_passive
         )
         rift.target_frame("ops")
         viewer = rift.get_frame_viewer()
+        viewer_metadata = rift._build_frame_viewer_metadata()
 
         assert isinstance(viewer, FrameViewer)
-        assert viewer.metadata["frame_count"] == 1
-        assert viewer.metadata["rift_id"] == rift.id
+        assert viewer_metadata["frame_count"] == 1
+        assert viewer_metadata["rift_id"] == rift.id
         assert viewer.list_frame_names() == ["ops"]
-        assert len(viewer.list_targets()) >= 3
+        assert len(viewer.list_targets(frame_name="ops")) >= 3
     finally:
         conduit.cleanup()
 
@@ -152,13 +153,13 @@ def test_integration_rift_get_frame_viewer_exposes_assigned_frame_after_passive_
         rift.target_frame("ops")
 
         viewer = rift.get_frame_viewer()
+        viewer_metadata = rift._build_frame_viewer_metadata()
 
         assert isinstance(viewer, FrameViewer)
-        assert viewer.metadata["rift_id"] == rift.id
-        assert viewer.metadata["assigned_frame_names"] == ("ops",)
-        assert list(viewer.frame_descriptors_by_name.keys()) == ["ops"]
-        assert viewer.frame_descriptors_by_name["ops"].frame_name == "ops"
-        assert len(viewer.list_targets()) >= 1
+        assert viewer_metadata["rift_id"] == rift.id
+        assert viewer_metadata["assigned_frame_names"] == ("ops",)
+        assert rift._get_required_view_projection("ops").frame_descriptor.frame_name == "ops"
+        assert len(viewer.list_targets(frame_name="ops")) >= 1
     finally:
         conduit.cleanup()
 
@@ -193,16 +194,17 @@ def test_integration_rift_scoped_refresh_rebuilds_room_owned_viewer_after_passiv
         rift.target_frame("ops")
 
         first_viewer = rift.get_frame_viewer()
-        first_viewer_metadata = first_viewer.metadata
-        first_viewer_frame_names = list(first_viewer.frame_descriptors_by_name.keys())
+        first_viewer_metadata = rift._build_frame_viewer_metadata()
+        first_viewer_frame_names = first_viewer.list_frame_names()
         rift.refresh_runtime_projections(frame_names=("ops",))
         second_viewer = rift.get_frame_viewer()
+        second_viewer_metadata = rift._build_frame_viewer_metadata()
 
         assert isinstance(first_viewer, FrameViewer)
         assert isinstance(second_viewer, FrameViewer)
         assert first_viewer is second_viewer
         assert first_viewer_metadata["rift_id"] == rift.id
-        assert second_viewer.metadata["assigned_frame_names"] == ("ops",)
+        assert second_viewer_metadata["assigned_frame_names"] == ("ops",)
         assert first_viewer_frame_names == ["ops"]
     finally:
         conduit.cleanup()

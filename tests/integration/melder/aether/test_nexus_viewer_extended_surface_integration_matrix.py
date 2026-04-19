@@ -532,7 +532,7 @@ def test_real_rift_viewer_multi_frame_compare_collision_and_filter_helpers() -> 
         _finance_spellbook.cleanup()
 
 
-def test_real_nexus_viewer_multi_frame_default_view_routes_general_helpers() -> None:
+def test_real_nexus_viewer_multi_frame_explicit_frame_routes_helper_reads() -> None:
     (
         ops_spellbook,
         finance_spellbook,
@@ -542,12 +542,10 @@ def test_real_nexus_viewer_multi_frame_default_view_routes_general_helpers() -> 
         viewer,
     ) = _build_real_multi_frame_room_viewer()
     try:
-        viewer.set_default_view("finance")
-        inventory = viewer.describe_frame_inventory()
-        spells = viewer.describe_spells()
+        inventory = viewer.describe_frame_inventory(frame_name="finance")
+        spells = viewer.describe_spells(frame_name="finance")
         finance_spell_source_ids = viewer.list_spells_by_spellbook_id(finance_spellbook.id)
 
-        assert viewer.default_view_frame_name == "finance"
         assert inventory["frame_name"] == "finance"
         assert len(spells) == 1
         assert [spell["source_id"] for spell in spells] == finance_spell_source_ids
@@ -558,7 +556,7 @@ def test_real_nexus_viewer_multi_frame_default_view_routes_general_helpers() -> 
         finance_spellbook.cleanup()
 
 
-def test_real_rift_viewer_multi_frame_default_view_routes_general_helpers() -> None:
+def test_real_rift_viewer_multi_frame_explicit_frame_routes_helper_reads() -> None:
     (
         ops_spellbook,
         finance_spellbook,
@@ -569,12 +567,10 @@ def test_real_rift_viewer_multi_frame_default_view_routes_general_helpers() -> N
         viewer,
     ) = _build_real_multi_frame_rift_viewer()
     try:
-        viewer.set_default_view("finance")
-        inventory = viewer.describe_frame_inventory()
-        spells = viewer.describe_spells()
+        inventory = viewer.describe_frame_inventory(frame_name="finance")
+        spells = viewer.describe_spells(frame_name="finance")
         finance_spell_source_ids = viewer.list_spells_by_spellbook_id(finance_spellbook.id)
 
-        assert viewer.default_view_frame_name == "finance"
         assert inventory["frame_name"] == "finance"
         assert len(spells) == 1
         assert [spell["source_id"] for spell in spells] == finance_spell_source_ids

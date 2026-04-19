@@ -76,7 +76,6 @@ class FrameACLConfiguration(Cleanable):
     __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_id",
-        "_configuration_id",
         "_lock",
         "_frame_name",
         "_source_configuration_id",
@@ -147,7 +146,6 @@ class FrameACLConfiguration(Cleanable):
         if not isinstance(locked, bool):
             raise TypeError("locked must be a bool.")
         self._id: str = IDBuilder.create_id()
-        self._configuration_id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
         self._source_configuration_id: Optional[str] = source_configuration_id
@@ -256,7 +254,7 @@ class FrameACLConfiguration(Cleanable):
             locked=locked,
         )
         if configuration_id is not None:
-            configuration._configuration_id = configuration_id
+            configuration._id = configuration_id
         return configuration
 
     @classmethod
@@ -385,7 +383,6 @@ class FrameACLConfiguration(Cleanable):
             self._view_configuration.cleanup()
             self._command_configuration.cleanup()
             self._codegen_configuration.cleanup()
-            self._configuration_id = None
             self._frame_name = None
             self._source_configuration_id = None
             self._previous_configuration_id = None
@@ -395,6 +392,7 @@ class FrameACLConfiguration(Cleanable):
             self._view_configuration = None
             self._command_configuration = None
             self._codegen_configuration = None
+            self._id = None
             self._lock = None
 
     @property
@@ -406,7 +404,7 @@ class FrameACLConfiguration(Cleanable):
             str: Unique id for this ACL configuration node.
         """
         self.check_cleaned()
-        return self._configuration_id
+        return self._id
 
     @property
     def frame_name(self) -> str:

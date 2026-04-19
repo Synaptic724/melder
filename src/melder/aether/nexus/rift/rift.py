@@ -592,17 +592,21 @@ class Rift(Cleanable, IRift):
 
     def _build_frame_viewer_metadata(self) -> Dict[str, object]:
         """
-        Build the Rift-managed metadata payload for the hosted viewer asset.
+        Build one Rift-owned frame-assignment and ACL-selection snapshot.
+
+        Purpose:
+            Expose the current frame-link-contract and ACL-family selection
+            state directly from `Rift` without treating `FrameViewer` as a
+            passthrough metadata shell.
 
         Returns:
-            Dict[str, object]: Viewer metadata derived from current Rift-owned
-            contracts.
+            Dict[str, object]: Rift-side frame-assignment metadata derived from
+            current contracts.
         """
         refreshed_assigned_frame_names = self.list_assigned_frame_names()
         selected_contract_names_by_frame_name = (
             self._build_selected_contract_names_by_frame_name()
         )
-        frame_viewer = self.space.frame_viewer
         return {
             "frame_count": len(refreshed_assigned_frame_names),
             "available_view_count": len(refreshed_assigned_frame_names),

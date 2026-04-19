@@ -157,12 +157,12 @@ def test_command_system_cleanup_rechecks_cleaned_inside_lock() -> None:
             return False
 
     command_system, _, _ = _make_command_system()
-    original_id = command_system._command_system_id
+    original_id = command_system._id
     command_system._lock = _RecheckLock(command_system)
 
     command_system.cleanup()
 
-    assert command_system._command_system_id == original_id
+    assert command_system._id == original_id
     assert command_system._lock is not None
 
 

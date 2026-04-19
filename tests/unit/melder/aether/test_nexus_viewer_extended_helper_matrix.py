@@ -487,8 +487,8 @@ HOST_ROUTE_CASES = [
     ("describe_spell_record", {"spell_source_id": "ops-spellbook:ops-spell-1"}, "dict"),
     ("list_spells_by_owner_conduit", {"conduit_id": "ops-conduit-1"}, "list"),
     ("list_spells_by_spellbook_id", {"spellbook_id": "ops-spellbook"}, "list"),
-    ("list_spells_by_permission", {"permission_name": "create"}, "list"),
-    ("list_spells_by_existence", {"existence_name": "unique"}, "list"),
+    ("list_spells_by_permission", {"permission": "create"}, "list"),
+    ("list_spells_by_existence", {"existence": "unique"}, "list"),
     ("list_spells_by_spellframe", {"spellframe_name": "LogicFrame"}, "list"),
 ]
 

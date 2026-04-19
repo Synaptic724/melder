@@ -126,9 +126,8 @@ def _build_spell_case_matrix() -> List[Dict[str, object]]:
             "name": "viewer_spell_targets",
             "request": {
                 "surface": "viewer",
-                "method": "execute_method",
+                "method": "list_targets",
                 "kwargs": {
-                    "method_name": "list_targets",
                     "frame_name": "@manifest.frame_name",
                     "source_kind": "spell",
                 },
@@ -498,9 +497,8 @@ def _build_turn_script_scenarios() -> List[Dict[str, object]]:
                             },
                             {
                                 "surface": "viewer",
-                                "method": "execute_method",
+                                "method": "list_targets",
                                 "kwargs": {
-                                    "method_name": "list_targets",
                                     "frame_name": "@manifest.frame_name",
                                     "source_kind": "spell",
                                 },
