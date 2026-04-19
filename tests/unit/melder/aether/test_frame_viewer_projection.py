@@ -205,6 +205,61 @@ def _build_surface(
     )
 
 
+def _build_single_frame_viewer(
+        frame_name: str,
+        descriptor: FrameDescriptor,
+        configuration: FrameACLConfiguration,
+        compiled_surface: CompiledFrameACLAccessSurface,
+        *,
+        active_profiles_by_name: Optional[dict[str, FrameViewerProfile]] = None,
+        default_profile_name: Optional[str] = None,
+        default_view_frame_name: Optional[str] = None,
+) -> FrameViewer:
+    projection_set = FrameProjectionSet(
+        frame_name=frame_name,
+        view_projection=ViewProjection(
+            frame_name=frame_name,
+            frame_descriptor=descriptor,
+            frame_acl_configuration=configuration,
+            compiled_access_surface=compiled_surface,
+            metadata={"surface": "view"},
+        ),
+        command_projection=CommandProjection(
+            frame_name=frame_name,
+            frame_descriptor=descriptor,
+            frame_acl_configuration=FrameViewer._clone_frame_acl_configuration(
+                configuration,
+                reason="test_command_projection_clone",
+            ),
+            compiled_access_surface=FrameViewer._clone_compiled_access_surface(
+                compiled_surface
+            ),
+            metadata={"surface": "command"},
+        ),
+        codegen_projection=CodegenProjection(
+            frame_name=frame_name,
+            frame_descriptor=descriptor,
+            frame_acl_configuration=FrameViewer._clone_frame_acl_configuration(
+                configuration,
+                reason="test_codegen_projection_clone",
+            ),
+            compiled_access_surface=FrameViewer._clone_compiled_access_surface(
+                compiled_surface
+            ),
+            metadata={"surface": "codegen"},
+        ),
+        metadata={"source": "test_frame_viewer_projection"},
+    )
+    return FrameViewer(
+        active_profiles_by_name=active_profiles_by_name,
+        default_profile_name=default_profile_name,
+        projection_sets_by_frame_name={frame_name: projection_set},
+        default_view_frame_name=(
+            frame_name if default_view_frame_name is None else default_view_frame_name
+        ),
+    )
+
+
 def _build_viewer(frame_names: tuple[str, ...]) -> FrameViewer:
     projection_sets_by_frame_name = {}
     for frame_name in frame_names:
@@ -692,12 +747,7 @@ def test_frame_viewer_describe_spell_omits_missing_detailed_sections_for_general
             ),
         },
     )
-    viewer = FrameViewer(
-        frame_descriptors_by_name={"ops": descriptor},
-        frame_acl_configurations_by_frame_name={"ops": configuration},
-        compiled_access_surfaces_by_frame_name={"ops": surface},
-        default_view_frame_name="ops",
-    )
+    viewer = _build_single_frame_viewer("ops", descriptor, configuration, surface)
 
     spell_description = viewer.execute_method(
         "describe_spell",
@@ -819,11 +869,11 @@ def test_frame_viewer_describe_spell_detail_reports_acl_restricted_for_detailed_
             ("ops-spellbook", "ops-spell"): ("binding_payload", "metadata"),
         },
     )
-    viewer = FrameViewer(
-        frame_descriptors_by_name={"ops": _build_detailed_descriptor("ops")},
-        frame_acl_configurations_by_frame_name={"ops": configuration},
-        compiled_access_surfaces_by_frame_name={"ops": surface},
-        default_view_frame_name="ops",
+    viewer = _build_single_frame_viewer(
+        "ops",
+        _build_detailed_descriptor("ops"),
+        configuration,
+        surface,
     )
 
     detail = viewer.execute_method(
@@ -857,11 +907,11 @@ def test_frame_viewer_describe_spell_detail_returns_rich_sections_for_detailed_p
             ),
         },
     )
-    viewer = FrameViewer(
-        frame_descriptors_by_name={"ops": _build_detailed_descriptor("ops")},
-        frame_acl_configurations_by_frame_name={"ops": configuration},
-        compiled_access_surfaces_by_frame_name={"ops": surface},
-        default_view_frame_name="ops",
+    viewer = _build_single_frame_viewer(
+        "ops",
+        _build_detailed_descriptor("ops"),
+        configuration,
+        surface,
     )
 
     detail = viewer.execute_method(
@@ -929,9 +979,7 @@ def test_frame_viewer_host_property_and_default_profile_helper_paths_work() -> N
     profile = FrameViewerProfile.create_general()
     empty_viewer = FrameViewer(
         active_profiles_by_name={},
-        frame_descriptors_by_name={},
-        frame_acl_configurations_by_frame_name={},
-        compiled_access_surfaces_by_frame_name={},
+        projection_sets_by_frame_name={},
     )
 
     empty_viewer.register_active_profile(profile)
@@ -1003,9 +1051,7 @@ def test_frame_viewer_host_skip_guard_and_internal_resolver_paths_work() -> None
     with pytest.raises(ValueError, match="FrameViewer has no active profiles."):
         FrameViewer(
             active_profiles_by_name={},
-            frame_descriptors_by_name={},
-            frame_acl_configurations_by_frame_name={},
-            compiled_access_surfaces_by_frame_name={},
+            projection_sets_by_frame_name={},
         )._resolve_profile(None, None)
 
     with pytest.raises(ValueError, match="frame_name cannot be empty."):
@@ -1934,11 +1980,11 @@ def test_view_spell_guardrails_and_detail_normalizers_work() -> None:
             )
         },
     )
-    restricted_viewer = FrameViewer(
-        frame_descriptors_by_name={"ops": detailed_descriptor},
-        frame_acl_configurations_by_frame_name={"ops": detailed_configuration},
-        compiled_access_surfaces_by_frame_name={"ops": restricted_surface},
-        default_view_frame_name="ops",
+    restricted_viewer = _build_single_frame_viewer(
+        "ops",
+        detailed_descriptor,
+        detailed_configuration,
+        restricted_surface,
     )
     restricted_view_spell = restricted_viewer.get_selected_profile_for_frame("ops").view_spell
     assert restricted_view_spell.describe_spell_class_profile("ops-spellbook:ops-spell") == {
@@ -1964,11 +2010,11 @@ def test_view_spell_guardrails_and_detail_normalizers_work() -> None:
             )
         },
     )
-    not_published_viewer = FrameViewer(
-        frame_descriptors_by_name={"ops": not_published_descriptor},
-        frame_acl_configurations_by_frame_name={"ops": detailed_configuration},
-        compiled_access_surfaces_by_frame_name={"ops": published_surface},
-        default_view_frame_name="ops",
+    not_published_viewer = _build_single_frame_viewer(
+        "ops",
+        not_published_descriptor,
+        detailed_configuration,
+        published_surface,
     )
     not_published_view_spell = not_published_viewer.get_selected_profile_for_frame("ops").view_spell
     assert not_published_view_spell.describe_spell_class_profile("ops-spellbook:ops-spell") == {
@@ -2110,11 +2156,11 @@ def test_view_spell_remaining_lineage_payload_and_fallback_paths_work() -> None:
             )
         },
     )
-    dynamic_viewer = FrameViewer(
-        frame_descriptors_by_name={"ops": dynamic_descriptor},
-        frame_acl_configurations_by_frame_name={"ops": dynamic_configuration},
-        compiled_access_surfaces_by_frame_name={"ops": dynamic_surface},
-        default_view_frame_name="ops",
+    dynamic_viewer = _build_single_frame_viewer(
+        "ops",
+        dynamic_descriptor,
+        dynamic_configuration,
+        dynamic_surface,
     )
     dynamic_view_spell = dynamic_viewer.get_selected_profile_for_frame("ops").view_spell
     assert dynamic_view_spell.describe_spell_dynamic_access("ops-spellbook:ops-spell") == {
@@ -2141,11 +2187,11 @@ def test_view_spell_remaining_lineage_payload_and_fallback_paths_work() -> None:
     )
     restricted_payload_descriptor = _build_detailed_descriptor("ops")
     restricted_payload_descriptor.spell_records_by_key[("ops-spellbook", "ops-spell")].payload.class_profile = None
-    restricted_payload_viewer = FrameViewer(
-        frame_descriptors_by_name={"ops": restricted_payload_descriptor},
-        frame_acl_configurations_by_frame_name={"ops": restricted_payload_configuration},
-        compiled_access_surfaces_by_frame_name={"ops": restricted_payload_surface},
-        default_view_frame_name="ops",
+    restricted_payload_viewer = _build_single_frame_viewer(
+        "ops",
+        restricted_payload_descriptor,
+        restricted_payload_configuration,
+        restricted_payload_surface,
     )
     restricted_payload_view_spell = restricted_payload_viewer.get_selected_profile_for_frame("ops").view_spell
     with pytest.raises(
@@ -2748,11 +2794,11 @@ def test_view_spell_detailed_methods_surface_profile_sections_and_dunders() -> N
             ),
         },
     )
-    viewer = FrameViewer(
-        frame_descriptors_by_name={"ops": _build_detailed_descriptor("ops", include_dunders=True)},
-        frame_acl_configurations_by_frame_name={"ops": configuration},
-        compiled_access_surfaces_by_frame_name={"ops": surface},
-        default_view_frame_name="ops",
+    viewer = _build_single_frame_viewer(
+        "ops",
+        _build_detailed_descriptor("ops", include_dunders=True),
+        configuration,
+        surface,
     )
     view_spell = viewer.get_selected_profile_for_frame("ops").view_spell
 
@@ -2816,7 +2862,7 @@ def test_frame_viewer_constructor_rejects_invalid_registry_and_default_inputs() 
     with pytest.raises(TypeError, match="profile_builder must be a FrameViewerProfileBuilder"):
         FrameViewer(profile_builder=object())
 
-    with pytest.raises(ValueError, match="maps must have matching keys"):
+    with pytest.raises(TypeError, match="unexpected keyword argument 'frame_descriptors_by_name'"):
         FrameViewer(
             frame_descriptors_by_name={"ops": descriptor},
             frame_acl_configurations_by_frame_name={"ops": configuration},
@@ -2824,18 +2870,20 @@ def test_frame_viewer_constructor_rejects_invalid_registry_and_default_inputs() 
         )
 
     with pytest.raises(ValueError, match="default_view_frame_name cannot be empty"):
-        FrameViewer(
-            frame_descriptors_by_name={"ops": descriptor},
-            frame_acl_configurations_by_frame_name={"ops": configuration},
-            compiled_access_surfaces_by_frame_name={"ops": surface},
+        _build_single_frame_viewer(
+            "ops",
+            descriptor,
+            configuration,
+            surface,
             default_view_frame_name="",
         )
 
     with pytest.raises(ValueError, match="default_view_frame_name must be present"):
-        FrameViewer(
-            frame_descriptors_by_name={"ops": descriptor},
-            frame_acl_configurations_by_frame_name={"ops": configuration},
-            compiled_access_surfaces_by_frame_name={"ops": surface},
+        _build_single_frame_viewer(
+            "ops",
+            descriptor,
+            configuration,
+            surface,
             default_view_frame_name="finance",
         )
 
@@ -2847,20 +2895,22 @@ def test_frame_viewer_constructor_rejects_invalid_registry_and_default_inputs() 
     )
 
     with pytest.raises(ValueError, match="default_profile_name cannot be empty"):
-        FrameViewer(
+        _build_single_frame_viewer(
+            "ops",
+            descriptor,
+            configuration,
+            surface,
             active_profiles_by_name={"inspection": inspection_profile},
-            frame_descriptors_by_name={"ops": descriptor},
-            frame_acl_configurations_by_frame_name={"ops": configuration},
-            compiled_access_surfaces_by_frame_name={"ops": surface},
             default_profile_name="",
         )
 
     with pytest.raises(ValueError, match="default_profile_name must be present"):
-        FrameViewer(
+        _build_single_frame_viewer(
+            "ops",
+            descriptor,
+            configuration,
+            surface,
             active_profiles_by_name={"inspection": inspection_profile},
-            frame_descriptors_by_name={"ops": descriptor},
-            frame_acl_configurations_by_frame_name={"ops": configuration},
-            compiled_access_surfaces_by_frame_name={"ops": surface},
             default_profile_name="general",
         )
 
@@ -2868,9 +2918,7 @@ def test_frame_viewer_constructor_rejects_invalid_registry_and_default_inputs() 
 def test_frame_viewer_empty_defaults_and_selected_profile_fallbacks_are_explicit() -> None:
     empty_viewer = FrameViewer(
         active_profiles_by_name={},
-        frame_descriptors_by_name={},
-        frame_acl_configurations_by_frame_name={},
-        compiled_access_surfaces_by_frame_name={},
+        projection_sets_by_frame_name={},
     )
 
     assert empty_viewer.default_view_frame_name is None
@@ -2882,17 +2930,10 @@ def test_frame_viewer_empty_defaults_and_selected_profile_fallbacks_are_explicit
     assert empty_viewer.profile is None
 
     viewer = _build_viewer(("ops",))
-    detached_selection_viewer = FrameViewer(
-        frame_descriptors_by_name=viewer.frame_descriptors_by_name,
-        frame_acl_configurations_by_frame_name=viewer.frame_acl_configurations_by_frame_name,
-        compiled_access_surfaces_by_frame_name=viewer.compiled_access_surfaces_by_frame_name,
-        selected_profile_names_by_frame_name={"ops": None},
-        default_view_frame_name="ops",
-    )
 
-    assert detached_selection_viewer.profile_name == "general"
-    assert detached_selection_viewer.profile is not None
-    assert detached_selection_viewer.selected_profile_names_by_frame_name == {"ops": "general"}
+    assert viewer.profile_name == "general"
+    assert viewer.profile is not None
+    assert viewer.selected_profile_names_by_frame_name == {"ops": "general"}
 
 
 def test_frame_viewer_rejects_invalid_frame_and_profile_inputs() -> None:
@@ -3057,9 +3098,7 @@ def test_frame_viewer_profile_and_execute_guardrails_are_explicit() -> None:
 
     empty_profiles_viewer = FrameViewer(
         active_profiles_by_name={},
-        frame_descriptors_by_name={},
-        frame_acl_configurations_by_frame_name={},
-        compiled_access_surfaces_by_frame_name={},
+        projection_sets_by_frame_name={},
     )
 
     assert empty_profiles_viewer.has_enabled_helper("list_frames") is False
