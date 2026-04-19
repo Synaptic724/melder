@@ -46,7 +46,6 @@ class StaticFrameViewer(FrameViewer):
         frame_viewer.check_cleaned()
         return cls(
             rift=frame_viewer._rift,
-            default_view_frame_name=frame_viewer.default_view_frame_name,
         )
 
     def clone(self) -> "StaticFrameViewer":

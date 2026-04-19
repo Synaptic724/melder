@@ -674,7 +674,7 @@ class Rift(Cleanable, IRift):
         assigned_frame_names = self.list_assigned_frame_names()
         if len(assigned_frame_names) == 1:
             return assigned_frame_names[0]
-        return self.get_frame_viewer().default_view_frame_name
+        return None
 
     @staticmethod
     def _normalize_refresh_frame_names(

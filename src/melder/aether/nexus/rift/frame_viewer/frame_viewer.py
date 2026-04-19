@@ -73,15 +73,12 @@ class FrameViewer(Cleanable):
         "_viewer_id",
         "_lock",
         "_rift",
-        "_view_multiframe",
-        "_default_view_frame_name",
     ]
 
     def __init__(
             self,
             *,
             rift: Any,
-            default_view_frame_name: Optional[str] = None,
     ) -> None:
         """
         Initialize one Rift-backed projection-native frame viewer.
@@ -89,8 +86,6 @@ class FrameViewer(Cleanable):
         Args:
             rift:
                 Owning `Rift` that exposes the current view projections.
-            default_view_frame_name:
-                Optional default selected frame name.
         """
         super().__init__()
         if rift is None:
@@ -98,20 +93,6 @@ class FrameViewer(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._viewer_id: str = IDBuilder.create_id()
         self._rift: Any = rift
-        if default_view_frame_name is not None:
-            if not default_view_frame_name:
-                raise ValueError("default_view_frame_name cannot be empty.")
-            if default_view_frame_name not in self._rift.list_assigned_frame_names():
-                raise ValueError(
-                    "default_view_frame_name must be present in the Rift assigned frame set."
-                )
-        self._default_view_frame_name: Optional[str] = (
-            default_view_frame_name
-            if default_view_frame_name is not None else None
-        )
-        self._view_multiframe: ViewMultiFrame = ViewMultiFrame(
-            viewer=self,
-        )
 
     def cleanup(self) -> None:
         """
@@ -123,10 +104,7 @@ class FrameViewer(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
-            self._view_multiframe.cleanup()
             self._rift = None
-            self._view_multiframe = None
-            self._default_view_frame_name = None
             self._viewer_id = None
         self._lock = None
 
@@ -180,18 +158,6 @@ class FrameViewer(Cleanable):
             }
 
     @property
-    def default_view_frame_name(self) -> Optional[str]:
-        self.check_cleaned()
-        assigned_frame_names = self.list_frame_names()
-        if len(assigned_frame_names) == 0:
-            return None
-        if self._default_view_frame_name in assigned_frame_names:
-            return self._default_view_frame_name
-        if len(assigned_frame_names) == 1:
-            return assigned_frame_names[0]
-        return assigned_frame_names[0]
-
-    @property
     def default_grouping(self) -> str:
         self.check_cleaned()
         return "frame"
@@ -226,34 +192,6 @@ class FrameViewer(Cleanable):
         self.check_cleaned()
         return self.get_view_multiframe().count_frames()
 
-    def set_default_view(self, frame_name: str) -> None:
-        """
-        Select the default hosted frame for subsequent host/profile calls.
-
-        Purpose:
-            Move the viewer's default frame pointer so host methods and
-            frame-local helper execution can fall back to a known frame when
-            callers omit `frame_name`.
-
-        Args:
-            frame_name:
-                Hosted frame name to promote to the default view.
-
-        Returns:
-            None.
-
-        Raises:
-            ValueError:
-                Raised when `frame_name` is empty or not hosted by this
-                viewer.
-        """
-        self.check_cleaned()
-        if not frame_name:
-            raise ValueError("frame_name cannot be empty.")
-        with self._lock:
-            self._get_required_frame_descriptor(frame_name)
-            self._default_view_frame_name = frame_name
-
     def describe_available_views(self) -> List[Dict[str, object]]:
         """
         Return a simple host-level description of the hosted frames.
@@ -271,7 +209,6 @@ class FrameViewer(Cleanable):
             described_frames.append(
                 {
                     "frame_name": frame_name,
-                    "is_default": frame_name == self._default_view_frame_name,
                 }
             )
         return described_frames
@@ -409,29 +346,9 @@ class FrameViewer(Cleanable):
         return {
             "viewer_id": self.viewer_id,
             "frame_count": self.count_frames(),
-            "default_view_frame_name": self._default_view_frame_name,
             "frame_names": tuple(self.list_frame_names()),
             "host_boundary": "descriptor_only",
         }
-
-    def describe_current_frame(self) -> Dict[str, object]:
-        """
-        Return the descriptor-level summary for the current default frame.
-
-        Purpose:
-            Save the operator one extra lookup when the current default frame
-            is already the intended host target.
-
-        Contract:
-            - Resolves only the current default hosted frame.
-            - Uses the same descriptor-only summary contract as
-              `describe_frame(...)`.
-
-        Returns:
-            Dict[str, object]: Descriptor-level summary for the current frame.
-        """
-        self.check_cleaned()
-        return self.get_view_multiframe().describe_current_frame()
 
     def describe_frames_inventory(self) -> Dict[str, Dict[str, object]]:
         """
@@ -477,16 +394,14 @@ class FrameViewer(Cleanable):
             "default_entrypoints": (
                 "describe_viewer",
                 "describe_host_inventory",
-                "describe_current_frame",
-                "describe_frames_inventory",
-            ),
-            "frame_summary_methods": (
-                "list_frame_names",
-                "describe_frame",
-                "describe_frames",
-                "describe_frame_brief",
-                "describe_current_frame",
-            ),
+            "describe_frames_inventory",
+        ),
+        "frame_summary_methods": (
+            "list_frame_names",
+            "describe_frame",
+            "describe_frames",
+            "describe_frame_brief",
+        ),
             "comparison_methods": (
                 "compare_frames",
                 "compare_frames_brief",
@@ -1422,7 +1337,6 @@ class FrameViewer(Cleanable):
         with self._lock:
             return FrameViewer(
                 rift=self._rift,
-                default_view_frame_name=self._default_view_frame_name,
             )
 
 
@@ -1503,27 +1417,7 @@ class FrameViewer(Cleanable):
             descriptor-hosted inventory/comparison logic.
         """
         self.check_cleaned()
-        return self._view_multiframe
-
-    @property
-    def view_frame(self) -> ViewFrame:
-        """Return the frame helper for the current default frame."""
-        return self.get_view_frame()
-
-    @property
-    def view_conduit(self) -> ViewConduit:
-        """Return the conduit helper for the current default frame."""
-        return self.get_view_conduit()
-
-    @property
-    def view_spell(self) -> ViewSpell:
-        """Return the spell helper for the current default frame."""
-        return self.get_view_spell()
-
-    @property
-    def view_multiframe(self) -> ViewMultiFrame:
-        """Return the multi-frame helper owned by this viewer."""
-        return self.get_view_multiframe()
+        return ViewMultiFrame(viewer=self)
 
     def list_viewer_method_names_ast_json(
             self,
@@ -1607,32 +1501,26 @@ class FrameViewer(Cleanable):
 
 
 
-    def _get_required_default_frame_name(self) -> str:
-        default_view_frame_name = self.default_view_frame_name
-        if default_view_frame_name is None:
-            raise ValueError("FrameViewer has no default selected frame.")
-        return default_view_frame_name
-
     def _get_required_selected_frame_name(
             self,
             frame_name: Optional[str] = None,
     ) -> str:
         """
-        Return the requested or default selected frame name.
+        Return one explicitly requested hosted frame name.
 
         Args:
             frame_name:
-                Optional hosted frame name override.
+                Required hosted frame name.
 
         Returns:
             str: Selected hosted frame name.
         """
-        if frame_name is not None:
-            if not frame_name:
-                raise ValueError("frame_name cannot be empty.")
-            self._get_required_frame_descriptor(frame_name)
-            return frame_name
-        return self._get_required_default_frame_name()
+        if frame_name is None:
+            raise ValueError("frame_name is required.")
+        if not frame_name:
+            raise ValueError("frame_name cannot be empty.")
+        self._get_required_frame_descriptor(frame_name)
+        return frame_name
 
     def _get_frame_names_for_query(
             self,

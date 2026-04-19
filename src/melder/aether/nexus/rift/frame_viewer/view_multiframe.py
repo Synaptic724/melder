@@ -46,13 +46,6 @@ class ViewMultiFrame(Cleanable):
     def _lock(self):
         return self._viewer._lock
 
-    @property
-    def _default_view_frame_name(self):
-        return self._viewer._default_view_frame_name
-
-    def _get_required_default_frame_name(self):
-        return self._viewer._get_required_default_frame_name()
-
     def _get_required_frame_descriptor(self, frame_name: str) -> FrameDescriptor:
         return self._viewer._get_required_frame_descriptor(frame_name)
 
@@ -298,7 +291,6 @@ class ViewMultiFrame(Cleanable):
                 }
             ),
             "spell_record_count": len(descriptor.spell_records_by_key),
-            "is_default": frame_name == self._default_view_frame_name,
         }
 
     def describe_frames(self) -> Dict[str, Dict[str, object]]:
@@ -371,7 +363,6 @@ class ViewMultiFrame(Cleanable):
         self.check_cleaned()
         return {
             "frame_count": self.count_frames(),
-            "default_view_frame_name": self._default_view_frame_name,
             "frame_names": tuple(self.list_frame_names()),
             "frame_ids": tuple(self.list_frame_ids()),
             "conduit_record_count": self.count_conduit_records(),
@@ -382,25 +373,6 @@ class ViewMultiFrame(Cleanable):
             "permissions": tuple(self.list_permissions()),
             "existence_kinds": tuple(self.list_existence_kinds()),
         }
-
-    def describe_current_frame(self) -> Dict[str, object]:
-        """
-        Return the descriptor-level summary for the current default frame.
-
-        Purpose:
-            Save the operator one extra lookup when the current default frame
-            is already the intended host target.
-
-        Contract:
-            - Resolves only the current default hosted frame.
-            - Uses the same descriptor-only summary contract as
-              `describe_frame(...)`.
-
-        Returns:
-            Dict[str, object]: Descriptor-level summary for the current frame.
-        """
-        self.check_cleaned()
-        return self.describe_frame(self._get_required_default_frame_name())
 
     def describe_frames_inventory(self) -> Dict[str, Dict[str, object]]:
         """
@@ -443,7 +415,6 @@ class ViewMultiFrame(Cleanable):
                 "lineage_count": len(
                     self.list_lineage_ids(frame_name=current_frame_name)
                 ),
-                "is_default": current_frame_name == self._default_view_frame_name,
             }
             for current_frame_name in self.list_frame_names()
         }

@@ -209,8 +209,6 @@ def _build_single_frame_viewer(
         descriptor: FrameDescriptor,
         configuration: FrameACLConfiguration,
         compiled_surface: CompiledFrameACLAccessSurface,
-        *,
-        default_view_frame_name: Optional[str] = None,
 ) -> FrameViewer:
     projection_set = FrameProjectionSet(
         frame_name=frame_name,
@@ -249,9 +247,6 @@ def _build_single_frame_viewer(
     )
     return FrameViewer(
         rift=ViewerProjectionRiftDouble({frame_name: projection_set}),
-        default_view_frame_name=(
-            frame_name if default_view_frame_name is None else default_view_frame_name
-        ),
     )
 
 
@@ -298,7 +293,6 @@ def _build_viewer(frame_names: tuple[str, ...]) -> FrameViewer:
         )
     return FrameViewer(
         rift=ViewerProjectionRiftDouble(projection_sets_by_frame_name),
-        default_view_frame_name=frame_names[0] if len(frame_names) > 0 else None,
     )
 
 
