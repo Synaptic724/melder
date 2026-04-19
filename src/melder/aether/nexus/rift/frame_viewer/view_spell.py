@@ -1,3 +1,7 @@
+"""
+Spell-scoped helper surface for one selected frame view.
+"""
+
 import threading
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -19,10 +23,11 @@ from melder.utilities.interfaces.interfaces import IFrameLink
 class ViewSpell(Cleanable):
     """
     Purpose:
-        Hold spell-scoped viewer helper methods for the `general` profile.
+        Hold spell-scoped viewer helper methods for one selected frame.
 
     Contract:
-        - Operates on one bound frame through a borrowed `ViewFrame` helper.
+        - Operates through a borrowed `ViewFrame` helper bound to one selected
+          frame.
         - Returns ACL-filtered spell links and spell descriptions only.
 
     Lifecycle:
@@ -1511,10 +1516,10 @@ class ViewSpell(Cleanable):
 
     def _get_required_frame_view(self) -> ViewFrame:
         """
-        Return the shared frame helper or raise when unbound.
+        Return the borrowed frame helper or raise when unbound.
 
         Returns:
-            ViewFrame: Shared frame helper surface.
+            ViewFrame: Borrowed frame helper surface.
         """
         if self._frame_view is None:
             raise ValueError("ViewSpell is not bound to a frame view.")

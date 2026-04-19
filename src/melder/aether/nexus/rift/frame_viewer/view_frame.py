@@ -1,3 +1,7 @@
+"""
+Frame-local helper surface for one selected view projection.
+"""
+
 import threading
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -15,10 +19,10 @@ from melder.utilities.interfaces.interfaces import IFrameLink
 class ViewFrame(Cleanable):
     """
     Purpose:
-        Hold frame-scoped viewer helper methods for the `general` profile.
+        Hold frame-scoped viewer helper methods for one selected frame.
 
     Contract:
-        - Operates only on one bound frame's descriptor + ACL state.
+        - Operates only on one selected frame's descriptor and ACL state.
         - Returns ACL-filtered `FrameLink` objects and summaries.
         - Does not expose raw runtime objects.
 

@@ -1,5 +1,5 @@
 """
-Internal descriptor-driven multi-frame viewer helper.
+Descriptor-oriented multi-frame helper for the Rift-backed viewer surface.
 """
 
 from typing import Callable, Dict, Iterator, List, Optional, Tuple
@@ -16,14 +16,14 @@ class ViewMultiFrame(Cleanable):
 
     Contract:
         - Owns only a borrowed reference to the parent `FrameViewer`.
-        - Reuses the viewer's private descriptor/record utilities instead of
-          duplicating ownership state.
+        - Reuses the viewer's private descriptor and record utilities instead
+          of duplicating lookup logic or Rift access.
         - Exposes cross-frame and descriptor-hosted inventory/comparison logic
           without introducing frame-local helper binding state.
 
     Lifecycle:
         Cleanup is idempotent and clears only the borrowed viewer reference.
-        `ViewMultiFrame` is cheap and may be created on demand.
+        `ViewMultiFrame` is cheap to create and may be materialized on demand.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -34,6 +34,10 @@ class ViewMultiFrame(Cleanable):
     def __init__(self, *, viewer: object) -> None:
         """
         Initialize one multi-frame helper.
+
+        Contract:
+            - Stores only the borrowed parent viewer reference.
+            - Does not cache descriptor, ACL, or record state locally.
 
         Args:
             viewer:
@@ -51,6 +55,10 @@ class ViewMultiFrame(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently drop the borrowed viewer reference.
+
+        Contract:
+            - Safe to call more than once.
+            - Clears only the helper's borrowed viewer reference.
 
         Returns:
             None.

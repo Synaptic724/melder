@@ -1,5 +1,5 @@
 """
-Internal descriptor-driven FrameViewer surface.
+Rift-backed public frame viewer host surface.
 """
 import threading
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
@@ -1282,8 +1282,8 @@ class FrameViewer(Cleanable):
         Return a detached copy of the viewer host.
 
         Purpose:
-            Preserve the borrowed Rift reference and current default-frame
-            routing state while creating a detached viewer object.
+            Preserve the borrowed Rift reference while creating a detached
+            viewer object with no additional local state.
 
         Returns:
             FrameViewer: Detached viewer clone.
@@ -3887,12 +3887,39 @@ class FrameViewer(Cleanable):
         )
 
     def _get_required_frame_descriptor(self, frame_name: str) -> FrameDescriptor:
+        """
+        Return the current frame descriptor for one hosted frame.
+
+        Args:
+            frame_name:
+                Hosted frame name whose descriptor should be returned.
+
+        Returns:
+            FrameDescriptor: Current descriptor published for the frame.
+        """
         return self._get_required_view_projection(frame_name).frame_descriptor
 
     def _get_required_compiled_access_surface(
             self,
             frame_name: str,
     ) -> CompiledFrameACLAccessSurface:
+        """
+        Return the current compiled ACL surface for one hosted frame.
+
+        Args:
+            frame_name:
+                Hosted frame name whose compiled ACL surface should be
+                returned.
+
+        Returns:
+            CompiledFrameACLAccessSurface: Current compiled ACL surface for the
+            frame.
+
+        Raises:
+            ValueError:
+                If the frame does not currently expose a view projection or
+                compiled ACL surface.
+        """
         try:
             return self._get_required_view_projection(frame_name).compiled_access_surface
         except ValueError as exc:
@@ -3906,6 +3933,23 @@ class FrameViewer(Cleanable):
             self,
             frame_name: str,
     ) -> FrameACLConfiguration:
+        """
+        Return the current frame ACL configuration for one hosted frame.
+
+        Args:
+            frame_name:
+                Hosted frame name whose frame ACL configuration should be
+                returned.
+
+        Returns:
+            FrameACLConfiguration: Current frame ACL configuration for the
+            frame.
+
+        Raises:
+            ValueError:
+                If the frame does not currently expose a view projection or
+                frame ACL configuration.
+        """
         try:
             return self._get_required_view_projection(frame_name).frame_acl_configuration
         except ValueError as exc:
