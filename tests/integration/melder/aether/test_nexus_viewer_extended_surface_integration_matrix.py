@@ -330,13 +330,11 @@ def _build_method_kwargs(viewer: object, method_name: str) -> dict[str, object]:
     Returns:
         dict[str, object]: Method kwargs.
     """
-    conduit_id = viewer.execute_method(
-        "list_targets",
+    conduit_id = viewer.list_targets(
         frame_name="ops",
         source_kind="conduit",
     )[0].source_id
-    spell_source_id = viewer.execute_method(
-        "list_targets",
+    spell_source_id = viewer.list_targets(
         frame_name="ops",
         source_kind="spell",
     )[0].source_id
@@ -417,10 +415,7 @@ def test_real_nexus_viewer_extended_method_matrix(
 ) -> None:
     spellbook, conduit, _, viewer = _build_real_room_viewer()
     try:
-        result = viewer.execute_method(
-            method_name,
-            **_build_method_kwargs(viewer, method_name),
-        )
+        result = getattr(viewer, method_name)(**_build_method_kwargs(viewer, method_name))
         if expected_type == "dict":
             assert isinstance(result, dict)
         elif expected_type == "list":
@@ -441,10 +436,7 @@ def test_real_rift_viewer_extended_method_matrix(
 ) -> None:
     spellbook, conduit, _, rift, viewer = _build_real_rift_viewer()
     try:
-        result = viewer.execute_method(
-            method_name,
-            **_build_method_kwargs(viewer, method_name),
-        )
+        result = getattr(viewer, method_name)(**_build_method_kwargs(viewer, method_name))
         if expected_type == "dict":
             assert isinstance(result, dict)
         elif expected_type == "list":
@@ -551,8 +543,8 @@ def test_real_nexus_viewer_multi_frame_default_view_routes_general_helpers() -> 
     ) = _build_real_multi_frame_room_viewer()
     try:
         viewer.set_default_view("finance")
-        inventory = viewer.execute_method("describe_frame_inventory")
-        spells = viewer.execute_method("describe_spells")
+        inventory = viewer.describe_frame_inventory()
+        spells = viewer.describe_spells()
         finance_spell_source_ids = viewer.list_spells_by_spellbook_id(finance_spellbook.id)
 
         assert viewer.default_view_frame_name == "finance"
@@ -578,8 +570,8 @@ def test_real_rift_viewer_multi_frame_default_view_routes_general_helpers() -> N
     ) = _build_real_multi_frame_rift_viewer()
     try:
         viewer.set_default_view("finance")
-        inventory = viewer.execute_method("describe_frame_inventory")
-        spells = viewer.execute_method("describe_spells")
+        inventory = viewer.describe_frame_inventory()
+        spells = viewer.describe_spells()
         finance_spell_source_ids = viewer.list_spells_by_spellbook_id(finance_spellbook.id)
 
         assert viewer.default_view_frame_name == "finance"

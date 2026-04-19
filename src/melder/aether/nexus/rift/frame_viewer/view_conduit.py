@@ -4,12 +4,13 @@ from typing import Dict, List, Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
 from melder.aether.nexus.rift.frame_viewer.view_frame import (
-    GeneralViewFrame,
+    ViewFrame,
 )
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import IFrameLink
 
 
-class GeneralViewConduit(Cleanable):
+class ViewConduit(Cleanable):
     """
     Purpose:
         Hold conduit-scoped viewer helper methods for the `general` profile.
@@ -34,7 +35,7 @@ class GeneralViewConduit(Cleanable):
         "_frame_view",
     ]
 
-    def __init__(self, *, frame_view: Optional[GeneralViewFrame]) -> None:
+    def __init__(self, *, frame_view: Optional[ViewFrame]) -> None:
         """
         Initialize one conduit-scoped helper surface.
 
@@ -51,7 +52,7 @@ class GeneralViewConduit(Cleanable):
         """
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
-        self._frame_view: Optional[GeneralViewFrame] = frame_view
+        self._frame_view: Optional[ViewFrame] = frame_view
 
     def cleanup(self) -> None:
         """
@@ -73,7 +74,7 @@ class GeneralViewConduit(Cleanable):
             self._frame_view = None
             self._lock = None
 
-    def list_conduits(self, *, frame_name: Optional[str] = None) -> List[FrameLink]:
+    def list_conduits(self, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
         """
         Return the currently visible conduit links for the bound frame.
 
@@ -192,7 +193,7 @@ class GeneralViewConduit(Cleanable):
             conduit_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return the ACL-visible spells owned by one conduit.
 
@@ -217,7 +218,7 @@ class GeneralViewConduit(Cleanable):
             source_kind="spell",
         )
         descriptor = self._get_required_frame_view()._get_required_frame_descriptor()
-        filtered_links: List[FrameLink] = []
+        filtered_links: List[IFrameLink] = []
         for spell_link in spell_links:
             record_key = spell_link.metadata["record_key"]
             spell_record = descriptor.spell_records_by_key[record_key]
@@ -591,7 +592,7 @@ class GeneralViewConduit(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return visible conduit links that are root conduits.
 
@@ -664,7 +665,7 @@ class GeneralViewConduit(Cleanable):
             root_conduit_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return visible conduits grouped under one root conduit id.
 
@@ -681,7 +682,7 @@ class GeneralViewConduit(Cleanable):
         self.check_cleaned()
         if not root_conduit_id:
             raise ValueError("root_conduit_id cannot be empty.")
-        matching_conduits: List[FrameLink] = []
+        matching_conduits: List[IFrameLink] = []
         for conduit_link in self.list_conduits(frame_name=frame_name):
             conduit_record = self._get_required_conduit_record(
                 conduit_link.source_id,
@@ -696,7 +697,7 @@ class GeneralViewConduit(Cleanable):
             policy_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return visible conduits with one conduit policy value.
 
@@ -714,7 +715,7 @@ class GeneralViewConduit(Cleanable):
         if not policy_name:
             raise ValueError("policy_name cannot be empty.")
         normalized_policy_name = policy_name.lower()
-        matching_conduits: List[FrameLink] = []
+        matching_conduits: List[IFrameLink] = []
         for conduit_link in self.list_conduits(frame_name=frame_name):
             conduit_record = self._get_required_conduit_record(
                 conduit_link.source_id,
@@ -734,7 +735,7 @@ class GeneralViewConduit(Cleanable):
             state_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return visible conduits with one conduit-state value.
 
@@ -752,7 +753,7 @@ class GeneralViewConduit(Cleanable):
         if not state_name:
             raise ValueError("state_name cannot be empty.")
         normalized_state_name = state_name.lower()
-        matching_conduits: List[FrameLink] = []
+        matching_conduits: List[IFrameLink] = []
         for conduit_link in self.list_conduits(frame_name=frame_name):
             conduit_record = self._get_required_conduit_record(
                 conduit_link.source_id,
@@ -768,7 +769,7 @@ class GeneralViewConduit(Cleanable):
             conduit_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return visible peer conduit links for one conduit.
 
@@ -967,7 +968,7 @@ class GeneralViewConduit(Cleanable):
             conduit_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return visible conduits whose display name matches exactly.
 
@@ -1070,7 +1071,7 @@ class GeneralViewConduit(Cleanable):
             conduit_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> FrameLink:
+    ) -> IFrameLink:
         """
         Return one conduit link by conduit id or raise.
 
@@ -1093,15 +1094,15 @@ class GeneralViewConduit(Cleanable):
             source_id=conduit_id,
         )
 
-    def _get_required_frame_view(self) -> GeneralViewFrame:
+    def _get_required_frame_view(self) -> ViewFrame:
         """
         Return the shared frame helper or raise when unbound.
 
         Returns:
-            GeneralViewFrame: Shared frame helper surface.
+            ViewFrame: Shared frame helper surface.
         """
         if self._frame_view is None:
-            raise ValueError("GeneralViewConduit is not bound to a frame view.")
+            raise ValueError("ViewConduit is not bound to a frame view.")
         return self._frame_view
 
     def _get_required_conduit_record(
@@ -1187,7 +1188,7 @@ class GeneralViewConduit(Cleanable):
         """
         filtered_payload: Dict[str, object] = {}
         for current_section in visible_sections:
-            filtered_payload[current_section] = GeneralViewFrame._normalize_value(
+            filtered_payload[current_section] = ViewFrame._normalize_value(
                 getattr(payload, current_section)
             )
         return filtered_payload

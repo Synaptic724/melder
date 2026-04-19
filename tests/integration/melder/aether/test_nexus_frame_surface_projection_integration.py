@@ -117,7 +117,7 @@ def test_integration_rift_space_can_attach_room_owned_frame_viewer_after_passive
         assert viewer.metadata["frame_count"] == 1
         assert viewer.metadata["rift_id"] == rift.id
         assert viewer.list_frame_names() == ["ops"]
-        assert len(viewer.execute_method("list_targets")) >= 3
+        assert len(viewer.list_targets()) >= 3
     finally:
         conduit.cleanup()
 
@@ -158,7 +158,7 @@ def test_integration_rift_get_frame_viewer_exposes_assigned_frame_after_passive_
         assert viewer.metadata["assigned_frame_names"] == ("ops",)
         assert list(viewer.frame_descriptors_by_name.keys()) == ["ops"]
         assert viewer.frame_descriptors_by_name["ops"].frame_name == "ops"
-        assert len(viewer.execute_method("list_targets")) >= 1
+        assert len(viewer.list_targets()) >= 1
     finally:
         conduit.cleanup()
 

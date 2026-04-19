@@ -1,8 +1,6 @@
 """
 Internal descriptor-driven FrameViewer surface.
 """
-
-import json
 import threading
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
@@ -12,25 +10,26 @@ from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
 )
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
-from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
-from melder.aether.nexus.rift.projection.command_projection import CommandProjection
 from melder.aether.nexus.rift.projection.frame_projection_set import FrameProjectionSet
 from melder.aether.nexus.rift.projection.view_projection import ViewProjection
 from melder.aether.nexus.rift.frame_viewer.view_conduit import (
-    GeneralViewConduit,
+    ViewConduit,
 )
 from melder.aether.nexus.rift.frame_viewer.view_frame import (
-    GeneralViewFrame,
+    ViewFrame,
+)
+from melder.aether.nexus.rift.frame_viewer.view_multiframe import (
+    ViewMultiFrame,
 )
 from melder.aether.nexus.rift.frame_viewer.view_spell import (
-    GeneralViewSpell,
+    ViewSpell,
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.class_surface_ast_describer import (
     ClassSurfaceAstDescriber,
 )
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import IRiftGate
+from melder.utilities.interfaces.interfaces import IFrameLink, IRiftGate
 
 
 class FrameViewer(Cleanable):
@@ -51,7 +50,8 @@ class FrameViewer(Cleanable):
         - Exposes descriptor-only multi-frame host methods directly on the
           viewer.
         - Exposes frame-local ACL/payload-aware behavior through the viewer's
-          internal helper surfaces without a separate profile layer.
+          internal helper surfaces without a separate profile layer or generic
+          dispatch entrypoint.
         - Does not expose raw runtime objects or any direct code-execution
           behavior.
 
@@ -67,146 +67,14 @@ class FrameViewer(Cleanable):
     __melder_internal__ = _mrg.sentinel
     _ast_helper_access: str = "public"
     __agent_purpose__: str = (
-        "access: public. Multi-frame descriptor host and defaulted shipped "
-        "general viewer surface for the Rift viewer path. Use this object to inspect hosted "
-        "frames, compare descriptor records, and reach the built-in helper "
-        "surface for frame-local methods."
+        "access: public. Multi-frame descriptor host for the Rift viewer path. Use this object to inspect hosted "
+        "frames, compare descriptor records, and call the explicit viewer methods for frame-local behavior."
     )
-    _SURFACE_NAME: str = "general"
-    _SURFACE_VERSION: str = "0.0.1"
-    _DEFAULT_GROUPING: str = "frame"
-    _DEFAULT_DETAIL_LEVEL: str = "detailed"
-    _TOOL_HANDLER_NAMES_BY_NAME: Dict[str, str] = {
-        "list_frames": "list_frame_names",
-        "list_frame_ids": "list_frame_ids",
-        "describe_viewer": "describe_viewer",
-        "describe_current_frame": "describe_current_frame",
-        "describe_frames_inventory": "describe_frames_inventory",
-        "list_nexus_contracts": "list_nexus_contracts",
-        "describe_frame_brief": "describe_frame_brief",
-        "describe_host_inventory": "describe_host_inventory",
-        "compare_frames_brief": "compare_frames_brief",
-        "describe_viewer_method_surface": "describe_viewer_method_surface",
-        "describe_agent_onboarding_json": "describe_agent_onboarding_json",
-        "describe_viewer_agent_purpose_json": "describe_viewer_agent_purpose_json",
-        "list_viewer_method_names_ast_json": "list_viewer_method_names_ast_json",
-        "describe_viewer_class_surface_ast_json": "describe_viewer_class_surface_ast_json",
-        "describe_frame": "describe_frame",
-        "describe_frames": "describe_frames",
-        "count_frames": "count_frames",
-        "count_conduit_records": "count_conduit_records",
-        "count_root_conduits": "count_root_conduits",
-        "count_spell_records": "count_spell_records",
-        "count_spellbooks": "count_spellbooks",
-        "list_conduit_record_ids": "list_conduit_record_ids",
-        "list_root_conduit_ids": "list_root_conduit_ids",
-        "list_origin_spellbook_ids": "list_origin_spellbook_ids",
-        "list_spell_record_ids": "list_spell_record_ids",
-        "list_spell_record_keys": "list_spell_record_keys",
-        "list_spell_names": "list_spell_names",
-        "list_binding_names": "list_binding_names",
-        "list_lineage_ids": "list_lineage_ids",
-        "list_spellframes": "list_spellframes",
-        "list_permissions": "list_permissions",
-        "list_existence_kinds": "list_existence_kinds",
-        "describe_descriptor_inventory": "describe_descriptor_inventory",
-        "describe_descriptor_topology": "describe_descriptor_topology",
-        "describe_conduit_records": "describe_conduit_records",
-        "describe_spell_records": "describe_spell_records",
-        "describe_spell_record": "describe_spell_record",
-        "list_spells_by_owner_conduit_record": "list_spells_by_owner_conduit",
-        "list_spells_by_spellbook_id_record": "list_spells_by_spellbook_id",
-        "list_spells_by_permission_record": "list_spells_by_permission",
-        "list_spells_by_existence_record": "list_spells_by_existence",
-        "list_spells_by_spellframe_record": "list_spells_by_spellframe",
-        "compare_frames": "compare_frames",
-        "compare_frame_conduits": "compare_frame_conduits",
-        "compare_frame_spells": "compare_frame_spells",
-        "describe_binding_name_collisions": "describe_binding_name_collisions",
-        "describe_spell_name_collisions": "describe_spell_name_collisions",
-        "describe_lineage_groups": "describe_lineage_groups",
-        "describe_spellframe_groups": "describe_spellframe_groups",
-        "describe_spellbook_permission_mismatches": "describe_spellbook_permission_mismatches",
-        "describe_spellbook_existence_mismatches": "describe_spellbook_existence_mismatches",
-        "compare_spell_records": "compare_spell_records",
-        "compare_conduit_records": "compare_conduit_records",
-        "describe_visible_surface": "view_frame.describe_visible_surface",
-        "describe_missing_surface": "view_frame.describe_missing_surface",
-        "describe_frame_brief_local": "view_frame.describe_frame_brief",
-        "describe_visible_inventory_by_kind": "view_frame.describe_visible_inventory_by_kind",
-        "describe_frame_topology": "view_frame.describe_frame_topology",
-        "list_visible_target_ids": "view_frame.list_visible_target_ids",
-        "list_visible_target_ids_by_kind": "view_frame.list_visible_target_ids_by_kind",
-        "list_visible_conduit_ids": "view_frame.list_visible_conduit_ids",
-        "list_visible_spell_source_ids": "view_frame.list_visible_spell_source_ids",
-        "list_visible_root_conduits": "view_frame.list_visible_root_conduits",
-        "list_visible_binding_names": "view_frame.list_visible_binding_names",
-        "list_visible_spell_names": "view_frame.list_visible_spell_names",
-        "list_visible_spellframes": "view_frame.list_visible_spellframes",
-        "list_visible_lineage_ids": "view_frame.list_visible_lineage_ids",
-        "describe_visible_spell_ownership": "view_frame.describe_visible_spell_ownership",
-        "describe_visible_conduit_tree": "view_frame.describe_visible_conduit_tree",
-        "search_targets_contains": "view_frame.search_targets_contains",
-        "search_targets_prefix": "view_frame.search_targets_prefix",
-        "group_targets_by_kind": "view_frame.group_targets_by_kind",
-        "describe_target_brief": "view_frame.describe_target_brief",
-        "describe_target_identity": "view_frame.describe_target_identity",
-        "describe_visible_collisions": "view_frame.describe_visible_collisions",
-        "describe_frame_payload": "view_frame.describe_frame_payload",
-        "describe_frame_inventory": "view_frame.describe_frame_inventory",
-        "describe_frame_access_contract": "view_frame.describe_frame_access_contract",
-        "get_frame_payload_field": "view_frame.get_frame_payload_field",
-        "find_target_by_display_name": "view_frame.find_target_by_display_name",
-        "explain_target_access": "view_frame.explain_target_access",
-        "list_targets": "view_frame.list_targets",
-        "describe_targets": "view_frame.describe_targets",
-        "list_conduits": "view_conduit.list_conduits",
-        "list_root_conduits": "view_conduit.list_root_conduits",
-        "describe_conduits": "view_conduit.describe_conduits",
-        "get_conduit": "view_conduit.get_required_conduit",
-        "describe_conduit": "view_conduit.describe_conduit",
-        "describe_conduit_brief": "view_conduit.describe_conduit_brief",
-        "describe_conduit_inventory": "view_conduit.describe_conduit_inventory",
-        "describe_conduit_relationships": "view_conduit.describe_conduit_relationships",
-        "describe_conduit_missing_sections": "view_conduit.describe_conduit_missing_sections",
-        "describe_conduit_crosswalk": "view_conduit.describe_conduit_crosswalk",
-        "list_conduit_spells": "view_conduit.list_conduit_spells",
-        "describe_conduit_topology": "view_conduit.describe_conduit_topology",
-        "compare_conduits": "view_conduit.compare_conduits",
-        "is_root_conduit": "view_conduit.is_root_conduit",
-        "get_root_conduit_id": "view_conduit.get_root_conduit_id",
-        "list_conduits_by_root_id": "view_conduit.list_conduits_by_root_id",
-        "list_conduits_by_policy": "view_conduit.list_conduits_by_policy",
-        "list_conduits_by_state": "view_conduit.list_conduits_by_state",
-        "list_peer_conduits": "view_conduit.list_peer_conduits",
-        "list_child_conduits": "view_conduit.list_child_conduits",
-        "list_parent_conduit": "view_conduit.get_parent_conduit_id",
-        "describe_root_conduit_inventory": "view_conduit.describe_root_conduit_inventory",
-        "list_spells": "view_spell.list_spells",
-        "describe_spells": "view_spell.describe_spells",
-        "get_spell": "view_spell.get_required_spell",
-        "describe_spell": "view_spell.describe_spell",
-        "describe_spell_brief": "view_spell.describe_spell_brief",
-        "describe_spell_inventory": "view_spell.describe_spell_inventory",
-        "describe_spell_origin": "view_spell.describe_spell_origin",
-        "describe_spell_lineage": "view_spell.describe_spell_lineage",
-        "describe_spell_payload": "view_spell.describe_spell_payload",
-        "describe_spell_methods": "view_spell.describe_spell_methods",
-        "describe_spell_attributes": "view_spell.describe_spell_attributes",
-        "describe_spell_dunder_surface": "view_spell.describe_spell_dunder_surface",
-        "describe_spell_missing_sections": "view_spell.describe_spell_missing_sections",
-        "describe_spell_crosswalk": "view_spell.describe_spell_crosswalk",
-        "compare_spells": "view_spell.compare_spells",
-        "list_spells_by_owner_conduit": "view_spell.list_spells_by_owner_conduit",
-        "list_spells_by_spellbook_id": "view_spell.list_spells_by_spellbook_id",
-        "list_spells_by_permission": "view_spell.list_spells_by_permission",
-        "list_spells_by_existence": "view_spell.list_spells_by_existence",
-        "list_spells_by_spellframe": "view_spell.list_spells_by_spellframe",
-    }
     __slots__ = Cleanable.__slots__ + [
         "_viewer_id",
         "_lock",
         "_projection_sets_by_frame_name",
+        "_view_multiframe",
         "_helper_surfaces_by_frame_name",
         "_default_view_frame_name",
         "_rift_gate",
@@ -257,9 +125,12 @@ class FrameViewer(Cleanable):
             )
         )
         self._rift_gate: Optional[IRiftGate] = rift_gate
+        self._view_multiframe: ViewMultiFrame = ViewMultiFrame(
+            viewer=self,
+        )
         self._helper_surfaces_by_frame_name: Dict[
             str,
-            Tuple[GeneralViewFrame, GeneralViewConduit, GeneralViewSpell],
+            Tuple[ViewFrame, ViewConduit, ViewSpell],
         ] = {}
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
 
@@ -273,10 +144,12 @@ class FrameViewer(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
+            self._view_multiframe.cleanup()
             self._clear_helper_cache()
             self._projection_sets_by_frame_name.clear()
             self._metadata.clear()
             self._projection_sets_by_frame_name = None
+            self._view_multiframe = None
             self._helper_surfaces_by_frame_name = None
             self._default_view_frame_name = None
             self._rift_gate = None
@@ -333,34 +206,14 @@ class FrameViewer(Cleanable):
         return self._default_view_frame_name
 
     @property
-    def surface_name(self) -> str:
-        self.check_cleaned()
-        return self._SURFACE_NAME
-
-    @property
-    def surface_version(self) -> str:
-        self.check_cleaned()
-        return self._SURFACE_VERSION
-
-    @property
-    def enabled_helpers(self) -> Tuple[str, ...]:
-        self.check_cleaned()
-        return tuple(self._TOOL_HANDLER_NAMES_BY_NAME.keys())
-
-    @property
     def default_grouping(self) -> str:
         self.check_cleaned()
-        return self._DEFAULT_GROUPING
+        return "frame"
 
     @property
     def default_detail_level(self) -> str:
         self.check_cleaned()
-        return self._DEFAULT_DETAIL_LEVEL
-
-    @property
-    def tool_handler_names_by_name(self) -> Dict[str, str]:
-        self.check_cleaned()
-        return dict(self._TOOL_HANDLER_NAMES_BY_NAME)
+        return "detailed"
 
     @property
     def metadata(self) -> Dict[str, object]:
@@ -499,8 +352,7 @@ class FrameViewer(Cleanable):
             List[str]: Sorted hosted frame names.
         """
         self.check_cleaned()
-        with self._lock:
-            return list(sorted(self._projection_sets_by_frame_name.keys()))
+        return self.get_view_multiframe().list_frame_names()
 
     def count_frames(self) -> int:
         """
@@ -510,7 +362,7 @@ class FrameViewer(Cleanable):
             int: Hosted frame count.
         """
         self.check_cleaned()
-        return len(self.list_frame_names())
+        return self.get_view_multiframe().count_frames()
 
     def set_default_view(self, frame_name: str) -> None:
         """
@@ -518,7 +370,7 @@ class FrameViewer(Cleanable):
 
         Purpose:
             Move the viewer's default frame pointer so host methods and
-            frame-local profile execution can fall back to a known frame when
+            frame-local helper execution can fall back to a known frame when
             callers omit `frame_name`.
 
         Args:
@@ -580,17 +432,7 @@ class FrameViewer(Cleanable):
             int: Root conduit record count.
         """
         self.check_cleaned()
-        frame_names = [frame_name] if frame_name is not None else self.list_frame_names()
-        total_count = 0
-        for current_frame_name in frame_names:
-            descriptor = self._get_required_frame_descriptor(current_frame_name)
-            total_count += len(
-                {
-                    conduit_record.root_conduit_id
-                    for conduit_record in descriptor.conduit_records_by_id.values()
-                }
-            )
-        return total_count
+        return self.get_view_multiframe().count_root_conduits(frame_name=frame_name)
 
     def count_spell_records(
             self,
@@ -609,12 +451,7 @@ class FrameViewer(Cleanable):
             int: Spell record count.
         """
         self.check_cleaned()
-        frame_names = [frame_name] if frame_name is not None else self.list_frame_names()
-        total_count = 0
-        for current_frame_name in frame_names:
-            descriptor = self._get_required_frame_descriptor(current_frame_name)
-            total_count += len(descriptor.spell_records_by_key)
-        return total_count
+        return self.get_view_multiframe().count_spell_records(frame_name=frame_name)
 
     def describe_frame(self, frame_name: str) -> Dict[str, object]:
         """
@@ -633,27 +470,7 @@ class FrameViewer(Cleanable):
             Dict[str, object]: Descriptor-level frame summary.
         """
         self.check_cleaned()
-        descriptor = self._get_required_frame_descriptor(frame_name)
-        frame_overview = descriptor.frame_overview
-        return {
-            "frame_name": frame_name,
-            "frame_id": frame_overview.frame_id if frame_overview is not None else None,
-            "nexus_label": (
-                frame_overview.nexus_label if frame_overview is not None else None
-            ),
-            "nexus_version": (
-                frame_overview.nexus_version if frame_overview is not None else None
-            ),
-            "conduit_record_count": len(descriptor.conduit_records_by_id),
-            "root_conduit_count": len(
-                {
-                    conduit_record.root_conduit_id
-                    for conduit_record in descriptor.conduit_records_by_id.values()
-                }
-            ),
-            "spell_record_count": len(descriptor.spell_records_by_key),
-            "is_default": frame_name == self._default_view_frame_name,
-        }
+        return self.get_view_multiframe().describe_frame(frame_name)
 
     def describe_frames(self) -> Dict[str, Dict[str, object]]:
         """
@@ -664,10 +481,7 @@ class FrameViewer(Cleanable):
             name.
         """
         self.check_cleaned()
-        return {
-            current_frame_name: self.describe_frame(current_frame_name)
-            for current_frame_name in self.list_frame_names()
-        }
+        return self.get_view_multiframe().describe_frames()
 
     def describe_frame_brief(self, frame_name: str) -> Dict[str, object]:
         """
@@ -692,19 +506,7 @@ class FrameViewer(Cleanable):
             Dict[str, object]: Compact descriptor-level frame summary.
         """
         self.check_cleaned()
-        frame_summary = self.describe_frame(frame_name)
-        return {
-            "frame_name": frame_summary["frame_name"],
-            "frame_id": frame_summary["frame_id"],
-            "nexus_contract": "{0}:{1}".format(
-                frame_summary["nexus_label"],
-                frame_summary["nexus_version"],
-            ),
-            "conduit_record_count": frame_summary["conduit_record_count"],
-            "root_conduit_count": frame_summary["root_conduit_count"],
-            "spell_record_count": frame_summary["spell_record_count"],
-            "is_default": frame_summary["is_default"],
-        }
+        return self.get_view_multiframe().describe_frame_brief(frame_name)
 
     def describe_host_inventory(self) -> Dict[str, object]:
         """
@@ -723,19 +525,7 @@ class FrameViewer(Cleanable):
             Dict[str, object]: Compact host-level inventory summary.
         """
         self.check_cleaned()
-        return {
-            "frame_count": self.count_frames(),
-            "default_view_frame_name": self._default_view_frame_name,
-            "frame_names": tuple(self.list_frame_names()),
-            "frame_ids": tuple(self.list_frame_ids()),
-            "conduit_record_count": self.count_conduit_records(),
-            "root_conduit_count": self.count_root_conduits(),
-            "spell_record_count": self.count_spell_records(),
-            "origin_spellbook_count": self.count_spellbooks(),
-            "origin_spellbook_ids": tuple(self.list_origin_spellbook_ids()),
-            "permissions": tuple(self.list_permissions()),
-            "existence_kinds": tuple(self.list_existence_kinds()),
-        }
+        return self.get_view_multiframe().describe_host_inventory()
 
     def describe_viewer(self) -> Dict[str, object]:
         """
@@ -759,8 +549,6 @@ class FrameViewer(Cleanable):
             "viewer_id": self.viewer_id,
             "frame_count": self.count_frames(),
             "default_view_frame_name": self._default_view_frame_name,
-            "surface_name": self.surface_name,
-            "surface_version": self.surface_version,
             "frame_names": tuple(self.list_frame_names()),
             "host_boundary": "descriptor_only",
         }
@@ -782,7 +570,7 @@ class FrameViewer(Cleanable):
             Dict[str, object]: Descriptor-level summary for the current frame.
         """
         self.check_cleaned()
-        return self.describe_frame(self._get_required_default_frame_name())
+        return self.get_view_multiframe().describe_current_frame()
 
     def describe_frames_inventory(self) -> Dict[str, Dict[str, object]]:
         """
@@ -803,32 +591,7 @@ class FrameViewer(Cleanable):
             by frame name.
         """
         self.check_cleaned()
-        return {
-            current_frame_name: {
-                "frame_id": self.describe_frame(current_frame_name)["frame_id"],
-                "nexus_contract": "{0}:{1}".format(
-                    self.describe_frame(current_frame_name)["nexus_label"],
-                    self.describe_frame(current_frame_name)["nexus_version"],
-                ),
-                "conduit_record_count": self.describe_frame(current_frame_name)[
-                    "conduit_record_count"
-                ],
-                "root_conduit_count": self.describe_frame(current_frame_name)[
-                    "root_conduit_count"
-                ],
-                "spell_record_count": self.describe_frame(current_frame_name)[
-                    "spell_record_count"
-                ],
-                "origin_spellbook_count": len(
-                    self.list_origin_spellbook_ids(frame_name=current_frame_name)
-                ),
-                "lineage_count": len(
-                    self.list_lineage_ids(frame_name=current_frame_name)
-                ),
-                "is_default": current_frame_name == self._default_view_frame_name,
-            }
-            for current_frame_name in self.list_frame_names()
-        }
+        return self.get_view_multiframe().describe_frames_inventory()
 
     def describe_viewer_method_surface(self) -> Dict[str, object]:
         """
@@ -840,8 +603,9 @@ class FrameViewer(Cleanable):
 
         Contract:
             - Describes only the curated host-side method groups.
-            - Keeps the host boundary explicit: descriptor-only on the viewer,
-              frame-local detail through `execute_method(...)`.
+            - Keeps the host boundary explicit: descriptor-oriented viewer
+              methods on the host, with explicit helper-backed methods exposed
+              directly on the viewer surface.
 
         Returns:
             Dict[str, object]: Curated host method-surface summary.
@@ -873,7 +637,12 @@ class FrameViewer(Cleanable):
                 "describe_spell_records",
                 "describe_spell_record",
             ),
-            "frame_local_method_entrypoint": "execute_method",
+            "frame_local_method_entrypoints": (
+                "describe_visible_surface",
+                "list_targets",
+                "describe_conduits",
+                "describe_spells",
+            ),
         }
 
     def compare_frames(
@@ -906,51 +675,7 @@ class FrameViewer(Cleanable):
             Dict[str, object]: Descriptor-level comparison summary.
         """
         self.check_cleaned()
-        left_descriptor = self._get_required_frame_descriptor(left_frame_name)
-        self._get_required_frame_descriptor(right_frame_name)
-        left_frame_overview = left_descriptor.frame_overview
-        right_frame_overview = self._get_required_frame_descriptor(
-            right_frame_name
-        ).frame_overview
-        return {
-            "left_frame_name": left_frame_name,
-            "right_frame_name": right_frame_name,
-            "same_frame_id": (
-                left_frame_overview is not None
-                and right_frame_overview is not None
-                and left_frame_overview.frame_id == right_frame_overview.frame_id
-            ),
-            "same_nexus_contract": (
-                left_frame_overview is not None
-                and right_frame_overview is not None
-                and left_frame_overview.nexus_label == right_frame_overview.nexus_label
-                and left_frame_overview.nexus_version == right_frame_overview.nexus_version
-            ),
-            "conduits": self.compare_frame_conduits(
-                left_frame_name,
-                right_frame_name,
-            ),
-            "spells": self.compare_frame_spells(
-                left_frame_name,
-                right_frame_name,
-            ),
-            "spellbooks": self._compare_sorted_value_sets(
-                tuple(self.list_origin_spellbook_ids(frame_name=left_frame_name)),
-                tuple(self.list_origin_spellbook_ids(frame_name=right_frame_name)),
-            ),
-            "permissions": self._compare_sorted_value_sets(
-                tuple(self.list_permissions(frame_name=left_frame_name)),
-                tuple(self.list_permissions(frame_name=right_frame_name)),
-            ),
-            "existence_kinds": self._compare_sorted_value_sets(
-                tuple(self.list_existence_kinds(frame_name=left_frame_name)),
-                tuple(self.list_existence_kinds(frame_name=right_frame_name)),
-            ),
-            "spellframes": self._compare_sorted_value_sets(
-                tuple(self.list_spellframes(frame_name=left_frame_name)),
-                tuple(self.list_spellframes(frame_name=right_frame_name)),
-            ),
-        }
+        return self.get_view_multiframe().compare_frames(left_frame_name, right_frame_name)
 
     def compare_frames_brief(
             self,
@@ -979,29 +704,7 @@ class FrameViewer(Cleanable):
             Dict[str, object]: Compact descriptor-level frame comparison.
         """
         self.check_cleaned()
-        full_comparison = self.compare_frames(left_frame_name, right_frame_name)
-        return {
-            "left_frame_name": left_frame_name,
-            "right_frame_name": right_frame_name,
-            "same_frame_id": full_comparison["same_frame_id"],
-            "same_nexus_contract": full_comparison["same_nexus_contract"],
-            "left_only_conduit_count": len(
-                full_comparison["conduits"]["conduit_ids"]["left_only"]
-            ),
-            "right_only_conduit_count": len(
-                full_comparison["conduits"]["conduit_ids"]["right_only"]
-            ),
-            "left_only_spell_count": len(
-                full_comparison["spells"]["spell_source_ids"]["left_only"]
-            ),
-            "right_only_spell_count": len(
-                full_comparison["spells"]["spell_source_ids"]["right_only"]
-            ),
-            "shared_permission_count": len(full_comparison["permissions"]["shared"]),
-            "shared_existence_kind_count": len(
-                full_comparison["existence_kinds"]["shared"]
-            ),
-        }
+        return self.get_view_multiframe().compare_frames_brief(left_frame_name, right_frame_name)
 
     def compare_frame_conduits(
             self,
@@ -1021,32 +724,7 @@ class FrameViewer(Cleanable):
             Dict[str, object]: Conduit-record comparison summary.
         """
         self.check_cleaned()
-        left_conduit_ids = tuple(
-            self.list_conduit_record_ids(frame_name=left_frame_name)
-        )
-        right_conduit_ids = tuple(
-            self.list_conduit_record_ids(frame_name=right_frame_name)
-        )
-        left_root_conduit_ids = tuple(
-            self.list_root_conduit_ids(frame_name=left_frame_name)
-        )
-        right_root_conduit_ids = tuple(
-            self.list_root_conduit_ids(frame_name=right_frame_name)
-        )
-        return {
-            "record_counts": {
-                "left": len(left_conduit_ids),
-                "right": len(right_conduit_ids),
-            },
-            "conduit_ids": self._compare_sorted_value_sets(
-                left_conduit_ids,
-                right_conduit_ids,
-            ),
-            "root_conduit_ids": self._compare_sorted_value_sets(
-                left_root_conduit_ids,
-                right_root_conduit_ids,
-            ),
-        }
+        return self.get_view_multiframe().compare_frame_conduits(left_frame_name, right_frame_name)
 
     def compare_frame_spells(
             self,
@@ -1066,40 +744,7 @@ class FrameViewer(Cleanable):
             Dict[str, object]: Spell-record comparison summary.
         """
         self.check_cleaned()
-        left_spell_source_ids = tuple(
-            self.list_spell_source_ids_for_frame(left_frame_name)
-        )
-        right_spell_source_ids = tuple(
-            self.list_spell_source_ids_for_frame(right_frame_name)
-        )
-        left_lineage_ids = tuple(self.list_lineage_ids(frame_name=left_frame_name))
-        right_lineage_ids = tuple(self.list_lineage_ids(frame_name=right_frame_name))
-        left_spell_names = tuple(self.list_spell_names(frame_name=left_frame_name))
-        right_spell_names = tuple(self.list_spell_names(frame_name=right_frame_name))
-        left_binding_names = tuple(self.list_binding_names(frame_name=left_frame_name))
-        right_binding_names = tuple(self.list_binding_names(frame_name=right_frame_name))
-        return {
-            "record_counts": {
-                "left": len(left_spell_source_ids),
-                "right": len(right_spell_source_ids),
-            },
-            "spell_source_ids": self._compare_sorted_value_sets(
-                left_spell_source_ids,
-                right_spell_source_ids,
-            ),
-            "lineage_ids": self._compare_sorted_value_sets(
-                left_lineage_ids,
-                right_lineage_ids,
-            ),
-            "spell_names": self._compare_sorted_value_sets(
-                left_spell_names,
-                right_spell_names,
-            ),
-            "binding_names": self._compare_sorted_value_sets(
-                left_binding_names,
-                right_binding_names,
-            ),
-        }
+        return self.get_view_multiframe().compare_frame_spells(left_frame_name, right_frame_name)
 
     def describe_binding_name_collisions(
             self,
@@ -1123,10 +768,7 @@ class FrameViewer(Cleanable):
             spell source ids.
         """
         self.check_cleaned()
-        return self._describe_spell_value_collisions(
-            frame_name=frame_name,
-            value_getter=lambda spell_record: spell_record.binding_name,
-        )
+        return self.get_view_multiframe().describe_binding_name_collisions(frame_name=frame_name)
 
     def describe_spell_name_collisions(
             self,
@@ -1146,10 +788,7 @@ class FrameViewer(Cleanable):
             spell source ids.
         """
         self.check_cleaned()
-        return self._describe_spell_value_collisions(
-            frame_name=frame_name,
-            value_getter=lambda spell_record: spell_record.spell_name,
-        )
+        return self.get_view_multiframe().describe_spell_name_collisions(frame_name=frame_name)
 
     def describe_lineage_groups(
             self,
@@ -1173,10 +812,7 @@ class FrameViewer(Cleanable):
             source ids.
         """
         self.check_cleaned()
-        return self._describe_spell_value_groups(
-            frame_name=frame_name,
-            value_getter=lambda spell_record: spell_record.spell_index_id,
-        )
+        return self.get_view_multiframe().describe_lineage_groups(frame_name=frame_name)
 
     def describe_spellframe_groups(
             self,
@@ -1200,12 +836,7 @@ class FrameViewer(Cleanable):
             spell source ids.
         """
         self.check_cleaned()
-        return self._describe_spell_value_groups(
-            frame_name=frame_name,
-            value_getter=lambda spell_record: self._normalize_spellframe_value(
-                spell_record.spellframe
-            ),
-        )
+        return self.get_view_multiframe().describe_spellframe_groups(frame_name=frame_name)
 
     def describe_spellbook_permission_mismatches(
             self,
@@ -1225,10 +856,7 @@ class FrameViewer(Cleanable):
             mismatch summaries.
         """
         self.check_cleaned()
-        return self._describe_spellbook_mismatches(
-            frame_name=frame_name,
-            value_getter=lambda spell_record: spell_record.permissions.name,
-        )
+        return self.get_view_multiframe().describe_spellbook_permission_mismatches(frame_name=frame_name)
 
     def describe_spellbook_existence_mismatches(
             self,
@@ -1248,10 +876,7 @@ class FrameViewer(Cleanable):
             mismatch summaries.
         """
         self.check_cleaned()
-        return self._describe_spellbook_mismatches(
-            frame_name=frame_name,
-            value_getter=lambda spell_record: spell_record.existence.name,
-        )
+        return self.get_view_multiframe().describe_spellbook_existence_mismatches(frame_name=frame_name)
 
     def compare_spell_records(
             self,
@@ -1283,56 +908,7 @@ class FrameViewer(Cleanable):
             Dict[str, object]: Record-level spell comparison summary.
         """
         self.check_cleaned()
-        resolved_left_frame_name, left_spell_record = self._get_required_spell_record(
-            left_spell_source_id,
-            frame_name=left_frame_name,
-        )
-        resolved_right_frame_name, right_spell_record = self._get_required_spell_record(
-            right_spell_source_id,
-            frame_name=right_frame_name,
-        )
-        return {
-            "left_source_id": left_spell_source_id,
-            "right_source_id": right_spell_source_id,
-            "same_frame": resolved_left_frame_name == resolved_right_frame_name,
-            "same_origin_spellbook": (
-                left_spell_record.origin_spellbook_id
-                == right_spell_record.origin_spellbook_id
-            ),
-            "same_owner_conduit": (
-                left_spell_record.owner_conduit_id
-                == right_spell_record.owner_conduit_id
-            ),
-            "same_spell_index_id": (
-                left_spell_record.spell_index_id == right_spell_record.spell_index_id
-            ),
-            "same_spell_name": (
-                left_spell_record.spell_name == right_spell_record.spell_name
-            ),
-            "same_binding_name": (
-                left_spell_record.binding_name == right_spell_record.binding_name
-            ),
-            "same_spellframe": (
-                self._normalize_spellframe_value(left_spell_record.spellframe)
-                == self._normalize_spellframe_value(right_spell_record.spellframe)
-            ),
-            "same_permissions": (
-                left_spell_record.permissions.name
-                == right_spell_record.permissions.name
-            ),
-            "same_existence": (
-                left_spell_record.existence.name
-                == right_spell_record.existence.name
-            ),
-            "same_payload_type": (
-                left_spell_record.payload.payload_type
-                == right_spell_record.payload.payload_type
-            ),
-            "same_nexus_contract": (
-                left_spell_record.nexus_label == right_spell_record.nexus_label
-                and left_spell_record.nexus_version == right_spell_record.nexus_version
-            ),
-        }
+        return self.get_view_multiframe().compare_spell_records(left_spell_source_id, right_spell_source_id, left_frame_name=left_frame_name, right_frame_name=right_frame_name)
 
     def compare_conduit_records(
             self,
@@ -1359,43 +935,7 @@ class FrameViewer(Cleanable):
             Dict[str, object]: Record-level conduit comparison summary.
         """
         self.check_cleaned()
-        resolved_left_frame_name, left_conduit_record = self._get_required_conduit_record(
-            left_conduit_id,
-            frame_name=left_frame_name,
-        )
-        resolved_right_frame_name, right_conduit_record = self._get_required_conduit_record(
-            right_conduit_id,
-            frame_name=right_frame_name,
-        )
-        return {
-            "left_conduit_id": left_conduit_id,
-            "right_conduit_id": right_conduit_id,
-            "same_frame": resolved_left_frame_name == resolved_right_frame_name,
-            "same_root_conduit_id": (
-                left_conduit_record.root_conduit_id
-                == right_conduit_record.root_conduit_id
-            ),
-            "same_origin_spellbook": (
-                left_conduit_record.origin_spellbook_id
-                == right_conduit_record.origin_spellbook_id
-            ),
-            "same_policy": (
-                self._normalize_policy_name(left_conduit_record.payload.policy)
-                == self._normalize_policy_name(right_conduit_record.payload.policy)
-            ),
-            "same_conduit_state": (
-                left_conduit_record.payload.conduit_state.name
-                == right_conduit_record.payload.conduit_state.name
-            ),
-            "same_peer_conduit_ids": (
-                tuple(left_conduit_record.payload.peer_conduit_ids)
-                == tuple(right_conduit_record.payload.peer_conduit_ids)
-            ),
-            "same_nexus_contract": (
-                left_conduit_record.nexus_label == right_conduit_record.nexus_label
-                and left_conduit_record.nexus_version == right_conduit_record.nexus_version
-            ),
-        }
+        return self.get_view_multiframe().compare_conduit_records(left_conduit_id, right_conduit_id, left_frame_name=left_frame_name, right_frame_name=right_frame_name)
 
     def list_spell_source_ids_for_frame(self, frame_name: str) -> List[str]:
         """
@@ -1413,11 +953,7 @@ class FrameViewer(Cleanable):
             List[str]: Spell source ids for the frame.
         """
         self.check_cleaned()
-        descriptor = self._get_required_frame_descriptor(frame_name)
-        return [
-            self._build_spell_source_id(descriptor.spell_records_by_key[record_key])
-            for record_key in sorted(descriptor.spell_records_by_key.keys())
-        ]
+        return self.get_view_multiframe().list_spell_source_ids_for_frame(frame_name)
 
     def list_frame_ids(
             self,
@@ -1446,14 +982,7 @@ class FrameViewer(Cleanable):
             List[str]: Published frame ids in deterministic order.
         """
         self.check_cleaned()
-        frame_ids: List[str] = []
-        for current_frame_name in self._get_frame_names_for_query(frame_name):
-            descriptor = self._get_required_frame_descriptor(current_frame_name)
-            frame_overview = descriptor.frame_overview
-            if frame_overview is None:
-                continue
-            frame_ids.append(frame_overview.frame_id)
-        return frame_ids
+        return self.get_view_multiframe().list_frame_ids(frame_name=frame_name)
 
     def list_nexus_contracts(
             self,
@@ -1483,20 +1012,7 @@ class FrameViewer(Cleanable):
             order.
         """
         self.check_cleaned()
-        contracts: List[Dict[str, str]] = []
-        for current_frame_name in self._get_frame_names_for_query(frame_name):
-            descriptor = self._get_required_frame_descriptor(current_frame_name)
-            frame_overview = descriptor.frame_overview
-            if frame_overview is None:
-                continue
-            contracts.append(
-                {
-                    "frame_name": current_frame_name,
-                    "nexus_label": frame_overview.nexus_label,
-                    "nexus_version": frame_overview.nexus_version,
-                }
-            )
-        return contracts
+        return self.get_view_multiframe().list_nexus_contracts(frame_name=frame_name)
 
     def count_conduit_records(
             self,
@@ -1519,7 +1035,7 @@ class FrameViewer(Cleanable):
             int: Published conduit-record count.
         """
         self.check_cleaned()
-        return len(self.list_conduit_record_ids(frame_name=frame_name))
+        return self.get_view_multiframe().count_conduit_records(frame_name=frame_name)
 
     def list_conduit_record_ids(
             self,
@@ -1542,10 +1058,7 @@ class FrameViewer(Cleanable):
             List[str]: Conduit ids in deterministic order.
         """
         self.check_cleaned()
-        conduit_ids: List[str] = []
-        for conduit_record in self._iter_conduit_records(frame_name=frame_name):
-            conduit_ids.append(conduit_record.conduit_id)
-        return conduit_ids
+        return self.get_view_multiframe().list_conduit_record_ids(frame_name=frame_name)
 
     def list_root_conduit_ids(
             self,
@@ -1568,11 +1081,7 @@ class FrameViewer(Cleanable):
             List[str]: Deterministically sorted root conduit ids.
         """
         self.check_cleaned()
-        root_conduit_ids = {
-            conduit_record.root_conduit_id
-            for conduit_record in self._iter_conduit_records(frame_name=frame_name)
-        }
-        return list(sorted(root_conduit_ids))
+        return self.get_view_multiframe().list_root_conduit_ids(frame_name=frame_name)
 
     def count_spellbooks(
             self,
@@ -1594,7 +1103,7 @@ class FrameViewer(Cleanable):
             int: Distinct origin spellbook count.
         """
         self.check_cleaned()
-        return len(self.list_origin_spellbook_ids(frame_name=frame_name))
+        return self.get_view_multiframe().count_spellbooks(frame_name=frame_name)
 
     def list_origin_spellbook_ids(
             self,
@@ -1617,11 +1126,7 @@ class FrameViewer(Cleanable):
             List[str]: Distinct spellbook ids in deterministic order.
         """
         self.check_cleaned()
-        spellbook_ids = {
-            spell_record.origin_spellbook_id
-            for spell_record in self._iter_spell_records(frame_name=frame_name)
-        }
-        return list(sorted(spellbook_ids))
+        return self.get_view_multiframe().list_origin_spellbook_ids(frame_name=frame_name)
 
     def list_spell_record_ids(
             self,
@@ -1644,10 +1149,7 @@ class FrameViewer(Cleanable):
             List[str]: Spell ids in deterministic record order.
         """
         self.check_cleaned()
-        spell_ids: List[str] = []
-        for spell_record in self._iter_spell_records(frame_name=frame_name):
-            spell_ids.append(spell_record.spell_id)
-        return spell_ids
+        return self.get_view_multiframe().list_spell_record_ids(frame_name=frame_name)
 
     def list_spell_record_keys(
             self,
@@ -1670,10 +1172,7 @@ class FrameViewer(Cleanable):
             List[Tuple[str, str]]: Spell record keys in deterministic order.
         """
         self.check_cleaned()
-        record_keys: List[Tuple[str, str]] = []
-        for spell_record in self._iter_spell_records(frame_name=frame_name):
-            record_keys.append(spell_record.record_key)
-        return record_keys
+        return self.get_view_multiframe().list_spell_record_keys(frame_name=frame_name)
 
     def list_spell_names(
             self,
@@ -1695,10 +1194,7 @@ class FrameViewer(Cleanable):
             List[str]: Spell names in deterministic record order.
         """
         self.check_cleaned()
-        spell_names: List[str] = []
-        for spell_record in self._iter_spell_records(frame_name=frame_name):
-            spell_names.append(spell_record.spell_name)
-        return spell_names
+        return self.get_view_multiframe().list_spell_names(frame_name=frame_name)
 
     def list_binding_names(
             self,
@@ -1721,12 +1217,7 @@ class FrameViewer(Cleanable):
             List[str]: Non-empty binding names in deterministic record order.
         """
         self.check_cleaned()
-        binding_names: List[str] = []
-        for spell_record in self._iter_spell_records(frame_name=frame_name):
-            if spell_record.binding_name is None:
-                continue
-            binding_names.append(spell_record.binding_name)
-        return binding_names
+        return self.get_view_multiframe().list_binding_names(frame_name=frame_name)
 
     def list_lineage_ids(
             self,
@@ -1748,10 +1239,7 @@ class FrameViewer(Cleanable):
             List[str]: Lineage ids in deterministic record order.
         """
         self.check_cleaned()
-        lineage_ids: List[str] = []
-        for spell_record in self._iter_spell_records(frame_name=frame_name):
-            lineage_ids.append(spell_record.spell_index_id)
-        return lineage_ids
+        return self.get_view_multiframe().list_lineage_ids(frame_name=frame_name)
 
     def list_spellframes(
             self,
@@ -1775,12 +1263,7 @@ class FrameViewer(Cleanable):
             order.
         """
         self.check_cleaned()
-        spellframes = {
-            self._normalize_spellframe_value(spell_record.spellframe)
-            for spell_record in self._iter_spell_records(frame_name=frame_name)
-            if self._normalize_spellframe_value(spell_record.spellframe) is not None
-        }
-        return list(sorted(spellframes))
+        return self.get_view_multiframe().list_spellframes(frame_name=frame_name)
 
     def list_permissions(
             self,
@@ -1803,11 +1286,7 @@ class FrameViewer(Cleanable):
             List[str]: Distinct permission names in deterministic order.
         """
         self.check_cleaned()
-        permissions = {
-            spell_record.permissions.name
-            for spell_record in self._iter_spell_records(frame_name=frame_name)
-        }
-        return list(sorted(permissions))
+        return self.get_view_multiframe().list_permissions(frame_name=frame_name)
 
     def list_existence_kinds(
             self,
@@ -1830,11 +1309,7 @@ class FrameViewer(Cleanable):
             List[str]: Distinct existence-kind names in deterministic order.
         """
         self.check_cleaned()
-        existence_kinds = {
-            spell_record.existence.name
-            for spell_record in self._iter_spell_records(frame_name=frame_name)
-        }
-        return list(sorted(existence_kinds))
+        return self.get_view_multiframe().list_existence_kinds(frame_name=frame_name)
 
     def describe_descriptor_inventory(
             self,
@@ -1863,23 +1338,7 @@ class FrameViewer(Cleanable):
             Dict[str, object]: Descriptor-only inventory summary.
         """
         self.check_cleaned()
-        frame_names = self._get_frame_names_for_query(frame_name)
-        return {
-            "frame_count": len(frame_names),
-            "frame_names": tuple(frame_names),
-            "frame_ids": tuple(self.list_frame_ids(frame_name=frame_name)),
-            "conduit_record_count": self.count_conduit_records(frame_name=frame_name),
-            "root_conduit_ids": tuple(self.list_root_conduit_ids(frame_name=frame_name)),
-            "spell_record_count": self.count_spell_records(frame_name=frame_name),
-            "origin_spellbook_count": self.count_spellbooks(frame_name=frame_name),
-            "origin_spellbook_ids": tuple(
-                self.list_origin_spellbook_ids(frame_name=frame_name)
-            ),
-            "permissions": tuple(self.list_permissions(frame_name=frame_name)),
-            "existence_kinds": tuple(
-                self.list_existence_kinds(frame_name=frame_name)
-            ),
-        }
+        return self.get_view_multiframe().describe_descriptor_inventory(frame_name=frame_name)
 
     def describe_descriptor_topology(self, frame_name: str) -> Dict[str, object]:
         """
@@ -1904,48 +1363,7 @@ class FrameViewer(Cleanable):
             Dict[str, object]: Descriptor topology summary for the frame.
         """
         self.check_cleaned()
-        descriptor = self._get_required_frame_descriptor(frame_name)
-        conduit_ids_by_root_id: Dict[str, List[str]] = {}
-        for conduit_record in self._iter_conduit_records(frame_name=frame_name):
-            conduit_ids_by_root_id.setdefault(
-                conduit_record.root_conduit_id,
-                [],
-            ).append(conduit_record.conduit_id)
-        spell_source_ids_by_conduit_id: Dict[str, List[str]] = {}
-        for conduit_id, record_keys in descriptor.spell_keys_by_conduit_id.items():
-            for record_key in sorted(record_keys):
-                spell_record = descriptor.spell_records_by_key[record_key]
-                spell_source_ids_by_conduit_id.setdefault(conduit_id, []).append(
-                    self._build_spell_source_id(spell_record)
-                )
-        spell_record_keys_by_spellbook_id: Dict[str, Tuple[Tuple[str, str], ...]] = {
-            spellbook_id: tuple(sorted(record_keys))
-            for spellbook_id, record_keys in (
-                descriptor.spell_keys_by_spellbook_id.items()
-            )
-        }
-        return {
-            "frame_name": frame_name,
-            "frame_id": (
-                descriptor.frame_overview.frame_id
-                if descriptor.frame_overview is not None
-                else None
-            ),
-            "root_conduit_ids": tuple(
-                sorted(conduit_ids_by_root_id.keys())
-            ),
-            "conduit_ids_by_root_id": {
-                root_conduit_id: tuple(sorted(conduit_ids))
-                for root_conduit_id, conduit_ids in conduit_ids_by_root_id.items()
-            },
-            "spell_source_ids_by_conduit_id": {
-                conduit_id: tuple(spell_source_ids)
-                for conduit_id, spell_source_ids in (
-                    spell_source_ids_by_conduit_id.items()
-                )
-            },
-            "spell_record_keys_by_spellbook_id": spell_record_keys_by_spellbook_id,
-        }
+        return self.get_view_multiframe().describe_descriptor_topology(frame_name)
 
     def describe_conduit_records(self, frame_name: str) -> List[Dict[str, object]]:
         """
@@ -1963,28 +1381,7 @@ class FrameViewer(Cleanable):
             List[Dict[str, object]]: Conduit record descriptions.
         """
         self.check_cleaned()
-        descriptor = self._get_required_frame_descriptor(frame_name)
-        descriptions: List[Dict[str, object]] = []
-        for conduit_record in self._iter_conduit_records(frame_name=frame_name):
-            owned_spell_keys = descriptor.spell_keys_by_conduit_id.get(
-                conduit_record.conduit_id,
-                set(),
-            )
-            descriptions.append(
-                {
-                    "frame_name": frame_name,
-                    "conduit_id": conduit_record.conduit_id,
-                    "root_conduit_id": conduit_record.root_conduit_id,
-                    "origin_spellbook_id": conduit_record.origin_spellbook_id,
-                    "nexus_label": conduit_record.nexus_label,
-                    "nexus_version": conduit_record.nexus_version,
-                    "is_root_conduit": (
-                        conduit_record.conduit_id == conduit_record.root_conduit_id
-                    ),
-                    "owned_spell_record_count": len(owned_spell_keys),
-                }
-            )
-        return descriptions
+        return self.get_view_multiframe().describe_conduit_records(frame_name)
 
     def describe_spell_records(self, frame_name: str) -> List[Dict[str, object]]:
         """
@@ -2002,13 +1399,7 @@ class FrameViewer(Cleanable):
             List[Dict[str, object]]: Spell record descriptions.
         """
         self.check_cleaned()
-        return [
-            self.describe_spell_record(
-                self._build_spell_source_id(spell_record),
-                frame_name=frame_name,
-            )
-            for spell_record in self._iter_spell_records(frame_name=frame_name)
-        ]
+        return self.get_view_multiframe().describe_spell_records(frame_name)
 
     def describe_spell_record(
             self,
@@ -2039,28 +1430,7 @@ class FrameViewer(Cleanable):
             Dict[str, object]: Descriptor-only spell record description.
         """
         self.check_cleaned()
-        resolved_frame_name, spell_record = self._get_required_spell_record(
-            spell_source_id,
-            frame_name=frame_name,
-        )
-        return {
-            "frame_name": resolved_frame_name,
-            "source_id": spell_source_id,
-            "record_key": spell_record.record_key,
-            "spell_id": spell_record.spell_id,
-            "spell_index_id": spell_record.spell_index_id,
-            "origin_spellbook_id": spell_record.origin_spellbook_id,
-            "owner_conduit_id": spell_record.owner_conduit_id,
-            "spell_name": spell_record.spell_name,
-            "binding_name": spell_record.binding_name,
-            "spellframe": self._normalize_spellframe_value(spell_record.spellframe),
-            "permissions": spell_record.permissions.name,
-            "existence": spell_record.existence.name,
-            "payload_type": spell_record.payload.payload_type,
-            "payload_version": spell_record.payload.payload_version,
-            "nexus_label": spell_record.nexus_label,
-            "nexus_version": spell_record.nexus_version,
-        }
+        return self.get_view_multiframe().describe_spell_record(spell_source_id, frame_name=frame_name)
 
     def list_spells_by_owner_conduit(
             self,
@@ -2086,13 +1456,7 @@ class FrameViewer(Cleanable):
             List[str]: Matching spell source ids in deterministic order.
         """
         self.check_cleaned()
-        if not conduit_id:
-            raise ValueError("conduit_id cannot be empty.")
-        matching_source_ids: List[str] = []
-        for spell_record in self._iter_spell_records(frame_name=frame_name):
-            if spell_record.owner_conduit_id == conduit_id:
-                matching_source_ids.append(self._build_spell_source_id(spell_record))
-        return matching_source_ids
+        return self.get_view_multiframe().list_spells_by_owner_conduit(conduit_id, frame_name=frame_name)
 
     def list_spells_by_spellbook_id(
             self,
@@ -2114,13 +1478,7 @@ class FrameViewer(Cleanable):
             List[str]: Matching spell source ids in deterministic order.
         """
         self.check_cleaned()
-        if not spellbook_id:
-            raise ValueError("spellbook_id cannot be empty.")
-        matching_source_ids: List[str] = []
-        for spell_record in self._iter_spell_records(frame_name=frame_name):
-            if spell_record.origin_spellbook_id == spellbook_id:
-                matching_source_ids.append(self._build_spell_source_id(spell_record))
-        return matching_source_ids
+        return self.get_view_multiframe().list_spells_by_spellbook_id(spellbook_id, frame_name=frame_name)
 
     def list_spells_by_permission(
             self,
@@ -2142,14 +1500,7 @@ class FrameViewer(Cleanable):
             List[str]: Matching spell source ids in deterministic order.
         """
         self.check_cleaned()
-        if not permission:
-            raise ValueError("permission cannot be empty.")
-        normalized_permission = permission.lower()
-        matching_source_ids: List[str] = []
-        for spell_record in self._iter_spell_records(frame_name=frame_name):
-            if spell_record.permissions.name.lower() == normalized_permission:
-                matching_source_ids.append(self._build_spell_source_id(spell_record))
-        return matching_source_ids
+        return self.get_view_multiframe().list_spells_by_permission(permission, frame_name=frame_name)
 
     def list_spells_by_existence(
             self,
@@ -2171,14 +1522,7 @@ class FrameViewer(Cleanable):
             List[str]: Matching spell source ids in deterministic order.
         """
         self.check_cleaned()
-        if not existence:
-            raise ValueError("existence cannot be empty.")
-        normalized_existence = existence.lower()
-        matching_source_ids: List[str] = []
-        for spell_record in self._iter_spell_records(frame_name=frame_name):
-            if spell_record.existence.name.lower() == normalized_existence:
-                matching_source_ids.append(self._build_spell_source_id(spell_record))
-        return matching_source_ids
+        return self.get_view_multiframe().list_spells_by_existence(existence, frame_name=frame_name)
 
     def list_spells_by_spellframe(
             self,
@@ -2200,16 +1544,7 @@ class FrameViewer(Cleanable):
             List[str]: Matching spell source ids in deterministic order.
         """
         self.check_cleaned()
-        if not spellframe_name:
-            raise ValueError("spellframe_name cannot be empty.")
-        matching_source_ids: List[str] = []
-        for spell_record in self._iter_spell_records(frame_name=frame_name):
-            normalized_spellframe = self._normalize_spellframe_value(
-                spell_record.spellframe
-            )
-            if normalized_spellframe == spellframe_name:
-                matching_source_ids.append(self._build_spell_source_id(spell_record))
-        return matching_source_ids
+        return self.get_view_multiframe().list_spells_by_spellframe(spellframe_name, frame_name=frame_name)
 
     def clone(self) -> "FrameViewer":
         """
@@ -2231,31 +1566,13 @@ class FrameViewer(Cleanable):
                 metadata=dict(self._metadata),
             )
 
-    def list_enabled_helpers(self) -> Tuple[str, ...]:
-        """
-        Return the exposed method names for the shipped viewer surface.
 
-        Returns:
-            Tuple[str, ...]: Exposed method names for the shipped viewer surface.
-        """
-        self.check_cleaned()
-        return self.enabled_helpers
-
-    def list_available_tools(self) -> Tuple[str, ...]:
-        """
-        Return the exposed viewer-surface method names.
-
-        Returns:
-            Tuple[str, ...]: Exposed viewer-surface method names.
-        """
-        self.check_cleaned()
-        return tuple(self._TOOL_HANDLER_NAMES_BY_NAME.keys())
 
     def get_view_frame(
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> GeneralViewFrame:
+    ) -> ViewFrame:
         """
         Return the viewer-owned frame helper for one hosted frame.
 
@@ -2264,7 +1581,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name. When omitted, the default frame is used.
 
         Returns:
-            GeneralViewFrame: Bound frame helper.
+            ViewFrame: Bound frame helper.
         """
         return self._get_helper_surface_bundle(frame_name=frame_name)[0]
 
@@ -2272,7 +1589,7 @@ class FrameViewer(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> GeneralViewConduit:
+    ) -> ViewConduit:
         """
         Return the viewer-owned conduit helper for one hosted frame.
 
@@ -2281,7 +1598,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name. When omitted, the default frame is used.
 
         Returns:
-            GeneralViewConduit: Bound conduit helper.
+            ViewConduit: Bound conduit helper.
         """
         return self._get_helper_surface_bundle(frame_name=frame_name)[1]
 
@@ -2289,7 +1606,7 @@ class FrameViewer(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> GeneralViewSpell:
+    ) -> ViewSpell:
         """
         Return the viewer-owned spell helper for one hosted frame.
 
@@ -2298,316 +1615,40 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name. When omitted, the default frame is used.
 
         Returns:
-            GeneralViewSpell: Bound spell helper.
+            ViewSpell: Bound spell helper.
         """
         return self._get_helper_surface_bundle(frame_name=frame_name)[2]
 
+    def get_view_multiframe(self) -> ViewMultiFrame:
+        """
+        Return the viewer-owned multi-frame helper.
+
+        Returns:
+            ViewMultiFrame: Borrowed helper for cross-frame and
+            descriptor-hosted inventory/comparison logic.
+        """
+        self.check_cleaned()
+        return self._view_multiframe
+
     @property
-    def view_frame(self) -> GeneralViewFrame:
+    def view_frame(self) -> ViewFrame:
         """Return the frame helper for the current default frame."""
         return self.get_view_frame()
 
     @property
-    def view_conduit(self) -> GeneralViewConduit:
+    def view_conduit(self) -> ViewConduit:
         """Return the conduit helper for the current default frame."""
         return self.get_view_conduit()
 
     @property
-    def view_spell(self) -> GeneralViewSpell:
+    def view_spell(self) -> ViewSpell:
         """Return the spell helper for the current default frame."""
         return self.get_view_spell()
 
-    def list_frames(self, *args, **kwargs) -> Any:
-        """Direct facade for `list_frame_names` on the shipped viewer surface."""
-        return self.list_frame_names(*args, **kwargs)
-
-    def list_spells_by_owner_conduit_record(self, *args, **kwargs) -> Any:
-        """Direct facade for `list_spells_by_owner_conduit` on the shipped viewer surface."""
-        return self.list_spells_by_owner_conduit(*args, **kwargs)
-
-    def list_spells_by_spellbook_id_record(self, *args, **kwargs) -> Any:
-        """Direct facade for `list_spells_by_spellbook_id` on the shipped viewer surface."""
-        return self.list_spells_by_spellbook_id(*args, **kwargs)
-
-    def list_spells_by_permission_record(self, *args, **kwargs) -> Any:
-        """Direct facade for `list_spells_by_permission` on the shipped viewer surface."""
-        return self.list_spells_by_permission(*args, **kwargs)
-
-    def list_spells_by_existence_record(self, *args, **kwargs) -> Any:
-        """Direct facade for `list_spells_by_existence` on the shipped viewer surface."""
-        return self.list_spells_by_existence(*args, **kwargs)
-
-    def list_spells_by_spellframe_record(self, *args, **kwargs) -> Any:
-        """Direct facade for `list_spells_by_spellframe` on the shipped viewer surface."""
-        return self.list_spells_by_spellframe(*args, **kwargs)
-
-    def describe_visible_surface(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.describe_visible_surface` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_visible_surface(*args, **kwargs)
-
-    def describe_missing_surface(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.describe_missing_surface` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_missing_surface(*args, **kwargs)
-
-    def describe_frame_brief_local(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.describe_frame_brief` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_frame_brief(*args, **kwargs)
-
-    def describe_visible_inventory_by_kind(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.describe_visible_inventory_by_kind` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_visible_inventory_by_kind(*args, **kwargs)
-
-    def describe_frame_topology(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.describe_frame_topology` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_frame_topology(*args, **kwargs)
-
-    def list_visible_target_ids(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.list_visible_target_ids` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).list_visible_target_ids(*args, **kwargs)
-
-    def list_visible_target_ids_by_kind(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.list_visible_target_ids_by_kind` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).list_visible_target_ids_by_kind(*args, **kwargs)
-
-    def list_visible_conduit_ids(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.list_visible_conduit_ids` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).list_visible_conduit_ids(*args, **kwargs)
-
-    def list_visible_spell_source_ids(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.list_visible_spell_source_ids` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).list_visible_spell_source_ids(*args, **kwargs)
-
-    def list_visible_root_conduits(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.list_visible_root_conduits` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).list_visible_root_conduits(*args, **kwargs)
-
-    def list_visible_binding_names(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.list_visible_binding_names` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).list_visible_binding_names(*args, **kwargs)
-
-    def list_visible_spell_names(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.list_visible_spell_names` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).list_visible_spell_names(*args, **kwargs)
-
-    def list_visible_spellframes(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.list_visible_spellframes` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).list_visible_spellframes(*args, **kwargs)
-
-    def list_visible_lineage_ids(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.list_visible_lineage_ids` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).list_visible_lineage_ids(*args, **kwargs)
-
-    def describe_visible_spell_ownership(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.describe_visible_spell_ownership` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_visible_spell_ownership(*args, **kwargs)
-
-    def describe_visible_conduit_tree(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.describe_visible_conduit_tree` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_visible_conduit_tree(*args, **kwargs)
-
-    def search_targets_contains(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.search_targets_contains` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).search_targets_contains(*args, **kwargs)
-
-    def search_targets_prefix(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.search_targets_prefix` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).search_targets_prefix(*args, **kwargs)
-
-    def group_targets_by_kind(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.group_targets_by_kind` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).group_targets_by_kind(*args, **kwargs)
-
-    def describe_target_brief(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.describe_target_brief` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_target_brief(*args, **kwargs)
-
-    def describe_target_identity(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.describe_target_identity` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_target_identity(*args, **kwargs)
-
-    def describe_visible_collisions(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.describe_visible_collisions` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_visible_collisions(*args, **kwargs)
-
-    def describe_frame_payload(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.describe_frame_payload` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_frame_payload(*args, **kwargs)
-
-    def describe_frame_inventory(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.describe_frame_inventory` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_frame_inventory(*args, **kwargs)
-
-    def describe_frame_access_contract(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.describe_frame_access_contract` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_frame_access_contract(*args, **kwargs)
-
-    def get_frame_payload_field(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.get_frame_payload_field` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).get_frame_payload_field(*args, **kwargs)
-
-    def find_target_by_display_name(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.find_target_by_display_name` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).find_target_by_display_name(*args, **kwargs)
-
-    def explain_target_access(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.explain_target_access` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).explain_target_access(*args, **kwargs)
-
-    def list_targets(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.list_targets` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).list_targets(*args, **kwargs)
-
-    def describe_targets(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_frame.describe_targets` on the shipped viewer surface."""
-        return self.get_view_frame(frame_name=frame_name).describe_targets(*args, **kwargs)
-
-    def list_conduits(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.list_conduits` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).list_conduits(*args, **kwargs)
-
-    def list_root_conduits(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.list_root_conduits` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).list_root_conduits(*args, **kwargs)
-
-    def describe_conduits(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.describe_conduits` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).describe_conduits(*args, **kwargs)
-
-    def get_conduit(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.get_required_conduit` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).get_required_conduit(*args, **kwargs)
-
-    def describe_conduit(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.describe_conduit` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).describe_conduit(*args, **kwargs)
-
-    def describe_conduit_brief(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.describe_conduit_brief` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).describe_conduit_brief(*args, **kwargs)
-
-    def describe_conduit_inventory(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.describe_conduit_inventory` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).describe_conduit_inventory(*args, **kwargs)
-
-    def describe_conduit_relationships(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.describe_conduit_relationships` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).describe_conduit_relationships(*args, **kwargs)
-
-    def describe_conduit_missing_sections(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.describe_conduit_missing_sections` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).describe_conduit_missing_sections(*args, **kwargs)
-
-    def describe_conduit_crosswalk(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.describe_conduit_crosswalk` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).describe_conduit_crosswalk(*args, **kwargs)
-
-    def list_conduit_spells(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.list_conduit_spells` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).list_conduit_spells(*args, **kwargs)
-
-    def describe_conduit_topology(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.describe_conduit_topology` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).describe_conduit_topology(*args, **kwargs)
-
-    def compare_conduits(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.compare_conduits` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).compare_conduits(*args, **kwargs)
-
-    def is_root_conduit(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.is_root_conduit` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).is_root_conduit(*args, **kwargs)
-
-    def get_root_conduit_id(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.get_root_conduit_id` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).get_root_conduit_id(*args, **kwargs)
-
-    def list_conduits_by_root_id(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.list_conduits_by_root_id` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).list_conduits_by_root_id(*args, **kwargs)
-
-    def list_conduits_by_policy(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.list_conduits_by_policy` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).list_conduits_by_policy(*args, **kwargs)
-
-    def list_conduits_by_state(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.list_conduits_by_state` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).list_conduits_by_state(*args, **kwargs)
-
-    def list_peer_conduits(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.list_peer_conduits` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).list_peer_conduits(*args, **kwargs)
-
-    def list_child_conduits(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.list_child_conduits` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).list_child_conduits(*args, **kwargs)
-
-    def list_parent_conduit(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.get_parent_conduit_id` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).get_parent_conduit_id(*args, **kwargs)
-
-    def describe_root_conduit_inventory(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_conduit.describe_root_conduit_inventory` on the shipped viewer surface."""
-        return self.get_view_conduit(frame_name=frame_name).describe_root_conduit_inventory(*args, **kwargs)
-
-    def list_spells(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_spell.list_spells` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).list_spells(*args, **kwargs)
-
-    def describe_spells(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_spell.describe_spells` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).describe_spells(*args, **kwargs)
-
-    def get_spell(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_spell.get_required_spell` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).get_required_spell(*args, **kwargs)
-
-    def describe_spell(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_spell.describe_spell` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).describe_spell(*args, **kwargs)
-
-    def describe_spell_brief(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_spell.describe_spell_brief` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).describe_spell_brief(*args, **kwargs)
-
-    def describe_spell_inventory(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_spell.describe_spell_inventory` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).describe_spell_inventory(*args, **kwargs)
-
-    def describe_spell_origin(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_spell.describe_spell_origin` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).describe_spell_origin(*args, **kwargs)
-
-    def describe_spell_lineage(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_spell.describe_spell_lineage` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).describe_spell_lineage(*args, **kwargs)
-
-    def describe_spell_payload(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_spell.describe_spell_payload` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).describe_spell_payload(*args, **kwargs)
-
-    def describe_spell_methods(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_spell.describe_spell_methods` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).describe_spell_methods(*args, **kwargs)
-
-    def describe_spell_attributes(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_spell.describe_spell_attributes` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).describe_spell_attributes(*args, **kwargs)
-
-    def describe_spell_dunder_surface(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_spell.describe_spell_dunder_surface` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).describe_spell_dunder_surface(*args, **kwargs)
-
-    def describe_spell_missing_sections(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_spell.describe_spell_missing_sections` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).describe_spell_missing_sections(*args, **kwargs)
-
-    def describe_spell_crosswalk(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_spell.describe_spell_crosswalk` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).describe_spell_crosswalk(*args, **kwargs)
-
-    def compare_spells(self, *args, frame_name: Optional[str] = None, **kwargs) -> Any:
-        """Direct facade for `view_spell.compare_spells` on the shipped viewer surface."""
-        return self.get_view_spell(frame_name=frame_name).compare_spells(*args, **kwargs)
+    @property
+    def view_multiframe(self) -> ViewMultiFrame:
+        """Return the multi-frame helper owned by this viewer."""
+        return self.get_view_multiframe()
 
     def list_viewer_method_names_ast_json(
             self,
@@ -2689,102 +1730,7 @@ class FrameViewer(Cleanable):
             include_dunder=include_dunder,
         )
 
-    def has_enabled_helper(self, helper_name: str) -> bool:
-        """
-        Return whether the shipped viewer surface exposes one method name.
 
-        Args:
-            helper_name:
-                Exposed viewer method name to inspect.
-
-        Returns:
-            bool: True when the shipped viewer surface exposes the method.
-        """
-        self.check_cleaned()
-        if not helper_name:
-            raise ValueError("helper_name cannot be empty.")
-        return helper_name in self._TOOL_HANDLER_NAMES_BY_NAME
-
-    def execute_method(
-            self,
-            method_name: str,
-            **kwargs,
-    ) -> Any:
-        """
-        Execute one shipped viewer-surface method for the target frame context.
-
-        Args:
-            method_name:
-                Exposed viewer method name to execute.
-            **kwargs:
-                Arguments forwarded to the resolved handler.
-
-        Raises:
-            ValueError:
-                Raised when `method_name` is empty or when the mapped handler
-                cannot be resolved.
-        """
-        self.check_cleaned()
-        if not method_name:
-            raise ValueError("method_name cannot be empty.")
-        handler_name = self._TOOL_HANDLER_NAMES_BY_NAME.get(method_name)
-        if not handler_name:
-            raise ValueError(
-                "FrameViewer surface method '{0}' was not found.".format(method_name)
-            )
-        selected_frame_name = kwargs.get("frame_name")
-        handler = self._resolve_tool_handler(
-            handler_name,
-            frame_name=selected_frame_name,
-        )
-        if handler is None or not callable(handler):
-            raise ValueError(
-                "FrameViewer surface method '{0}' targets missing handler '{1}'.".format(
-                    method_name,
-                    handler_name,
-                )
-            )
-        if self._rift_gate is None:
-            return handler(**kwargs)
-        self._rift_gate.admit()
-        self._rift_gate.register_ticket()
-        try:
-            return handler(**kwargs)
-        finally:
-            self._rift_gate.unregister_ticket()
-
-    def _resolve_tool_handler(
-            self,
-            handler_name: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> Optional[Any]:
-        """
-        Resolve one viewer-surface handler.
-
-        Args:
-            handler_name:
-                Host method name or dotted helper-path target.
-            frame_name:
-                Optional hosted frame name for helper-surface methods.
-
-        Returns:
-            Optional[Any]: Resolved callable when found.
-        """
-        if "." not in handler_name:
-            return getattr(self, handler_name, None)
-        helper_name, method_name = handler_name.split(".", 1)
-        if helper_name == "view_frame":
-            return getattr(self.get_view_frame(frame_name=frame_name), method_name, None)
-        if helper_name == "view_conduit":
-            return getattr(
-                self.get_view_conduit(frame_name=frame_name),
-                method_name,
-                None,
-            )
-        if helper_name == "view_spell":
-            return getattr(self.get_view_spell(frame_name=frame_name), method_name, None)
-        return None
 
     def _get_required_default_frame_name(self) -> str:
         if self._default_view_frame_name is None:
@@ -2816,7 +1762,7 @@ class FrameViewer(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> Tuple[GeneralViewFrame, GeneralViewConduit, GeneralViewSpell]:
+    ) -> Tuple[ViewFrame, ViewConduit, ViewSpell]:
         """
         Return the helper bundle for one hosted frame, creating it on demand.
 
@@ -2825,7 +1771,7 @@ class FrameViewer(Cleanable):
                 Optional hosted frame name override.
 
         Returns:
-            Tuple[GeneralViewFrame, GeneralViewConduit, GeneralViewSpell]:
+            Tuple[ViewFrame, ViewConduit, ViewSpell]:
                 Helper bundle for the selected frame.
         """
         selected_frame_name = self._get_required_selected_frame_name(frame_name)
@@ -2838,6 +1784,328 @@ class FrameViewer(Cleanable):
             )
             self._helper_surfaces_by_frame_name[selected_frame_name] = helper_bundle
             return helper_bundle
+
+    def list_frames(self) -> List[str]:
+        """Direct facade for `list_frame_names` on the shipped viewer surface."""
+        return self.list_frame_names()
+
+    def list_spells_by_owner_conduit_record(self, conduit_id: str, *, frame_name: Optional[str] = None) -> List[str]:
+        """Direct facade for `list_spells_by_owner_conduit` on the shipped viewer surface."""
+        return self.list_spells_by_owner_conduit(conduit_id)
+
+    def list_spells_by_spellbook_id_record(self, spellbook_id: str, *, frame_name: Optional[str] = None) -> List[str]:
+        """Direct facade for `list_spells_by_spellbook_id` on the shipped viewer surface."""
+        return self.list_spells_by_spellbook_id(spellbook_id)
+
+    def list_spells_by_permission_record(self, permission: str, *, frame_name: Optional[str] = None) -> List[str]:
+        """Direct facade for `list_spells_by_permission` on the shipped viewer surface."""
+        return self.list_spells_by_permission(permission)
+
+    def list_spells_by_existence_record(self, existence: str, *, frame_name: Optional[str] = None) -> List[str]:
+        """Direct facade for `list_spells_by_existence` on the shipped viewer surface."""
+        return self.list_spells_by_existence(existence)
+
+    def list_spells_by_spellframe_record(self, spellframe_name: str, *, frame_name: Optional[str] = None) -> List[str]:
+        """Direct facade for `list_spells_by_spellframe` on the shipped viewer surface."""
+        return self.list_spells_by_spellframe(spellframe_name)
+
+    def describe_visible_surface(self, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_frame.describe_visible_surface` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_visible_surface(frame_name=frame_name)
+
+    def describe_missing_surface(self, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_frame.describe_missing_surface` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_missing_surface(frame_name=frame_name)
+
+    def describe_frame_brief_local(self, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_frame.describe_frame_brief` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_frame_brief(frame_name=frame_name)
+
+    def describe_visible_inventory_by_kind(self, *, frame_name: Optional[str] = None) -> Dict[str, Dict[str, object]]:
+        """Direct facade for `view_frame.describe_visible_inventory_by_kind` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_visible_inventory_by_kind(frame_name=frame_name)
+
+    def describe_frame_topology(self, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_frame.describe_frame_topology` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_frame_topology(frame_name=frame_name)
+
+    def list_visible_target_ids(self, *, frame_name: Optional[str] = None, source_kind: Optional[str] = None) -> List[str]:
+        """Direct facade for `view_frame.list_visible_target_ids` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).list_visible_target_ids(frame_name=frame_name, source_kind=source_kind)
+
+    def list_visible_target_ids_by_kind(self, *, frame_name: Optional[str] = None) -> Dict[str, Tuple[str, ...]]:
+        """Direct facade for `view_frame.list_visible_target_ids_by_kind` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).list_visible_target_ids_by_kind(frame_name=frame_name)
+
+    def list_visible_conduit_ids(self, *, frame_name: Optional[str] = None) -> List[str]:
+        """Direct facade for `view_frame.list_visible_conduit_ids` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).list_visible_conduit_ids(frame_name=frame_name)
+
+    def list_visible_spell_source_ids(self, *, frame_name: Optional[str] = None) -> List[str]:
+        """Direct facade for `view_frame.list_visible_spell_source_ids` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).list_visible_spell_source_ids(frame_name=frame_name)
+
+    def list_visible_root_conduits(self, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
+        """Direct facade for `view_frame.list_visible_root_conduits` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).list_visible_root_conduits(frame_name=frame_name)
+
+    def list_visible_binding_names(self, *, frame_name: Optional[str] = None) -> List[str]:
+        """Direct facade for `view_frame.list_visible_binding_names` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).list_visible_binding_names(frame_name=frame_name)
+
+    def list_visible_spell_names(self, *, frame_name: Optional[str] = None) -> List[str]:
+        """Direct facade for `view_frame.list_visible_spell_names` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).list_visible_spell_names(frame_name=frame_name)
+
+    def list_visible_spellframes(self, *, frame_name: Optional[str] = None) -> List[str]:
+        """Direct facade for `view_frame.list_visible_spellframes` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).list_visible_spellframes(frame_name=frame_name)
+
+    def list_visible_lineage_ids(self, *, frame_name: Optional[str] = None) -> List[str]:
+        """Direct facade for `view_frame.list_visible_lineage_ids` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).list_visible_lineage_ids(frame_name=frame_name)
+
+    def describe_visible_spell_ownership(self, *, frame_name: Optional[str] = None) -> Dict[str, Tuple[str, ...]]:
+        """Direct facade for `view_frame.describe_visible_spell_ownership` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_visible_spell_ownership(frame_name=frame_name)
+
+    def describe_visible_conduit_tree(self, *, frame_name: Optional[str] = None) -> Dict[str, Tuple[str, ...]]:
+        """Direct facade for `view_frame.describe_visible_conduit_tree` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_visible_conduit_tree(frame_name=frame_name)
+
+    def search_targets_contains(self, text: str, *, frame_name: Optional[str] = None, source_kind: Optional[str] = None) -> List[IFrameLink]:
+        """Direct facade for `view_frame.search_targets_contains` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).search_targets_contains(text, frame_name=frame_name, source_kind=source_kind)
+
+    def search_targets_prefix(self, prefix: str, *, frame_name: Optional[str] = None, source_kind: Optional[str] = None) -> List[IFrameLink]:
+        """Direct facade for `view_frame.search_targets_prefix` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).search_targets_prefix(prefix, frame_name=frame_name, source_kind=source_kind)
+
+    def group_targets_by_kind(self, *, frame_name: Optional[str] = None) -> Dict[str, List[IFrameLink]]:
+        """Direct facade for `view_frame.group_targets_by_kind` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).group_targets_by_kind(frame_name=frame_name)
+
+    def describe_target_brief(self, *, source_kind: str, source_id: str, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_frame.describe_target_brief` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_target_brief(frame_name=frame_name, source_kind=source_kind, source_id=source_id)
+
+    def describe_target_identity(self, *, source_kind: str, source_id: str, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_frame.describe_target_identity` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_target_identity(frame_name=frame_name, source_kind=source_kind, source_id=source_id)
+
+    def describe_visible_collisions(self, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_frame.describe_visible_collisions` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_visible_collisions(frame_name=frame_name)
+
+    def describe_frame_payload(self, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_frame.describe_frame_payload` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_frame_payload(frame_name=frame_name)
+
+    def describe_frame_inventory(self, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_frame.describe_frame_inventory` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_frame_inventory(frame_name=frame_name)
+
+    def describe_frame_access_contract(self, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_frame.describe_frame_access_contract` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_frame_access_contract(frame_name=frame_name)
+
+    def get_frame_payload_field(self, field_name: str, *, frame_name: Optional[str] = None) -> object:
+        """Direct facade for `view_frame.get_frame_payload_field` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).get_frame_payload_field(field_name, frame_name=frame_name)
+
+    def find_target_by_display_name(self, display_name: str, *, frame_name: Optional[str] = None, source_kind: Optional[str] = None) -> List[IFrameLink]:
+        """Direct facade for `view_frame.find_target_by_display_name` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).find_target_by_display_name(display_name, frame_name=frame_name, source_kind=source_kind)
+
+    def explain_target_access(self, *, source_kind: str, source_id: str, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_frame.explain_target_access` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).explain_target_access(frame_name=frame_name, source_kind=source_kind, source_id=source_id)
+
+    def list_targets(self, *, frame_name: Optional[str] = None, source_kind: Optional[str] = None) -> List[IFrameLink]:
+        """Direct facade for `view_frame.list_targets` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).list_targets(frame_name=frame_name, source_kind=source_kind)
+
+    def describe_targets(self, *, frame_name: Optional[str] = None, source_kind: Optional[str] = None) -> List[Dict[str, object]]:
+        """Direct facade for `view_frame.describe_targets` on the shipped viewer surface."""
+        return self.get_view_frame(frame_name=frame_name).describe_targets(frame_name=frame_name, source_kind=source_kind)
+
+    def list_conduits(self, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
+        """Direct facade for `view_conduit.list_conduits` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).list_conduits(frame_name=frame_name)
+
+    def list_root_conduits(self, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
+        """Direct facade for `view_conduit.list_root_conduits` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).list_root_conduits(frame_name=frame_name)
+
+    def describe_conduits(self, *, frame_name: Optional[str] = None) -> List[Dict[str, object]]:
+        """Direct facade for `view_conduit.describe_conduits` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).describe_conduits(frame_name=frame_name)
+
+    def get_conduit(self, conduit_id: str, *, frame_name: Optional[str] = None) -> IFrameLink:
+        """Direct facade for `view_conduit.get_required_conduit` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).get_required_conduit(conduit_id, frame_name=frame_name)
+
+    def describe_conduit(self, conduit_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_conduit.describe_conduit` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).describe_conduit(conduit_id, frame_name=frame_name)
+
+    def describe_conduit_brief(self, conduit_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_conduit.describe_conduit_brief` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).describe_conduit_brief(conduit_id, frame_name=frame_name)
+
+    def describe_conduit_inventory(self, conduit_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_conduit.describe_conduit_inventory` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).describe_conduit_inventory(conduit_id, frame_name=frame_name)
+
+    def describe_conduit_relationships(self, conduit_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_conduit.describe_conduit_relationships` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).describe_conduit_relationships(conduit_id, frame_name=frame_name)
+
+    def describe_conduit_missing_sections(self, conduit_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_conduit.describe_conduit_missing_sections` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).describe_conduit_missing_sections(conduit_id, frame_name=frame_name)
+
+    def describe_conduit_crosswalk(self, conduit_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_conduit.describe_conduit_crosswalk` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).describe_conduit_crosswalk(conduit_id, frame_name=frame_name)
+
+    def list_conduit_spells(self, conduit_id: str, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
+        """Direct facade for `view_conduit.list_conduit_spells` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).list_conduit_spells(conduit_id, frame_name=frame_name)
+
+    def describe_conduit_topology(self, conduit_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_conduit.describe_conduit_topology` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).describe_conduit_topology(conduit_id, frame_name=frame_name)
+
+    def compare_conduits(self, left_conduit_id: str, right_conduit_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_conduit.compare_conduits` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).compare_conduits(left_conduit_id, right_conduit_id, frame_name=frame_name)
+
+    def is_root_conduit(self, conduit_id: str, *, frame_name: Optional[str] = None) -> bool:
+        """Direct facade for `view_conduit.is_root_conduit` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).is_root_conduit(conduit_id, frame_name=frame_name)
+
+    def get_root_conduit_id(self, conduit_id: str, *, frame_name: Optional[str] = None) -> str:
+        """Direct facade for `view_conduit.get_root_conduit_id` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).get_root_conduit_id(conduit_id, frame_name=frame_name)
+
+    def list_conduits_by_root_id(self, root_conduit_id: str, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
+        """Direct facade for `view_conduit.list_conduits_by_root_id` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).list_conduits_by_root_id(root_conduit_id, frame_name=frame_name)
+
+    def list_conduits_by_policy(self, policy_name: str, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
+        """Direct facade for `view_conduit.list_conduits_by_policy` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).list_conduits_by_policy(policy_name, frame_name=frame_name)
+
+    def list_conduits_by_state(self, state_name: str, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
+        """Direct facade for `view_conduit.list_conduits_by_state` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).list_conduits_by_state(state_name, frame_name=frame_name)
+
+    def list_peer_conduits(self, conduit_id: str, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
+        """Direct facade for `view_conduit.list_peer_conduits` on the shipped viewer surface."""
+        return self.get_view_conduit(frame_name=frame_name).list_peer_conduits(conduit_id, frame_name=frame_name)
+
+    def list_spells(self, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
+        """Direct facade for `view_spell.list_spells` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).list_spells(frame_name=frame_name)
+
+    def describe_spells(self, *, frame_name: Optional[str] = None) -> List[Dict[str, object]]:
+        """Direct facade for `view_spell.describe_spells` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).describe_spells(frame_name=frame_name)
+
+    def get_spell(self, spell_source_id: str, *, frame_name: Optional[str] = None) -> IFrameLink:
+        """Direct facade for `view_spell.get_required_spell` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).get_required_spell(spell_source_id, frame_name=frame_name)
+
+    def describe_spell(self, spell_source_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_spell.describe_spell` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).describe_spell(spell_source_id, frame_name=frame_name)
+
+    def describe_spell_brief(self, spell_source_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_spell.describe_spell_brief` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).describe_spell_brief(spell_source_id, frame_name=frame_name)
+
+    def describe_spell_origin(self, spell_source_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_spell.describe_spell_origin` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).describe_spell_origin(spell_source_id, frame_name=frame_name)
+
+    def describe_spell_lineage(self, spell_source_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_spell.describe_spell_lineage` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).describe_spell_lineage(spell_source_id, frame_name=frame_name)
+
+    def describe_spell_payload(self, spell_source_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_spell.describe_spell_payload` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).describe_spell_payload(spell_source_id, frame_name=frame_name)
+
+    def describe_spell_missing_sections(self, spell_source_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_spell.describe_spell_missing_sections` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).describe_spell_missing_sections(spell_source_id, frame_name=frame_name)
+
+    def describe_spell_crosswalk(self, spell_source_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_spell.describe_spell_crosswalk` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).describe_spell_crosswalk(spell_source_id, frame_name=frame_name)
+
+    def compare_spells(self, left_spell_source_id: str, right_spell_source_id: str, *, frame_name: Optional[str] = None) -> Dict[str, object]:
+        """Direct facade for `view_spell.compare_spells` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).compare_spells(left_spell_source_id, right_spell_source_id, frame_name=frame_name)
+
+    def list_spells_by_owner_conduit(self, conduit_id: str, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
+        """Direct facade for `view_spell.list_spells_by_owner_conduit` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).list_spells_by_owner_conduit(conduit_id, frame_name=frame_name)
+
+    def list_spells_by_spellbook_id(self, spellbook_id: str, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
+        """Direct facade for `view_spell.list_spells_by_spellbook_id` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).list_spells_by_spellbook_id(spellbook_id, frame_name=frame_name)
+
+    def list_spells_by_permission(self, permission_name: str, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
+        """Direct facade for `view_spell.list_spells_by_permission` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).list_spells_by_permission(permission_name, frame_name=frame_name)
+
+    def list_spells_by_existence(self, existence_name: str, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
+        """Direct facade for `view_spell.list_spells_by_existence` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).list_spells_by_existence(existence_name, frame_name=frame_name)
+
+    def list_spells_by_spellframe(self, spellframe_name: str, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
+        """Direct facade for `view_spell.list_spells_by_spellframe` on the shipped viewer surface."""
+        return self.get_view_spell(frame_name=frame_name).list_spells_by_spellframe(spellframe_name, frame_name=frame_name)
+
+    def list_viewer_method_names_ast_json(
+            self,
+            *,
+            include_private: bool = False,
+            include_dunder: bool = False,
+    ) -> str:
+        """Return a minified JSON list of `FrameViewer` class method names."""
+        self.check_cleaned()
+        return ClassSurfaceAstDescriber.list_class_method_names_ast_json(
+            self,
+            include_private=include_private,
+            include_dunder=include_dunder,
+        )
+
+    def describe_agent_onboarding_json(self) -> str:
+        """Return the shared first-time onboarding hint for Melder agents."""
+        self.check_cleaned()
+        return ClassSurfaceAstDescriber.describe_agent_onboarding_json()
+
+    def describe_viewer_agent_purpose_json(self) -> str:
+        """Return the minified JSON agent-purpose surface for the viewer host."""
+        self.check_cleaned()
+        return ClassSurfaceAstDescriber.describe_agent_purpose_json(self)
+
+    def describe_viewer_class_surface_ast_json(
+            self,
+            *,
+            include_private: bool = False,
+            include_dunder: bool = False,
+    ) -> str:
+        """Return a minified JSON description of the `FrameViewer` class surface."""
+        self.check_cleaned()
+        return ClassSurfaceAstDescriber.describe_class_surface_ast_json(
+            self,
+            include_private=include_private,
+            include_dunder=include_dunder,
+        )
 
     def _get_required_frame_descriptor(self, frame_name: str) -> FrameDescriptor:
         return self._get_required_view_projection(frame_name).frame_descriptor
@@ -2894,384 +2162,10 @@ class FrameViewer(Cleanable):
         """
         return self._get_required_frame_projection_set(frame_name).view_projection
 
-    def _get_frame_names_for_query(
-            self,
-            frame_name: Optional[str] = None,
-    ) -> Tuple[str, ...]:
-        """
-        Return the hosted frame names participating in one host query.
-
-        Purpose:
-            Normalize one optional frame filter into the deterministic set of
-            frame names a multi-descriptor host query should inspect.
-
-        Args:
-            frame_name:
-                Optional hosted frame name. When provided, only that frame is
-                returned after validation.
-
-        Returns:
-            Tuple[str, ...]: Deterministic hosted frame names for the query.
-        """
-        self.check_cleaned()
-        if frame_name is not None:
-            if not frame_name:
-                raise ValueError("frame_name cannot be empty.")
-            self._get_required_frame_descriptor(frame_name)
-            return (frame_name,)
-        return tuple(self.list_frame_names())
-
-    def _iter_conduit_records(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> Iterator[object]:
-        """
-        Yield conduit records in deterministic hosted order.
-
-        Purpose:
-            Provide one internal iteration path for descriptor-host conduit
-            queries without duplicating record traversal logic.
-
-        Args:
-            frame_name:
-                Optional hosted frame name. When omitted, yields conduit
-                records across all hosted frames.
-
-        Yields:
-            ConduitRecord-like objects in deterministic order.
-        """
-        for current_frame_name in self._get_frame_names_for_query(frame_name):
-            descriptor = self._get_required_frame_descriptor(current_frame_name)
-            for conduit_id in sorted(descriptor.conduit_records_by_id.keys()):
-                yield descriptor.conduit_records_by_id[conduit_id]
-
-    def _iter_spell_records(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> Iterator[object]:
-        """
-        Yield spell records in deterministic hosted order.
-
-        Purpose:
-            Provide one internal iteration path for descriptor-host spell
-            queries without duplicating record traversal logic.
-
-        Args:
-            frame_name:
-                Optional hosted frame name. When omitted, yields spell records
-                across all hosted frames.
-
-        Yields:
-            SpellRecord-like objects in deterministic order.
-        """
-        for current_frame_name in self._get_frame_names_for_query(frame_name):
-            descriptor = self._get_required_frame_descriptor(current_frame_name)
-            for record_key in sorted(descriptor.spell_records_by_key.keys()):
-                yield descriptor.spell_records_by_key[record_key]
-
-    @staticmethod
-    def _build_spell_source_id(spell_record: object) -> str:
-        """
-        Build the published spell source id for one spell record.
-
-        Args:
-            spell_record:
-                Spell record whose published source id should be derived.
-
-        Returns:
-            str: Published spell source id in `spellbook_id:spell_id` form.
-        """
-        return "{0}:{1}".format(
-            spell_record.origin_spellbook_id,
-            spell_record.spell_id,
-        )
-
-    @staticmethod
-    def _normalize_spellframe_value(spellframe: object) -> Optional[str]:
-        """
-        Return one stable string view of a spellframe value.
-
-        Purpose:
-            Normalize the loose `SpellRecord.spellframe` field into a host-safe
-            string representation suitable for descriptor-only summaries and
-            filters.
-
-        Args:
-            spellframe:
-                Raw spellframe value from a spell record.
-
-        Returns:
-            Optional[str]: Normalized spellframe string when present.
-        """
-        if spellframe is None:
-            return None
-        if isinstance(spellframe, str):
-            return spellframe
-        if isinstance(spellframe, type):
-            return spellframe.__name__
-        return str(spellframe)
-
-    def _get_required_spell_record(
-            self,
-            spell_source_id: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> Tuple[str, object]:
-        """
-        Return one spell record plus its frame name or raise.
-
-        Purpose:
-            Resolve one published spell source id against the hosted
-            descriptors while keeping the lookup behavior explicit and
-            deterministic.
-
-        Args:
-            spell_source_id:
-                Published spell source id in `spellbook_id:spell_id` form.
-            frame_name:
-                Optional hosted frame name to constrain the lookup.
-
-        Returns:
-            Tuple[str, object]: `(frame_name, spell_record)` for the resolved
-            record.
-        """
-        if not spell_source_id:
-            raise ValueError("spell_source_id cannot be empty.")
-        spellbook_id, spell_id = self._parse_spell_source_id(spell_source_id)
-        matching_records: List[Tuple[str, object]] = []
-        for current_frame_name in self._get_frame_names_for_query(frame_name):
-            descriptor = self._get_required_frame_descriptor(current_frame_name)
-            record = descriptor.spell_records_by_key.get((spellbook_id, spell_id))
-            if record is None:
-                continue
-            matching_records.append((current_frame_name, record))
-        if len(matching_records) == 0:
-            raise ValueError(
-                "Spell source id '{0}' was not found.".format(spell_source_id)
-            )
-        if len(matching_records) > 1:
-            raise ValueError(
-                "Spell source id '{0}' is ambiguous across hosted frames.".format(
-                    spell_source_id
-                )
-            )
-        return matching_records[0]
-
-    def _get_required_conduit_record(
-            self,
-            conduit_id: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> Tuple[str, object]:
-        """
-        Return one conduit record plus its frame name or raise.
-
-        Args:
-            conduit_id:
-                Published conduit id.
-            frame_name:
-                Optional hosted frame name to constrain the lookup.
-
-        Returns:
-            Tuple[str, object]: `(frame_name, conduit_record)` for the resolved
-            record.
-        """
-        if not conduit_id:
-            raise ValueError("conduit_id cannot be empty.")
-        matching_records: List[Tuple[str, object]] = []
-        for current_frame_name in self._get_frame_names_for_query(frame_name):
-            descriptor = self._get_required_frame_descriptor(current_frame_name)
-            record = descriptor.conduit_records_by_id.get(conduit_id)
-            if record is None:
-                continue
-            matching_records.append((current_frame_name, record))
-        if len(matching_records) == 0:
-            raise ValueError(
-                "Conduit id '{0}' was not found.".format(conduit_id)
-            )
-        if len(matching_records) > 1:
-            raise ValueError(
-                "Conduit id '{0}' is ambiguous across hosted frames.".format(
-                    conduit_id
-                )
-            )
-        return matching_records[0]
-
-    @staticmethod
-    def _parse_spell_source_id(spell_source_id: str) -> Tuple[str, str]:
-        """
-        Parse one published spell source id into its canonical record key.
-
-        Args:
-            spell_source_id:
-                Published spell source id in `spellbook_id:spell_id` form.
-
-        Returns:
-            Tuple[str, str]: `(spellbook_id, spell_id)` key.
-        """
-        parts = spell_source_id.split(":", 1)
-        if len(parts) != 2:
-            raise ValueError(
-                "spell_source_id '{0}' must be in 'spellbook_id:spell_id' form.".format(
-                    spell_source_id
-                )
-            )
-        return parts[0], parts[1]
-
-    @staticmethod
-    def _compare_sorted_value_sets(
-            left_values: Tuple[str, ...],
-            right_values: Tuple[str, ...],
-    ) -> Dict[str, Tuple[str, ...]]:
-        """
-        Return one deterministic shared/left-only/right-only value diff.
-
-        Args:
-            left_values:
-                Left normalized value tuple.
-            right_values:
-                Right normalized value tuple.
-
-        Returns:
-            Dict[str, Tuple[str, ...]]: Shared and directional set deltas.
-        """
-        left_set = set(left_values)
-        right_set = set(right_values)
-        return {
-            "shared": tuple(sorted(left_set & right_set)),
-            "left_only": tuple(sorted(left_set - right_set)),
-            "right_only": tuple(sorted(right_set - left_set)),
-        }
-
-    def _describe_spell_value_groups(
-            self,
-            *,
-            frame_name: Optional[str],
-            value_getter: Callable[[object], Optional[object]],
-    ) -> Dict[str, Tuple[str, ...]]:
-        """
-        Group spell source ids by one normalized spell-record value.
-
-        Args:
-            frame_name:
-                Optional hosted frame name filter.
-            value_getter:
-                Callable that extracts the grouping value from one spell
-                record.
-
-        Returns:
-            Dict[str, Tuple[str, ...]]: Grouping value mapped to spell source
-            ids.
-        """
-        grouped_source_ids_by_value: Dict[str, List[str]] = {}
-        for spell_record in self._iter_spell_records(frame_name=frame_name):
-            current_value = value_getter(spell_record)
-            if current_value is None:
-                continue
-            grouped_source_ids_by_value.setdefault(
-                str(current_value),
-                [],
-            ).append(self._build_spell_source_id(spell_record))
-        return {
-            current_value: tuple(sorted(source_ids))
-            for current_value, source_ids in grouped_source_ids_by_value.items()
-        }
-
-    def _describe_spell_value_collisions(
-            self,
-            *,
-            frame_name: Optional[str],
-            value_getter: Callable[[object], Optional[object]],
-    ) -> Dict[str, Tuple[str, ...]]:
-        """
-        Return spell value groups that have more than one published member.
-
-        Args:
-            frame_name:
-                Optional hosted frame name filter.
-            value_getter:
-                Callable that extracts the grouping value from one spell
-                record.
-
-        Returns:
-            Dict[str, Tuple[str, ...]]: Colliding value groups only.
-        """
-        grouped_source_ids_by_value = self._describe_spell_value_groups(
-            frame_name=frame_name,
-            value_getter=value_getter,
-        )
-        return {
-            current_value: source_ids
-            for current_value, source_ids in grouped_source_ids_by_value.items()
-            if len(source_ids) > 1
-        }
-
-    def _describe_spellbook_mismatches(
-            self,
-            *,
-            frame_name: Optional[str],
-            value_getter: Callable[[object], Optional[object]],
-    ) -> Dict[str, Dict[str, object]]:
-        """
-        Return spellbook groups whose selected value is not uniform.
-
-        Args:
-            frame_name:
-                Optional hosted frame name filter.
-            value_getter:
-                Callable that extracts the compared value from one spell record.
-
-        Returns:
-            Dict[str, Dict[str, object]]: Spellbook mismatch summaries.
-        """
-        grouped_records_by_spellbook_id: Dict[str, List[object]] = {}
-        for spell_record in self._iter_spell_records(frame_name=frame_name):
-            grouped_records_by_spellbook_id.setdefault(
-                spell_record.origin_spellbook_id,
-                [],
-            ).append(spell_record)
-        mismatches_by_spellbook_id: Dict[str, Dict[str, object]] = {}
-        for spellbook_id, spell_records in grouped_records_by_spellbook_id.items():
-            current_values = {
-                str(value_getter(spell_record))
-                for spell_record in spell_records
-                if value_getter(spell_record) is not None
-            }
-            if len(current_values) <= 1:
-                continue
-            mismatches_by_spellbook_id[spellbook_id] = {
-                "source_ids": tuple(
-                    sorted(
-                        self._build_spell_source_id(spell_record)
-                        for spell_record in spell_records
-                    )
-                ),
-                "values": tuple(sorted(current_values)),
-            }
-        return mismatches_by_spellbook_id
-
-    @staticmethod
-    def _normalize_policy_name(policy: object) -> Optional[str]:
-        """
-        Return one stable string view of a conduit policy value.
-
-        Args:
-            policy:
-                Raw conduit policy value.
-
-        Returns:
-            Optional[str]: Normalized conduit policy name when present.
-        """
-        if policy is None:
-            return None
-        return policy.name
-
     def _create_helper_surface_bundle_for_frame(
             self,
             frame_name: str,
-    ) -> Tuple[GeneralViewFrame, GeneralViewConduit, GeneralViewSpell]:
+    ) -> Tuple[ViewFrame, ViewConduit, ViewSpell]:
         """
         Create one helper bundle for one hosted frame.
 
@@ -3280,11 +2174,11 @@ class FrameViewer(Cleanable):
                 Hosted frame name.
 
         Returns:
-            Tuple[GeneralViewFrame, GeneralViewConduit, GeneralViewSpell]:
+            Tuple[ViewFrame, ViewConduit, ViewSpell]:
                 Helper bundle bound to the hosted frame's projection-owned
                 descriptor and ACL state.
         """
-        view_frame = GeneralViewFrame(
+        view_frame = ViewFrame(
             frame_name=frame_name,
             frame_descriptor=self._get_required_frame_descriptor(frame_name),
             frame_acl_configuration=self._get_required_frame_acl_configuration(
@@ -3295,51 +2189,6 @@ class FrameViewer(Cleanable):
             ),
             default_detail_level=self.default_detail_level,
         )
-        view_conduit = GeneralViewConduit(frame_view=view_frame)
-        view_spell = GeneralViewSpell(frame_view=view_frame)
+        view_conduit = ViewConduit(frame_view=view_frame)
+        view_spell = ViewSpell(frame_view=view_frame)
         return view_frame, view_conduit, view_spell
-
-    @staticmethod
-    def _clone_compiled_access_surface(
-            compiled_access_surface: CompiledFrameACLAccessSurface,
-    ) -> CompiledFrameACLAccessSurface:
-        """
-        Return a detached compiled ACL surface clone for viewer-owned state.
-
-        Contract:
-            - Preserves both visibility and command-enablement fields so cloned
-              viewers do not silently lose command ACL state.
-            - Copies detached mapping data through the public access-surface
-              properties.
-
-        Args:
-            compiled_access_surface:
-                Source compiled ACL access surface to clone.
-
-        Returns:
-            CompiledFrameACLAccessSurface: Detached compiled ACL surface copy.
-        """
-        return CompiledFrameACLAccessSurface(
-            frame_name=compiled_access_surface.frame_name,
-            configuration_id=compiled_access_surface.configuration_id,
-            view_profile_name=compiled_access_surface.view_profile_name,
-            view_profile_version=compiled_access_surface.view_profile_version,
-            codegen_profile_name=compiled_access_surface.codegen_profile_name,
-            codegen_profile_version=compiled_access_surface.codegen_profile_version,
-            command_frame_enabled=compiled_access_surface.command_frame_enabled,
-            allowed_kinds=compiled_access_surface.allowed_kinds,
-            allowed_commands=compiled_access_surface.allowed_commands,
-            frame_payload_fields=compiled_access_surface.frame_payload_fields,
-            visible_conduit_ids=compiled_access_surface.visible_conduit_ids,
-            visible_spell_keys=compiled_access_surface.visible_spell_keys,
-            visible_spell_index_ids=compiled_access_surface.visible_spell_index_ids,
-            enabled_conduit_ids=compiled_access_surface.enabled_conduit_ids,
-            enabled_spell_index_ids=compiled_access_surface.enabled_spell_index_ids,
-            conduit_payload_sections_by_id=(
-                compiled_access_surface.conduit_payload_sections_by_id
-            ),
-            spell_payload_sections_by_key=(
-                compiled_access_surface.spell_payload_sections_by_key
-            ),
-            metadata=compiled_access_surface.metadata,
-        )

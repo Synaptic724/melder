@@ -161,6 +161,45 @@ class StaticFrameViewer(FrameViewer):
             self._base_compiled_access_surfaces_by_frame_name = None
         super().cleanup()
 
+    @staticmethod
+    def _clone_compiled_access_surface(
+            compiled_access_surface: CompiledFrameACLAccessSurface,
+    ) -> CompiledFrameACLAccessSurface:
+        """
+        Return a detached compiled ACL surface clone for static-viewer state.
+
+        Args:
+            compiled_access_surface:
+                Source compiled ACL access surface to clone.
+
+        Returns:
+            CompiledFrameACLAccessSurface: Detached compiled ACL surface copy.
+        """
+        return CompiledFrameACLAccessSurface(
+            frame_name=compiled_access_surface.frame_name,
+            configuration_id=compiled_access_surface.configuration_id,
+            view_profile_name=compiled_access_surface.view_profile_name,
+            view_profile_version=compiled_access_surface.view_profile_version,
+            codegen_profile_name=compiled_access_surface.codegen_profile_name,
+            codegen_profile_version=compiled_access_surface.codegen_profile_version,
+            command_frame_enabled=compiled_access_surface.command_frame_enabled,
+            allowed_kinds=compiled_access_surface.allowed_kinds,
+            allowed_commands=compiled_access_surface.allowed_commands,
+            frame_payload_fields=compiled_access_surface.frame_payload_fields,
+            visible_conduit_ids=compiled_access_surface.visible_conduit_ids,
+            visible_spell_keys=compiled_access_surface.visible_spell_keys,
+            visible_spell_index_ids=compiled_access_surface.visible_spell_index_ids,
+            enabled_conduit_ids=compiled_access_surface.enabled_conduit_ids,
+            enabled_spell_index_ids=compiled_access_surface.enabled_spell_index_ids,
+            conduit_payload_sections_by_id=(
+                compiled_access_surface.conduit_payload_sections_by_id
+            ),
+            spell_payload_sections_by_key=(
+                compiled_access_surface.spell_payload_sections_by_key
+            ),
+            metadata=compiled_access_surface.metadata,
+        )
+
     def clone(self) -> "StaticFrameViewer":
         """
         Return a detached clone of this static viewer overlay.
@@ -172,25 +211,32 @@ class StaticFrameViewer(FrameViewer):
         with self._lock:
             return StaticFrameViewer.from_frame_viewer(self)
 
-    def execute_method(
+    def get_view_frame(
             self,
-            method_name: str,
-            **kwargs: Any
-    ) -> Any:
-        """
-        Refresh live spell projection before executing one viewer method.
+            *,
+            frame_name: Optional[str] = None,
+    ):
+        """Refresh live spell projection before returning the frame helper."""
+        self.refresh_live_spell_projection(frame_name)
+        return super().get_view_frame(frame_name=frame_name)
 
-        Args:
-            method_name:
-                Exposed viewer method name to execute.
-            **kwargs:
-                Arguments forwarded to the resolved handler.
+    def get_view_conduit(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ):
+        """Refresh live spell projection before returning the conduit helper."""
+        self.refresh_live_spell_projection(frame_name)
+        return super().get_view_conduit(frame_name=frame_name)
 
-        Returns:
-            Any: Handler return value.
-        """
-        self.refresh_live_spell_projection(kwargs.get("frame_name"))
-        return super().execute_method(method_name, **kwargs)
+    def get_view_spell(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ):
+        """Refresh live spell projection before returning the spell helper."""
+        self.refresh_live_spell_projection(frame_name)
+        return super().get_view_spell(frame_name=frame_name)
 
     def list_spell_source_ids_for_frame(self, frame_name: str) -> List[str]:
         """

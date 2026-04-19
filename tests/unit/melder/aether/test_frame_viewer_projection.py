@@ -30,10 +30,10 @@ from melder.aether.nexus.rift.projection.frame_projection_set import FrameProjec
 from melder.aether.nexus.rift.projection.view_projection import ViewProjection
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer
 from melder.aether.nexus.rift.frame_viewer.view_frame import (
-    GeneralViewFrame,
+    ViewFrame,
 )
 from melder.aether.nexus.rift.frame_viewer.view_spell import (
-    GeneralViewSpell,
+    ViewSpell,
 )
 from melder.utilities.helpers.class_surface_ast_describer import (
     ClassSurfaceAstDescriber,
@@ -425,7 +425,7 @@ def test_frame_viewer_describes_available_frames() -> None:
 def test_frame_viewer_profile_lists_targets_for_one_frame() -> None:
     viewer = _build_viewer(("ops",))
 
-    links = viewer.execute_method("list_targets", frame_name="ops")
+    links = viewer.list_targets( frame_name="ops")
 
     assert [link.source_kind for link in links] == ["frame", "conduit", "spell"]
 
@@ -445,7 +445,7 @@ def test_frame_viewer_describe_frames_summarizes_all_hosted_frames() -> None:
 def test_frame_viewer_profile_lists_targets_for_default_frame() -> None:
     viewer = _build_viewer(("ops",))
 
-    targets = viewer.execute_method("list_targets")
+    targets = viewer.list_targets()
 
     assert [target.source_kind for target in targets] == ["frame", "conduit", "spell"]
 
@@ -453,7 +453,7 @@ def test_frame_viewer_profile_lists_targets_for_default_frame() -> None:
 def test_frame_viewer_profile_describe_targets_adds_metadata_for_detailed_profile() -> None:
     viewer = _build_viewer(("ops",))
 
-    descriptions = viewer.execute_method("describe_targets")
+    descriptions = viewer.describe_targets()
 
     assert descriptions[0]["source_kind"] == "frame"
     assert "metadata" in descriptions[0]
@@ -462,16 +462,15 @@ def test_frame_viewer_profile_describe_targets_adds_metadata_for_detailed_profil
 def test_frame_viewer_exposes_the_shipped_general_surface() -> None:
     viewer = _build_viewer(("ops",))
 
-    assert viewer.surface_name == "general"
-    assert viewer.surface_version == "0.0.1"
-    assert "describe_targets" in viewer.list_available_tools()
+    assert viewer.default_grouping == "frame"
+    assert viewer.default_detail_level == "detailed"
+    assert hasattr(viewer, "describe_targets")
 
 
 def test_frame_viewer_execute_method_routes_through_profile_mapping() -> None:
     viewer = _build_viewer(("ops",))
 
-    descriptions = viewer.execute_method(
-        "describe_targets",
+    descriptions = viewer.describe_targets(
     )
 
     assert descriptions[0]["source_kind"] == "frame"
@@ -492,9 +491,8 @@ def test_frame_viewer_bound_view_frame_can_get_required_target_by_source() -> No
 def test_frame_viewer_profile_list_targets_can_filter_by_kind() -> None:
     viewer = _build_viewer(("ops", "finance"))
 
-    ops_targets = viewer.execute_method("list_targets", frame_name="ops")
-    ops_spells = viewer.execute_method(
-        "list_targets",
+    ops_targets = viewer.list_targets( frame_name="ops")
+    ops_spells = viewer.list_targets(
         frame_name="ops",
         source_kind="spell",
     )
@@ -507,8 +505,7 @@ def test_frame_viewer_profile_list_targets_can_filter_by_kind() -> None:
 def test_frame_viewer_describe_frame_summarizes_descriptor_driven_surface() -> None:
     viewer = _build_viewer(("ops",))
 
-    summary = viewer.execute_method(
-        "describe_frame",
+    summary = viewer.describe_frame(
         frame_name="ops",
     )
 
@@ -525,16 +522,15 @@ def test_frame_viewer_describe_frame_summarizes_descriptor_driven_surface() -> N
 def test_frame_viewer_host_count_methods_report_descriptor_counts() -> None:
     viewer = _build_viewer(("ops", "finance"))
 
-    assert viewer.execute_method("count_frames") == 2
-    assert viewer.execute_method("count_root_conduits") == 2
-    assert viewer.execute_method("count_spell_records") == 2
+    assert viewer.count_frames() == 2
+    assert viewer.count_root_conduits() == 2
+    assert viewer.count_spell_records() == 2
 
 
 def test_frame_viewer_describe_frame_inventory_reports_visible_ids() -> None:
     viewer = _build_viewer(("ops",))
 
-    inventory = viewer.execute_method(
-        "describe_frame_inventory",
+    inventory = viewer.describe_frame_inventory(
         frame_name="ops",
     )
 
@@ -551,8 +547,7 @@ def test_frame_viewer_describe_frame_inventory_reports_visible_ids() -> None:
 def test_frame_viewer_describe_frame_access_contract_reports_acl_surface() -> None:
     viewer = _build_viewer(("ops",))
 
-    contract = viewer.execute_method(
-        "describe_frame_access_contract",
+    contract = viewer.describe_frame_access_contract(
         frame_name="ops",
     )
 
@@ -565,8 +560,7 @@ def test_frame_viewer_describe_frame_access_contract_reports_acl_surface() -> No
 def test_frame_viewer_find_target_by_display_name_returns_exact_matches() -> None:
     viewer = _build_viewer(("ops",))
 
-    targets = viewer.execute_method(
-        "find_target_by_display_name",
+    targets = viewer.find_target_by_display_name(
         frame_name="ops",
         display_name="ops_spell",
     )
@@ -578,8 +572,7 @@ def test_frame_viewer_find_target_by_display_name_returns_exact_matches() -> Non
 def test_frame_viewer_explain_target_access_reports_visible_spell_sections() -> None:
     viewer = _build_viewer(("ops",))
 
-    explanation = viewer.execute_method(
-        "explain_target_access",
+    explanation = viewer.explain_target_access(
         frame_name="ops",
         source_kind="spell",
         source_id="ops-spellbook:ops-spell",
@@ -602,8 +595,7 @@ def test_frame_viewer_explain_target_access_reports_visible_spell_sections() -> 
 def test_frame_viewer_describe_frame_payload_filters_to_visible_fields() -> None:
     viewer = _build_viewer(("ops",))
 
-    payload_description = viewer.execute_method(
-        "describe_frame_payload",
+    payload_description = viewer.describe_frame_payload(
         frame_name="ops",
     )
 
@@ -618,8 +610,7 @@ def test_frame_viewer_describe_frame_payload_filters_to_visible_fields() -> None
 def test_frame_viewer_describe_conduit_returns_acl_filtered_payload() -> None:
     viewer = _build_viewer(("ops",))
 
-    conduit_description = viewer.execute_method(
-        "describe_conduit",
+    conduit_description = viewer.describe_conduit(
         frame_name="ops",
         conduit_id="ops-conduit",
     )
@@ -638,8 +629,7 @@ def test_frame_viewer_describe_conduit_returns_acl_filtered_payload() -> None:
 def test_frame_viewer_describe_conduit_topology_reports_visible_spell_links() -> None:
     viewer = _build_viewer(("ops",))
 
-    topology = viewer.execute_method(
-        "describe_conduit_topology",
+    topology = viewer.describe_conduit_topology(
         frame_name="ops",
         conduit_id="ops-conduit",
     )
@@ -655,8 +645,7 @@ def test_frame_viewer_describe_conduit_topology_reports_visible_spell_links() ->
 def test_frame_viewer_find_conduit_by_name_returns_exact_matches() -> None:
     viewer = _build_viewer(("ops",))
 
-    conduits = viewer.execute_method(
-        "find_conduit_by_name",
+    conduits = viewer.find_conduit_by_name(
         frame_name="ops",
         conduit_name="root",
     )
@@ -668,8 +657,7 @@ def test_frame_viewer_find_conduit_by_name_returns_exact_matches() -> None:
 def test_frame_viewer_explain_conduit_access_reports_acl_flags() -> None:
     viewer = _build_viewer(("ops",))
 
-    explanation = viewer.execute_method(
-        "explain_conduit_access",
+    explanation = viewer.explain_conduit_access(
         frame_name="ops",
         conduit_id="ops-conduit",
     )
@@ -690,8 +678,7 @@ def test_frame_viewer_explain_conduit_access_reports_acl_flags() -> None:
 def test_frame_viewer_get_conduit_payload_field_returns_visible_value() -> None:
     viewer = _build_viewer(("ops",))
 
-    conduit_state = viewer.execute_method(
-        "get_conduit_payload_field",
+    conduit_state = viewer.get_conduit_payload_field(
         frame_name="ops",
         conduit_id="ops-conduit",
         field_name="conduit_state",
@@ -703,8 +690,7 @@ def test_frame_viewer_get_conduit_payload_field_returns_visible_value() -> None:
 def test_frame_viewer_describe_spell_returns_acl_filtered_payload() -> None:
     viewer = _build_viewer(("ops",))
 
-    spell_description = viewer.execute_method(
-        "describe_spell",
+    spell_description = viewer.describe_spell(
         frame_name="ops",
         spell_source_id="ops-spellbook:ops-spell",
     )
@@ -740,8 +726,7 @@ def test_frame_viewer_describe_spell_omits_missing_detailed_sections_for_general
     )
     viewer = _build_single_frame_viewer("ops", descriptor, configuration, surface)
 
-    spell_description = viewer.execute_method(
-        "describe_spell",
+    spell_description = viewer.describe_spell(
         frame_name="ops",
         spell_source_id="ops-spellbook:ops-spell",
     )
@@ -762,8 +747,7 @@ def test_frame_viewer_describe_spell_omits_missing_detailed_sections_for_general
 def test_frame_viewer_describe_spell_detail_reports_payload_not_detailed() -> None:
     viewer = _build_viewer(("ops",))
 
-    detail = viewer.execute_method(
-        "describe_spell_detail",
+    detail = viewer.describe_spell_detail(
         frame_name="ops",
         spell_source_id="ops-spellbook:ops-spell",
     )
@@ -785,8 +769,7 @@ def test_frame_viewer_describe_spell_detail_reports_payload_not_detailed() -> No
 def test_frame_viewer_find_spell_by_binding_name_returns_exact_match() -> None:
     viewer = _build_viewer(("ops",))
 
-    spells = viewer.execute_method(
-        "find_spell_by_binding_name",
+    spells = viewer.find_spell_by_binding_name(
         frame_name="ops",
         binding_name="ops_spell",
     )
@@ -798,8 +781,7 @@ def test_frame_viewer_find_spell_by_binding_name_returns_exact_match() -> None:
 def test_frame_viewer_list_spells_by_payload_type_filters_visible_spells() -> None:
     viewer = _build_viewer(("ops",))
 
-    spells = viewer.execute_method(
-        "list_spells_by_payload_type",
+    spells = viewer.list_spells_by_payload_type(
         frame_name="ops",
         payload_type="general",
     )
@@ -811,8 +793,7 @@ def test_frame_viewer_list_spells_by_payload_type_filters_visible_spells() -> No
 def test_frame_viewer_explain_spell_access_reports_detail_reason() -> None:
     viewer = _build_viewer(("ops",))
 
-    explanation = viewer.execute_method(
-        "explain_spell_access",
+    explanation = viewer.explain_spell_access(
         frame_name="ops",
         spell_source_id="ops-spellbook:ops-spell",
     )
@@ -841,8 +822,7 @@ def test_frame_viewer_explain_spell_access_reports_detail_reason() -> None:
 def test_frame_viewer_get_spell_payload_section_returns_visible_section() -> None:
     viewer = _build_viewer(("ops",))
 
-    binding_payload = viewer.execute_method(
-        "get_spell_payload_section",
+    binding_payload = viewer.get_spell_payload_section(
         frame_name="ops",
         spell_source_id="ops-spellbook:ops-spell",
         section_name="binding_payload",
@@ -867,8 +847,7 @@ def test_frame_viewer_describe_spell_detail_reports_acl_restricted_for_detailed_
         surface,
     )
 
-    detail = viewer.execute_method(
-        "describe_spell_detail",
+    detail = viewer.describe_spell_detail(
         frame_name="ops",
         spell_source_id="ops-spellbook:ops-spell",
     )
@@ -905,8 +884,7 @@ def test_frame_viewer_describe_spell_detail_returns_rich_sections_for_detailed_p
         surface,
     )
 
-    detail = viewer.execute_method(
-        "describe_spell_detail",
+    detail = viewer.describe_spell_detail(
         frame_name="ops",
         spell_source_id="ops-spellbook:ops-spell",
     )
@@ -1167,8 +1145,6 @@ def test_frame_viewer_brief_and_compare_methods_report_expected_shapes() -> None
         "viewer_id": viewer.viewer_id,
         "frame_count": 2,
         "default_view_frame_name": "ops",
-        "surface_name": "general",
-        "surface_version": "0.0.1",
         "frame_names": ("finance", "ops"),
         "host_boundary": "descriptor_only",
     }
@@ -1470,7 +1446,7 @@ def test_view_frame_search_and_identity_helpers_work() -> None:
 
 def test_view_frame_guardrails_and_missing_record_paths_work() -> None:
     with pytest.raises(ValueError, match="default_detail_level cannot be empty."):
-        GeneralViewFrame(
+        ViewFrame(
             frame_name=None,
             frame_descriptor=None,
             frame_acl_configuration=None,
@@ -1542,29 +1518,29 @@ def test_view_frame_guardrails_and_missing_record_paths_work() -> None:
     with pytest.raises(ValueError, match="Missing SpellRecord for compiled spell key"):
         view_frame.list_targets(source_kind="spell")
 
-    assert GeneralViewFrame._normalize_value(("a", Permissions.create)) == ("a", "create")
-    assert GeneralViewFrame._find_spell_record_key_by_source_id("ops-spellbook:ops-spell") == (
+    assert ViewFrame._normalize_value(("a", Permissions.create)) == ("a", "create")
+    assert ViewFrame._find_spell_record_key_by_source_id("ops-spellbook:ops-spell") == (
         "ops-spellbook",
         "ops-spell",
     )
     with pytest.raises(ValueError, match="must be in 'spellbook_id:spell_id' form"):
-        GeneralViewFrame._find_spell_record_key_by_source_id("bad")
+        ViewFrame._find_spell_record_key_by_source_id("bad")
 
-    assert GeneralViewFrame._normalize_spellframe_value(FrameViewer) == "FrameViewer"
-    assert isinstance(GeneralViewFrame._normalize_spellframe_value(object()), str)
+    assert ViewFrame._normalize_spellframe_value(FrameViewer) == "FrameViewer"
+    assert isinstance(ViewFrame._normalize_spellframe_value(object()), str)
 
-    unbound = GeneralViewFrame(
+    unbound = ViewFrame(
         frame_name=None,
         frame_descriptor=None,
         frame_acl_configuration=None,
         compiled_access_surface=None,
         default_detail_level="summary",
     )
-    with pytest.raises(ValueError, match="GeneralViewFrame is not bound to a frame."):
+    with pytest.raises(ValueError, match="ViewFrame is not bound to a frame."):
         unbound._get_required_frame_name()
-    with pytest.raises(ValueError, match="GeneralViewFrame has no bound FrameDescriptor."):
+    with pytest.raises(ValueError, match="ViewFrame has no bound FrameDescriptor."):
         unbound._get_required_frame_descriptor()
-    with pytest.raises(ValueError, match="GeneralViewFrame has no bound CompiledFrameACLAccessSurface."):
+    with pytest.raises(ValueError, match="ViewFrame has no bound CompiledFrameACLAccessSurface."):
         unbound._get_required_compiled_access_surface()
     with pytest.raises(ValueError, match="frame_name cannot be empty."):
         unbound._assert_optional_frame_name("")
@@ -1613,7 +1589,7 @@ def test_view_frame_cleanup_and_frame_identity_branches_work() -> None:
 
 def test_view_frame_cleanup_rechecks_cleaned_inside_lock() -> None:
     class _FlipCleanedOnEnter:
-        def __init__(self, view_frame: GeneralViewFrame) -> None:
+        def __init__(self, view_frame: ViewFrame) -> None:
             self._view_frame = view_frame
 
         def __enter__(self):
@@ -1745,7 +1721,7 @@ def test_view_conduit_guardrails_and_optional_paths_work() -> None:
         view_conduit.get_conduit_payload_field("ops-conduit", "policy")
 
     view_conduit._frame_view = None
-    with pytest.raises(ValueError, match="GeneralViewConduit is not bound to a frame view."):
+    with pytest.raises(ValueError, match="ViewConduit is not bound to a frame view."):
         view_conduit.list_conduits()
 
 
@@ -2034,8 +2010,8 @@ def test_view_spell_guardrails_and_detail_normalizers_work() -> None:
     view_spell.cleanup()
     assert view_spell.cleaned is True
 
-    unbound_spell = GeneralViewSpell(frame_view=None)
-    with pytest.raises(ValueError, match="GeneralViewSpell is not bound to a frame view."):
+    unbound_spell = ViewSpell(frame_view=None)
+    with pytest.raises(ValueError, match="ViewSpell is not bound to a frame view."):
         unbound_spell.list_spells()
 
 
@@ -2163,47 +2139,39 @@ def test_view_spell_remaining_lineage_payload_and_fallback_paths_work() -> None:
 def test_execute_method_routes_new_brief_and_compare_methods() -> None:
     viewer = _build_viewer(("ops", "finance"))
 
-    viewer_summary = viewer.execute_method("describe_viewer")
-    current_frame = viewer.execute_method("describe_current_frame")
-    frames_inventory = viewer.execute_method("describe_frames_inventory")
-    frame_brief = viewer.execute_method("describe_frame_brief", frame_name="ops")
-    host_inventory = viewer.execute_method("describe_host_inventory")
-    frame_compare = viewer.execute_method(
-        "compare_frames",
+    viewer_summary = viewer.describe_viewer()
+    current_frame = viewer.describe_current_frame()
+    frames_inventory = viewer.describe_frames_inventory()
+    frame_brief = viewer.describe_frame_brief( frame_name="ops")
+    host_inventory = viewer.describe_host_inventory()
+    frame_compare = viewer.compare_frames(
         left_frame_name="ops",
         right_frame_name="finance",
     )
-    frame_compare_brief = viewer.execute_method(
-        "compare_frames_brief",
+    frame_compare_brief = viewer.compare_frames_brief(
         left_frame_name="ops",
         right_frame_name="finance",
     )
-    method_surface = viewer.execute_method("describe_viewer_method_surface")
-    frame_view_brief = viewer.execute_method(
-        "describe_frame_brief_local",
+    method_surface = viewer.describe_viewer_method_surface()
+    frame_view_brief = viewer.describe_frame_brief_local(
         frame_name="ops",
     )
-    missing_surface = viewer.execute_method(
-        "describe_missing_surface",
+    missing_surface = viewer.describe_missing_surface(
         frame_name="ops",
     )
-    conduit_brief = viewer.execute_method(
-        "describe_conduit_brief",
+    conduit_brief = viewer.describe_conduit_brief(
         frame_name="ops",
         conduit_id="ops-conduit",
     )
-    conduit_missing = viewer.execute_method(
-        "describe_conduit_missing_sections",
+    conduit_missing = viewer.describe_conduit_missing_sections(
         frame_name="ops",
         conduit_id="ops-conduit",
     )
-    spell_brief = viewer.execute_method(
-        "describe_spell_brief",
+    spell_brief = viewer.describe_spell_brief(
         frame_name="ops",
         spell_source_id="ops-spellbook:ops-spell",
     )
-    spell_missing = viewer.execute_method(
-        "describe_spell_missing_sections",
+    spell_missing = viewer.describe_spell_missing_sections(
         frame_name="ops",
         spell_source_id="ops-spellbook:ops-spell",
     )
@@ -2438,22 +2406,18 @@ def test_view_spell_crosswalk_and_compare_methods_work() -> None:
 def test_execute_method_routes_crosswalk_and_collision_methods() -> None:
     viewer = _build_visible_collision_viewer()
 
-    visible_collisions = viewer.execute_method(
-        "describe_visible_collisions",
+    visible_collisions = viewer.describe_visible_collisions(
         frame_name="ops",
     )
-    conduit_crosswalk = viewer.execute_method(
-        "describe_conduit_crosswalk",
+    conduit_crosswalk = viewer.describe_conduit_crosswalk(
         frame_name="ops",
         conduit_id="ops-conduit-1",
     )
-    spell_crosswalk = viewer.execute_method(
-        "describe_spell_crosswalk",
+    spell_crosswalk = viewer.describe_spell_crosswalk(
         frame_name="ops",
         spell_source_id="ops-spellbook:ops-spell-1",
     )
-    spell_compare = viewer.execute_method(
-        "compare_spells",
+    spell_compare = viewer.compare_spells(
         frame_name="ops",
         left_spell_source_id="ops-spellbook:ops-spell-1",
         right_spell_source_id="ops-spellbook:ops-spell-2",
@@ -2756,8 +2720,8 @@ def test_frame_viewer_surface_defaults_are_explicit() -> None:
     viewer = _build_viewer(("ops",))
 
     assert viewer.default_view_frame_name == "ops"
-    assert viewer.surface_name == "general"
-    assert viewer.surface_version == "0.0.1"
+    assert viewer.default_grouping == "frame"
+    assert viewer.default_detail_level == "detailed"
     assert viewer.default_grouping == "frame"
     assert viewer.default_detail_level == "detailed"
 
@@ -2775,11 +2739,8 @@ def test_frame_viewer_rejects_invalid_frame_inputs() -> None:
 def test_frame_viewer_rejects_empty_tool_and_kind_inputs() -> None:
     viewer = _build_viewer(("ops",))
 
-    with pytest.raises(ValueError, match="method_name cannot be empty"):
-        viewer.execute_method("")
-
     with pytest.raises(ValueError, match="source_kind cannot be empty"):
-        viewer.execute_method("list_targets", source_kind="")
+        viewer.list_targets( source_kind="")
 
 
 def test_frame_viewer_cleanup_is_idempotent_and_rechecks_cleaned_state_under_lock() -> None:
@@ -2820,7 +2781,6 @@ def test_frame_viewer_execute_guardrails_are_explicit() -> None:
             ValueError,
             match="surface method 'ghost_tool' was not found",
     ):
-        viewer.execute_method(
-            "ghost_tool",
+        viewer.ghost_tool(
             frame_name="ops",
         )

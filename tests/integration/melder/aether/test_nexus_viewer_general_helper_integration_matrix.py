@@ -157,13 +157,11 @@ def _build_tool_kwargs(viewer: object, tool_name: str) -> dict[str, object]:
     Returns:
         dict[str, object]: Tool kwargs.
     """
-    conduit_id = viewer.execute_method(
-        "list_targets",
+    conduit_id = viewer.list_targets(
         frame_name="ops",
         source_kind="conduit",
     )[0].source_id
-    spell_source_id = viewer.execute_method(
-        "list_targets",
+    spell_source_id = viewer.list_targets(
         frame_name="ops",
         source_kind="spell",
     )[0].source_id
@@ -204,10 +202,7 @@ def test_real_nexus_viewer_general_tool_matrix(
 ) -> None:
     spellbook, conduit, _, viewer = _build_real_room_viewer()
     try:
-        result = viewer.execute_method(
-            tool_name,
-            **_build_tool_kwargs(viewer, tool_name),
-        )
+        result = getattr(viewer, tool_name)(**_build_tool_kwargs(viewer, tool_name))
         if expected_key is None:
             assert len(result) >= 1
         else:
@@ -241,10 +236,7 @@ def test_real_rift_viewer_general_tool_matrix(
 ) -> None:
     spellbook, conduit, _, rift, viewer = _build_real_rift_viewer()
     try:
-        result = viewer.execute_method(
-            tool_name,
-            **_build_tool_kwargs(viewer, tool_name),
-        )
+        result = getattr(viewer, tool_name)(**_build_tool_kwargs(viewer, tool_name))
         if expected_key is None:
             assert len(result) >= 1
         else:

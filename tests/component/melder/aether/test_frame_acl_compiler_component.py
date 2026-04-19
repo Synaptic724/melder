@@ -253,7 +253,7 @@ def test_component_compiled_surface_flows_directly_into_frame_viewer_projection(
     assert frame_summary["frame_name"] == "ops"
     assert frame_summary["conduit_record_count"] == 1
     assert frame_summary["spell_record_count"] == 1
-    assert len(viewer.execute_method("list_targets")) == 3
+    assert len(viewer.list_targets()) == 3
 
 
 def test_component_rollback_restores_original_compiled_command_surface() -> None:

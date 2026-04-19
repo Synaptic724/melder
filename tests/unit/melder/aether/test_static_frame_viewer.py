@@ -69,7 +69,7 @@ def test_static_frame_viewer_cleanup_clone_and_dispatch_paths_work(monkeypatch) 
         },
     )
 
-    assert static_viewer.execute_method("list_targets", frame_name="ops") == {
+    assert static_viewer.list_targets( frame_name="ops") == {
         "method_name": "list_targets",
         "frame_name": "ops",
     }

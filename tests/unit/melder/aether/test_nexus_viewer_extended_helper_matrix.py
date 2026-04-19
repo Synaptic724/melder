@@ -454,7 +454,7 @@ ROUTE_CASES = [
 def test_execute_method_extended_route_matrix(method_name, kwargs, expected_type) -> None:
     viewer = _visible_viewer(include_dunders=True)
 
-    result = viewer.execute_method(method_name, **kwargs)
+    result = getattr(viewer, method_name)(**kwargs)
 
     if expected_type == "dict":
         assert isinstance(result, dict)
@@ -497,7 +497,7 @@ HOST_ROUTE_CASES = [
 def test_execute_method_host_route_matrix(method_name, kwargs, expected_type) -> None:
     viewer = _visible_viewer(include_dunders=True)
 
-    result = viewer.execute_method(method_name, **kwargs)
+    result = getattr(viewer, method_name)(**kwargs)
 
     if expected_type == "dict":
         assert isinstance(result, dict)

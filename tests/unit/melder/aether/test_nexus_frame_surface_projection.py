@@ -209,9 +209,7 @@ def test_rift_get_frame_viewer_projects_multiple_assigned_frames() -> None:
     viewer = rift.get_frame_viewer()
 
     assert isinstance(viewer, FrameViewer)
-    assert viewer.surface_name == "general"
     assert viewer.metadata["frame_count"] == 2
-    assert viewer.metadata["viewer_surface_name"] == "general"
     assert viewer.list_frame_names() == ["finance", "ops"]
 
 

@@ -9,9 +9,10 @@ from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguratio
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import IFrameLink
 
 
-class GeneralViewFrame(Cleanable):
+class ViewFrame(Cleanable):
     """
     Purpose:
         Hold frame-scoped viewer helper methods for the `general` profile.
@@ -118,7 +119,7 @@ class GeneralViewFrame(Cleanable):
             *,
             frame_name: Optional[str] = None,
             source_kind: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return the currently visible targets for the bound frame.
 
@@ -213,7 +214,7 @@ class GeneralViewFrame(Cleanable):
         self.check_cleaned()
         self._assert_optional_frame_name(frame_name)
         compiled_access_surface = self._get_required_compiled_access_surface()
-        grouped_links: Dict[str, List[FrameLink]] = {}
+        grouped_links: Dict[str, List[IFrameLink]] = {}
         for frame_link in self._build_links():
             grouped_links.setdefault(frame_link.source_kind, []).append(frame_link)
         descriptor = self._get_required_frame_descriptor()
@@ -895,7 +896,7 @@ class GeneralViewFrame(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return visible conduit links that are also root conduits.
 
@@ -910,7 +911,7 @@ class GeneralViewFrame(Cleanable):
         self.check_cleaned()
         self._assert_optional_frame_name(frame_name)
         descriptor = self._get_required_frame_descriptor()
-        root_conduits: List[FrameLink] = []
+        root_conduits: List[IFrameLink] = []
         for conduit_link in self.list_targets(
                 frame_name=frame_name,
                 source_kind="conduit",
@@ -1119,7 +1120,7 @@ class GeneralViewFrame(Cleanable):
             *,
             frame_name: Optional[str] = None,
             source_kind: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return visible targets whose identity contains one text fragment.
 
@@ -1196,7 +1197,7 @@ class GeneralViewFrame(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> Dict[str, List[FrameLink]]:
+    ) -> Dict[str, List[IFrameLink]]:
         """
         Return visible targets grouped by target kind.
 
@@ -1210,7 +1211,7 @@ class GeneralViewFrame(Cleanable):
         """
         self.check_cleaned()
         self._assert_optional_frame_name(frame_name)
-        grouped_targets: Dict[str, List[FrameLink]] = {}
+        grouped_targets: Dict[str, List[IFrameLink]] = {}
         for frame_link in self.list_targets(frame_name=frame_name):
             grouped_targets.setdefault(frame_link.source_kind, []).append(frame_link)
         return {
@@ -1310,7 +1311,7 @@ class GeneralViewFrame(Cleanable):
             *,
             frame_name: Optional[str] = None,
             source_kind: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return visible targets whose display name matches exactly.
 
@@ -1488,7 +1489,7 @@ class GeneralViewFrame(Cleanable):
             frame_name: Optional[str] = None,
             source_kind: str,
             source_id: str,
-    ) -> FrameLink:
+    ) -> IFrameLink:
         """
         Return one ACL-filtered target by source identity or raise.
 
@@ -1517,14 +1518,14 @@ class GeneralViewFrame(Cleanable):
             ):
                 return frame_link
         raise ValueError(
-            "GeneralViewFrame target '{0}:{1}' was not found for frame '{2}'.".format(
+            "ViewFrame target '{0}:{1}' was not found for frame '{2}'.".format(
                 source_kind,
                 source_id,
                 self._get_required_frame_name(),
             )
         )
 
-    def _build_links(self) -> List[FrameLink]:
+    def _build_links(self) -> List[IFrameLink]:
         """
         Build ACL-filtered `FrameLink` objects for the bound frame.
 
@@ -1540,7 +1541,7 @@ class GeneralViewFrame(Cleanable):
         descriptor = self._get_required_frame_descriptor()
         compiled_access_surface = self._get_required_compiled_access_surface()
         frame_name = self._get_required_frame_name()
-        links: List[FrameLink] = []
+        links: List[IFrameLink] = []
         frame_overview = descriptor.frame_overview
         if "frame" in compiled_access_surface.allowed_kinds:
             if frame_overview is None:
@@ -1665,7 +1666,7 @@ class GeneralViewFrame(Cleanable):
         """
         filtered_payload: Dict[str, object] = {}
         for current_field in visible_fields:
-            filtered_payload[current_field] = GeneralViewFrame._normalize_value(
+            filtered_payload[current_field] = ViewFrame._normalize_value(
                 getattr(payload, current_field)
             )
         return filtered_payload
@@ -1684,17 +1685,17 @@ class GeneralViewFrame(Cleanable):
         """
         if isinstance(value, dict):
             return {
-                current_key: GeneralViewFrame._normalize_value(current_value)
+                current_key: ViewFrame._normalize_value(current_value)
                 for current_key, current_value in value.items()
             }
         if isinstance(value, list):
             return [
-                GeneralViewFrame._normalize_value(current_value)
+                ViewFrame._normalize_value(current_value)
                 for current_value in value
             ]
         if isinstance(value, tuple):
             return tuple(
-                GeneralViewFrame._normalize_value(current_value)
+                ViewFrame._normalize_value(current_value)
                 for current_value in value
             )
         if hasattr(value, "name"):
@@ -1775,7 +1776,7 @@ class GeneralViewFrame(Cleanable):
             str: Bound frame name.
         """
         if self._frame_name is None:
-            raise ValueError("GeneralViewFrame is not bound to a frame.")
+            raise ValueError("ViewFrame is not bound to a frame.")
         return self._frame_name
 
     def _get_required_frame_descriptor(self) -> FrameDescriptor:
@@ -1786,7 +1787,7 @@ class GeneralViewFrame(Cleanable):
             FrameDescriptor: Bound descriptor reference.
         """
         if self._frame_descriptor is None:
-            raise ValueError("GeneralViewFrame has no bound FrameDescriptor.")
+            raise ValueError("ViewFrame has no bound FrameDescriptor.")
         return self._frame_descriptor
 
     def _get_required_compiled_access_surface(self) -> CompiledFrameACLAccessSurface:
@@ -1798,7 +1799,7 @@ class GeneralViewFrame(Cleanable):
         """
         if self._compiled_access_surface is None:
             raise ValueError(
-                "GeneralViewFrame has no bound CompiledFrameACLAccessSurface."
+                "ViewFrame has no bound CompiledFrameACLAccessSurface."
             )
         return self._compiled_access_surface
 
@@ -1840,7 +1841,7 @@ class GeneralViewFrame(Cleanable):
             raise ValueError("frame_name cannot be empty.")
         if frame_name != self._get_required_frame_name():
             raise ValueError(
-                "GeneralViewFrame is bound to frame '{0}', not '{1}'.".format(
+                "ViewFrame is bound to frame '{0}', not '{1}'.".format(
                     self._get_required_frame_name(),
                     frame_name,
                 )
@@ -1850,7 +1851,7 @@ class GeneralViewFrame(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[Tuple[FrameLink, object]]:
+    ) -> List[Tuple[IFrameLink, object]]:
         """
         Return visible spell links paired with their descriptor-owned records.
 

@@ -76,13 +76,11 @@ def _build_component_viewer(profile_name: str, payload_type: str) -> FrameViewer
 
 
 def _build_component_kwargs(viewer: FrameViewer, method_name: str) -> dict[str, object]:
-    conduit_id = viewer.execute_method(
-        "list_targets",
+    conduit_id = viewer.list_targets(
         frame_name="ops",
         source_kind="conduit",
     )[0].source_id
-    spell_source_id = viewer.execute_method(
-        "list_targets",
+    spell_source_id = viewer.list_targets(
         frame_name="ops",
         source_kind="spell",
     )[0].source_id
@@ -177,10 +175,7 @@ def test_component_viewer_extended_surface_matrix(
 ) -> None:
     viewer = _build_component_viewer(profile_name, payload_type)
 
-    result = viewer.execute_method(
-        method_name,
-        **_build_component_kwargs(viewer, method_name),
-    )
+    result = getattr(viewer, method_name)(**_build_component_kwargs(viewer, method_name))
 
     if expected_type == "dict":
         assert isinstance(result, dict)

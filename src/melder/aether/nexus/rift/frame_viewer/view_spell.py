@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
 from melder.aether.nexus.rift.frame_viewer.view_frame import (
-    GeneralViewFrame,
+    ViewFrame,
 )
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.class_profile import (
     ClassProfile,
@@ -13,9 +13,10 @@ from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.method_pr
     MethodProfile,
 )
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import IFrameLink
 
 
-class GeneralViewSpell(Cleanable):
+class ViewSpell(Cleanable):
     """
     Purpose:
         Hold spell-scoped viewer helper methods for the `general` profile.
@@ -41,7 +42,7 @@ class GeneralViewSpell(Cleanable):
         "_frame_view",
     ]
 
-    def __init__(self, *, frame_view: Optional[GeneralViewFrame]) -> None:
+    def __init__(self, *, frame_view: Optional[ViewFrame]) -> None:
         """
         Initialize one spell-scoped helper surface.
 
@@ -58,7 +59,7 @@ class GeneralViewSpell(Cleanable):
         """
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
-        self._frame_view: Optional[GeneralViewFrame] = frame_view
+        self._frame_view: Optional[ViewFrame] = frame_view
 
     def cleanup(self) -> None:
         """
@@ -80,7 +81,7 @@ class GeneralViewSpell(Cleanable):
             self._frame_view = None
             self._lock = None
 
-    def list_spells(self, *, frame_name: Optional[str] = None) -> List[FrameLink]:
+    def list_spells(self, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
         """
         Return the currently visible spell links for the bound frame.
 
@@ -860,7 +861,7 @@ class GeneralViewSpell(Cleanable):
             payload_type: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return visible spells whose published payload type matches exactly.
 
@@ -877,7 +878,7 @@ class GeneralViewSpell(Cleanable):
         self.check_cleaned()
         if not payload_type:
             raise ValueError("payload_type cannot be empty.")
-        matching_spells: List[FrameLink] = []
+        matching_spells: List[IFrameLink] = []
         frame_view = self._get_required_frame_view()
         descriptor = frame_view._get_required_frame_descriptor()
         for spell_link in self.list_spells(frame_name=frame_name):
@@ -892,7 +893,7 @@ class GeneralViewSpell(Cleanable):
             binding_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return visible spells whose binding name matches exactly.
 
@@ -920,7 +921,7 @@ class GeneralViewSpell(Cleanable):
             conduit_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return visible spells owned by one conduit.
 
@@ -950,7 +951,7 @@ class GeneralViewSpell(Cleanable):
             spellbook_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return visible spells published by one spellbook id.
 
@@ -980,7 +981,7 @@ class GeneralViewSpell(Cleanable):
             lineage_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return visible spells sharing one lineage id.
 
@@ -1010,7 +1011,7 @@ class GeneralViewSpell(Cleanable):
             permission_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return visible spells with one permission posture.
 
@@ -1041,7 +1042,7 @@ class GeneralViewSpell(Cleanable):
             existence_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return visible spells with one existence posture.
 
@@ -1072,7 +1073,7 @@ class GeneralViewSpell(Cleanable):
             spell_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return visible spells whose spell name matches exactly.
 
@@ -1102,7 +1103,7 @@ class GeneralViewSpell(Cleanable):
             spellframe_name: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return visible spells with one normalized spellframe value.
 
@@ -1133,7 +1134,7 @@ class GeneralViewSpell(Cleanable):
             text: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[FrameLink]:
+    ) -> List[IFrameLink]:
         """
         Return visible spells whose identity contains one text fragment.
 
@@ -1485,7 +1486,7 @@ class GeneralViewSpell(Cleanable):
             spell_source_id: str,
             *,
             frame_name: Optional[str] = None,
-    ) -> FrameLink:
+    ) -> IFrameLink:
         """
         Return one spell link by published source id or raise.
 
@@ -1508,15 +1509,15 @@ class GeneralViewSpell(Cleanable):
             source_id=spell_source_id,
         )
 
-    def _get_required_frame_view(self) -> GeneralViewFrame:
+    def _get_required_frame_view(self) -> ViewFrame:
         """
         Return the shared frame helper or raise when unbound.
 
         Returns:
-            GeneralViewFrame: Shared frame helper surface.
+            ViewFrame: Shared frame helper surface.
         """
         if self._frame_view is None:
-            raise ValueError("GeneralViewSpell is not bound to a frame view.")
+            raise ValueError("ViewSpell is not bound to a frame view.")
         return self._frame_view
 
     def _get_required_spell_record(
@@ -1549,7 +1550,7 @@ class GeneralViewSpell(Cleanable):
             self,
             *,
             frame_name: Optional[str] = None,
-    ) -> List[Tuple[FrameLink, object]]:
+    ) -> List[Tuple[IFrameLink, object]]:
         """
         Return visible spell links paired with their descriptor-owned records.
 
@@ -1686,8 +1687,8 @@ class GeneralViewSpell(Cleanable):
         if section_name == "instance_members":
             return self._normalize_instance_members_value(value)
         if section_name == "dynamic_access":
-            return GeneralViewFrame._normalize_value(value)
-        return GeneralViewFrame._normalize_value(value)
+            return ViewFrame._normalize_value(value)
+        return ViewFrame._normalize_value(value)
 
     def _normalize_class_profile_value(self, class_profile: Any) -> Optional[object]:
         """
@@ -1703,7 +1704,7 @@ class GeneralViewSpell(Cleanable):
         if class_profile is None:
             return None
         if isinstance(class_profile, dict):
-            normalized_class_profile = GeneralViewFrame._normalize_value(class_profile)
+            normalized_class_profile = ViewFrame._normalize_value(class_profile)
             member_names, method_names = self._extract_class_profile_name_sets(
                 normalized_class_profile
             )
@@ -1729,10 +1730,10 @@ class GeneralViewSpell(Cleanable):
                 "module": class_profile.module,
                 "mro": tuple(class_profile.mro),
                 "bases": tuple(class_profile.bases),
-                "annotations": GeneralViewFrame._normalize_value(
+                "annotations": ViewFrame._normalize_value(
                     class_profile.annotations
                 ),
-                "protocols": GeneralViewFrame._normalize_value(
+                "protocols": ViewFrame._normalize_value(
                     class_profile.protocols
                 ),
                 "slots": tuple(class_profile.slots or []),
@@ -1757,16 +1758,16 @@ class GeneralViewSpell(Cleanable):
                     for current_name in method_names
                     if self._is_dunder_name(current_name)
                 ),
-                "members": GeneralViewFrame._normalize_value(class_profile.members),
+                "members": ViewFrame._normalize_value(class_profile.members),
                 "methods": {
                     method_name: self._normalize_callable_profile_value(method_profile)
                     for method_name, method_profile in class_profile.methods.items()
                 },
-                "dynamic_access": GeneralViewFrame._normalize_value(
+                "dynamic_access": ViewFrame._normalize_value(
                     class_profile.dynamic_access
                 ),
             }
-        return GeneralViewFrame._normalize_value(class_profile)
+        return ViewFrame._normalize_value(class_profile)
 
     def _normalize_callable_profile_value(
             self,
@@ -1785,14 +1786,14 @@ class GeneralViewSpell(Cleanable):
         if callable_profile is None:
             return None
         if isinstance(callable_profile, dict):
-            return GeneralViewFrame._normalize_value(callable_profile)
+            return ViewFrame._normalize_value(callable_profile)
         if isinstance(callable_profile, MethodProfile):
             return {
                 "name": callable_profile.name,
                 "qualname": callable_profile.qualname,
                 "module": callable_profile.module,
                 "signature": callable_profile.signature,
-                "parameters": GeneralViewFrame._normalize_value(
+                "parameters": ViewFrame._normalize_value(
                     callable_profile.parameters
                 ),
                 "start_line": callable_profile.start_line,
@@ -1812,7 +1813,7 @@ class GeneralViewSpell(Cleanable):
                 "lambda_fn": callable_profile.lambda_fn,
                 "abstract": callable_profile.abstract,
             }
-        return GeneralViewFrame._normalize_value(callable_profile)
+        return ViewFrame._normalize_value(callable_profile)
 
     @staticmethod
     def _normalize_instance_members_value(instance_members: Any) -> Optional[object]:
@@ -1828,7 +1829,7 @@ class GeneralViewSpell(Cleanable):
         """
         if instance_members is None:
             return None
-        return GeneralViewFrame._normalize_value(instance_members)
+        return ViewFrame._normalize_value(instance_members)
 
     @staticmethod
     def _extract_class_profile_name_sets(
@@ -1973,7 +1974,7 @@ class GeneralViewSpell(Cleanable):
                 continue
             if isinstance(current_value, dict) and len(current_value) == 0:
                 continue
-            filtered_payload[current_section] = GeneralViewFrame._normalize_value(
+            filtered_payload[current_section] = ViewFrame._normalize_value(
                 current_value
             )
         return filtered_payload

@@ -2408,7 +2408,7 @@ def test_static_room_viewer_filters_non_live_spell_targets(
     )
 
     _attach_projection_backed_viewer(space, viewer)
-    frame_links = space.frame_viewer.execute_method("list_targets", frame_name="ops")
+    frame_links = space.frame_viewer.list_targets( frame_name="ops")
     spell_source_ids = [
         frame_link.source_id
         for frame_link in frame_links
@@ -2520,7 +2520,7 @@ def test_static_room_viewer_hides_many_and_spellspace_spells(
     _attach_projection_backed_viewer(space, viewer)
 
     assert space.frame_viewer.list_spell_source_ids_for_frame("ops") == []
-    frame_links = space.frame_viewer.execute_method("list_targets", frame_name="ops")
+    frame_links = space.frame_viewer.list_targets( frame_name="ops")
     assert [frame_link for frame_link in frame_links if frame_link.source_kind == "spell"] == []
 
 
