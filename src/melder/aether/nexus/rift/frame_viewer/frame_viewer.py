@@ -44,23 +44,25 @@ class FrameViewer(Cleanable):
         - Treats descriptor/config/surface state as Rift-owned, not
           viewer-owned.
         - Owns the shipped `general` viewer feature surface directly.
-        - Owns shared viewer-backed helper surfaces for the `general`
-          view/frame/conduit/spell families.
+        - Creates helper objects on demand for the `general`
+          view/frame/conduit/spell families rather than caching bound helper
+          state on the viewer itself.
         - Exposes descriptor-only multi-frame host methods directly on the
           viewer.
         - Exposes frame-local ACL/payload-aware behavior through the viewer's
-          internal helper surfaces without a separate profile layer or generic
-          dispatch entrypoint.
+          helper surfaces without a separate profile layer or generic dispatch
+          entrypoint.
         - Does not expose raw runtime objects or any direct code-execution
           behavior.
 
     Threading:
         Uses one instance `threading.RLock` to serialize cleanup and
-        multi-step viewer-state mutation.
+        multi-step viewer-state mutation and teardown.
 
     Lifecycle:
-        Cleanup cascades into the viewer-owned helper surfaces before clearing
-        viewer-owned references.
+        Cleanup clears only viewer-owned references. It does not cleanup the
+        owning `Rift` or any Rift-owned projection objects because those are
+        borrowed runtime inputs.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -70,7 +72,7 @@ class FrameViewer(Cleanable):
         "frames, compare descriptor records, and call the explicit viewer methods for frame-local behavior."
     )
     __slots__ = Cleanable.__slots__ + [
-        "_viewer_id",
+        "_id",
         "_lock",
         "_rift",
     ]
@@ -91,12 +93,18 @@ class FrameViewer(Cleanable):
         if rift is None:
             raise TypeError("rift cannot be None.")
         self._lock: threading.RLock = threading.RLock()
-        self._viewer_id: str = IDBuilder.create_id()
+        self._id: str = IDBuilder.create_id()
         self._rift: Any = rift
 
     def cleanup(self) -> None:
         """
         Idempotently clear viewer-owned state.
+
+        Contract:
+            - Safe to call more than once.
+            - Clears only viewer-owned references.
+            - Does not cleanup the owning `Rift` because the viewer borrows
+              that runtime object.
         """
         if self._cleaned:
             return
@@ -105,72 +113,19 @@ class FrameViewer(Cleanable):
                 return
             self._cleaned = True
             self._rift = None
-            self._viewer_id = None
+            self._id = None
         self._lock = None
 
     @property
-    def viewer_id(self) -> str:
-        self.check_cleaned()
-        return self._viewer_id
-
-    @property
-    def frame_descriptors_by_name(self) -> Dict[str, FrameDescriptor]:
-        self.check_cleaned()
-        with self._lock:
-            return {
-                frame_name: self._rift._get_required_view_projection(
-                    frame_name
-                ).frame_descriptor
-                for frame_name in self.list_frame_names()
-            }
-
-    @property
-    def compiled_access_surfaces_by_frame_name(
-            self,
-    ) -> Dict[str, CompiledFrameACLAccessSurface]:
-        self.check_cleaned()
-        with self._lock:
-            return {
-                frame_name: self._rift._get_required_view_projection(
-                    frame_name
-                ).compiled_access_surface
-                for frame_name in self.list_frame_names()
-            }
-
-    @property
-    def frame_acl_configurations_by_frame_name(
-            self,
-    ) -> Dict[str, FrameACLConfiguration]:
+    def id(self) -> str:
         """
-        Return the hosted frame ACL configurations keyed by frame name.
+        Return the stable viewer identifier.
 
         Returns:
-            Dict[str, FrameACLConfiguration]:
-                Detached snapshot of hosted frame ACL configurations.
+            str: Stable viewer id.
         """
         self.check_cleaned()
-        with self._lock:
-            return {
-                frame_name: self._rift._get_required_view_projection(
-                    frame_name
-                ).frame_acl_configuration
-                for frame_name in self.list_frame_names()
-            }
-
-    @property
-    def default_grouping(self) -> str:
-        self.check_cleaned()
-        return "frame"
-
-    @property
-    def default_detail_level(self) -> str:
-        self.check_cleaned()
-        return "detailed"
-
-    @property
-    def metadata(self) -> Dict[str, object]:
-        self.check_cleaned()
-        return self._rift._build_frame_viewer_metadata()
+        return self._id
 
     def list_frame_names(self) -> List[str]:
         """
@@ -344,7 +299,7 @@ class FrameViewer(Cleanable):
         """
         self.check_cleaned()
         return {
-            "viewer_id": self.viewer_id,
+            "id": self.id,
             "frame_count": self.count_frames(),
             "frame_names": tuple(self.list_frame_names()),
             "host_boundary": "descriptor_only",
@@ -1347,11 +1302,11 @@ class FrameViewer(Cleanable):
             frame_name: Optional[str] = None,
     ) -> ViewFrame:
         """
-        Return one frame helper bound to the current selected frame.
+        Return one frame helper bound to the requested frame.
 
         Args:
             frame_name:
-                Optional hosted frame name override.
+                Required hosted frame name.
 
         Returns:
             ViewFrame: Bound frame helper surface.
@@ -1367,7 +1322,7 @@ class FrameViewer(Cleanable):
             compiled_access_surface=self._get_required_compiled_access_surface(
                 selected_frame_name
             ),
-            default_detail_level=self.default_detail_level,
+            default_detail_level="detailed",
         )
 
     def get_view_conduit(
@@ -1376,11 +1331,11 @@ class FrameViewer(Cleanable):
             frame_name: Optional[str] = None,
     ) -> ViewConduit:
         """
-        Return one conduit helper bound to the current selected frame.
+        Return one conduit helper bound to the requested frame.
 
         Args:
             frame_name:
-                Optional hosted frame name override.
+                Required hosted frame name.
 
         Returns:
             ViewConduit: Bound conduit helper surface.
@@ -1395,11 +1350,11 @@ class FrameViewer(Cleanable):
             frame_name: Optional[str] = None,
     ) -> ViewSpell:
         """
-        Return one spell helper bound to the current selected frame.
+        Return one spell helper bound to the requested frame.
 
         Args:
             frame_name:
-                Optional hosted frame name override.
+                Required hosted frame name.
 
         Returns:
             ViewSpell: Bound spell helper surface.
@@ -1410,11 +1365,11 @@ class FrameViewer(Cleanable):
 
     def get_view_multiframe(self) -> ViewMultiFrame:
         """
-        Return the viewer-owned multi-frame helper.
+        Return one descriptor-hosted multi-frame helper.
 
         Returns:
-            ViewMultiFrame: Borrowed helper for cross-frame and
-            descriptor-hosted inventory/comparison logic.
+            ViewMultiFrame: Fresh helper for cross-frame and descriptor-hosted
+            inventory/comparison logic.
         """
         self.check_cleaned()
         return ViewMultiFrame(viewer=self)
@@ -1510,7 +1465,9 @@ class FrameViewer(Cleanable):
 
         Args:
             frame_name:
-                Required hosted frame name.
+                Required hosted frame name. `None` is rejected because the
+                viewer no longer supports default-frame routing for
+                frame-local operations.
 
         Returns:
             str: Selected hosted frame name.

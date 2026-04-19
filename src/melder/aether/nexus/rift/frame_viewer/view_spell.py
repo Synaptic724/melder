@@ -22,7 +22,7 @@ class ViewSpell(Cleanable):
         Hold spell-scoped viewer helper methods for the `general` profile.
 
     Contract:
-        - Operates on one bound frame through the shared frame helper surface.
+        - Operates on one bound frame through a borrowed `ViewFrame` helper.
         - Returns ACL-filtered spell links and spell descriptions only.
 
     Lifecycle:
@@ -47,7 +47,7 @@ class ViewSpell(Cleanable):
         Initialize one spell-scoped helper surface.
 
         Contract:
-            - Holds only a borrowed reference to the shared frame helper.
+            - Holds only a borrowed reference to the bound frame helper.
             - Reads descriptor and ACL state indirectly through that helper.
 
         Args:

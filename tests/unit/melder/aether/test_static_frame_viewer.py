@@ -47,9 +47,7 @@ def test_static_frame_viewer_from_frame_viewer_handles_plain_and_static_sources(
     cloned_static_viewer = StaticFrameViewer.from_frame_viewer(static_viewer)
 
     assert static_viewer._rift is viewer._rift
-    assert static_viewer.default_view_frame_name == viewer.default_view_frame_name
     assert cloned_static_viewer._rift is static_viewer._rift
-    assert cloned_static_viewer.default_view_frame_name == static_viewer.default_view_frame_name
 
 
 def test_static_frame_viewer_cleanup_clone_and_dispatch_paths_work() -> None:

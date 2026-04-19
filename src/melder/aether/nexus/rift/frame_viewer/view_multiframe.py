@@ -19,10 +19,11 @@ class ViewMultiFrame(Cleanable):
         - Reuses the viewer's private descriptor/record utilities instead of
           duplicating ownership state.
         - Exposes cross-frame and descriptor-hosted inventory/comparison logic
-          outside the main viewer class body.
+          without introducing frame-local helper binding state.
 
     Lifecycle:
         Cleanup is idempotent and clears only the borrowed viewer reference.
+        `ViewMultiFrame` is cheap and may be created on demand.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -31,12 +32,29 @@ class ViewMultiFrame(Cleanable):
     ]
 
     def __init__(self, *, viewer: object) -> None:
+        """
+        Initialize one multi-frame helper.
+
+        Args:
+            viewer:
+                Borrowed `FrameViewer` used to source descriptor and record
+                utilities.
+
+        Returns:
+            None.
+        """
         super().__init__()
         if viewer is None:
             raise TypeError("viewer cannot be None.")
         self._viewer = viewer
 
     def cleanup(self) -> None:
+        """
+        Idempotently drop the borrowed viewer reference.
+
+        Returns:
+            None.
+        """
         if self._cleaned:
             return
         self._cleaned = True
@@ -341,7 +359,6 @@ class ViewMultiFrame(Cleanable):
             "conduit_record_count": frame_summary["conduit_record_count"],
             "root_conduit_count": frame_summary["root_conduit_count"],
             "spell_record_count": frame_summary["spell_record_count"],
-            "is_default": frame_summary["is_default"],
         }
 
     def describe_host_inventory(self) -> Dict[str, object]:

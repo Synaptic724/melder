@@ -209,7 +209,7 @@ def test_rift_get_frame_viewer_projects_multiple_assigned_frames() -> None:
     viewer = rift.get_frame_viewer()
 
     assert isinstance(viewer, FrameViewer)
-    assert viewer.metadata["frame_count"] == 2
+    assert rift._build_frame_viewer_metadata()["frame_count"] == 2
     assert viewer.list_frame_names() == ["finance", "ops"]
 
 
@@ -233,11 +233,10 @@ def test_rift_get_frame_viewer_hosts_descriptor_and_compiled_surface_maps() -> N
     viewer = rift.get_frame_viewer()
 
     assert isinstance(viewer, FrameViewer)
-    assert list(sorted(viewer.frame_descriptors_by_name.keys())) == ["finance", "ops"]
-    assert list(sorted(viewer.compiled_access_surfaces_by_frame_name.keys())) == [
-        "finance",
-        "ops",
-    ]
+    assert viewer._get_required_frame_descriptor("finance").frame_name == "finance"
+    assert viewer._get_required_frame_descriptor("ops").frame_name == "ops"
+    assert viewer._get_required_compiled_access_surface("finance").frame_name == "finance"
+    assert viewer._get_required_compiled_access_surface("ops").frame_name == "ops"
 
 
 def test_rift_refresh_runtime_projections_for_one_frame_preserves_other_room_projections() -> None:
@@ -349,7 +348,7 @@ def test_rift_refresh_runtime_projections_for_multiple_frames_uses_one_projectio
         (("finance", "ops"), True),
     ]
     assert sync_calls == []
-    assert rift.space.frame_viewer.metadata["assigned_frame_names"] == (
+    assert rift._build_frame_viewer_metadata()["assigned_frame_names"] == (
         "ops",
         "finance",
     )
@@ -370,13 +369,14 @@ def test_rift_target_frame_populates_room_owned_viewer_metadata_from_assigned_fr
 
     viewer = rift.get_frame_viewer()
 
-    assert viewer.metadata["rift_id"] == rift.id
-    assert viewer.metadata["assigned_frame_names"] == ("ops",)
-    assert viewer.metadata["selected_contract_names_by_frame_name"] == {
+    viewer_metadata = rift._build_frame_viewer_metadata()
+
+    assert viewer_metadata["rift_id"] == rift.id
+    assert viewer_metadata["assigned_frame_names"] == ("ops",)
+    assert viewer_metadata["selected_contract_names_by_frame_name"] == {
         "ops": {
             "view": "default",
             "command": "default",
             "codegen": "default",
         }
     }
-    assert viewer.default_view_frame_name == "ops"

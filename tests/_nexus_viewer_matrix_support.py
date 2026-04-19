@@ -106,8 +106,6 @@ class ViewerProjectionRiftDouble:
             ),
             "acl_selection_by_frame_name": selected_contract_names_by_frame_name,
             "contract_names_by_frame_name": selected_contract_names_by_frame_name,
-            "default_grouping": "frame",
-            "default_detail_level": "detailed",
         }
 
 
@@ -493,7 +491,6 @@ def build_viewer(
     )
     return FrameViewer(
         rift=ViewerProjectionRiftDouble({frame_name: projection_set}),
-        default_view_frame_name=frame_name,
     )
 
 
@@ -556,7 +553,6 @@ def build_projection_backed_viewer_from_state(
     )
     return FrameViewer(
         rift=ViewerProjectionRiftDouble({frame_name: projection_set}),
-        default_view_frame_name=frame_name,
     )
 
 
@@ -639,5 +635,4 @@ def build_multi_frame_viewer(
         )
     return FrameViewer(
         rift=ViewerProjectionRiftDouble(projection_sets_by_frame_name),
-        default_view_frame_name=frame_names[0] if len(frame_names) > 0 else None,
     )

@@ -16,7 +16,7 @@ class ViewConduit(Cleanable):
         Hold conduit-scoped viewer helper methods for the `general` profile.
 
     Contract:
-        - Operates on one bound frame through the shared frame helper surface.
+        - Operates on one bound frame through a borrowed `ViewFrame` helper.
         - Returns ACL-filtered conduit links and conduit descriptions only.
 
     Lifecycle:
@@ -40,7 +40,7 @@ class ViewConduit(Cleanable):
         Initialize one conduit-scoped helper surface.
 
         Contract:
-            - Holds only a borrowed reference to the shared frame helper.
+            - Holds only a borrowed reference to the bound frame helper.
             - Does not own the bound descriptor or ACL state directly.
 
         Args:

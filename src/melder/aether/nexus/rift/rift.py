@@ -619,8 +619,6 @@ class Rift(Cleanable, IRift):
             ),
             "acl_selection_by_frame_name": selected_contract_names_by_frame_name,
             "contract_names_by_frame_name": selected_contract_names_by_frame_name,
-            "default_grouping": frame_viewer.default_grouping,
-            "default_detail_level": frame_viewer.default_detail_level,
         }
 
     def _get_required_view_projection(self, frame_name: str):

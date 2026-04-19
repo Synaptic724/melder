@@ -322,7 +322,7 @@ def _build_collision_viewer() -> FrameViewer:
             ("ops", ("shared-book", "ops-spell-1")),
             ("finance", ("shared-book", "finance-spell-1")),
     ):
-        descriptor = viewer.frame_descriptors_by_name[frame_name]
+        descriptor = viewer._get_required_frame_descriptor(frame_name)
         spell_record = descriptor.spell_records_by_key[spell_record_key]
         spell_record.binding_name = "shared_binding"
         spell_record.spell_name = "SharedSpell"
@@ -379,7 +379,7 @@ def _build_visible_collision_viewer() -> FrameViewer:
         ),
         include_detail_dunders=True,
     )
-    descriptor = viewer.frame_descriptors_by_name["ops"]
+    descriptor = viewer._get_required_frame_descriptor("ops")
     first_spell = descriptor.spell_records_by_key[("ops-spellbook", "ops-spell-1")]
     second_spell = descriptor.spell_records_by_key[("ops-spellbook", "ops-spell-2")]
     first_spell.binding_name = "shared_binding"
@@ -399,22 +399,14 @@ def test_frame_viewer_lists_hosted_frame_names() -> None:
     assert viewer.list_frame_names() == ["finance", "ops"]
 
 
-def test_frame_viewer_can_switch_default_frame() -> None:
-    viewer = _build_viewer(("ops", "finance"))
-
-    viewer.set_default_view("finance")
-
-    assert viewer.default_view_frame_name == "finance"
-
-
 def test_frame_viewer_describes_available_frames() -> None:
     viewer = _build_viewer(("ops", "finance"))
 
     descriptions = viewer.describe_available_views()
 
     assert descriptions == [
-        {"frame_name": "finance", "is_default": False},
-        {"frame_name": "ops", "is_default": True},
+        {"frame_name": "finance"},
+        {"frame_name": "ops"},
     ]
 
 
@@ -435,13 +427,12 @@ def test_frame_viewer_describe_frames_summarizes_all_hosted_frames() -> None:
     assert descriptions["finance"]["frame_name"] == "finance"
     assert descriptions["finance"]["spell_record_count"] == 1
     assert descriptions["ops"]["frame_name"] == "ops"
-    assert descriptions["ops"]["is_default"] is True
 
 
 def test_frame_viewer_profile_lists_targets_for_default_frame() -> None:
     viewer = _build_viewer(("ops",))
 
-    targets = viewer.list_targets()
+    targets = viewer.list_targets(frame_name="ops")
 
     assert [target.source_kind for target in targets] == ["frame", "conduit", "spell"]
 
@@ -449,7 +440,7 @@ def test_frame_viewer_profile_lists_targets_for_default_frame() -> None:
 def test_frame_viewer_profile_describe_targets_adds_metadata_for_detailed_profile() -> None:
     viewer = _build_viewer(("ops",))
 
-    descriptions = viewer.describe_targets()
+    descriptions = viewer.describe_targets(frame_name="ops")
 
     assert descriptions[0]["source_kind"] == "frame"
     assert "metadata" in descriptions[0]
@@ -458,8 +449,6 @@ def test_frame_viewer_profile_describe_targets_adds_metadata_for_detailed_profil
 def test_frame_viewer_exposes_the_shipped_general_surface() -> None:
     viewer = _build_viewer(("ops",))
 
-    assert viewer.default_grouping == "frame"
-    assert viewer.default_detail_level == "detailed"
     assert hasattr(viewer, "describe_targets")
 
 
@@ -467,6 +456,7 @@ def test_frame_viewer_execute_method_routes_through_profile_mapping() -> None:
     viewer = _build_viewer(("ops",))
 
     descriptions = viewer.describe_targets(
+        frame_name="ops",
     )
 
     assert descriptions[0]["source_kind"] == "frame"
@@ -512,7 +502,6 @@ def test_frame_viewer_describe_frame_summarizes_descriptor_driven_surface() -> N
     assert summary["conduit_record_count"] == 1
     assert summary["root_conduit_count"] == 1
     assert summary["spell_record_count"] == 1
-    assert summary["is_default"] is True
 
 
 def test_frame_viewer_host_count_methods_report_descriptor_counts() -> None:
@@ -942,7 +931,7 @@ def test_frame_viewer_descriptor_host_methods_report_record_level_inventory() ->
 
 def test_frame_viewer_host_skip_guard_and_internal_resolver_paths_work() -> None:
     viewer = _build_viewer(("ops", "finance"))
-    viewer.frame_descriptors_by_name["finance"]._frame_overview = None
+    viewer._get_required_frame_descriptor("finance")._frame_overview = None
 
     assert viewer.list_frame_ids() == ["ops-frame"]
     assert viewer.list_nexus_contracts() == [
@@ -971,7 +960,8 @@ def test_frame_viewer_host_skip_guard_and_internal_resolver_paths_work() -> None
     with pytest.raises(ValueError, match="frame_name cannot be empty."):
         viewer._get_required_selected_frame_name("")
 
-    assert viewer._get_required_selected_frame_name() == "ops"
+    with pytest.raises(ValueError, match="frame_name is required."):
+        viewer._get_required_selected_frame_name()
 
     with pytest.raises(ValueError, match="Frame 'missing' was not found."):
         viewer._get_required_frame_descriptor("missing")
@@ -1000,7 +990,7 @@ def test_frame_viewer_host_skip_guard_and_internal_resolver_paths_work() -> None
     with pytest.raises(ValueError, match="spell_source_id 'bad' must be in 'spellbook_id:spell_id' form."):
         viewer._parse_spell_source_id("bad")
 
-    finance_descriptor = viewer.frame_descriptors_by_name["finance"]
+    finance_descriptor = viewer._get_required_frame_descriptor("finance")
     finance_descriptor.upsert_spell_record(
         SpellRecord(
             origin_spellbook_id="ops-spellbook",
@@ -1133,26 +1123,14 @@ def test_frame_viewer_brief_and_compare_methods_report_expected_shapes() -> None
     viewer = _build_viewer(("ops", "finance"))
 
     viewer_summary = viewer.describe_viewer()
-    current_frame = viewer.describe_current_frame()
     frames_inventory = viewer.describe_frames_inventory()
     method_surface = viewer.describe_viewer_method_surface()
 
     assert viewer_summary == {
-        "viewer_id": viewer.viewer_id,
+        "id": viewer.id,
         "frame_count": 2,
-        "default_view_frame_name": "ops",
         "frame_names": ("finance", "ops"),
         "host_boundary": "descriptor_only",
-    }
-    assert current_frame == {
-        "frame_name": "ops",
-        "frame_id": "ops-frame",
-        "nexus_label": "default",
-        "nexus_version": "0.0.1",
-        "conduit_record_count": 1,
-        "root_conduit_count": 1,
-        "spell_record_count": 1,
-        "is_default": True,
     }
     assert frames_inventory == {
         "finance": {
@@ -1163,7 +1141,6 @@ def test_frame_viewer_brief_and_compare_methods_report_expected_shapes() -> None
             "spell_record_count": 1,
             "origin_spellbook_count": 1,
             "lineage_count": 1,
-            "is_default": False,
         },
         "ops": {
             "frame_id": "ops-frame",
@@ -1173,7 +1150,6 @@ def test_frame_viewer_brief_and_compare_methods_report_expected_shapes() -> None
             "spell_record_count": 1,
             "origin_spellbook_count": 1,
             "lineage_count": 1,
-            "is_default": True,
         },
     }
     assert method_surface == {
@@ -1181,7 +1157,6 @@ def test_frame_viewer_brief_and_compare_methods_report_expected_shapes() -> None
         "default_entrypoints": (
             "describe_viewer",
             "describe_host_inventory",
-            "describe_current_frame",
             "describe_frames_inventory",
         ),
         "frame_summary_methods": (
@@ -1189,7 +1164,6 @@ def test_frame_viewer_brief_and_compare_methods_report_expected_shapes() -> None
             "describe_frame",
             "describe_frames",
             "describe_frame_brief",
-            "describe_current_frame",
         ),
         "comparison_methods": (
             "compare_frames",
@@ -1216,11 +1190,9 @@ def test_frame_viewer_brief_and_compare_methods_report_expected_shapes() -> None
         "conduit_record_count": 1,
         "root_conduit_count": 1,
         "spell_record_count": 1,
-        "is_default": True,
     }
     assert viewer.describe_host_inventory() == {
         "frame_count": 2,
-        "default_view_frame_name": "ops",
         "frame_names": ("finance", "ops"),
         "frame_ids": ("finance-frame", "ops-frame"),
         "conduit_record_count": 2,
@@ -1457,7 +1429,7 @@ def test_view_frame_guardrails_and_missing_record_paths_work() -> None:
 
     viewer = _build_viewer(("ops",))
     view_frame = viewer.get_view_frame(frame_name="ops")
-    descriptor = viewer.frame_descriptors_by_name["ops"]
+    descriptor = viewer._get_required_frame_descriptor("ops")
     spell_record = descriptor.spell_records_by_key[("ops-spellbook", "ops-spell")]
 
     spell_record.binding_name = None
@@ -1507,14 +1479,14 @@ def test_view_frame_guardrails_and_missing_record_paths_work() -> None:
 
     viewer = _build_viewer(("ops",))
     view_frame = viewer.get_view_frame(frame_name="ops")
-    descriptor = viewer.frame_descriptors_by_name["ops"]
+    descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor._conduit_records_by_id.pop("ops-conduit")
     with pytest.raises(ValueError, match="Missing ConduitRecord for compiled conduit id 'ops-conduit'."):
         view_frame.list_targets(source_kind="conduit")
 
     viewer = _build_viewer(("ops",))
     view_frame = viewer.get_view_frame(frame_name="ops")
-    descriptor = viewer.frame_descriptors_by_name["ops"]
+    descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor._spell_records_by_key.pop(("ops-spellbook", "ops-spell"))
     with pytest.raises(ValueError, match="Missing SpellRecord for compiled spell key"):
         view_frame.list_targets(source_kind="spell")
@@ -1552,7 +1524,7 @@ def test_view_frame_guardrails_and_missing_record_paths_work() -> None:
 def test_view_frame_cleanup_and_frame_identity_branches_work() -> None:
     viewer = _build_viewer(("ops",))
     view_frame = viewer.get_view_frame(frame_name="ops")
-    descriptor = viewer.frame_descriptors_by_name["ops"]
+    descriptor = viewer._get_required_frame_descriptor("ops")
 
     frame_identity = view_frame.describe_target_identity(
         source_kind="frame",
@@ -1685,7 +1657,7 @@ def test_view_conduit_brief_and_missing_section_methods_work() -> None:
 def test_view_conduit_guardrails_and_optional_paths_work() -> None:
     viewer = _build_viewer(("ops",))
     view_conduit = viewer.get_view_conduit(frame_name="ops")
-    descriptor = viewer.frame_descriptors_by_name["ops"]
+    descriptor = viewer._get_required_frame_descriptor("ops")
     conduit_record = descriptor.conduit_records_by_id["ops-conduit"]
     spell_record = descriptor.spell_records_by_key[("ops-spellbook", "ops-spell")]
 
@@ -2018,7 +1990,7 @@ def test_view_spell_guardrails_and_detail_normalizers_work() -> None:
 
 def test_view_spell_remaining_lineage_payload_and_fallback_paths_work() -> None:
     viewer = _build_visible_collision_viewer()
-    descriptor = viewer.frame_descriptors_by_name["ops"]
+    descriptor = viewer._get_required_frame_descriptor("ops")
     view_spell = viewer.get_view_spell(frame_name="ops")
 
     descriptor.upsert_spell_record(
@@ -2141,7 +2113,7 @@ def test_execute_method_routes_new_brief_and_compare_methods() -> None:
     viewer = _build_viewer(("ops", "finance"))
 
     viewer_summary = viewer.describe_viewer()
-    current_frame = viewer.describe_current_frame()
+    current_frame = viewer.describe_frame("ops")
     frames_inventory = viewer.describe_frames_inventory()
     frame_brief = viewer.describe_frame_brief( frame_name="ops")
     host_inventory = viewer.describe_host_inventory()
@@ -2458,8 +2430,8 @@ def test_frame_viewer_ast_surface_methods_return_minified_json() -> None:
         for current_method in class_surface["methods"]
     )
     assert any(
-        current_property["method_name"] == "view_frame"
-        for current_property in class_surface["properties"]
+        current_method["method_name"] == "get_view_frame"
+        for current_method in class_surface["methods"]
     )
 
 
@@ -2669,8 +2641,8 @@ def test_view_spell_detailed_methods_surface_profile_sections_and_dunders() -> N
 
 def test_frame_viewer_cleanup_cascades_to_owned_surfaces_and_profiles_only() -> None:
     viewer = _build_viewer(("ops",))
-    descriptor = viewer.frame_descriptors_by_name["ops"]
-    surface = viewer.compiled_access_surfaces_by_frame_name["ops"]
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    surface = viewer._get_required_compiled_access_surface("ops")
 
     viewer.cleanup()
 
@@ -2684,10 +2656,10 @@ def test_frame_viewer_clone_detaches_owned_surfaces_and_metadata() -> None:
     cloned = viewer.clone()
 
     assert cloned is not viewer
-    assert cloned.frame_descriptors_by_name["ops"] is viewer.frame_descriptors_by_name["ops"]
+    assert cloned._get_required_frame_descriptor("ops") is viewer._get_required_frame_descriptor("ops")
     assert (
-        cloned.compiled_access_surfaces_by_frame_name["ops"]
-        is viewer.compiled_access_surfaces_by_frame_name["ops"]
+        cloned._get_required_compiled_access_surface("ops")
+        is viewer._get_required_compiled_access_surface("ops")
     )
 
 
@@ -2703,50 +2675,27 @@ def test_frame_viewer_constructor_rejects_invalid_registry_and_default_inputs() 
             compiled_access_surfaces_by_frame_name={},
         )
 
-    with pytest.raises(ValueError, match="default_view_frame_name cannot be empty"):
-        _build_single_frame_viewer(
-            "ops",
-            descriptor,
-            configuration,
-            surface,
-            default_view_frame_name="",
-        )
-
-    with pytest.raises(ValueError, match="default_view_frame_name must be present"):
-        _build_single_frame_viewer(
-            "ops",
-            descriptor,
-            configuration,
-            surface,
-            default_view_frame_name="finance",
-        )
-
-
 def test_frame_viewer_surface_defaults_are_explicit() -> None:
     viewer = _build_viewer(("ops",))
 
-    assert viewer.default_view_frame_name == "ops"
-    assert viewer.default_grouping == "frame"
-    assert viewer.default_detail_level == "detailed"
-    assert viewer.default_grouping == "frame"
-    assert viewer.default_detail_level == "detailed"
+    assert viewer.describe_targets(frame_name="ops")[0]["metadata"]["frame_id"] == "ops-frame"
 
 
 def test_frame_viewer_rejects_invalid_frame_inputs() -> None:
     viewer = _build_viewer(("ops",))
 
     with pytest.raises(ValueError, match="frame_name cannot be empty"):
-        viewer.set_default_view("")
+        viewer._get_required_selected_frame_name("")
 
-    with pytest.raises(ValueError, match="Frame 'finance' was not found"):
-        viewer.set_default_view("finance")
+    with pytest.raises(ValueError, match="frame_name is required."):
+        viewer._get_required_selected_frame_name()
 
 
 def test_frame_viewer_rejects_empty_tool_and_kind_inputs() -> None:
     viewer = _build_viewer(("ops",))
 
     with pytest.raises(ValueError, match="source_kind cannot be empty"):
-        viewer.list_targets( source_kind="")
+        viewer.list_targets(frame_name="ops", source_kind="")
 
 
 def test_frame_viewer_cleanup_is_idempotent_and_rechecks_cleaned_state_under_lock() -> None:

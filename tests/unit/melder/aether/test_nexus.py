@@ -259,7 +259,6 @@ def _build_descriptor_backed_viewer(
     )
     return FrameViewer(
         rift=ViewerProjectionRiftDouble({frame_name: projection_set}),
-        default_view_frame_name=frame_name,
     )
 
 
@@ -357,9 +356,9 @@ def _build_projection_set_from_viewer(
     Returns:
         FrameProjectionSet: Detached projection set for the frame.
     """
-    frame_descriptor = viewer.frame_descriptors_by_name[frame_name]
-    frame_acl_configuration = viewer.frame_acl_configurations_by_frame_name[frame_name]
-    compiled_access_surface = viewer.compiled_access_surfaces_by_frame_name[frame_name]
+    frame_descriptor = viewer._get_required_frame_descriptor(frame_name)
+    frame_acl_configuration = viewer._get_required_frame_acl_configuration(frame_name)
+    compiled_access_surface = viewer._get_required_compiled_access_surface(frame_name)
     return FrameProjectionSet(
         frame_name=frame_name,
         view_projection=ViewProjection(
@@ -426,11 +425,9 @@ def _attach_projection_backed_viewer(space: RiftSpace, viewer: FrameViewer) -> N
     detached_rift._apply_projection_sets(
         {
             frame_name: _build_projection_set_from_viewer(viewer, frame_name)
-            for frame_name in viewer.frame_descriptors_by_name.keys()
+            for frame_name in viewer.list_frame_names()
         }
     )
-    if viewer.default_view_frame_name is not None:
-        space.frame_viewer.set_default_view(viewer.default_view_frame_name)
     viewer.cleanup()
 
 
@@ -507,11 +504,9 @@ def _make_detached_rift_projection_owner() -> object:
                 "selected_contract_names_by_frame_name": (
                     selected_contract_names_by_frame_name
                 ),
-                "acl_selection_by_frame_name": selected_contract_names_by_frame_name,
-                "contract_names_by_frame_name": selected_contract_names_by_frame_name,
-                "default_grouping": "frame",
-                "default_detail_level": "detailed",
-            }
+            "acl_selection_by_frame_name": selected_contract_names_by_frame_name,
+            "contract_names_by_frame_name": selected_contract_names_by_frame_name,
+        }
 
     return _DetachedRiftProjectionOwner()
 
@@ -3844,9 +3839,10 @@ def test_rift_get_frame_viewer_returns_room_owned_viewer_from_assigned_frame_con
 
     viewer = rift.get_frame_viewer()
 
-    assert viewer.metadata["rift_id"] == rift.id
-    assert viewer.default_view_frame_name == "ops"
-    assert viewer.frame_descriptors_by_name["ops"].frame_name == "ops"
+    viewer_metadata = rift._build_frame_viewer_metadata()
+
+    assert viewer_metadata["rift_id"] == rift.id
+    assert viewer._get_required_frame_descriptor("ops").frame_name == "ops"
 
 
 def test_rift_can_target_frame_through_contract_after_nexus_validation() -> None:
@@ -3953,10 +3949,10 @@ def test_rift_target_frame_uses_selected_named_acl_contract_for_viewer_projectio
     viewer = rift.get_frame_viewer()
 
     assert rift.get_frame_link_contract("ops").get_selected_contract_name() == "ops_contract"
-    assert viewer.frame_acl_configurations_by_frame_name["ops"].to_json_dict() == (
+    assert viewer._get_required_frame_acl_configuration("ops").to_json_dict() == (
         named_configuration.to_json_dict()
     )
-    assert viewer.metadata["contract_names_by_frame_name"] == {
+    assert rift._build_frame_viewer_metadata()["contract_names_by_frame_name"] == {
         "ops": {
             "view": "ops_contract",
             "command": "ops_contract",
@@ -4000,7 +3996,7 @@ def test_rift_refresh_runtime_projections_rebuilds_room_owned_viewer_for_one_eng
     assert viewer.list_frame_names() == ["ops"]
     assert viewer is first_viewer
     assert viewer.get_view_frame(frame_name="ops")._get_required_frame_descriptor() is (
-        viewer.frame_descriptors_by_name["ops"]
+        viewer._get_required_frame_descriptor("ops")
     )
 
 
@@ -4035,7 +4031,6 @@ def test_rift_attaches_room_owned_viewer_to_active_space_and_reads_it_back() -> 
 
     assert viewer is space.frame_viewer
     assert rift.get_frame_viewer() is viewer
-    assert viewer.default_view_frame_name == "ops"
 
 
 def test_rift_space_frame_viewer_asset_exists_before_targeting() -> None:

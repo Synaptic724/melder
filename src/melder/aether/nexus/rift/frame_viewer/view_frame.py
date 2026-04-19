@@ -56,9 +56,8 @@ class ViewFrame(Cleanable):
 
         Contract:
             - Stores borrowed references to one frame's descriptor and compiled
-              ACL state when available.
-            - Allows unbound construction so the owning profile can create the
-              helper trio before a frame is selected.
+              ACL state for one frame-local helper instance.
+            - Does not own the bound descriptor or ACL objects.
 
         Args:
             frame_name:
@@ -96,7 +95,7 @@ class ViewFrame(Cleanable):
         Contract:
             - Clears only the helper's own references and lock.
             - Never cleans the descriptor or ACL objects because they are
-              borrowed from the bound profile.
+              borrowed runtime inputs.
 
         Returns:
             None.
