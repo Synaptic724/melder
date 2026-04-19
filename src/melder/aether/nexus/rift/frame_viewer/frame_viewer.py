@@ -1,5 +1,9 @@
 """
-Rift-backed public frame viewer host surface.
+Public Rift-backed viewer host for frame, conduit, spell, and descriptor reads.
+
+This module owns the top-level viewer facade that routes all read-only viewer
+behavior through current `Rift` projection state instead of viewer-local
+projection caches.
 """
 import threading
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
@@ -35,16 +39,16 @@ class FrameViewer(Cleanable):
     """
     Purpose:
         Hold one durable viewer asset that reads current frame truth from the
-        Rift-owned projection bundle plus the shipped general helper surface
-        used to inspect that state.
+        Rift-owned projection bundle plus the viewer helper surfaces used to
+        inspect that state.
 
     Contract:
         - Holds one borrowed `Rift` reference and reads current view
           projections from that owner on demand.
         - Treats descriptor/config/surface state as Rift-owned, not
           viewer-owned.
-        - Owns the shipped `general` viewer feature surface directly.
-        - Creates helper objects on demand for the `general`
+        - Owns the public viewer feature surface directly.
+        - Creates helper objects on demand for the
           view/frame/conduit/spell families rather than caching bound helper
           state on the viewer itself.
         - Exposes descriptor-only multi-frame host methods directly on the
@@ -1309,7 +1313,7 @@ class FrameViewer(Cleanable):
                 Required hosted frame name.
 
         Returns:
-            ViewFrame: Bound frame helper surface.
+            ViewFrame: Selected-frame helper surface.
         """
         self.check_cleaned()
         selected_frame_name = self._get_required_selected_frame_name(frame_name)
@@ -2479,7 +2483,8 @@ class FrameViewer(Cleanable):
         Return the currently visible conduit links for the selected frame.
 
         Contract:
-            - Delegates visibility decisions to the shared frame helper and its
+            - Delegates visibility decisions to the selected-frame helper and
+              its
               compiled ACL surface.
             - Returns a fresh link snapshot for this call.
 
@@ -3138,7 +3143,8 @@ class FrameViewer(Cleanable):
         Return the currently visible spell links for the selected frame.
 
         Contract:
-            - Delegates visibility decisions to the shared frame helper and its
+            - Delegates visibility decisions to the selected-frame helper and
+              its
               compiled ACL surface.
             - Returns a fresh link snapshot for this call.
 

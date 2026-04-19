@@ -1,5 +1,9 @@
 """
 Spell-scoped helper surface for one selected frame view.
+
+This module provides ACL-filtered spell inspection, payload reads, lineage
+queries, and spell comparison behavior over the currently selected frame
+helper.
 """
 
 import threading
@@ -39,7 +43,7 @@ class ViewSpell(Cleanable):
     __agent_purpose__: str = (
         "access: public. Spell-local helper surface for spell identity, "
         "origin, lineage, filtering, detailed payload access, dunder-member "
-        "visibility, and spell crosswalk/comparison flows inside one bound "
+        "visibility, and spell crosswalk/comparison flows inside one selected "
         "frame."
     )
     __slots__ = Cleanable.__slots__ + [
@@ -52,12 +56,12 @@ class ViewSpell(Cleanable):
         Initialize one spell-scoped helper surface.
 
         Contract:
-            - Holds only a borrowed reference to the bound frame helper.
+            - Holds only a borrowed reference to the selected-frame helper.
             - Reads descriptor and ACL state indirectly through that helper.
 
         Args:
             frame_view:
-                Shared frame helper used to source ACL-filtered links.
+                Selected-frame helper used to source ACL-filtered links.
 
         Returns:
             None.
@@ -88,20 +92,21 @@ class ViewSpell(Cleanable):
 
     def list_spells(self, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
         """
-        Return the currently visible spell links for the bound frame.
+        Return the currently visible spell links for the selected frame.
 
         Contract:
-            - Delegates visibility decisions to the shared frame helper and its
+            - Delegates visibility decisions to the borrowed frame helper and
+              its
               compiled ACL surface.
             - Returns a fresh link snapshot for this call.
 
         Args:
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
-            List[FrameLink]: Spell links for the bound frame.
+            List[FrameLink]: Spell links for the selected frame.
         """
         self.check_cleaned()
         return self._get_required_frame_view().list_targets(
@@ -125,8 +130,8 @@ class ViewSpell(Cleanable):
 
         Args:
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             List[Dict[str, object]]: Spell descriptions.
@@ -165,8 +170,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id in `spellbook_id:spell_id` form.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: ACL-filtered spell description.
@@ -225,8 +230,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Spell payload summary.
@@ -271,8 +276,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Rich detail status and payload.
@@ -338,8 +343,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Compact spell summary.
@@ -378,8 +383,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Missing spell-section summary.
@@ -437,8 +442,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Stable identity fields for the visible spell.
@@ -480,8 +485,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Publication-origin fields for the visible spell.
@@ -519,8 +524,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Lineage grouping summary for the spell.
@@ -568,8 +573,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Binding-facing spell summary.
@@ -606,8 +611,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Resolution-facing spell summary.
@@ -646,8 +651,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Metadata visibility summary for the spell.
@@ -677,8 +682,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Class-profile availability and normalized data.
@@ -703,8 +708,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Callable-profile availability and normalized
@@ -734,8 +739,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Instance-member availability and normalized
@@ -761,8 +766,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Dynamic-access availability and normalized data.
@@ -791,8 +796,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Tuple[str, ...]: Distinct visible dunder member names.
@@ -825,8 +830,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Visible dunder-member summary.
@@ -874,8 +879,8 @@ class ViewSpell(Cleanable):
             payload_type:
                 Required spell payload type.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             List[FrameLink]: Matching visible spell links.
@@ -906,8 +911,8 @@ class ViewSpell(Cleanable):
             binding_name:
                 Exact published binding name.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             List[FrameLink]: Matching visible spell links.
@@ -934,8 +939,8 @@ class ViewSpell(Cleanable):
             conduit_id:
                 Published conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             List[FrameLink]: Matching visible spell links.
@@ -964,8 +969,8 @@ class ViewSpell(Cleanable):
             spellbook_id:
                 Required origin spellbook id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             List[FrameLink]: Matching visible spell links.
@@ -994,8 +999,8 @@ class ViewSpell(Cleanable):
             lineage_id:
                 Required lineage id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             List[FrameLink]: Matching visible spell links.
@@ -1024,8 +1029,8 @@ class ViewSpell(Cleanable):
             permission_name:
                 Required permission name.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             List[FrameLink]: Matching visible spell links.
@@ -1055,8 +1060,8 @@ class ViewSpell(Cleanable):
             existence_name:
                 Required existence-kind name.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             List[FrameLink]: Matching visible spell links.
@@ -1086,8 +1091,8 @@ class ViewSpell(Cleanable):
             spell_name:
                 Required spell name.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             List[FrameLink]: Matching visible spell links.
@@ -1116,8 +1121,8 @@ class ViewSpell(Cleanable):
             spellframe_name:
                 Required normalized spellframe name.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             List[FrameLink]: Matching visible spell links.
@@ -1147,8 +1152,8 @@ class ViewSpell(Cleanable):
             text:
                 Case-insensitive text fragment to match.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             List[FrameLink]: Matching visible spell links.
@@ -1184,8 +1189,8 @@ class ViewSpell(Cleanable):
             prefix:
                 Case-insensitive prefix to match.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             List[FrameLink]: Matching visible spell links.
@@ -1221,8 +1226,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Spell visibility, section, and detail posture
@@ -1277,8 +1282,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Compact spell access summary.
@@ -1321,8 +1326,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Spell crosswalk summary.
@@ -1374,8 +1379,8 @@ class ViewSpell(Cleanable):
             right_spell_source_id:
                 Right visible spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Visible spell comparison summary.
@@ -1455,8 +1460,8 @@ class ViewSpell(Cleanable):
             section_name:
                 Required spell payload section name.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             object: ACL-visible spell payload section value.
@@ -1499,8 +1504,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             FrameLink: Matching spell link.
@@ -1538,8 +1543,8 @@ class ViewSpell(Cleanable):
             spell_source_id:
                 Published spell source id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             object: Descriptor-owned spell record.
@@ -1561,8 +1566,8 @@ class ViewSpell(Cleanable):
 
         Args:
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             List[Tuple[FrameLink, object]]: Visible spell links paired with
@@ -1593,8 +1598,8 @@ class ViewSpell(Cleanable):
             section_name:
                 Required detailed payload section name.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Detailed section availability and normalized
@@ -1983,3 +1988,4 @@ class ViewSpell(Cleanable):
                 current_value
             )
         return filtered_payload
+

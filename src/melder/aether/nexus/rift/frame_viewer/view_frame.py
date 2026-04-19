@@ -1,5 +1,9 @@
 """
 Frame-local helper surface for one selected view projection.
+
+This module owns the selected-frame helper that converts one descriptor plus
+one compiled ACL surface into `FrameLink` snapshots and frame-scoped view
+summaries.
 """
 
 import threading

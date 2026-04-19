@@ -1,5 +1,8 @@
 """
 Conduit-scoped helper surface for one selected frame view.
+
+This module provides ACL-filtered conduit inspection and conduit-to-spell
+navigation over the currently selected frame helper.
 """
 
 import threading
@@ -33,7 +36,7 @@ class ViewConduit(Cleanable):
     __agent_purpose__: str = (
         "access: public. Conduit-local helper surface for conduit identity, "
         "inventory, relationships, crosswalks, and conduit-to-spell views "
-        "inside one bound frame."
+        "inside one selected frame."
     )
     __slots__ = Cleanable.__slots__ + [
         "_lock",
@@ -45,12 +48,12 @@ class ViewConduit(Cleanable):
         Initialize one conduit-scoped helper surface.
 
         Contract:
-            - Holds only a borrowed reference to the bound frame helper.
+            - Holds only a borrowed reference to the selected-frame helper.
             - Does not own the bound descriptor or ACL state directly.
 
         Args:
             frame_view:
-                Shared frame helper used to source ACL-filtered links.
+                Selected-frame helper used to source ACL-filtered links.
 
         Returns:
             None.
@@ -81,20 +84,21 @@ class ViewConduit(Cleanable):
 
     def list_conduits(self, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
         """
-        Return the currently visible conduit links for the bound frame.
+        Return the currently visible conduit links for the selected frame.
 
         Contract:
-            - Delegates visibility decisions to the shared frame helper and its
+            - Delegates visibility decisions to the borrowed frame helper and
+              its
               compiled ACL surface.
             - Returns a fresh link snapshot for this call.
 
         Args:
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
-            List[FrameLink]: Conduit links for the bound frame.
+            List[FrameLink]: Conduit links for the selected frame.
         """
         self.check_cleaned()
         return self._get_required_frame_view().list_targets(
@@ -117,8 +121,8 @@ class ViewConduit(Cleanable):
 
         Args:
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             List[Dict[str, object]]: Conduit descriptions.
@@ -155,8 +159,8 @@ class ViewConduit(Cleanable):
             conduit_id:
                 Published conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: ACL-filtered conduit description.
@@ -210,8 +214,8 @@ class ViewConduit(Cleanable):
             conduit_id:
                 Published conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             List[FrameLink]: ACL-visible spells owned by the conduit.
@@ -248,8 +252,8 @@ class ViewConduit(Cleanable):
             conduit_id:
                 Published conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Visible conduit topology summary.
@@ -292,8 +296,8 @@ class ViewConduit(Cleanable):
             conduit_id:
                 Published conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Compact conduit summary.
@@ -335,8 +339,8 @@ class ViewConduit(Cleanable):
             conduit_id:
                 Published conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Missing conduit-section summary.
@@ -382,8 +386,8 @@ class ViewConduit(Cleanable):
             conduit_id:
                 Published conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Conduit crosswalk summary.
@@ -439,8 +443,8 @@ class ViewConduit(Cleanable):
             conduit_id:
                 Published conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Compact conduit inventory summary.
@@ -494,8 +498,8 @@ class ViewConduit(Cleanable):
             conduit_id:
                 Published conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Visible conduit relationship summary.
@@ -545,8 +549,8 @@ class ViewConduit(Cleanable):
             right_conduit_id:
                 Right visible conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Visible conduit comparison summary.
@@ -603,8 +607,8 @@ class ViewConduit(Cleanable):
 
         Args:
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             List[FrameLink]: Visible root conduit links.
@@ -626,8 +630,8 @@ class ViewConduit(Cleanable):
             conduit_id:
                 Published conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             bool: True when the conduit is a root conduit.
@@ -652,8 +656,8 @@ class ViewConduit(Cleanable):
             conduit_id:
                 Published conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             str: Root conduit id for the conduit.
@@ -678,8 +682,8 @@ class ViewConduit(Cleanable):
             root_conduit_id:
                 Required root conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             List[FrameLink]: Visible conduits whose root lineage matches.
@@ -710,8 +714,8 @@ class ViewConduit(Cleanable):
             policy_name:
                 Required conduit policy name.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             List[FrameLink]: Visible conduits whose payload policy matches.
@@ -748,8 +752,8 @@ class ViewConduit(Cleanable):
             state_name:
                 Required conduit-state name.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             List[FrameLink]: Visible conduits whose payload state matches.
@@ -782,8 +786,8 @@ class ViewConduit(Cleanable):
             conduit_id:
                 Published conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             List[FrameLink]: Visible peer conduit links.
@@ -814,8 +818,8 @@ class ViewConduit(Cleanable):
             conduit_id:
                 Published conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Tuple[str, ...]: Visible peer conduit ids in deterministic order.
@@ -848,8 +852,8 @@ class ViewConduit(Cleanable):
             conduit_id:
                 Published conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Tuple[str, ...]: Visible spell source ids owned by the conduit.
@@ -876,8 +880,8 @@ class ViewConduit(Cleanable):
             conduit_id:
                 Published conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Tuple[str, ...]: Visible binding names owned by the conduit.
@@ -910,8 +914,8 @@ class ViewConduit(Cleanable):
             conduit_id:
                 Published conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Tuple[str, ...]: Visible spell names owned by the conduit.
@@ -945,8 +949,8 @@ class ViewConduit(Cleanable):
             conduit_id:
                 Published conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Compact conduit access summary.
@@ -981,8 +985,8 @@ class ViewConduit(Cleanable):
             conduit_name:
                 Exact conduit display name.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             List[FrameLink]: Matching visible conduit links.
@@ -1009,8 +1013,8 @@ class ViewConduit(Cleanable):
             conduit_id:
                 Published conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             Dict[str, object]: Conduit visibility and section explanation.
@@ -1048,8 +1052,8 @@ class ViewConduit(Cleanable):
             field_name:
                 Required conduit payload field name.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             object: ACL-visible conduit payload field value.
@@ -1084,8 +1088,8 @@ class ViewConduit(Cleanable):
             conduit_id:
                 Published conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             FrameLink: Matching conduit link.
@@ -1123,8 +1127,8 @@ class ViewConduit(Cleanable):
             conduit_id:
                 Published conduit id.
             frame_name:
-                Optional frame-name assertion passed through to the shared frame
-                helper.
+                Optional frame-name assertion passed through to the selected-
+                frame helper.
 
         Returns:
             object: Descriptor-owned conduit record.
@@ -1197,3 +1201,4 @@ class ViewConduit(Cleanable):
                 getattr(payload, current_section)
             )
         return filtered_payload
+

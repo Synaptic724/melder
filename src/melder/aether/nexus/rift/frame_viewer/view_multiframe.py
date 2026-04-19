@@ -1,5 +1,9 @@
 """
-Descriptor-oriented multi-frame helper for the Rift-backed viewer surface.
+Multi-frame descriptor helper for the Rift-backed viewer surface.
+
+This module holds the cross-frame inventory, grouping, and comparison helper
+that reuses `FrameViewer` lookup utilities without taking ownership of frame-
+local descriptor or ACL state.
 """
 
 from typing import Callable, Dict, Iterator, List, Optional, Tuple
