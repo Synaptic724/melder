@@ -1914,9 +1914,6 @@ class Nexus(Cleanable, INexus):
     def _refresh_rift_projection_sets_for_frame(
             self,
             frame_name: str,
-            *,
-            timeout: float = 30.0,
-            interval: float = 0.1,
     ) -> None:
         """
         Synchronously refresh projection sets for all Rifts targeting one frame.
@@ -1924,10 +1921,6 @@ class Nexus(Cleanable, INexus):
         Args:
             frame_name:
                 Target frame whose ACL-driven projections changed.
-            timeout:
-                Maximum seconds to wait per impacted Rift for gate drain.
-            interval:
-                Poll interval while waiting for drain.
 
         Returns:
             None.
@@ -1937,11 +1930,24 @@ class Nexus(Cleanable, INexus):
             raise ValueError("frame_name cannot be empty.")
         with self._lock:
             rifts = list(self._rifts_by_id.values())
+            projection_refresh_gate_enabled = self._configuration.get_property(
+                "projection_refresh_gate_enabled"
+            )
+            timeout = self._configuration.get_property(
+                "projection_refresh_gate_timeout_seconds"
+            )
+            interval = self._configuration.get_property(
+                "projection_refresh_gate_poll_interval_seconds"
+            )
         impacted_rifts = [
             rift
             for rift in rifts
             if frame_name in rift.list_assigned_frame_names()
         ]
+        if not projection_refresh_gate_enabled:
+            for rift in impacted_rifts:
+                rift.refresh_runtime_projections(frame_name=frame_name)
+            return
         disabled_rift_ids: List[str] = []
         try:
             for rift in impacted_rifts:

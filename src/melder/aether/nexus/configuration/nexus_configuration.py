@@ -78,6 +78,9 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
             "allow_target_frame_override": bool,
             "allow_multiple_target_frames": bool,
             "max_target_frame_count": int,
+            "projection_refresh_gate_enabled": bool,
+            "projection_refresh_gate_timeout_seconds": (int, float),
+            "projection_refresh_gate_poll_interval_seconds": (int, float),
             "default_space_type": RiftSpaceType,
             "default_auto_activate_on_program": bool,
             "default_auto_create_space": bool,
@@ -259,6 +262,9 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
             "allow_target_frame_override": False,
             "allow_multiple_target_frames": False,
             "max_target_frame_count": 1,
+            "projection_refresh_gate_enabled": True,
+            "projection_refresh_gate_timeout_seconds": 30.0,
+            "projection_refresh_gate_poll_interval_seconds": 0.1,
             "default_space_type": RiftSpaceType.static,
             "default_auto_activate_on_program": True,
             "default_auto_create_space": False,
@@ -300,6 +306,12 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
         max_nexus_frame_count = self.get_property("max_nexus_frame_count")
         allow_multiple_target_frames = self.get_property("allow_multiple_target_frames")
         max_target_frame_count = self.get_property("max_target_frame_count")
+        projection_refresh_gate_timeout_seconds = self.get_property(
+            "projection_refresh_gate_timeout_seconds"
+        )
+        projection_refresh_gate_poll_interval_seconds = self.get_property(
+            "projection_refresh_gate_poll_interval_seconds"
+        )
 
         if max_active_rift_count < 0:
             raise ValueError("max_active_rift_count must be >= 0.")
@@ -313,6 +325,12 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
             raise ValueError("max_nexus_frame_count must be 1 when nexus_frame_mode is single.")
         if not allow_multiple_target_frames and max_target_frame_count != 1:
             raise ValueError("max_target_frame_count must be 1 when allow_multiple_target_frames is False.")
+        if projection_refresh_gate_timeout_seconds <= 0:
+            raise ValueError("projection_refresh_gate_timeout_seconds must be > 0.")
+        if projection_refresh_gate_poll_interval_seconds <= 0:
+            raise ValueError(
+                "projection_refresh_gate_poll_interval_seconds must be > 0."
+            )
         return True
 
     def freeze(self) -> None:
@@ -730,6 +748,72 @@ class NexusConfiguration(Cleanable, INexusConfiguration):
             INexusConfiguration: This configuration instance.
         """
         self.set_property("max_target_frame_count", count)
+        return self
+
+    def with_projection_refresh_gate(
+            self,
+            enabled: bool = True,
+    ) -> "INexusConfiguration":
+        """
+        Fluent
+
+        Set whether ACL-driven projection refresh uses the RiftGate drain
+        barrier.
+
+        Args:
+            enabled:
+                True to block new entrants, wait for in-flight work to drain,
+                refresh projections/viewers, then reopen gates.
+
+        Returns:
+            INexusConfiguration: This configuration instance.
+        """
+        self.set_property("projection_refresh_gate_enabled", enabled)
+        return self
+
+    def with_projection_refresh_gate_timeout_seconds(
+            self,
+            timeout_seconds: Union[int, float],
+    ) -> "INexusConfiguration":
+        """
+        Fluent
+
+        Set the timeout used while waiting for impacted Rift gates to drain.
+
+        Args:
+            timeout_seconds:
+                Positive timeout in seconds.
+
+        Returns:
+            INexusConfiguration: This configuration instance.
+        """
+        self.set_property(
+            "projection_refresh_gate_timeout_seconds",
+            timeout_seconds,
+        )
+        return self
+
+    def with_projection_refresh_gate_poll_interval_seconds(
+            self,
+            interval_seconds: Union[int, float],
+    ) -> "INexusConfiguration":
+        """
+        Fluent
+
+        Set the poll interval used while waiting for impacted Rift gates to
+        drain.
+
+        Args:
+            interval_seconds:
+                Positive poll interval in seconds.
+
+        Returns:
+            INexusConfiguration: This configuration instance.
+        """
+        self.set_property(
+            "projection_refresh_gate_poll_interval_seconds",
+            interval_seconds,
+        )
         return self
 
     def with_default_space_type(

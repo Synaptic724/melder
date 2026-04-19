@@ -6686,6 +6686,30 @@ class INexusConfiguration(ICleanable, Protocol):
         """
         ...
 
+    def with_projection_refresh_gate(self, enabled: bool = True) -> "INexusConfiguration":
+        """
+        Set whether ACL-driven projection refresh uses the RiftGate drain barrier.
+        """
+        ...
+
+    def with_projection_refresh_gate_timeout_seconds(
+            self,
+            timeout_seconds: object,
+    ) -> "INexusConfiguration":
+        """
+        Set the timeout used while waiting for impacted Rift gates to drain.
+        """
+        ...
+
+    def with_projection_refresh_gate_poll_interval_seconds(
+            self,
+            interval_seconds: object,
+    ) -> "INexusConfiguration":
+        """
+        Set the poll interval used while waiting for impacted Rift gates to drain.
+        """
+        ...
+
     def with_default_space_type(self, space_type: object) -> "INexusConfiguration":
         """
         Set the default RiftSpace type used when new spaces are created implicitly.

@@ -171,6 +171,12 @@ def test_nexus_configuration_property_helpers_and_defaults_work() -> None:
     assert configuration.get_property("allow_rift_creation") is True
     assert configuration.get_property("nexus_frame_mode") is NexusFrameMode.single
     assert configuration.get_property("allowed_target_frame_names") == ("default",)
+    assert configuration.get_property("projection_refresh_gate_enabled") is True
+    assert configuration.get_property("projection_refresh_gate_timeout_seconds") == 30.0
+    assert (
+        configuration.get_property("projection_refresh_gate_poll_interval_seconds")
+        == 0.1
+    )
 
     with pytest.raises(KeyError):
         NexusConfiguration().get_property("allow_rift_creation")
@@ -209,6 +215,14 @@ def test_nexus_configuration_validate_rejects_missing_properties_and_invalid_inv
     bad_multiple_target = _build_valid_configuration()
     bad_multiple_target.set_property("max_target_frame_count", 2)
     invalid_cases.append((bad_multiple_target, "max_target_frame_count must be 1 when allow_multiple_target_frames is False"))
+
+    bad_refresh_timeout = _build_valid_configuration()
+    bad_refresh_timeout.set_property("projection_refresh_gate_timeout_seconds", 0)
+    invalid_cases.append((bad_refresh_timeout, "projection_refresh_gate_timeout_seconds must be > 0"))
+
+    bad_refresh_interval = _build_valid_configuration()
+    bad_refresh_interval.set_property("projection_refresh_gate_poll_interval_seconds", 0)
+    invalid_cases.append((bad_refresh_interval, "projection_refresh_gate_poll_interval_seconds must be > 0"))
 
     empty_default_nexus = _build_valid_configuration()
     empty_default_nexus.set_property("default_nexus_frame_name", "")
@@ -280,6 +294,9 @@ def test_nexus_configuration_fluent_setters_return_self_and_store_values() -> No
         .with_target_frame_override(True)
         .with_multiple_target_frames(True)
         .with_max_target_frame_count(3)
+        .with_projection_refresh_gate(False)
+        .with_projection_refresh_gate_timeout_seconds(9.5)
+        .with_projection_refresh_gate_poll_interval_seconds(0.25)
         .with_default_space_type("dynamic")
         .with_default_auto_activate_on_program(False)
         .with_default_auto_create_space(True)
@@ -305,6 +322,9 @@ def test_nexus_configuration_fluent_setters_return_self_and_store_values() -> No
     assert configuration.get_property("allow_target_frame_override") is True
     assert configuration.get_property("allow_multiple_target_frames") is True
     assert configuration.get_property("max_target_frame_count") == 3
+    assert configuration.get_property("projection_refresh_gate_enabled") is False
+    assert configuration.get_property("projection_refresh_gate_timeout_seconds") == 9.5
+    assert configuration.get_property("projection_refresh_gate_poll_interval_seconds") == 0.25
     assert configuration.get_property("default_space_type") is RiftSpaceType.codegen
     assert configuration.get_property("default_auto_activate_on_program") is False
     assert configuration.get_property("default_auto_create_space") is True
