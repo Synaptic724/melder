@@ -195,7 +195,7 @@ def test_integration_rift_scoped_refresh_rebuilds_room_owned_viewer_after_passiv
         first_viewer = rift.get_frame_viewer()
         first_viewer_metadata = first_viewer.metadata
         first_viewer_frame_names = list(first_viewer.frame_descriptors_by_name.keys())
-        rift.refresh_runtime_projections(frame_name="ops")
+        rift.refresh_runtime_projections(frame_names=("ops",))
         second_viewer = rift.get_frame_viewer()
 
         assert isinstance(first_viewer, FrameViewer)

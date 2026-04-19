@@ -684,16 +684,16 @@ def test_nexus_refresh_rift_projection_sets_for_frame_uses_configured_gate_barri
         id="rift-1",
         list_assigned_frame_names=lambda: ("ops",),
         cleanup=lambda: None,
-        refresh_runtime_projections=lambda *, frame_name=None: calls.append(
-            ("refresh", "rift-1", frame_name)
+        refresh_runtime_projections=lambda *, frame_names=None: calls.append(
+            ("refresh", "rift-1", frame_names)
         ),
     )
     unimpacted_rift = SimpleNamespace(
         id="rift-2",
         list_assigned_frame_names=lambda: ("finance",),
         cleanup=lambda: None,
-        refresh_runtime_projections=lambda *, frame_name=None: calls.append(
-            ("refresh", "rift-2", frame_name)
+        refresh_runtime_projections=lambda *, frame_names=None: calls.append(
+            ("refresh", "rift-2", frame_names)
         ),
     )
     nexus._rifts_by_id = {
@@ -723,7 +723,7 @@ def test_nexus_refresh_rift_projection_sets_for_frame_uses_configured_gate_barri
     assert calls == [
         ("disable", "rift-1"),
         ("wait", "rift-1", 9.5, 0.25),
-        ("refresh", "rift-1", "ops"),
+        ("refresh", "rift-1", ("ops",)),
         ("enable", "rift-1"),
     ]
 
@@ -743,8 +743,8 @@ def test_nexus_refresh_rift_projection_sets_for_frame_can_skip_gate_barrier(
         id="rift-1",
         list_assigned_frame_names=lambda: ("ops",),
         cleanup=lambda: None,
-        refresh_runtime_projections=lambda *, frame_name=None: calls.append(
-            ("refresh", "rift-1", frame_name)
+        refresh_runtime_projections=lambda *, frame_names=None: calls.append(
+            ("refresh", "rift-1", frame_names)
         ),
     )
     nexus._rifts_by_id = {
@@ -771,8 +771,98 @@ def test_nexus_refresh_rift_projection_sets_for_frame_can_skip_gate_barrier(
     nexus._refresh_rift_projection_sets_for_frame("ops")
 
     assert calls == [
-        ("refresh", "rift-1", "ops"),
+        ("refresh", "rift-1", ("ops",)),
     ]
+
+
+def test_nexus_refresh_rift_projection_sets_for_frames_batches_overlapping_rifts(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_direct_rift_access(True)
+    configuration.with_projection_refresh_gate(True)
+    configuration.with_projection_refresh_gate_timeout_seconds(7.0)
+    configuration.with_projection_refresh_gate_poll_interval_seconds(0.5)
+    nexus.enable(configuration)
+
+    calls = []
+    first_impacted_rift = SimpleNamespace(
+        id="rift-1",
+        list_assigned_frame_names=lambda: ("ops", "finance"),
+        cleanup=lambda: None,
+        refresh_runtime_projections=lambda *, frame_names=None: calls.append(
+            ("refresh", "rift-1", frame_names)
+        ),
+    )
+    second_impacted_rift = SimpleNamespace(
+        id="rift-2",
+        list_assigned_frame_names=lambda: ("finance",),
+        cleanup=lambda: None,
+        refresh_runtime_projections=lambda *, frame_names=None: calls.append(
+            ("refresh", "rift-2", frame_names)
+        ),
+    )
+    unimpacted_rift = SimpleNamespace(
+        id="rift-3",
+        list_assigned_frame_names=lambda: ("billing",),
+        cleanup=lambda: None,
+        refresh_runtime_projections=lambda *, frame_names=None: calls.append(
+            ("refresh", "rift-3", frame_names)
+        ),
+    )
+    nexus._rifts_by_id = {
+        "rift-1": first_impacted_rift,
+        "rift-2": second_impacted_rift,
+        "rift-3": unimpacted_rift,
+    }
+    monkeypatch.setattr(
+        Nexus,
+        "disable_rift_gate",
+        lambda self, rift_id: calls.append(("disable", rift_id)),
+    )
+    monkeypatch.setattr(
+        Nexus,
+        "enable_rift_gate",
+        lambda self, rift_id: calls.append(("enable", rift_id)),
+    )
+    monkeypatch.setattr(
+        Nexus,
+        "_wait_until_rift_gate_is_idle",
+        lambda self, rift_id, *, timeout, interval: calls.append(
+            ("wait", rift_id, timeout, interval)
+        ),
+    )
+
+    nexus._refresh_rift_projection_sets_for_frames(("ops", "finance", "ops"))
+
+    assert calls == [
+        ("disable", "rift-1"),
+        ("disable", "rift-2"),
+        ("wait", "rift-1", 7.0, 0.5),
+        ("wait", "rift-2", 7.0, 0.5),
+        ("refresh", "rift-1", ("ops", "finance")),
+        ("refresh", "rift-2", ("finance",)),
+        ("enable", "rift-1"),
+        ("enable", "rift-2"),
+    ]
+
+
+def test_nexus_on_frame_acl_changed_delegates_to_batch_refresh(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    nexus = Nexus()
+    calls = []
+    monkeypatch.setattr(
+        Nexus,
+        "_refresh_rift_projection_sets_for_frames",
+        lambda self, frame_names: calls.append(tuple(frame_names)),
+    )
+
+    nexus._on_frame_acl_changed("ops")
+
+    assert calls == [("ops",)]
 
 
 def test_create_rift_uses_registered_channel_logger_provider() -> None:

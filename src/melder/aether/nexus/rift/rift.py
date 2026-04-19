@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
@@ -463,15 +463,15 @@ class Rift(Cleanable, IRift):
     def refresh_runtime_projections(
             self,
             *,
-            frame_name: Optional[str] = None,
+            frame_names: Optional[Sequence[str]] = None,
             viewer_profile_name: str = "general",
     ) -> Dict[str, FrameProjectionSet]:
         """
         Build fresh runtime projections and rebuild the owned room viewer.
 
         Args:
-            frame_name:
-                Optional single-frame refresh scope.
+            frame_names:
+                Optional explicit multi-frame refresh scope.
             viewer_profile_name:
                 Viewer profile name applied to the rebuilt viewer.
 
@@ -480,9 +480,22 @@ class Rift(Cleanable, IRift):
         """
         self.check_cleaned()
         assigned_frame_names = self.list_assigned_frame_names()
+        selected_frame_names = assigned_frame_names
+        if frame_names is not None:
+            selected_frame_names = self._normalize_refresh_frame_names(
+                frame_names
+            )
+            for frame_name in selected_frame_names:
+                if frame_name not in assigned_frame_names:
+                    raise ValueError(
+                        "Frame '{0}' is not assigned to Rift '{1}'.".format(
+                            frame_name,
+                            self._id,
+                        )
+                    )
         projection_sets_by_frame_name = self._nexus.create_frame_projection_sets_for_rift(
             self._id,
-            frame_name=frame_name,
+            frame_names=selected_frame_names if frame_names is not None else None,
         )
         space = self.space
         current_viewer = space.frame_viewer
@@ -502,7 +515,7 @@ class Rift(Cleanable, IRift):
         )
         space.replace_projection_sets(
             projection_sets_by_frame_name,
-            merge=(frame_name is not None),
+            merge=(frame_names is not None),
         )
         refreshed_assigned_frame_names = self.list_assigned_frame_names()
         space._rebuild_frame_viewer(
@@ -527,6 +540,42 @@ class Rift(Cleanable, IRift):
             },
         )
         return projection_sets_by_frame_name
+
+    @staticmethod
+    def _normalize_refresh_frame_names(
+            frame_names: Sequence[str],
+    ) -> Tuple[str, ...]:
+        """
+        Normalize one explicit projection-refresh frame batch.
+
+        Args:
+            frame_names:
+                Requested frame names for the refresh batch.
+
+        Returns:
+            Tuple[str, ...]: Deduplicated frame names in first-seen order.
+
+        Raises:
+            ValueError:
+                If the payload is empty, is a bare string, or contains an empty
+                frame name.
+        """
+        if isinstance(frame_names, str):
+            raise ValueError(
+                "frame_names must be a sequence of frame names, not one string."
+            )
+        normalized_frame_names = []
+        seen_frame_names = set()
+        for frame_name in frame_names:
+            if not isinstance(frame_name, str) or not frame_name:
+                raise ValueError("frame_names must contain non-empty frame names.")
+            if frame_name in seen_frame_names:
+                continue
+            seen_frame_names.add(frame_name)
+            normalized_frame_names.append(frame_name)
+        if len(normalized_frame_names) == 0:
+            raise ValueError("frame_names cannot be empty.")
+        return tuple(normalized_frame_names)
 
     def get_frame_viewer(self) -> FrameViewer:
         """

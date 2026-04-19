@@ -1798,7 +1798,7 @@ class Nexus(Cleanable, INexus):
             self,
             rift_id: str,
             *,
-            frame_name: Optional[str] = None,
+            frame_names: Optional[Sequence[str]] = None,
     ) -> Dict[str, FrameProjectionSet]:
         """
         Build projection sets from one Rift's current frame contracts.
@@ -1806,8 +1806,9 @@ class Nexus(Cleanable, INexus):
         Args:
             rift_id:
                 Existing Rift id whose frame contracts should be projected.
-            frame_name:
-                Optional single-frame scope.
+            frame_names:
+                Optional explicit multi-frame scope for one or more engaged
+                frames.
 
         Returns:
             Dict[str, FrameProjectionSet]: Projection sets keyed by frame name.
@@ -1817,23 +1818,72 @@ class Nexus(Cleanable, INexus):
             raise ValueError("rift_id cannot be empty.")
         rift = self._get_required_rift(rift_id)
         assigned_frame_names = rift.list_assigned_frame_names()
-        if frame_name is not None:
-            if frame_name not in assigned_frame_names:
-                raise ValueError(
-                    "Frame '{0}' is not assigned to Rift '{1}'.".format(
-                        frame_name,
-                        rift_id,
+        selected_frame_names = assigned_frame_names
+        if frame_names is not None:
+            selected_frame_names = self._normalize_requested_frame_name_batch(
+                frame_names,
+                argument_name="frame_names",
+            )
+            for frame_name in selected_frame_names:
+                if frame_name not in assigned_frame_names:
+                    raise ValueError(
+                        "Frame '{0}' is not assigned to Rift '{1}'.".format(
+                            frame_name,
+                            rift_id,
+                        )
                     )
-                )
-            assigned_frame_names = (frame_name,)
         contract_names_by_frame_name = {
-            assigned_frame_name: rift.get_selected_contract_names(assigned_frame_name)
-            for assigned_frame_name in assigned_frame_names
+            selected_frame_name: rift.get_selected_contract_names(selected_frame_name)
+            for selected_frame_name in selected_frame_names
         }
         return self.create_frame_projection_sets(
-            assigned_frame_names,
+            selected_frame_names,
             contract_names_by_frame_name=contract_names_by_frame_name,
         )
+
+    @staticmethod
+    def _normalize_requested_frame_name_batch(
+            frame_names: Sequence[str],
+            *,
+            argument_name: str = "frame_names",
+    ) -> Tuple[str, ...]:
+        """
+        Normalize one explicit frame-name batch while preserving caller order.
+
+        Args:
+            frame_names:
+                Sequence of requested frame names.
+            argument_name:
+                Argument label used for error messages.
+
+        Returns:
+            Tuple[str, ...]: Deduplicated frame names in first-seen order.
+
+        Raises:
+            ValueError:
+                If the payload is empty, is a bare string, or contains an empty
+                frame name.
+        """
+        if isinstance(frame_names, str):
+            raise ValueError(
+                "{0} must be a sequence of frame names, not one string.".format(
+                    argument_name
+                )
+            )
+        normalized_frame_names: List[str] = []
+        seen_frame_names = set()
+        for frame_name in frame_names:
+            if not isinstance(frame_name, str) or not frame_name:
+                raise ValueError(
+                    "{0} must contain non-empty frame names.".format(argument_name)
+                )
+            if frame_name in seen_frame_names:
+                continue
+            seen_frame_names.add(frame_name)
+            normalized_frame_names.append(frame_name)
+        if len(normalized_frame_names) == 0:
+            raise ValueError("{0} cannot be empty.".format(argument_name))
+        return tuple(normalized_frame_names)
 
     @staticmethod
     def _normalize_acl_selection_input(
@@ -1925,9 +1975,27 @@ class Nexus(Cleanable, INexus):
         Returns:
             None.
         """
+        self._refresh_rift_projection_sets_for_frames((frame_name,))
+
+    def _refresh_rift_projection_sets_for_frames(
+            self,
+            frame_names: Sequence[str],
+    ) -> None:
+        """
+        Synchronously refresh projection sets for all impacted Rifts in one batch.
+
+        Args:
+            frame_names:
+                Changed frame names whose projections should refresh.
+
+        Returns:
+            None.
+        """
         self.check_cleaned()
-        if not frame_name:
-            raise ValueError("frame_name cannot be empty.")
+        normalized_frame_names = self._normalize_requested_frame_name_batch(
+            frame_names,
+            argument_name="frame_names",
+        )
         with self._lock:
             rifts = list(self._rifts_by_id.values())
             projection_refresh_gate_enabled = self._configuration.get_property(
@@ -1939,14 +2007,24 @@ class Nexus(Cleanable, INexus):
             interval = self._configuration.get_property(
                 "projection_refresh_gate_poll_interval_seconds"
             )
-        impacted_rifts = [
-            rift
-            for rift in rifts
-            if frame_name in rift.list_assigned_frame_names()
-        ]
+        impacted_rifts = []
+        frame_names_by_rift_id: Dict[str, Tuple[str, ...]] = {}
+        for rift in rifts:
+            assigned_frame_names = rift.list_assigned_frame_names()
+            impacted_frame_names = tuple(
+                frame_name
+                for frame_name in normalized_frame_names
+                if frame_name in assigned_frame_names
+            )
+            if len(impacted_frame_names) == 0:
+                continue
+            impacted_rifts.append(rift)
+            frame_names_by_rift_id[rift.id] = impacted_frame_names
         if not projection_refresh_gate_enabled:
             for rift in impacted_rifts:
-                rift.refresh_runtime_projections(frame_name=frame_name)
+                rift.refresh_runtime_projections(
+                    frame_names=frame_names_by_rift_id[rift.id]
+                )
             return
         disabled_rift_ids: List[str] = []
         try:
@@ -1960,7 +2038,9 @@ class Nexus(Cleanable, INexus):
                     interval=interval,
                 )
             for rift in impacted_rifts:
-                rift.refresh_runtime_projections(frame_name=frame_name)
+                rift.refresh_runtime_projections(
+                    frame_names=frame_names_by_rift_id[rift.id]
+                )
         except Exception:
             raise
         finally:
@@ -1981,7 +2061,7 @@ class Nexus(Cleanable, INexus):
         Returns:
             None.
         """
-        self._refresh_rift_projection_sets_for_frame(frame_name)
+        self._refresh_rift_projection_sets_for_frames((frame_name,))
 
     def get_nexus_frame_for_rift(
             self,

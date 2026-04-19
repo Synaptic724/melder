@@ -260,7 +260,7 @@ def test_rift_refresh_runtime_projections_for_one_frame_preserves_other_room_pro
     rift.target_frame("finance")
     first_viewer = rift.get_frame_viewer()
 
-    rift.refresh_runtime_projections(frame_name="ops")
+    rift.refresh_runtime_projections(frame_names=("ops",))
 
     second_viewer = rift.get_frame_viewer()
 
@@ -268,6 +268,114 @@ def test_rift_refresh_runtime_projections_for_one_frame_preserves_other_room_pro
     assert second_viewer.list_frame_names() == ["finance", "ops"]
     assert rift.space.get_required_frame_projection_set("finance").frame_name == "finance"
     assert rift.space.get_required_frame_projection_set("ops").frame_name == "ops"
+
+
+def test_rift_refresh_runtime_projections_for_multiple_frames_uses_one_projection_build_and_rebuild(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify explicit multi-frame refresh uses one projection-build call, one
+    merge call, and one viewer rebuild.
+
+    Args:
+        monkeypatch:
+            Pytest monkeypatch fixture.
+
+    Returns:
+        None.
+    """
+    _bind_target_frame_configuration("ops", rift_enabled=True)
+    _bind_target_frame_configuration("finance", rift_enabled=True)
+    nexus = _create_enabled_nexus("ops", "finance")
+    _populate_descriptor(nexus, "ops")
+    _populate_descriptor(nexus, "finance")
+    rift = nexus.create_rift(rift_name="ops_rift")
+    rift.target_frame("ops")
+    rift.target_frame("finance")
+
+    create_calls = []
+    replace_calls = []
+    rebuild_calls = []
+    original_create_frame_projection_sets_for_rift = (
+        nexus.create_frame_projection_sets_for_rift
+    )
+    original_replace_projection_sets = rift.space.replace_projection_sets
+    original_rebuild_frame_viewer = rift.space._rebuild_frame_viewer
+
+    def wrapped_create_frame_projection_sets_for_rift(
+            rift_id: str,
+            *,
+            frame_names=None,
+    ):
+        create_calls.append(
+            (
+                rift_id,
+                tuple(frame_names) if frame_names is not None else None,
+            )
+        )
+        return original_create_frame_projection_sets_for_rift(
+            rift_id,
+            frame_names=frame_names,
+        )
+
+    def wrapped_replace_projection_sets(
+            projection_sets_by_frame_name,
+            *,
+            merge: bool = False,
+    ) -> None:
+        replace_calls.append(
+            (
+                tuple(sorted(projection_sets_by_frame_name.keys())),
+                merge,
+            )
+        )
+        return original_replace_projection_sets(
+            projection_sets_by_frame_name,
+            merge=merge,
+        )
+
+    def wrapped_rebuild_frame_viewer(
+            *,
+            viewer_profile_name: str = "general",
+            selected_profile_names_by_frame_name=None,
+            default_view_frame_name=None,
+            metadata=None,
+    ):
+        rebuild_calls.append(metadata["assigned_frame_names"])
+        return original_rebuild_frame_viewer(
+            viewer_profile_name=viewer_profile_name,
+            selected_profile_names_by_frame_name=selected_profile_names_by_frame_name,
+            default_view_frame_name=default_view_frame_name,
+            metadata=metadata,
+        )
+
+    monkeypatch.setattr(
+        nexus,
+        "create_frame_projection_sets_for_rift",
+        wrapped_create_frame_projection_sets_for_rift,
+    )
+    monkeypatch.setattr(
+        rift.space,
+        "replace_projection_sets",
+        wrapped_replace_projection_sets,
+    )
+    monkeypatch.setattr(
+        rift.space,
+        "_rebuild_frame_viewer",
+        wrapped_rebuild_frame_viewer,
+    )
+
+    rift.refresh_runtime_projections(frame_names=("ops", "finance"))
+
+    assert create_calls == [
+        (rift.id, ("ops", "finance")),
+    ]
+    assert replace_calls == [
+        (("finance", "ops"), True),
+    ]
+    assert rebuild_calls == [
+        ("ops", "finance"),
+    ]
 
 
 def test_rift_target_frame_populates_room_owned_viewer_metadata_from_assigned_frames() -> None:
