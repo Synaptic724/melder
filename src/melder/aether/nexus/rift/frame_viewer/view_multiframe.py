@@ -62,33 +62,125 @@ class ViewMultiFrame(Cleanable):
 
     @property
     def _lock(self):
+        """
+        Return the shared viewer lock.
+
+        Returns:
+            object: Borrowed lock used for grouped viewer reads.
+        """
         return self._viewer._lock
 
     def _get_required_frame_descriptor(self, frame_name: str) -> FrameDescriptor:
+        """
+        Return one hosted frame descriptor through the parent viewer.
+
+        Args:
+            frame_name:
+                Hosted frame name.
+
+        Returns:
+            FrameDescriptor: Descriptor for the requested frame.
+        """
         return self._viewer._get_required_frame_descriptor(frame_name)
 
     def _get_frame_names_for_query(self, frame_name: Optional[str] = None):
+        """
+        Return the concrete frame names that should be queried.
+
+        Args:
+            frame_name:
+                Optional hosted frame name filter.
+
+        Returns:
+            Tuple[str, ...]: Hosted frame names selected for the query.
+        """
         return self._viewer._get_frame_names_for_query(frame_name)
 
     def _iter_conduit_records(self, *, frame_name: Optional[str] = None) -> Iterator[object]:
+        """
+        Yield descriptor-owned conduit records for the selected frame scope.
+
+        Args:
+            frame_name:
+                Optional hosted frame name filter.
+
+        Yields:
+            object: Descriptor-owned conduit records.
+        """
         yield from self._viewer._iter_conduit_records(frame_name=frame_name)
 
     def _iter_spell_records(self, *, frame_name: Optional[str] = None) -> Iterator[object]:
+        """
+        Yield descriptor-owned spell records for the selected frame scope.
+
+        Args:
+            frame_name:
+                Optional hosted frame name filter.
+
+        Yields:
+            object: Descriptor-owned spell records.
+        """
         yield from self._viewer._iter_spell_records(frame_name=frame_name)
 
     def _build_spell_source_id(self, spell_record: object) -> str:
+        """
+        Build one published spell source id from a spell record.
+
+        Args:
+            spell_record:
+                Descriptor-owned spell record.
+
+        Returns:
+            str: Published spell source id in `spellbook_id:spell_id` form.
+        """
         return self._viewer._build_spell_source_id(spell_record)
 
     def _normalize_spellframe_value(self, spellframe: object):
+        """
+        Return one stable string view of a spellframe value.
+
+        Args:
+            spellframe:
+                Raw spellframe value.
+
+        Returns:
+            Optional[str]: Normalized spellframe name when present.
+        """
         return self._viewer._normalize_spellframe_value(spellframe)
 
     def _get_required_spell_record(self, spell_source_id: str, *, frame_name: Optional[str] = None):
+        """
+        Return one descriptor-owned spell record plus its hosted frame.
+
+        Args:
+            spell_source_id:
+                Published spell source id in `spellbook_id:spell_id` form.
+            frame_name:
+                Optional hosted frame name to constrain the lookup.
+
+        Returns:
+            Tuple[str, object]: `(frame_name, spell_record)` for the resolved
+            record.
+        """
         return self._viewer._get_required_spell_record(
             spell_source_id,
             frame_name=frame_name,
         )
 
     def _get_required_conduit_record(self, conduit_id: str, *, frame_name: Optional[str] = None):
+        """
+        Return one descriptor-owned conduit record or raise.
+
+        Args:
+            conduit_id:
+                Published conduit id.
+            frame_name:
+                Optional hosted frame name to constrain the lookup.
+
+        Returns:
+            Tuple[str, object]: `(frame_name, conduit_record)` for the
+            resolved record.
+        """
         if not conduit_id:
             raise ValueError("conduit_id cannot be empty.")
         matching_records: List[Tuple[str, object]] = []
@@ -111,6 +203,18 @@ class ViewMultiFrame(Cleanable):
         return matching_records[0]
 
     def _compare_sorted_value_sets(self, left_values: Tuple[str, ...], right_values: Tuple[str, ...]):
+        """
+        Return one deterministic shared/left-only/right-only value diff.
+
+        Args:
+            left_values:
+                Left normalized value tuple.
+            right_values:
+                Right normalized value tuple.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Shared and directional set deltas.
+        """
         left_set = set(left_values)
         right_set = set(right_values)
         return {
@@ -120,6 +224,20 @@ class ViewMultiFrame(Cleanable):
         }
 
     def _describe_spell_value_groups(self, *, frame_name: Optional[str], value_getter: Callable[[object], Optional[object]]):
+        """
+        Group spell source ids by one normalized spell-record value.
+
+        Args:
+            frame_name:
+                Optional hosted frame name filter.
+            value_getter:
+                Callable that extracts the grouping value from one spell
+                record.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Grouping value mapped to spell source
+            ids.
+        """
         grouped_source_ids_by_value: Dict[str, List[str]] = {}
         for spell_record in self._iter_spell_records(frame_name=frame_name):
             current_value = value_getter(spell_record)
@@ -135,6 +253,19 @@ class ViewMultiFrame(Cleanable):
         }
 
     def _describe_spell_value_collisions(self, *, frame_name: Optional[str], value_getter: Callable[[object], Optional[object]]):
+        """
+        Return spell value groups that have more than one published member.
+
+        Args:
+            frame_name:
+                Optional hosted frame name filter.
+            value_getter:
+                Callable that extracts the grouping value from one spell
+                record.
+
+        Returns:
+            Dict[str, Tuple[str, ...]]: Colliding value groups only.
+        """
         grouped_source_ids_by_value = self._describe_spell_value_groups(
             frame_name=frame_name,
             value_getter=value_getter,
@@ -146,6 +277,19 @@ class ViewMultiFrame(Cleanable):
         }
 
     def _describe_spellbook_mismatches(self, *, frame_name: Optional[str], value_getter: Callable[[object], Optional[object]]):
+        """
+        Return spellbook groups whose selected value is not uniform.
+
+        Args:
+            frame_name:
+                Optional hosted frame name filter.
+            value_getter:
+                Callable that extracts the compared value from one spell
+                record.
+
+        Returns:
+            Dict[str, Dict[str, object]]: Spellbook mismatch summaries.
+        """
         grouped_records_by_spellbook_id: Dict[str, List[object]] = {}
         for spell_record in self._iter_spell_records(frame_name=frame_name):
             grouped_records_by_spellbook_id.setdefault(
@@ -173,6 +317,16 @@ class ViewMultiFrame(Cleanable):
         return mismatches_by_spellbook_id
 
     def _normalize_policy_name(self, policy: object):
+        """
+        Return one stable string view of a conduit policy value.
+
+        Args:
+            policy:
+                Raw conduit policy value.
+
+        Returns:
+            Optional[str]: Normalized conduit policy name when present.
+        """
         if policy is None:
             return None
         return policy.name
