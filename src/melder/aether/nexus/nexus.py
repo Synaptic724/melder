@@ -24,6 +24,7 @@ from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescripto
 from melder.aether.nexus.frame_acl_manager import FrameACLManager
 from melder.aether.nexus.frame_descriptor_manager import FrameDescriptorManager
 from melder.aether.nexus.nexus_frame_record import NexusFrameRecord
+from melder.aether.nexus.nexus_frame_manager import NexusFrameManager
 from melder.aether.nexus.configuration.rift_configuration import RiftConfiguration
 from melder.aether.nexus.configuration.nexus_configuration import (
     NexusConfiguration,
@@ -106,6 +107,7 @@ class Nexus(Cleanable, INexus):
         "_rift_gate_controller",
         "_frame_acl_manager",
         "_frame_descriptor_manager",
+        "_frame_manager",
         "_target_frame_ref_counts",
     ]
 
@@ -206,6 +208,9 @@ class Nexus(Cleanable, INexus):
             self._target_frame_ref_counts: Dict[str, int] = {}
 
             self._frame_descriptor_manager: Optional[FrameDescriptorManager] = FrameDescriptorManager(aether)
+            self._frame_manager: Optional[NexusFrameManager] = NexusFrameManager(
+                nexus=self,
+            )
             self._initialize_logging(logger)
             Nexus._initialized = True
         except Exception:
@@ -258,6 +263,8 @@ class Nexus(Cleanable, INexus):
                 self._frame_acl_manager.cleanup()
             if self._frame_descriptor_manager is not None:
                 self._frame_descriptor_manager.cleanup()
+            if self._frame_manager is not None:
+                self._frame_manager.cleanup()
             self._configuration = None
             self._configured = None
             self._enabled = None
@@ -276,6 +283,7 @@ class Nexus(Cleanable, INexus):
             self._rift_gate_controller = None
             self._frame_acl_manager = None
             self._frame_descriptor_manager = None
+            self._frame_manager = None
             self._target_frame_ref_counts = None
             self._id = None
         if self._logger is not None:
@@ -420,6 +428,17 @@ class Nexus(Cleanable, INexus):
         """
         self.check_cleaned()
         return self._id
+
+    @property
+    def frame_manager(self) -> NexusFrameManager:
+        """
+        Return the Nexus frame authoring facade.
+
+        Returns:
+            NexusFrameManager: Manager for authored Nexus-managed frames.
+        """
+        self.check_cleaned()
+        return self._frame_manager
 
     @property
     def configuration(self) -> INexusConfiguration:
@@ -893,7 +912,11 @@ class Nexus(Cleanable, INexus):
             self._rift_gate_controller.unregister_rift_gate(rift.id)
             for target_frame_name in rift.list_assigned_frame_names():
                 self._decrement_ref_count(self._target_frame_ref_counts, target_frame_name)
-            frame_names_to_cleanup.extend(self._detach_rift_from_nexus_frames(rift.id))
+            frame_names_to_cleanup.extend(
+                self._frame_manager.get_frame_names_to_cleanup_for_removed_rift(
+                    rift.id
+                )
+            )
 
         for frame_name in frame_names_to_cleanup:
             self._dispose_nexus_frame(frame_name)
@@ -2088,36 +2111,10 @@ class Nexus(Cleanable, INexus):
             ValueError: If the requesting Rift or requested frame is not
                 available under the current mode rules.
         """
-        self._require_enabled()
-        with self._lock:
-            rift = self._get_required_rift(rift_id)
-            nexus_frame_mode = self._configuration.get_property("nexus_frame_mode")
-
-            if nexus_frame_mode == NexusFrameMode.single:
-                requested_frame_name = frame_name or self._configuration.get_property(
-                    "default_nexus_frame_name"
-                )
-                if requested_frame_name != self._configuration.get_property("default_nexus_frame_name"):
-                    raise ValueError("Shared Nexus mode only exposes the shared frame.")
-                nexus_frame_record = self._get_required_nexus_frame_record(requested_frame_name)
-                return nexus_frame_record.frame
-
-            if nexus_frame_mode == NexusFrameMode.one_per_workspace:
-                requested_frame_name = frame_name or self._determine_nexus_frame_name(rift.id)
-                if requested_frame_name != self._determine_nexus_frame_name(rift.id):
-                    raise ValueError("Rift can only access its own private Nexus frame.")
-                nexus_frame_record = self._get_required_nexus_frame_record(requested_frame_name)
-                if rift.id not in nexus_frame_record.attached_rift_ids:
-                    raise ValueError("Rift is not attached to the requested private Nexus frame.")
-                return nexus_frame_record.frame
-
-            if frame_name is None:
-                raise ValueError("Indexed Nexus mode requires an explicit frame_name for access.")
-            requested_frame_name = frame_name
-            nexus_frame_record = self._get_required_nexus_frame_record(requested_frame_name)
-            if rift.id not in nexus_frame_record.attached_rift_ids:
-                nexus_frame_record.attach_rift_id(rift.id)
-            return nexus_frame_record.frame
+        return self._frame_manager.get_frame_for_rift(
+            rift_id,
+            frame_name=frame_name,
+        )
 
     def create_nexus_frame_for_rift(
             self,
@@ -2147,63 +2144,19 @@ class Nexus(Cleanable, INexus):
             ValueError: If creation is not valid under the current topology
                 rules.
         """
-        self._require_enabled()
-        with self._lock:
-            rift = self._get_required_rift(rift_id)
-            nexus_frame_mode = self._configuration.get_property("nexus_frame_mode")
-
-            if nexus_frame_mode == NexusFrameMode.single:
-                shared_frame_name = self._configuration.get_property("default_nexus_frame_name")
-                nexus_frame_record = self._get_or_create_nexus_frame_record(
-                    shared_frame_name,
-                    creator_rift_id=rift.id,
-                    immutable=immutable,
-                )
-                if rift.id not in nexus_frame_record.attached_rift_ids:
-                    nexus_frame_record.attach_rift_id(rift.id)
-                frame = nexus_frame_record.frame
-                self._logger.info(
-                    "Resolved Nexus frame '{0}' for Rift id={1}.".format(frame.name, rift_id),
-                    "create_nexus_frame_for_rift",
-                )
-                return frame
-
-            if nexus_frame_mode == NexusFrameMode.one_per_workspace:
-                if immutable:
-                    raise ValueError("one_per_workspace frames cannot be immutable.")
-                private_frame_name = frame_name or self._determine_nexus_frame_name(rift.id)
-                if private_frame_name != self._determine_nexus_frame_name(rift.id):
-                    raise ValueError("Rift can only create or recover its own private Nexus frame.")
-                nexus_frame_record = self._get_or_create_nexus_frame_record(
-                    private_frame_name,
-                    creator_rift_id=rift.id,
-                    immutable=False,
-                )
-                if rift.id not in nexus_frame_record.attached_rift_ids:
-                    nexus_frame_record.attach_rift_id(rift.id)
-                frame = nexus_frame_record.frame
-                self._logger.info(
-                    "Resolved Nexus frame '{0}' for Rift id={1}.".format(frame.name, rift_id),
-                    "create_nexus_frame_for_rift",
-                )
-                return frame
-
-            new_frame_name = frame_name or self._allocate_indexed_nexus_frame_name()
-            if self._get_nexus_frame_record(new_frame_name) is not None:
-                raise ValueError("Indexed Nexus frame '{0}' already exists.".format(new_frame_name))
-            self._validate_nexus_frame_budget((new_frame_name,))
-            nexus_frame_record = self._create_nexus_frame_record(
-                new_frame_name,
-                creator_rift_id=rift.id,
-                immutable=immutable,
-            )
-            nexus_frame_record.attach_rift_id(rift.id)
-            frame = nexus_frame_record.frame
-            self._logger.info(
-                "Resolved Nexus frame '{0}' for Rift id={1}.".format(frame.name, rift_id),
-                "create_nexus_frame_for_rift",
-            )
-            return frame
+        frame = self._frame_manager.create_frame_for_rift(
+            rift_id,
+            frame_name=frame_name,
+            immutable=immutable,
+        )
+        self._logger.info(
+            "Resolved Nexus frame '{0}' for Rift id={1}.".format(
+                frame.name,
+                rift_id,
+            ),
+            "create_nexus_frame_for_rift",
+        )
+        return frame
 
     def list_accessible_nexus_frame_names(self, rift_id: str) -> Tuple[str, ...]:
         """
@@ -2224,27 +2177,7 @@ class Nexus(Cleanable, INexus):
         Returns:
             Tuple[str, ...]: Accessible Nexus frame names.
         """
-        self._require_enabled()
-        with self._lock:
-            rift = self._get_required_rift(rift_id)
-            nexus_frame_mode = self._configuration.get_property("nexus_frame_mode")
-            if nexus_frame_mode == NexusFrameMode.single:
-                shared_frame_name = self._configuration.get_property("default_nexus_frame_name")
-                if self._get_nexus_frame_record(shared_frame_name) is not None:
-                    return (shared_frame_name,)
-                return tuple()
-            if nexus_frame_mode == NexusFrameMode.one_per_workspace:
-                private_frame_name = self._determine_nexus_frame_name(rift.id)
-                if self._get_nexus_frame_record(private_frame_name) is not None:
-                    return (private_frame_name,)
-                return tuple()
-            return tuple(
-                sorted(
-                    frame_name
-                    for frame_name in self._list_nexus_frame_names()
-                    if rift.id in self._get_required_nexus_frame_record(frame_name).attached_rift_ids
-                )
-            )
+        return self._frame_manager.list_accessible_frame_names_for_rift(rift_id)
 
     def check_for_aetheric_frame(self, frame_name: str) -> None:
         """
@@ -2273,35 +2206,25 @@ class Nexus(Cleanable, INexus):
         with self._lock:
             if self._cleaned or not self._enabled or self._frame_descriptor_manager is None:
                 return
-            nexus_frame_record = self._frame_descriptor_manager._detach_nexus_frame_record(frame_name)
-            acl_container_removed = self._frame_acl_manager._remove_frame_acl_container(
-                frame_name
-            )
-            if nexus_frame_record is None:
-                if acl_container_removed:
-                    self._logger.info(
-                        "Removed frame ACL container for '{0}' during Aether detach.".format(
-                            frame_name
-                        ),
-                        "check_for_aetheric_frame",
-                    )
-                return
-
-            attached_rift_ids = nexus_frame_record.attached_rift_ids
-            for attached_rift_id in attached_rift_ids:
-                attached_rift = self._rifts_by_id.get(attached_rift_id)
-                if attached_rift is not None:
-                    attached_rift.on_nexus_frame_disposed(frame_name)
-            nexus_frame_record.cleanup()
-            if acl_container_removed:
-                self._logger.info(
-                    "Removed frame ACL container for '{0}' during Aether detach.".format(
+            handled = self._frame_manager.handle_aether_frame_disposal(frame_name)
+            if not handled:
+                if self._frame_descriptor_manager._has_frame_descriptor(frame_name):
+                    descriptor = self._frame_descriptor_manager._get_required_frame_descriptor(
                         frame_name
-                    ),
-                    "check_for_aetheric_frame",
+                    )
+                    descriptor.set_frame_handle(None)
+                    descriptor.set_frame_configuration(None)
+                    descriptor.set_frame_overview(None)
+                    descriptor.set_nexus_frame_record(None)
+                acl_container_removed = self._frame_acl_manager._remove_frame_acl_container(
+                    frame_name
                 )
+                if not acl_container_removed:
+                    return
         self._logger.info(
-            "Dropped Nexus frame record for '{0}' during Aether detach.".format(frame_name),
+            "Dropped Nexus managed frame '{0}' during Aether detach.".format(
+                frame_name
+            ),
             "check_for_aetheric_frame",
         )
 
