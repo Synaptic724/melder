@@ -3,7 +3,6 @@ from typing import Dict, Optional, Set, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
-from melder.aether.nexus.nexus_frame_record import NexusFrameRecord
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import (
@@ -25,8 +24,8 @@ class FrameDescriptor(Cleanable):
         - The descriptor may reference the live runtime frame and bound frame
           posture, but it does not own their runtime lifecycle.
         - The descriptor owns Nexus-side records and indexes derived from the
-          frame: `FrameRecord`, `NexusFrameRecord`, `ConduitRecord`,
-          `SpellRecord`, and the related secondary indexes.
+          frame: `FrameRecord`, `ConduitRecord`, `SpellRecord`, and the
+          related secondary indexes.
         - Cleanup is idempotent and clears owned metadata while dropping any
           non-owned references.
 
@@ -47,7 +46,6 @@ class FrameDescriptor(Cleanable):
         "_frame_handle",
         "_frame_configuration",
         "_frame_overview",
-        "_nexus_frame_record",
         "_conduit_records_by_id",
         "_spell_records_by_key",
         "_spell_keys_by_conduit_id",
@@ -82,7 +80,6 @@ class FrameDescriptor(Cleanable):
         self._frame_handle: Optional[IAethericFrame] = None
         self._frame_configuration: Optional[AethericFrameConfiguration] = None
         self._frame_overview: Optional[IFrameRecord] = None
-        self._nexus_frame_record: Optional[NexusFrameRecord] = None
         self._conduit_records_by_id: Dict[str, IConduitRecord] = {}
         self._spell_records_by_key: Dict[Tuple[str, str], ISpellRecord] = {}
         self._spell_keys_by_conduit_id: Dict[str, Set[Tuple[str, str]]] = {}
@@ -116,8 +113,6 @@ class FrameDescriptor(Cleanable):
             self._cleaned = True
             if self._frame_overview is not None:
                 self._frame_overview.cleanup()
-            if self._nexus_frame_record is not None:
-                self._nexus_frame_record.cleanup()
             for conduit_record in self._conduit_records_by_id.values():
                 conduit_record.cleanup()
             for spell_record in self._spell_records_by_key.values():
@@ -129,7 +124,6 @@ class FrameDescriptor(Cleanable):
             self._frame_handle = None
             self._frame_configuration = None
             self._frame_overview = None
-            self._nexus_frame_record = None
             self._conduit_records_by_id = None
             self._spell_records_by_key = None
             self._spell_keys_by_conduit_id = None
@@ -200,22 +194,6 @@ class FrameDescriptor(Cleanable):
         self.check_cleaned()
         with self._lock:
             return self._frame_overview
-
-    @property
-    def nexus_frame_record(self) -> Optional[NexusFrameRecord]:
-        """
-        Return the owned Nexus-managed frame metadata record when present.
-
-        Purpose:
-            Expose the Nexus-managed internal frame record when one has been
-            attached to this descriptor.
-
-        Returns:
-            Optional[NexusFrameRecord]: Current Nexus-managed frame record.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self._nexus_frame_record
 
     @property
     def conduit_records_by_id(self) -> Dict[str, IConduitRecord]:
@@ -355,32 +333,6 @@ class FrameDescriptor(Cleanable):
                 existing.cleanup()
             self._frame_overview = frame_overview
 
-    def set_nexus_frame_record(
-            self,
-            nexus_frame_record: Optional[NexusFrameRecord],
-    ) -> None:
-        """
-        Replace the owned Nexus-managed frame metadata record.
-
-        Purpose:
-            Install or clear the Nexus-managed internal frame record owned by
-            the descriptor.
-
-        Contract:
-            When a different record is already owned, the older record is
-            cleaned before replacement.
-
-        Args:
-            nexus_frame_record:
-                New Nexus-managed frame record or None when clearing ownership.
-        """
-        self.check_cleaned()
-        with self._lock:
-            existing = self._nexus_frame_record
-            if existing is not None and existing is not nexus_frame_record:
-                existing.cleanup()
-            self._nexus_frame_record = nexus_frame_record
-
     def upsert_conduit_record(self, conduit_record: IConduitRecord) -> None:
         """
         Upsert one conduit record owned by this descriptor.
@@ -489,26 +441,6 @@ class FrameDescriptor(Cleanable):
                 return
             self._discard_spell_from_indexes(existing)
             existing.cleanup()
-
-    def detach_nexus_frame_record(self) -> Optional[NexusFrameRecord]:
-        """
-        Detach and return the owned Nexus-managed frame metadata record.
-
-        Purpose:
-            Remove the currently owned Nexus-managed frame record from the
-            descriptor without cleaning it.
-
-        Contract:
-            Ownership of the detached record transfers to the caller.
-
-        Returns:
-            Optional[NexusFrameRecord]: Detached record when present.
-        """
-        self.check_cleaned()
-        with self._lock:
-            nexus_frame_record = self._nexus_frame_record
-            self._nexus_frame_record = None
-            return nexus_frame_record
 
     def _ensure_conduit_spell_index(
             self,

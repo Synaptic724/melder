@@ -19,6 +19,11 @@ class NexusFrameBuilder(Cleanable):
         - One builder instance is scoped to one frame name.
         - The builder is mutable until `build()` or `create()` is called.
         - `create()` delegates to the owning `NexusFrameManager`.
+
+    Lifecycle:
+        Builders are lightweight, short-lived authoring helpers created by
+        `NexusFrameManager.begin(...)` and typically consumed immediately by
+        `build()` or `create()`.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -39,6 +44,29 @@ class NexusFrameBuilder(Cleanable):
             manager: Any,
             frame_name: str,
     ) -> None:
+        """
+        Initialize one fluent authored-frame builder.
+
+        Purpose:
+            Bind the builder to its owning manager and stable frame name while
+            leaving posture fields unset until the caller chooses defaults or
+            explicit values.
+
+        Args:
+            manager:
+                Owning `NexusFrameManager`.
+            frame_name:
+                Stable frame name being authored.
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError:
+                If `manager` is missing.
+            ValueError:
+                If `frame_name` is empty.
+        """
         super().__init__()
         if manager is None:
             raise TypeError("manager cannot be None.")
@@ -57,6 +85,10 @@ class NexusFrameBuilder(Cleanable):
         """
         Apply the standard dynamic authored-frame posture.
 
+        Purpose:
+            Configure the builder for the common AI-native dynamic frame mode
+            without requiring callers to set each posture field manually.
+
         Returns:
             NexusFrameBuilder: This builder for fluent chaining.
         """
@@ -69,6 +101,10 @@ class NexusFrameBuilder(Cleanable):
         """
         Apply the standard automatic authored-frame posture.
 
+        Purpose:
+            Configure the builder for a Rift-visible, non-AI-native automatic
+            frame posture without requiring field-by-field setup.
+
         Returns:
             NexusFrameBuilder: This builder for fluent chaining.
         """
@@ -80,6 +116,10 @@ class NexusFrameBuilder(Cleanable):
     def system_state(self, system_state: SystemState) -> "NexusFrameBuilder":
         """
         Override the authored frame system state.
+
+        Purpose:
+            Let callers override the default posture presets when they need a
+            custom authored runtime mode.
 
         Args:
             system_state:
@@ -95,6 +135,10 @@ class NexusFrameBuilder(Cleanable):
         """
         Override the authored AI-native posture flag.
 
+        Purpose:
+            Allow callers to widen or narrow AI-native behavior independently
+            from the preset posture helpers.
+
         Args:
             enabled:
                 True when AI-native posture should be enabled.
@@ -108,6 +152,10 @@ class NexusFrameBuilder(Cleanable):
     def rift_enabled(self, enabled: bool = True) -> "NexusFrameBuilder":
         """
         Override the authored Rift-visible posture flag.
+
+        Purpose:
+            Let callers explicitly opt the authored frame in or out of
+            Rift-facing visibility.
 
         Args:
             enabled:
@@ -123,6 +171,10 @@ class NexusFrameBuilder(Cleanable):
         """
         Override the authored immutability flag.
 
+        Purpose:
+            Mark the authored frame as protected from normal removal when the
+            manager later realizes it.
+
         Args:
             immutable:
                 True when the authored frame should reject normal removal.
@@ -136,6 +188,10 @@ class NexusFrameBuilder(Cleanable):
     def metadata(self, metadata: Dict[str, object]) -> "NexusFrameBuilder":
         """
         Replace the authored metadata payload.
+
+        Purpose:
+            Attach detached authoring metadata that the caller wants preserved
+            on the authored configuration.
 
         Args:
             metadata:
@@ -154,6 +210,11 @@ class NexusFrameBuilder(Cleanable):
         """
         Request one root-conduit bootstrap after frame init.
 
+        Purpose:
+            Record the intent to create a starter root conduit immediately
+            after the frame is realized, which gives agent-created frames a
+            ready-to-use entry topology.
+
         Args:
             root_conduit_name:
                 Root conduit name to bootstrap.
@@ -170,6 +231,9 @@ class NexusFrameBuilder(Cleanable):
         """
         Clear any requested root-conduit bootstrap.
 
+        Purpose:
+            Explicitly return the builder to a pure empty-frame creation path.
+
         Returns:
             NexusFrameBuilder: This builder for fluent chaining.
         """
@@ -179,6 +243,16 @@ class NexusFrameBuilder(Cleanable):
     def build(self) -> NexusFrameConfiguration:
         """
         Build one immutable authored frame configuration.
+
+        Purpose:
+            Freeze the currently accumulated builder state into a detached
+            authored configuration object that can be passed around or realized
+            later.
+
+        Contract:
+            - Fails fast when required posture fields have not been set.
+            - Returns a new `NexusFrameConfiguration` detached from future
+              builder mutation.
 
         Returns:
             NexusFrameConfiguration: Built authored frame configuration.
@@ -203,6 +277,10 @@ class NexusFrameBuilder(Cleanable):
         """
         Build and create the authored frame through the owning manager.
 
+        Purpose:
+            Provide the fluent one-shot path that both finalizes the authored
+            configuration and realizes the frame immediately.
+
         Returns:
             IAethericFrame: Created managed frame.
         """
@@ -211,6 +289,10 @@ class NexusFrameBuilder(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently clear builder-owned temporary state.
+
+        Purpose:
+            Release transient builder state once authoring is complete or the
+            builder is discarded.
 
         Returns:
             None.

@@ -17,8 +17,6 @@ from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescripto
 from melder.aether.nexus.frame_descriptor.conduit_record import ConduitRecord
 from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
-from melder.aether.nexus.configuration.nexus_frame_mode import NexusFrameMode
-from melder.aether.nexus.nexus_frame_record import NexusFrameRecord
 from melder.utilities.interfaces.interfaces import (
     IAether,
     ISpellGeneralProfile,
@@ -39,8 +37,6 @@ class FrameDescriptorManager(Cleanable):
           publication.
         - It owns canonical frame, conduit, and spell record publication and
           removal.
-        - It owns Nexus-managed internal frame-record lookup, creation, and
-          enumeration.
         - It does not own process-wide Rift registry or Nexus configuration
           policy; those remain on `Nexus`.
 
@@ -558,32 +554,6 @@ class FrameDescriptorManager(Cleanable):
             descriptor.remove_spell_record((origin_spellbook_id, spell_id))
             return True
 
-    def _detach_nexus_frame_record(
-            self,
-            frame_name: str,
-    ) -> Optional[NexusFrameRecord]:
-        """
-        Detach and return one Nexus-managed frame record.
-
-        Purpose:
-            Remove the current Nexus-managed frame record from a descriptor
-            without cleaning it.
-
-        Args:
-            frame_name:
-                Frame name whose record should be detached.
-
-        Returns:
-            Optional[NexusFrameRecord]:
-                Detached record when present.
-        """
-        self.check_cleaned()
-        with self._lock:
-            descriptor = self._frame_descriptors_by_name.get(frame_name)
-            if descriptor is None:
-                return None
-            return descriptor.detach_nexus_frame_record()
-
     def _get_required_frame_descriptor(
             self,
             frame_name: str,
@@ -665,200 +635,6 @@ class FrameDescriptorManager(Cleanable):
         self.check_cleaned()
         with self._lock:
             return frame_name in self._frame_descriptors_by_name
-
-    def _get_nexus_frame_record(
-            self,
-            frame_name: str,
-    ) -> Optional[NexusFrameRecord]:
-        """
-        Return the descriptor-owned Nexus-managed frame record when present.
-
-        Purpose:
-            Resolve the current Nexus-managed frame record without creating a
-            descriptor or record on demand.
-
-        Args:
-            frame_name:
-                Frame name to resolve.
-
-        Contract:
-            - Does not create a descriptor or a frame record on demand.
-            - Returns None when the frame has never been registered or does
-              not currently carry a Nexus-managed frame record.
-
-        Returns:
-            Optional[NexusFrameRecord]:
-                Current Nexus-managed frame record.
-        """
-        self.check_cleaned()
-        with self._lock:
-            descriptor = self._frame_descriptors_by_name.get(frame_name)
-            if descriptor is None:
-                return None
-            return descriptor.nexus_frame_record
-
-    def _list_nexus_frame_names(self) -> List[str]:
-        """
-        Return the frame names that currently carry a Nexus-managed frame
-        record.
-
-        Purpose:
-            Enumerate frame names currently backed by Nexus-managed frame
-            records.
-
-        Contract:
-            Returns a snapshot list filtered from the current descriptor
-            registry.
-
-        Returns:
-            List[str]:
-                Current Nexus-managed frame names.
-        """
-        self.check_cleaned()
-        with self._lock:
-            frame_names = []
-            for frame_name, descriptor in self._frame_descriptors_by_name.items():
-                if descriptor.nexus_frame_record is not None:
-                    frame_names.append(frame_name)
-            return frame_names
-
-    def _count_nexus_frame_records(self) -> int:
-        """
-        Return the current number of Nexus-managed frame records.
-
-        Purpose:
-            Expose the size of the Nexus-managed frame-record set.
-
-        Contract:
-            Computes the count from the current descriptor-backed
-            Nexus-frame-name snapshot rather than tracking a second counter.
-
-        Returns:
-            int:
-                Number of descriptor-owned Nexus-managed frame records.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return len(self._list_nexus_frame_names())
-
-    def _get_required_nexus_frame_record(
-            self,
-            frame_name: str,
-    ) -> NexusFrameRecord:
-        """
-        Return one existing Nexus-managed frame record or raise.
-
-        Purpose:
-            Resolve a Nexus-managed frame record only when absence is a real
-            error.
-
-        Args:
-            frame_name:
-                Nexus-managed frame name to resolve.
-
-        Returns:
-            NexusFrameRecord:
-                Existing frame record.
-
-        Raises:
-            ValueError:
-                If the record does not exist.
-        """
-        self.check_cleaned()
-        with self._lock:
-            try:
-                nexus_frame_record = self._get_required_frame_descriptor(frame_name).nexus_frame_record
-            except KeyError as exc:
-                raise ValueError("Nexus frame '{0}' was not found.".format(frame_name)) from exc
-            if nexus_frame_record is None:
-                raise ValueError("Nexus frame '{0}' was not found.".format(frame_name))
-            return nexus_frame_record
-
-    def _get_or_create_nexus_frame_record(
-            self,
-            frame_name: str,
-            *,
-            creator_rift_id: str,
-            immutable: bool,
-            nexus_frame_mode: NexusFrameMode,
-    ) -> NexusFrameRecord:
-        """
-        Return one existing Nexus-managed frame record or create it.
-
-        Purpose:
-            Provide the canonical lookup/creation path for Nexus-managed frame
-            records.
-
-        Args:
-            frame_name:
-                Nexus-managed frame name to resolve or create.
-            creator_rift_id:
-                Rift id that should be recorded as creator when creation is
-                required.
-            immutable:
-                Immutable flag to apply when creation is required.
-            nexus_frame_mode:
-                Current Nexus frame topology mode recorded on new records.
-
-        Returns:
-            NexusFrameRecord:
-                Existing or newly created record.
-        """
-        self.check_cleaned()
-        with self._lock:
-            nexus_frame_record = self._get_nexus_frame_record(frame_name)
-            if nexus_frame_record is not None:
-                return nexus_frame_record
-            return self._create_nexus_frame_record(
-                frame_name,
-                creator_rift_id=creator_rift_id,
-                immutable=immutable,
-                nexus_frame_mode=nexus_frame_mode,
-            )
-
-    def _create_nexus_frame_record(
-            self,
-            frame_name: str,
-            *,
-            creator_rift_id: str,
-            immutable: bool,
-            nexus_frame_mode: NexusFrameMode,
-    ) -> NexusFrameRecord:
-        """
-        Create one new Nexus-managed frame record and realize its frame.
-
-        Purpose:
-            Realize the underlying frame through `Aether`, then create and
-            attach the matching Nexus-managed frame record.
-
-        Args:
-            frame_name:
-                Nexus-managed frame name to create.
-            creator_rift_id:
-                Rift id recorded as creator and initial owner.
-            immutable:
-                Immutable flag for the new record.
-            nexus_frame_mode:
-                Current Nexus frame topology mode recorded on the new record.
-
-        Returns:
-            NexusFrameRecord:
-                Newly created record.
-        """
-        self.check_cleaned()
-        realized_frame = self._aether._ensure_frame(frame_name)
-        nexus_frame_record = NexusFrameRecord(
-            frame_name=frame_name,
-            frame=realized_frame,
-            nexus_frame_mode=nexus_frame_mode,
-            creator_rift_id=creator_rift_id,
-            owner_rift_id=creator_rift_id,
-            immutable=immutable,
-        )
-        descriptor = self._get_or_create_frame_descriptor(frame_name)
-        descriptor.set_frame_handle(realized_frame)
-        descriptor.set_nexus_frame_record(nexus_frame_record)
-        return nexus_frame_record
 
     @classmethod
     def _validate_published_frame_payload(

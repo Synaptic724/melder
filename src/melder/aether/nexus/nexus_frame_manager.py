@@ -9,7 +9,6 @@ from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
 from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.aether.nexus.nexus_frame_builder import NexusFrameBuilder
 from melder.aether.nexus.nexus_frame_configuration import NexusFrameConfiguration
-from melder.aether.nexus.nexus_frame_record import NexusFrameRecord
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -41,6 +40,7 @@ class NexusFrameManager(Cleanable):
         "_id",
         "_lock",
         "_nexus",
+        "_next_indexed_frame_number",
         "_frames_by_name",
         "_configurations_by_frame_name",
     ]
@@ -48,6 +48,10 @@ class NexusFrameManager(Cleanable):
     def __init__(self, *, nexus: Any) -> None:
         """
         Initialize one Nexus frame-authoring facade.
+
+        Purpose:
+            Bind the manager to its owning `Nexus` facade and start the
+            authoritative manager-owned registries empty.
 
         Args:
             nexus:
@@ -62,12 +66,19 @@ class NexusFrameManager(Cleanable):
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._nexus = nexus
+        self._next_indexed_frame_number: int = 1
         self._frames_by_name: Dict[str, Any] = {}
         self._configurations_by_frame_name: Dict[str, NexusFrameConfiguration] = {}
 
     def cleanup(self) -> None:
         """
         Idempotently clear manager-owned registry state.
+
+        Purpose:
+            Tear down the manager-owned authored-frame registry, authored
+            configurations, and indexed-frame allocator state without directly
+            disposing runtime frames. Runtime teardown remains driven by the
+            normal Aether cleanup path.
 
         Returns:
             None.
@@ -82,6 +93,7 @@ class NexusFrameManager(Cleanable):
             for configuration in self._configurations_by_frame_name.values():
                 configuration.cleanup()
             self._configurations_by_frame_name.clear()
+            self._next_indexed_frame_number = None
             self._frames_by_name = None
             self._configurations_by_frame_name = None
             self._nexus = None
@@ -90,13 +102,22 @@ class NexusFrameManager(Cleanable):
 
     @property
     def id(self) -> str:
-        """Return the stable manager id."""
+        """
+        Return the stable manager id.
+
+        Returns:
+            str: Stable manager identity.
+        """
         self.check_cleaned()
         return self._id
 
     def begin(self, frame_name: str) -> NexusFrameBuilder:
         """
         Begin one fluent authored-frame build.
+
+        Purpose:
+            Create a builder that accumulates authored frame posture and
+            optional bootstrap intent before the frame is realized.
 
         Args:
             frame_name:
@@ -111,6 +132,11 @@ class NexusFrameManager(Cleanable):
     def exists(self, frame_name: str) -> bool:
         """
         Return whether the manager currently tracks a frame name.
+
+        Purpose:
+            Expose the authoritative manager-owned registry membership check
+            used after the legacy descriptor-owned Nexus-frame-record path was
+            removed.
 
         Args:
             frame_name:
@@ -127,6 +153,10 @@ class NexusFrameManager(Cleanable):
         """
         Return the currently managed frame names in sorted order.
 
+        Purpose:
+            Expose a detached snapshot of the authoritative manager-owned
+            registry without leaking the mutable internal dictionary.
+
         Returns:
             Tuple[str, ...]: Managed frame names.
         """
@@ -141,10 +171,13 @@ class NexusFrameManager(Cleanable):
             immutable: bool = False,
             metadata: Optional[Dict[str, object]] = None,
             root_conduit_name: Optional[str] = None,
-            creator_rift_id: Optional[str] = None,
     ) -> Any:
         """
         Create one dynamic Nexus-managed frame directly.
+
+        Purpose:
+            Provide the non-fluent shortcut for the common AI-native dynamic
+            authored frame posture used by internal agent workspaces.
 
         Returns:
             IAethericFrame: Managed frame.
@@ -156,7 +189,6 @@ class NexusFrameManager(Cleanable):
                 metadata=metadata,
                 root_conduit_name=root_conduit_name,
             ),
-            creator_rift_id=creator_rift_id,
         )
 
     def create_automatic_frame(
@@ -166,10 +198,13 @@ class NexusFrameManager(Cleanable):
             immutable: bool = False,
             metadata: Optional[Dict[str, object]] = None,
             root_conduit_name: Optional[str] = None,
-            creator_rift_id: Optional[str] = None,
     ) -> Any:
         """
         Create one automatic Nexus-managed frame directly.
+
+        Purpose:
+            Provide the non-fluent shortcut for an authored frame that is
+            Rift-visible but not AI-native.
 
         Returns:
             IAethericFrame: Managed frame.
@@ -181,24 +216,32 @@ class NexusFrameManager(Cleanable):
                 metadata=metadata,
                 root_conduit_name=root_conduit_name,
             ),
-            creator_rift_id=creator_rift_id,
         )
 
     def create(
             self,
             configuration: NexusFrameConfiguration,
-            *,
-            creator_rift_id: Optional[str] = None,
     ) -> Any:
         """
         Create one managed frame from authored configuration.
 
+        Purpose:
+            Realize an authored Nexus-managed frame, bind both runtime
+            configuration layers into Aether, provision descriptor/ACL state,
+            and optionally bootstrap the requested root conduit.
+
+        Contract:
+            - Rejects duplicate manager-owned frame names.
+            - Treats the manager registry as the authoritative Nexus-managed
+              frame set.
+            - Binds both `Configuration` and `AethericFrameConfiguration`
+              before publishing descriptor-owned overview state.
+            - Bootstraps an optional root conduit only after the empty frame
+              exists and descriptor state is provisioned.
+
         Args:
             configuration:
                 Authored frame configuration.
-            creator_rift_id:
-                Optional creating Rift id when this is a Rift/topology-driven
-                creation path.
 
         Returns:
             IAethericFrame: Realized managed frame.
@@ -215,7 +258,7 @@ class NexusFrameManager(Cleanable):
                 raise ValueError(
                     "Nexus managed frame '{0}' already exists.".format(frame_name)
                 )
-            self._nexus._validate_nexus_frame_budget((frame_name,))
+            self._validate_frame_budget((frame_name,))
             frame = self._nexus._aether._ensure_frame(frame_name)
             self._frames_by_name[frame_name] = frame
             self._configurations_by_frame_name[frame_name] = configuration
@@ -231,13 +274,6 @@ class NexusFrameManager(Cleanable):
             frame_name,
         )
         self._ensure_descriptor_and_acl(frame_name)
-        if creator_rift_id is not None:
-            self._mirror_legacy_nexus_frame_record(
-                frame_name,
-                frame,
-                creator_rift_id=creator_rift_id,
-                immutable=configuration.immutable,
-            )
         self._publish_frame_overview(
             frame_name,
             config_origin_spellbook_id=None,
@@ -253,6 +289,11 @@ class NexusFrameManager(Cleanable):
     def remove(self, frame_name: str) -> None:
         """
         Remove one authored Nexus-managed frame.
+
+        Purpose:
+            Request disposal of one manager-owned frame through the normal
+            Aether cleanup path after validating that the frame still exists,
+            is not immutable, and is no longer in active Rift use.
 
         Args:
             frame_name:
@@ -289,6 +330,11 @@ class NexusFrameManager(Cleanable):
         """
         Return one manager-owned frame for a Rift under the current topology.
 
+        Purpose:
+            Resolve a previously created Nexus-managed frame according to the
+            active topology mode while enforcing the same access rules that the
+            Rift facade exposes publicly.
+
         Args:
             rift_id:
                 Requesting Rift id.
@@ -324,6 +370,11 @@ class NexusFrameManager(Cleanable):
         """
         Create or recover one managed frame for a Rift under current topology.
 
+        Purpose:
+            Provide the topology-aware create-or-recover path used by the Rift
+            facade so shared, indexed, and one-per-workspace modes all flow
+            through one authoritative implementation.
+
         Args:
             rift_id:
                 Requesting Rift id.
@@ -352,12 +403,15 @@ class NexusFrameManager(Cleanable):
         return self.create_dynamic_frame(
             requested_frame_name,
             immutable=immutable,
-            creator_rift_id=rift_id,
         )
 
     def list_accessible_frame_names_for_rift(self, rift_id: str) -> Tuple[str, ...]:
         """
         Return the manager-owned frame names accessible to one Rift.
+
+        Purpose:
+            Materialize the current frame visibility for one Rift from the
+            authoritative manager registry and active topology mode.
 
         Args:
             rift_id:
@@ -393,6 +447,11 @@ class NexusFrameManager(Cleanable):
     ) -> List[str]:
         """
         Return the authored frame names that should be disposed after Rift removal.
+
+        Purpose:
+            Compute post-Rift-removal cleanup candidates directly from the
+            manager registry and current Nexus topology mode instead of using a
+            second attachment registry.
 
         Args:
             rift_id:
@@ -436,6 +495,11 @@ class NexusFrameManager(Cleanable):
         """
         Drop manager-owned authored state after external Aether frame disposal.
 
+        Purpose:
+            Synchronize the manager, descriptor, and ACL layers after Aether
+            has already decided to dispose a frame. This is the bridge between
+            runtime frame teardown and Nexus-side authored metadata cleanup.
+
         Args:
             frame_name:
                 Disposed frame name.
@@ -461,13 +525,16 @@ class NexusFrameManager(Cleanable):
             descriptor.set_frame_handle(None)
             descriptor.set_frame_configuration(None)
             descriptor.set_frame_overview(None)
-            descriptor.set_nexus_frame_record(None)
         self._nexus._frame_acl_manager._remove_frame_acl_container(frame_name)
         return True
 
     def _determine_frame_name_for_rift(self, rift_id: str) -> str:
         """
         Determine the manager-owned frame name for one Rift.
+
+        Purpose:
+            Derive the private frame name used by `one_per_workspace` mode
+            without relying on legacy descriptor-backed Nexus frame records.
 
         Args:
             rift_id:
@@ -490,6 +557,11 @@ class NexusFrameManager(Cleanable):
     ) -> str:
         """
         Resolve one frame name for a Rift under the current topology.
+
+        Purpose:
+            Centralize topology-sensitive frame-name resolution so both
+            retrieval and create-or-recover flows enforce the same naming and
+            visibility rules.
 
         Args:
             rift_id:
@@ -534,16 +606,40 @@ class NexusFrameManager(Cleanable):
         return frame_name
 
     def _allocate_indexed_frame_name(self) -> str:
+        """
+        Allocate the next deterministic indexed Nexus-managed frame name.
+
+        Purpose:
+            Keep indexed Nexus-frame naming inside the frame manager so the
+            manager owns both authoritative storage and indexed name
+            allocation for authored frames.
+
+        Returns:
+            str: Newly allocated indexed Nexus-managed frame name.
+        """
         indexed_frame_name = "{0}-{1}".format(
             self._nexus._configuration.get_property("default_nexus_frame_name"),
-            self._nexus._next_indexed_nexus_frame_number,
+            self._next_indexed_frame_number,
         )
-        self._nexus._next_indexed_nexus_frame_number = (
-            self._nexus._next_indexed_nexus_frame_number + 1
-        )
+        self._next_indexed_frame_number = self._next_indexed_frame_number + 1
         return indexed_frame_name
 
     def _ensure_descriptor_and_acl(self, frame_name: str) -> None:
+        """
+        Provision descriptor and ACL container state for one authored frame.
+
+        Purpose:
+            Keep the descriptor-side cached frame/configuration references and
+            the ACL container aligned with the newly realized manager-owned
+            frame before higher-level viewing or command surfaces inspect it.
+
+        Args:
+            frame_name:
+                Managed frame name being provisioned.
+
+        Returns:
+            None.
+        """
         descriptor = self._nexus._frame_descriptor_manager._get_or_create_frame_descriptor(
             frame_name
         )
@@ -561,6 +657,23 @@ class NexusFrameManager(Cleanable):
             *,
             config_origin_spellbook_id: Optional[str],
     ) -> None:
+        """
+        Publish the descriptor-owned overview record for one authored frame.
+
+        Purpose:
+            Mirror the new authored frame into the passive descriptor layer so
+            viewer and inventory surfaces can inspect the empty frame
+            immediately after creation.
+
+        Args:
+            frame_name:
+                Managed frame name being published.
+            config_origin_spellbook_id:
+                Optional originating spellbook id when one exists.
+
+        Returns:
+            None.
+        """
         frame = self._frames_by_name[frame_name]
         frame_configuration = self._nexus._aether._get_aetheric_frame_configuration(
             frame_name
@@ -600,12 +713,70 @@ class NexusFrameManager(Cleanable):
         )
         descriptor.set_frame_overview(frame_record)
 
+    def _validate_frame_budget(
+            self,
+            frame_names: Tuple[str, ...],
+    ) -> None:
+        """
+        Validate manager-owned frame budget before authored creation.
+
+        Purpose:
+            Enforce `max_nexus_frame_count` directly from the authoritative
+            manager registry now that the legacy descriptor-owned Nexus frame
+            record path has been removed.
+
+        Args:
+            frame_names:
+                Candidate authored frame names being added.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If the configured Nexus-managed frame budget would be
+                exceeded.
+        """
+        unique_new_frame_names = []
+        for frame_name in frame_names:
+            if frame_name in self._frames_by_name:
+                continue
+            if frame_name in unique_new_frame_names:
+                continue
+            unique_new_frame_names.append(frame_name)
+        if not unique_new_frame_names:
+            return
+        if len(self._frames_by_name) + len(unique_new_frame_names) > self._nexus._configuration.get_property(
+                "max_nexus_frame_count"
+        ):
+            raise ValueError("Nexus internal frame cap has been reached.")
+
     def _bootstrap_root_conduit(
             self,
             frame_name: str,
             configuration: NexusFrameConfiguration,
             root_conduit_name: str,
     ) -> Any:
+        """
+        Bootstrap one optional root conduit into a newly created frame.
+
+        Purpose:
+            Use a narrow temporary `Spellbook` path to create the requested
+            starter conduit and then refresh the descriptor-owned frame
+            overview so the passive view surfaces immediately reflect the new
+            topology.
+
+        Args:
+            frame_name:
+                Managed frame receiving the bootstrap conduit.
+            configuration:
+                Authored configuration that drove frame creation.
+            root_conduit_name:
+                Requested starter conduit name.
+
+        Returns:
+            IConduit: Newly created root conduit.
+        """
         from melder.spellbook.spellbook import Spellbook
 
         spellbook_configuration = configuration.to_spellbook_configuration()
@@ -628,6 +799,22 @@ class NexusFrameManager(Cleanable):
         return conduit
 
     def _frame_is_in_active_rift_use(self, frame_name: str) -> bool:
+        """
+        Return whether any live Rift can still access the frame.
+
+        Purpose:
+            Guard removal of manager-owned frames without maintaining a second
+            attachment registry by deriving live usage from the current Rift
+            registry and topology rules.
+
+        Args:
+            frame_name:
+                Managed frame name being considered for removal.
+
+        Returns:
+            bool: True when at least one active Rift can still reach the
+            frame.
+        """
         for rift in self._nexus._rifts_by_id.values():
             try:
                 accessible_frame_names = set(
@@ -638,28 +825,3 @@ class NexusFrameManager(Cleanable):
             if frame_name in accessible_frame_names:
                 return True
         return False
-
-    def _mirror_legacy_nexus_frame_record(
-            self,
-            frame_name: str,
-            frame: Any,
-            *,
-            creator_rift_id: str,
-            immutable: bool,
-    ) -> None:
-        descriptor = self._nexus._frame_descriptor_manager._get_or_create_frame_descriptor(
-            frame_name
-        )
-        descriptor.set_nexus_frame_record(
-            NexusFrameRecord(
-                frame_name=frame_name,
-                frame=frame,
-                nexus_frame_mode=self._nexus._configuration.get_property(
-                    "nexus_frame_mode"
-                ),
-                creator_rift_id=creator_rift_id,
-                owner_rift_id=creator_rift_id,
-                immutable=immutable,
-            )
-        )
-        descriptor.nexus_frame_record.attach_rift_id(creator_rift_id)

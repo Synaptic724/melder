@@ -39,11 +39,11 @@ def test_component_acl_container_is_provisioned_once_per_descriptor_creation_flo
         AetherUtilitySystem._reset_singleton_for_tests()
 
 
-def test_component_frame_detach_cleans_acl_container_even_without_nexus_frame_record() -> None:
+def test_component_frame_detach_cleans_acl_container_even_without_managed_frame_state() -> None:
     """
     Purpose:
         Verify the facade-driven frame-detach cleanup removes ACL state even
-        when no Nexus-managed frame record exists for that frame.
+        when no Nexus-managed frame state exists for that frame.
     Contract:
         - Descriptor creation provisions the ACL container.
         - `check_for_aetheric_frame(...)` removes the matching ACL container.

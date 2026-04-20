@@ -268,7 +268,7 @@ class Aether(Cleanable, IAether):
                     self._nexus.check_for_aetheric_frame(frame_name)
                 except Exception as e:
                     self._logger.error(
-                        f"Error detaching Nexus frame record for '{frame_name}': {e}",
+                        f"Error detaching Nexus frame state for '{frame_name}': {e}",
                         "_detach_cleaned_frame",
                         exc_info=True,
                     )

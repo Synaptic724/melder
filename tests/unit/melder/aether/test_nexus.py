@@ -4338,7 +4338,7 @@ def test_shared_nexus_frame_survives_until_last_rift_is_removed() -> None:
 
     nexus.remove_rift(second.id)
     assert shared_frame_name not in aether._aetheric_frames
-    assert nexus._get_nexus_frame_record(shared_frame_name) is None
+    assert nexus.frame_manager.exists(shared_frame_name) is False
 
 
 def test_one_per_workspace_nexus_frame_is_removed_with_its_rift() -> None:
@@ -4365,13 +4365,13 @@ def test_one_per_workspace_nexus_frame_is_removed_with_its_rift() -> None:
     nexus.remove_rift(rift.id)
 
     assert frame_name not in Aether()._aetheric_frames
-    assert nexus._get_nexus_frame_record(frame_name) is None
+    assert nexus.frame_manager.exists(frame_name) is False
 
 
-def test_external_aether_frame_cleanup_clears_nexus_frame_record() -> None:
+def test_external_aether_frame_cleanup_clears_nexus_frame_manager_state() -> None:
     """
-    Verify direct Aether frame disposal clears the corresponding Nexus frame
-    record first.
+    Verify direct Aether frame disposal clears the corresponding manager-owned
+    Nexus frame state.
 
     Returns:
         None.
@@ -4380,11 +4380,11 @@ def test_external_aether_frame_cleanup_clears_nexus_frame_record() -> None:
     rift = nexus.create_rift(rift_name="alpha")
     frame_name = rift.create_nexus_frame().name
 
-    assert nexus._get_nexus_frame_record(frame_name) is not None
+    assert nexus.frame_manager.exists(frame_name) is True
 
     rift.get_nexus_frame().cleanup()
 
-    assert nexus._get_nexus_frame_record(frame_name) is None
+    assert nexus.frame_manager.exists(frame_name) is False
 
 
 def test_shared_mode_returns_the_same_frame_to_any_rift() -> None:
@@ -4492,7 +4492,7 @@ def test_indexed_mode_can_create_explicit_new_frame() -> None:
     rift = nexus.create_rift(rift_name="builder")
     created_frame = rift.create_nexus_frame(frame_name="ops", immutable=True)
 
-    assert nexus._get_nexus_frame_record("ops") is not None
+    assert nexus.frame_manager.exists("ops") is True
     assert rift.get_nexus_frame("ops") is created_frame
     assert "ops" in rift.list_accessible_nexus_frame_names()
 

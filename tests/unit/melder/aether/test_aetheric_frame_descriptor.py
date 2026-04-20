@@ -18,29 +18,24 @@ from melder.aether.nexus.frame_descriptor.spell_descriptor_payload import (
 )
 from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.aether.nexus.frame_descriptor.spell_record import SpellRecord
-from melder.aether.nexus.nexus_frame_record import NexusFrameRecord
 from melder.aether.conduit.conduit_state.conduit_state import ConduitState
 from melder.aether.conduit.conduit_ward.policies.policies import Policies
-from melder.aether.nexus.configuration.nexus_frame_mode import NexusFrameMode
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.spellbook.configuration.system_state import SystemState
 from melder.spellbook.existence.existence import Existence
 
 
-def test_descriptor_replaces_owned_frame_overview_and_nexus_frame_record() -> None:
+def test_descriptor_replaces_owned_frame_overview() -> None:
     """
-    Verify descriptor replacement cleans superseded owned metadata objects.
+    Verify descriptor replacement cleans superseded owned frame metadata.
 
     Contract:
         - Replacing `frame_overview` cleans the old `FrameRecord`.
-        - Replacing `nexus_frame_record` cleans the old `NexusFrameRecord`.
 
     Returns:
         None.
     """
     descriptor = FrameDescriptor("ops")
-    frame_handle = SimpleNamespace(name="ops")
-
     first_overview = FrameRecord(
         frame_name="ops",
         frame_id="frame-1",
@@ -76,32 +71,11 @@ def test_descriptor_replaces_owned_frame_overview_and_nexus_frame_record() -> No
         ),
     )
 
-    first_nexus_record = NexusFrameRecord(
-        frame_name="ops",
-        frame=frame_handle,
-        nexus_frame_mode=NexusFrameMode.single,
-        creator_rift_id="rift-1",
-        owner_rift_id="rift-1",
-        immutable=False,
-    )
-    second_nexus_record = NexusFrameRecord(
-        frame_name="ops",
-        frame=frame_handle,
-        nexus_frame_mode=NexusFrameMode.single,
-        creator_rift_id="rift-2",
-        owner_rift_id="rift-2",
-        immutable=True,
-    )
-
     descriptor.set_frame_overview(first_overview)
     descriptor.set_frame_overview(second_overview)
-    descriptor.set_nexus_frame_record(first_nexus_record)
-    descriptor.set_nexus_frame_record(second_nexus_record)
 
     assert first_overview.cleaned is True
-    assert first_nexus_record.cleaned is True
     assert descriptor.frame_overview is second_overview
-    assert descriptor.nexus_frame_record is second_nexus_record
 
 
 def test_descriptor_cleanup_cleans_owned_metadata_and_releases_lock() -> None:
@@ -109,7 +83,7 @@ def test_descriptor_cleanup_cleans_owned_metadata_and_releases_lock() -> None:
     Verify descriptor cleanup performs grouped teardown under the owned lock.
 
     Contract:
-        - Owned frame overview and Nexus frame record are cleaned.
+        - Owned frame overview is cleaned.
         - Descriptor grouped state is nulled.
         - Descriptor lock is released and nulled last.
 
@@ -141,24 +115,13 @@ def test_descriptor_cleanup_cleans_owned_metadata_and_releases_lock() -> None:
             cluster_names=tuple(),
         ),
     )
-    nexus_frame_record = NexusFrameRecord(
-        frame_name="ops",
-        frame=frame_handle,
-        nexus_frame_mode=NexusFrameMode.single,
-        creator_rift_id="rift-1",
-        owner_rift_id="rift-1",
-        immutable=False,
-    )
-
     descriptor.set_frame_handle(frame_handle)
     descriptor.set_frame_configuration(frame_configuration)
     descriptor.set_frame_overview(frame_overview)
-    descriptor.set_nexus_frame_record(nexus_frame_record)
 
     descriptor.cleanup()
 
     assert frame_overview.cleaned is True
-    assert nexus_frame_record.cleaned is True
     assert descriptor._lock is None
 
 
@@ -360,37 +323,6 @@ def test_descriptor_remove_spell_record_cleans_record_and_indexes() -> None:
     assert descriptor.spell_records_by_key == {}
     assert descriptor.spell_keys_by_conduit_id == {}
     assert descriptor.spell_keys_by_spellbook_id == {}
-
-
-def test_descriptor_detach_nexus_frame_record_clears_property_without_cleaning_record() -> None:
-    """
-    Verify detaching a Nexus frame record removes ownership without cleanup.
-
-    Contract:
-        - `detach_nexus_frame_record()` returns the current record.
-        - Descriptor property becomes None after detach.
-        - Detached record is not cleaned by the detach operation itself.
-
-    Returns:
-        None.
-    """
-    descriptor = FrameDescriptor("ops")
-    frame_handle = SimpleNamespace(name="ops")
-    nexus_frame_record = NexusFrameRecord(
-        frame_name="ops",
-        frame=frame_handle,
-        nexus_frame_mode=NexusFrameMode.single,
-        creator_rift_id="rift-1",
-        owner_rift_id="rift-1",
-        immutable=False,
-    )
-
-    descriptor.set_nexus_frame_record(nexus_frame_record)
-    detached = descriptor.detach_nexus_frame_record()
-
-    assert detached is nexus_frame_record
-    assert descriptor.nexus_frame_record is None
-    assert nexus_frame_record.cleaned is False
 
 
 def test_descriptor_set_frame_handle_and_configuration_round_trip() -> None:

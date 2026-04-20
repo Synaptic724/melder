@@ -6,7 +6,6 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
-from melder.aether.nexus.configuration.nexus_frame_mode import NexusFrameMode
 from melder.aether.nexus.frame_descriptor.conduit_descriptor_payload import (
     ConduitDescriptorPayload,
 )
@@ -97,35 +96,6 @@ def test_manager_constructor_rejects_missing_aether() -> None:
         FrameDescriptorManager(None)
 
 
-def test_manager_create_and_detach_nexus_frame_record_updates_descriptor_indexes() -> None:
-    """
-    Verify Nexus-managed frame records are stored and detached through manager.
-
-    Returns:
-        None.
-    """
-    aether = Aether()
-    manager = FrameDescriptorManager(aether)
-
-    record = manager._create_nexus_frame_record(
-        "ops",
-        creator_rift_id="rift-1",
-        immutable=False,
-        nexus_frame_mode=NexusFrameMode.single,
-    )
-
-    assert manager._get_nexus_frame_record("ops") is record
-    assert manager._count_nexus_frame_records() == 1
-    assert manager._list_nexus_frame_names() == ["ops"]
-
-    detached = manager._detach_nexus_frame_record("ops")
-
-    assert detached is record
-    assert manager._get_nexus_frame_record("ops") is None
-    assert manager._count_nexus_frame_records() == 0
-    assert manager._list_nexus_frame_names() == []
-
-
 def test_manager_publishable_frame_posture_short_circuits_when_rift_disabled() -> None:
     """
     Verify manager keeps the descriptor but denies passive publication posture.
@@ -192,20 +162,16 @@ def test_manager_descriptor_helpers_cover_create_has_and_missing_record_cases() 
     manager = FrameDescriptorManager(Aether())
 
     assert manager._has_frame_descriptor("ops") is False
-    assert manager._detach_nexus_frame_record("ops") is None
 
     descriptor = manager._get_or_create_frame_descriptor("ops")
 
     assert manager._has_frame_descriptor("ops") is True
     assert manager._get_required_frame_descriptor("ops") is descriptor
 
-    with pytest.raises(ValueError, match="Nexus frame 'ops' was not found."):
-        manager._get_required_nexus_frame_record("ops")
-
 
 def test_manager_required_getters_raise_for_missing_records() -> None:
     """
-    Verify required descriptor/frame-record getters fail loudly when absent.
+    Verify required descriptor getters fail loudly when absent.
 
     Returns:
         None.
@@ -214,36 +180,6 @@ def test_manager_required_getters_raise_for_missing_records() -> None:
 
     with pytest.raises(KeyError, match="ops"):
         manager._get_required_frame_descriptor("ops")
-
-    with pytest.raises(ValueError, match="Nexus frame 'ops' was not found."):
-        manager._get_required_nexus_frame_record("ops")
-
-
-def test_manager_get_or_create_nexus_frame_record_reuses_existing_record() -> None:
-    """
-    Verify get-or-create returns the same Nexus frame record on repeat calls.
-
-    Returns:
-        None.
-    """
-    manager = FrameDescriptorManager(Aether())
-
-    first_record = manager._get_or_create_nexus_frame_record(
-        "ops",
-        creator_rift_id="rift-1",
-        immutable=False,
-        nexus_frame_mode=NexusFrameMode.single,
-    )
-    second_record = manager._get_or_create_nexus_frame_record(
-        "ops",
-        creator_rift_id="rift-2",
-        immutable=True,
-        nexus_frame_mode=NexusFrameMode.indexed,
-    )
-
-    assert second_record is first_record
-    assert second_record.creator_rift_id == "rift-1"
-    assert second_record.immutable is False
 
 
 def test_manager_publish_conduit_record_short_circuits_for_none_or_unpublishable_frame() -> None:

@@ -57,6 +57,18 @@ class NexusFrameConfiguration(Cleanable):
         """
         Initialize one Nexus-managed frame authoring configuration.
 
+        Purpose:
+            Freeze the authored posture and bootstrap intent for one
+            Nexus-managed frame before the frame exists in Aether.
+
+        Contract:
+            - Validates the stable frame identity up front.
+            - Stores only authored input state, not live runtime objects.
+            - Preserves metadata as a detached snapshot so later caller
+              mutation cannot affect the authored configuration.
+            - Accepts an optional root-conduit bootstrap name that will later
+              be interpreted by `NexusFrameManager`.
+
         Args:
             frame_name:
                 Stable frame name to author.
@@ -119,6 +131,10 @@ class NexusFrameConfiguration(Cleanable):
         """
         Create one dynamic authored frame configuration.
 
+        Purpose:
+            Provide the standard authored posture for a Nexus-managed frame
+            that should be AI-native, dynamic, and immediately Rift-visible.
+
         Args:
             frame_name:
                 Stable frame name to author.
@@ -153,6 +169,11 @@ class NexusFrameConfiguration(Cleanable):
     ) -> "NexusFrameConfiguration":
         """
         Create one automatic authored frame configuration.
+
+        Purpose:
+            Provide the standard authored posture for a Nexus-managed frame
+            that should be Rift-visible without enabling AI-native dynamic
+            behavior.
 
         Args:
             frame_name:
@@ -190,49 +211,88 @@ class NexusFrameConfiguration(Cleanable):
 
     @property
     def frame_name(self) -> str:
-        """Return the authored frame name."""
+        """
+        Return the authored frame name.
+
+        Returns:
+            str: Stable frame identity that the manager will realize.
+        """
         self.check_cleaned()
         return self._frame_name
 
     @property
     def system_state(self) -> SystemState:
-        """Return the authored runtime posture."""
+        """
+        Return the authored runtime posture.
+
+        Returns:
+            SystemState: Authored frame system state.
+        """
         self.check_cleaned()
         return self._system_state
 
     @property
     def ai_native_enabled(self) -> bool:
-        """Return whether AI-native posture is enabled."""
+        """
+        Return whether AI-native posture is enabled.
+
+        Returns:
+            bool: True when the authored frame should be AI-native.
+        """
         self.check_cleaned()
         return self._ai_native_enabled
 
     @property
     def rift_enabled(self) -> bool:
-        """Return whether the frame should be Rift-visible."""
+        """
+        Return whether the frame should be Rift-visible.
+
+        Returns:
+            bool: True when the authored frame should be exposed to Rifts.
+        """
         self.check_cleaned()
         return self._rift_enabled
 
     @property
     def immutable(self) -> bool:
-        """Return whether the frame is immutable."""
+        """
+        Return whether the frame is immutable.
+
+        Returns:
+            bool: True when the authored frame should reject normal removal.
+        """
         self.check_cleaned()
         return self._immutable
 
     @property
     def metadata(self) -> Dict[str, object]:
-        """Return a detached authored metadata copy."""
+        """
+        Return a detached authored metadata copy.
+
+        Returns:
+            Dict[str, object]: Snapshot of authored metadata.
+        """
         self.check_cleaned()
         return dict(self._metadata)
 
     @property
     def root_conduit_name(self) -> Optional[str]:
-        """Return the optional root conduit bootstrap name."""
+        """
+        Return the optional root conduit bootstrap name.
+
+        Returns:
+            Optional[str]: Requested bootstrap root conduit name.
+        """
         self.check_cleaned()
         return self._root_conduit_name
 
     def to_aetheric_frame_configuration(self) -> AethericFrameConfiguration:
         """
         Compile the authored posture into the narrow frame runtime posture.
+
+        Purpose:
+            Build the minimal runtime posture object that Aether and the
+            passive descriptor publication layer need for the realized frame.
 
         Returns:
             AethericFrameConfiguration: Narrow frame posture object.
@@ -248,6 +308,10 @@ class NexusFrameConfiguration(Cleanable):
     def to_spellbook_configuration(self) -> Configuration:
         """
         Compile the authored posture into a Spellbook configuration.
+
+        Purpose:
+            Build the broader `Configuration` surface needed when the manager
+            bootstraps a root conduit through a temporary `Spellbook` path.
 
         Returns:
             Configuration: Spellbook configuration suitable for optional root
@@ -266,6 +330,10 @@ class NexusFrameConfiguration(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently clear authored configuration state.
+
+        Purpose:
+            Release authored configuration state once the manager no longer
+            needs to keep this authored snapshot alive.
 
         Returns:
             None.
