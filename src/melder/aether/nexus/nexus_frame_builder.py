@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import IAethericFrame
 
 from melder.aether.nexus.nexus_frame_configuration import NexusFrameConfiguration
 
@@ -17,6 +18,8 @@ class NexusFrameBuilder(Cleanable):
 
     Contract:
         - One builder instance is scoped to one frame name.
+        - The builder defaults to the only valid Nexus-managed frame posture:
+          dynamic, AI-native, and Rift-enabled.
         - The builder is mutable until `build()` or `create()` is called.
         - `create()` delegates to the owning `NexusFrameManager`.
 
@@ -74,9 +77,9 @@ class NexusFrameBuilder(Cleanable):
             raise ValueError("frame_name cannot be empty.")
         self._manager = manager
         self._frame_name = frame_name
-        self._system_state: Optional[SystemState] = None
-        self._ai_native_enabled: Optional[bool] = None
-        self._rift_enabled: Optional[bool] = None
+        self._system_state: Optional[SystemState] = SystemState.dynamic
+        self._ai_native_enabled: Optional[bool] = True
+        self._rift_enabled: Optional[bool] = True
         self._immutable: bool = False
         self._metadata: Dict[str, object] = {}
         self._root_conduit_name: Optional[str] = None
@@ -95,76 +98,6 @@ class NexusFrameBuilder(Cleanable):
         self._system_state = SystemState.dynamic
         self._ai_native_enabled = True
         self._rift_enabled = True
-        return self
-
-    def automatic_defaults(self) -> "NexusFrameBuilder":
-        """
-        Apply the standard automatic authored-frame posture.
-
-        Purpose:
-            Configure the builder for a Rift-visible, non-AI-native automatic
-            frame posture without requiring field-by-field setup.
-
-        Returns:
-            NexusFrameBuilder: This builder for fluent chaining.
-        """
-        self._system_state = SystemState.automatic
-        self._ai_native_enabled = False
-        self._rift_enabled = True
-        return self
-
-    def system_state(self, system_state: SystemState) -> "NexusFrameBuilder":
-        """
-        Override the authored frame system state.
-
-        Purpose:
-            Let callers override the default posture presets when they need a
-            custom authored runtime mode.
-
-        Args:
-            system_state:
-                Desired authored runtime posture.
-
-        Returns:
-            NexusFrameBuilder: This builder for fluent chaining.
-        """
-        self._system_state = system_state
-        return self
-
-    def ai_native_enabled(self, enabled: bool = True) -> "NexusFrameBuilder":
-        """
-        Override the authored AI-native posture flag.
-
-        Purpose:
-            Allow callers to widen or narrow AI-native behavior independently
-            from the preset posture helpers.
-
-        Args:
-            enabled:
-                True when AI-native posture should be enabled.
-
-        Returns:
-            NexusFrameBuilder: This builder for fluent chaining.
-        """
-        self._ai_native_enabled = enabled
-        return self
-
-    def rift_enabled(self, enabled: bool = True) -> "NexusFrameBuilder":
-        """
-        Override the authored Rift-visible posture flag.
-
-        Purpose:
-            Let callers explicitly opt the authored frame in or out of
-            Rift-facing visibility.
-
-        Args:
-            enabled:
-                True when Rift-visible posture should be enabled.
-
-        Returns:
-            NexusFrameBuilder: This builder for fluent chaining.
-        """
-        self._rift_enabled = enabled
         return self
 
     def immutable(self, immutable: bool = True) -> "NexusFrameBuilder":
@@ -273,7 +206,7 @@ class NexusFrameBuilder(Cleanable):
             root_conduit_name=self._root_conduit_name,
         )
 
-    def create(self):
+    def create(self) -> IAethericFrame:
         """
         Build and create the authored frame through the owning manager.
 

@@ -240,8 +240,9 @@ class Aether(Cleanable, IAether):
               registered object matches the cleaned frame instance.
             - Clears the default-frame pointer when the removed frame was the
               default.
-            - Drops any matching Nexus frame record before the registry entry is
-              removed.
+            - Notifies `Nexus` before the registry entry is removed so any
+              manager-owned frame state, descriptor cache state, and ACL state
+              can be detached consistently.
 
         Args:
             frame_name:

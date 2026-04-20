@@ -918,51 +918,6 @@ class Nexus(Cleanable, INexus):
             "remove_rift",
         )
 
-    def _refresh_frame_posture_cache(
-            self,
-            frame_name: str,
-    ) -> Optional[AethericFrameConfiguration]:
-        """
-        Internal
-
-        Refresh the cached frame posture for one frame from Aether.
-
-        Args:
-            frame_name:
-                Target frame name.
-
-        Returns:
-            Optional[AethericFrameConfiguration]: Bound frame posture when
-            available, otherwise None.
-        """
-        frame_posture = self._frame_descriptor_manager._refresh_frame_posture_cache(frame_name)
-        if self._frame_descriptor_manager._has_frame_descriptor(frame_name):
-            self._ensure_frame_acl_container(frame_name)
-        return frame_posture
-
-    def _get_publishable_frame_posture(
-            self,
-            frame_name: str,
-    ) -> Optional[AethericFrameConfiguration]:
-        """
-        Internal
-
-        Return the cached publishable frame posture when the frame may publish
-        passive Nexus records.
-
-        Args:
-            frame_name:
-                Target frame name.
-
-        Returns:
-            Optional[AethericFrameConfiguration]: Publishable frame posture or
-            None when publication should short-circuit.
-        """
-        frame_posture = self._frame_descriptor_manager._get_publishable_frame_posture(frame_name)
-        if self._frame_descriptor_manager._has_frame_descriptor(frame_name):
-            self._ensure_frame_acl_container(frame_name)
-        return frame_posture
-
     def _publish_frame_record(self, spellbook: Any) -> bool:
         """
         Internal
@@ -1766,47 +1721,6 @@ class Nexus(Cleanable, INexus):
             for frame_name in normalized_frame_names
         }
 
-    def insert_head_frame_acl_configuration(
-            self,
-            frame_name: str,
-            configuration: FrameACLConfiguration,
-            *,
-            select_as_current: bool = True,
-    ) -> FrameACLConfiguration:
-        """
-        Install one same-name ACL bundle revision across the three families.
-
-        Purpose:
-            Install a locked ACL bundle into the same named view, command, and
-            codegen chains through the Nexus facade.
-
-        Args:
-            frame_name:
-                Stable frame name that owns the ACL registry.
-            configuration:
-                Locked configuration node to install.
-            select_as_current:
-                Ignored. Bundle-chain current/head separation no longer exists
-                as a primary storage model.
-
-        Returns:
-            FrameACLConfiguration:
-                Installed assembled configuration snapshot.
-
-        Raises:
-            TypeError, ValueError:
-                Propagated when validation fails or family-chain install rejects
-                the bundle.
-        """
-        self.check_cleaned()
-        self._ensure_frame_acl_container(frame_name)
-        inserted_configuration = self._frame_acl_manager._install_named_frame_acl_configuration(
-            frame_name,
-            configuration,
-            contract_name="default",
-        )
-        return inserted_configuration
-
     def create_frame_projection_sets_for_rift(
             self,
             rift_id: str,
@@ -1973,22 +1887,6 @@ class Nexus(Cleanable, INexus):
                     "Timeout waiting for Rift gate '{0}' to drain.".format(rift_id)
                 )
             time.sleep(interval)
-
-    def _refresh_rift_projection_sets_for_frame(
-            self,
-            frame_name: str,
-    ) -> None:
-        """
-        Synchronously refresh projection sets for all Rifts targeting one frame.
-
-        Args:
-            frame_name:
-                Target frame whose ACL-driven projections changed.
-
-        Returns:
-            None.
-        """
-        self._refresh_rift_projection_sets_for_frames((frame_name,))
 
     def _refresh_rift_projection_sets_for_frames(
             self,
@@ -2453,83 +2351,6 @@ class Nexus(Cleanable, INexus):
                 )
             )
         return target_frame_configuration
-
-    def _get_required_target_frame_boolean(
-            self,
-            target_frame_configuration: IConfiguration,
-            target_frame_name: str,
-            property_name: str,
-    ) -> bool:
-        """
-        Internal
-
-        Read one required boolean property from a target frame configuration.
-
-        Args:
-            target_frame_configuration:
-                Bound Melder configuration for the target frame.
-            target_frame_name:
-                Target frame name being validated.
-            property_name:
-                Required boolean property name.
-
-        Returns:
-            bool: Property value.
-        """
-        try:
-            value = target_frame_configuration.get_property(property_name)
-        except KeyError as exc:
-            raise ValueError(
-                "Target frame '{0}' must define '{1}' for AR use.".format(
-                    target_frame_name,
-                    property_name,
-                )
-            ) from exc
-        if not isinstance(value, bool):
-            raise ValueError(
-                "Target frame '{0}' has invalid '{1}' value '{2}'.".format(
-                    target_frame_name,
-                    property_name,
-                    value,
-                )
-            )
-        return value
-
-    def _get_required_target_frame_system_state(
-            self,
-            target_frame_configuration: IConfiguration,
-            target_frame_name: str,
-    ) -> SystemState:
-        """
-        Internal
-
-        Read the bound Melder system_state for one target frame.
-
-        Args:
-            target_frame_configuration:
-                Bound Melder configuration for the target frame.
-            target_frame_name:
-                Target frame name being validated.
-
-        Returns:
-            SystemState: Bound target-frame system state.
-        """
-        try:
-            system_state = target_frame_configuration.get_property("system_state")
-        except KeyError as exc:
-            raise ValueError(
-                "Target frame '{0}' must define 'system_state' for AR use.".format(
-                    target_frame_name
-                )
-            ) from exc
-        if not isinstance(system_state, SystemState):
-            raise ValueError(
-                "Target frame '{0}' has invalid system_state '{1}'.".format(
-                    target_frame_name,
-                    system_state,
-                )
-            )
-        return system_state
 
     def _validate_target_frame_names(self, target_frame_names: Sequence[str]) -> None:
         """

@@ -824,7 +824,7 @@ def test_nexus_refresh_rift_projection_sets_for_frame_uses_configured_gate_barri
         ),
     )
 
-    nexus._refresh_rift_projection_sets_for_frame("ops")
+    nexus._refresh_rift_projection_sets_for_frames(("ops",))
 
     assert calls == [
         ("disable", "rift-1"),
@@ -874,7 +874,7 @@ def test_nexus_refresh_rift_projection_sets_for_frame_can_skip_gate_barrier(
         ),
     )
 
-    nexus._refresh_rift_projection_sets_for_frame("ops")
+    nexus._refresh_rift_projection_sets_for_frames(("ops",))
 
     assert calls == [
         ("refresh", "rift-1", ("ops",)),

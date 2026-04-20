@@ -2,6 +2,7 @@ from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
 from melder.aether.nexus.nexus import Nexus
+from melder.aether.nexus.nexus_frame_configuration import NexusFrameConfiguration
 from melder.spellbook.spellbook import Spellbook
 from melder.spellbook.configuration.system_state import SystemState
 
@@ -48,7 +49,6 @@ def test_nexus_frame_builder_builds_dynamic_configuration_with_root_conduit() ->
     configuration = (
         nexus.frame_manager
         .begin("ops")
-        .dynamic_defaults()
         .immutable(False)
         .with_root_conduit("root")
         .build()
@@ -59,6 +59,26 @@ def test_nexus_frame_builder_builds_dynamic_configuration_with_root_conduit() ->
     assert configuration.ai_native_enabled is True
     assert configuration.rift_enabled is True
     assert configuration.root_conduit_name == "root"
+
+
+def test_nexus_frame_configuration_rejects_non_dynamic_posture() -> None:
+    nexus = _create_enabled_nexus()
+
+    assert nexus is not None
+
+    try:
+        NexusFrameConfiguration(
+            frame_name="ops",
+            system_state=SystemState.automatic,
+            ai_native_enabled=False,
+            rift_enabled=True,
+        )
+    except ValueError as exc:
+        assert "system_state=SystemState.dynamic" in str(exc)
+    else:
+        raise AssertionError(
+            "NexusFrameConfiguration should reject automatic posture."
+        )
 
 
 def test_nexus_frame_manager_can_create_empty_dynamic_frame() -> None:
@@ -102,6 +122,11 @@ def test_rift_create_nexus_frame_delegates_through_frame_manager() -> None:
     rift = nexus.create_rift(rift_name="alpha")
 
     frame = rift.create_nexus_frame()
+    descriptor = nexus._get_required_frame_descriptor(frame.name)
 
     assert frame.name == "aetheric_frame_system"
     assert nexus.frame_manager.exists(frame.name) is True
+    assert descriptor.frame_configuration is not None
+    assert descriptor.frame_configuration.system_state == SystemState.dynamic
+    assert descriptor.frame_configuration.ai_native_enabled is True
+    assert descriptor.frame_configuration.rift_enabled is True

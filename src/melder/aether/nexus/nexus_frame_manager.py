@@ -12,6 +12,7 @@ from melder.aether.nexus.nexus_frame_configuration import NexusFrameConfiguratio
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.interfaces.interfaces import IAethericFrame
 
 
 class NexusFrameManager(Cleanable):
@@ -28,6 +29,7 @@ class NexusFrameManager(Cleanable):
           `frame_name -> IAethericFrame`.
         - Holds the authored frame configuration registry as
           `frame_name -> NexusFrameConfiguration`.
+        - Every managed frame is dynamic, AI-native, and Rift-enabled.
         - Treats `Aether` as the real frame owner and disposal executor.
         - Exposes Rift-aware topology methods for `single`, `indexed`, and
           `one_per_workspace`.
@@ -67,7 +69,7 @@ class NexusFrameManager(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._nexus = nexus
         self._next_indexed_frame_number: int = 1
-        self._frames_by_name: Dict[str, Any] = {}
+        self._frames_by_name: Dict[str, IAethericFrame] = {}
         self._configurations_by_frame_name: Dict[str, NexusFrameConfiguration] = {}
 
     def cleanup(self) -> None:
@@ -171,7 +173,7 @@ class NexusFrameManager(Cleanable):
             immutable: bool = False,
             metadata: Optional[Dict[str, object]] = None,
             root_conduit_name: Optional[str] = None,
-    ) -> Any:
+    ) -> IAethericFrame:
         """
         Create one dynamic Nexus-managed frame directly.
 
@@ -191,37 +193,10 @@ class NexusFrameManager(Cleanable):
             ),
         )
 
-    def create_automatic_frame(
-            self,
-            frame_name: str,
-            *,
-            immutable: bool = False,
-            metadata: Optional[Dict[str, object]] = None,
-            root_conduit_name: Optional[str] = None,
-    ) -> Any:
-        """
-        Create one automatic Nexus-managed frame directly.
-
-        Purpose:
-            Provide the non-fluent shortcut for an authored frame that is
-            Rift-visible but not AI-native.
-
-        Returns:
-            IAethericFrame: Managed frame.
-        """
-        return self.create(
-            NexusFrameConfiguration.create_automatic_defaults(
-                frame_name,
-                immutable=immutable,
-                metadata=metadata,
-                root_conduit_name=root_conduit_name,
-            ),
-        )
-
     def create(
             self,
             configuration: NexusFrameConfiguration,
-    ) -> Any:
+    ) -> IAethericFrame:
         """
         Create one managed frame from authored configuration.
 
@@ -251,7 +226,10 @@ class NexusFrameManager(Cleanable):
             raise TypeError(
                 "configuration must be a NexusFrameConfiguration."
             )
+        self._validate_configuration_contract(configuration)
         frame_name = configuration.frame_name
+        frame: Optional[IAethericFrame] = None
+        registered = False
         with self._lock:
             existing_frame = self._frames_by_name.get(frame_name)
             if existing_frame is not None:
@@ -262,29 +240,47 @@ class NexusFrameManager(Cleanable):
             frame = self._nexus._aether._ensure_frame(frame_name)
             self._frames_by_name[frame_name] = frame
             self._configurations_by_frame_name[frame_name] = configuration
+            registered = True
 
-        spellbook_configuration = configuration.to_spellbook_configuration()
-        self._nexus._aether._bind_configuration(
-            spellbook_configuration,
-            frame_name,
-        )
-        frame_configuration = configuration.to_aetheric_frame_configuration()
-        self._nexus._aether._bind_aetheric_frame_configuration(
-            frame_configuration,
-            frame_name,
-        )
-        self._ensure_descriptor_and_acl(frame_name)
-        self._publish_frame_overview(
-            frame_name,
-            config_origin_spellbook_id=None,
-        )
-        if configuration.root_conduit_name is not None:
-            self._bootstrap_root_conduit(
+        try:
+            spellbook_configuration = configuration.to_spellbook_configuration()
+            self._nexus._aether._bind_configuration(
+                spellbook_configuration,
                 frame_name,
-                configuration,
-                configuration.root_conduit_name,
             )
-        return frame
+            frame_configuration = configuration.to_aetheric_frame_configuration()
+            self._nexus._aether._bind_aetheric_frame_configuration(
+                frame_configuration,
+                frame_name,
+            )
+            self._ensure_descriptor_and_acl(frame_name)
+            self._publish_frame_overview(
+                frame_name,
+                config_origin_spellbook_id=None,
+            )
+            if configuration.root_conduit_name is not None:
+                self._bootstrap_root_conduit(
+                    frame_name,
+                    configuration,
+                    configuration.root_conduit_name,
+                )
+            return frame
+        except Exception:
+            if registered:
+                with self._lock:
+                    if self._frames_by_name.get(frame_name) is frame:
+                        self._frames_by_name.pop(frame_name, None)
+                    if (
+                            self._configurations_by_frame_name.get(frame_name)
+                            is configuration
+                    ):
+                        self._configurations_by_frame_name.pop(frame_name, None)
+                if frame is not None:
+                    try:
+                        frame.cleanup()
+                    except Exception:
+                        pass
+            raise
 
     def remove(self, frame_name: str) -> None:
         """
@@ -326,7 +322,7 @@ class NexusFrameManager(Cleanable):
             self,
             rift_id: str,
             frame_name: Optional[str] = None,
-    ) -> Any:
+    ) -> IAethericFrame:
         """
         Return one manager-owned frame for a Rift under the current topology.
 
@@ -366,7 +362,7 @@ class NexusFrameManager(Cleanable):
             rift_id: str,
             frame_name: Optional[str] = None,
             immutable: bool = False,
-    ) -> Any:
+    ) -> IAethericFrame:
         """
         Create or recover one managed frame for a Rift under current topology.
 
@@ -534,7 +530,8 @@ class NexusFrameManager(Cleanable):
 
         Purpose:
             Derive the private frame name used by `one_per_workspace` mode
-            without relying on legacy descriptor-backed Nexus frame records.
+            without relying on any legacy descriptor-backed Nexus-managed
+            frame bookkeeping.
 
         Args:
             rift_id:
@@ -750,6 +747,43 @@ class NexusFrameManager(Cleanable):
                 "max_nexus_frame_count"
         ):
             raise ValueError("Nexus internal frame cap has been reached.")
+
+    @staticmethod
+    def _validate_configuration_contract(
+            configuration: NexusFrameConfiguration,
+    ) -> None:
+        """
+        Validate the fixed Nexus-managed frame posture contract.
+
+        Purpose:
+            Enforce the agent-usable Nexus frame posture at manager ingress so
+            manually constructed or later-mutated authored configurations cannot
+            enter the authoritative frame registry in an invalid state.
+
+        Args:
+            configuration:
+                Authored Nexus frame configuration being realized.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If the authored frame posture is not dynamic, AI-native, and
+                Rift-enabled.
+        """
+        if configuration.system_state != SystemState.dynamic:
+            raise ValueError(
+                "Nexus-managed frames must use system_state=SystemState.dynamic."
+            )
+        if configuration.ai_native_enabled is not True:
+            raise ValueError(
+                "Nexus-managed frames must set ai_native_enabled=True."
+            )
+        if configuration.rift_enabled is not True:
+            raise ValueError(
+                "Nexus-managed frames must set rift_enabled=True."
+            )
 
     def _bootstrap_root_conduit(
             self,

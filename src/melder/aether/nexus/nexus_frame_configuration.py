@@ -22,6 +22,8 @@ class NexusFrameConfiguration(Cleanable):
         - Stores only Nexus frame-authoring inputs, not live frame objects.
         - Uses the narrower frame posture fields that later compile into
           `AethericFrameConfiguration`.
+        - Nexus-managed frames are always dynamic, AI-native, and
+          Rift-enabled.
         - May optionally request one root conduit bootstrap by name.
         - Is immutable-by-convention after construction.
 
@@ -68,6 +70,8 @@ class NexusFrameConfiguration(Cleanable):
               mutation cannot affect the authored configuration.
             - Accepts an optional root-conduit bootstrap name that will later
               be interpreted by `NexusFrameManager`.
+            - Rejects non-dynamic or non-agent-usable frame posture because
+              Nexus-managed frames are reserved for agent-facing runtime use.
 
         Args:
             frame_name:
@@ -109,6 +113,18 @@ class NexusFrameConfiguration(Cleanable):
             system_state,
             SystemState,
         )
+        if normalized_system_state != SystemState.dynamic:
+            raise ValueError(
+                "Nexus-managed frames must use system_state=SystemState.dynamic."
+            )
+        if ai_native_enabled is not True:
+            raise ValueError(
+                "Nexus-managed frames must set ai_native_enabled=True."
+            )
+        if rift_enabled is not True:
+            raise ValueError(
+                "Nexus-managed frames must set rift_enabled=True."
+            )
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
@@ -152,46 +168,6 @@ class NexusFrameConfiguration(Cleanable):
             frame_name=frame_name,
             system_state=SystemState.dynamic,
             ai_native_enabled=True,
-            rift_enabled=True,
-            immutable=immutable,
-            metadata=metadata,
-            root_conduit_name=root_conduit_name,
-        )
-
-    @classmethod
-    def create_automatic_defaults(
-            cls,
-            frame_name: str,
-            *,
-            immutable: bool = False,
-            metadata: Optional[Dict[str, object]] = None,
-            root_conduit_name: Optional[str] = None,
-    ) -> "NexusFrameConfiguration":
-        """
-        Create one automatic authored frame configuration.
-
-        Purpose:
-            Provide the standard authored posture for a Nexus-managed frame
-            that should be Rift-visible without enabling AI-native dynamic
-            behavior.
-
-        Args:
-            frame_name:
-                Stable frame name to author.
-            immutable:
-                Whether the frame should reject normal removal.
-            metadata:
-                Optional authored metadata payload.
-            root_conduit_name:
-                Optional root conduit name to bootstrap after init.
-
-        Returns:
-            NexusFrameConfiguration: Automatic authored frame configuration.
-        """
-        return cls(
-            frame_name=frame_name,
-            system_state=SystemState.automatic,
-            ai_native_enabled=False,
             rift_enabled=True,
             immutable=immutable,
             metadata=metadata,
@@ -319,10 +295,7 @@ class NexusFrameConfiguration(Cleanable):
         """
         self.check_cleaned()
         configuration = Configuration(aether_frame=self._frame_name)
-        if self._system_state == SystemState.dynamic:
-            configuration.dynamic_defaults()
-        else:
-            configuration.automatic_defaults()
+        configuration.dynamic_defaults()
         configuration.with_ai_native(self._ai_native_enabled)
         configuration.with_rift_enabled(self._rift_enabled)
         return configuration
