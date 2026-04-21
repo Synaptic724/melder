@@ -199,10 +199,10 @@ def test_integration_runtime_acl_commit_changes_compiled_command_surface() -> No
             reason="integration-permissive",
             locked=True,
         )
-        nexus.register_named_frame_acl_configuration(
+        nexus.insert_head_frame_acl_configuration(
             "ops",
             bundle,
-            contract_name="default",
+            select_as_current=True,
         )
 
         compiler = FrameACLCompiler(nexus._frame_acl_manager.frame_acl_profile_builder)

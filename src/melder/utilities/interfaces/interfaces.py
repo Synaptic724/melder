@@ -8241,6 +8241,18 @@ class INexus(ICleanable, Protocol):
         """
         ...
 
+    def insert_head_frame_acl_configuration(
+            self,
+            frame_name: str,
+            configuration: IFrameACLConfiguration,
+            *,
+            select_as_current: bool = True,
+    ) -> IFrameACLConfiguration:
+        """
+        Install one replacement revision into the selected same-name ACL contract.
+        """
+        ...
+
     def get_current_view_frame_acl_configuration(
             self,
             frame_name: str,

@@ -1721,6 +1721,49 @@ class Nexus(Cleanable, INexus):
             for frame_name in normalized_frame_names
         }
 
+    def insert_head_frame_acl_configuration(
+            self,
+            frame_name: str,
+            configuration: FrameACLConfiguration,
+            *,
+            select_as_current: bool = True,
+    ) -> FrameACLConfiguration:
+        """
+        Install one replacement revision into the selected same-name ACL contract.
+
+        Purpose:
+            Expose the public Nexus seam for replacing the current selected
+            same-name ACL bundle revision under an existing named contract.
+
+        Contract:
+            - Installs the supplied locked ACL bundle into the selected named
+              contract set for the frame.
+            - Preserves the current same-name contract model by advancing the
+              selected bundle revision instead of creating a new contract name.
+            - `select_as_current` is retained for compatibility with existing
+              callers, but current/head separation is already implicit in the
+              install path and does not require separate branch logic here.
+
+        Args:
+            frame_name:
+                Stable frame name that owns the ACL registry.
+            configuration:
+                Locked ACL configuration node to install.
+            select_as_current:
+                Compatibility-only flag preserved for existing callers.
+
+        Returns:
+            FrameACLConfiguration:
+                Installed assembled configuration snapshot.
+        """
+        self.check_cleaned()
+        self._ensure_frame_acl_container(frame_name)
+        return self._frame_acl_manager._install_named_frame_acl_configuration(
+            frame_name,
+            configuration,
+            contract_name="default",
+        )
+
     def create_frame_projection_sets_for_rift(
             self,
             rift_id: str,
