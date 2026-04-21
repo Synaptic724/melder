@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
@@ -12,7 +12,11 @@ from melder.aether.nexus.nexus_frame_configuration import NexusFrameConfiguratio
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import IAethericFrame
+from melder.utilities.interfaces.interfaces import (
+    IAethericFrame,
+    IConduit,
+    INexus,
+)
 
 
 class NexusFrameManager(Cleanable):
@@ -47,7 +51,7 @@ class NexusFrameManager(Cleanable):
         "_configurations_by_frame_name",
     ]
 
-    def __init__(self, *, nexus: Any) -> None:
+    def __init__(self, *, nexus: INexus) -> None:
         """
         Initialize one Nexus frame-authoring facade.
 
@@ -67,7 +71,7 @@ class NexusFrameManager(Cleanable):
             raise TypeError("nexus cannot be None.")
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._nexus = nexus
+        self._nexus: INexus = nexus
         self._next_indexed_frame_number: int = 1
         self._frames_by_name: Dict[str, IAethericFrame] = {}
         self._configurations_by_frame_name: Dict[str, NexusFrameConfiguration] = {}
@@ -790,7 +794,7 @@ class NexusFrameManager(Cleanable):
             frame_name: str,
             configuration: NexusFrameConfiguration,
             root_conduit_name: str,
-    ) -> Any:
+    ) -> IConduit:
         """
         Bootstrap one optional root conduit into a newly created frame.
 
@@ -824,7 +828,7 @@ class NexusFrameManager(Cleanable):
         )
         conduit = spellbook.conjure(
             name=root_conduit_name,
-            automatic=(configuration.system_state == SystemState.automatic),
+            automatic=False,
         )
         self._publish_frame_overview(
             frame_name,

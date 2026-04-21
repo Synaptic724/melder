@@ -1,9 +1,12 @@
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import IAethericFrame
+from melder.utilities.interfaces.interfaces import (
+    IAethericFrame,
+    INexusFrameManager,
+)
 
 from melder.aether.nexus.nexus_frame_configuration import NexusFrameConfiguration
 
@@ -44,7 +47,7 @@ class NexusFrameBuilder(Cleanable):
     def __init__(
             self,
             *,
-            manager: Any,
+            manager: INexusFrameManager,
             frame_name: str,
     ) -> None:
         """
@@ -52,8 +55,8 @@ class NexusFrameBuilder(Cleanable):
 
         Purpose:
             Bind the builder to its owning manager and stable frame name while
-            leaving posture fields unset until the caller chooses defaults or
-            explicit values.
+            defaulting the authored posture to the only valid Nexus-managed
+            frame contract: dynamic, AI-native, and Rift-enabled.
 
         Args:
             manager:
@@ -75,14 +78,37 @@ class NexusFrameBuilder(Cleanable):
             raise TypeError("manager cannot be None.")
         if not frame_name:
             raise ValueError("frame_name cannot be empty.")
-        self._manager = manager
-        self._frame_name = frame_name
+        self._manager: INexusFrameManager = manager
+        self._frame_name: str = frame_name
         self._system_state: Optional[SystemState] = SystemState.dynamic
         self._ai_native_enabled: Optional[bool] = True
         self._rift_enabled: Optional[bool] = True
         self._immutable: bool = False
         self._metadata: Dict[str, object] = {}
         self._root_conduit_name: Optional[str] = None
+
+    def cleanup(self) -> None:
+        """
+        Idempotently clear builder-owned temporary state.
+
+        Purpose:
+            Release transient builder state once authoring is complete or the
+            builder is discarded.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        self._cleaned = True
+        self._manager = None
+        self._frame_name = None
+        self._system_state = None
+        self._ai_native_enabled = None
+        self._rift_enabled = None
+        self._immutable = None
+        self._metadata = None
+        self._root_conduit_name = None
 
     def dynamic_defaults(self) -> "NexusFrameBuilder":
         """
@@ -218,26 +244,3 @@ class NexusFrameBuilder(Cleanable):
             IAethericFrame: Created managed frame.
         """
         return self._manager.create(self.build())
-
-    def cleanup(self) -> None:
-        """
-        Idempotently clear builder-owned temporary state.
-
-        Purpose:
-            Release transient builder state once authoring is complete or the
-            builder is discarded.
-
-        Returns:
-            None.
-        """
-        if self._cleaned:
-            return
-        self._cleaned = True
-        self._manager = None
-        self._frame_name = None
-        self._system_state = None
-        self._ai_native_enabled = None
-        self._rift_enabled = None
-        self._immutable = None
-        self._metadata = None
-        self._root_conduit_name = None

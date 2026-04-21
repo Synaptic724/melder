@@ -70,8 +70,8 @@ class NexusFrameConfiguration(Cleanable):
               mutation cannot affect the authored configuration.
             - Accepts an optional root-conduit bootstrap name that will later
               be interpreted by `NexusFrameManager`.
-            - Rejects non-dynamic or non-agent-usable frame posture because
-              Nexus-managed frames are reserved for agent-facing runtime use.
+            - Rejects any posture outside the fixed Nexus-managed frame
+              contract: dynamic, AI-native, and Rift-enabled.
 
         Args:
             frame_name:
@@ -135,6 +135,32 @@ class NexusFrameConfiguration(Cleanable):
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
         self._root_conduit_name: Optional[str] = root_conduit_name
 
+    def cleanup(self) -> None:
+        """
+        Idempotently clear authored configuration state.
+
+        Purpose:
+            Release authored configuration state once the manager no longer
+            needs to keep this authored snapshot alive.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._frame_name = None
+            self._system_state = None
+            self._ai_native_enabled = None
+            self._rift_enabled = None
+            self._immutable = None
+            self._metadata = None
+            self._root_conduit_name = None
+            self._id = None
+        self._lock = None
     @classmethod
     def create_dynamic_defaults(
             cls,
@@ -299,30 +325,3 @@ class NexusFrameConfiguration(Cleanable):
         configuration.with_ai_native(self._ai_native_enabled)
         configuration.with_rift_enabled(self._rift_enabled)
         return configuration
-
-    def cleanup(self) -> None:
-        """
-        Idempotently clear authored configuration state.
-
-        Purpose:
-            Release authored configuration state once the manager no longer
-            needs to keep this authored snapshot alive.
-
-        Returns:
-            None.
-        """
-        if self._cleaned:
-            return
-        with self._lock:
-            if self._cleaned:
-                return
-            self._cleaned = True
-            self._frame_name = None
-            self._system_state = None
-            self._ai_native_enabled = None
-            self._rift_enabled = None
-            self._immutable = None
-            self._metadata = None
-            self._root_conduit_name = None
-            self._id = None
-        self._lock = None

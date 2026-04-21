@@ -8328,6 +8328,40 @@ class INexus(ICleanable, Protocol):
             None.
         """
         ...
+
+
+@runtime_checkable
+class INexusFrameManager(ICleanable, Protocol):
+    """
+    Interface for the Nexus-managed frame authoring facade.
+
+    Purpose:
+        Expose the authored-frame creation contract used by collaborators that
+        should depend on the frame-manager capability surface without importing
+        the concrete runtime implementation directly.
+
+    Contract:
+        - Realizes only Nexus-managed frames that satisfy the fixed
+          dynamic/AI-native/Rift-enabled posture contract.
+        - Consumes authored `NexusFrameConfiguration` objects as immutable
+          inputs to frame realization.
+        - Returns live `IAethericFrame` objects owned by the underlying
+          Aether/Nexus runtime.
+    """
+
+    def create(
+            self,
+            configuration: "NexusFrameConfiguration",
+    ) -> "IAethericFrame":
+        """
+        Realize one Nexus-managed frame from authored configuration.
+
+        Returns:
+            IAethericFrame: Realized Nexus-managed frame.
+        """
+        ...
+
+
 @runtime_checkable
 class IAether(ICleanable, Protocol):
     """
