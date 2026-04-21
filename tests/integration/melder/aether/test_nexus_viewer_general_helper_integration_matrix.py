@@ -103,7 +103,7 @@ def _build_real_room_viewer() -> object:
         .with_space_type(RiftSpaceType.capability)
     )
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
-    rift.target_frame("ops")
+    rift.create_frame_link("ops")
     viewer = rift.get_frame_viewer()
     return spellbook, conduit, nexus, viewer
 
@@ -139,7 +139,7 @@ def _build_real_rift_viewer() -> object:
         .with_space_type(RiftSpaceType.capability)
     )
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
-    rift.target_frame("ops")
+    rift.create_frame_link("ops")
     viewer = rift.get_frame_viewer()
     return spellbook, conduit, nexus, rift, viewer
 
@@ -245,3 +245,4 @@ def test_real_rift_viewer_general_tool_matrix(
         rift.cleanup()
         conduit.cleanup()
         spellbook.cleanup()
+

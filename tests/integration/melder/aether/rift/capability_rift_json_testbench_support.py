@@ -283,7 +283,7 @@ class CapabilityRiftJsonBench:
             configuration=configuration,
             rift_name="{0}_capability_rift".format(self.frame_name),
         )
-        rift.target_frame(self.frame_name)
+        rift.create_frame_link(self.frame_name)
         return rift
 
     def _build_manifest(self) -> Dict[str, object]:
@@ -445,3 +445,4 @@ class CapabilityRiftJsonBench:
                 continue
             current_value = getattr(current_value, current_part)
         return current_value
+

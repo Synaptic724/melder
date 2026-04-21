@@ -2091,6 +2091,39 @@ class Nexus(Cleanable, INexus):
         )
         return frame
 
+    def authorize_frame_link_for_rift(self, rift_id: str, frame_name: str) -> bool:
+        """
+        Internal
+
+        Authorize one Rift frame-link request against Nexus-managed frame policy.
+
+        Purpose:
+            Keep Nexus as the owner of Nexus-managed frame topology rules when a
+            live `Rift` tries to attach to a frame by name through its
+            frame-link API.
+
+        Args:
+            rift_id:
+                Requesting Rift id.
+            frame_name:
+                Target frame name being attached through the Rift frame-link
+                path.
+
+        Contract:
+            - Returns `False` when the target frame is not Nexus-managed.
+            - Returns `True` when the frame is Nexus-managed and accessible to
+              the requesting Rift.
+            - Raises `ValueError` when the frame is Nexus-managed but not
+              accessible under the current topology mode.
+
+        Returns:
+            bool: True when the target frame is Nexus-managed and authorized.
+        """
+        return self._frame_manager.authorize_frame_link_for_rift(
+            rift_id,
+            frame_name,
+        )
+
     def list_accessible_nexus_frame_names(self, rift_id: str) -> Tuple[str, ...]:
         """
         Internal

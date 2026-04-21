@@ -364,15 +364,7 @@ class Rift(Cleanable, IRift):
         """
         return self.get_frame_link_contract(frame_name).get_selected_contract_names()
 
-    def target_frame(
-            self,
-            frame_name: str,
-            *,
-            contract_name: str = "default",
-            view_contract_name: Optional[str] = None,
-            command_contract_name: Optional[str] = None,
-            codegen_contract_name: Optional[str] = None,
-    ) -> None:
+    def create_frame_link(self, frame_name: str) -> None:
         """
         Internal
 
@@ -381,18 +373,13 @@ class Rift(Cleanable, IRift):
         Args:
             frame_name:
                 Target frame name to engage.
-            contract_name:
-                Same-name ACL contract convenience selector for the target
-                frame.
-            view_contract_name:
-                Optional explicit selected view ACL contract name.
-            command_contract_name:
-                Optional explicit selected command ACL contract name.
-            codegen_contract_name:
-                Optional explicit selected codegen ACL contract name.
 
         Contract:
             - Validates target-frame policy and runtime posture through Nexus.
+            - Delegates Nexus-managed frame attachment authorization back
+              through Nexus before the frame link is created.
+            - Materializes the frame-name-selected ACL contract when the
+              selected contract does not yet exist for the frame.
             - Resolves and validates the selected named ACL contract for the
               frame against descriptor truth.
             - Registers the frame on the Rift-local frame contract.
@@ -405,59 +392,48 @@ class Rift(Cleanable, IRift):
         self.check_cleaned()
         if not frame_name:
             raise ValueError("frame_name cannot be empty.")
-        normalized_acl_selection = self._nexus._normalize_acl_selection_input(
-            {
-                "view": view_contract_name or contract_name,
-                "command": command_contract_name or contract_name,
-                "codegen": codegen_contract_name or contract_name,
-            }
+        is_nexus_managed_frame = self._authorize_nexus_managed_frame_link(
+            frame_name
         )
-        is_new_frame = frame_name not in self._frame_link_contracts_by_frame_name
-        self._nexus._validate_target_frame_names((frame_name,))
+        if not is_nexus_managed_frame:
+            self._nexus._validate_target_frame_names((frame_name,))
         requested_space_type = self._configuration.get_property("space_type")
         self._nexus._validate_target_frame_runtime_requirements(
             frame_name,
             requested_space_type,
         )
         try:
-            self._nexus._get_required_frame_descriptor(frame_name)
+            descriptor = self._nexus._get_required_frame_descriptor(frame_name)
         except KeyError as exc:
             raise ValueError(
                 "Target frame '{0}' has no descriptor and cannot be targeted yet.".format(
                     frame_name
                 )
             ) from exc
+        selected_contract_name = self._ensure_frame_link_acl_contract(frame_name)
         configuration = self._nexus._frame_acl_manager._get_current_frame_acl_configuration(
             frame_name,
-            view_contract_name=normalized_acl_selection["view"],
-            command_contract_name=normalized_acl_selection["command"],
-            codegen_contract_name=normalized_acl_selection["codegen"],
+            view_contract_name=selected_contract_name,
+            command_contract_name=selected_contract_name,
+            codegen_contract_name=selected_contract_name,
         )
-        self._nexus._frame_acl_manager._validate_frame_acl_configuration_against_descriptor(
-            frame_name,
-            configuration,
-            self._nexus._get_required_frame_descriptor(frame_name),
-        )
+        try:
+            self._nexus._frame_acl_manager._validate_frame_acl_configuration_against_descriptor(
+                frame_name,
+                configuration,
+                descriptor,
+            )
+        finally:
+            configuration.cleanup()
+        is_new_frame = frame_name not in self._frame_link_contracts_by_frame_name
         if is_new_frame:
             self._nexus._validate_target_frame_budget((frame_name,))
             self._frame_link_contracts_by_frame_name[frame_name] = FrameLinkContract(
                 rift_id=self._id,
                 frame_name=frame_name,
-                view_contract_name=normalized_acl_selection["view"],
-                command_contract_name=normalized_acl_selection["command"],
-                codegen_contract_name=normalized_acl_selection["codegen"],
                 metadata={
                     "rift_name": self._rift_name,
                 },
-            )
-        else:
-            self._frame_link_contracts_by_frame_name[
-                frame_name
-            ].set_selected_contract_names(
-                contract_name=contract_name,
-                view_contract_name=normalized_acl_selection["view"],
-                command_contract_name=normalized_acl_selection["command"],
-                codegen_contract_name=normalized_acl_selection["codegen"],
             )
         if is_new_frame:
             self._nexus._increment_ref_count(
@@ -465,6 +441,66 @@ class Rift(Cleanable, IRift):
                 frame_name,
             )
         self.refresh_runtime_projections()
+
+    def _authorize_nexus_managed_frame_link(self, frame_name: str) -> bool:
+        """
+        Authorize one frame-link request against Nexus-managed frame policy.
+
+        Purpose:
+            Keep `Rift` out of the business of re-implementing Nexus-managed
+            frame topology rules when the target frame belongs to the
+            Nexus-managed frame registry.
+
+        Args:
+            frame_name:
+                Target frame name being attached through the frame-link API.
+
+        Returns:
+            bool: True when the target frame is Nexus-managed and authorized.
+        """
+        return self._nexus.authorize_frame_link_for_rift(
+            self._id,
+            frame_name,
+        )
+
+    def _ensure_frame_link_acl_contract(self, frame_name: str) -> str:
+        """
+        Ensure the frame-name-selected ACL contract exists for one frame.
+
+        Purpose:
+            Materialize the same-name ACL contract used by the frame-link API
+            when the frame currently exposes only the reserved `"default"`
+            contract.
+
+        Args:
+            frame_name:
+                Target frame name whose same-name contract should exist.
+
+        Returns:
+            str: The selected contract name for the frame link.
+        """
+        selected_contract_name = frame_name
+        named_contract_names = self._nexus.list_named_frame_acl_configuration_names(
+            frame_name
+        )
+        if selected_contract_name in named_contract_names:
+            return selected_contract_name
+        current_configuration = self._nexus.get_named_frame_acl_configuration(
+            frame_name,
+            "default",
+        )
+        try:
+            registered_configuration = (
+                self._nexus.register_named_frame_acl_configuration(
+                    frame_name,
+                    current_configuration,
+                    contract_name=selected_contract_name,
+                )
+            )
+        finally:
+            current_configuration.cleanup()
+        registered_configuration.cleanup()
+        return selected_contract_name
 
     def refresh_runtime_projections(
             self,

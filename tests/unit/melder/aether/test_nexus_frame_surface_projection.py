@@ -203,8 +203,8 @@ def test_rift_get_frame_viewer_projects_multiple_assigned_frames() -> None:
     _populate_descriptor(nexus, "ops")
     _populate_descriptor(nexus, "finance")
     rift = nexus.create_rift(rift_name="ops_rift")
-    rift.target_frame("ops")
-    rift.target_frame("finance")
+    rift.create_frame_link("ops")
+    rift.create_frame_link("finance")
 
     viewer = rift.get_frame_viewer()
 
@@ -227,8 +227,8 @@ def test_rift_get_frame_viewer_hosts_descriptor_and_compiled_surface_maps() -> N
     _populate_descriptor(nexus, "ops")
     _populate_descriptor(nexus, "finance")
     rift = nexus.create_rift(rift_name="ops_rift")
-    rift.target_frame("ops")
-    rift.target_frame("finance")
+    rift.create_frame_link("ops")
+    rift.create_frame_link("finance")
 
     viewer = rift.get_frame_viewer()
 
@@ -253,8 +253,8 @@ def test_rift_refresh_runtime_projections_for_one_frame_preserves_other_room_pro
     _populate_descriptor(nexus, "ops")
     _populate_descriptor(nexus, "finance")
     rift = nexus.create_rift(rift_name="ops_rift")
-    rift.target_frame("ops")
-    rift.target_frame("finance")
+    rift.create_frame_link("ops")
+    rift.create_frame_link("finance")
     first_viewer = rift.get_frame_viewer()
 
     rift.refresh_runtime_projections(frame_names=("ops",))
@@ -287,8 +287,8 @@ def test_rift_refresh_runtime_projections_for_multiple_frames_uses_one_projectio
     _populate_descriptor(nexus, "ops")
     _populate_descriptor(nexus, "finance")
     rift = nexus.create_rift(rift_name="ops_rift")
-    rift.target_frame("ops")
-    rift.target_frame("finance")
+    rift.create_frame_link("ops")
+    rift.create_frame_link("finance")
 
     create_calls = []
     apply_calls = []
@@ -365,7 +365,7 @@ def test_rift_target_frame_populates_room_owned_viewer_metadata_from_assigned_fr
     nexus = _create_enabled_nexus("ops")
     _populate_descriptor(nexus, "ops")
     rift = nexus.create_rift(rift_name="ops_rift")
-    rift.target_frame("ops")
+    rift.create_frame_link("ops")
 
     viewer = rift.get_frame_viewer()
 
@@ -375,8 +375,9 @@ def test_rift_target_frame_populates_room_owned_viewer_metadata_from_assigned_fr
     assert viewer_metadata["assigned_frame_names"] == ("ops",)
     assert viewer_metadata["selected_contract_names_by_frame_name"] == {
         "ops": {
-            "view": "default",
-            "command": "default",
-            "codegen": "default",
+            "view": "ops",
+            "command": "ops",
+            "codegen": "ops",
         }
     }
+

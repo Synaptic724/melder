@@ -400,9 +400,9 @@ def _build_projection_set_from_viewer(
         metadata={
             "source": "test_viewer_clone",
             "selected_contract_names": {
-                "view": "default",
-                "command": "default",
-                "codegen": "default",
+                "view": frame_name,
+                "command": frame_name,
+                "codegen": frame_name,
             },
         },
     )
@@ -486,9 +486,9 @@ def _make_detached_rift_projection_owner() -> object:
             assigned_frame_names = self.list_assigned_frame_names()
             selected_contract_names_by_frame_name = {
                 frame_name: {
-                    "view": "default",
-                    "command": "default",
-                    "codegen": "default",
+                    "view": frame_name,
+                    "command": frame_name,
+                    "codegen": frame_name,
                 }
                 for frame_name in assigned_frame_names
             }
@@ -2993,7 +2993,7 @@ def test_capability_rift_can_attach_to_automatic_target_frame_when_rift_enabled(
         RiftSpaceType.capability
     )
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops-capability")
-    rift.target_frame("ops")
+    rift.create_frame_link("ops")
 
     assert isinstance(rift.space, CapabilityRiftSpace)
 
@@ -3804,7 +3804,7 @@ def test_rift_exposes_frame_link_contract_from_assigned_frames() -> None:
 
     rift_configuration = nexus.create_rift_configuration()
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
-    rift.target_frame("ops")
+    rift.create_frame_link("ops")
 
     assert rift.list_assigned_frame_names() == ("ops",)
 
@@ -3835,7 +3835,7 @@ def test_rift_get_frame_viewer_returns_room_owned_viewer_from_assigned_frame_con
 
     rift_configuration = nexus.create_rift_configuration()
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
-    rift.target_frame("ops")
+    rift.create_frame_link("ops")
 
     viewer = rift.get_frame_viewer()
 
@@ -3872,7 +3872,7 @@ def test_rift_can_target_frame_through_contract_after_nexus_validation() -> None
     rift_configuration = nexus.create_rift_configuration()
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
 
-    rift.target_frame("ops")
+    rift.create_frame_link("ops")
 
     assert rift.get_frame_link_contract("ops").frame_name == "ops"
 
@@ -3908,9 +3908,10 @@ def test_nexus_can_register_and_list_named_frame_acl_configurations() -> None:
     ]
 
 
-def test_rift_target_frame_uses_selected_named_acl_contract_for_viewer_projection() -> None:
+def test_rift_create_frame_link_uses_frame_named_acl_contract_for_viewer_projection(
+) -> None:
     """
-    Verify Rift targeting selects the named ACL contract used for viewer projection.
+    Verify frame-link creation selects the frame-named ACL contract.
 
     Returns:
         None.
@@ -3940,23 +3941,23 @@ def test_rift_target_frame_uses_selected_named_acl_contract_for_viewer_projectio
     nexus.register_named_frame_acl_configuration(
         "ops",
         named_configuration,
-        contract_name="ops_contract",
+        contract_name="ops",
     )
 
     rift = nexus.create_rift(rift_name="ops_rift")
-    rift.target_frame("ops", contract_name="ops_contract")
+    rift.create_frame_link("ops")
 
     viewer = rift.get_frame_viewer()
 
-    assert rift.get_frame_link_contract("ops").get_selected_contract_name() == "ops_contract"
+    assert rift.get_frame_link_contract("ops").get_selected_contract_name() == "ops"
     assert viewer._get_required_frame_acl_configuration("ops").to_json_dict() == (
         named_configuration.to_json_dict()
     )
     assert rift._build_frame_viewer_metadata()["contract_names_by_frame_name"] == {
         "ops": {
-            "view": "ops_contract",
-            "command": "ops_contract",
-            "codegen": "ops_contract",
+            "view": "ops",
+            "command": "ops",
+            "codegen": "ops",
         }
     }
 
@@ -3987,7 +3988,7 @@ def test_rift_refresh_runtime_projections_rebuilds_room_owned_viewer_for_one_eng
 
     rift_configuration = nexus.create_rift_configuration()
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
-    rift.target_frame("ops")
+    rift.create_frame_link("ops")
 
     first_viewer = rift.get_frame_viewer()
     rift.refresh_runtime_projections()
@@ -4025,7 +4026,7 @@ def test_rift_attaches_room_owned_viewer_to_active_space_and_reads_it_back() -> 
 
     rift_configuration = nexus.create_rift_configuration().with_space_name("main")
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
-    rift.target_frame("ops")
+    rift.create_frame_link("ops")
     space = rift.space
     viewer = rift.get_frame_viewer()
 
@@ -4097,7 +4098,7 @@ def test_target_frame_allow_and_deny_lists_are_enforced() -> None:
 
     blocked_rift = nexus.create_rift(rift_name="blocked")
     with pytest.raises(ValueError, match="denied"):
-        blocked_rift.target_frame("ops")
+        blocked_rift.create_frame_link("ops")
 
     replacement_configuration = nexus.create_system_configuration()
     replacement_configuration.with_rift_creation_enabled(True)
@@ -4107,7 +4108,7 @@ def test_target_frame_allow_and_deny_lists_are_enforced() -> None:
     nexus.enable(replacement_configuration)
     _seed_frame_descriptor("ops")
     rift = nexus.create_rift(rift_name="allowed")
-    rift.target_frame("ops")
+    rift.create_frame_link("ops")
 
     assert rift.list_assigned_frame_names() == ("ops",)
 
@@ -4133,7 +4134,7 @@ def test_static_rift_requires_target_frame_ai_profiles() -> None:
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops-static")
 
     with pytest.raises(ValueError, match="rift_enabled"):
-        rift.target_frame("ops")
+        rift.create_frame_link("ops")
 
 
 def test_codegen_rift_requires_target_frame_ai_native_enabled() -> None:
@@ -4162,7 +4163,7 @@ def test_codegen_rift_requires_target_frame_ai_native_enabled() -> None:
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops-codegen")
 
     with pytest.raises(ValueError, match="ai_native_enabled"):
-        rift.target_frame("ops")
+        rift.create_frame_link("ops")
 
 
 def test_codegen_rift_requires_dynamic_target_frame_system_state() -> None:
@@ -4191,7 +4192,7 @@ def test_codegen_rift_requires_dynamic_target_frame_system_state() -> None:
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops-codegen")
 
     with pytest.raises(ValueError, match="dynamic system_state"):
-        rift.target_frame("ops")
+        rift.create_frame_link("ops")
 
 
 def test_codegen_rift_can_attach_to_dynamic_ai_native_target_frame() -> None:
@@ -4220,7 +4221,7 @@ def test_codegen_rift_can_attach_to_dynamic_ai_native_target_frame() -> None:
         RiftSpaceType.codegen
     )
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops-codegen")
-    rift.target_frame("ops")
+    rift.create_frame_link("ops")
 
     assert rift.list_assigned_frame_names() == ("ops",)
     assert rift.configuration.get_property("space_type") == RiftSpaceType.codegen
@@ -4252,7 +4253,7 @@ def test_static_rift_can_attach_to_automatic_target_frame_when_rift_enabled() ->
         RiftSpaceType.static
     )
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops-static")
-    rift.target_frame("ops")
+    rift.create_frame_link("ops")
 
     assert rift.list_assigned_frame_names() == ("ops",)
     assert rift.configuration.get_property("space_type") == RiftSpaceType.static
@@ -4281,7 +4282,7 @@ def test_target_frame_requires_existing_descriptor_truth() -> None:
     rift = nexus.create_rift(rift_name="ops-static")
 
     with pytest.raises(ValueError, match="has no descriptor"):
-        rift.target_frame("ops")
+        rift.create_frame_link("ops")
 
 
 def test_shared_and_private_nexus_frames_are_realized_only_on_request() -> None:
@@ -4312,6 +4313,32 @@ def test_shared_and_private_nexus_frames_are_realized_only_on_request() -> None:
     assert private_frame_name not in Aether()._aetheric_frames
     private_frame = isolated_rift.create_nexus_frame()
     assert private_frame.name == private_frame_name
+
+
+def test_rift_create_frame_link_rejects_other_private_nexus_frame_in_one_per_workspace_mode(
+) -> None:
+    """
+    Verify one-per-workspace topology is enforced during frame-link creation.
+
+    Returns:
+        None.
+    """
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_nexus_frame_mode("one_per_workspace")
+    configuration.with_max_nexus_frame_count(3)
+    nexus.enable(configuration)
+
+    owner_rift = nexus.create_rift(rift_name="owner")
+    other_rift = nexus.create_rift(rift_name="other")
+    owner_frame = owner_rift.create_nexus_frame()
+    other_frame = other_rift.create_nexus_frame()
+
+    owner_rift.create_frame_link(owner_frame.name)
+
+    with pytest.raises(ValueError, match="only access its own private Nexus frame"):
+        owner_rift.create_frame_link(other_frame.name)
 
 
 def test_shared_nexus_frame_survives_until_last_rift_is_removed() -> None:
@@ -4561,6 +4588,7 @@ def test_direct_rift_construction_requires_nexus_argument() -> None:
             configuration=configuration,
             rift_name="manual",
         )
+
 
 
 

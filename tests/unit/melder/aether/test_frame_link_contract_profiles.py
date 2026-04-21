@@ -7,9 +7,9 @@ from melder.aether.nexus.rift.frame_link.frame_link_contract import (
 )
 
 
-def test_frame_link_contract_defaults_to_same_name_selection() -> None:
+def test_frame_link_contract_defaults_to_frame_name_selection() -> None:
     """
-    Verify one per-frame contract defaults every ACL family to `default`.
+    Verify one per-frame contract defaults every ACL family to `frame_name`.
 
     Returns:
         None.
@@ -21,34 +21,11 @@ def test_frame_link_contract_defaults_to_same_name_selection() -> None:
 
     assert contract.frame_name == "ops"
     assert contract.get_selected_contract_names() == {
-        "view": "default",
-        "command": "default",
-        "codegen": "default",
+        "view": "ops",
+        "command": "ops",
+        "codegen": "ops",
     }
-    assert contract.get_selected_contract_name() == "default"
-
-
-def test_frame_link_contract_accepts_explicit_family_selection_on_init() -> None:
-    """
-    Verify constructor accepts explicit family-name selections.
-
-    Returns:
-        None.
-    """
-    contract = FrameLinkContract(
-        rift_id="rift-1",
-        frame_name="ops",
-        view_contract_name="view_ops",
-        command_contract_name="command_ops",
-        codegen_contract_name="codegen_ops",
-    )
-
-    assert contract.get_selected_contract_names() == {
-        "view": "view_ops",
-        "command": "command_ops",
-        "codegen": "codegen_ops",
-    }
-    assert contract.get_selected_contract_name() == "view_ops"
+    assert contract.get_selected_contract_name() == "ops"
 
 
 def test_frame_link_contract_properties_and_snapshot_views_are_detached() -> None:
@@ -74,40 +51,9 @@ def test_frame_link_contract_properties_and_snapshot_views_are_detached() -> Non
     assert contract.frame_name == "ops"
     assert contract.metadata == {"mode": "safe"}
     assert contract.get_selected_contract_names() == {
-        "view": "default",
-        "command": "default",
-        "codegen": "default",
-    }
-
-
-def test_frame_link_contract_can_update_selected_contract_names() -> None:
-    """
-    Verify same-name and explicit family selection updates both work.
-
-    Returns:
-        None.
-    """
-    contract = FrameLinkContract(
-        rift_id="rift-1",
-        frame_name="ops",
-    )
-
-    contract.set_selected_contract_name("ops_contract")
-    assert contract.get_selected_contract_names() == {
-        "view": "ops_contract",
-        "command": "ops_contract",
-        "codegen": "ops_contract",
-    }
-
-    contract.set_selected_contract_names(
-        view_contract_name="view_ops",
-        command_contract_name="command_ops",
-        codegen_contract_name="codegen_ops",
-    )
-    assert contract.get_selected_contract_names() == {
-        "view": "view_ops",
-        "command": "command_ops",
-        "codegen": "codegen_ops",
+        "view": "ops",
+        "command": "ops",
+        "codegen": "ops",
     }
 
 
@@ -124,30 +70,6 @@ def test_frame_link_contract_rejects_invalid_inputs() -> None:
     with pytest.raises(ValueError, match="frame_name cannot be empty"):
         FrameLinkContract(rift_id="rift-1", frame_name="")
 
-    with pytest.raises(ValueError, match="contract_name cannot be empty"):
-        FrameLinkContract(rift_id="rift-1", frame_name="ops", contract_name="")
-
-    with pytest.raises(ValueError, match="view_contract_name must be a non-empty string."):
-        FrameLinkContract(
-            rift_id="rift-1",
-            frame_name="ops",
-            view_contract_name="",
-        )
-
-    with pytest.raises(ValueError, match="command_contract_name must be a non-empty string."):
-        FrameLinkContract(
-            rift_id="rift-1",
-            frame_name="ops",
-            command_contract_name="",
-        )
-
-    with pytest.raises(ValueError, match="codegen_contract_name must be a non-empty string."):
-        FrameLinkContract(
-            rift_id="rift-1",
-            frame_name="ops",
-            codegen_contract_name="",
-        )
-
 
 def test_frame_link_contract_describe_and_clone_include_selection() -> None:
     """
@@ -159,9 +81,6 @@ def test_frame_link_contract_describe_and_clone_include_selection() -> None:
     contract = FrameLinkContract(
         rift_id="rift-1",
         frame_name="ops",
-        view_contract_name="view_ops",
-        command_contract_name="command_ops",
-        codegen_contract_name="codegen_ops",
     )
 
     description = contract.describe()
@@ -169,15 +88,15 @@ def test_frame_link_contract_describe_and_clone_include_selection() -> None:
 
     assert description["frame_name"] == "ops"
     assert description["selected_contract_names"] == {
-        "view": "view_ops",
-        "command": "command_ops",
-        "codegen": "codegen_ops",
+        "view": "ops",
+        "command": "ops",
+        "codegen": "ops",
     }
     assert clone.frame_name == "ops"
     assert clone.get_selected_contract_names() == {
-        "view": "view_ops",
-        "command": "command_ops",
-        "codegen": "codegen_ops",
+        "view": "ops",
+        "command": "ops",
+        "codegen": "ops",
     }
 
 

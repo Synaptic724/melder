@@ -7913,20 +7913,12 @@ class IRift(ICleanable, Protocol):
         """
         ...
 
-    def target_frame(
-            self,
-            frame_name: str,
-            *,
-            contract_name: str = "default",
-            view_contract_name: Optional[str] = None,
-            command_contract_name: Optional[str] = None,
-            codegen_contract_name: Optional[str] = None,
-    ) -> None:
+    def create_frame_link(self, frame_name: str) -> None:
         """
         Validate and engage one target frame for this Rift.
 
-        A successful target operation updates the Rift-local frame contract and
-        may refresh the attached viewer for the owned space.
+        A successful frame-link operation updates the Rift-local frame contract
+        and may refresh the attached viewer for the owned space.
         """
         ...
 
@@ -8201,6 +8193,12 @@ class INexus(ICleanable, Protocol):
     ) -> "IAethericFrame":
         """
         Create and return one Nexus frame scoped for the specified Rift.
+        """
+        ...
+
+    def authorize_frame_link_for_rift(self, rift_id: str, frame_name: str) -> bool:
+        """
+        Authorize one Rift frame-link request against Nexus-managed frame policy.
         """
         ...
 

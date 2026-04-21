@@ -405,6 +405,46 @@ class NexusFrameManager(Cleanable):
             immutable=immutable,
         )
 
+    def authorize_frame_link_for_rift(
+            self,
+            rift_id: str,
+            frame_name: str,
+    ) -> bool:
+        """
+        Authorize one Rift frame-link request against Nexus-managed topology.
+
+        Purpose:
+            Let the Rift attachment path ask the manager whether a target frame
+            is Nexus-managed and, if so, enforce the active topology rules
+            before the frame link is created.
+
+        Contract:
+            - Returns `False` when the target frame is not manager-owned, so
+              the caller can continue with the generic target-frame path.
+            - Returns `True` when the frame is manager-owned and accessible to
+              the requesting Rift.
+            - Raises `ValueError` when the frame is manager-owned but the Rift
+              is not allowed to attach to it under the active topology mode.
+
+        Args:
+            rift_id:
+                Requesting Rift id.
+            frame_name:
+                Target frame name being attached through the Rift frame-link
+                path.
+
+        Returns:
+            bool: True when the frame is manager-owned and authorized.
+        """
+        self.check_cleaned()
+        self._nexus._require_enabled()
+        self._nexus._get_required_rift(rift_id)
+        with self._lock:
+            if frame_name not in self._frames_by_name:
+                return False
+        self.get_frame_for_rift(rift_id, frame_name=frame_name)
+        return True
+
     def list_accessible_frame_names_for_rift(self, rift_id: str) -> Tuple[str, ...]:
         """
         Return the manager-owned frame names accessible to one Rift.

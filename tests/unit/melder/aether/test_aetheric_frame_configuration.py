@@ -139,7 +139,7 @@ def test_nexus_runtime_posture_accepts_bound_frame_configuration() -> None:
 
     assert rift.list_assigned_frame_names() == tuple()
 
-    rift.target_frame("ops")
+    rift.create_frame_link("ops")
 
     assert rift.list_assigned_frame_names() == ("ops",)
 
@@ -218,3 +218,4 @@ def test_cleanup_is_idempotent_for_frame_configuration() -> None:
     frame_configuration.cleanup()
 
     assert frame_configuration._cleaned is True
+

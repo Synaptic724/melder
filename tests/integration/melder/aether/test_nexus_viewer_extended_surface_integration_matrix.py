@@ -133,7 +133,7 @@ def _build_real_room_viewer() -> object:
         .with_space_type(RiftSpaceType.capability)
     )
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
-    rift.target_frame("ops")
+    rift.create_frame_link("ops")
     viewer = rift.get_frame_viewer()
     return spellbook, conduit, nexus, viewer
 
@@ -169,7 +169,7 @@ def _build_real_rift_viewer() -> object:
         .with_space_type(RiftSpaceType.capability)
     )
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="ops_rift")
-    rift.target_frame("ops")
+    rift.create_frame_link("ops")
     viewer = rift.get_frame_viewer()
     return spellbook, conduit, nexus, rift, viewer
 
@@ -232,8 +232,8 @@ def _build_real_multi_frame_room_viewer() -> object:
         .with_space_type(RiftSpaceType.capability)
     )
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="dual_rift")
-    rift.target_frame("ops")
-    rift.target_frame("finance")
+    rift.create_frame_link("ops")
+    rift.create_frame_link("finance")
     viewer = rift.get_frame_viewer()
     return (
         ops_spellbook,
@@ -303,8 +303,8 @@ def _build_real_multi_frame_rift_viewer() -> object:
         .with_space_type(RiftSpaceType.capability)
     )
     rift = nexus.create_rift(configuration=rift_configuration, rift_name="dual_rift")
-    rift.target_frame("ops")
-    rift.target_frame("finance")
+    rift.create_frame_link("ops")
+    rift.create_frame_link("finance")
     viewer = rift.get_frame_viewer()
     return (
         ops_spellbook,
@@ -580,3 +580,4 @@ def test_real_rift_viewer_multi_frame_explicit_frame_routes_helper_reads() -> No
         finance_conduit.cleanup()
         ops_spellbook.cleanup()
         finance_spellbook.cleanup()
+

@@ -24,7 +24,8 @@ class FrameLinkContract(Cleanable):
     Contract:
         - Owns exactly one frame name.
         - Owns exactly one selected contract-name set for `view`, `command`,
-          and `codegen`.
+          and `codegen`, and that same-name selection always matches the
+          attached frame name.
         - Does not own aggregate frame membership or default-frame selection.
         - Cleanup is idempotent and clears the owned per-frame contract state.
 
@@ -48,10 +49,6 @@ class FrameLinkContract(Cleanable):
             *,
             rift_id: str,
             frame_name: str,
-            contract_name: str = "default",
-            view_contract_name: Optional[str] = None,
-            command_contract_name: Optional[str] = None,
-            codegen_contract_name: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
     ) -> None:
         """
@@ -62,14 +59,6 @@ class FrameLinkContract(Cleanable):
                 Owning Rift id.
             frame_name:
                 Attached frame name for this contract.
-            contract_name:
-                Same-name ACL contract convenience selector.
-            view_contract_name:
-                Optional explicit selected view contract name.
-            command_contract_name:
-                Optional explicit selected command contract name.
-            codegen_contract_name:
-                Optional explicit selected codegen contract name.
             metadata:
                 Optional contract-local metadata.
 
@@ -86,12 +75,7 @@ class FrameLinkContract(Cleanable):
         self._rift_id: str = rift_id
         self._frame_name: str = frame_name
         self._selected_contract_names: Dict[str, str] = (
-            self._normalize_contract_selection(
-                contract_name,
-                view_contract_name=view_contract_name,
-                command_contract_name=command_contract_name,
-                codegen_contract_name=codegen_contract_name,
-            )
+            self._build_selected_contract_names(frame_name)
         )
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
 
@@ -161,65 +145,15 @@ class FrameLinkContract(Cleanable):
         """
         Return the selected view ACL contract name for this frame.
 
+        Contract:
+            This same-name selection always matches the attached `frame_name`.
+
         Returns:
             str: Selected view ACL contract name.
         """
         self.check_cleaned()
         with self._lock:
             return self._selected_contract_names["view"]
-
-    def set_selected_contract_name(self, contract_name: str) -> None:
-        """
-        Update the selected ACL contract names for this frame to the same-name
-        convenience selection.
-
-        Args:
-            contract_name:
-                Selected ACL contract name for all three families.
-
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        normalized_contract_selection = self._normalize_contract_selection(
-            contract_name,
-        )
-        with self._lock:
-            self._selected_contract_names = normalized_contract_selection
-
-    def set_selected_contract_names(
-            self,
-            *,
-            contract_name: str = "default",
-            view_contract_name: Optional[str] = None,
-            command_contract_name: Optional[str] = None,
-            codegen_contract_name: Optional[str] = None,
-    ) -> None:
-        """
-        Update the selected ACL contract names for this frame.
-
-        Args:
-            contract_name:
-                Same-name ACL contract convenience selector.
-            view_contract_name:
-                Optional explicit selected view contract name.
-            command_contract_name:
-                Optional explicit selected command contract name.
-            codegen_contract_name:
-                Optional explicit selected codegen contract name.
-
-        Returns:
-            None.
-        """
-        self.check_cleaned()
-        normalized_contract_selection = self._normalize_contract_selection(
-            contract_name,
-            view_contract_name=view_contract_name,
-            command_contract_name=command_contract_name,
-            codegen_contract_name=codegen_contract_name,
-        )
-        with self._lock:
-            self._selected_contract_names = normalized_contract_selection
 
     def describe(self) -> Dict[str, object]:
         """
@@ -248,56 +182,26 @@ class FrameLinkContract(Cleanable):
             return FrameLinkContract(
                 rift_id=self._rift_id,
                 frame_name=self._frame_name,
-                view_contract_name=self._selected_contract_names["view"],
-                command_contract_name=self._selected_contract_names["command"],
-                codegen_contract_name=self._selected_contract_names["codegen"],
                 metadata=dict(self._metadata),
             )
 
     @staticmethod
-    def _normalize_contract_selection(
-            contract_name: Optional[str],
-            *,
-            view_contract_name: Optional[str] = None,
-            command_contract_name: Optional[str] = None,
-            codegen_contract_name: Optional[str] = None,
-    ) -> Dict[str, str]:
+    def _build_selected_contract_names(frame_name: str) -> Dict[str, str]:
         """
-        Normalize one frame ACL contract selection payload.
+        Build the fixed same-name ACL contract selection for one frame.
 
         Args:
-            contract_name:
-                Same-name convenience selector applied to all families when the
-                family-specific names are omitted.
-            view_contract_name:
-                Optional explicit selected view contract name.
-            command_contract_name:
-                Optional explicit selected command contract name.
-            codegen_contract_name:
-                Optional explicit selected codegen contract name.
+            frame_name:
+                Attached frame name whose same-name ACL contract should be used
+                across all three families.
 
         Returns:
-            Dict[str, str]: Normalized family selection map.
+            Dict[str, str]: Fixed family selection map for the frame.
         """
-        if contract_name == "":
-            raise ValueError("contract_name cannot be empty.")
-        if view_contract_name == "":
-            raise ValueError("view_contract_name must be a non-empty string.")
-        if command_contract_name == "":
-            raise ValueError("command_contract_name must be a non-empty string.")
-        if codegen_contract_name == "":
-            raise ValueError("codegen_contract_name must be a non-empty string.")
-        base_contract_name = contract_name or "default"
-        normalized_selection = {
-            "view": view_contract_name or base_contract_name,
-            "command": command_contract_name or base_contract_name,
-            "codegen": codegen_contract_name or base_contract_name,
+        if not isinstance(frame_name, str) or not frame_name:
+            raise ValueError("frame_name must be a non-empty string.")
+        return {
+            "view": frame_name,
+            "command": frame_name,
+            "codegen": frame_name,
         }
-        for family_name, selected_contract_name in normalized_selection.items():
-            if not isinstance(selected_contract_name, str) or not selected_contract_name:
-                raise ValueError(
-                    "{0}_contract_name must be a non-empty string.".format(
-                        family_name
-                    )
-                )
-        return normalized_selection

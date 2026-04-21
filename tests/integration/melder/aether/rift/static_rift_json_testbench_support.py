@@ -402,7 +402,7 @@ class StaticRiftJsonBench:
             configuration=configuration,
             rift_name="{0}_rift".format(self.frame_name),
         )
-        rift.target_frame(self.frame_name)
+        rift.create_frame_link(self.frame_name)
         return rift
 
     def _materialize_live_objects(self) -> None:
@@ -604,3 +604,4 @@ class StaticRiftJsonBench:
                 continue
             current_value = getattr(current_value, current_part)
         return current_value
+

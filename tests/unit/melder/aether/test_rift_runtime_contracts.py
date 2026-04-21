@@ -230,9 +230,9 @@ def test_rift_logger_falls_back_when_channel_resolution_fails(
     fallback_logger.error.assert_called_once()
 
 
-def test_rift_target_frame_rejects_empty_inputs() -> None:
+def test_rift_create_frame_link_rejects_empty_frame_name() -> None:
     """
-    Verify target-frame engagement rejects empty frame and contract names.
+    Verify frame-link creation rejects an empty frame name.
 
     Returns:
         None.
@@ -242,15 +242,12 @@ def test_rift_target_frame_rejects_empty_inputs() -> None:
     rift = _create_registered_rift()
 
     with pytest.raises(ValueError, match="frame_name cannot be empty"):
-        rift.target_frame("")
-
-    with pytest.raises(ValueError, match="must be a non-empty string"):
-        rift.target_frame("ops", contract_name="")
+        rift.create_frame_link("")
 
 
-def test_rift_target_frame_attaches_room_owned_viewer_path() -> None:
+def test_rift_create_frame_link_attaches_room_owned_viewer_path() -> None:
     """
-    Verify targeting a frame attaches the room-owned viewer path.
+    Verify creating a frame link attaches the room-owned viewer path.
 
     Returns:
         None.
@@ -259,10 +256,11 @@ def test_rift_target_frame_attaches_room_owned_viewer_path() -> None:
     _seed_frame_descriptor("ops")
     rift = _create_registered_rift()
 
-    rift.target_frame("ops")
+    rift.create_frame_link("ops")
     viewer = rift.get_frame_viewer()
 
     assert rift.get_frame_link_contract("ops").frame_name == "ops"
+    assert rift.get_frame_link_contract("ops").get_selected_contract_name() == "ops"
     assert isinstance(viewer, FrameViewer)
     assert viewer.list_frame_names() == ["ops"]
 
@@ -307,7 +305,7 @@ def test_rift_spaces_expose_conduit_discovery_through_command_system() -> None:
     _bind_target_frame_configuration("ops", rift_enabled=True)
     _seed_frame_descriptor("ops")
     rift = _create_registered_rift()
-    rift.target_frame("ops")
+    rift.create_frame_link("ops")
     space = rift.space
     command = space.command_system
     conduit_cloud = object()
@@ -450,3 +448,4 @@ def test_rift_create_primary_space_from_configuration_supports_explicit_space_id
     assert isinstance(rift.space, StaticRiftSpace)
     assert rift.space.space_id == "space-explicit"
     assert isinstance(rift.rift_gate, RiftGate)
+

@@ -110,7 +110,7 @@ def test_integration_rift_space_can_attach_room_owned_frame_viewer_after_passive
             configuration=rift_configuration,
             rift_name="ops_rift",
         )
-        rift.target_frame("ops")
+        rift.create_frame_link("ops")
         viewer = rift.get_frame_viewer()
         viewer_metadata = rift._build_frame_viewer_metadata()
 
@@ -150,7 +150,7 @@ def test_integration_rift_get_frame_viewer_exposes_assigned_frame_after_passive_
             configuration=rift_configuration,
             rift_name="ops_rift",
         )
-        rift.target_frame("ops")
+        rift.create_frame_link("ops")
 
         viewer = rift.get_frame_viewer()
         viewer_metadata = rift._build_frame_viewer_metadata()
@@ -191,7 +191,7 @@ def test_integration_rift_scoped_refresh_rebuilds_room_owned_viewer_after_passiv
             configuration=rift_configuration,
             rift_name="ops_rift",
         )
-        rift.target_frame("ops")
+        rift.create_frame_link("ops")
 
         first_viewer = rift.get_frame_viewer()
         first_viewer_metadata = rift._build_frame_viewer_metadata()
@@ -208,3 +208,4 @@ def test_integration_rift_scoped_refresh_rebuilds_room_owned_viewer_after_passiv
         assert first_viewer_frame_names == ["ops"]
     finally:
         conduit.cleanup()
+
