@@ -4357,8 +4357,8 @@ def test_shared_nexus_frame_survives_until_last_rift_is_removed() -> None:
     second = nexus.create_rift(rift_name="second")
     shared_frame_name = "aetheric_frame_system"
 
-    first.create_nexus_frame()
-    second.create_nexus_frame()
+    shared = first.create_nexus_frame()
+    assert second.get_nexus_frame() is shared
 
     assert shared_frame_name in aether._aetheric_frames
 
@@ -4416,7 +4416,7 @@ def test_external_aether_frame_cleanup_clears_nexus_frame_manager_state() -> Non
     assert nexus.frame_manager.exists(frame_name) is False
 
 
-def test_shared_mode_returns_the_same_frame_to_any_rift() -> None:
+def test_shared_mode_exposes_the_same_frame_to_any_rift_while_create_stays_strict() -> None:
     """
     Verify shared mode returns the same Nexus frame to all Rifts.
 
@@ -4427,7 +4427,11 @@ def test_shared_mode_returns_the_same_frame_to_any_rift() -> None:
     first = nexus.create_rift(rift_name="first")
     second = nexus.create_rift(rift_name="second")
 
-    assert first.create_nexus_frame() is second.create_nexus_frame()
+    created = first.create_nexus_frame()
+
+    assert second.get_nexus_frame() is created
+    with pytest.raises(ValueError, match="already exists"):
+        second.create_nexus_frame()
 
 
 def test_one_per_workspace_mode_rejects_other_rift_frame_access() -> None:

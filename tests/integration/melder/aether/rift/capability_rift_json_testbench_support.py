@@ -55,6 +55,39 @@ class CapabilityBenchService:
         self.calls.append(prefix)
         return "{0}:{1}".format(self.kind, prefix)
 
+    def make_payload(self, label: str) -> Dict[str, str]:
+        """
+        Return one stable payload dictionary for workstation attribute binding.
+
+        Args:
+            label:
+                Stable label included in the returned payload.
+
+        Returns:
+            Dict[str, str]: Deterministic payload dictionary.
+        """
+        return {
+            "kind": self.kind,
+            "label": label,
+        }
+
+    def make_runner(self, prefix: str):
+        """
+        Return one deterministic callable for workstation method binding.
+
+        Args:
+            prefix:
+                Stable prefix captured by the returned callable.
+
+        Returns:
+            object: Callable that appends its suffix to the captured prefix.
+        """
+
+        def _runner(suffix: str = "tail") -> str:
+            return "{0}:{1}:{2}".format(self.kind, prefix, suffix)
+
+        return _runner
+
 
 class CapabilityRiftJsonBench:
     """
@@ -266,6 +299,7 @@ class CapabilityRiftJsonBench:
         configuration.with_multiple_target_frames(True)
         configuration.with_max_target_frame_count(8)
         configuration.with_allowed_target_frame_names(("default", self.frame_name))
+        configuration.with_nexus_frame_mode("indexed")
         nexus.enable(configuration)
         return nexus
 

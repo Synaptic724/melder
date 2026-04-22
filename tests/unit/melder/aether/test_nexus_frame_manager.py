@@ -122,6 +122,15 @@ class _FakeAether:
             self.frames[frame_name] = frame
         return frame
 
+    def _create_frame(self, frame_name: str):
+        if frame_name in self.frames:
+            raise ValueError(
+                "AethericFrame '{0}' already exists.".format(frame_name)
+            )
+        frame = _FakeFrame(frame_name, frame_id="frame-{0}".format(frame_name))
+        self.frames[frame_name] = frame
+        return frame
+
     def _bind_configuration(self, configuration, frame_name: str) -> None:
         if self.raise_on_bind_configuration:
             raise RuntimeError("bind_configuration_failure")
@@ -610,8 +619,8 @@ def test_nexus_frame_manager_create_frame_for_rift_matrix(
         manager._frames_by_name[expected] = existing_frame
         existing_conduit = _FakeConduit(conduit_name="root", frame_name=expected)
         existing_frame._conduits[existing_conduit.id] = existing_conduit
-        result = manager.create_frame_for_rift("rift-1", frame_name=frame_name)
-        assert result is existing_conduit
+        with pytest.raises(ValueError, match="already exists"):
+            manager.create_frame_for_rift("rift-1", frame_name=frame_name)
         return
 
     created = _FakeConduit(conduit_name="root", frame_name=expected)
@@ -653,6 +662,14 @@ def test_nexus_frame_manager_create_frame_for_rift_allocates_indexed_frame_name(
 
     assert result is created
     assert recorded["frame_name"] == "aetheric_frame_system-1"
+
+
+def test_nexus_frame_manager_get_required_root_conduit_for_frame_rejects_missing_manager_frame(
+) -> None:
+    manager, _ = _build_manager()
+
+    with pytest.raises(ValueError, match="was not found"):
+        manager._get_required_root_conduit_for_frame("ops")
 
 
 @pytest.mark.parametrize(

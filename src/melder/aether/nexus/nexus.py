@@ -2061,8 +2061,8 @@ class Nexus(Cleanable, INexus):
         """
         Internal
 
-        Create or recover a rooted Nexus-managed conduit for one Rift under the
-        current topology rules.
+        Create one rooted Nexus-managed conduit for one Rift under the current
+        topology rules.
 
         Args:
             rift_id:
@@ -2076,11 +2076,11 @@ class Nexus(Cleanable, INexus):
                 explicit external cleanup path removes it.
 
         Returns:
-            IConduit: Root conduit for the created or recovered frame.
+            IConduit: Root conduit for the newly created frame.
 
         Raises:
             ValueError: If creation is not valid under the current topology
-                rules.
+                rules or the target frame already exists.
         """
         root_conduit = self._frame_manager.create_frame_for_rift(
             rift_id,

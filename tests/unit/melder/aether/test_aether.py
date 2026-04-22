@@ -249,6 +249,24 @@ def test_ensure_frame_returns_existing_custom_frame() -> None:
 
     assert a._ensure_frame("custom") is existing
 
+
+def test_create_frame_creates_new_custom_frame() -> None:
+    """_create_frame should create and register a new custom frame."""
+    a = Aether()
+
+    created = a._create_frame("custom")
+
+    assert a._aetheric_frames["custom"] is created
+
+
+def test_create_frame_raises_if_frame_already_exists() -> None:
+    """_create_frame should fail instead of silently recovering an existing frame."""
+    a = Aether()
+    a._ensure_frame("custom")
+
+    with pytest.raises(ValueError, match="already exists"):
+        a._create_frame("custom")
+
 def test_cleanup_unregistered_frame_is_safe() -> None:
     """A direct unregistered frame cleanup does not mutate Aether registry."""
     a = Aether()

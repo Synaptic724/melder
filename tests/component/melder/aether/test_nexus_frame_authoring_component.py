@@ -300,6 +300,38 @@ def test_component_external_frame_cleanup_clears_manager_state_matrix(
 
 
 @pytest.mark.parametrize(
+    ("nexus_frame_mode", "frame_name", "repeat_on_same_rift"),
+    [
+        ("single", None, False),
+        ("indexed", "ops", False),
+        ("one_per_workspace", None, True),
+    ],
+)
+def test_component_rift_create_nexus_frame_rejects_existing_manager_frame(
+        nexus_frame_mode: str,
+        frame_name,
+        repeat_on_same_rift: bool,
+) -> None:
+    nexus = _create_enabled_nexus(
+        nexus_frame_mode=nexus_frame_mode,
+        max_nexus_frame_count=8,
+    )
+    first = nexus.create_rift(rift_name="first")
+    second = nexus.create_rift(rift_name="second")
+
+    if frame_name is None:
+        first.create_nexus_frame()
+    else:
+        first.create_nexus_frame(frame_name=frame_name)
+
+    target_rift = first if repeat_on_same_rift else second
+    kwargs = {} if frame_name is None else {"frame_name": frame_name}
+
+    with pytest.raises(ValueError, match="already exists"):
+        target_rift.create_nexus_frame(**kwargs)
+
+
+@pytest.mark.parametrize(
     ("nexus_frame_mode", "remove_kind"),
     [
         ("single", "first"),
@@ -323,7 +355,7 @@ def test_component_nexus_remove_rift_cleans_frames_by_topology_matrix(
 
     if nexus_frame_mode == "single":
         shared = first.create_nexus_frame()
-        second.create_nexus_frame()
+        assert second.get_nexus_frame() is shared
         nexus.remove_rift(first.id if remove_kind == "first" else second.id)
         assert nexus.frame_manager.exists(shared._aetheric_frame) is True
         nexus.remove_rift(second.id if remove_kind == "first" else first.id)

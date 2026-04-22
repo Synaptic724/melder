@@ -153,6 +153,38 @@ def test_integration_rift_get_nexus_frame_matrix(
 
 
 @pytest.mark.parametrize(
+    ("nexus_frame_mode", "frame_name", "repeat_on_same_rift"),
+    [
+        ("single", None, False),
+        ("indexed", "ops", False),
+        ("one_per_workspace", None, True),
+    ],
+)
+def test_integration_rift_create_nexus_frame_rejects_existing_manager_frame(
+        nexus_frame_mode: str,
+        frame_name,
+        repeat_on_same_rift: bool,
+) -> None:
+    nexus = _create_enabled_nexus(
+        nexus_frame_mode=nexus_frame_mode,
+        max_nexus_frame_count=8,
+    )
+    first = nexus.create_rift(rift_name="first")
+    second = nexus.create_rift(rift_name="second")
+
+    if frame_name is None:
+        first.create_nexus_frame()
+    else:
+        first.create_nexus_frame(frame_name=frame_name)
+
+    target_rift = first if repeat_on_same_rift else second
+    kwargs = {} if frame_name is None else {"frame_name": frame_name}
+
+    with pytest.raises(ValueError, match="already exists"):
+        target_rift.create_nexus_frame(**kwargs)
+
+
+@pytest.mark.parametrize(
     ("nexus_frame_mode", "create_kind", "expected_names"),
     [
         ("single", "none", tuple()),

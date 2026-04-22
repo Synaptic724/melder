@@ -24,9 +24,8 @@ class NexusFrameManager(Cleanable):
     Authoring and topology facade for Nexus-managed frames.
 
     Purpose:
-        Centralize frame authoring, empty-frame initialization, optional root
-        conduit bootstrap, and topology-aware frame access above the lower
-        `Aether`, descriptor, and ACL subsystems.
+        Centralize rooted frame authoring and topology-aware frame access above
+        the lower `Aether`, descriptor, and ACL subsystems.
 
     Contract:
         - Holds the authoritative Nexus-managed frame registry as
@@ -35,6 +34,8 @@ class NexusFrameManager(Cleanable):
           `frame_name -> NexusFrameConfiguration`.
         - Every managed frame is dynamic, AI-native, and Rift-enabled.
         - Treats `Aether` as the real frame owner and disposal executor.
+        - Uses strict-create semantics for Nexus-managed frame authoring:
+          creation raises when the target frame already exists.
         - Exposes Rift-aware topology methods for `single`, `indexed`, and
           `one_per_workspace`.
         - Does not own a persistent attachment registry; it derives removal and
@@ -281,11 +282,11 @@ class NexusFrameManager(Cleanable):
             self._creating_frame_names.add(frame_name)
 
         try:
+            frame = self._nexus._aether._create_frame(frame_name)
             root_conduit = self._conjure_root_conduit_for_configuration(
                 configuration
             )
             spellbook_id = root_conduit._spellbook.id
-            frame = self._nexus._aether._ensure_frame(frame_name)
             with self._lock:
                 self._creating_frame_names.discard(frame_name)
                 if frame_name in self._frames_by_name:
@@ -458,12 +459,13 @@ class NexusFrameManager(Cleanable):
             immutable: bool = False,
     ) -> IConduit:
         """
-        Create or recover one rooted Nexus-managed conduit for a Rift.
+        Create one rooted Nexus-managed conduit for a Rift.
 
         Purpose:
-            Provide the topology-aware create-or-recover path used by the Rift
-            facade so shared, indexed, and one-per-workspace modes all flow
-            through one authoritative implementation.
+            Provide the topology-aware strict-create path used by the Rift
+            facade so shared, indexed, and one-per-workspace modes all create
+            through one authoritative implementation while leaving recovery to
+            the getter path.
 
         Args:
             rift_id:
@@ -476,7 +478,11 @@ class NexusFrameManager(Cleanable):
                 Immutable flag for newly created frames.
 
         Returns:
-            IConduit: Root conduit for the created or recovered frame.
+            IConduit: Root conduit for the newly created frame.
+
+        Raises:
+            ValueError: If the target frame already exists or creation is not
+                valid under the current topology rules.
         """
         self.check_cleaned()
         self._nexus._require_enabled()
@@ -491,9 +497,10 @@ class NexusFrameManager(Cleanable):
         with self._lock:
             existing_frame = self._frames_by_name.get(requested_frame_name)
         if existing_frame is not None:
-            return self._get_required_root_conduit_for_frame(
-                requested_frame_name,
-                root_conduit_name=root_conduit_name,
+            raise ValueError(
+                "Nexus managed frame '{0}' already exists.".format(
+                    requested_frame_name
+                )
             )
         return self._create_configuration(
             NexusFrameConfiguration.create_dynamic_defaults(
@@ -700,7 +707,7 @@ class NexusFrameManager(Cleanable):
 
         Purpose:
             Centralize topology-sensitive frame-name resolution so both
-            retrieval and create-or-recover flows enforce the same naming and
+            retrieval and strict-create flows enforce the same naming and
             visibility rules.
 
         Args:
@@ -709,7 +716,7 @@ class NexusFrameManager(Cleanable):
             frame_name:
                 Optional explicit frame name.
             allow_creation:
-                True when the resolution path is a create-or-recover path.
+                True when the resolution path is a strict-create path.
 
         Returns:
             str: Resolved managed frame name.
@@ -973,8 +980,8 @@ class NexusFrameManager(Cleanable):
         Return the required root conduit for an already managed frame.
 
         Purpose:
-            Support create-or-recover semantics for the Rift-facing Nexus
-            creation path without returning the frame object.
+            Support getter-only rooted-conduit recovery for the Rift-facing
+            Nexus access path without returning the frame object.
 
         Args:
             frame_name:
@@ -985,7 +992,12 @@ class NexusFrameManager(Cleanable):
         Returns:
             IConduit: Matching root conduit for the frame.
         """
-        frame = self._nexus._aether._ensure_frame(frame_name)
+        with self._lock:
+            frame = self._frames_by_name.get(frame_name)
+        if frame is None:
+            raise ValueError(
+                "Nexus managed frame '{0}' was not found.".format(frame_name)
+            )
         if not frame._conduits:
             raise ValueError(
                 "Nexus managed frame '{0}' has no root conduit.".format(

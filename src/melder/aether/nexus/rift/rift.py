@@ -955,7 +955,7 @@ class Rift(Cleanable, IRift):
         """
         Internal
 
-        Create one rooted Nexus-managed conduit through Nexus policy.
+        Create one new rooted Nexus-managed conduit through Nexus policy.
 
         Args:
             frame_name:
@@ -966,11 +966,15 @@ class Rift(Cleanable, IRift):
                 Immutable flag for indexed/shared creation.
 
         Contract:
-            Delegates frame creation/recovery to Nexus using this Rift's
+            Delegates strict frame creation to Nexus using this Rift's
             identity and current frame policy.
 
         Returns:
-            IConduit: Root conduit for the created or recovered frame.
+            IConduit: Root conduit for the newly created frame.
+
+        Raises:
+            ValueError: If the target Nexus-managed frame already exists or
+                creation is invalid under the current topology rules.
         """
         self.check_cleaned()
         return self._nexus.create_nexus_frame_for_rift(

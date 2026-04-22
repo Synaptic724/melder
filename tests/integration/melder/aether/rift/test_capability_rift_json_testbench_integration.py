@@ -637,6 +637,224 @@ def _build_capability_turn_script_matrix() -> List[Dict[str, object]]:
                 "prefix": "automatic_{0}".format(index),
             }
         )
+    for frame_mode in ("automatic", "dynamic"):
+        created_frame_name = "nexus_{0}_ops".format(frame_mode)
+        scenarios.append(
+            {
+                "name": "{0}_nexus_frame_link_cycle".format(frame_mode),
+                "frame_mode": frame_mode,
+                "script_json": json.dumps(
+                    {
+                        "turns": [
+                            {
+                                "surface": "rift",
+                                "method": "create_nexus_frame",
+                                "kwargs": {"frame_name": created_frame_name},
+                                "save_as": "created_conduit",
+                            },
+                            {
+                                "surface": "rift",
+                                "method": "create_frame_link",
+                                "args": [created_frame_name],
+                            },
+                            {
+                                "surface": "rift",
+                                "method": "list_assigned_frame_names",
+                                "save_as": "assigned_frames",
+                            },
+                            {
+                                "surface": "rift",
+                                "method": "get_selected_contract_names",
+                                "args": [created_frame_name],
+                                "save_as": "selected_contracts",
+                            },
+                        ]
+                    }
+                ),
+                "kind": "nexus_frame_link_cycle",
+                "created_frame_name": created_frame_name,
+            }
+        )
+        scenarios.append(
+            {
+                "name": "{0}_nexus_frame_workstation_target".format(frame_mode),
+                "frame_mode": frame_mode,
+                "script_json": json.dumps(
+                    {
+                        "turns": [
+                            {
+                                "surface": "rift",
+                                "method": "create_nexus_frame",
+                                "kwargs": {"frame_name": created_frame_name},
+                                "save_as": "created_conduit",
+                            },
+                            {
+                                "surface": "workstation",
+                                "method": "bind_object",
+                                "args": ["nexus_conduit", "@turns.created_conduit"],
+                                "kwargs": {"weak_ref": False},
+                            },
+                            {
+                                "surface": "workstation",
+                                "method": "set_target",
+                                "args": ["nexus_conduit"],
+                                "kwargs": {"store": "objects"},
+                            },
+                            {
+                                "surface": "command",
+                                "method": "get_target_attribute",
+                                "args": ["name"],
+                                "save_as": "conduit_name",
+                            },
+                            {
+                                "surface": "command",
+                                "method": "get_target_attribute",
+                                "args": ["_aetheric_frame"],
+                                "save_as": "conduit_frame_name",
+                            },
+                        ]
+                    }
+                ),
+                "kind": "nexus_frame_workstation_target",
+                "created_frame_name": created_frame_name,
+            }
+        )
+        scenarios.append(
+            {
+                "name": "{0}_nexus_frame_duplicate_create".format(frame_mode),
+                "frame_mode": frame_mode,
+                "script_json": json.dumps(
+                    {
+                        "turns": [
+                            {
+                                "surface": "rift",
+                                "method": "create_nexus_frame",
+                                "kwargs": {"frame_name": created_frame_name},
+                            },
+                            {
+                                "surface": "rift",
+                                "method": "create_nexus_frame",
+                                "kwargs": {"frame_name": created_frame_name},
+                                "expect_error_contains": "already exists",
+                                "expect_error_type": "ValueError",
+                                "save_as": "duplicate_error",
+                            },
+                        ]
+                    }
+                ),
+                "kind": "nexus_frame_duplicate_create",
+            }
+        )
+        scenarios.append(
+            {
+                "name": "{0}_attribute_result_binding_cycle".format(frame_mode),
+                "frame_mode": frame_mode,
+                "script_json": json.dumps(
+                    {
+                        "turns": [
+                            {
+                                "surface": "command",
+                                "method": "meld",
+                                "args": ["@manifest.conduits.left.id"],
+                                "kwargs": {
+                                    "spell": "@manifest.spell.spell_id",
+                                    "frame_name": "@manifest.frame_name",
+                                },
+                                "save_as": "live_object",
+                            },
+                            {
+                                "surface": "workstation",
+                                "method": "bind_object",
+                                "args": ["live", "@turns.live_object"],
+                                "kwargs": {"weak_ref": False},
+                            },
+                            {
+                                "surface": "workstation",
+                                "method": "set_target",
+                                "args": ["live"],
+                                "kwargs": {"store": "objects"},
+                            },
+                            {
+                                "surface": "command",
+                                "method": "execute_target_method",
+                                "args": ["make_payload", "{0}_payload".format(frame_mode)],
+                                "kwargs": {
+                                    "bind_as_name": "payload",
+                                    "bind_as_store": "attributes",
+                                },
+                                "save_as": "payload_result",
+                            },
+                            {
+                                "surface": "workstation",
+                                "method": "get",
+                                "args": ["payload"],
+                                "kwargs": {"store": "attributes"},
+                                "save_as": "payload_binding",
+                            },
+                        ]
+                    }
+                ),
+                "kind": "attribute_result_binding_cycle",
+                "payload_label": "{0}_payload".format(frame_mode),
+            }
+        )
+        scenarios.append(
+            {
+                "name": "{0}_method_result_binding_cycle".format(frame_mode),
+                "frame_mode": frame_mode,
+                "script_json": json.dumps(
+                    {
+                        "turns": [
+                            {
+                                "surface": "command",
+                                "method": "meld",
+                                "args": ["@manifest.conduits.left.id"],
+                                "kwargs": {
+                                    "spell": "@manifest.spell.spell_id",
+                                    "frame_name": "@manifest.frame_name",
+                                },
+                                "save_as": "live_object",
+                            },
+                            {
+                                "surface": "workstation",
+                                "method": "bind_object",
+                                "args": ["live", "@turns.live_object"],
+                                "kwargs": {"weak_ref": False},
+                            },
+                            {
+                                "surface": "workstation",
+                                "method": "set_target",
+                                "args": ["live"],
+                                "kwargs": {"store": "objects"},
+                            },
+                            {
+                                "surface": "command",
+                                "method": "execute_target_method",
+                                "args": ["make_runner", "{0}_prefix".format(frame_mode)],
+                                "kwargs": {
+                                    "bind_as_name": "runner",
+                                    "bind_as_store": "methods",
+                                },
+                            },
+                            {
+                                "surface": "workstation",
+                                "method": "set_target",
+                                "args": ["runner"],
+                                "kwargs": {"store": "methods"},
+                            },
+                            {
+                                "surface": "workstation",
+                                "method": "call_target",
+                                "args": ["tail"],
+                                "save_as": "runner_output",
+                            },
+                        ]
+                    }
+                ),
+                "kind": "method_result_binding_cycle",
+                "runner_prefix": "{0}_prefix".format(frame_mode),
+            }
+        )
     return scenarios
 
 
@@ -817,6 +1035,39 @@ def _assert_capability_turn_script_result(
             scenario["prefix"]
         )
         assert saved_results["existing_object"].kind == "capability_live"
+        return
+    if kind == "nexus_frame_link_cycle":
+        assert saved_results["created_conduit"]._aetheric_frame == scenario["created_frame_name"]
+        assert saved_results["assigned_frames"] == (
+            bench.frame_name,
+            scenario["created_frame_name"],
+        )
+        assert saved_results["selected_contracts"] == {
+            "view": scenario["created_frame_name"],
+            "command": scenario["created_frame_name"],
+            "codegen": scenario["created_frame_name"],
+        }
+        return
+    if kind == "nexus_frame_workstation_target":
+        assert saved_results["conduit_name"] == "root"
+        assert saved_results["conduit_frame_name"] == scenario["created_frame_name"]
+        return
+    if kind == "nexus_frame_duplicate_create":
+        assert saved_results["duplicate_error"]["error_type"] == "ValueError"
+        assert "already exists" in saved_results["duplicate_error"]["error"]
+        return
+    if kind == "attribute_result_binding_cycle":
+        expected_payload = {
+            "kind": "capability_live",
+            "label": scenario["payload_label"],
+        }
+        assert saved_results["payload_result"] == expected_payload
+        assert saved_results["payload_binding"] == expected_payload
+        return
+    if kind == "method_result_binding_cycle":
+        assert saved_results["runner_output"] == "capability_live:{0}:tail".format(
+            scenario["runner_prefix"]
+        )
         return
     raise AssertionError(kind)
 
