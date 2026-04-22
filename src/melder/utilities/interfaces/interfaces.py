@@ -7922,19 +7922,20 @@ class IRift(ICleanable, Protocol):
         """
         ...
 
-    def get_nexus_frame(self, frame_name: Optional[str] = None) -> "IAethericFrame":
+    def get_nexus_frame(self, frame_name: Optional[str] = None) -> "IConduit":
         """
-        Return one Nexus frame accessible through this Rift.
+        Return one rooted Nexus conduit accessible through this Rift.
         """
         ...
 
     def create_nexus_frame(
             self,
             frame_name: Optional[str] = None,
+            root_conduit_name: str = "root",
             immutable: bool = False,
-    ) -> "IAethericFrame":
+    ) -> "IConduit":
         """
-        Create and return one Nexus frame through this Rift's Nexus access surface.
+        Create and return one rooted Nexus conduit through this Rift's Nexus access surface.
         """
         ...
 
@@ -8179,9 +8180,9 @@ class INexus(ICleanable, Protocol):
             self,
             rift_id: str,
             frame_name: Optional[str] = None,
-    ) -> "IAethericFrame":
+    ) -> "IConduit":
         """
-        Return one existing accessible Nexus frame for the specified Rift.
+        Return one existing accessible rooted Nexus conduit for the specified Rift.
         """
         ...
 
@@ -8189,10 +8190,11 @@ class INexus(ICleanable, Protocol):
             self,
             rift_id: str,
             frame_name: Optional[str] = None,
+            root_conduit_name: str = "root",
             immutable: bool = False,
-    ) -> "IAethericFrame":
+    ) -> "IConduit":
         """
-        Create and return one Nexus frame scoped for the specified Rift.
+        Create and return one rooted Nexus conduit scoped for the specified Rift.
         """
         ...
 
@@ -8355,19 +8357,19 @@ class INexusFrameManager(ICleanable, Protocol):
           dynamic/AI-native/Rift-enabled posture contract.
         - Consumes authored `NexusFrameConfiguration` objects as immutable
           inputs to frame realization.
-        - Returns live `IAethericFrame` objects owned by the underlying
-          Aether/Nexus runtime.
+        - Returns rooted `IConduit` objects for the realized Nexus-managed
+          workspace.
     """
 
     def create(
             self,
             configuration: "NexusFrameConfiguration",
-    ) -> "IAethericFrame":
+    ) -> "IConduit":
         """
-        Realize one Nexus-managed frame from authored configuration.
+        Realize one rooted Nexus-managed conduit from authored configuration.
 
         Returns:
-            IAethericFrame: Realized Nexus-managed frame.
+            IConduit: Root conduit for the realized Nexus-managed workspace.
         """
         ...
 

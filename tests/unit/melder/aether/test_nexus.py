@@ -4296,8 +4296,9 @@ def test_shared_and_private_nexus_frames_are_realized_only_on_request() -> None:
     shared_nexus = _create_enabled_nexus()
     shared_rift = shared_nexus.create_rift(rift_name="shared")
     assert "aetheric_frame_system" not in Aether()._aetheric_frames
-    shared_frame = shared_rift.create_nexus_frame()
-    assert shared_frame.name == "aetheric_frame_system"
+    shared_conduit = shared_rift.create_nexus_frame()
+    assert shared_conduit.name == "root"
+    assert shared_conduit._aetheric_frame == "aetheric_frame_system"
     assert shared_rift.get_nexus_frame() is shared_nexus.get_nexus_frame_for_rift(shared_rift.id)
 
     isolated_nexus = Nexus()
@@ -4311,8 +4312,9 @@ def test_shared_and_private_nexus_frames_are_realized_only_on_request() -> None:
     isolated_rift = isolated_nexus.create_rift(rift_name="isolated")
     private_frame_name = "aetheric_frame_system:{0}".format(isolated_rift.id)
     assert private_frame_name not in Aether()._aetheric_frames
-    private_frame = isolated_rift.create_nexus_frame()
-    assert private_frame.name == private_frame_name
+    private_conduit = isolated_rift.create_nexus_frame()
+    assert private_conduit.name == "root"
+    assert private_conduit._aetheric_frame == private_frame_name
 
 
 def test_rift_create_frame_link_rejects_other_private_nexus_frame_in_one_per_workspace_mode(
@@ -4332,13 +4334,13 @@ def test_rift_create_frame_link_rejects_other_private_nexus_frame_in_one_per_wor
 
     owner_rift = nexus.create_rift(rift_name="owner")
     other_rift = nexus.create_rift(rift_name="other")
-    owner_frame = owner_rift.create_nexus_frame()
-    other_frame = other_rift.create_nexus_frame()
+    owner_conduit = owner_rift.create_nexus_frame()
+    other_conduit = other_rift.create_nexus_frame()
 
-    owner_rift.create_frame_link(owner_frame.name)
+    owner_rift.create_frame_link(owner_conduit._aetheric_frame)
 
     with pytest.raises(ValueError, match="only access its own private Nexus frame"):
-        owner_rift.create_frame_link(other_frame.name)
+        owner_rift.create_frame_link(other_conduit._aetheric_frame)
 
 
 def test_shared_nexus_frame_survives_until_last_rift_is_removed() -> None:
@@ -4385,7 +4387,7 @@ def test_one_per_workspace_nexus_frame_is_removed_with_its_rift() -> None:
     nexus.enable(configuration)
 
     rift = nexus.create_rift(rift_name="isolated")
-    frame_name = rift.create_nexus_frame().name
+    frame_name = rift.create_nexus_frame()._aetheric_frame
 
     assert frame_name in Aether()._aetheric_frames
 
@@ -4405,7 +4407,7 @@ def test_external_aether_frame_cleanup_clears_nexus_frame_manager_state() -> Non
     """
     nexus = _create_enabled_nexus()
     rift = nexus.create_rift(rift_name="alpha")
-    frame_name = rift.create_nexus_frame().name
+    frame_name = rift.create_nexus_frame()._aetheric_frame
 
     assert nexus.frame_manager.exists(frame_name) is True
 
@@ -4446,10 +4448,13 @@ def test_one_per_workspace_mode_rejects_other_rift_frame_access() -> None:
 
     first = nexus.create_rift(rift_name="first")
     second = nexus.create_rift(rift_name="second")
-    second_frame = second.create_nexus_frame()
+    second_conduit = second.create_nexus_frame()
 
     with pytest.raises(ValueError, match="private Nexus frame"):
-        nexus.get_nexus_frame_for_rift(first.id, frame_name=second_frame.name)
+        nexus.get_nexus_frame_for_rift(
+            first.id,
+            frame_name=second_conduit._aetheric_frame,
+        )
 
 
 def test_one_per_workspace_mode_rejects_immutable_private_frame_creation() -> None:
@@ -4494,10 +4499,10 @@ def test_indexed_mode_allows_shared_lookup_by_explicit_name() -> None:
     with pytest.raises(ValueError, match="explicit frame_name"):
         first.get_nexus_frame()
 
-    shared_frame = first.create_nexus_frame(frame_name="ops")
-    looked_up_frame = second.get_nexus_frame(frame_name="ops")
+    shared_conduit = first.create_nexus_frame(frame_name="ops")
+    looked_up_conduit = second.get_nexus_frame(frame_name="ops")
 
-    assert looked_up_frame is shared_frame
+    assert looked_up_conduit is shared_conduit
     assert "ops" in second.list_accessible_nexus_frame_names()
 
 
@@ -4517,10 +4522,10 @@ def test_indexed_mode_can_create_explicit_new_frame() -> None:
     nexus.enable(configuration)
 
     rift = nexus.create_rift(rift_name="builder")
-    created_frame = rift.create_nexus_frame(frame_name="ops", immutable=True)
+    created_conduit = rift.create_nexus_frame(frame_name="ops", immutable=True)
 
     assert nexus.frame_manager.exists("ops") is True
-    assert rift.get_nexus_frame("ops") is created_frame
+    assert rift.get_nexus_frame("ops") is created_conduit
     assert "ops" in rift.list_accessible_nexus_frame_names()
 
 

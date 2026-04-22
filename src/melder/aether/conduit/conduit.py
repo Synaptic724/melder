@@ -378,7 +378,10 @@ class Conduit(Cleanable, IConduit):
             Conduit._aether._remove_conduit(self, self._aetheric_frame)
             if self.__dynamic_environment__ and self._name is not None:
                 Conduit._aether._unregister_conduit_cloud(self, self._aetheric_frame)
-            self._publish_frame_record_to_nexus()
+            if Conduit._aether.count_conduits(self._aetheric_frame) == 0:
+                Conduit._aether._ensure_frame(self._aetheric_frame).cleanup()
+            else:
+                self._publish_frame_record_to_nexus()
         except Exception as e:
             self._logger.error(f"Error unregistering from Aether: {e}", "_cleanup_normal_conduit", exc_info=True)
 

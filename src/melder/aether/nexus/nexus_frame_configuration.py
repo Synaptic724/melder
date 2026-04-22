@@ -24,7 +24,8 @@ class NexusFrameConfiguration(Cleanable):
           `AethericFrameConfiguration`.
         - Nexus-managed frames are always dynamic, AI-native, and
           Rift-enabled.
-        - May optionally request one root conduit bootstrap by name.
+        - Always carries one root conduit bootstrap name for rooted Nexus-managed
+          creation.
         - Is immutable-by-convention after construction.
 
     Lifecycle:
@@ -54,7 +55,7 @@ class NexusFrameConfiguration(Cleanable):
             rift_enabled: bool,
             immutable: bool = False,
             metadata: Optional[Dict[str, object]] = None,
-            root_conduit_name: Optional[str] = None,
+            root_conduit_name: str = "root",
     ) -> None:
         """
         Initialize one Nexus-managed frame authoring configuration.
@@ -68,8 +69,8 @@ class NexusFrameConfiguration(Cleanable):
             - Stores only authored input state, not live runtime objects.
             - Preserves metadata as a detached snapshot so later caller
               mutation cannot affect the authored configuration.
-            - Accepts an optional root-conduit bootstrap name that will later
-              be interpreted by `NexusFrameManager`.
+            - Requires one root-conduit bootstrap name that will later be
+              interpreted by `NexusFrameManager`.
             - Rejects any posture outside the fixed Nexus-managed frame
               contract: dynamic, AI-native, and Rift-enabled.
 
@@ -87,7 +88,7 @@ class NexusFrameConfiguration(Cleanable):
             metadata:
                 Optional authored metadata payload.
             root_conduit_name:
-                Optional root conduit name to bootstrap after frame init.
+                Root conduit name to bootstrap during rooted creation.
 
         Returns:
             None.
@@ -107,7 +108,7 @@ class NexusFrameConfiguration(Cleanable):
             raise TypeError("rift_enabled must be a bool.")
         if not isinstance(immutable, bool):
             raise TypeError("immutable must be a bool.")
-        if root_conduit_name is not None and not root_conduit_name:
+        if not root_conduit_name:
             raise ValueError("root_conduit_name cannot be empty.")
         normalized_system_state = EnumHelpers.convert_enum_and_check(
             system_state,
@@ -133,7 +134,7 @@ class NexusFrameConfiguration(Cleanable):
         self._rift_enabled: bool = rift_enabled
         self._immutable: bool = immutable
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
-        self._root_conduit_name: Optional[str] = root_conduit_name
+        self._root_conduit_name: str = root_conduit_name
 
     def cleanup(self) -> None:
         """
@@ -168,7 +169,7 @@ class NexusFrameConfiguration(Cleanable):
             *,
             immutable: bool = False,
             metadata: Optional[Dict[str, object]] = None,
-            root_conduit_name: Optional[str] = None,
+            root_conduit_name: str = "root",
     ) -> "NexusFrameConfiguration":
         """
         Create one dynamic authored frame configuration.
@@ -185,7 +186,7 @@ class NexusFrameConfiguration(Cleanable):
             metadata:
                 Optional authored metadata payload.
             root_conduit_name:
-                Optional root conduit name to bootstrap after init.
+                Root conduit name to bootstrap during rooted creation.
 
         Returns:
             NexusFrameConfiguration: Dynamic authored frame configuration.
@@ -278,12 +279,12 @@ class NexusFrameConfiguration(Cleanable):
         return dict(self._metadata)
 
     @property
-    def root_conduit_name(self) -> Optional[str]:
+    def root_conduit_name(self) -> str:
         """
-        Return the optional root conduit bootstrap name.
+        Return the required root conduit bootstrap name.
 
         Returns:
-            Optional[str]: Requested bootstrap root conduit name.
+            str: Requested bootstrap root conduit name.
         """
         self.check_cleaned()
         return self._root_conduit_name

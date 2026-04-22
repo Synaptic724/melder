@@ -81,25 +81,26 @@ def test_nexus_frame_configuration_rejects_non_dynamic_posture() -> None:
         )
 
 
-def test_nexus_frame_manager_can_create_empty_dynamic_frame() -> None:
+def test_nexus_frame_manager_can_create_rooted_dynamic_conduit() -> None:
     nexus = _create_enabled_nexus()
 
-    frame = nexus.frame_manager.create_dynamic_frame("ops")
+    conduit = nexus.frame_manager.create_dynamic_frame("ops")
     descriptor = nexus._get_required_frame_descriptor("ops")
 
-    assert frame.name == "ops"
+    assert conduit.name == "root"
+    assert conduit._aetheric_frame == "ops"
     assert nexus.frame_manager.exists("ops") is True
     assert nexus.frame_manager.list_frame_names() == ("ops",)
     assert descriptor.frame_configuration is not None
     assert descriptor.frame_configuration.system_state == SystemState.dynamic
     assert descriptor.frame_overview is not None
-    assert descriptor.frame_overview.payload.root_conduit_count == 0
+    assert descriptor.frame_overview.payload.root_conduit_count == 1
 
 
 def test_nexus_frame_manager_can_bootstrap_root_conduit() -> None:
     nexus = _create_enabled_nexus()
 
-    frame = (
+    conduit = (
         nexus.frame_manager
         .begin("ops")
         .dynamic_defaults()
@@ -108,8 +109,9 @@ def test_nexus_frame_manager_can_bootstrap_root_conduit() -> None:
     )
     descriptor = nexus._get_required_frame_descriptor("ops")
 
-    assert frame.name == "ops"
-    assert len(frame._conduits) == 1
+    assert conduit.name == "root"
+    assert conduit._aetheric_frame == "ops"
+    assert len(Aether()._ensure_frame("ops")._conduits) == 1
     assert descriptor.frame_overview is not None
     assert descriptor.frame_overview.payload.root_conduit_count == 1
     assert descriptor.frame_overview.payload.named_root_conduits == (
@@ -121,11 +123,12 @@ def test_rift_create_nexus_frame_delegates_through_frame_manager() -> None:
     nexus = _create_enabled_single_nexus()
     rift = nexus.create_rift(rift_name="alpha")
 
-    frame = rift.create_nexus_frame()
-    descriptor = nexus._get_required_frame_descriptor(frame.name)
+    conduit = rift.create_nexus_frame()
+    descriptor = nexus._get_required_frame_descriptor(conduit._aetheric_frame)
 
-    assert frame.name == "aetheric_frame_system"
-    assert nexus.frame_manager.exists(frame.name) is True
+    assert conduit.name == "root"
+    assert conduit._aetheric_frame == "aetheric_frame_system"
+    assert nexus.frame_manager.exists(conduit._aetheric_frame) is True
     assert descriptor.frame_configuration is not None
     assert descriptor.frame_configuration.system_state == SystemState.dynamic
     assert descriptor.frame_configuration.ai_native_enabled is True

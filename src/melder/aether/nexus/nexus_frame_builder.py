@@ -4,7 +4,7 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.spellbook.configuration.system_state import SystemState
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import (
-    IAethericFrame,
+    IConduit,
     INexusFrameManager,
 )
 
@@ -85,7 +85,7 @@ class NexusFrameBuilder(Cleanable):
         self._rift_enabled: Optional[bool] = True
         self._immutable: bool = False
         self._metadata: Dict[str, object] = {}
-        self._root_conduit_name: Optional[str] = None
+        self._root_conduit_name: str = "root"
 
     def cleanup(self) -> None:
         """
@@ -186,19 +186,6 @@ class NexusFrameBuilder(Cleanable):
         self._root_conduit_name = root_conduit_name
         return self
 
-    def without_root_conduit(self) -> "NexusFrameBuilder":
-        """
-        Clear any requested root-conduit bootstrap.
-
-        Purpose:
-            Explicitly return the builder to a pure empty-frame creation path.
-
-        Returns:
-            NexusFrameBuilder: This builder for fluent chaining.
-        """
-        self._root_conduit_name = None
-        return self
-
     def build(self) -> NexusFrameConfiguration:
         """
         Build one immutable authored frame configuration.
@@ -232,15 +219,16 @@ class NexusFrameBuilder(Cleanable):
             root_conduit_name=self._root_conduit_name,
         )
 
-    def create(self) -> IAethericFrame:
+    def create(self) -> IConduit:
         """
         Build and create the authored frame through the owning manager.
 
         Purpose:
             Provide the fluent one-shot path that both finalizes the authored
-            configuration and realizes the frame immediately.
+            configuration and realizes the rooted Nexus-managed conduit
+            immediately.
 
         Returns:
-            IAethericFrame: Created managed frame.
+            IConduit: Rooted conduit created through the owning manager.
         """
         return self._manager.create(self.build())

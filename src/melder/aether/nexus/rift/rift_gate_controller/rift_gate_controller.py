@@ -54,12 +54,11 @@ class RiftGateController(Cleanable):
         with self._lock:
             if self._cleaned:
                 return
-            for gate in set(self._rift_gates_by_rift_id.values()):
+            for gate in self._rift_gates_by_rift_id.values():
                 gate.cleanup()
             self._rift_gates_by_rift_id.clear()
             self._cleaned = True
             self._rift_gates_by_rift_id = None
-
         self._lock = None
 
     @staticmethod
@@ -109,10 +108,11 @@ class RiftGateController(Cleanable):
         """
         self.check_cleaned()
         self._require_rift_id(rift_id)
-        self._ensure_absent(self._rift_gates_by_rift_id, rift_id)
-        gate = RiftGate()
-        self._rift_gates_by_rift_id[rift_id] = gate
-        return gate
+        with self._lock:
+            self._ensure_absent(self._rift_gates_by_rift_id, rift_id)
+            gate = RiftGate()
+            self._rift_gates_by_rift_id[rift_id] = gate
+            return gate
 
     def register_rift_gate(self, rift_id: str, gate: RiftGate) -> None:
         """
@@ -129,8 +129,9 @@ class RiftGateController(Cleanable):
         """
         self.check_cleaned()
         self._require_rift_id(rift_id)
-        self._ensure_absent(self._rift_gates_by_rift_id, rift_id)
-        self._rift_gates_by_rift_id[rift_id] = gate
+        with self._lock:
+            self._ensure_absent(self._rift_gates_by_rift_id, rift_id)
+            self._rift_gates_by_rift_id[rift_id] = gate
 
     def unregister_rift_gate(self, rift_id: str) -> None:
         """
@@ -144,7 +145,8 @@ class RiftGateController(Cleanable):
             None.
         """
         self.check_cleaned()
-        self._rift_gates_by_rift_id.pop(rift_id, None)
+        with self._lock:
+            self._rift_gates_by_rift_id.pop(rift_id, None)
 
     def get_rift_gate(self, rift_id: str) -> Optional[RiftGate]:
         """
@@ -158,7 +160,8 @@ class RiftGateController(Cleanable):
             Optional[RiftGate]: Registered gate when present; otherwise ``None``.
         """
         self.check_cleaned()
-        return self._rift_gates_by_rift_id.get(rift_id)
+        with self._lock:
+            return self._rift_gates_by_rift_id.get(rift_id)
 
     def count_active_threads_for_rift(self, rift_id: str) -> int:
         """
@@ -172,7 +175,8 @@ class RiftGateController(Cleanable):
             int: Active ticket count for the Rift gate, or 0 when missing.
         """
         self.check_cleaned()
-        gate = self._rift_gates_by_rift_id.get(rift_id)
+        with self._lock:
+            gate = self._rift_gates_by_rift_id.get(rift_id)
         if gate is None:
             return 0
         return gate.active_ticket_count()
@@ -185,7 +189,11 @@ class RiftGateController(Cleanable):
             int: Sum of active tickets across the Rift registry.
         """
         self.check_cleaned()
-        return sum(gate.active_ticket_count() for gate in self._rift_gates_by_rift_id.values())
+        with self._lock:
+            return sum(
+                gate.active_ticket_count()
+                for gate in self._rift_gates_by_rift_id.values()
+            )
 
     def close_and_wait_until_rift_free(
         self,
@@ -208,7 +216,8 @@ class RiftGateController(Cleanable):
             None.
         """
         self.check_cleaned()
-        gate = self._rift_gates_by_rift_id.get(rift_id)
+        with self._lock:
+            gate = self._rift_gates_by_rift_id.get(rift_id)
         if gate is None:
             return
         gate.close_and_wait_until_free(timeout=timeout, interval=interval)
@@ -221,8 +230,9 @@ class RiftGateController(Cleanable):
             None.
         """
         self.check_cleaned()
-        for gate in self._rift_gates_by_rift_id.values():
-            gate.open()
+        with self._lock:
+            for gate in self._rift_gates_by_rift_id.values():
+                gate.open()
 
     def disable_all_rift_gates(self) -> None:
         """
@@ -232,8 +242,9 @@ class RiftGateController(Cleanable):
             None.
         """
         self.check_cleaned()
-        for gate in self._rift_gates_by_rift_id.values():
-            gate.close()
+        with self._lock:
+            for gate in self._rift_gates_by_rift_id.values():
+                gate.close()
 
     def enable_all(self) -> None:
         """
@@ -269,7 +280,8 @@ class RiftGateController(Cleanable):
             None.
         """
         self.check_cleaned()
-        gate = self._rift_gates_by_rift_id.get(rift_id)
+        with self._lock:
+            gate = self._rift_gates_by_rift_id.get(rift_id)
         if gate is None:
             return
         gate.set_entry_mode(entry_mode)
@@ -286,5 +298,6 @@ class RiftGateController(Cleanable):
             None.
         """
         self.check_cleaned()
-        for gate in self._rift_gates_by_rift_id.values():
-            gate.set_entry_mode(entry_mode)
+        with self._lock:
+            for gate in self._rift_gates_by_rift_id.values():
+                gate.set_entry_mode(entry_mode)

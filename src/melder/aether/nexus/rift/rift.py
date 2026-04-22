@@ -14,6 +14,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.interfaces.interfaces import (
+    IConduit,
     IAethericFrame,
     INexus,
     IRiftGate,
@@ -925,22 +926,22 @@ class Rift(Cleanable, IRift):
                 space_id=space_id,
             )
         return primary_space
-    def get_nexus_frame(self, frame_name: Optional[str] = None) -> IAethericFrame:
+    def get_nexus_frame(self, frame_name: Optional[str] = None) -> IConduit:
         """
         Internal
 
-        Return one Nexus-managed frame through Nexus policy.
+        Return one rooted Nexus-managed conduit through Nexus policy.
 
         Args:
             frame_name:
                 Optional explicit Nexus frame name.
 
         Contract:
-            Delegates frame resolution to Nexus using this Rift's identity and
-            the current Nexus/Rift frame policy.
+            Delegates rooted conduit resolution to Nexus using this Rift's
+            identity and the current Nexus/Rift frame policy.
 
         Returns:
-            IAethericFrame: Resolved Nexus frame.
+            IConduit: Root conduit for the resolved Nexus-managed frame.
         """
         self.check_cleaned()
         return self._nexus.get_nexus_frame_for_rift(self._id, frame_name=frame_name)
@@ -948,16 +949,19 @@ class Rift(Cleanable, IRift):
     def create_nexus_frame(
             self,
             frame_name: Optional[str] = None,
+            root_conduit_name: str = "root",
             immutable: bool = False,
-    ) -> IAethericFrame:
+    ) -> IConduit:
         """
         Internal
 
-        Create one Nexus-managed frame through Nexus policy.
+        Create one rooted Nexus-managed conduit through Nexus policy.
 
         Args:
             frame_name:
                 Optional explicit Nexus frame name.
+            root_conduit_name:
+                Root conduit name to use for newly created frames.
             immutable:
                 Immutable flag for indexed/shared creation.
 
@@ -966,12 +970,13 @@ class Rift(Cleanable, IRift):
             identity and current frame policy.
 
         Returns:
-            IAethericFrame: Created or recovered Nexus frame.
+            IConduit: Root conduit for the created or recovered frame.
         """
         self.check_cleaned()
         return self._nexus.create_nexus_frame_for_rift(
             self._id,
             frame_name=frame_name,
+            root_conduit_name=root_conduit_name,
             immutable=immutable,
         )
 

@@ -43,6 +43,7 @@ from melder.utilities.helpers.init_helpers import InitHelpers
 from melder.utilities.interfaces.interfaces import (
     IAether,
     IAethericFrame,
+    IConduit,
     IConfiguration,
     INexus,
     INexusConfiguration,
@@ -2023,11 +2024,11 @@ class Nexus(Cleanable, INexus):
             self,
             rift_id: str,
             frame_name: Optional[str] = None,
-    ) -> IAethericFrame:
+    ) -> IConduit:
         """
         Internal
 
-        Return a Nexus-managed frame reference for one Rift under the current
+        Return a rooted Nexus-managed conduit for one Rift under the current
         topology rules.
 
         Args:
@@ -2038,58 +2039,63 @@ class Nexus(Cleanable, INexus):
                 derives the requested frame from the current topology mode.
 
         Returns:
-            IAethericFrame: Resolved Nexus frame.
+            IConduit: Root conduit for the resolved Nexus-managed frame.
 
         Raises:
             ValueError: If the requesting Rift or requested frame is not
                 available under the current mode rules.
         """
-        return self._frame_manager.get_frame_for_rift(
+        frame = self._frame_manager.get_frame_for_rift(
             rift_id,
             frame_name=frame_name,
         )
+        return self._frame_manager._get_required_root_conduit_for_frame(frame.name)
 
     def create_nexus_frame_for_rift(
             self,
             rift_id: str,
             frame_name: Optional[str] = None,
+            root_conduit_name: str = "root",
             immutable: bool = False,
-    ) -> IAethericFrame:
+    ) -> IConduit:
         """
         Internal
 
-        Create or recover a Nexus-managed frame for one Rift under the current
-        topology rules.
+        Create or recover a rooted Nexus-managed conduit for one Rift under the
+        current topology rules.
 
         Args:
             rift_id:
                 Requesting Rift id.
             frame_name:
                 Optional explicit Nexus frame name.
+            root_conduit_name:
+                Root conduit name to use for newly created frames.
             immutable:
                 True when the new frame should survive zero attachments until an
                 explicit external cleanup path removes it.
 
         Returns:
-            IAethericFrame: Created or recovered Nexus frame.
+            IConduit: Root conduit for the created or recovered frame.
 
         Raises:
             ValueError: If creation is not valid under the current topology
                 rules.
         """
-        frame = self._frame_manager.create_frame_for_rift(
+        root_conduit = self._frame_manager.create_frame_for_rift(
             rift_id,
             frame_name=frame_name,
+            root_conduit_name=root_conduit_name,
             immutable=immutable,
         )
         self._logger.info(
-            "Resolved Nexus frame '{0}' for Rift id={1}.".format(
-                frame.name,
+            "Resolved Nexus rooted conduit '{0}' for Rift id={1}.".format(
+                root_conduit.id,
                 rift_id,
             ),
             "create_nexus_frame_for_rift",
         )
-        return frame
+        return root_conduit
 
     def authorize_frame_link_for_rift(self, rift_id: str, frame_name: str) -> bool:
         """

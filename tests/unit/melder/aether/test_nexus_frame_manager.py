@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from typing import Optional
 
 import pytest
 
@@ -25,6 +26,27 @@ class _FakeFrame:
         self._conduits = dict(conduit_ids or {})
         self._conduit_cloud = SimpleNamespace(_registry=dict(cloud_names or {}))
         self._conduit_clusters = dict(cluster_names or {})
+
+    def cleanup(self) -> None:
+        self.cleaned = True
+
+
+class _FakeConduit:
+    def __init__(
+            self,
+            *,
+            conduit_name: str,
+            frame_name: str,
+            spellbook_id: str = "spellbook-1",
+            conduit_id: str = "conduit-1",
+    ) -> None:
+        self.name = conduit_name
+        self.id = conduit_id
+        self._id = conduit_id
+        self._name = conduit_name
+        self._aetheric_frame = frame_name
+        self._spellbook = SimpleNamespace(id=spellbook_id)
+        self.cleaned = False
 
     def cleanup(self) -> None:
         self.cleaned = True
@@ -180,13 +202,47 @@ def _build_configuration(
         *,
         immutable: bool = False,
         metadata=None,
-        root_conduit_name=None,
+        root_conduit_name="root",
 ):
     return NexusFrameConfiguration.create_dynamic_defaults(
         frame_name,
         immutable=immutable,
         metadata=metadata,
         root_conduit_name=root_conduit_name,
+    )
+
+
+def _patch_conjure_root_conduit(
+        monkeypatch: pytest.MonkeyPatch,
+        manager: NexusFrameManager,
+        nexus,
+        *,
+        conduit_name: Optional[str] = None,
+        spellbook_id: str = "spellbook-1",
+        failure_message: Optional[str] = None,
+) -> None:
+    def _conjure(configuration: NexusFrameConfiguration):
+        if failure_message is not None:
+            raise RuntimeError(failure_message)
+        nexus._aether.bound_configurations[configuration.frame_name] = (
+            configuration.to_spellbook_configuration()
+        )
+        nexus._aether.bound_frame_configurations[configuration.frame_name] = (
+            configuration.to_aetheric_frame_configuration()
+        )
+        frame = nexus._aether._ensure_frame(configuration.frame_name)
+        conduit = _FakeConduit(
+            conduit_name=conduit_name or configuration.root_conduit_name,
+            frame_name=configuration.frame_name,
+            spellbook_id=spellbook_id,
+        )
+        frame._conduits[conduit.id] = conduit
+        return conduit
+
+    monkeypatch.setattr(
+        manager,
+        "_conjure_root_conduit_for_configuration",
+        _conjure,
     )
 
 
@@ -229,9 +285,9 @@ def test_nexus_frame_manager_list_frame_names_returns_sorted_snapshot(
 @pytest.mark.parametrize(
     ("immutable", "metadata", "root_conduit_name"),
     [
-        (False, None, None),
-        (True, None, None),
-        (False, {"team": "ops"}, None),
+        (False, None, "root"),
+        (True, None, "root"),
+        (False, {"team": "ops"}, "root"),
         (False, None, "root"),
         (True, {"team": "ops"}, "root"),
     ],
@@ -305,47 +361,93 @@ def test_nexus_frame_manager_validate_configuration_contract_rejects_invalid_pos
         NexusFrameManager._validate_configuration_contract(_Configuration())
 
 
-def test_nexus_frame_manager_create_publishes_descriptor_and_acl_state() -> None:
+def test_nexus_frame_manager_create_publishes_descriptor_and_acl_state(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
     manager, nexus = _build_manager()
+    _patch_conjure_root_conduit(monkeypatch, manager, nexus)
 
-    frame = manager.create(_build_configuration("ops"))
+    conduit = manager.create(_build_configuration("ops"))
     descriptor = nexus._frame_descriptor_manager._get_required_frame_descriptor("ops")
 
-    assert frame.name == "ops"
+    assert conduit.name == "root"
     assert nexus._aether.bound_configurations["ops"]._aether_frame == "ops"
     assert nexus._aether.bound_frame_configurations["ops"].system_state == SystemState.dynamic
-    assert descriptor.frame_handle is frame
+    assert descriptor.frame_handle.name == "ops"
     assert descriptor.frame_configuration.system_state == SystemState.dynamic
     assert descriptor.frame_overview.frame_name == "ops"
-    assert descriptor.frame_overview.payload.root_conduit_count == 0
+    assert descriptor.frame_overview.payload.root_conduit_count == 1
     assert nexus.ensured_acl_frames == ["ops"]
 
 
-def test_nexus_frame_manager_create_calls_root_bootstrap_when_requested(monkeypatch) -> None:
+def test_nexus_frame_manager_create_allows_raw_single_shared_frame_name(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manager, nexus = _build_manager(nexus_frame_mode="single")
+    _patch_conjure_root_conduit(monkeypatch, manager, nexus)
+
+    conduit = manager.create(_build_configuration("aetheric_frame_system"))
+
+    assert conduit.name == "root"
+    assert nexus._frame_descriptor_manager._get_required_frame_descriptor(
+        "aetheric_frame_system"
+    ).frame_overview is not None
+
+
+def test_nexus_frame_manager_create_rejects_raw_single_non_shared_frame_name(
+) -> None:
+    manager, _ = _build_manager(nexus_frame_mode="single")
+
+    with pytest.raises(ValueError, match="only allows raw creation of the shared frame"):
+        manager.create(_build_configuration("ops"))
+
+
+def test_nexus_frame_manager_create_rejects_raw_one_per_workspace_creation(
+) -> None:
+    manager, _ = _build_manager(nexus_frame_mode="one_per_workspace")
+
+    with pytest.raises(ValueError, match="Raw NexusFrameManager creation is not allowed"):
+        manager.create(_build_configuration("ops"))
+
+
+def test_nexus_frame_manager_create_uses_rooted_spellbook_conjure(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
     manager, _ = _build_manager()
     calls = []
 
     monkeypatch.setattr(
         manager,
-        "_bootstrap_root_conduit",
-        lambda frame_name, configuration, root_conduit_name: calls.append(
-            (frame_name, configuration.frame_name, root_conduit_name)
+        "_conjure_root_conduit_for_configuration",
+        lambda configuration: calls.append(
+            (configuration.frame_name, configuration.root_conduit_name)
+        ) or _FakeConduit(
+            conduit_name=configuration.root_conduit_name,
+            frame_name=configuration.frame_name,
         ),
+    )
+    monkeypatch.setattr(
+        manager,
+        "_ensure_descriptor_and_acl",
+        lambda frame_name: None,
+    )
+    monkeypatch.setattr(
+        manager,
+        "_publish_frame_overview",
+        lambda frame_name, config_origin_spellbook_id=None: None,
     )
 
     manager.create(_build_configuration("ops", root_conduit_name="root"))
 
-    assert calls == [("ops", "ops", "root")]
+    assert calls == [("ops", "root")]
 
 
 @pytest.mark.parametrize(
     "failure_step",
     [
-        "bind_configuration",
-        "bind_frame_configuration",
+        "conjure_root_conduit",
         "ensure_descriptor_and_acl",
         "publish_frame_overview",
-        "bootstrap_root_conduit",
     ],
 )
 def test_nexus_frame_manager_create_rolls_back_registry_on_failure(
@@ -355,17 +457,22 @@ def test_nexus_frame_manager_create_rolls_back_registry_on_failure(
     manager, nexus = _build_manager()
     configuration = _build_configuration("ops", root_conduit_name="root")
 
-    if failure_step == "bind_configuration":
-        nexus._aether.raise_on_bind_configuration = True
-    elif failure_step == "bind_frame_configuration":
-        nexus._aether.raise_on_bind_frame_configuration = True
+    if failure_step == "conjure_root_conduit":
+        _patch_conjure_root_conduit(
+            monkeypatch,
+            manager,
+            nexus,
+            failure_message="conjure_failure",
+        )
     elif failure_step == "ensure_descriptor_and_acl":
+        _patch_conjure_root_conduit(monkeypatch, manager, nexus)
         monkeypatch.setattr(
             manager,
             "_ensure_descriptor_and_acl",
             lambda frame_name: (_ for _ in ()).throw(RuntimeError("descriptor_failure")),
         )
     elif failure_step == "publish_frame_overview":
+        _patch_conjure_root_conduit(monkeypatch, manager, nexus)
         monkeypatch.setattr(
             manager,
             "_publish_frame_overview",
@@ -374,20 +481,15 @@ def test_nexus_frame_manager_create_rolls_back_registry_on_failure(
             ),
         )
     else:
-        monkeypatch.setattr(
-            manager,
-            "_bootstrap_root_conduit",
-            lambda frame_name, configuration, root_conduit_name: (_ for _ in ()).throw(
-                RuntimeError("bootstrap_failure")
-            ),
-        )
+        _patch_conjure_root_conduit(monkeypatch, manager, nexus)
 
     with pytest.raises(RuntimeError):
         manager.create(configuration)
 
     assert manager.exists("ops") is False
     assert "ops" not in manager._configurations_by_frame_name
-    assert nexus._aether.frames["ops"].cleaned is True
+    if "ops" in nexus._aether.frames:
+        assert nexus._aether.frames["ops"].cleaned is True
 
 
 def test_nexus_frame_manager_remove_rejects_missing_frame() -> None:
@@ -504,16 +606,19 @@ def test_nexus_frame_manager_create_frame_for_rift_matrix(
     nexus._rifts_by_id["rift-1"] = _FakeRift("rift-1")
     if existing:
         existing_frame = _FakeFrame(expected)
+        nexus._aether.frames[expected] = existing_frame
         manager._frames_by_name[expected] = existing_frame
+        existing_conduit = _FakeConduit(conduit_name="root", frame_name=expected)
+        existing_frame._conduits[existing_conduit.id] = existing_conduit
         result = manager.create_frame_for_rift("rift-1", frame_name=frame_name)
-        assert result is existing_frame
+        assert result is existing_conduit
         return
 
-    created = _FakeFrame(expected)
+    created = _FakeConduit(conduit_name="root", frame_name=expected)
     monkeypatch.setattr(
         manager,
-        "create_dynamic_frame",
-        lambda resolved_frame_name, immutable=False: created,
+        "_create_configuration",
+        lambda configuration, validate_raw_mode: created,
     )
 
     result = manager.create_frame_for_rift("rift-1", frame_name=frame_name)
@@ -532,14 +637,17 @@ def test_nexus_frame_manager_create_frame_for_rift_rejects_immutable_private_fra
 def test_nexus_frame_manager_create_frame_for_rift_allocates_indexed_frame_name() -> None:
     manager, nexus = _build_manager(nexus_frame_mode="indexed")
     nexus._rifts_by_id["rift-1"] = _FakeRift("rift-1")
-    created = _FakeFrame("aetheric_frame_system-1")
+    created = _FakeConduit(
+        conduit_name="root",
+        frame_name="aetheric_frame_system-1",
+    )
     recorded = {}
 
-    def _create_dynamic_frame(frame_name, immutable=False):
-        recorded["frame_name"] = frame_name
+    def _create_configuration(configuration, validate_raw_mode):
+        recorded["frame_name"] = configuration.frame_name
         return created
 
-    manager.create_dynamic_frame = _create_dynamic_frame
+    manager._create_configuration = _create_configuration
 
     result = manager.create_frame_for_rift("rift-1")
 
@@ -739,45 +847,40 @@ def test_nexus_frame_manager_bootstrap_root_conduit_binds_and_refreshes_overview
         monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     manager, nexus = _build_manager()
-    frame = _FakeFrame("ops")
-    manager._frames_by_name["ops"] = frame
-    nexus._aether.bound_frame_configurations["ops"] = (
-        _build_configuration("ops").to_aetheric_frame_configuration()
-    )
-    nexus._frame_descriptor_manager._get_or_create_frame_descriptor("ops")
-    published = []
+    calls = []
 
     class _FakeSpellbook:
         def __init__(self, aetheric_frame: str, configuration) -> None:
+            calls.append(("init", aetheric_frame, configuration))
             self.id = "spellbook-1"
             self.aetheric_frame = aetheric_frame
             self.configuration = configuration
 
         def conjure(self, name: str, automatic: bool):
-            return SimpleNamespace(name=name, automatic=automatic)
+            calls.append(("conjure", name, automatic))
+            nexus._aether.bound_configurations["ops"] = self.configuration
+            nexus._aether.bound_frame_configurations["ops"] = (
+                _build_configuration("ops").to_aetheric_frame_configuration()
+            )
+            nexus._aether._ensure_frame("ops")
+            return _FakeConduit(
+                conduit_name=name,
+                frame_name="ops",
+                spellbook_id=self.id,
+            )
 
     monkeypatch.setattr(
         "melder.spellbook.spellbook.Spellbook",
         _FakeSpellbook,
     )
-    monkeypatch.setattr(
-        manager,
-        "_publish_frame_overview",
-        lambda frame_name, config_origin_spellbook_id=None: published.append(
-            (frame_name, config_origin_spellbook_id)
-        ),
-    )
 
-    conduit = manager._bootstrap_root_conduit(
-        "ops",
-        _build_configuration("ops", root_conduit_name="root"),
-        "root",
+    conduit = manager._conjure_root_conduit_for_configuration(
+        _build_configuration("ops", root_conduit_name="root")
     )
 
     assert conduit.name == "root"
-    assert conduit.automatic is False
-    assert nexus._aether.bound_configurations["ops"].get_property("system_state") == SystemState.dynamic
-    assert published == [("ops", "spellbook-1")]
+    assert calls[0][0] == "init"
+    assert calls[1] == ("conjure", "root", False)
 
 
 @pytest.mark.parametrize(

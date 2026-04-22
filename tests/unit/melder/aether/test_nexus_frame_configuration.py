@@ -7,9 +7,9 @@ from melder.spellbook.configuration.system_state import SystemState
 @pytest.mark.parametrize(
     ("immutable", "metadata", "root_conduit_name"),
     [
-        (False, None, None),
-        (True, None, None),
-        (False, {"team": "ops"}, None),
+        (False, None, "root"),
+        (True, None, "root"),
+        (False, {"team": "ops"}, "root"),
         (False, None, "root"),
         (True, {"team": "ops"}, "root"),
     ],
@@ -119,11 +119,6 @@ def test_nexus_frame_configuration_rejects_invalid_posture(
 def test_nexus_frame_configuration_rejects_empty_root_conduit_name(
         root_conduit_name,
 ) -> None:
-    if root_conduit_name is None:
-        configuration = NexusFrameConfiguration.create_dynamic_defaults("ops")
-        assert configuration.root_conduit_name is None
-        return
-
     with pytest.raises(ValueError, match="root_conduit_name cannot be empty"):
         NexusFrameConfiguration(
             frame_name="ops",

@@ -1,5 +1,5 @@
 import threading
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
@@ -47,6 +47,7 @@ class NexusFrameManager(Cleanable):
         "_lock",
         "_nexus",
         "_next_indexed_frame_number",
+        "_creating_frame_names",
         "_frames_by_name",
         "_configurations_by_frame_name",
     ]
@@ -73,6 +74,7 @@ class NexusFrameManager(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._nexus: INexus = nexus
         self._next_indexed_frame_number: int = 1
+        self._creating_frame_names: Set[str] = set()
         self._frames_by_name: Dict[str, IAethericFrame] = {}
         self._configurations_by_frame_name: Dict[str, NexusFrameConfiguration] = {}
 
@@ -99,7 +101,9 @@ class NexusFrameManager(Cleanable):
             for configuration in self._configurations_by_frame_name.values():
                 configuration.cleanup()
             self._configurations_by_frame_name.clear()
+            self._creating_frame_names.clear()
             self._next_indexed_frame_number = None
+            self._creating_frame_names = None
             self._frames_by_name = None
             self._configurations_by_frame_name = None
             self._nexus = None
@@ -176,17 +180,17 @@ class NexusFrameManager(Cleanable):
             *,
             immutable: bool = False,
             metadata: Optional[Dict[str, object]] = None,
-            root_conduit_name: Optional[str] = None,
-    ) -> IAethericFrame:
+            root_conduit_name: str = "root",
+    ) -> IConduit:
         """
-        Create one dynamic Nexus-managed frame directly.
+        Create one rooted dynamic Nexus-managed conduit directly.
 
         Purpose:
             Provide the non-fluent shortcut for the common AI-native dynamic
             authored frame posture used by internal agent workspaces.
 
         Returns:
-            IAethericFrame: Managed frame.
+            IConduit: Root conduit for the managed frame.
         """
         return self.create(
             NexusFrameConfiguration.create_dynamic_defaults(
@@ -200,30 +204,29 @@ class NexusFrameManager(Cleanable):
     def create(
             self,
             configuration: NexusFrameConfiguration,
-    ) -> IAethericFrame:
+    ) -> IConduit:
         """
-        Create one managed frame from authored configuration.
+        Create one rooted Nexus-managed conduit from authored configuration.
 
         Purpose:
-            Realize an authored Nexus-managed frame, bind both runtime
-            configuration layers into Aether, provision descriptor/ACL state,
-            and optionally bootstrap the requested root conduit.
+            Realize an authored Nexus-managed workspace through the repo-native
+            `Spellbook` -> `conjure(...)` path so the caller gets a rooted
+            conduit instead of an empty frame shell.
 
         Contract:
             - Rejects duplicate manager-owned frame names.
             - Treats the manager registry as the authoritative Nexus-managed
               frame set.
-            - Binds both `Configuration` and `AethericFrameConfiguration`
-              before publishing descriptor-owned overview state.
-            - Bootstraps an optional root conduit only after the empty frame
-              exists and descriptor state is provisioned.
+            - Uses the public `Spellbook` API to bind configuration and conjure
+              the root conduit.
+            - Returns the rooted conduit, not the frame object.
 
         Args:
             configuration:
                 Authored frame configuration.
 
         Returns:
-            IAethericFrame: Realized managed frame.
+            IConduit: Root conduit for the managed frame.
         """
         self.check_cleaned()
         if not isinstance(configuration, NexusFrameConfiguration):
@@ -231,60 +234,146 @@ class NexusFrameManager(Cleanable):
                 "configuration must be a NexusFrameConfiguration."
             )
         self._validate_configuration_contract(configuration)
+        return self._create_configuration(
+            configuration,
+            validate_raw_mode=True,
+        )
+
+    def _create_configuration(
+            self,
+            configuration: NexusFrameConfiguration,
+            *,
+            validate_raw_mode: bool,
+    ) -> IConduit:
+        """
+        Realize one rooted Nexus-managed conduit from authored configuration.
+
+        Purpose:
+            Share the frame-realization body between the public raw manager
+            authoring path and the internal Rift-scoped topology path while
+            letting only the public raw path enforce the extra raw-mode gate.
+
+        Args:
+            configuration:
+                Authored frame configuration to realize.
+            validate_raw_mode:
+                True when the call originated from the public raw manager
+                authoring path and must enforce raw mode constraints.
+
+        Returns:
+            IConduit: Root conduit for the managed frame.
+        """
         frame_name = configuration.frame_name
+        if validate_raw_mode:
+            self._validate_raw_creation_for_mode(frame_name)
+        root_conduit: Optional[IConduit] = None
+        spellbook_id: Optional[str] = None
         frame: Optional[IAethericFrame] = None
-        registered = False
         with self._lock:
-            existing_frame = self._frames_by_name.get(frame_name)
-            if existing_frame is not None:
+            if (
+                    frame_name in self._frames_by_name
+                    or frame_name in self._creating_frame_names
+            ):
                 raise ValueError(
                     "Nexus managed frame '{0}' already exists.".format(frame_name)
                 )
             self._validate_frame_budget((frame_name,))
-            frame = self._nexus._aether._ensure_frame(frame_name)
-            self._frames_by_name[frame_name] = frame
-            self._configurations_by_frame_name[frame_name] = configuration
-            registered = True
+            self._creating_frame_names.add(frame_name)
 
         try:
-            spellbook_configuration = configuration.to_spellbook_configuration()
-            self._nexus._aether._bind_configuration(
-                spellbook_configuration,
-                frame_name,
+            root_conduit = self._conjure_root_conduit_for_configuration(
+                configuration
             )
-            frame_configuration = configuration.to_aetheric_frame_configuration()
-            self._nexus._aether._bind_aetheric_frame_configuration(
-                frame_configuration,
-                frame_name,
-            )
+            spellbook_id = root_conduit._spellbook.id
+            frame = self._nexus._aether._ensure_frame(frame_name)
+            with self._lock:
+                self._creating_frame_names.discard(frame_name)
+                if frame_name in self._frames_by_name:
+                    raise ValueError(
+                        "Nexus managed frame '{0}' already exists.".format(
+                            frame_name
+                        )
+                    )
+                self._frames_by_name[frame_name] = frame
+                self._configurations_by_frame_name[frame_name] = configuration
             self._ensure_descriptor_and_acl(frame_name)
             self._publish_frame_overview(
                 frame_name,
-                config_origin_spellbook_id=None,
+                config_origin_spellbook_id=spellbook_id,
             )
-            if configuration.root_conduit_name is not None:
-                self._bootstrap_root_conduit(
-                    frame_name,
-                    configuration,
-                    configuration.root_conduit_name,
-                )
-            return frame
+            return root_conduit
         except Exception:
-            if registered:
-                with self._lock:
-                    if self._frames_by_name.get(frame_name) is frame:
-                        self._frames_by_name.pop(frame_name, None)
-                    if (
-                            self._configurations_by_frame_name.get(frame_name)
-                            is configuration
-                    ):
-                        self._configurations_by_frame_name.pop(frame_name, None)
-                if frame is not None:
-                    try:
-                        frame.cleanup()
-                    except Exception:
-                        pass
+            with self._lock:
+                self._creating_frame_names.discard(frame_name)
+                if self._frames_by_name.get(frame_name) is frame:
+                    self._frames_by_name.pop(frame_name, None)
+                if (
+                        self._configurations_by_frame_name.get(frame_name)
+                        is configuration
+                ):
+                    self._configurations_by_frame_name.pop(frame_name, None)
+            if root_conduit is not None:
+                try:
+                    root_conduit.cleanup()
+                except Exception:
+                    pass
+            if frame is not None and not frame.cleaned:
+                try:
+                    frame.cleanup()
+                except Exception:
+                    pass
             raise
+
+    def _validate_raw_creation_for_mode(self, frame_name: str) -> None:
+        """
+        Validate raw manager creation against the active Nexus frame mode.
+
+        Purpose:
+            Keep direct `NexusFrameManager` authoring aligned with the same
+            `single` / `indexed` / `one_per_workspace` behavior model already
+            enforced by the Rift-facing Nexus APIs.
+
+        Contract:
+            - Requires the owning Nexus to be enabled before direct authoring.
+            - In `single`, only the canonical shared frame name may be created
+              directly through the manager.
+            - In `one_per_workspace`, raw manager creation is rejected because
+              the path carries no Rift owner identity.
+            - In `indexed`, explicit named creation remains allowed.
+
+        Args:
+            frame_name:
+                Candidate frame name for the raw manager creation path.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If the current Nexus frame mode does not allow raw creation for
+                the requested frame name.
+        """
+        self.check_cleaned()
+        self._nexus._require_enabled()
+        nexus_frame_mode = self._nexus._configuration.get_property(
+            "nexus_frame_mode"
+        )
+        if nexus_frame_mode.name == "single":
+            shared_frame_name = self._nexus._configuration.get_property(
+                "default_nexus_frame_name"
+            )
+            if frame_name != shared_frame_name:
+                raise ValueError(
+                    "single Nexus mode only allows raw creation of the shared "
+                    "frame '{0}'.".format(shared_frame_name)
+                )
+            return
+        if nexus_frame_mode.name == "one_per_workspace":
+            raise ValueError(
+                "Raw NexusFrameManager creation is not allowed in "
+                "one_per_workspace mode; use Rift.create_nexus_frame() or "
+                "Nexus.create_nexus_frame_for_rift()."
+            )
 
     def remove(self, frame_name: str) -> None:
         """
@@ -365,10 +454,11 @@ class NexusFrameManager(Cleanable):
             self,
             rift_id: str,
             frame_name: Optional[str] = None,
+            root_conduit_name: str = "root",
             immutable: bool = False,
-    ) -> IAethericFrame:
+    ) -> IConduit:
         """
-        Create or recover one managed frame for a Rift under current topology.
+        Create or recover one rooted Nexus-managed conduit for a Rift.
 
         Purpose:
             Provide the topology-aware create-or-recover path used by the Rift
@@ -380,11 +470,13 @@ class NexusFrameManager(Cleanable):
                 Requesting Rift id.
             frame_name:
                 Optional explicit frame name.
+            root_conduit_name:
+                Root conduit name to use for newly created frames.
             immutable:
                 Immutable flag for newly created frames.
 
         Returns:
-            IAethericFrame: Created or recovered managed frame.
+            IConduit: Root conduit for the created or recovered frame.
         """
         self.check_cleaned()
         self._nexus._require_enabled()
@@ -398,11 +490,18 @@ class NexusFrameManager(Cleanable):
             raise ValueError("one_per_workspace frames cannot be immutable.")
         with self._lock:
             existing_frame = self._frames_by_name.get(requested_frame_name)
-            if existing_frame is not None:
-                return existing_frame
-        return self.create_dynamic_frame(
-            requested_frame_name,
-            immutable=immutable,
+        if existing_frame is not None:
+            return self._get_required_root_conduit_for_frame(
+                requested_frame_name,
+                root_conduit_name=root_conduit_name,
+            )
+        return self._create_configuration(
+            NexusFrameConfiguration.create_dynamic_defaults(
+                requested_frame_name,
+                immutable=immutable,
+                root_conduit_name=root_conduit_name,
+            ),
+            validate_raw_mode=False,
         )
 
     def authorize_frame_link_for_rift(
@@ -829,52 +928,81 @@ class NexusFrameManager(Cleanable):
                 "Nexus-managed frames must set rift_enabled=True."
             )
 
-    def _bootstrap_root_conduit(
+    def _conjure_root_conduit_for_configuration(
             self,
-            frame_name: str,
             configuration: NexusFrameConfiguration,
-            root_conduit_name: str,
     ) -> IConduit:
         """
-        Bootstrap one optional root conduit into a newly created frame.
+        Conjure the required root conduit for one Nexus-managed frame.
 
         Purpose:
-            Use a narrow temporary `Spellbook` path to create the requested
-            starter conduit and then refresh the descriptor-owned frame
-            overview so the passive view surfaces immediately reflect the new
-            topology.
+            Use the public `Spellbook` API so Nexus-managed creation follows the
+            same runtime grammar as the rest of the repo: configuration through
+            `Spellbook`, then rooted conduit creation through
+            `Spellbook.conjure(...)`.
 
         Args:
-            frame_name:
-                Managed frame receiving the bootstrap conduit.
             configuration:
-                Authored configuration that drove frame creation.
-            root_conduit_name:
-                Requested starter conduit name.
+                Authored configuration that drives rooted creation.
 
         Returns:
             IConduit: Newly created root conduit.
         """
+        from melder.aether.conduit.conduit import Conduit
         from melder.spellbook.spellbook import Spellbook
 
+        Spellbook._aether = self._nexus._aether
+        Conduit._aether = self._nexus._aether
         spellbook_configuration = configuration.to_spellbook_configuration()
-        self._nexus._aether._bind_configuration(
-            spellbook_configuration,
-            frame_name,
-        )
         spellbook = Spellbook(
-            aetheric_frame=frame_name,
+            aetheric_frame=configuration.frame_name,
             configuration=spellbook_configuration,
         )
-        conduit = spellbook.conjure(
-            name=root_conduit_name,
+        return spellbook.conjure(
+            name=configuration.root_conduit_name,
             automatic=False,
         )
-        self._publish_frame_overview(
-            frame_name,
-            config_origin_spellbook_id=spellbook.id,
+
+    def _get_required_root_conduit_for_frame(
+            self,
+            frame_name: str,
+            *,
+            root_conduit_name: str = "root",
+    ) -> IConduit:
+        """
+        Return the required root conduit for an already managed frame.
+
+        Purpose:
+            Support create-or-recover semantics for the Rift-facing Nexus
+            creation path without returning the frame object.
+
+        Args:
+            frame_name:
+                Managed frame name whose root conduit should be returned.
+            root_conduit_name:
+                Preferred root conduit name.
+
+        Returns:
+            IConduit: Matching root conduit for the frame.
+        """
+        frame = self._nexus._aether._ensure_frame(frame_name)
+        if not frame._conduits:
+            raise ValueError(
+                "Nexus managed frame '{0}' has no root conduit.".format(
+                    frame_name
+                )
+            )
+        for conduit in frame._conduits.values():
+            if conduit is not None and conduit.name == root_conduit_name:
+                return conduit
+        if len(frame._conduits) == 1:
+            return next(iter(frame._conduits.values()))
+        raise ValueError(
+            "Nexus managed frame '{0}' has no root conduit named '{1}'.".format(
+                frame_name,
+                root_conduit_name,
+            )
         )
-        return conduit
 
     def _frame_is_in_active_rift_use(self, frame_name: str) -> bool:
         """

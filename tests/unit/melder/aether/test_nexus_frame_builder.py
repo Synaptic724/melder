@@ -37,7 +37,7 @@ def test_nexus_frame_builder_defaults_to_dynamic_ai_native_rift_enabled() -> Non
     assert builder._rift_enabled is True
     assert builder._immutable is False
     assert builder._metadata == {}
-    assert builder._root_conduit_name is None
+    assert builder._root_conduit_name == "root"
 
 
 def test_nexus_frame_builder_dynamic_defaults_is_idempotent() -> None:
@@ -122,24 +122,12 @@ def test_nexus_frame_builder_with_root_conduit_rejects_empty_name() -> None:
         builder.with_root_conduit("")
 
 
-def test_nexus_frame_builder_without_root_conduit_clears_name() -> None:
-    builder = NexusFrameBuilder(
-        manager=_RecordingFrameManager(),
-        frame_name="ops",
-    ).with_root_conduit("root")
-
-    returned = builder.without_root_conduit()
-
-    assert returned is builder
-    assert builder._root_conduit_name is None
-
-
 @pytest.mark.parametrize(
     ("immutable", "metadata", "root_conduit_name"),
     [
-        (False, None, None),
-        (True, None, None),
-        (False, {"team": "ops"}, None),
+        (False, None, "root"),
+        (True, None, "root"),
+        (False, {"team": "ops"}, "root"),
         (False, None, "root"),
         (True, {"team": "ops"}, "root"),
     ],
@@ -155,8 +143,7 @@ def test_nexus_frame_builder_build_matrix(
     )
     builder.immutable(immutable)
     builder.metadata(metadata)
-    if root_conduit_name is not None:
-        builder.with_root_conduit(root_conduit_name)
+    builder.with_root_conduit(root_conduit_name)
 
     configuration = builder.build()
 
@@ -182,7 +169,7 @@ def test_nexus_frame_builder_build_returns_detached_configuration() -> None:
     builder.with_root_conduit("root")
 
     assert configuration.metadata == {"team": "ops"}
-    assert configuration.root_conduit_name is None
+    assert configuration.root_conduit_name == "root"
 
 
 def test_nexus_frame_builder_create_delegates_to_manager() -> None:

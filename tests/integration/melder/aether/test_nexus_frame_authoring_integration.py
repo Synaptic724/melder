@@ -42,6 +42,20 @@ def _create_enabled_nexus(
     return nexus
 
 
+def _expected_frame_name(
+        nexus_frame_mode: str,
+        rift,
+        frame_name: str = None,
+) -> str:
+    if nexus_frame_mode == "single":
+        return "aetheric_frame_system"
+    if nexus_frame_mode == "one_per_workspace":
+        return "aetheric_frame_system:{0}".format(rift.id)
+    if frame_name is not None:
+        return frame_name
+    return "aetheric_frame_system-1"
+
+
 @pytest.mark.parametrize(
     ("nexus_frame_mode", "frame_name", "expected_name"),
     [
@@ -66,13 +80,16 @@ def test_integration_rift_create_nexus_frame_matrix(
     )
     rift = nexus.create_rift(rift_name="alpha")
 
-    frame = rift.create_nexus_frame(frame_name=frame_name)
-    descriptor = nexus._get_required_frame_descriptor(frame.name)
+    conduit = rift.create_nexus_frame(frame_name=frame_name)
+    expected_frame_name = _expected_frame_name(
+        nexus_frame_mode,
+        rift,
+        frame_name=frame_name,
+    )
+    descriptor = nexus._get_required_frame_descriptor(expected_frame_name)
 
-    if nexus_frame_mode == "one_per_workspace":
-        assert frame.name == "aetheric_frame_system:{0}".format(rift.id)
-    else:
-        assert frame.name == expected_name
+    assert conduit.name == "root"
+    assert conduit._aetheric_frame == expected_frame_name
     assert descriptor.frame_configuration.system_state == SystemState.dynamic
     assert descriptor.frame_configuration.ai_native_enabled is True
     assert descriptor.frame_configuration.rift_enabled is True
@@ -120,7 +137,7 @@ def test_integration_rift_get_nexus_frame_matrix(
         return
     if create_kind == "auto":
         created = first.create_nexus_frame()
-        assert first.get_nexus_frame(created.name) is created
+        assert first.get_nexus_frame(created._aetheric_frame) is created
         return
     if create_kind == "private":
         created = first.create_nexus_frame()
@@ -183,11 +200,9 @@ def test_integration_rift_list_accessible_nexus_frame_names_matrix(
 @pytest.mark.parametrize(
     ("immutable", "metadata", "root_conduit_name"),
     [
-        (False, None, None),
-        (True, None, None),
-        (False, {"team": "ops"}, None),
         (False, None, "root"),
-        (True, {"team": "ops"}, None),
+        (True, None, "root"),
+        (False, {"team": "ops"}, "root"),
         (True, {"team": "ops"}, "root"),
     ],
 )
@@ -198,7 +213,7 @@ def test_integration_nexus_frame_manager_direct_create_matrix(
 ) -> None:
     nexus = _create_enabled_nexus()
 
-    frame = nexus.frame_manager.create_dynamic_frame(
+    conduit = nexus.frame_manager.create_dynamic_frame(
         "ops",
         immutable=immutable,
         metadata=metadata,
@@ -206,15 +221,44 @@ def test_integration_nexus_frame_manager_direct_create_matrix(
     )
     descriptor = nexus._get_required_frame_descriptor("ops")
 
-    assert frame.name == "ops"
+    assert conduit.name == root_conduit_name
+    assert conduit._aetheric_frame == "ops"
     assert nexus.frame_manager.exists("ops") is True
     assert descriptor.frame_configuration.system_state == SystemState.dynamic
     assert descriptor.frame_configuration.ai_native_enabled is True
     assert descriptor.frame_configuration.rift_enabled is True
-    if root_conduit_name is None:
-        assert descriptor.frame_overview.payload.root_conduit_count == 0
-    else:
-        assert descriptor.frame_overview.payload.root_conduit_count == 1
+    assert descriptor.frame_overview.payload.root_conduit_count == 1
+
+
+def test_integration_nexus_frame_manager_direct_create_allows_single_shared_name(
+) -> None:
+    nexus = _create_enabled_nexus(nexus_frame_mode="single", max_nexus_frame_count=1)
+
+    conduit = nexus.frame_manager.create_dynamic_frame("aetheric_frame_system")
+    descriptor = nexus._get_required_frame_descriptor("aetheric_frame_system")
+
+    assert conduit.name == "root"
+    assert conduit._aetheric_frame == "aetheric_frame_system"
+    assert descriptor.frame_configuration.system_state == SystemState.dynamic
+
+
+def test_integration_nexus_frame_manager_direct_create_rejects_single_non_shared_name(
+) -> None:
+    nexus = _create_enabled_nexus(nexus_frame_mode="single", max_nexus_frame_count=1)
+
+    with pytest.raises(ValueError, match="only allows raw creation of the shared frame"):
+        nexus.frame_manager.create_dynamic_frame("ops")
+
+
+def test_integration_nexus_frame_manager_direct_create_rejects_one_per_workspace(
+) -> None:
+    nexus = _create_enabled_nexus(
+        nexus_frame_mode="one_per_workspace",
+        max_nexus_frame_count=8,
+    )
+
+    with pytest.raises(ValueError, match="Raw NexusFrameManager creation is not allowed"):
+        nexus.frame_manager.create_dynamic_frame("ops")
 
 
 @pytest.mark.parametrize(
@@ -238,22 +282,22 @@ def test_integration_nexus_frame_cleanup_matrix(
     )
     rift = nexus.create_rift(rift_name="alpha")
     if nexus_frame_mode == "indexed":
-        frame = rift.create_nexus_frame(frame_name="ops")
+        conduit = rift.create_nexus_frame(frame_name="ops")
     else:
-        frame = rift.create_nexus_frame()
+        conduit = rift.create_nexus_frame()
 
-    assert nexus.frame_manager.exists(frame.name) is True
+    assert nexus.frame_manager.exists(conduit._aetheric_frame) is True
 
     if cleanup_kind == "external":
-        frame.cleanup()
-        assert nexus.frame_manager.exists(frame.name) is False
+        conduit.cleanup()
+        assert nexus.frame_manager.exists(conduit._aetheric_frame) is False
         return
 
     nexus.remove_rift(rift.id)
     if nexus_frame_mode == "indexed":
-        assert nexus.frame_manager.exists(frame.name) is True
+        assert nexus.frame_manager.exists(conduit._aetheric_frame) is True
     else:
-        assert nexus.frame_manager.exists(frame.name) is False
+        assert nexus.frame_manager.exists(conduit._aetheric_frame) is False
 
 
 @pytest.mark.parametrize(
@@ -284,9 +328,12 @@ def test_integration_nexus_frame_rejection_matrix(
             first.create_nexus_frame(frame_name="other")
         return
     if action == "foreign_access":
-        frame = second.create_nexus_frame()
+        conduit = second.create_nexus_frame()
         with pytest.raises(ValueError, match=message):
-            nexus.get_nexus_frame_for_rift(first.id, frame_name=frame.name)
+            nexus.get_nexus_frame_for_rift(
+                first.id,
+                frame_name=conduit._aetheric_frame,
+            )
         return
     if action == "immutable_private":
         with pytest.raises(ValueError, match=message):
@@ -309,5 +356,6 @@ def test_integration_nexus_frame_rejection_matrix(
                 system_state=SystemState.automatic,
                 ai_native_enabled=False,
                 rift_enabled=True,
+                root_conduit_name="root",
             )
         )
