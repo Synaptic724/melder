@@ -802,7 +802,7 @@ class NexusFrameManager(Cleanable):
 
         Purpose:
             Mirror the new authored frame into the passive descriptor layer so
-            viewer and inventory surfaces can inspect the empty frame
+            viewer and inventory surfaces can inspect the rooted frame
             immediately after creation.
 
         Args:

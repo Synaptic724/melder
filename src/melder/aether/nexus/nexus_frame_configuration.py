@@ -15,7 +15,7 @@ class NexusFrameConfiguration(Cleanable):
     Authored frame configuration for one Nexus-managed frame.
 
     Purpose:
-        Capture the authored frame posture and optional root-conduit bootstrap
+        Capture the authored frame posture and required root-conduit bootstrap
         intent for one Nexus-managed frame before the manager realizes it.
 
     Contract:
