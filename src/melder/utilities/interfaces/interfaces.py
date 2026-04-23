@@ -7040,122 +7040,6 @@ class ICommandSystem(ICleanable, Protocol):
         """
         ...
 
-    def get_links(
-            self,
-            conduit_id: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> Tuple[object, ...]:
-        """
-        Return the current peer links for one conduit.
-        """
-        ...
-
-    def get_lesser_conduit(
-            self,
-            parent_conduit_id: str,
-            conduit_id: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> object:
-        """
-        Return one lesser conduit linked beneath a parent conduit.
-        """
-        ...
-
-    def get_initiated_conduit(
-            self,
-            conduit_id: str,
-            peer_conduit_id: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> object:
-        """
-        Return one outbound linked conduit from a source conduit.
-        """
-        ...
-
-    def get_provider_conduit(
-            self,
-            conduit_id: str,
-            peer_conduit_id: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> object:
-        """
-        Return one inbound provider conduit for a source conduit.
-        """
-        ...
-
-    def get_initiated_conduits(
-            self,
-            conduit_id: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> Tuple[object, ...]:
-        """
-        Return the outbound linked conduits for one conduit.
-        """
-        ...
-
-    def get_provider_conduits(
-            self,
-            conduit_id: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> Tuple[object, ...]:
-        """
-        Return the inbound provider conduits for one conduit.
-        """
-        ...
-
-    def get_contracted_conduits(
-            self,
-            conduit_id: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> object:
-        """
-        Return the contracted peer conduits for one conduit.
-        """
-        ...
-
-    def get_spell_in_contracts(
-            self,
-            conduit_id: str,
-            spell_id: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> object:
-        """
-        Return one contracted spell lookup result from a conduit.
-        """
-        ...
-
-    def get_spells_in_contract_by_conduit(
-            self,
-            conduit_id: str,
-            peer_conduit_id: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> object:
-        """
-        Return contracted spell data keyed by peer conduit id.
-        """
-        ...
-
-    def get_spells_in_contract_by_conduit_name(
-            self,
-            conduit_id: str,
-            conduit_name: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> object:
-        """
-        Return contracted spell data keyed by peer conduit name.
-        """
-        ...
-
     def describe_spells_in_conduit(
             self,
             conduit_id: str,
@@ -7407,6 +7291,17 @@ class ICapabilityCommandSystem(ICommandSystem, Protocol):
         """
         ...
 
+    def get_links(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[object, ...]:
+        """
+        Return the current peer links for one conduit.
+        """
+        ...
+
     def create_lesser_conduit(
             self,
             conduit_id: str,
@@ -7529,6 +7424,111 @@ class ICapabilityCommandSystem(ICommandSystem, Protocol):
     ) -> object:
         """
         Return one already-live spell runtime object through a selected conduit.
+        """
+        ...
+
+    def get_lesser_conduit(
+            self,
+            parent_conduit_id: str,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one lesser conduit linked beneath a parent conduit.
+        """
+        ...
+
+    def get_initiated_conduit(
+            self,
+            conduit_id: str,
+            peer_conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one outbound linked conduit from a source conduit.
+        """
+        ...
+
+    def get_provider_conduit(
+            self,
+            conduit_id: str,
+            peer_conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one inbound provider conduit for a source conduit.
+        """
+        ...
+
+    def get_initiated_conduits(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[object, ...]:
+        """
+        Return the outbound linked conduits for one conduit.
+        """
+        ...
+
+    def get_provider_conduits(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[object, ...]:
+        """
+        Return the inbound provider conduits for one conduit.
+        """
+        ...
+
+    def get_contracted_conduits(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return the contracted peer conduits for one conduit.
+        """
+        ...
+
+    def get_spell_in_contracts(
+            self,
+            conduit_id: str,
+            spell_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one contracted spell lookup result from a conduit.
+        """
+        ...
+
+    def get_spells_in_contract_by_conduit(
+            self,
+            conduit_id: str,
+            peer_conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return contracted spell data keyed by peer conduit id.
+        """
+        ...
+
+    def get_spells_in_contract_by_conduit_name(
+            self,
+            conduit_id: str,
+            conduit_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return contracted spell data keyed by peer conduit name.
         """
         ...
 

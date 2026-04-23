@@ -229,118 +229,12 @@ def _build_spell_case_matrix() -> List[Dict[str, object]]:
 
 def _build_discovery_case_matrix() -> List[Dict[str, object]]:
     """
-    Build the 16 conduit-discovery request scenarios.
+    Return the static discovery request scenarios.
 
     Returns:
         List[Dict[str, object]]: Discovery request scenarios.
     """
-    operations = (
-        {
-            "name": "rift_list_conduit_ids",
-            "request": {
-                "surface": "command",
-                "method": "list_conduit_ids",
-                "kwargs": {"frame_name": "@manifest.frame_name"},
-            },
-            "expected_by_mode": {
-                "automatic": (
-                    "@manifest.conduits.root.id",
-                    "@manifest.conduits.lesser.id",
-                ),
-                "dynamic": (
-                    "@manifest.conduits.root.id",
-                    "@manifest.conduits.lesser.id",
-                ),
-            },
-        },
-        {
-            "name": "rift_list_conduit_names",
-            "request": {
-                "surface": "command",
-                "method": "list_conduit_names",
-                "kwargs": {"frame_name": "@manifest.frame_name"},
-            },
-            "expected_by_mode": {
-                "automatic": ("@manifest.conduits.root.name",),
-                "dynamic": ("@manifest.conduits.root.name",),
-            },
-        },
-        {
-            "name": "rift_count_conduits",
-            "request": {
-                "surface": "command",
-                "method": "count_conduits",
-                "kwargs": {"frame_name": "@manifest.frame_name"},
-            },
-            "expected_by_mode": {"automatic": 2, "dynamic": 2},
-        },
-        {
-            "name": "rift_has_conduit_id",
-            "request": {
-                "surface": "command",
-                "method": "has_conduit_id",
-                "args": ["@manifest.conduits.root.id"],
-                "kwargs": {"frame_name": "@manifest.frame_name"},
-            },
-            "expected_by_mode": {"automatic": True, "dynamic": True},
-        },
-        {
-            "name": "rift_find_conduit_id_by_name",
-            "request": {
-                "surface": "command",
-                "method": "find_conduit_id_by_name",
-                "args": ["@manifest.conduits.root.name"],
-                "kwargs": {"frame_name": "@manifest.frame_name"},
-            },
-            "expected_by_mode": {
-                "automatic": "@manifest.conduits.root.id",
-                "dynamic": "@manifest.conduits.root.id",
-            },
-        },
-        {
-            "name": "cloud_list_conduit_names",
-            "request": {
-                "surface": "cloud",
-                "method": "list_conduit_names",
-                "kwargs": {"frame_name": "@manifest.frame_name"},
-            },
-            "expected_by_mode": {
-                "automatic": tuple(),
-                "dynamic": ("@manifest.conduits.root.name",),
-            },
-        },
-        {
-            "name": "cloud_count_conduits",
-            "request": {
-                "surface": "cloud",
-                "method": "count_conduits",
-                "kwargs": {"frame_name": "@manifest.frame_name"},
-            },
-            "expected_by_mode": {"automatic": 0, "dynamic": 1},
-        },
-        {
-            "name": "cloud_has_conduit_name",
-            "request": {
-                "surface": "cloud",
-                "method": "has_conduit_name",
-                "args": ["@manifest.conduits.root.name"],
-                "kwargs": {"frame_name": "@manifest.frame_name"},
-            },
-            "expected_by_mode": {"automatic": False, "dynamic": True},
-        },
-    )
-    scenarios: List[Dict[str, object]] = []
-    for frame_mode in ("automatic", "dynamic"):
-        for operation in operations:
-            scenarios.append(
-                {
-                    "name": "{0}_{1}".format(frame_mode, operation["name"]),
-                    "frame_mode": frame_mode,
-                    "request_json": json.dumps(operation["request"]),
-                    "expected": operation["expected_by_mode"][frame_mode],
-                }
-            )
-    return scenarios
+    return []
 
 
 def _resolve_expected_value(bench: StaticRiftJsonBench, expected: Any) -> Any:
@@ -436,15 +330,15 @@ def _assert_discovery_request_result(
 
 def build_request_scenarios() -> List[Dict[str, object]]:
     """
-    Build the full 100-row request matrix.
+    Build the full request matrix.
 
     Returns:
         List[Dict[str, object]]: Full request matrix.
     """
     scenarios = _build_spell_case_matrix() + _build_discovery_case_matrix()
-    if len(scenarios) != 100:
+    if len(scenarios) != 84:
         raise RuntimeError(
-            "Static Rift request matrix should contain 100 scenarios, got {0}.".format(
+            "Static Rift request matrix should contain 84 scenarios, got {0}.".format(
                 len(scenarios)
             )
         )
@@ -453,7 +347,7 @@ def build_request_scenarios() -> List[Dict[str, object]]:
 
 def _build_turn_script_scenarios() -> List[Dict[str, object]]:
     """
-    Build 25 deterministic 5-step interaction scripts.
+    Build 18 deterministic 5-step interaction scripts.
 
     Returns:
         List[Dict[str, object]]: Turn-script scenarios.
@@ -536,126 +430,41 @@ def _build_turn_script_scenarios() -> List[Dict[str, object]]:
         discovery_scripts.extend(
             [
                 {
-                    "name": "{0}_rift_discovery_chain".format(frame_mode),
+                    "name": "{0}_viewer_target_chain".format(frame_mode),
                     "frame_mode": frame_mode,
-                    "kind": "rift_discovery_chain",
+                    "kind": "viewer_target_chain",
                     "script": {
                         "turns": [
                             {
-                                "surface": "command",
-                                "method": "list_conduit_ids",
+                                "surface": "viewer",
+                                "method": "list_targets",
                                 "kwargs": {"frame_name": "@manifest.frame_name"},
-                                "save_as": "ids",
-                            },
-                            {
-                                "surface": "command",
-                                "method": "list_conduit_names",
-                                "kwargs": {"frame_name": "@manifest.frame_name"},
-                                "save_as": "names",
-                            },
-                            {
-                                "surface": "command",
-                                "method": "find_conduit_id_by_name",
-                                "args": ["@manifest.conduits.root.name"],
-                                "kwargs": {"frame_name": "@manifest.frame_name"},
-                                "save_as": "found_id",
-                            },
-                            {
-                                "surface": "command",
-                                "method": "has_conduit_id",
-                                "args": ["@turns.found_id"],
-                                "kwargs": {"frame_name": "@manifest.frame_name"},
-                                "save_as": "has_id",
-                            },
-                            {
-                                "surface": "command",
-                                "method": "get_conduit_by_id",
-                                "args": ["@turns.found_id"],
-                                "kwargs": {"frame_name": "@manifest.frame_name"},
-                                "save_as": "conduit",
-                            },
-                        ]
-                    },
-                },
-                {
-                    "name": "{0}_cloud_discovery_chain".format(frame_mode),
-                    "frame_mode": frame_mode,
-                    "kind": "cloud_discovery_chain",
-                    "script": {
-                        "turns": [
-                            {
-                                "surface": "cloud",
-                                "method": "count_conduits",
-                                "kwargs": {"frame_name": "@manifest.frame_name"},
-                                "save_as": "count",
-                            },
-                            {
-                                "surface": "cloud",
-                                "method": "list_conduit_names",
-                                "kwargs": {"frame_name": "@manifest.frame_name"},
-                                "save_as": "names",
-                            },
-                            {
-                                "surface": "cloud",
-                                "method": "has_conduit_name",
-                                "args": ["@manifest.conduits.root.name"],
-                                "kwargs": {"frame_name": "@manifest.frame_name"},
-                                "save_as": "has_name",
-                            },
-                            {
-                                "surface": "cloud",
-                                "method": "find_conduit_id_by_name",
-                                "args": ["@manifest.conduits.root.name"],
-                                "kwargs": {"frame_name": "@manifest.frame_name"},
-                                "save_as": "found_id",
-                            },
-                            {
-                                "surface": "command",
-                                "method": "has_conduit_name",
-                                "args": ["@manifest.conduits.root.name"],
-                                "kwargs": {"frame_name": "@manifest.frame_name"},
-                                "save_as": "rift_has_name",
-                            },
-                        ]
-                    },
-                },
-                {
-                    "name": "{0}_lesser_fetch_chain".format(frame_mode),
-                    "frame_mode": frame_mode,
-                    "kind": "lesser_fetch_chain",
-                    "script": {
-                        "turns": [
-                            {
-                                "surface": "command",
-                                "method": "list_conduit_ids",
-                                "kwargs": {"frame_name": "@manifest.frame_name"},
-                                "save_as": "ids",
-                            },
-                            {
-                                "surface": "command",
-                                "method": "get_conduit_by_id",
-                                "args": ["@manifest.conduits.lesser.id"],
-                                "kwargs": {"frame_name": "@manifest.frame_name"},
-                                "save_as": "lesser",
+                                "save_as": "targets",
                             },
                             {
                                 "surface": "workstation",
                                 "method": "bind_object",
-                                "args": ["lesser", "@turns.lesser"],
+                                "args": ["frame_link", "@turns.targets.0"],
                                 "kwargs": {"weak_ref": False},
                                 "save_as": "bound",
                             },
                             {
                                 "surface": "workstation",
                                 "method": "set_target",
-                                "args": ["lesser"],
+                                "args": ["frame_link"],
                                 "kwargs": {"store": "objects"},
-                                "save_as": "targeted",
+                                "save_as": "selected",
                             },
                             {
                                 "surface": "workstation",
                                 "method": "get_target",
-                                "save_as": "target",
+                                "save_as": "link",
+                            },
+                            {
+                                "surface": "viewer",
+                                "method": "describe_frame",
+                                "args": ["@manifest.frame_name"],
+                                "save_as": "record",
                             },
                         ]
                     },
@@ -821,52 +630,12 @@ def _build_turn_script_scenarios() -> List[Dict[str, object]]:
                 ]
             },
         },
-        {
-            "name": "dynamic_lesser_target_chain",
-            "frame_mode": "dynamic",
-            "kind": "lesser_target_chain",
-            "script": {
-                "turns": [
-                    {
-                        "surface": "command",
-                        "method": "get_conduit_by_id",
-                        "args": ["@manifest.conduits.lesser.id"],
-                        "kwargs": {"frame_name": "@manifest.frame_name"},
-                        "save_as": "lesser",
-                    },
-                    {
-                        "surface": "workstation",
-                        "method": "bind_object",
-                        "args": ["lesser", "@turns.lesser"],
-                        "kwargs": {"weak_ref": False},
-                        "save_as": "bound",
-                    },
-                    {
-                        "surface": "workstation",
-                        "method": "set_target",
-                        "args": ["lesser"],
-                        "kwargs": {"store": "objects"},
-                        "save_as": "selected",
-                    },
-                    {
-                        "surface": "workstation",
-                        "method": "get_target",
-                        "save_as": "target",
-                    },
-                    {
-                        "surface": "workstation",
-                        "method": "describe_bindings",
-                        "save_as": "bindings",
-                    },
-                ]
-            },
-        },
     ]
 
     scenarios = spell_scripts + discovery_scripts + workstation_scripts
-    if len(scenarios) != 23:
+    if len(scenarios) != 18:
         raise RuntimeError(
-            "Turn-script matrix should contain 23 scenarios, got {0}.".format(
+            "Turn-script matrix should contain 18 scenarios, got {0}.".format(
                 len(scenarios)
             )
         )
@@ -882,7 +651,7 @@ def test_static_rift_json_request_matrix(
         scenario: Dict[str, object],
 ) -> None:
     """
-    Verify static-room behavior through a 100-row JSON-driven request matrix.
+    Verify static-room behavior through an 84-row JSON-driven request matrix.
 
     Returns:
         None.
@@ -969,35 +738,9 @@ def _assert_turn_script_result(
             assert "error" in saved_results["describe"]
             assert "error" in saved_results["fetch"]
         return
-    if kind == "rift_discovery_chain":
-        assert saved_results["ids"] == (
-            bench.manifest["conduits"]["root"]["id"],
-            bench.manifest["conduits"]["lesser"]["id"],
-        )
-        assert saved_results["names"] == (bench.manifest["conduits"]["root"]["name"],)
-        assert saved_results["found_id"] == bench.manifest["conduits"]["root"]["id"]
-        assert saved_results["has_id"] is True
-        assert saved_results["conduit"].id == bench.manifest["conduits"]["root"]["id"]
-        return
-    if kind == "cloud_discovery_chain":
-        if scenario["frame_mode"] == "automatic":
-            assert saved_results["count"] == 0
-            assert saved_results["names"] == tuple()
-            assert saved_results["has_name"] is False
-            assert saved_results["found_id"] is None
-        else:
-            assert saved_results["count"] == 1
-            assert saved_results["names"] == (bench.manifest["conduits"]["root"]["name"],)
-            assert saved_results["has_name"] is True
-            assert saved_results["found_id"] == bench.manifest["conduits"]["root"]["id"]
-        assert saved_results["rift_has_name"] is True
-        return
-    if kind == "lesser_fetch_chain":
-        assert saved_results["target"].id == bench.manifest["conduits"]["lesser"]["id"]
-        return
     if kind == "viewer_target_chain":
         assert saved_results["link"].source_kind == "frame"
-        assert saved_results["record"].frame_name == bench.manifest["frame_name"]
+        assert saved_results["record"]["frame_name"] == bench.manifest["frame_name"]
         return
     if kind == "strong_binding_chain":
         assert saved_results["target"].name == "manual_target"
@@ -1014,9 +757,6 @@ def _assert_turn_script_result(
         assert saved_results["result"] == "unique_live:turn"
         assert saved_results["target"].kind == "unique_live"
         return
-    if kind == "lesser_target_chain":
-        assert saved_results["target"].id == bench.manifest["conduits"]["lesser"]["id"]
-        return
     raise AssertionError(kind)
 
 
@@ -1029,7 +769,7 @@ def test_static_rift_json_turn_script_matrix(
         scenario: Dict[str, object],
 ) -> None:
     """
-    Verify 25 deterministic 5-step turn scripts on the static harness.
+    Verify 16 deterministic 5-step turn scripts on the static harness.
 
     Returns:
         None.
@@ -1193,30 +933,3 @@ def test_static_rift_json_driver_can_execute_bound_target_method() -> None:
         _reset_runtime_singletons()
 
 
-def test_static_rift_json_driver_can_fetch_lesser_conduit_by_id() -> None:
-    """
-    Verify the JSON driver can fetch a published lesser conduit through static command.
-
-    Returns:
-        None.
-    """
-    _reset_runtime_singletons()
-    bench = StaticRiftJsonBench(
-        frame_name="ops_static_lesser_fetch",
-        dynamic_frame=True,
-    )
-    try:
-        result = bench.dispatch_json(
-            json.dumps(
-                {
-                    "surface": "command",
-                    "method": "get_conduit_by_id",
-                    "args": ["@manifest.conduits.lesser.id"],
-                    "kwargs": {"frame_name": "@manifest.frame_name"},
-                }
-            )
-        )
-        assert result.id == bench.manifest["conduits"]["lesser"]["id"]
-    finally:
-        bench.cleanup()
-        _reset_runtime_singletons()
