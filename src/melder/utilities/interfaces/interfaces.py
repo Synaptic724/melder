@@ -7040,173 +7040,6 @@ class ICommandSystem(ICleanable, Protocol):
         """
         ...
 
-    def get_conduit_cloud(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> object:
-        """
-        Return the live conduit cloud for one hosted frame.
-        """
-        ...
-
-    def list_conduit_ids(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> Tuple[str, ...]:
-        """
-        Return the command-enabled published conduit ids for one frame.
-        """
-        ...
-
-    def list_conduit_names(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> Tuple[str, ...]:
-        """
-        Return the command-enabled published conduit names for one frame.
-        """
-        ...
-
-    def count_conduits(
-            self,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> int:
-        """
-        Return the number of command-enabled published conduits for one frame.
-        """
-        ...
-
-    def has_conduit_id(
-            self,
-            conduit_id: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> bool:
-        """
-        Return whether one published command-enabled conduit id exists.
-        """
-        ...
-
-    def has_conduit_name(
-            self,
-            conduit_name: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> bool:
-        """
-        Return whether one published command-enabled conduit name exists.
-        """
-        ...
-
-    def find_conduit_id_by_name(
-            self,
-            conduit_name: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> Optional[str]:
-        """
-        Return the published command-enabled conduit id for one conduit name.
-        """
-        ...
-
-    def create_lesser_conduit(
-            self,
-            conduit_id: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> object:
-        """
-        Create one lesser conduit beneath an existing conduit.
-        """
-        ...
-
-    def create_cluster(
-            self,
-            conduit_id: str,
-            cluster_name: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> None:
-        """
-        Create one cluster through an existing conduit.
-        """
-        ...
-
-    def delete_cluster(
-            self,
-            conduit_id: str,
-            cluster_name: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> None:
-        """
-        Delete one cluster through an existing conduit.
-        """
-        ...
-
-    def join_cluster(
-            self,
-            conduit_id: str,
-            cluster_name: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> None:
-        """
-        Join one conduit to one cluster through the shared command surface.
-        """
-        ...
-
-    def leave_cluster(
-            self,
-            conduit_id: str,
-            cluster_name: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> None:
-        """
-        Remove one conduit from one cluster through the shared command surface.
-        """
-        ...
-
-    def list_clusters(
-            self,
-            conduit_id: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> Tuple[str, ...]:
-        """
-        Return the cluster names visible from one conduit.
-        """
-        ...
-
-    def link(
-            self,
-            source_conduit_id: str,
-            target_conduit_id: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> bool:
-        """
-        Link two conduits through the shared command surface.
-        """
-        ...
-
-    def sever_link(
-            self,
-            source_conduit_id: str,
-            target_conduit_id: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> bool:
-        """
-        Sever one conduit link through the shared command surface.
-        """
-        ...
-
     def get_links(
             self,
             conduit_id: str,
@@ -7462,6 +7295,212 @@ class ICommandSystem(ICleanable, Protocol):
         """
         ...
 
+    def get_target_attribute(self, attribute_name: str) -> object:
+        """
+        Return one attribute value from the current workstation target.
+        """
+        ...
+
+    def get_target_method(self, method_name: str) -> object:
+        """
+        Return one method/callable from the current workstation target.
+        """
+        ...
+
+    def execute_target_method(
+            self,
+            method_name: str,
+            *args: Any,
+            bind_as_name: Optional[str] = None,
+            bind_as_store: str = "objects",
+            bind_result_weak_ref: Optional[bool] = None,
+            **kwargs: Any
+    ) -> object:
+        """
+        Execute one method on the current workstation target.
+        """
+        ...
+
+    def list_supported_command_methods(self) -> Tuple[str, ...]:
+        """
+        Return the public command methods supported by this room surface.
+        """
+        ...
+
+
+@runtime_checkable
+class ICapabilityCommandSystem(ICommandSystem, Protocol):
+    """
+    Interface for the capability-room command system.
+    """
+
+    def get_conduit_cloud(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return the live conduit cloud for one hosted frame.
+        """
+        ...
+
+    def list_conduit_ids(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return the command-enabled published conduit ids for one frame.
+        """
+        ...
+
+    def list_conduit_names(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return the command-enabled published conduit names for one frame.
+        """
+        ...
+
+    def count_conduits(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> int:
+        """
+        Return the number of command-enabled published conduits for one frame.
+        """
+        ...
+
+    def has_conduit_id(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> bool:
+        """
+        Return whether one published command-enabled conduit id exists.
+        """
+        ...
+
+    def has_conduit_name(
+            self,
+            conduit_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> bool:
+        """
+        Return whether one published command-enabled conduit name exists.
+        """
+        ...
+
+    def find_conduit_id_by_name(
+            self,
+            conduit_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Optional[str]:
+        """
+        Return the published command-enabled conduit id for one conduit name.
+        """
+        ...
+
+    def create_lesser_conduit(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Create one lesser conduit beneath an existing conduit.
+        """
+        ...
+
+    def create_cluster(
+            self,
+            conduit_id: str,
+            cluster_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> None:
+        """
+        Create one cluster through an existing conduit.
+        """
+        ...
+
+    def delete_cluster(
+            self,
+            conduit_id: str,
+            cluster_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> None:
+        """
+        Delete one cluster through an existing conduit.
+        """
+        ...
+
+    def join_cluster(
+            self,
+            conduit_id: str,
+            cluster_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> None:
+        """
+        Join one conduit to one cluster through the capability command surface.
+        """
+        ...
+
+    def leave_cluster(
+            self,
+            conduit_id: str,
+            cluster_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> None:
+        """
+        Remove one conduit from one cluster through the capability command surface.
+        """
+        ...
+
+    def list_clusters(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return the cluster names visible from one conduit.
+        """
+        ...
+
+    def link(
+            self,
+            source_conduit_id: str,
+            target_conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> bool:
+        """
+        Link two conduits through the capability command surface.
+        """
+        ...
+
+    def sever_link(
+            self,
+            source_conduit_id: str,
+            target_conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> bool:
+        """
+        Sever one conduit link through the capability command surface.
+        """
+        ...
+
     def meld(
             self,
             conduit_id: str,
@@ -7493,35 +7532,58 @@ class ICommandSystem(ICleanable, Protocol):
         """
         ...
 
-    def get_target_attribute(self, attribute_name: str) -> object:
-        """
-        Return one attribute value from the current workstation target.
-        """
-        ...
 
-    def get_target_method(self, method_name: str) -> object:
-        """
-        Return one method/callable from the current workstation target.
-        """
-        ...
+@runtime_checkable
+class IStaticCommandSystem(ICommandSystem, Protocol):
+    """
+    Interface for the static-room command system.
+    """
 
-    def execute_target_method(
+    def meld_existing_spell(
             self,
-            method_name: str,
-            *args: Any,
-            bind_as_name: Optional[str] = None,
-            bind_as_store: str = "objects",
-            bind_result_weak_ref: Optional[bool] = None,
-            **kwargs: Any
+            conduit_id: str,
+            spell_name: Optional[str] = None,
+            *,
+            spell: Optional[object] = None,
+            spellframe: Optional[object] = None,
+            binding_name: Optional[str] = None,
+            frame_name: Optional[str] = None,
     ) -> object:
         """
-        Execute one method on the current workstation target.
+        Return one already-live spell runtime object through a selected conduit.
         """
         ...
 
-    def list_supported_command_methods(self) -> Tuple[str, ...]:
+    def describe_spell_status_by_source_id(
+            self,
+            spell_source_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> dict:
         """
-        Return the public command methods supported by this room surface.
+        Return static availability status for one published spell source id.
+        """
+        ...
+
+    def describe_spell_status_by_id(
+            self,
+            spell_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> dict:
+        """
+        Return static availability status for one current spell id.
+        """
+        ...
+
+    def describe_spell_status_by_index_id(
+            self,
+            spell_index_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> dict:
+        """
+        Return static availability status for one stable spell lineage id.
         """
         ...
 
@@ -7609,6 +7671,13 @@ class IStaticRiftSpace(IRiftSpace, Protocol):
     Interface for StaticRiftSpace.
     """
 
+    @property
+    def command_system(self) -> IStaticCommandSystem:
+        """
+        Return the room-local static command system owned by this space.
+        """
+        ...
+
 
 @runtime_checkable
 class ICodegenRiftSpace(IRiftSpace, Protocol):
@@ -7622,6 +7691,13 @@ class ICapabilityRiftSpace(IRiftSpace, Protocol):
     """
     Interface for CapabilityRiftSpace.
     """
+
+    @property
+    def command_system(self) -> ICapabilityCommandSystem:
+        """
+        Return the room-local capability command system owned by this space.
+        """
+        ...
 
 
 @runtime_checkable

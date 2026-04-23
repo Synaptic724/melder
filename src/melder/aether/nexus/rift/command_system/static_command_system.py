@@ -13,35 +13,24 @@ class StaticCommandSystem(CommandSystem):
     Static-room command surface.
 
     Purpose:
-        Keep the shared command API while restricting raw runtime-object
-        exposure for `StaticRiftSpace`.
+        Keep the shared command infrastructure while owning the static-safe
+        command surface for `StaticRiftSpace`.
 
     Contract:
         - Inherits all shared selected-target, ACL, and workstation behavior
           from `CommandSystem`.
-        - Allows the shared command getter names to remain intact while
-          specializing spell runtime retrieval to live-only behavior.
-        - Uses current runtime creation storage only and never creates through
-          the generic spell getters.
+        - Owns live-only spell runtime retrieval under the shared getter names.
+        - Owns static-specific spell status and reuse-only command helpers.
+        - Does not expose topology mutation or direct `meld(...)` because those
+          methods now live on the capability surface instead of being denied
+          after inheritance.
         - Leaves already-bound workstation objects outside post-bind policing.
     """
-    _DENIED_TOPOLOGY_MUTATION_METHOD_NAMES: frozenset[str] = frozenset(
-        (
-            "create_lesser_conduit",
-            "create_cluster",
-            "delete_cluster",
-            "join_cluster",
-            "leave_cluster",
-            "link",
-            "sever_link",
-        )
-    )
-    _DENIED_SPELL_ACTIVATION_METHOD_NAMES: frozenset[str] = frozenset(("meld",))
-    _TOPOLOGY_MUTATION_DENIED_MESSAGE_TEMPLATE: str = (
-        "Static command surface does not allow topology mutation method '{0}'."
-    )
-    _SPELL_ACTIVATION_DENIED_MESSAGE_TEMPLATE: str = (
-        "Static command surface does not allow spell activation method '{0}'."
+    _STATIC_COMMAND_METHOD_NAMES: tuple[str, ...] = (
+        "meld_existing_spell",
+        "describe_spell_status_by_source_id",
+        "describe_spell_status_by_id",
+        "describe_spell_status_by_index_id",
     )
 
     def _get_spell_by_index_id_locked(
@@ -133,37 +122,6 @@ class StaticCommandSystem(CommandSystem):
                 frame_name,
             )
         )
-
-    def list_clusters(
-            self,
-            conduit_id: str,
-            *,
-            frame_name: Optional[str] = None,
-    ) -> tuple[str, ...]:
-        """
-        Deny cluster listing through the static command surface.
-
-        Args:
-            conduit_id:
-                Ignored conduit id from the shared command signature.
-            frame_name:
-                Ignored frame name from the shared command signature.
-
-        Returns:
-            tuple[str, ...]: Never returns successfully.
-
-        Raises:
-            ValueError:
-                Always, because static rooms do not expose cluster topology.
-        """
-        _ = conduit_id
-        with self._entered_command_action(
-                action_name="list_clusters",
-                frame_name=frame_name,
-        ), self._lock:
-            raise ValueError(
-                "Static command surface does not allow cluster query method 'list_clusters'."
-            )
 
     def get_spell_by_source_id(
             self,
@@ -459,6 +417,58 @@ class StaticCommandSystem(CommandSystem):
                 frame_name=resolved_frame_name,
             )
 
+    def meld_existing_spell(
+            self,
+            conduit_id: str,
+            spell_name: Optional[str] = None,
+            *,
+            spell: Optional[object] = None,
+            spellframe: Optional[object] = None,
+            binding_name: Optional[str] = None,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one already-live spell runtime object through a selected conduit.
+
+        Purpose:
+            Keep the reuse-only spell-activation helper on the static command
+            surface without inheriting the broader capability activation set.
+
+        Args:
+            conduit_id:
+                Conduit id that should perform the reuse-only resolution.
+            spell_name:
+                Optional logical spell name key.
+            spell:
+                Optional spell id string or spell object.
+            spellframe:
+                Optional spellframe / protocol / frame key.
+            binding_name:
+                Optional binding name for resolution.
+            frame_name:
+                Optional hosted frame name. When omitted, the room default
+                frame is used.
+
+        Returns:
+            object: Already-live runtime object returned by the conduit.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="meld_existing_spell",
+                frame_name=frame_name,
+        ), self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self._get_conduit_by_id_locked(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return conduit.meld_existing_spell(
+                spell_name=spell_name,
+                spell=spell,
+                spellframe=spellframe,
+                binding_name=binding_name,
+            )
+
     def _describe_static_spell_status(
             self,
             spell_record: object,
@@ -533,26 +543,14 @@ class StaticCommandSystem(CommandSystem):
         Return the public command methods supported by static rooms.
 
         Returns:
-            tuple[str, ...]: Supported public command method names for static
-                command usage.
+            tuple[str, ...]: Shared command names plus static-owned helper
+                names in stable presentation order.
         """
+        self.check_cleaned()
         with self._entered_command_action(
                 action_name="list_supported_command_methods",
                 frame_name=None,
         ):
-            denied_methods = {
-                "create_lesser_conduit",
-                "create_cluster",
-                "delete_cluster",
-                "join_cluster",
-                "leave_cluster",
-                "list_clusters",
-                "link",
-                "sever_link",
-                "meld",
-            }
-            return tuple(
-                method_name
-                for method_name in self._list_supported_command_methods_tuple()
-                if method_name not in denied_methods
+            return self._list_supported_command_methods_tuple() + (
+                self._STATIC_COMMAND_METHOD_NAMES
             )

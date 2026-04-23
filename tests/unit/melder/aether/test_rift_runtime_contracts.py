@@ -140,7 +140,10 @@ def _build_finalized_rift_configuration() -> RiftConfiguration:
     return configuration
 
 
-def _create_registered_rift() -> Rift:
+def _create_registered_rift(
+        *,
+        space_type: RiftSpaceType = RiftSpaceType.static,
+) -> Rift:
     """
     Create one real Rift through Nexus for runtime-contract tests.
 
@@ -148,7 +151,8 @@ def _create_registered_rift() -> Rift:
         Rift: Registered Rift.
     """
     nexus = _create_enabled_nexus()
-    return nexus.create_rift(rift_name="alpha")
+    configuration = nexus.create_rift_configuration().with_space_type(space_type)
+    return nexus.create_rift(configuration=configuration, rift_name="alpha")
 
 
 def test_rift_constructor_rejects_invalid_nexus_and_configuration_inputs() -> None:
@@ -295,7 +299,7 @@ def test_rift_frame_viewer_asset_is_stable_before_targeting() -> None:
     assert first_viewer is second_viewer
 
 
-def test_rift_spaces_expose_conduit_discovery_through_command_system() -> None:
+def test_capability_rift_spaces_expose_conduit_discovery_through_command_system() -> None:
     """
     Verify conduit discovery routes through the room-owned command surface.
 
@@ -304,7 +308,7 @@ def test_rift_spaces_expose_conduit_discovery_through_command_system() -> None:
     """
     _bind_target_frame_configuration("ops", rift_enabled=True)
     _seed_frame_descriptor("ops")
-    rift = _create_registered_rift()
+    rift = _create_registered_rift(space_type=RiftSpaceType.capability)
     rift.create_frame_link("ops")
     space = rift.space
     command = space.command_system

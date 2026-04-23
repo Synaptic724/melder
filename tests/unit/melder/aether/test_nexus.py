@@ -1475,7 +1475,7 @@ def test_workstation_cleanup_target_calls_methods_then_clears_target() -> None:
         def cleanup(self) -> None:
             self.calls.append("cleanup")
 
-    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+    space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     workstation = space.workstation
     disposable = _Disposable()
 
@@ -1494,7 +1494,7 @@ def test_workstation_and_space_cleanup_are_integrated() -> None:
     Returns:
         None.
     """
-    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+    space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     workstation = space.workstation
     command_system = space.command_system
     workstation.bind_attribute("status", "ready")
@@ -1512,7 +1512,7 @@ def test_rift_space_owns_command_system() -> None:
     Returns:
         None.
     """
-    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+    space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
 
     assert space.command_system.owner_space_id == space.space_id
 
@@ -1568,6 +1568,106 @@ def test_codegen_rift_space_composes_codegen_command_system() -> None:
     assert isinstance(space.command_system, CodegenCommandSystem)
 
 
+def test_codegen_command_system_preserves_base_commands_and_adds_codegen_placeholders() -> None:
+    """
+    Verify codegen rooms keep the broad base command surface and expose the
+    codegen placeholder seams.
+
+    Returns:
+        None.
+    """
+    space = CodegenRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+
+    supported_methods = space.command_system.list_supported_command_methods()
+
+    assert "get_spell_by_id" in supported_methods
+    assert "execute_target_method" in supported_methods
+    assert "validate_codegen" in supported_methods
+    assert "execute_codegen" in supported_methods
+
+
+def test_codegen_validate_codegen_placeholder_rejects_until_validator_exists() -> None:
+    """
+    Verify the placeholder validation seam is explicit and non-executing.
+
+    Returns:
+        None.
+    """
+    space = CodegenRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+
+    result = space.command_system.validate_codegen(
+        "result = 1",
+        frame_name="ops",
+    )
+
+    assert result == {
+        "accepted": False,
+        "reason": "codegen_validation_not_implemented",
+        "frame_name": "ops",
+    }
+
+
+def test_codegen_execute_codegen_placeholder_rejects_until_exec_exists() -> None:
+    """
+    Verify the placeholder execution seam is explicit and non-executing.
+
+    Returns:
+        None.
+    """
+    space = CodegenRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+
+    result = space.command_system.execute_codegen(
+        "result = 1",
+        frame_name="ops",
+    )
+
+    assert result == {
+        "accepted": False,
+        "reason": "codegen_execution_not_implemented",
+        "frame_name": "ops",
+    }
+
+
+@pytest.mark.parametrize(
+    ("method_name", "code", "frame_name", "message"),
+    [
+        ("validate_codegen", "", "ops", "code cannot be empty"),
+        ("validate_codegen", "result = 1", "", "frame_name cannot be empty"),
+        ("execute_codegen", "", "ops", "code cannot be empty"),
+        ("execute_codegen", "result = 1", "", "frame_name cannot be empty"),
+    ],
+)
+def test_codegen_placeholder_methods_reject_empty_contract_inputs(
+        method_name: str,
+        code: str,
+        frame_name: str,
+        message: str,
+) -> None:
+    """
+    Verify codegen placeholder methods preserve the future non-empty input contract.
+
+    Args:
+        method_name:
+            Codegen placeholder method to invoke.
+        code:
+            Code string to pass.
+        frame_name:
+            Frame name to pass.
+        message:
+            Expected validation message.
+
+    Returns:
+        None.
+    """
+    space = CodegenRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+
+    with pytest.raises(ValueError, match=message):
+        if method_name == "validate_codegen":
+            space.command_system.validate_codegen(code, frame_name=frame_name)
+            return
+        space.command_system.execute_codegen(code, frame_name=frame_name)
+
+
 def test_command_system_can_get_target_attribute_and_method() -> None:
     """
     Verify the command system reads attributes and methods from the current workstation target.
@@ -1582,7 +1682,7 @@ def test_command_system_can_get_target_attribute_and_method() -> None:
         def run(self) -> str:
             return "ok"
 
-    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+    space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     workstation = space.workstation
     target = _Target()
     workstation.bind_object("target", target)
@@ -1606,7 +1706,7 @@ def test_command_system_execute_target_method_can_bind_result() -> None:
         def run(self, prefix: str) -> str:
             return "{0}-done".format(prefix)
 
-    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+    space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     workstation = space.workstation
     target = _Target()
     workstation.bind_object("target", target)
@@ -1652,16 +1752,16 @@ def test_command_system_execute_target_method_can_force_strong_result_binding() 
     assert workstation.get("status", store="attributes") == "ops-done"
 
 
-def test_command_system_can_get_conduit_by_id_with_lesser_fallback(
+def test_capability_command_system_can_get_conduit_by_id_with_lesser_fallback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
-    Verify conduit lookup falls back to lesser-conduit lineage traversal when root lookup misses.
+    Verify capability conduit lookup falls back to lesser-conduit lineage traversal when root lookup misses.
 
     Returns:
         None.
     """
-    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+    space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     _replace_compiled_access_surface(
         viewer,
@@ -1700,14 +1800,14 @@ def test_command_system_can_get_conduit_by_id_with_lesser_fallback(
     assert result is sentinel
 
 
-def test_command_system_can_query_command_enabled_conduits() -> None:
+def test_capability_command_system_can_query_command_enabled_conduits() -> None:
     """
     Verify command-side conduit query helpers use published command-enabled truth.
 
     Returns:
         None.
     """
-    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+    space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -1772,7 +1872,7 @@ def test_command_system_can_get_spell_by_id(
     Returns:
         None.
     """
-    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+    space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -1857,7 +1957,7 @@ def test_command_system_can_get_spell_by_index_id(
     Returns:
         None.
     """
-    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+    space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -1925,14 +2025,14 @@ def test_command_system_can_get_spell_by_index_id(
     assert result is spell
 
 
-def test_command_system_denies_selected_target_link_when_frame_command_disabled() -> None:
+def test_capability_command_system_denies_conduit_discovery_when_frame_command_disabled() -> None:
     """
-    Verify selected-target access fails fast when frame command access is disabled.
+    Verify capability conduit discovery fails fast when frame command access is disabled.
 
     Returns:
         None.
     """
-    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+    space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer(
         "ops",
         command_frame_enabled=False,
@@ -1942,16 +2042,16 @@ def test_command_system_denies_selected_target_link_when_frame_command_disabled(
         space.command_system.get_conduit_cloud(frame_name="ops")
 
 
-def test_command_system_denies_conduit_object_by_id_when_conduit_acl_disabled(
+def test_capability_command_system_denies_conduit_object_by_id_when_conduit_acl_disabled(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
-    Verify direct conduit access fails fast when the conduit is not command-enabled.
+    Verify capability conduit access fails fast when the conduit is not command-enabled.
 
     Returns:
         None.
     """
-    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+    space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -2092,11 +2192,11 @@ def test_frame_viewer_clone_compiled_access_surface_preserves_command_acl_fields
     assert cloned_access_surface.enabled_spell_index_ids == ("lineage-1",)
 
 
-def test_static_room_allows_direct_conduit_runtime_object_access(
+def test_static_room_does_not_expose_direct_conduit_runtime_object_access(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """
-    Verify static rooms can still return already-live conduit runtime objects.
+    Verify static rooms do not expose direct conduit runtime helpers.
 
     Returns:
         None.
@@ -2125,21 +2225,19 @@ def test_static_room_allows_direct_conduit_runtime_object_access(
         enabled_conduit_ids=("ops-conduit",),
     )
     _attach_projection_backed_viewer(space, viewer)
-    conduit_object = object()
     monkeypatch.setattr(
         type(space.command_system),
         "_aether",
         SimpleNamespace(
-            get_conduit_by_id=lambda conduit_id, frame_name: conduit_object,
+            get_conduit_by_id=lambda conduit_id, frame_name: object(),
         ),
     )
 
-    assert (
+    with pytest.raises(AttributeError):
         space.command_system.get_conduit_by_id(
             "ops-conduit",
             frame_name="ops",
-        ) is conduit_object
-    )
+        )
 
 
 def test_static_room_returns_live_spell_runtime_object_by_index_id(
@@ -3423,15 +3521,15 @@ def test_capability_room_can_meld_existing_spell_through_command_surface() -> No
     assert result is runtime_object
 
 
-def test_static_command_system_denies_shared_topology_mutation_methods() -> None:
+def test_static_command_system_does_not_expose_capability_topology_methods() -> None:
     """
-    Verify static rooms deny shared topology-mutation command methods.
+    Verify static rooms do not expose capability-only topology methods.
 
     Returns:
         None.
     """
     space = StaticRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
-    denied_calls = (
+    absent_calls = (
         lambda: space.command_system.create_lesser_conduit("conduit-1"),
         lambda: space.command_system.create_cluster("conduit-1", "alpha"),
         lambda: space.command_system.delete_cluster("conduit-1", "alpha"),
@@ -3441,26 +3539,20 @@ def test_static_command_system_denies_shared_topology_mutation_methods() -> None
         lambda: space.command_system.sever_link("left", "right"),
     )
 
-    for denied_call in denied_calls:
-        with pytest.raises(
-                ValueError,
-                match="Static command surface does not allow topology mutation method",
-        ):
-            denied_call()
+    for absent_call in absent_calls:
+        with pytest.raises(AttributeError):
+            absent_call()
 
 
-def test_static_command_system_denies_direct_spell_activation_methods() -> None:
+def test_static_command_system_does_not_expose_direct_meld() -> None:
     """
-    Verify static rooms deny direct command-level spell activation helpers.
+    Verify static rooms do not expose direct `meld(...)`.
 
     Returns:
         None.
     """
     space = StaticRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
-    with pytest.raises(
-            ValueError,
-            match="Static command surface does not allow spell activation method 'meld'",
-    ):
+    with pytest.raises(AttributeError):
         space.command_system.meld("conduit-1", spell="sha-1")
 
 
@@ -3512,7 +3604,7 @@ def test_static_command_system_allows_meld_existing_spell() -> None:
     assert result is runtime_object
 
 
-def test_static_command_system_denies_list_clusters() -> None:
+def test_static_command_system_does_not_expose_list_clusters() -> None:
     """
     Verify static rooms do not expose cluster topology through command.
 
@@ -3521,16 +3613,13 @@ def test_static_command_system_denies_list_clusters() -> None:
     """
     space = StaticRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
 
-    with pytest.raises(
-            ValueError,
-            match="Static command surface does not allow cluster query method 'list_clusters'",
-    ):
+    with pytest.raises(AttributeError):
         space.command_system.list_clusters("conduit-1")
 
 
 def test_static_command_system_lists_only_supported_methods() -> None:
     """
-    Verify static command introspection excludes denied topology-mutation methods.
+    Verify static command introspection reflects the static-owned surface.
 
     Returns:
         None.
@@ -3546,13 +3635,24 @@ def test_static_command_system_lists_only_supported_methods() -> None:
     assert "sever_link" not in supported_methods
     assert "meld" not in supported_methods
     assert "meld_existing_spell" in supported_methods
-    assert "get_conduit_by_id" in supported_methods
-    assert "get_conduit_cloud" in supported_methods
+    assert "describe_spell_status_by_source_id" in supported_methods
+    assert "describe_spell_status_by_id" in supported_methods
+    assert "describe_spell_status_by_index_id" in supported_methods
+    assert "get_conduit_cloud" not in supported_methods
+    assert "get_conduit_by_id" not in supported_methods
+    assert "get_conduit_by_name" not in supported_methods
+    assert "list_conduit_ids" not in supported_methods
+    assert "list_conduit_names" not in supported_methods
+    assert "count_conduits" not in supported_methods
+    assert "has_conduit_id" not in supported_methods
+    assert "has_conduit_name" not in supported_methods
+    assert "find_conduit_id_by_name" not in supported_methods
 
 
 def test_capability_command_system_lists_shared_manual_runtime_methods() -> None:
     """
-    Verify capability command introspection exposes the shared manual-runtime methods.
+    Verify capability command introspection exposes the capability-owned
+    manual-runtime methods.
 
     Returns:
         None.
@@ -3562,6 +3662,14 @@ def test_capability_command_system_lists_shared_manual_runtime_methods() -> None
     supported_methods = space.command_system.list_supported_command_methods()
 
     assert "get_conduit_cloud" in supported_methods
+    assert "get_conduit_by_id" in supported_methods
+    assert "get_conduit_by_name" in supported_methods
+    assert "list_conduit_ids" in supported_methods
+    assert "list_conduit_names" in supported_methods
+    assert "count_conduits" in supported_methods
+    assert "has_conduit_id" in supported_methods
+    assert "has_conduit_name" in supported_methods
+    assert "find_conduit_id_by_name" in supported_methods
     assert "create_lesser_conduit" in supported_methods
     assert "create_cluster" in supported_methods
     assert "delete_cluster" in supported_methods
@@ -3575,6 +3683,37 @@ def test_capability_command_system_lists_shared_manual_runtime_methods() -> None
     assert "meld_existing_spell" in supported_methods
 
 
+def test_base_command_system_does_not_expose_capability_only_methods() -> None:
+    """
+    Verify the shared base command system exposes only the shared surface.
+
+    Returns:
+        None.
+    """
+    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+
+    supported_methods = space.command_system.list_supported_command_methods()
+
+    assert "create_lesser_conduit" not in supported_methods
+    assert "create_cluster" not in supported_methods
+    assert "list_clusters" not in supported_methods
+    assert "link" not in supported_methods
+    assert "sever_link" not in supported_methods
+    assert "meld" not in supported_methods
+    assert "meld_existing_spell" not in supported_methods
+    assert "get_conduit_cloud" not in supported_methods
+    assert "get_conduit_by_id" not in supported_methods
+    assert "get_conduit_by_name" not in supported_methods
+    assert "list_conduit_ids" not in supported_methods
+    assert "list_conduit_names" not in supported_methods
+    assert "count_conduits" not in supported_methods
+    assert "has_conduit_id" not in supported_methods
+    assert "has_conduit_name" not in supported_methods
+    assert "find_conduit_id_by_name" not in supported_methods
+    assert "describe_spells_in_conduit" in supported_methods
+    assert "execute_target_method" in supported_methods
+
+
 def test_command_system_can_delegate_conduit_introspection_helpers(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -3584,7 +3723,7 @@ def test_command_system_can_delegate_conduit_introspection_helpers(
     Returns:
         None.
     """
-    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+    space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(
@@ -3705,7 +3844,7 @@ def test_command_system_can_delegate_spell_query_and_snapshot_helpers(
     Returns:
         None.
     """
-    space = RiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+    space = CapabilityRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
     viewer = _build_descriptor_backed_viewer("ops")
     descriptor = viewer._get_required_frame_descriptor("ops")
     descriptor.upsert_conduit_record(

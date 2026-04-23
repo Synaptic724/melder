@@ -2,6 +2,9 @@ from types import SimpleNamespace
 
 import pytest
 
+from melder.aether.nexus.rift.command_system.capability_command_system import (
+    CapabilityCommandSystem,
+)
 from melder.aether.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
@@ -88,7 +91,7 @@ def _make_command_system(
     *,
     target: object = None,
     memory_system: object = None,
-) -> tuple[CommandSystem, _Viewer, object]:
+) -> tuple[CapabilityCommandSystem, _Viewer, object]:
     viewer = _Viewer()
     workstation = SimpleNamespace(
         get_target=lambda: target,
@@ -111,7 +114,7 @@ def _make_command_system(
         _get_required_command_projection=lambda frame_name: command_projection,
         _get_default_runtime_frame_name=lambda: viewer.default_view_frame_name,
     )
-    command_system = CommandSystem(
+    command_system = CapabilityCommandSystem(
         rift=rift,
         space=space,
         workstation=workstation,
@@ -146,7 +149,7 @@ def test_command_system_init_cleanup_and_property_guardrails() -> None:
 
 def test_command_system_cleanup_rechecks_cleaned_inside_lock() -> None:
     class _RecheckLock:
-        def __init__(self, command_system: CommandSystem) -> None:
+        def __init__(self, command_system: CapabilityCommandSystem) -> None:
             self._command_system = command_system
 
         def __enter__(self):
