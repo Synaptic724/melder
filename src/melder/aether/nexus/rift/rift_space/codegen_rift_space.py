@@ -23,10 +23,10 @@ class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
         - Fixes `space_kind` to `codegen`.
         - Represents the richer room surface intended for local construction,
           mutable room state, and more open-ended workflows.
-        - Currently shares the same broad manual runtime command posture as
-          capability.
-        - Reserved as the codegen-oriented room rather than a different current
-          manual-runtime policy.
+        - Currently composes a slim selected runtime-helper surface plus the
+          placeholder codegen execution seams.
+        - Reserved as the codegen-oriented room rather than a duplicate of the
+          broad capability manual-runtime posture.
     """
 
     def __init__(

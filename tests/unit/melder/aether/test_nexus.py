@@ -1570,8 +1570,8 @@ def test_codegen_rift_space_composes_codegen_command_system() -> None:
 
 def test_codegen_command_system_preserves_base_commands_and_adds_codegen_placeholders() -> None:
     """
-    Verify codegen rooms keep the broad base command surface and expose the
-    codegen placeholder seams.
+    Verify codegen rooms expose the selected helper surface and the codegen
+    placeholder seams.
 
     Returns:
         None.
@@ -1580,10 +1580,174 @@ def test_codegen_command_system_preserves_base_commands_and_adds_codegen_placeho
 
     supported_methods = space.command_system.list_supported_command_methods()
 
-    assert "get_spell_by_id" in supported_methods
+    assert "get_conduit_cloud" in supported_methods
+    assert "get_conduit_by_id" in supported_methods
+    assert "describe_spells_in_conduit" in supported_methods
     assert "execute_target_method" in supported_methods
     assert "validate_codegen" in supported_methods
     assert "execute_codegen" in supported_methods
+    assert "get_spell_by_id" not in supported_methods
+    assert "get_resolution_state" not in supported_methods
+    assert "snapshot_state" not in supported_methods
+
+
+def test_codegen_command_system_lists_selected_runtime_helpers_only() -> None:
+    """
+    Verify codegen command discovery exposes only the selected helper set plus
+    the codegen placeholders.
+
+    Returns:
+        None.
+    """
+    space = CodegenRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+
+    supported_methods = space.command_system.list_supported_command_methods()
+
+    expected_methods = (
+        "get_conduit_cloud",
+        "get_conduit_by_id",
+        "get_conduit_by_name",
+        "list_conduit_ids",
+        "list_conduit_names",
+        "count_conduits",
+        "find_conduit_id_by_name",
+        "list_clusters",
+        "get_links",
+        "get_contracted_conduits",
+        "get_spell_in_contracts",
+        "get_spells_in_contract_by_conduit_name",
+        "describe_spells_in_conduit",
+        "find_spell_id",
+        "find_spell_key",
+        "get_spell_permissions",
+        "get_target_attribute",
+        "get_target_method",
+        "execute_target_method",
+        "validate_codegen",
+        "execute_codegen",
+    )
+
+    assert supported_methods == expected_methods
+
+
+def test_codegen_command_system_can_delegate_selected_runtime_helpers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify codegen can use the selected conduit/runtime helper subset.
+
+    Returns:
+        None.
+    """
+    space = CodegenRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
+    viewer = _build_descriptor_backed_viewer("ops")
+    descriptor = viewer._get_required_frame_descriptor("ops")
+    descriptor.upsert_conduit_record(
+        ConduitRecord(
+            conduit_id="ops-conduit",
+            root_conduit_id="ops-conduit",
+            frame_name="ops",
+            origin_spellbook_id="ops-spellbook",
+            payload=ConduitDescriptorPayload(
+                conduit_name="root",
+                conduit_state=ConduitState.normal,
+                policy=Policies.default,
+                peer_conduit_ids=tuple(),
+            ),
+        )
+    )
+    _replace_compiled_access_surface(
+        viewer,
+        "ops",
+        command_frame_enabled=True,
+        enabled_conduit_ids=("ops-conduit",),
+    )
+    _attach_projection_backed_viewer(space, viewer)
+    linked_conduit = object()
+    contract_spell = object()
+    contracted = [("peer", linked_conduit)]
+    owner_conduit = SimpleNamespace(
+        list_clusters=lambda: ["alpha"],
+        get_links=lambda: [linked_conduit],
+        get_contracted_conduits=lambda: contracted,
+        get_spell_in_contracts=lambda spell_id: ("peer", contract_spell),
+        get_spells_in_contract_by_conduit_name=lambda conduit_name: {
+            "outbound": [("sha-1", contract_spell)]
+        },
+        describe_spells_in_conduit=lambda: [{"spell_id": "sha-1"}],
+        find_spell_id=lambda spellframe, spell_name, binding_name: "sha-1",
+        find_spell_key=lambda spellframe, spell_name, binding_name: "ops:sha-1",
+        get_spell_permissions=lambda spell_id: Permissions.create.name,
+    )
+    conduit_cloud = object()
+    monkeypatch.setattr(
+        type(space.command_system),
+        "_aether",
+        SimpleNamespace(
+            get_conduit_cloud=lambda frame_name: conduit_cloud,
+            get_conduit_by_name=lambda conduit_name, frame_name: owner_conduit,
+        ),
+    )
+    monkeypatch.setattr(
+        type(space.command_system),
+        "_get_conduit_by_id_locked",
+        lambda self, conduit_id, *, frame_name=None: owner_conduit,
+    )
+
+    assert space.command_system.get_conduit_cloud(frame_name="ops") is conduit_cloud
+    assert space.command_system.get_conduit_by_id(
+        "ops-conduit",
+        frame_name="ops",
+    ) is owner_conduit
+    assert space.command_system.get_conduit_by_name(
+        "root",
+        frame_name="ops",
+    ) is owner_conduit
+    assert space.command_system.list_clusters(
+        "ops-conduit",
+        frame_name="ops",
+    ) == ("alpha",)
+    assert space.command_system.get_links(
+        "ops-conduit",
+        frame_name="ops",
+    ) == (linked_conduit,)
+    assert space.command_system.get_contracted_conduits(
+        "ops-conduit",
+        frame_name="ops",
+    ) == contracted
+    assert space.command_system.get_spell_in_contracts(
+        "ops-conduit",
+        "sha-1",
+        frame_name="ops",
+    ) == ("peer", contract_spell)
+    assert space.command_system.get_spells_in_contract_by_conduit_name(
+        "ops-conduit",
+        "peer-name",
+        frame_name="ops",
+    ) == {"outbound": [("sha-1", contract_spell)]}
+    assert space.command_system.describe_spells_in_conduit(
+        "ops-conduit",
+        frame_name="ops",
+    ) == [{"spell_id": "sha-1"}]
+    assert space.command_system.find_spell_id(
+        "ops-conduit",
+        "Frame",
+        "Spell",
+        "binding",
+        frame_name="ops",
+    ) == "sha-1"
+    assert space.command_system.find_spell_key(
+        "ops-conduit",
+        "Frame",
+        "Spell",
+        "binding",
+        frame_name="ops",
+    ) == "ops:sha-1"
+    assert space.command_system.get_spell_permissions(
+        "ops-conduit",
+        "sha-1",
+        frame_name="ops",
+    ) == Permissions.create.name
 
 
 def test_codegen_validate_codegen_placeholder_rejects_until_validator_exists() -> None:

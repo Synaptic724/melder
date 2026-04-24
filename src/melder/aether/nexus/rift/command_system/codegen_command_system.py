@@ -1,4 +1,4 @@
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 
 from melder.aether.nexus.rift.command_system.command_system import (
     CommandSystem,
@@ -12,22 +12,428 @@ class CodegenCommandSystem(CommandSystem):
     Codegen-room command surface.
 
     Purpose:
-        Preserve the shared broad runtime command behavior for
+        Own the slim runtime-helper plus codegen execution surface for
         `CodegenRiftSpace`.
 
     Contract:
-        - Inherits all shared selected-target, ACL, and workstation behavior
-          from `CommandSystem`.
-        - Does not narrow raw runtime-object access beyond the shared ACL
-          checks already enforced by the base class.
-        - Adds only the placeholder codegen seams in this slice; AST
-          validation and compile/exec behavior are intentionally not active yet.
+        - Inherits shared selected-target, ACL, and workstation behavior from
+          `CommandSystem`.
+        - Owns the explicitly selected conduit/runtime helper subset for
+          codegen work without inheriting the full capability command surface.
+        - Keeps `validate_codegen(...)` and `execute_codegen(...)` as explicit
+          placeholders; AST validation and compile/exec behavior are
+          intentionally not active yet.
     """
 
+    _CODEGEN_RUNTIME_HELPER_METHOD_NAMES: Tuple[str, ...] = (
+        "get_conduit_cloud",
+        "get_conduit_by_id",
+        "get_conduit_by_name",
+        "list_conduit_ids",
+        "list_conduit_names",
+        "count_conduits",
+        "find_conduit_id_by_name",
+        "list_clusters",
+        "get_links",
+        "get_contracted_conduits",
+        "get_spell_in_contracts",
+        "get_spells_in_contract_by_conduit_name",
+        "describe_spells_in_conduit",
+        "find_spell_id",
+        "find_spell_key",
+        "get_spell_permissions",
+        "get_target_attribute",
+        "get_target_method",
+        "execute_target_method",
+    )
     _CODEGEN_COMMAND_METHOD_NAMES: Tuple[str, ...] = (
         "validate_codegen",
         "execute_codegen",
     )
+
+    def get_conduit_cloud(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return the live conduit cloud for one hosted frame.
+
+        Args:
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            object: Live conduit-cloud object for the resolved frame.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="get_conduit_cloud",
+                frame_name=frame_name,
+        ), self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            self._assert_raw_runtime_object_access_allowed("get_conduit_cloud")
+            self._assert_frame_command_enabled(resolved_frame_name)
+            return self._aether.get_conduit_cloud(resolved_frame_name)
+
+    def get_conduit_by_id(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one live conduit object by id, including lesser-conduit fallback.
+
+        Args:
+            conduit_id:
+                Conduit id to resolve.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            object: Live conduit object.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="get_conduit_by_id",
+                frame_name=frame_name,
+        ), self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            return self._get_conduit_by_id_locked(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+
+    def get_conduit_by_name(
+            self,
+            conduit_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one live root/normal conduit object by name.
+
+        Args:
+            conduit_name:
+                Conduit name to resolve.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            object: Live conduit object.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="get_conduit_by_name",
+                frame_name=frame_name,
+        ), self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            self._assert_raw_runtime_object_access_allowed("get_conduit_by_name")
+            self._assert_frame_command_enabled(resolved_frame_name)
+            conduit_id = self._get_required_published_conduit_id_by_name(
+                conduit_name,
+                frame_name=resolved_frame_name,
+            )
+            self._assert_conduit_command_enabled(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return self._aether.get_conduit_by_name(
+                conduit_name,
+                resolved_frame_name,
+            )
+
+    def list_conduit_ids(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return the command-enabled published conduit ids for one frame.
+
+        Args:
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            Tuple[str, ...]: Published command-enabled conduit ids.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="list_conduit_ids",
+                frame_name=frame_name,
+        ), self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit_records = self._get_enabled_published_conduit_records(
+                resolved_frame_name
+            )
+            return tuple(record.conduit_id for record in conduit_records)
+
+    def list_conduit_names(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return the command-enabled published conduit names for one frame.
+
+        Args:
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            Tuple[str, ...]: Published command-enabled conduit names.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="list_conduit_names",
+                frame_name=frame_name,
+        ), self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit_records = self._get_enabled_published_conduit_records(
+                resolved_frame_name
+            )
+            return tuple(
+                record.payload.conduit_name
+                for record in conduit_records
+                if record.payload.conduit_name is not None
+            )
+
+    def count_conduits(
+            self,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> int:
+        """
+        Return the number of command-enabled published conduits for one frame.
+
+        Args:
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            int: Number of published command-enabled conduits.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="count_conduits",
+                frame_name=frame_name,
+        ), self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit_records = self._get_enabled_published_conduit_records(
+                resolved_frame_name
+            )
+            return len(conduit_records)
+
+    def find_conduit_id_by_name(
+            self,
+            conduit_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Optional[str]:
+        """
+        Return the published command-enabled conduit id for one conduit name.
+
+        Args:
+            conduit_name:
+                Conduit name to resolve.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            Optional[str]: Matching conduit id, or None when missing.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="find_conduit_id_by_name",
+                frame_name=frame_name,
+        ), self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            self._assert_frame_command_enabled(resolved_frame_name)
+            try:
+                conduit_id = self._get_required_published_conduit_id_by_name(
+                    conduit_name,
+                    frame_name=resolved_frame_name,
+                )
+            except ValueError as exc:
+                if "was not found" in str(exc):
+                    return None
+                raise
+            compiled_access_surface = self._get_required_compiled_access_surface(
+                resolved_frame_name
+            )
+            if conduit_id in compiled_access_surface.enabled_conduit_ids:
+                return conduit_id
+            return None
+
+    def list_clusters(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[str, ...]:
+        """
+        Return the cluster names visible from one conduit.
+
+        Args:
+            conduit_id:
+                Conduit id whose cluster membership view should be queried.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            Tuple[str, ...]: Cluster names visible from the conduit.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="list_clusters",
+                frame_name=frame_name,
+        ), self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self._get_conduit_by_id_locked(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return tuple(conduit.list_clusters())
+
+    def get_links(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> Tuple[object, ...]:
+        """
+        Return the current peer links for one conduit.
+
+        Args:
+            conduit_id:
+                Conduit id whose peer links should be returned.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            Tuple[object, ...]: Linked conduit objects.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="get_links",
+                frame_name=frame_name,
+        ), self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self._get_conduit_by_id_locked(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return tuple(conduit.get_links())
+
+    def get_contracted_conduits(
+            self,
+            conduit_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return the contracted peer conduits for one conduit.
+
+        Args:
+            conduit_id:
+                Source conduit id whose contracted peers should be returned.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            object: Lower-runtime contracted conduit collection.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="get_contracted_conduits",
+                frame_name=frame_name,
+        ), self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self._get_conduit_by_id_locked(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return conduit.get_contracted_conduits()
+
+    def get_spell_in_contracts(
+            self,
+            conduit_id: str,
+            spell_id: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return one contracted spell lookup result from a conduit.
+
+        Args:
+            conduit_id:
+                Source conduit id whose contract view should be queried.
+            spell_id:
+                Current spell id to resolve inside the conduit's contract set.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            object: Lower-runtime spell-in-contract lookup result.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="get_spell_in_contracts",
+                frame_name=frame_name,
+        ), self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self._get_conduit_by_id_locked(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return conduit.get_spell_in_contracts(spell_id)
+
+    def get_spells_in_contract_by_conduit_name(
+            self,
+            conduit_id: str,
+            conduit_name: str,
+            *,
+            frame_name: Optional[str] = None,
+    ) -> object:
+        """
+        Return contracted spell data keyed by peer conduit name.
+
+        Args:
+            conduit_id:
+                Source conduit id whose contract table should be queried.
+            conduit_name:
+                Peer conduit name whose contract spell data should be returned.
+            frame_name:
+                Optional frame name. When omitted, the room default frame is
+                used.
+
+        Returns:
+            object: Lower-runtime contract spell payload for the peer name.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="get_spells_in_contract_by_conduit_name",
+                frame_name=frame_name,
+        ), self._lock:
+            resolved_frame_name = self._resolve_runtime_frame_name(frame_name)
+            conduit = self._get_conduit_by_id_locked(
+                conduit_id,
+                frame_name=resolved_frame_name,
+            )
+            return conduit.get_spells_in_contract_by_conduit_name(conduit_name)
 
     def validate_codegen(
             self,
@@ -136,6 +542,6 @@ class CodegenCommandSystem(CommandSystem):
                 action_name="list_supported_command_methods",
                 frame_name=None,
         ):
-            return self._list_supported_command_methods_tuple() + (
+            return self._CODEGEN_RUNTIME_HELPER_METHOD_NAMES + (
                 self._CODEGEN_COMMAND_METHOD_NAMES
             )
