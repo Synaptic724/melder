@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import (
     CodegenTransactionContext,
@@ -37,9 +37,19 @@ from melder.aether.nexus.rift.codegen_system.validation.codegen_validator import
 from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.interfaces.interfaces import (
+    ICodegenExecutionResult,
+    ICodegenNamespace,
+    ICodegenNamespaceConfiguration,
+    ICodegenRiftSpace,
+    ICodegenSystem,
+    ICodegenTransactionContext,
+    ICodegenValidationResult,
+    IRift,
+)
 
 
-class CodegenSystem(Cleanable):
+class CodegenSystem(Cleanable, ICodegenSystem):
     """
     Internal
 
@@ -77,7 +87,7 @@ class CodegenSystem(Cleanable):
         "_monitor",
     ]
 
-    def __init__(self, *, rift: Any, space: Any) -> None:
+    def __init__(self, *, rift: IRift, space: ICodegenRiftSpace) -> None:
         """
         Initialize one root codegen system.
 
@@ -102,8 +112,8 @@ class CodegenSystem(Cleanable):
         self._id: str = IDBuilder.create_id()
         self._owner_space_id: str = space.space_id
         self._lock: threading.RLock = threading.RLock()
-        self._rift: Any = rift
-        self._space: Any = space
+        self._rift: IRift = rift
+        self._space: ICodegenRiftSpace = space
         self._validator: CodegenValidator = CodegenValidator()
         self._validation_reporter: CodegenValidationReporter = (
             CodegenValidationReporter()
@@ -166,7 +176,7 @@ class CodegenSystem(Cleanable):
             code: str,
             *,
             frame_name: str,
-    ) -> CodegenValidationResult:
+    ) -> ICodegenValidationResult:
         """
         Validate one codegen request through the internal engine.
 
@@ -183,18 +193,20 @@ class CodegenSystem(Cleanable):
             ValueError:
                 If `code` or `frame_name` is empty.
         """
-        _, validation_result = self.validate_codegen_request(
-            code,
-            frame_name=frame_name,
-        )
-        return validation_result
+        self.check_cleaned()
+        with self._lock:
+            _, validation_result = self.validate_codegen_request(
+                code,
+                frame_name=frame_name,
+            )
+            return validation_result
 
     def execute_codegen(
             self,
             code: str,
             *,
             frame_name: str,
-    ) -> CodegenExecutionResult:
+    ) -> ICodegenExecutionResult:
         """
         Execute one codegen request through the internal engine.
 
@@ -211,18 +223,20 @@ class CodegenSystem(Cleanable):
             ValueError:
                 If `code` or `frame_name` is empty.
         """
-        _, execution_result = self.execute_codegen_request(
-            code,
-            frame_name=frame_name,
-        )
-        return execution_result
+        self.check_cleaned()
+        with self._lock:
+            _, execution_result = self.execute_codegen_request(
+                code,
+                frame_name=frame_name,
+            )
+            return execution_result
 
     def validate_codegen_request(
             self,
             code: str,
             *,
             frame_name: str,
-    ) -> Tuple[CodegenTransactionContext, CodegenValidationResult]:
+    ) -> Tuple[ICodegenTransactionContext, ICodegenValidationResult]:
         """
         Validate one codegen request and return both context and result.
 
@@ -241,21 +255,23 @@ class CodegenSystem(Cleanable):
             Tuple[CodegenTransactionContext, CodegenValidationResult]:
                 Shared transaction context plus validator-owned result.
         """
-        context = self._build_transaction_context(
-            code,
-            frame_name=frame_name,
-        )
-        self._monitor.on_validation_started(context)
-        validation_result = self._validator.validate(context)
-        self._monitor.on_validation_finished(context, validation_result)
-        return context, validation_result
+        self.check_cleaned()
+        with self._lock:
+            context = self._build_transaction_context(
+                code,
+                frame_name=frame_name,
+            )
+            self._monitor.on_validation_started(context)
+            validation_result = self._validator.validate(context)
+            self._monitor.on_validation_finished(context, validation_result)
+            return context, validation_result
 
     def execute_codegen_request(
             self,
             code: str,
             *,
             frame_name: str,
-    ) -> Tuple[CodegenTransactionContext, CodegenExecutionResult]:
+    ) -> Tuple[ICodegenTransactionContext, ICodegenExecutionResult]:
         """
         Execute one codegen request and return both context and result.
 
@@ -274,35 +290,37 @@ class CodegenSystem(Cleanable):
             Tuple[CodegenTransactionContext, CodegenExecutionResult]:
                 Shared transaction context plus executor-owned result.
         """
-        context = self._build_transaction_context(
-            code,
-            frame_name=frame_name,
-        )
-        self._monitor.on_execution_started(context)
-        self._monitor.on_validation_started(context)
-        validation_result = self._validator.validate(context)
-        self._monitor.on_validation_finished(context, validation_result)
-        if (
-                not validation_result.accepted
-                and validation_result.reason != "codegen_validation_not_implemented"
-        ):
-            execution_result = CodegenExecutionResult.validation_failed(
+        self.check_cleaned()
+        with self._lock:
+            context = self._build_transaction_context(
+                code,
                 frame_name=frame_name,
-                validation_issues=validation_result.validation_issues,
-                transaction_id=context.transaction_id,
             )
+            self._monitor.on_execution_started(context)
+            self._monitor.on_validation_started(context)
+            validation_result = self._validator.validate(context)
+            self._monitor.on_validation_finished(context, validation_result)
+            if (
+                    not validation_result.accepted
+                    and validation_result.reason != "codegen_validation_not_implemented"
+            ):
+                execution_result = CodegenExecutionResult.validation_failed(
+                    frame_name=frame_name,
+                    validation_issues=validation_result.validation_issues,
+                    transaction_id=context.transaction_id,
+                )
+                self._monitor.on_execution_finished(context, execution_result)
+                return context, execution_result
+            namespace = self._build_namespace(context)
+            context.set_namespace(namespace)
+            compiled_code = self._compiler.compile(context)
+            execution_result = self._executor.execute(compiled_code, context)
             self._monitor.on_execution_finished(context, execution_result)
             return context, execution_result
-        namespace = self._build_namespace(context)
-        context.set_namespace(namespace)
-        compiled_code = self._compiler.compile(context)
-        execution_result = self._executor.execute(compiled_code, context)
-        self._monitor.on_execution_finished(context, execution_result)
-        return context, execution_result
 
     def report_validation_result(
             self,
-            validation_result: CodegenValidationResult,
+            validation_result: ICodegenValidationResult,
     ) -> Dict[str, object]:
         """
         Convert one validation result into the public payload shape.
@@ -314,14 +332,16 @@ class CodegenSystem(Cleanable):
         Returns:
             Dict[str, object]: Public validation payload.
         """
-        return self._validation_reporter.report(validation_result)
+        self.check_cleaned()
+        with self._lock:
+            return self._validation_reporter.report(validation_result)
 
     def _build_transaction_context(
             self,
             code: str,
             *,
             frame_name: str,
-    ) -> CodegenTransactionContext:
+    ) -> ICodegenTransactionContext:
         """
         Build one per-call transaction context for the root slice.
 
@@ -363,7 +383,7 @@ class CodegenSystem(Cleanable):
             *,
             frame_name: str,
             projection: Optional[CodegenProjection],
-    ) -> CodegenNamespaceConfiguration:
+    ) -> ICodegenNamespaceConfiguration:
         """
         Build the current stable default namespace configuration.
 
@@ -386,7 +406,7 @@ class CodegenSystem(Cleanable):
     def _build_namespace(
             self,
             transaction_context: CodegenTransactionContext,
-    ) -> CodegenNamespace:
+    ) -> ICodegenNamespace:
         """
         Build one live namespace for the current transaction context.
 

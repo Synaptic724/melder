@@ -8,7 +8,7 @@ from melder.aether.nexus.rift.command_system.codegen_command_system import (
 )
 from melder.aether.nexus.rift.codegen_system.codegen_system import CodegenSystem
 from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
-from melder.utilities.interfaces.interfaces import ICodegenRiftSpace, IRiftGate
+from melder.utilities.interfaces.interfaces import ICodegenRiftSpace, IRift, IRiftGate
 
 
 class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
@@ -38,7 +38,7 @@ class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
             self,
             owner_rift_id: str,
             *,
-            rift: object,
+            rift: IRift,
             space_name: Optional[str] = None,
             metadata: Optional[Dict[str, object]] = None,
             rift_gate: Optional[IRiftGate] = None,
@@ -86,7 +86,7 @@ class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
         )
         self._command_system.attach_codegen_system(self._codegen_system)
 
-    def _create_command_system(self, rift: object) -> CommandSystem:
+    def _create_command_system(self, rift: IRift) -> CommandSystem:
         """
         Build the codegen room's command system.
 

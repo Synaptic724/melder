@@ -1,11 +1,18 @@
-from typing import Any, Dict
+import threading
+from typing import Dict
 
 from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
     CodegenNamespaceConfiguration,
 )
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import (
+    ICodegenNamespaceConfiguration,
+    ICodegenRiftSpace,
+    IRift,
+)
 
 
-class CodegenRoomObjectsStrategy:
+class CodegenRoomObjectsStrategy(Cleanable):
     """
     Internal
 
@@ -21,14 +28,41 @@ class CodegenRoomObjectsStrategy:
           `rift`, `space`, `viewer`, and `frame_name`.
     """
 
-    __slots__ = []
+    __slots__ = Cleanable.__slots__ + [
+        "_lock",
+    ]
+
+    def __init__(self) -> None:
+        """
+        Initialize the room-objects strategy.
+
+        Returns:
+            None.
+        """
+        super().__init__()
+        self._lock: threading.RLock = threading.RLock()
+
+    def cleanup(self) -> None:
+        """
+        Idempotently cleanup the strategy.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+        self._lock = None
 
     def build_namespace_entries(
             self,
-            configuration: CodegenNamespaceConfiguration,
+            configuration: ICodegenNamespaceConfiguration,
             *,
-            rift: Any,
-            space: Any,
+            rift: IRift,
+            space: ICodegenRiftSpace,
     ) -> Dict[str, object]:
         """
         Build room-object namespace entries for one request.
@@ -48,21 +82,22 @@ class CodegenRoomObjectsStrategy:
             TypeError:
                 If `configuration`, `rift`, or `space` is None.
         """
-        if configuration is None:
-            raise TypeError("configuration cannot be None.")
-        if rift is None:
-            raise TypeError("rift cannot be None.")
-        if space is None:
-            raise TypeError("space cannot be None.")
-        namespace_entries: Dict[str, object] = {}
-        exposed_names = configuration.exposed_names
-        if "rift" in exposed_names:
-            namespace_entries["rift"] = rift
-        if "space" in exposed_names:
-            namespace_entries["space"] = space
-        if "viewer" in exposed_names:
-            namespace_entries["viewer"] = space.frame_viewer
-        if "frame_name" in exposed_names:
-            namespace_entries["frame_name"] = configuration.frame_name
-        return namespace_entries
-
+        self.check_cleaned()
+        with self._lock:
+            if configuration is None:
+                raise TypeError("configuration cannot be None.")
+            if rift is None:
+                raise TypeError("rift cannot be None.")
+            if space is None:
+                raise TypeError("space cannot be None.")
+            namespace_entries: Dict[str, object] = {}
+            exposed_names = configuration.exposed_names
+            if "rift" in exposed_names:
+                namespace_entries["rift"] = rift
+            if "space" in exposed_names:
+                namespace_entries["space"] = space
+            if "viewer" in exposed_names:
+                namespace_entries["viewer"] = space.frame_viewer
+            if "frame_name" in exposed_names:
+                namespace_entries["frame_name"] = configuration.frame_name
+            return namespace_entries

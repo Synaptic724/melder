@@ -1,3 +1,4 @@
+import threading
 from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import (
     CodegenTransactionContext,
 )
@@ -11,6 +12,12 @@ from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_resul
     CodegenValidationResult,
 )
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import (
+    ICodegenExecutionResult,
+    ICodegenRiftSpace,
+    ICodegenTransactionContext,
+    ICodegenValidationResult,
+)
 
 
 class CodegenMonitor(Cleanable):
@@ -32,6 +39,7 @@ class CodegenMonitor(Cleanable):
     """
 
     __slots__ = Cleanable.__slots__ + [
+        "_lock",
         "_event_publisher",
     ]
 
@@ -47,6 +55,7 @@ class CodegenMonitor(Cleanable):
             None.
         """
         super().__init__()
+        self._lock: threading.RLock = threading.RLock()
         self._event_publisher: CodegenEventPublisher = CodegenEventPublisher(
             space=space,
         )
@@ -60,13 +69,17 @@ class CodegenMonitor(Cleanable):
         """
         if self._cleaned:
             return
-        self._cleaned = True
-        self._event_publisher.cleanup()
-        self._event_publisher = None
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._event_publisher.cleanup()
+            self._event_publisher = None
+        self._lock = None
 
     def on_validation_started(
             self,
-            transaction_context: CodegenTransactionContext,
+            transaction_context: ICodegenTransactionContext,
     ) -> None:
         """
         Publish one validation-started lifecycle signal.
@@ -79,12 +92,13 @@ class CodegenMonitor(Cleanable):
             None.
         """
         self.check_cleaned()
-        self._event_publisher.publish_validation_started(transaction_context)
+        with self._lock:
+            self._event_publisher.publish_validation_started(transaction_context)
 
     def on_validation_finished(
             self,
-            transaction_context: CodegenTransactionContext,
-            validation_result: CodegenValidationResult,
+            transaction_context: ICodegenTransactionContext,
+            validation_result: ICodegenValidationResult,
     ) -> None:
         """
         Publish one validation-finished lifecycle signal.
@@ -99,14 +113,15 @@ class CodegenMonitor(Cleanable):
             None.
         """
         self.check_cleaned()
-        self._event_publisher.publish_validation_finished(
-            transaction_context,
-            validation_result,
-        )
+        with self._lock:
+            self._event_publisher.publish_validation_finished(
+                transaction_context,
+                validation_result,
+            )
 
     def on_execution_started(
             self,
-            transaction_context: CodegenTransactionContext,
+            transaction_context: ICodegenTransactionContext,
     ) -> None:
         """
         Publish one execution-started lifecycle signal.
@@ -119,12 +134,13 @@ class CodegenMonitor(Cleanable):
             None.
         """
         self.check_cleaned()
-        self._event_publisher.publish_execution_started(transaction_context)
+        with self._lock:
+            self._event_publisher.publish_execution_started(transaction_context)
 
     def on_execution_finished(
             self,
-            transaction_context: CodegenTransactionContext,
-            execution_result: CodegenExecutionResult,
+            transaction_context: ICodegenTransactionContext,
+            execution_result: ICodegenExecutionResult,
     ) -> None:
         """
         Publish one execution-finished lifecycle signal.
@@ -139,7 +155,8 @@ class CodegenMonitor(Cleanable):
             None.
         """
         self.check_cleaned()
-        self._event_publisher.publish_execution_finished(
-            transaction_context,
-            execution_result,
-        )
+        with self._lock:
+            self._event_publisher.publish_execution_finished(
+                transaction_context,
+                execution_result,
+            )

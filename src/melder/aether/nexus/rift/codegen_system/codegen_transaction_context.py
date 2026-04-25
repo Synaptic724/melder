@@ -1,5 +1,6 @@
+import threading
 import hashlib
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace import (
     CodegenNamespace,
@@ -8,10 +9,12 @@ from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_configu
     CodegenNamespaceConfiguration,
 )
 from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
+from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.interfaces.interfaces import ICodegenTransactionContext
 
 
-class CodegenTransactionContext:
+class CodegenTransactionContext(Cleanable, ICodegenTransactionContext):
     """
     Internal
 
@@ -30,7 +33,8 @@ class CodegenTransactionContext:
         - Does not own or cleanup the referenced projection.
     """
 
-    __slots__ = [
+    __slots__ = Cleanable.__slots__ + [
+        "_lock",
         "_transaction_id",
         "_frame_name",
         "_code",
@@ -75,10 +79,12 @@ class CodegenTransactionContext:
             ValueError:
                 If `frame_name` or `code` is empty.
         """
+        super().__init__()
         if not isinstance(frame_name, str) or not frame_name:
             raise ValueError("frame_name cannot be empty.")
         if not isinstance(code, str) or not code:
             raise ValueError("code cannot be empty.")
+        self._lock: threading.RLock = threading.RLock()
         self._transaction_id: str = IDBuilder.create_id()
         self._frame_name: str = frame_name
         self._code: str = code
@@ -90,6 +96,30 @@ class CodegenTransactionContext:
         self._namespace: Optional[CodegenNamespace] = namespace
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
 
+    def cleanup(self) -> None:
+        """
+        Idempotently clear transaction-context-owned state.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._transaction_id = None
+            self._frame_name = None
+            self._code = None
+            self._code_hash = None
+            self._projection = None
+            self._namespace_configuration = None
+            self._namespace = None
+            self._metadata.clear()
+            self._metadata = None
+        self._lock = None
+
     @property
     def transaction_id(self) -> str:
         """
@@ -98,7 +128,9 @@ class CodegenTransactionContext:
         Returns:
             str: Stable transaction id.
         """
-        return self._transaction_id
+        self.check_cleaned()
+        with self._lock:
+            return self._transaction_id
 
     @property
     def frame_name(self) -> str:
@@ -108,7 +140,9 @@ class CodegenTransactionContext:
         Returns:
             str: Target frame name.
         """
-        return self._frame_name
+        self.check_cleaned()
+        with self._lock:
+            return self._frame_name
 
     @property
     def code(self) -> str:
@@ -118,7 +152,9 @@ class CodegenTransactionContext:
         Returns:
             str: Raw code string.
         """
-        return self._code
+        self.check_cleaned()
+        with self._lock:
+            return self._code
 
     @property
     def code_hash(self) -> str:
@@ -128,7 +164,9 @@ class CodegenTransactionContext:
         Returns:
             str: SHA256 code hash.
         """
-        return self._code_hash
+        self.check_cleaned()
+        with self._lock:
+            return self._code_hash
 
     @property
     def projection(self) -> Optional[CodegenProjection]:
@@ -138,7 +176,9 @@ class CodegenTransactionContext:
         Returns:
             Optional[CodegenProjection]: Resolved projection when available.
         """
-        return self._projection
+        self.check_cleaned()
+        with self._lock:
+            return self._projection
 
     @property
     def namespace_configuration(self) -> Optional[CodegenNamespaceConfiguration]:
@@ -149,7 +189,9 @@ class CodegenTransactionContext:
             Optional[CodegenNamespaceConfiguration]: Namespace configuration
             when assigned.
         """
-        return self._namespace_configuration
+        self.check_cleaned()
+        with self._lock:
+            return self._namespace_configuration
 
     @property
     def namespace(self) -> Optional[CodegenNamespace]:
@@ -159,7 +201,9 @@ class CodegenTransactionContext:
         Returns:
             Optional[CodegenNamespace]: Built namespace when assigned.
         """
-        return self._namespace
+        self.check_cleaned()
+        with self._lock:
+            return self._namespace
 
     @property
     def metadata(self) -> Dict[str, object]:
@@ -169,7 +213,9 @@ class CodegenTransactionContext:
         Returns:
             Dict[str, object]: Detached metadata copy.
         """
-        return dict(self._metadata)
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._metadata)
 
     def set_projection(self, projection: Optional[CodegenProjection]) -> None:
         """
@@ -182,7 +228,9 @@ class CodegenTransactionContext:
         Returns:
             None.
         """
-        self._projection = projection
+        self.check_cleaned()
+        with self._lock:
+            self._projection = projection
 
     def set_namespace_configuration(
             self,
@@ -198,7 +246,9 @@ class CodegenTransactionContext:
         Returns:
             None.
         """
-        self._namespace_configuration = namespace_configuration
+        self.check_cleaned()
+        with self._lock:
+            self._namespace_configuration = namespace_configuration
 
     def set_namespace(self, namespace: Optional[CodegenNamespace]) -> None:
         """
@@ -211,5 +261,6 @@ class CodegenTransactionContext:
         Returns:
             None.
         """
-        self._namespace = namespace
-
+        self.check_cleaned()
+        with self._lock:
+            self._namespace = namespace

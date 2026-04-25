@@ -1,4 +1,5 @@
 import ast
+import threading
 from typing import Optional
 
 from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import (
@@ -22,9 +23,14 @@ from melder.aether.nexus.rift.codegen_system.validation.strategies.codegen_name_
 from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_result import (
     CodegenValidationResult,
 )
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import (
+    ICodegenTransactionContext,
+    ICodegenValidationResult,
+)
 
 
-class CodegenValidator:
+class CodegenValidator(Cleanable):
     """
     Internal
 
@@ -42,7 +48,8 @@ class CodegenValidator:
           the deeper strategy family is not yet implemented.
     """
 
-    __slots__ = [
+    __slots__ = Cleanable.__slots__ + [
+        "_lock",
         "_ast_structure_strategy",
         "_import_policy_strategy",
         "_builtin_policy_strategy",
@@ -57,6 +64,8 @@ class CodegenValidator:
         Returns:
             None.
         """
+        super().__init__()
+        self._lock: threading.RLock = threading.RLock()
         self._ast_structure_strategy: CodegenAstStructureStrategy = (
             CodegenAstStructureStrategy()
         )
@@ -73,10 +82,35 @@ class CodegenValidator:
             CodegenAttributeAccessStrategy()
         )
 
+    def cleanup(self) -> None:
+        """
+        Idempotently cleanup the validator and its strategies.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._ast_structure_strategy.cleanup()
+            self._import_policy_strategy.cleanup()
+            self._builtin_policy_strategy.cleanup()
+            self._name_resolution_strategy.cleanup()
+            self._attribute_access_strategy.cleanup()
+            self._ast_structure_strategy = None
+            self._import_policy_strategy = None
+            self._builtin_policy_strategy = None
+            self._name_resolution_strategy = None
+            self._attribute_access_strategy = None
+        self._lock = None
+
     def validate(
             self,
-            transaction_context: CodegenTransactionContext,
-    ) -> CodegenValidationResult:
+            transaction_context: ICodegenTransactionContext,
+    ) -> ICodegenValidationResult:
         """
         Validate one codegen transaction context.
 
@@ -91,55 +125,57 @@ class CodegenValidator:
             TypeError:
                 If `transaction_context` is None.
         """
-        if transaction_context is None:
-            raise TypeError("transaction_context cannot be None.")
-        try:
-            syntax_tree = ast.parse(transaction_context.code, mode="exec")
-        except SyntaxError as exc:
-            return CodegenValidationResult.syntax_error(
+        self.check_cleaned()
+        with self._lock:
+            if transaction_context is None:
+                raise TypeError("transaction_context cannot be None.")
+            try:
+                syntax_tree = ast.parse(transaction_context.code, mode="exec")
+            except SyntaxError as exc:
+                return CodegenValidationResult.syntax_error(
+                    frame_name=transaction_context.frame_name,
+                    transaction_id=transaction_context.transaction_id,
+                    message=self._build_syntax_error_message(exc),
+                )
+            validation_result = self._run_strategy(
+                self._ast_structure_strategy,
+                transaction_context,
+                syntax_tree,
+            )
+            if validation_result is not None:
+                return validation_result
+            validation_result = self._run_strategy(
+                self._import_policy_strategy,
+                transaction_context,
+                syntax_tree,
+            )
+            if validation_result is not None:
+                return validation_result
+            validation_result = self._run_strategy(
+                self._builtin_policy_strategy,
+                transaction_context,
+                syntax_tree,
+            )
+            if validation_result is not None:
+                return validation_result
+            validation_result = self._run_strategy(
+                self._name_resolution_strategy,
+                transaction_context,
+                syntax_tree,
+            )
+            if validation_result is not None:
+                return validation_result
+            validation_result = self._run_strategy(
+                self._attribute_access_strategy,
+                transaction_context,
+                syntax_tree,
+            )
+            if validation_result is not None:
+                return validation_result
+            return CodegenValidationResult.not_implemented(
                 frame_name=transaction_context.frame_name,
                 transaction_id=transaction_context.transaction_id,
-                message=self._build_syntax_error_message(exc),
             )
-        validation_result = self._run_strategy(
-            self._ast_structure_strategy,
-            transaction_context,
-            syntax_tree,
-        )
-        if validation_result is not None:
-            return validation_result
-        validation_result = self._run_strategy(
-            self._import_policy_strategy,
-            transaction_context,
-            syntax_tree,
-        )
-        if validation_result is not None:
-            return validation_result
-        validation_result = self._run_strategy(
-            self._builtin_policy_strategy,
-            transaction_context,
-            syntax_tree,
-        )
-        if validation_result is not None:
-            return validation_result
-        validation_result = self._run_strategy(
-            self._name_resolution_strategy,
-            transaction_context,
-            syntax_tree,
-        )
-        if validation_result is not None:
-            return validation_result
-        validation_result = self._run_strategy(
-            self._attribute_access_strategy,
-            transaction_context,
-            syntax_tree,
-        )
-        if validation_result is not None:
-            return validation_result
-        return CodegenValidationResult.not_implemented(
-            frame_name=transaction_context.frame_name,
-            transaction_id=transaction_context.transaction_id,
-        )
 
     @staticmethod
     def _build_syntax_error_message(exc: SyntaxError) -> str:
@@ -166,9 +202,9 @@ class CodegenValidator:
     @staticmethod
     def _run_strategy(
             strategy: object,
-            transaction_context: CodegenTransactionContext,
+            transaction_context: ICodegenTransactionContext,
             syntax_tree: ast.AST,
-    ) -> Optional[CodegenValidationResult]:
+    ) -> Optional[ICodegenValidationResult]:
         """
         Execute one validation strategy and return its optional failure result.
 

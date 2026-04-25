@@ -1,3 +1,4 @@
+import threading
 from typing import Dict
 
 from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import (
@@ -10,6 +11,12 @@ from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_resul
     CodegenValidationResult,
 )
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import (
+    ICodegenExecutionResult,
+    ICodegenRiftSpace,
+    ICodegenTransactionContext,
+    ICodegenValidationResult,
+)
 
 
 class CodegenEventPublisher(Cleanable):
@@ -32,6 +39,7 @@ class CodegenEventPublisher(Cleanable):
     """
 
     __slots__ = Cleanable.__slots__ + [
+        "_lock",
         "_space",
     ]
 
@@ -53,7 +61,8 @@ class CodegenEventPublisher(Cleanable):
         super().__init__()
         if space is None:
             raise TypeError("space cannot be None.")
-        self._space: object = space
+        self._lock: threading.RLock = threading.RLock()
+        self._space: ICodegenRiftSpace = space
 
     def cleanup(self) -> None:
         """
@@ -64,12 +73,16 @@ class CodegenEventPublisher(Cleanable):
         """
         if self._cleaned:
             return
-        self._cleaned = True
-        self._space = None
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._space = None
+        self._lock = None
 
     def publish_validation_started(
             self,
-            transaction_context: CodegenTransactionContext,
+            transaction_context: ICodegenTransactionContext,
     ) -> None:
         """
         Emit one validation-started event.
@@ -92,8 +105,8 @@ class CodegenEventPublisher(Cleanable):
 
     def publish_validation_finished(
             self,
-            transaction_context: CodegenTransactionContext,
-            validation_result: CodegenValidationResult,
+            transaction_context: ICodegenTransactionContext,
+            validation_result: ICodegenValidationResult,
     ) -> None:
         """
         Emit one validation-finished event.
@@ -123,7 +136,7 @@ class CodegenEventPublisher(Cleanable):
 
     def publish_execution_started(
             self,
-            transaction_context: CodegenTransactionContext,
+            transaction_context: ICodegenTransactionContext,
     ) -> None:
         """
         Emit one execution-started event.
@@ -146,8 +159,8 @@ class CodegenEventPublisher(Cleanable):
 
     def publish_execution_finished(
             self,
-            transaction_context: CodegenTransactionContext,
-            execution_result: CodegenExecutionResult,
+            transaction_context: ICodegenTransactionContext,
+            execution_result: ICodegenExecutionResult,
     ) -> None:
         """
         Emit one execution-finished event.
@@ -182,7 +195,7 @@ class CodegenEventPublisher(Cleanable):
             self,
             *,
             event_type: str,
-            transaction_context: CodegenTransactionContext,
+            transaction_context: ICodegenTransactionContext,
             payload: Dict[str, object],
     ) -> None:
         """
@@ -200,17 +213,17 @@ class CodegenEventPublisher(Cleanable):
             None.
         """
         self.check_cleaned()
-        if transaction_context is None:
-            raise TypeError("transaction_context cannot be None.")
-        event_payload: Dict[str, object] = {
-            "transaction_id": transaction_context.transaction_id,
-            "code_hash": transaction_context.code_hash,
-            "code_length": len(transaction_context.code),
-        }
-        event_payload.update(payload)
-        self._space.event_system.create_and_emit_event(
-            event_type,
-            frame_name=transaction_context.frame_name,
-            payload=event_payload,
-        )
-
+        with self._lock:
+            if transaction_context is None:
+                raise TypeError("transaction_context cannot be None.")
+            event_payload: Dict[str, object] = {
+                "transaction_id": transaction_context.transaction_id,
+                "code_hash": transaction_context.code_hash,
+                "code_length": len(transaction_context.code),
+            }
+            event_payload.update(payload)
+            self._space.event_system.create_and_emit_event(
+                event_type,
+                frame_name=transaction_context.frame_name,
+                payload=event_payload,
+            )

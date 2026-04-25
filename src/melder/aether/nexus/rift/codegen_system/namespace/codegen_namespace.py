@@ -1,11 +1,14 @@
+import threading
 from typing import Dict, Optional
 
 from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
     CodegenNamespaceConfiguration,
 )
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import ICodegenNamespace
 
 
-class CodegenNamespace:
+class CodegenNamespace(Cleanable, ICodegenNamespace):
     """
     Internal
 
@@ -22,7 +25,8 @@ class CodegenNamespace:
         - Keeps metadata separate from the raw globals/locals mappings.
     """
 
-    __slots__ = [
+    __slots__ = Cleanable.__slots__ + [
+        "_lock",
         "_configuration",
         "_globals_dict",
         "_locals_dict",
@@ -57,8 +61,10 @@ class CodegenNamespace:
             TypeError:
                 If `configuration` is None.
         """
+        super().__init__()
         if configuration is None:
             raise TypeError("configuration cannot be None.")
+        self._lock: threading.RLock = threading.RLock()
         self._configuration: CodegenNamespaceConfiguration = configuration
         self._globals_dict: Dict[str, object] = (
             dict(globals_dict) if globals_dict else {}
@@ -67,6 +73,28 @@ class CodegenNamespace:
             dict(locals_dict) if locals_dict else {}
         )
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
+
+    def cleanup(self) -> None:
+        """
+        Idempotently clear live namespace state.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._configuration = None
+            self._globals_dict.clear()
+            self._locals_dict.clear()
+            self._metadata.clear()
+            self._globals_dict = None
+            self._locals_dict = None
+            self._metadata = None
+        self._lock = None
 
     @classmethod
     def create_placeholder(
@@ -106,7 +134,9 @@ class CodegenNamespace:
         Returns:
             CodegenNamespaceConfiguration: Namespace configuration.
         """
-        return self._configuration
+        self.check_cleaned()
+        with self._lock:
+            return self._configuration
 
     @property
     def globals_dict(self) -> Dict[str, object]:
@@ -116,7 +146,9 @@ class CodegenNamespace:
         Returns:
             Dict[str, object]: Live globals dictionary.
         """
-        return self._globals_dict
+        self.check_cleaned()
+        with self._lock:
+            return self._globals_dict
 
     @property
     def locals_dict(self) -> Dict[str, object]:
@@ -126,7 +158,9 @@ class CodegenNamespace:
         Returns:
             Dict[str, object]: Live locals dictionary.
         """
-        return self._locals_dict
+        self.check_cleaned()
+        with self._lock:
+            return self._locals_dict
 
     @property
     def metadata(self) -> Dict[str, object]:
@@ -136,7 +170,9 @@ class CodegenNamespace:
         Returns:
             Dict[str, object]: Detached metadata copy.
         """
-        return dict(self._metadata)
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._metadata)
 
     def get_result(self) -> Optional[object]:
         """
@@ -145,7 +181,8 @@ class CodegenNamespace:
         Returns:
             Optional[object]: Stored `result` value when present.
         """
-        if "result" not in self._locals_dict:
-            return None
-        return self._locals_dict["result"]
-
+        self.check_cleaned()
+        with self._lock:
+            if "result" not in self._locals_dict:
+                return None
+            return self._locals_dict["result"]

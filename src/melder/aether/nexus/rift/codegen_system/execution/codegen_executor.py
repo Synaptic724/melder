@@ -1,4 +1,4 @@
-from typing import Any
+import threading
 
 from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import (
     CodegenTransactionContext,
@@ -6,9 +6,14 @@ from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import 
 from melder.aether.nexus.rift.codegen_system.execution.codegen_execution_result import (
     CodegenExecutionResult,
 )
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import (
+    ICodegenExecutionResult,
+    ICodegenTransactionContext,
+)
 
 
-class CodegenExecutor:
+class CodegenExecutor(Cleanable):
     """
     Internal
 
@@ -19,13 +24,40 @@ class CodegenExecutor:
         return the execution-layer result.
     """
 
-    __slots__ = []
+    __slots__ = Cleanable.__slots__ + [
+        "_lock",
+    ]
+
+    def __init__(self) -> None:
+        """
+        Initialize one codegen executor.
+
+        Returns:
+            None.
+        """
+        super().__init__()
+        self._lock: threading.RLock = threading.RLock()
+
+    def cleanup(self) -> None:
+        """
+        Idempotently cleanup the executor.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+        self._lock = None
 
     def execute(
             self,
-            compiled_code: Any,
-            transaction_context: CodegenTransactionContext,
-    ) -> CodegenExecutionResult:
+            compiled_code: object,
+            transaction_context: ICodegenTransactionContext,
+    ) -> ICodegenExecutionResult:
         """
         Execute one compiled code object against the transaction namespace.
 
@@ -44,25 +76,26 @@ class CodegenExecutor:
             RuntimeError:
                 If the transaction has no built namespace.
         """
-        if transaction_context is None:
-            raise TypeError("transaction_context cannot be None.")
-        namespace = transaction_context.namespace
-        if namespace is None:
-            raise RuntimeError("codegen transaction has no built namespace.")
-        try:
-            exec(compiled_code, namespace.globals_dict, namespace.locals_dict)
-        except Exception as exc:
-            return CodegenExecutionResult.runtime_failed(
+        self.check_cleaned()
+        with self._lock:
+            if transaction_context is None:
+                raise TypeError("transaction_context cannot be None.")
+            namespace = transaction_context.namespace
+            if namespace is None:
+                raise RuntimeError("codegen transaction has no built namespace.")
+            try:
+                exec(compiled_code, namespace.globals_dict, namespace.locals_dict)
+            except Exception as exc:
+                return CodegenExecutionResult.runtime_failed(
+                    frame_name=transaction_context.frame_name,
+                    runtime_error="{0}: {1}".format(
+                        exc.__class__.__name__,
+                        exc,
+                    ),
+                    transaction_id=transaction_context.transaction_id,
+                )
+            return CodegenExecutionResult.executed(
                 frame_name=transaction_context.frame_name,
-                runtime_error="{0}: {1}".format(
-                    exc.__class__.__name__,
-                    exc,
-                ),
+                result=namespace.get_result(),
                 transaction_id=transaction_context.transaction_id,
             )
-        return CodegenExecutionResult.executed(
-            frame_name=transaction_context.frame_name,
-            result=namespace.get_result(),
-            transaction_id=transaction_context.transaction_id,
-        )
-

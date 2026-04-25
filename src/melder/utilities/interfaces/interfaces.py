@@ -7687,6 +7687,346 @@ class ICodegenRiftSpace(IRiftSpace, Protocol):
 
 
 @runtime_checkable
+class ICodegenNamespaceConfiguration(ICleanable, Protocol):
+    """
+    Interface for the codegen namespace policy object.
+    """
+
+    @property
+    def frame_name(self) -> str:
+        """
+        Return the target frame name for this configuration.
+        """
+        ...
+
+    @property
+    def exposed_names(self) -> Tuple[str, ...]:
+        """
+        Return the stable ordered namespace names enabled by this configuration.
+        """
+        ...
+
+    @property
+    def metadata(self) -> Dict[str, object]:
+        """
+        Return detached metadata for this configuration.
+        """
+        ...
+
+
+@runtime_checkable
+class ICodegenNamespace(ICleanable, Protocol):
+    """
+    Interface for one live codegen namespace.
+    """
+
+    @property
+    def configuration(self) -> ICodegenNamespaceConfiguration:
+        """
+        Return the configuration that produced this namespace.
+        """
+        ...
+
+    @property
+    def globals_dict(self) -> Dict[str, object]:
+        """
+        Return the live globals dictionary.
+        """
+        ...
+
+    @property
+    def locals_dict(self) -> Dict[str, object]:
+        """
+        Return the live locals dictionary.
+        """
+        ...
+
+    @property
+    def metadata(self) -> Dict[str, object]:
+        """
+        Return detached metadata for this namespace.
+        """
+        ...
+
+    def get_result(self) -> Optional[object]:
+        """
+        Return the optional `result` value from this namespace.
+        """
+        ...
+
+
+@runtime_checkable
+class ICodegenTransactionContext(ICleanable, Protocol):
+    """
+    Interface for one codegen transaction context.
+    """
+
+    @property
+    def transaction_id(self) -> str:
+        """
+        Return the stable transaction id.
+        """
+        ...
+
+    @property
+    def frame_name(self) -> str:
+        """
+        Return the target frame name for this request.
+        """
+        ...
+
+    @property
+    def code(self) -> str:
+        """
+        Return the raw code string for this request.
+        """
+        ...
+
+    @property
+    def code_hash(self) -> str:
+        """
+        Return the deterministic code hash for this request.
+        """
+        ...
+
+    @property
+    def projection(self) -> Optional["CodegenProjection"]:
+        """
+        Return the optional resolved codegen projection.
+        """
+        ...
+
+    @property
+    def namespace_configuration(self) -> Optional[ICodegenNamespaceConfiguration]:
+        """
+        Return the optional namespace configuration.
+        """
+        ...
+
+    @property
+    def namespace(self) -> Optional[ICodegenNamespace]:
+        """
+        Return the optional live namespace.
+        """
+        ...
+
+    @property
+    def metadata(self) -> Dict[str, object]:
+        """
+        Return detached metadata for this transaction.
+        """
+        ...
+
+    def set_projection(self, projection: Optional["CodegenProjection"]) -> None:
+        """
+        Replace the optional projection reference.
+        """
+        ...
+
+    def set_namespace_configuration(
+            self,
+            namespace_configuration: Optional[ICodegenNamespaceConfiguration],
+    ) -> None:
+        """
+        Replace the optional namespace configuration.
+        """
+        ...
+
+    def set_namespace(
+            self,
+            namespace: Optional[ICodegenNamespace],
+    ) -> None:
+        """
+        Replace the optional live namespace.
+        """
+        ...
+
+
+@runtime_checkable
+class ICodegenValidationResult(ICleanable, Protocol):
+    """
+    Interface for the validator-owned codegen result type.
+    """
+
+    @property
+    def accepted(self) -> bool:
+        """
+        Return the validation acceptance state.
+        """
+        ...
+
+    @property
+    def frame_name(self) -> str:
+        """
+        Return the target frame name.
+        """
+        ...
+
+    @property
+    def reason(self) -> Optional[str]:
+        """
+        Return the optional validation reason.
+        """
+        ...
+
+    @property
+    def validation_issues(self) -> Tuple[str, ...]:
+        """
+        Return the validation issues tuple.
+        """
+        ...
+
+    @property
+    def transaction_id(self) -> Optional[str]:
+        """
+        Return the optional transaction id.
+        """
+        ...
+
+    def to_payload(self) -> Dict[str, object]:
+        """
+        Return the public validation payload.
+        """
+        ...
+
+
+@runtime_checkable
+class ICodegenExecutionResult(ICleanable, Protocol):
+    """
+    Interface for the executor-owned codegen result type.
+    """
+
+    @property
+    def accepted(self) -> bool:
+        """
+        Return the execution acceptance state.
+        """
+        ...
+
+    @property
+    def frame_name(self) -> str:
+        """
+        Return the target frame name.
+        """
+        ...
+
+    @property
+    def reason(self) -> Optional[str]:
+        """
+        Return the optional execution reason.
+        """
+        ...
+
+    @property
+    def validation_issues(self) -> Tuple[str, ...]:
+        """
+        Return the propagated validation issues.
+        """
+        ...
+
+    @property
+    def runtime_error(self) -> Optional[str]:
+        """
+        Return the optional runtime error summary.
+        """
+        ...
+
+    @property
+    def result(self) -> Optional[object]:
+        """
+        Return the optional final execution result.
+        """
+        ...
+
+    @property
+    def transaction_id(self) -> Optional[str]:
+        """
+        Return the optional transaction id.
+        """
+        ...
+
+    def to_payload(self) -> Dict[str, object]:
+        """
+        Return the public execution payload.
+        """
+        ...
+
+
+@runtime_checkable
+class ICodegenSystem(ICleanable, Protocol):
+    """
+    Interface for the room-owned internal codegen system.
+    """
+
+    @property
+    def codegen_system_id(self) -> str:
+        """
+        Return the stable codegen-system identifier.
+        """
+        ...
+
+    @property
+    def owner_space_id(self) -> str:
+        """
+        Return the owning room identifier.
+        """
+        ...
+
+    def validate_codegen(
+            self,
+            code: str,
+            *,
+            frame_name: str,
+    ) -> ICodegenValidationResult:
+        """
+        Validate one codegen request.
+        """
+        ...
+
+    def execute_codegen(
+            self,
+            code: str,
+            *,
+            frame_name: str,
+    ) -> ICodegenExecutionResult:
+        """
+        Execute one codegen request.
+        """
+        ...
+
+    def validate_codegen_request(
+            self,
+            code: str,
+            *,
+            frame_name: str,
+    ) -> Tuple[ICodegenTransactionContext, ICodegenValidationResult]:
+        """
+        Validate one codegen request and return context plus validation result.
+        """
+        ...
+
+    def execute_codegen_request(
+            self,
+            code: str,
+            *,
+            frame_name: str,
+    ) -> Tuple[ICodegenTransactionContext, ICodegenExecutionResult]:
+        """
+        Execute one codegen request and return context plus execution result.
+        """
+        ...
+
+    def report_validation_result(
+            self,
+            validation_result: ICodegenValidationResult,
+    ) -> Dict[str, object]:
+        """
+        Convert one validation result into the public payload shape.
+        """
+        ...
+
+
+@runtime_checkable
 class ICapabilityRiftSpace(IRiftSpace, Protocol):
     """
     Interface for CapabilityRiftSpace.
@@ -7959,6 +8299,12 @@ class IRift(ICleanable, Protocol):
     def rift_gate(self) -> IRiftGate:
         """
         Return the Rift-owned gate for this runtime instance.
+        """
+        ...
+
+    def _get_required_codegen_projection(self, frame_name: str) -> "CodegenProjection":
+        """
+        Return the required codegen projection for one frame.
         """
         ...
 

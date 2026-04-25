@@ -1,4 +1,5 @@
-from typing import Any, Dict
+import threading
+from typing import Dict
 
 from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace import (
     CodegenNamespace,
@@ -18,9 +19,16 @@ from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_target
 from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_workstation_strategy import (
     CodegenWorkstationStrategy,
 )
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import (
+    ICodegenNamespace,
+    ICodegenNamespaceConfiguration,
+    ICodegenRiftSpace,
+    IRift,
+)
 
 
-class CodegenNamespaceBuilder:
+class CodegenNamespaceBuilder(Cleanable):
     """
     Internal
 
@@ -37,7 +45,8 @@ class CodegenNamespaceBuilder:
         - Uses only the current stable namespace contract for this slice.
     """
 
-    __slots__ = [
+    __slots__ = Cleanable.__slots__ + [
+        "_lock",
         "_room_objects_strategy",
         "_workstation_strategy",
         "_command_strategy",
@@ -51,6 +60,8 @@ class CodegenNamespaceBuilder:
         Returns:
             None.
         """
+        super().__init__()
+        self._lock: threading.RLock = threading.RLock()
         self._room_objects_strategy: CodegenRoomObjectsStrategy = (
             CodegenRoomObjectsStrategy()
         )
@@ -60,13 +71,36 @@ class CodegenNamespaceBuilder:
         self._command_strategy: CodegenCommandStrategy = CodegenCommandStrategy()
         self._target_strategy: CodegenTargetStrategy = CodegenTargetStrategy()
 
+    def cleanup(self) -> None:
+        """
+        Idempotently clear builder-owned strategy references.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._room_objects_strategy.cleanup()
+            self._workstation_strategy.cleanup()
+            self._command_strategy.cleanup()
+            self._target_strategy.cleanup()
+            self._room_objects_strategy = None
+            self._workstation_strategy = None
+            self._command_strategy = None
+            self._target_strategy = None
+        self._lock = None
+
     def build(
             self,
-            configuration: CodegenNamespaceConfiguration,
+            configuration: ICodegenNamespaceConfiguration,
             *,
-            rift: Any,
-            space: Any,
-    ) -> CodegenNamespace:
+            rift: IRift,
+            space: ICodegenRiftSpace,
+    ) -> ICodegenNamespace:
         """
         Build one live namespace from config and room/runtime state.
 
@@ -85,44 +119,45 @@ class CodegenNamespaceBuilder:
             TypeError:
                 If `configuration`, `rift`, or `space` is None.
         """
-        if configuration is None:
-            raise TypeError("configuration cannot be None.")
-        if rift is None:
-            raise TypeError("rift cannot be None.")
-        if space is None:
-            raise TypeError("space cannot be None.")
-        globals_dict: Dict[str, object] = {}
-        globals_dict.update(
-            self._room_objects_strategy.build_namespace_entries(
-                configuration,
-                rift=rift,
-                space=space,
+        self.check_cleaned()
+        with self._lock:
+            if configuration is None:
+                raise TypeError("configuration cannot be None.")
+            if rift is None:
+                raise TypeError("rift cannot be None.")
+            if space is None:
+                raise TypeError("space cannot be None.")
+            globals_dict: Dict[str, object] = {}
+            globals_dict.update(
+                self._room_objects_strategy.build_namespace_entries(
+                    configuration,
+                    rift=rift,
+                    space=space,
+                )
             )
-        )
-        globals_dict.update(
-            self._workstation_strategy.build_namespace_entries(
-                configuration,
-                space=space,
+            globals_dict.update(
+                self._workstation_strategy.build_namespace_entries(
+                    configuration,
+                    space=space,
+                )
             )
-        )
-        globals_dict.update(
-            self._command_strategy.build_namespace_entries(
-                configuration,
-                space=space,
+            globals_dict.update(
+                self._command_strategy.build_namespace_entries(
+                    configuration,
+                    space=space,
+                )
             )
-        )
-        globals_dict.update(
-            self._target_strategy.build_namespace_entries(
-                configuration,
-                space=space,
+            globals_dict.update(
+                self._target_strategy.build_namespace_entries(
+                    configuration,
+                    space=space,
+                )
             )
-        )
-        return CodegenNamespace(
-            configuration=configuration,
-            globals_dict=globals_dict,
-            locals_dict={},
-            metadata={
-                "exposed_names": configuration.exposed_names,
-            },
-        )
-
+            return CodegenNamespace(
+                configuration=configuration,
+                globals_dict=globals_dict,
+                locals_dict={},
+                metadata={
+                    "exposed_names": configuration.exposed_names,
+                },
+            )

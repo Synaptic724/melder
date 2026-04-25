@@ -1,7 +1,11 @@
+import threading
 from typing import Dict, Optional, Tuple
 
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import ICodegenNamespaceConfiguration
 
-class CodegenNamespaceConfiguration:
+
+class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
     """
     Internal
 
@@ -18,7 +22,8 @@ class CodegenNamespaceConfiguration:
         - Returns exposed names in stable first-class order.
     """
 
-    __slots__ = [
+    __slots__ = Cleanable.__slots__ + [
+        "_lock",
         "_frame_name",
         "_include_rift",
         "_include_space",
@@ -73,8 +78,10 @@ class CodegenNamespaceConfiguration:
             ValueError:
                 If `frame_name` is empty.
         """
+        super().__init__()
         if not isinstance(frame_name, str) or not frame_name:
             raise ValueError("frame_name cannot be empty.")
+        self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
         self._include_rift: bool = include_rift
         self._include_space: bool = include_space
@@ -84,6 +91,31 @@ class CodegenNamespaceConfiguration:
         self._include_target: bool = include_target
         self._include_frame_name: bool = include_frame_name
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
+
+    def cleanup(self) -> None:
+        """
+        Idempotently clear namespace-configuration-owned state.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._frame_name = None
+            self._include_rift = None
+            self._include_space = None
+            self._include_viewer = None
+            self._include_workstation = None
+            self._include_command = None
+            self._include_target = None
+            self._include_frame_name = None
+            self._metadata.clear()
+            self._metadata = None
+        self._lock = None
 
     @classmethod
     def create_default(
@@ -117,7 +149,9 @@ class CodegenNamespaceConfiguration:
         Returns:
             str: Target frame name.
         """
-        return self._frame_name
+        self.check_cleaned()
+        with self._lock:
+            return self._frame_name
 
     @property
     def exposed_names(self) -> Tuple[str, ...]:
@@ -127,22 +161,24 @@ class CodegenNamespaceConfiguration:
         Returns:
             Tuple[str, ...]: Enabled namespace names.
         """
-        enabled_names = []
-        if self._include_rift:
-            enabled_names.append("rift")
-        if self._include_space:
-            enabled_names.append("space")
-        if self._include_viewer:
-            enabled_names.append("viewer")
-        if self._include_workstation:
-            enabled_names.append("workstation")
-        if self._include_command:
-            enabled_names.append("command")
-        if self._include_target:
-            enabled_names.append("target")
-        if self._include_frame_name:
-            enabled_names.append("frame_name")
-        return tuple(enabled_names)
+        self.check_cleaned()
+        with self._lock:
+            enabled_names = []
+            if self._include_rift:
+                enabled_names.append("rift")
+            if self._include_space:
+                enabled_names.append("space")
+            if self._include_viewer:
+                enabled_names.append("viewer")
+            if self._include_workstation:
+                enabled_names.append("workstation")
+            if self._include_command:
+                enabled_names.append("command")
+            if self._include_target:
+                enabled_names.append("target")
+            if self._include_frame_name:
+                enabled_names.append("frame_name")
+            return tuple(enabled_names)
 
     @property
     def metadata(self) -> Dict[str, object]:
@@ -152,5 +188,6 @@ class CodegenNamespaceConfiguration:
         Returns:
             Dict[str, object]: Detached metadata copy.
         """
-        return dict(self._metadata)
-
+        self.check_cleaned()
+        with self._lock:
+            return dict(self._metadata)

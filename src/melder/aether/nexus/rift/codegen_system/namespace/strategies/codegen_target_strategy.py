@@ -1,11 +1,17 @@
-from typing import Any, Dict
+import threading
+from typing import Dict
 
 from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
     CodegenNamespaceConfiguration,
 )
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import (
+    ICodegenNamespaceConfiguration,
+    ICodegenRiftSpace,
+)
 
 
-class CodegenTargetStrategy:
+class CodegenTargetStrategy(Cleanable):
     """
     Internal
 
@@ -16,13 +22,28 @@ class CodegenTargetStrategy:
         while keeping missing-target behavior non-fatal.
     """
 
-    __slots__ = []
+    __slots__ = Cleanable.__slots__ + [
+        "_lock",
+    ]
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._lock: threading.RLock = threading.RLock()
+
+    def cleanup(self) -> None:
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+        self._lock = None
 
     def build_namespace_entries(
             self,
-            configuration: CodegenNamespaceConfiguration,
+            configuration: ICodegenNamespaceConfiguration,
             *,
-            space: Any,
+            space: ICodegenRiftSpace,
     ) -> Dict[str, object]:
         """
         Build target namespace entries for one request.
@@ -40,17 +61,18 @@ class CodegenTargetStrategy:
             TypeError:
                 If `configuration` or `space` is None.
         """
-        if configuration is None:
-            raise TypeError("configuration cannot be None.")
-        if space is None:
-            raise TypeError("space cannot be None.")
-        if "target" not in configuration.exposed_names:
-            return {}
-        try:
-            target = space.workstation.get_target()
-        except ValueError:
-            target = None
-        return {
-            "target": target,
-        }
-
+        self.check_cleaned()
+        with self._lock:
+            if configuration is None:
+                raise TypeError("configuration cannot be None.")
+            if space is None:
+                raise TypeError("space cannot be None.")
+            if "target" not in configuration.exposed_names:
+                return {}
+            try:
+                target = space.workstation.get_target()
+            except ValueError:
+                target = None
+            return {
+                "target": target,
+            }

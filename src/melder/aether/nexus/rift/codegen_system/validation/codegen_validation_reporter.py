@@ -1,11 +1,14 @@
+import threading
 from typing import Dict
 
 from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_result import (
     CodegenValidationResult,
 )
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import ICodegenValidationResult
 
 
-class CodegenValidationReporter:
+class CodegenValidationReporter(Cleanable):
     """
     Internal
 
@@ -20,11 +23,38 @@ class CodegenValidationReporter:
         - Delegates payload formatting to the result object.
     """
 
-    __slots__ = []
+    __slots__ = Cleanable.__slots__ + [
+        "_lock",
+    ]
+
+    def __init__(self) -> None:
+        """
+        Initialize one validation reporter.
+
+        Returns:
+            None.
+        """
+        super().__init__()
+        self._lock: threading.RLock = threading.RLock()
+
+    def cleanup(self) -> None:
+        """
+        Idempotently cleanup the validation reporter.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+        self._lock = None
 
     def report(
             self,
-            validation_result: CodegenValidationResult,
+            validation_result: ICodegenValidationResult,
     ) -> Dict[str, object]:
         """
         Convert one validation result into the public payload shape.
@@ -40,7 +70,8 @@ class CodegenValidationReporter:
             TypeError:
                 If `validation_result` is None.
         """
-        if validation_result is None:
-            raise TypeError("validation_result cannot be None.")
-        return validation_result.to_payload()
-
+        self.check_cleaned()
+        with self._lock:
+            if validation_result is None:
+                raise TypeError("validation_result cannot be None.")
+            return validation_result.to_payload()

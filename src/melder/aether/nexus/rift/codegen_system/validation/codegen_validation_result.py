@@ -1,7 +1,11 @@
+import threading
 from typing import Dict, Optional, Tuple
 
+from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import ICodegenValidationResult
 
-class CodegenValidationResult:
+
+class CodegenValidationResult(Cleanable, ICodegenValidationResult):
     """
     Internal
 
@@ -18,7 +22,8 @@ class CodegenValidationResult:
         - Serializes to the public payload shape expected by current room tests.
     """
 
-    __slots__ = [
+    __slots__ = Cleanable.__slots__ + [
+        "_lock",
         "_accepted",
         "_frame_name",
         "_reason",
@@ -57,8 +62,10 @@ class CodegenValidationResult:
             ValueError:
                 If `frame_name` is empty.
         """
+        super().__init__()
         if not isinstance(frame_name, str) or not frame_name:
             raise ValueError("frame_name cannot be empty.")
+        self._lock: threading.RLock = threading.RLock()
         self._accepted: bool = accepted
         self._frame_name: str = frame_name
         self._reason: Optional[str] = reason
@@ -66,6 +73,26 @@ class CodegenValidationResult:
             tuple(validation_issues) if validation_issues else tuple()
         )
         self._transaction_id: Optional[str] = transaction_id
+
+    def cleanup(self) -> None:
+        """
+        Idempotently clear validation-result state.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        with self._lock:
+            if self._cleaned:
+                return
+            self._cleaned = True
+            self._accepted = None
+            self._frame_name = None
+            self._reason = None
+            self._validation_issues = None
+            self._transaction_id = None
+        self._lock = None
 
     @classmethod
     def not_implemented(
@@ -161,7 +188,9 @@ class CodegenValidationResult:
         Returns:
             bool: Validation acceptance state.
         """
-        return self._accepted
+        self.check_cleaned()
+        with self._lock:
+            return self._accepted
 
     @property
     def frame_name(self) -> str:
@@ -171,7 +200,9 @@ class CodegenValidationResult:
         Returns:
             str: Target frame name.
         """
-        return self._frame_name
+        self.check_cleaned()
+        with self._lock:
+            return self._frame_name
 
     @property
     def reason(self) -> Optional[str]:
@@ -181,7 +212,9 @@ class CodegenValidationResult:
         Returns:
             Optional[str]: Top-level validation reason when present.
         """
-        return self._reason
+        self.check_cleaned()
+        with self._lock:
+            return self._reason
 
     @property
     def validation_issues(self) -> Tuple[str, ...]:
@@ -191,7 +224,9 @@ class CodegenValidationResult:
         Returns:
             Tuple[str, ...]: Detailed validation issues.
         """
-        return self._validation_issues
+        self.check_cleaned()
+        with self._lock:
+            return self._validation_issues
 
     @property
     def transaction_id(self) -> Optional[str]:
@@ -201,7 +236,9 @@ class CodegenValidationResult:
         Returns:
             Optional[str]: Internal transaction id when present.
         """
-        return self._transaction_id
+        self.check_cleaned()
+        with self._lock:
+            return self._transaction_id
 
     def to_payload(self) -> Dict[str, object]:
         """
@@ -210,12 +247,14 @@ class CodegenValidationResult:
         Returns:
             Dict[str, object]: Public validation payload.
         """
-        payload: Dict[str, object] = {
-            "accepted": self._accepted,
-            "frame_name": self._frame_name,
-        }
-        if self._reason is not None:
-            payload["reason"] = self._reason
-        if len(self._validation_issues) > 0:
-            payload["validation_issues"] = self._validation_issues
-        return payload
+        self.check_cleaned()
+        with self._lock:
+            payload: Dict[str, object] = {
+                "accepted": self._accepted,
+                "frame_name": self._frame_name,
+            }
+            if self._reason is not None:
+                payload["reason"] = self._reason
+            if len(self._validation_issues) > 0:
+                payload["validation_issues"] = self._validation_issues
+            return payload

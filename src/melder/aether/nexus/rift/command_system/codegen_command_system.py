@@ -13,6 +13,15 @@ from melder.aether.nexus.rift.codegen_system.execution.codegen_execution_result 
 from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_result import (
     CodegenValidationResult,
 )
+from melder.utilities.interfaces.interfaces import (
+    ICodegenExecutionResult,
+    ICodegenRiftSpace,
+    ICodegenSystem,
+    ICodegenTransactionContext,
+    ICodegenValidationResult,
+    IRift,
+    IWorkstation,
+)
 
 
 class CodegenCommandSystem(CommandSystem):
@@ -70,10 +79,10 @@ class CodegenCommandSystem(CommandSystem):
     def __init__(
             self,
             *,
-            rift: object,
-            space: object,
-            workstation: object,
-            codegen_system: Optional[CodegenSystem] = None,
+            rift: IRift,
+            space: ICodegenRiftSpace,
+            workstation: IWorkstation,
+            codegen_system: Optional[ICodegenSystem] = None,
     ) -> None:
         """
         Initialize one codegen-room command surface.
@@ -97,7 +106,7 @@ class CodegenCommandSystem(CommandSystem):
             space=space,
             workstation=workstation,
         )
-        self._codegen_system: Optional[CodegenSystem] = codegen_system
+        self._codegen_system: Optional[ICodegenSystem] = codegen_system
 
     def cleanup(self) -> None:
         """
@@ -111,7 +120,7 @@ class CodegenCommandSystem(CommandSystem):
         self._codegen_system = None
         super().cleanup()
 
-    def attach_codegen_system(self, codegen_system: CodegenSystem) -> None:
+    def attach_codegen_system(self, codegen_system: ICodegenSystem) -> None:
         """
         Attach the room-owned `CodegenSystem` after room initialization.
 
@@ -651,9 +660,9 @@ class CodegenCommandSystem(CommandSystem):
             self,
             *,
             action_name: str,
-            transaction_context: CodegenTransactionContext,
-            validation_result: Optional[CodegenValidationResult] = None,
-            execution_result: Optional[CodegenExecutionResult] = None,
+            transaction_context: ICodegenTransactionContext,
+            validation_result: Optional[ICodegenValidationResult] = None,
+            execution_result: Optional[ICodegenExecutionResult] = None,
     ) -> None:
         """
         Emit one full-source codegen memory record when room memory is enabled.
@@ -713,7 +722,7 @@ class CodegenCommandSystem(CommandSystem):
             metadata=metadata,
         )
 
-    def _require_codegen_system(self) -> CodegenSystem:
+    def _require_codegen_system(self) -> ICodegenSystem:
         """
         Return the attached room-owned `CodegenSystem`.
 
