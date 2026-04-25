@@ -195,6 +195,9 @@ class StaticFrameViewer(FrameViewer):
             codegen_dunder_access_allowed=(
                 base_compiled_access_surface.codegen_dunder_access_allowed
             ),
+            codegen_recursive_codegen_allowed=(
+                base_compiled_access_surface.codegen_recursive_codegen_allowed
+            ),
             command_frame_enabled=base_compiled_access_surface.command_frame_enabled,
             allowed_kinds=base_compiled_access_surface.allowed_kinds,
             allowed_commands=base_compiled_access_surface.allowed_commands,

@@ -7796,6 +7796,13 @@ class ICodegenNamespaceConfiguration(ICleanable, Protocol):
         ...
 
     @property
+    def allow_recursive_codegen(self) -> bool:
+        """
+        Return whether recursive codegen is allowed.
+        """
+        ...
+
+    @property
     def metadata(self) -> Dict[str, object]:
         """
         Return detached metadata for this configuration.

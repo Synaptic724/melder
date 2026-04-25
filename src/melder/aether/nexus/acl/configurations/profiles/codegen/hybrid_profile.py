@@ -91,6 +91,7 @@ def create_hybrid_codegen_profile() -> FrameACLCodegenProfile:
                 FrameACLViewProfile.build_rule("capability_contract_override", "contract_override", "deny"),
                 FrameACLViewProfile.build_rule("capability_unsafe_reflection", "unsafe_reflection", "deny"),
                 FrameACLViewProfile.build_rule("capability_dunder_access", "dunder_access", "deny"),
+                FrameACLViewProfile.build_rule("capability_recursive_codegen", "recursive_codegen", "deny"),
             ],
         ),
     )

@@ -35,6 +35,7 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
         "_denied_builtin_names",
         "_allow_unsafe_reflection",
         "_allow_dunder_access",
+        "_allow_recursive_codegen",
         "_metadata",
     ]
 
@@ -52,6 +53,7 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
             denied_builtin_names: Tuple[str, ...] = tuple(),
             allow_unsafe_reflection: bool = False,
             allow_dunder_access: bool = False,
+            allow_recursive_codegen: bool = False,
             metadata: Optional[Dict[str, object]] = None,
     ) -> None:
         """
@@ -80,6 +82,8 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
                 Whether unsafe reflection helpers are allowed.
             allow_dunder_access:
                 Whether dunder attribute access is allowed.
+            allow_recursive_codegen:
+                Whether recursive codegen is allowed.
             metadata:
                 Optional configuration metadata.
 
@@ -111,6 +115,7 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
         )
         self._allow_unsafe_reflection: bool = allow_unsafe_reflection
         self._allow_dunder_access: bool = allow_dunder_access
+        self._allow_recursive_codegen: bool = allow_recursive_codegen
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
 
     def cleanup(self) -> None:
@@ -137,6 +142,7 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
             self._denied_builtin_names = None
             self._allow_unsafe_reflection = None
             self._allow_dunder_access = None
+            self._allow_recursive_codegen = None
             self._metadata.clear()
             self._metadata = None
         self._lock = None
@@ -152,6 +158,7 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
             denied_builtin_names: Tuple[str, ...] = tuple(),
             allow_unsafe_reflection: bool = False,
             allow_dunder_access: bool = False,
+            allow_recursive_codegen: bool = False,
             metadata: Optional[Dict[str, object]] = None,
     ) -> "CodegenNamespaceConfiguration":
         """
@@ -172,6 +179,8 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
                 Whether unsafe reflection helpers are allowed.
             allow_dunder_access:
                 Whether dunder access is allowed.
+            allow_recursive_codegen:
+                Whether recursive codegen is allowed.
             metadata:
                 Optional configuration metadata.
 
@@ -186,6 +195,7 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
             denied_builtin_names=denied_builtin_names,
             allow_unsafe_reflection=allow_unsafe_reflection,
             allow_dunder_access=allow_dunder_access,
+            allow_recursive_codegen=allow_recursive_codegen,
             metadata=metadata,
         )
 
@@ -293,6 +303,18 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
         self.check_cleaned()
         with self._lock:
             return self._allow_dunder_access
+
+    @property
+    def allow_recursive_codegen(self) -> bool:
+        """
+        Return whether recursive codegen is allowed.
+
+        Returns:
+            bool: True when recursive codegen is allowed.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._allow_recursive_codegen
 
     @property
     def metadata(self) -> Dict[str, object]:

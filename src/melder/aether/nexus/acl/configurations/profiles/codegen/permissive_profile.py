@@ -72,6 +72,7 @@ def create_permissive_codegen_profile() -> FrameACLCodegenProfile:
                 FrameACLViewProfile.build_rule("capability_mutation", "mutation", "allow"),
                 FrameACLViewProfile.build_rule("capability_unsafe_reflection", "unsafe_reflection", "allow"),
                 FrameACLViewProfile.build_rule("capability_dunder_access", "dunder_access", "allow"),
+                FrameACLViewProfile.build_rule("capability_recursive_codegen", "recursive_codegen", "allow"),
             ],
         ),
     )

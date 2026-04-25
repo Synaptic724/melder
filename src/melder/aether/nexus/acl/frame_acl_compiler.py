@@ -205,6 +205,13 @@ class FrameACLCompiler(Cleanable):
             codegen_precision_profile,
             configuration,
         )
+        codegen_recursive_codegen_allowed = (
+            self._compile_codegen_recursive_control(
+                codegen_profile,
+                codegen_precision_profile,
+                configuration,
+            )
+        )
 
         metadata = {
             "view_profile_name": view_profile.name,
@@ -247,6 +254,7 @@ class FrameACLCompiler(Cleanable):
             denied_builtin_names=tuple(sorted(denied_builtin_names)),
             codegen_unsafe_reflection_allowed=codegen_unsafe_reflection_allowed,
             codegen_dunder_access_allowed=codegen_dunder_access_allowed,
+            codegen_recursive_codegen_allowed=codegen_recursive_codegen_allowed,
             command_frame_enabled=command_frame_enabled,
             allowed_kinds=tuple(sorted(allowed_kinds)),
             allowed_commands=tuple(sorted(allowed_commands)),
@@ -599,6 +607,33 @@ class FrameACLCompiler(Cleanable):
             and "unsafe_reflection" not in deny_operations,
             "dunder_access" in allow_operations
             and "dunder_access" not in deny_operations,
+        )
+
+    @staticmethod
+    def _compile_codegen_recursive_control(
+            codegen_profile: FrameACLCodegenProfile,
+            precision_profile: FrameACLCodegenProfile,
+            configuration: FrameACLConfiguration,
+    ) -> bool:
+        """
+        Derive whether recursive codegen is allowed.
+
+        Returns:
+            bool: True when recursive codegen is allowed.
+        """
+        rulesets = (
+            codegen_profile.capability_ruleset,
+            precision_profile.capability_ruleset if precision_profile is not None else None,
+            configuration.codegen_configuration.capability_override_ruleset,
+        )
+        allow_operations, deny_operations = (
+            FrameACLCompiler._collect_effective_operation_effects_from_rulesets(
+                *rulesets
+            )
+        )
+        return (
+            "recursive_codegen" in allow_operations
+            and "recursive_codegen" not in deny_operations
         )
 
     @staticmethod

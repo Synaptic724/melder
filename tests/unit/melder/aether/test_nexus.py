@@ -2395,7 +2395,8 @@ def test_codegen_system_builds_stable_namespace_contract() -> None:
     assert namespace.globals_dict["viewer"] is space.frame_viewer
     assert namespace.globals_dict["workstation"] is space.workstation
     assert namespace.globals_dict["command"] is space.command_system
-    assert namespace.globals_dict["codegen"] is space.codegen_system
+    assert callable(namespace.globals_dict["codegen"].validate_codegen)
+    assert callable(namespace.globals_dict["codegen"].execute_codegen)
     assert "__builtins__" in namespace.globals_dict
 
 
@@ -2417,7 +2418,8 @@ def test_codegen_system_namespace_exposes_codegen_object() -> None:
     )
     namespace = space._codegen_system._build_namespace(transaction_context)
 
-    assert namespace.globals_dict["codegen"] is space.codegen_system
+    assert callable(namespace.globals_dict["codegen"].validate_codegen)
+    assert callable(namespace.globals_dict["codegen"].execute_codegen)
 
 
 def test_codegen_execute_codegen_reports_runtime_failure() -> None:
@@ -2820,6 +2822,94 @@ def test_codegen_execute_codegen_permissive_profile_allows_eval_and_socket_impor
     assert validation_result["accepted"] is True
     assert execution_result["accepted"] is True
     assert execution_result["result"] == 2
+
+
+def test_codegen_validate_codegen_safe_profile_rejects_direct_recursive_codegen_call() -> None:
+    """
+    Verify safe codegen profiles reject direct recursive codegen calls at
+    validation time.
+
+    Returns:
+        None.
+    """
+    detached_rift = _make_detached_rift_projection_owner()
+    detached_rift._codegen_projections_by_frame_name["ops"] = _build_codegen_projection(
+        "ops",
+        codegen_profile_name="safe",
+    )
+    space = CodegenRiftSpace(
+        rift=detached_rift,
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    result = space.command_system.validate_codegen(
+        'result = codegen.execute_codegen("result = 1")',
+        frame_name="ops",
+    )
+
+    assert result["accepted"] is False
+    assert result["reason"] == "codegen_validation_failed"
+    assert "Recursive codegen call 'codegen.execute_codegen' is not allowed" in (
+        result["validation_issues"][0]
+    )
+
+
+def test_codegen_execute_codegen_safe_profile_runtime_wrapper_rejects_recursive_codegen() -> None:
+    """
+    Verify the runtime `codegen` wrapper still enforces recursive denial.
+
+    Returns:
+        None.
+    """
+    detached_rift = _make_detached_rift_projection_owner()
+    detached_rift._codegen_projections_by_frame_name["ops"] = _build_codegen_projection(
+        "ops",
+        codegen_profile_name="safe",
+    )
+    space = CodegenRiftSpace(
+        rift=detached_rift,
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    result = space.command_system.execute_codegen(
+        "alias = codegen\nresult = alias.execute_codegen('result = 1')",
+        frame_name="ops",
+    )
+
+    assert result["accepted"] is False
+    assert result["reason"] == "codegen_execution_runtime_failed"
+    assert result["runtime_error"] == (
+        "RuntimeError: Recursive codegen is not allowed in this codegen mode."
+    )
+
+
+def test_codegen_execute_codegen_permissive_profile_allows_recursive_codegen() -> None:
+    """
+    Verify permissive codegen profiles allow recursive codegen calls.
+
+    Returns:
+        None.
+    """
+    detached_rift = _make_detached_rift_projection_owner()
+    detached_rift._codegen_projections_by_frame_name["ops"] = _build_codegen_projection(
+        "ops",
+        codegen_profile_name="permissive",
+    )
+    space = CodegenRiftSpace(
+        rift=detached_rift,
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    result = space.command_system.execute_codegen(
+        'result = codegen.execute_codegen("result = 2 + 2")["result"]',
+        frame_name="ops",
+    )
+
+    assert result["accepted"] is True
+    assert result["result"] == 4
 
 
 def test_codegen_execute_codegen_allows_missing_result_value() -> None:

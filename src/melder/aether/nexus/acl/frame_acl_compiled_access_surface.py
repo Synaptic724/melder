@@ -37,6 +37,7 @@ class CompiledFrameACLAccessSurface(Cleanable):
         "_denied_builtin_names",
         "_codegen_unsafe_reflection_allowed",
         "_codegen_dunder_access_allowed",
+        "_codegen_recursive_codegen_allowed",
         "_command_frame_enabled",
         "_allowed_kinds",
         "_allowed_commands",
@@ -66,6 +67,7 @@ class CompiledFrameACLAccessSurface(Cleanable):
             denied_builtin_names: Tuple[str, ...] = tuple(),
             codegen_unsafe_reflection_allowed: bool = False,
             codegen_dunder_access_allowed: bool = False,
+            codegen_recursive_codegen_allowed: bool = False,
             command_frame_enabled: bool = False,
             allowed_kinds: Tuple[str, ...],
             allowed_commands: Tuple[str, ...],
@@ -153,6 +155,9 @@ class CompiledFrameACLAccessSurface(Cleanable):
         self._codegen_dunder_access_allowed: bool = bool(
             codegen_dunder_access_allowed
         )
+        self._codegen_recursive_codegen_allowed: bool = bool(
+            codegen_recursive_codegen_allowed
+        )
         self._command_frame_enabled: bool = bool(command_frame_enabled)
         self._allowed_kinds: Tuple[str, ...] = tuple(allowed_kinds)
         self._allowed_commands: Tuple[str, ...] = tuple(allowed_commands)
@@ -211,6 +216,7 @@ class CompiledFrameACLAccessSurface(Cleanable):
             self._denied_builtin_names = None
             self._codegen_unsafe_reflection_allowed = None
             self._codegen_dunder_access_allowed = None
+            self._codegen_recursive_codegen_allowed = None
             self._command_frame_enabled = None
             self._allowed_kinds = None
             self._allowed_commands = None
@@ -357,6 +363,17 @@ class CompiledFrameACLAccessSurface(Cleanable):
         """
         self.check_cleaned()
         return self._codegen_dunder_access_allowed
+
+    @property
+    def codegen_recursive_codegen_allowed(self) -> bool:
+        """
+        Return whether recursive codegen is allowed.
+
+        Returns:
+            bool: True when recursive codegen is allowed.
+        """
+        self.check_cleaned()
+        return self._codegen_recursive_codegen_allowed
 
     @property
     def command_frame_enabled(self) -> bool:

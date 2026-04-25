@@ -429,6 +429,11 @@ class CodegenSystem(Cleanable, ICodegenSystem):
             allow_dunder_access = (
                 compiled_access_surface.codegen_dunder_access_allowed
             )
+            allow_recursive_codegen = (
+                compiled_access_surface.codegen_recursive_codegen_allowed
+            )
+        else:
+            allow_recursive_codegen = False
         return CodegenNamespaceConfiguration.create_default(
             frame_name=frame_name,
             imports_enabled=imports_enabled,
@@ -437,6 +442,7 @@ class CodegenSystem(Cleanable, ICodegenSystem):
             denied_builtin_names=denied_builtin_names,
             allow_unsafe_reflection=allow_unsafe_reflection,
             allow_dunder_access=allow_dunder_access,
+            allow_recursive_codegen=allow_recursive_codegen,
             metadata={
                 "has_projection": projection is not None,
             },

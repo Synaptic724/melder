@@ -131,6 +131,46 @@ def test_frame_acl_compiler_precision_codegen_profile_narrows_imports_relative_t
     assert "subprocess" in compiled_surface.denied_import_module_roots
 
 
+def test_frame_acl_compiler_permissive_codegen_profile_allows_recursive_codegen() -> None:
+    configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        FrameACLConfiguration.create_default("ops"),
+        reason="permissive_recursive_codegen",
+    )
+    configuration.set_codegen_configuration(
+        configuration.codegen_configuration.from_profile(
+            FrameACLCodegenProfile.create_permissive()
+        )
+    )
+    configuration.finalize()
+
+    compiled_surface = _build_compiler().compile_frame_access_surface(
+        _build_frame_descriptor(),
+        configuration,
+    )
+
+    assert compiled_surface.codegen_recursive_codegen_allowed is True
+
+
+def test_frame_acl_compiler_safe_codegen_profile_denies_recursive_codegen() -> None:
+    configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        FrameACLConfiguration.create_default("ops"),
+        reason="safe_recursive_codegen",
+    )
+    configuration.set_codegen_configuration(
+        configuration.codegen_configuration.from_profile(
+            FrameACLCodegenProfile.create_safe()
+        )
+    )
+    configuration.finalize()
+
+    compiled_surface = _build_compiler().compile_frame_access_surface(
+        _build_frame_descriptor(),
+        configuration,
+    )
+
+    assert compiled_surface.codegen_recursive_codegen_allowed is False
+
+
 def test_frame_acl_validator_rejects_codegen_import_rule_without_module_roots() -> None:
     configuration = FrameACLConfiguration.create_new_from_acl_configuration(
         FrameACLConfiguration.create_default("ops"),

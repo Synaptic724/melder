@@ -1575,6 +1575,9 @@ class Nexus(Cleanable, INexus):
             codegen_dunder_access_allowed=(
                 compiled_access_surface.codegen_dunder_access_allowed
             ),
+            codegen_recursive_codegen_allowed=(
+                compiled_access_surface.codegen_recursive_codegen_allowed
+            ),
             command_frame_enabled=compiled_access_surface.command_frame_enabled,
             allowed_kinds=compiled_access_surface.allowed_kinds,
             allowed_commands=compiled_access_surface.allowed_commands,

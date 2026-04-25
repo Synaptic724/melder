@@ -141,6 +141,7 @@ class FrameACLValidator(Cleanable):
             "contract_override",
             "unsafe_reflection",
             "dunder_access",
+            "recursive_codegen",
         },
     }
     _COMMAND_ALLOWED_OPERATIONS_BY_RULESET: Dict[str, Set[str]] = {

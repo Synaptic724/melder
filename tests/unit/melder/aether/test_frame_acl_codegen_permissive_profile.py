@@ -47,5 +47,6 @@ def test_permissive_codegen_profile_exposes_expected_identity_and_rulesets() -> 
     assert capability_rules["capability_mutation"].effect == "allow"
     assert capability_rules["capability_unsafe_reflection"].effect == "allow"
     assert capability_rules["capability_dunder_access"].effect == "allow"
+    assert capability_rules["capability_recursive_codegen"].effect == "allow"
     assert capability_rules["capability_enable_imports"].effect == "allow"
     assert capability_rules["capability_allow_import_modules"].effect == "allow"

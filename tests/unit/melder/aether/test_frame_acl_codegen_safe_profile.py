@@ -47,4 +47,5 @@ def test_safe_codegen_profile_exposes_expected_identity_and_rulesets() -> None:
     assert capability_rules["capability_contract_override"].effect == "deny"
     assert capability_rules["capability_unsafe_reflection"].effect == "deny"
     assert capability_rules["capability_dunder_access"].effect == "deny"
+    assert capability_rules["capability_recursive_codegen"].effect == "deny"
     assert capability_rules["capability_deny_dangerous_builtins"].effect == "deny"

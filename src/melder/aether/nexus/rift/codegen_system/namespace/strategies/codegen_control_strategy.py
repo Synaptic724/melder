@@ -1,6 +1,9 @@
 import threading
 from typing import Dict
 
+from melder.aether.nexus.rift.codegen_system.namespace.codegen_control_surface import (
+    CodegenControlSurface,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import (
     ICodegenNamespaceConfiguration,
@@ -63,5 +66,11 @@ class CodegenControlStrategy(Cleanable):
             if "codegen" not in configuration.exposed_names:
                 return {}
             return {
-                "codegen": space.codegen_system,
+                "codegen": CodegenControlSurface(
+                    codegen_system=space.codegen_system,
+                    default_frame_name=configuration.frame_name,
+                    recursive_codegen_allowed=(
+                        configuration.allow_recursive_codegen
+                    ),
+                ),
             }
