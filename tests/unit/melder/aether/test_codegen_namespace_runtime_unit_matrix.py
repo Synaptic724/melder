@@ -236,6 +236,18 @@ def test_unit_codegen_builtins_strategy_removes_denied_builtins(
         ("result = 'ok'", "ok"),
         ("result = [1, 2, 3]", [1, 2, 3]),
         ("result = {'x': 1}", {"x": 1}),
+        (
+            "class Right:\n"
+            "    def __init__(self, value: int) -> None:\n"
+            "        self.value = value\n"
+            "class Left:\n"
+            "    def __init__(self, right: Right) -> None:\n"
+            "        self.right = right\n"
+            "    def read(self) -> int:\n"
+            "        return self.right.value\n"
+            "result = Left(Right(11)).read()",
+            11,
+        ),
     ],
 )
 def test_unit_codegen_compiler_and_executor_matrix(

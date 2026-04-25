@@ -97,6 +97,8 @@ class CodegenNameResolutionStrategy(Cleanable):
             allowed_names = set(namespace_configuration.exposed_names)
             allowed_names.update(self._ALWAYS_ALLOWED_NAME_NODES)
             allowed_names.update(self._collect_locally_assigned_names(syntax_tree))
+            allowed_names.update(self._collect_locally_declared_names(syntax_tree))
+            allowed_names.update(self._collect_local_parameter_names(syntax_tree))
             allowed_names.update(self._collect_imported_names(syntax_tree))
             allowed_names.update(
                 self._collect_allowed_builtin_names(namespace_configuration)
@@ -136,6 +138,32 @@ class CodegenNameResolutionStrategy(Cleanable):
                     assigned_names.add(node.id)
             return assigned_names
 
+    def _collect_locally_declared_names(self, syntax_tree: ast.AST) -> Set[str]:
+        """
+        Collect names introduced by local function and class declarations.
+
+        Args:
+            syntax_tree:
+                Parsed AST for the request.
+
+        Returns:
+            Set[str]: Declared local function and class names.
+        """
+        self.check_cleaned()
+        with self._lock:
+            declared_names: Set[str] = set()
+            for node in ast.walk(syntax_tree):
+                if isinstance(
+                        node,
+                        (
+                            ast.FunctionDef,
+                            ast.AsyncFunctionDef,
+                            ast.ClassDef,
+                        ),
+                ):
+                    declared_names.add(node.name)
+            return declared_names
+
     def _collect_imported_names(self, syntax_tree: ast.AST) -> Set[str]:
         """
         Collect imported names introduced by import statements.
@@ -164,6 +192,25 @@ class CodegenNameResolutionStrategy(Cleanable):
                             alias.asname if alias.asname is not None else alias.name
                         )
             return imported_names
+
+    def _collect_local_parameter_names(self, syntax_tree: ast.AST) -> Set[str]:
+        """
+        Collect function and lambda parameter names defined locally.
+
+        Args:
+            syntax_tree:
+                Parsed AST for the request.
+
+        Returns:
+            Set[str]: Parameter names introduced by local callable scopes.
+        """
+        self.check_cleaned()
+        with self._lock:
+            parameter_names: Set[str] = set()
+            for node in ast.walk(syntax_tree):
+                if isinstance(node, ast.arg):
+                    parameter_names.add(node.arg)
+            return parameter_names
 
     def _collect_allowed_builtin_names(
             self,

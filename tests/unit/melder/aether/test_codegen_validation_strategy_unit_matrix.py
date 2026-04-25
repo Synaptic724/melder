@@ -261,6 +261,10 @@ NAME_RESOLUTION_ALLOWED_CASES = [
     "result = codegen",
     "result = 1",
     "value = 1\nresult = value",
+    "def helper() -> int:\n    return 1\nresult = helper()",
+    "def helper(value: int, prefix: str = 'ok') -> str:\n    return '{0}:{1}'.format(prefix, value)\nresult = helper(2)",
+    "class Helper:\n    pass\nhelper = Helper()\nresult = helper",
+    "class Helper:\n    def run(self, value: int) -> int:\n        return value\nhelper = Helper()\nresult = helper.run(3)",
     "import json\nresult = json.dumps({'x': 1})",
     "from math import sqrt\nresult = sqrt(4)",
 ]

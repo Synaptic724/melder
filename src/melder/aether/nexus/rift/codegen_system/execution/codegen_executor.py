@@ -84,7 +84,10 @@ class CodegenExecutor(Cleanable):
             if namespace is None:
                 raise RuntimeError("codegen transaction has no built namespace.")
             try:
-                exec(compiled_code, namespace.globals_dict, namespace.locals_dict)
+                execution_namespace = namespace.globals_dict
+                exec(compiled_code, execution_namespace, execution_namespace)
+                namespace.locals_dict.clear()
+                namespace.locals_dict.update(execution_namespace)
             except Exception as exc:
                 return CodegenExecutionResult.runtime_failed(
                     frame_name=transaction_context.frame_name,
