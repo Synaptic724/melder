@@ -2797,6 +2797,90 @@ class IFrameACLProfileBuilder(ICleanable, Protocol):
 
 
 @runtime_checkable
+class IFrameACLViewConfiguration(ICleanable, Protocol):
+    """
+    Typed frame view ACL configuration contract.
+
+    Contract:
+        - Carries one view-policy profile identity/version pair plus the
+          descriptor floor fields derived from the selected profile.
+        - Owns detached frame, conduit, spell, and member override rulesets.
+        - Represents the view-side sibling inside a frame ACL bundle.
+        - Is configuration data only; it does not publish view surfaces by
+          itself.
+    """
+
+    configuration_id: str
+    source_configuration_id: Optional[str]
+    previous_configuration_id: Optional[str]
+    created_at: str
+    reason: str
+    locked: bool
+    profile_name: str
+    profile_version: str
+    precision_profile_name: Optional[str]
+    precision_profile_version: Optional[str]
+    required_nexus_label: str
+    required_nexus_version: str
+    minimum_spell_payload_type: str
+    minimum_spell_payload_version: str
+    frame_override_ruleset: IFrameACLRuleSet
+    conduit_override_ruleset: IFrameACLRuleSet
+    spell_override_ruleset: IFrameACLRuleSet
+    member_override_ruleset: IFrameACLRuleSet
+
+    def to_json_dict(self) -> Dict[str, Any]:
+        """
+        Return the configuration as a JSON-compatible dictionary.
+
+        Returns:
+            Dict[str, Any]: JSON-compatible configuration payload.
+        """
+        ...
+
+    def to_json_string(self) -> str:
+        """
+        Return the configuration as a normalized JSON string.
+
+        Returns:
+            str: Normalized JSON payload string.
+        """
+        ...
+
+    def clone(self) -> "IFrameACLViewConfiguration":
+        """
+        Return a detached configuration copy.
+
+        Returns:
+            IFrameACLViewConfiguration: Detached configuration copy.
+        """
+        ...
+
+    def finalize(self) -> None:
+        """
+        Lock the configuration against further mutation.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def set_profiles(
+            self,
+            profile: IFrameACLViewProfile,
+            *,
+            precision_profile: Optional[IFrameACLViewProfile] = None,
+    ) -> None:
+        """
+        Replace the base and optional precision profiles on the mutable config.
+
+        Returns:
+            None.
+        """
+        ...
+
+
+@runtime_checkable
 class IFrameACLCommandConfiguration(ICleanable, Protocol):
     """
     Typed frame command ACL configuration contract.
@@ -2808,10 +2892,149 @@ class IFrameACLCommandConfiguration(ICleanable, Protocol):
           validate descriptor truth by itself.
     """
 
+    configuration_id: str
+    source_configuration_id: Optional[str]
+    previous_configuration_id: Optional[str]
+    created_at: str
+    reason: str
+    locked: bool
     profile_name: str
     profile_version: str
     precision_profile_name: Optional[str]
     precision_profile_version: Optional[str]
+    frame_override_ruleset: IFrameACLRuleSet
+    conduit_override_ruleset: IFrameACLRuleSet
+    spell_override_ruleset: IFrameACLRuleSet
+    member_override_ruleset: IFrameACLRuleSet
+
+    def to_json_dict(self) -> Dict[str, Any]:
+        """
+        Return the configuration as a JSON-compatible dictionary.
+
+        Returns:
+            Dict[str, Any]: JSON-compatible configuration payload.
+        """
+        ...
+
+    def to_json_string(self) -> str:
+        """
+        Return the configuration as a normalized JSON string.
+
+        Returns:
+            str: Normalized JSON payload string.
+        """
+        ...
+
+    def clone(self) -> "IFrameACLCommandConfiguration":
+        """
+        Return a detached configuration copy.
+
+        Returns:
+            IFrameACLCommandConfiguration: Detached configuration copy.
+        """
+        ...
+
+    def finalize(self) -> None:
+        """
+        Lock the configuration against further mutation.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def set_profiles(
+            self,
+            profile: IFrameACLCommandProfile,
+            *,
+            precision_profile: Optional[IFrameACLCommandProfile] = None,
+    ) -> None:
+        """
+        Replace the base and optional precision profiles on the mutable config.
+
+        Returns:
+            None.
+        """
+        ...
+
+
+@runtime_checkable
+class IFrameACLCodegenConfiguration(ICleanable, Protocol):
+    """
+    Typed frame codegen ACL configuration contract.
+
+    Contract:
+        - Carries one codegen-policy profile identity/version pair.
+        - Owns detached frame, conduit, spell, and capability override rulesets.
+        - Represents the codegen-side sibling inside a frame ACL bundle.
+        - Is configuration data only; it does not validate or execute codegen
+          work by itself.
+    """
+
+    configuration_id: str
+    source_configuration_id: Optional[str]
+    previous_configuration_id: Optional[str]
+    created_at: str
+    reason: str
+    locked: bool
+    profile_name: str
+    profile_version: str
+    precision_profile_name: Optional[str]
+    precision_profile_version: Optional[str]
+    frame_override_ruleset: IFrameACLRuleSet
+    conduit_override_ruleset: IFrameACLRuleSet
+    spell_override_ruleset: IFrameACLRuleSet
+    capability_override_ruleset: IFrameACLRuleSet
+
+    def to_json_dict(self) -> Dict[str, Any]:
+        """
+        Return the configuration as a JSON-compatible dictionary.
+
+        Returns:
+            Dict[str, Any]: JSON-compatible configuration payload.
+        """
+        ...
+
+    def to_json_string(self) -> str:
+        """
+        Return the configuration as a normalized JSON string.
+
+        Returns:
+            str: Normalized JSON payload string.
+        """
+        ...
+
+    def clone(self) -> "IFrameACLCodegenConfiguration":
+        """
+        Return a detached configuration copy.
+
+        Returns:
+            IFrameACLCodegenConfiguration: Detached configuration copy.
+        """
+        ...
+
+    def finalize(self) -> None:
+        """
+        Lock the configuration against further mutation.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def set_profiles(
+            self,
+            profile: IFrameACLCodegenProfile,
+            *,
+            precision_profile: Optional[IFrameACLCodegenProfile] = None,
+    ) -> None:
+        """
+        Replace the base and optional precision profiles on the mutable config.
+
+        Returns:
+            None.
+        """
+        ...
 
 
 @runtime_checkable
@@ -2851,7 +3074,98 @@ class IFrameACLConfiguration(ICleanable, Protocol):
     frame_name: str
     configuration_id: str
     locked: bool
+    view_configuration: IFrameACLViewConfiguration
     command_configuration: IFrameACLCommandConfiguration
+    codegen_configuration: IFrameACLCodegenConfiguration
+
+
+@runtime_checkable
+class IFrameACLBuilder(ICleanable, Protocol):
+    """
+    Frame-local ACL builder contract used by the family-specific builders.
+
+    Contract:
+        - Owns at most one active family draft at a time.
+        - Exposes generic profile, precision, commit, and discard operations.
+        - Exposes typed accessors for the currently active family draft.
+    """
+
+    change_active: bool
+    draft_family_name: Optional[str]
+    draft_contract_name: Optional[str]
+
+    def set_profile_name(self, profile_name: str) -> None:
+        """
+        Replace the base profile on the active family draft.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def set_precision_profile_name(
+            self,
+            profile_name: Optional[str],
+    ) -> None:
+        """
+        Replace or clear the precision profile on the active family draft.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def commit_change(
+            self,
+    ) -> Union[
+        IFrameACLViewConfiguration,
+        IFrameACLCommandConfiguration,
+        IFrameACLCodegenConfiguration,
+    ]:
+        """
+        Finalize and install the active family draft.
+
+        Returns:
+            Union[IFrameACLViewConfiguration, IFrameACLCommandConfiguration, IFrameACLCodegenConfiguration]:
+                Newly installed family configuration.
+        """
+        ...
+
+    def discard_change(self) -> None:
+        """
+        Discard the active family draft.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def _require_active_view_configuration(self) -> IFrameACLViewConfiguration:
+        """
+        Return the active view draft or raise.
+
+        Returns:
+            IFrameACLViewConfiguration: Active view draft.
+        """
+        ...
+
+    def _require_active_command_configuration(self) -> IFrameACLCommandConfiguration:
+        """
+        Return the active command draft or raise.
+
+        Returns:
+            IFrameACLCommandConfiguration: Active command draft.
+        """
+        ...
+
+    def _require_active_codegen_configuration(self) -> IFrameACLCodegenConfiguration:
+        """
+        Return the active codegen draft or raise.
+
+        Returns:
+            IFrameACLCodegenConfiguration: Active codegen draft.
+        """
+        ...
 
 
 @runtime_checkable
@@ -2862,6 +3176,7 @@ class IFrameACLContainer(ICleanable, Protocol):
 
     frame_name: str
     frame_acl_configuration: IFrameACLConfiguration
+    frame_acl_builder: IFrameACLBuilder
     frame_acl_profile_builder: IFrameACLProfileBuilder
     named_configurations_by_name: Dict[str, IFrameACLConfiguration]
     frame_acl_set_compatibility_validator: IFrameACLSetCompatibilityValidator
