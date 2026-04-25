@@ -3,8 +3,14 @@ import threading
 from typing import Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.aether.nexus.acl.builder.frame_acl_command_builder import (
+    FrameACLCommandBuilder,
+)
 from melder.aether.nexus.acl.builder.frame_acl_codegen_builder import (
     FrameACLCodegenBuilder,
+)
+from melder.aether.nexus.acl.builder.frame_acl_view_builder import (
+    FrameACLViewBuilder,
 )
 from melder.aether.nexus.acl.configurations.frame_acl_command_configuration import (
     FrameACLCommandConfiguration,
@@ -191,6 +197,56 @@ class FrameACLBuilder(Cleanable):
             self._draft_contract_name = contract_name
             self._change_active = True
 
+    def begin_view_change(
+            self,
+            *,
+            contract_name: str = "default",
+            reason: str = "builder_draft",
+    ) -> FrameACLViewBuilder:
+        """
+        Start one view draft session and return the fluent view builder.
+
+        Args:
+            contract_name:
+                Named view contract to edit.
+            reason:
+                Human-readable draft reason.
+
+        Returns:
+            FrameACLViewBuilder: Fluent builder over the active view draft.
+        """
+        self.begin_change(
+            "view",
+            contract_name=contract_name,
+            reason=reason,
+        )
+        return FrameACLViewBuilder(self)
+
+    def begin_command_change(
+            self,
+            *,
+            contract_name: str = "default",
+            reason: str = "builder_draft",
+    ) -> FrameACLCommandBuilder:
+        """
+        Start one command draft session and return the fluent command builder.
+
+        Args:
+            contract_name:
+                Named command contract to edit.
+            reason:
+                Human-readable draft reason.
+
+        Returns:
+            FrameACLCommandBuilder: Fluent builder over the active command draft.
+        """
+        self.begin_change(
+            "command",
+            contract_name=contract_name,
+            reason=reason,
+        )
+        return FrameACLCommandBuilder(self)
+
     def begin_codegen_change(
             self,
             *,
@@ -231,6 +287,40 @@ class FrameACLBuilder(Cleanable):
                 raise RuntimeError("FrameACLBuilder has no active change.")
             if self._draft_family_name != "codegen":
                 raise RuntimeError("FrameACLBuilder has no active codegen change.")
+            return self._draft_configuration
+
+    def _require_active_view_configuration(
+            self,
+    ) -> FrameACLViewConfiguration:
+        """
+        Return the active view draft configuration or raise.
+
+        Returns:
+            FrameACLViewConfiguration: Active view draft configuration.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if not self._change_active or self._draft_configuration is None:
+                raise RuntimeError("FrameACLBuilder has no active change.")
+            if self._draft_family_name != "view":
+                raise RuntimeError("FrameACLBuilder has no active view change.")
+            return self._draft_configuration
+
+    def _require_active_command_configuration(
+            self,
+    ) -> FrameACLCommandConfiguration:
+        """
+        Return the active command draft configuration or raise.
+
+        Returns:
+            FrameACLCommandConfiguration: Active command draft configuration.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if not self._change_active or self._draft_configuration is None:
+                raise RuntimeError("FrameACLBuilder has no active change.")
+            if self._draft_family_name != "command":
+                raise RuntimeError("FrameACLBuilder has no active command change.")
             return self._draft_configuration
 
     def apply_frame_acl_profile(
