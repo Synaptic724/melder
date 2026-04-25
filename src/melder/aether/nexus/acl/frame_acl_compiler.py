@@ -528,13 +528,10 @@ class FrameACLCompiler(Cleanable):
             "enable_imports" in allow_operations
             and "enable_imports" not in deny_operations
         )
-        allowed_import_module_roots, denied_import_module_roots = (
-            FrameACLCompiler._collect_condition_string_values_from_rulesets(
-                "import_modules",
-                "module_roots",
-                *rulesets,
-            )
-        )
+        (
+            allowed_import_module_roots,
+            denied_import_module_roots,
+        ) = FrameACLCompiler._collect_import_module_roots_from_rulesets(*rulesets)
         if not imports_enabled:
             return False, set(), denied_import_module_roots
         return (
@@ -781,6 +778,44 @@ class FrameACLCompiler(Cleanable):
                         allowed_values.add(value)
                     elif rule.effect == "deny":
                         denied_values.add(value)
+        return allowed_values, denied_values
+
+    @staticmethod
+    def _collect_import_module_roots_from_rulesets(
+            *rulesets: FrameACLRuleSet,
+    ) -> Tuple[Set[str], Set[str]]:
+        """
+        Collect import-module roots using narrowing intersection semantics.
+
+        Contract:
+            - Allowed import roots intersect across allow-bearing rulesets so
+              precision profiles can narrow broader base profiles.
+            - Denied import roots always union across the rulesets.
+
+        Returns:
+            Tuple[Set[str], Set[str]]: Allowed and denied import roots.
+        """
+        allowed_value_sets: List[Set[str]] = []
+        denied_values: Set[str] = set()
+        for ruleset in rulesets:
+            if ruleset is None:
+                continue
+            ruleset_allowed_values: Set[str] = set()
+            for rule in ruleset.rules_by_name.values():
+                if rule.operation != "import_modules":
+                    continue
+                module_roots = set(rule.conditions.get("module_roots", tuple()))
+                if rule.effect == "allow":
+                    ruleset_allowed_values.update(module_roots)
+                elif rule.effect == "deny":
+                    denied_values.update(module_roots)
+            if len(ruleset_allowed_values) > 0:
+                allowed_value_sets.append(ruleset_allowed_values)
+        if len(allowed_value_sets) == 0:
+            return set(), denied_values
+        allowed_values = set(allowed_value_sets[0])
+        for value_set in allowed_value_sets[1:]:
+            allowed_values.intersection_update(value_set)
         return allowed_values, denied_values
 
     @staticmethod

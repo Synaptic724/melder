@@ -2731,6 +2731,65 @@ def test_codegen_validate_codegen_hybrid_profile_rejects_denied_import_roots() -
     assert "Import root 'subprocess' is not allowed" in result["validation_issues"][0]
 
 
+def test_codegen_validate_codegen_hybrid_profile_rejects_reflection_helpers() -> None:
+    """
+    Verify hybrid codegen profiles reject direct reflection helper calls.
+
+    Returns:
+        None.
+    """
+    detached_rift = _make_detached_rift_projection_owner()
+    detached_rift._codegen_projections_by_frame_name["ops"] = _build_codegen_projection(
+        "ops",
+        codegen_profile_name="hybrid",
+    )
+    space = CodegenRiftSpace(
+        rift=detached_rift,
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    result = space.command_system.validate_codegen(
+        "import inspect\nresult = inspect.signature(command.link_frame)",
+        frame_name="ops",
+    )
+
+    assert result["accepted"] is False
+    assert result["reason"] == "codegen_validation_failed"
+    assert "Reflection helper 'inspect.signature' is not allowed" in (
+        result["validation_issues"][0]
+    )
+
+
+def test_codegen_validate_codegen_precision_profile_uses_narrower_import_set() -> None:
+    """
+    Verify precision codegen profiles reject imports that hybrid still allows.
+
+    Returns:
+        None.
+    """
+    detached_rift = _make_detached_rift_projection_owner()
+    detached_rift._codegen_projections_by_frame_name["ops"] = _build_codegen_projection(
+        "ops",
+        codegen_profile_name="hybrid",
+        precision_profile_name="precision",
+    )
+    space = CodegenRiftSpace(
+        rift=detached_rift,
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    result = space.command_system.validate_codegen(
+        "import inspect\nresult = 1",
+        frame_name="ops",
+    )
+
+    assert result["accepted"] is False
+    assert result["reason"] == "codegen_validation_failed"
+    assert "Import root 'inspect' is not allowed" in result["validation_issues"][0]
+
+
 def test_codegen_execute_codegen_permissive_profile_allows_eval_and_socket_import() -> None:
     """
     Verify permissive codegen profiles stay broadly usable for real work.

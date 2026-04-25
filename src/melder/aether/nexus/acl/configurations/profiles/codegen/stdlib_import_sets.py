@@ -42,7 +42,26 @@ _PERMISSIVE_EXTRA_IMPORT_MODULE_ROOTS = (
 )
 
 HYBRID_IMPORT_MODULE_ROOTS = _COMMON_SAFE_IMPORT_MODULE_ROOTS
-PRECISION_IMPORT_MODULE_ROOTS = _COMMON_SAFE_IMPORT_MODULE_ROOTS
+PRECISION_IMPORT_MODULE_ROOTS = (
+    "base64",
+    "collections",
+    "copy",
+    "datetime",
+    "decimal",
+    "enum",
+    "fractions",
+    "functools",
+    "hashlib",
+    "itertools",
+    "json",
+    "math",
+    "re",
+    "statistics",
+    "string",
+    "textwrap",
+    "typing",
+    "uuid",
+)
 PERMISSIVE_IMPORT_MODULE_ROOTS = tuple(
     sorted(
         set(_COMMON_SAFE_IMPORT_MODULE_ROOTS).union(

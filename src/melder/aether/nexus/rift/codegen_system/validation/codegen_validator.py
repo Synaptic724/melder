@@ -20,6 +20,9 @@ from melder.aether.nexus.rift.codegen_system.validation.strategies.codegen_impor
 from melder.aether.nexus.rift.codegen_system.validation.strategies.codegen_name_resolution_strategy import (
     CodegenNameResolutionStrategy,
 )
+from melder.aether.nexus.rift.codegen_system.validation.strategies.codegen_reflection_policy_strategy import (
+    CodegenReflectionPolicyStrategy,
+)
 from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_result import (
     CodegenValidationResult,
 )
@@ -55,6 +58,7 @@ class CodegenValidator(Cleanable):
         "_builtin_policy_strategy",
         "_name_resolution_strategy",
         "_attribute_access_strategy",
+        "_reflection_policy_strategy",
     ]
 
     def __init__(self) -> None:
@@ -81,6 +85,9 @@ class CodegenValidator(Cleanable):
         self._attribute_access_strategy: CodegenAttributeAccessStrategy = (
             CodegenAttributeAccessStrategy()
         )
+        self._reflection_policy_strategy: CodegenReflectionPolicyStrategy = (
+            CodegenReflectionPolicyStrategy()
+        )
 
     def cleanup(self) -> None:
         """
@@ -100,11 +107,13 @@ class CodegenValidator(Cleanable):
             self._builtin_policy_strategy.cleanup()
             self._name_resolution_strategy.cleanup()
             self._attribute_access_strategy.cleanup()
+            self._reflection_policy_strategy.cleanup()
             self._ast_structure_strategy = None
             self._import_policy_strategy = None
             self._builtin_policy_strategy = None
             self._name_resolution_strategy = None
             self._attribute_access_strategy = None
+            self._reflection_policy_strategy = None
         self._lock = None
 
     def validate(
@@ -167,6 +176,13 @@ class CodegenValidator(Cleanable):
                 return validation_result
             validation_result = self._run_strategy(
                 self._attribute_access_strategy,
+                transaction_context,
+                syntax_tree,
+            )
+            if validation_result is not None:
+                return validation_result
+            validation_result = self._run_strategy(
+                self._reflection_policy_strategy,
                 transaction_context,
                 syntax_tree,
             )

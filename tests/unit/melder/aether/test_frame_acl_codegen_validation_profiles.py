@@ -107,6 +107,30 @@ def test_frame_acl_compiler_permissive_codegen_profile_compiles_broad_runtime_co
     assert "dunder_access" in compiled_surface.allowed_commands
 
 
+def test_frame_acl_compiler_precision_codegen_profile_narrows_imports_relative_to_hybrid() -> None:
+    configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        FrameACLConfiguration.create_default("ops"),
+        reason="precision_codegen_validation",
+    )
+    configuration.set_codegen_configuration(
+        configuration.codegen_configuration.from_profile(
+            FrameACLCodegenProfile.create_hybrid(),
+            precision_profile=FrameACLCodegenProfile.create_precision(),
+        )
+    )
+    configuration.finalize()
+
+    compiled_surface = _build_compiler().compile_frame_access_surface(
+        _build_frame_descriptor(),
+        configuration,
+    )
+
+    assert compiled_surface.codegen_imports_enabled is True
+    assert "json" in compiled_surface.allowed_import_module_roots
+    assert "inspect" not in compiled_surface.allowed_import_module_roots
+    assert "subprocess" in compiled_surface.denied_import_module_roots
+
+
 def test_frame_acl_validator_rejects_codegen_import_rule_without_module_roots() -> None:
     configuration = FrameACLConfiguration.create_new_from_acl_configuration(
         FrameACLConfiguration.create_default("ops"),
