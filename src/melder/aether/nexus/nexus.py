@@ -2151,6 +2151,47 @@ class Nexus(Cleanable, INexus):
         """
         return self._frame_manager.list_accessible_frame_names_for_rift(rift_id)
 
+    def list_accessible_non_nexus_frame_names(self, rift_id: str) -> Tuple[str, ...]:
+        """
+        Internal
+
+        Return the published non-Nexus frame names the requesting Rift may
+        currently target.
+
+        Args:
+            rift_id:
+                Requesting Rift id.
+
+        Contract:
+            - Requires Nexus to be enabled.
+            - Starts from published descriptor truth only.
+            - Excludes every manager-owned Nexus frame name.
+            - Applies generic target-frame name policy and the requesting
+              Rift's current room runtime requirements before returning names.
+
+        Returns:
+            Tuple[str, ...]: Accessible published non-Nexus frame names.
+        """
+        self.check_cleaned()
+        self._require_enabled()
+        rift = self._get_required_rift(rift_id)
+        requested_space_type = rift.configuration.get_property("space_type")
+        nexus_managed_frame_names = set(self._frame_manager.list_frame_names())
+        accessible_non_nexus_frame_names: List[str] = []
+        for frame_name in self._frame_descriptor_manager.list_published_frame_names():
+            if frame_name in nexus_managed_frame_names:
+                continue
+            try:
+                self._validate_target_frame_names((frame_name,))
+                self._validate_target_frame_runtime_requirements(
+                    frame_name,
+                    requested_space_type,
+                )
+            except ValueError:
+                continue
+            accessible_non_nexus_frame_names.append(frame_name)
+        return tuple(accessible_non_nexus_frame_names)
+
     def check_for_aetheric_frame(self, frame_name: str) -> None:
         """
         Internal

@@ -145,13 +145,43 @@ class FrameViewer(Cleanable):
 
     def list_frame_names(self) -> List[str]:
         """
-        Return the hosted frame names in deterministic order.
+        Return the currently linked frame names in deterministic order.
 
         Returns:
-            List[str]: Sorted hosted frame names.
+            List[str]: Sorted linked frame names.
         """
         self.check_cleaned()
         return self.get_view_multiframe().list_frame_names()
+
+    def list_linked_frame_names(self) -> List[str]:
+        """
+        Return the currently linked frame names in deterministic order.
+
+        Returns:
+            List[str]: Sorted linked frame names.
+        """
+        self.check_cleaned()
+        return self.get_view_multiframe().list_linked_frame_names()
+
+    def list_nexus_frame_names(self) -> List[str]:
+        """
+        Return the currently accessible Nexus-managed frame names.
+
+        Returns:
+            List[str]: Sorted accessible Nexus-managed frame names.
+        """
+        self.check_cleaned()
+        return self.get_view_multiframe().list_nexus_frame_names()
+
+    def list_non_nexus_frame_names(self) -> List[str]:
+        """
+        Return the currently accessible published non-Nexus frame names.
+
+        Returns:
+            List[str]: Sorted accessible published non-Nexus frame names.
+        """
+        self.check_cleaned()
+        return self.get_view_multiframe().list_non_nexus_frame_names()
 
     def count_frames(self) -> int:
         """

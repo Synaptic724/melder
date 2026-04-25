@@ -1890,6 +1890,8 @@ def test_codegen_command_system_lists_selected_runtime_helpers_only() -> None:
     supported_methods = space.command_system.list_supported_command_methods()
 
     expected_methods = (
+        "link_frame",
+        "get_nexus_frame",
         "get_conduit_cloud",
         "get_conduit_by_id",
         "get_conduit_by_name",
@@ -4639,6 +4641,8 @@ def test_base_command_system_does_not_expose_capability_only_methods() -> None:
     assert "has_conduit_id" not in supported_methods
     assert "has_conduit_name" not in supported_methods
     assert "find_conduit_id_by_name" not in supported_methods
+    assert "link_frame" in supported_methods
+    assert "get_nexus_frame" in supported_methods
     assert "describe_spells_in_conduit" in supported_methods
     assert "execute_target_method" in supported_methods
 
@@ -5599,6 +5603,109 @@ def test_indexed_mode_can_create_explicit_new_frame() -> None:
     assert nexus.frame_manager.exists("ops") is True
     assert rift.get_nexus_frame("ops") is created_conduit
     assert "ops" in rift.list_accessible_nexus_frame_names()
+
+
+def test_viewer_lists_linked_nexus_and_non_nexus_frame_names_separately() -> None:
+    """
+    Verify the viewer separates linked frames from accessible Nexus and
+    non-Nexus frame names.
+
+    Returns:
+        None.
+    """
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_direct_rift_access(True)
+    configuration.with_nexus_frame_mode("indexed")
+    configuration.with_max_nexus_frame_count(4)
+    configuration.with_allowed_target_frame_names(("managed", "ops", "blocked"))
+    nexus.enable(configuration)
+
+    rift = nexus.create_rift(rift_name="alpha")
+    rift.create_nexus_frame(frame_name="managed")
+    _bind_target_frame_configuration("ops", rift_enabled=True)
+    _seed_frame_descriptor("ops")
+    _bind_target_frame_configuration("blocked", rift_enabled=False)
+    _seed_frame_descriptor("blocked")
+
+    viewer = rift.space.frame_viewer
+
+    assert viewer.list_frame_names() == []
+    assert viewer.list_linked_frame_names() == []
+    assert viewer.list_nexus_frame_names() == ["managed"]
+    assert viewer.list_non_nexus_frame_names() == ["ops"]
+
+
+def test_codegen_room_filters_non_nexus_frame_names_by_runtime_requirements() -> None:
+    """
+    Verify non-Nexus frame discovery respects the requesting Rift room posture.
+
+    Returns:
+        None.
+    """
+    nexus = Nexus()
+    nexus_configuration = nexus.create_system_configuration()
+    nexus_configuration.with_rift_creation_enabled(True)
+    nexus_configuration.with_direct_rift_access(True)
+    nexus_configuration.with_allowed_target_frame_names(("ops", "forge"))
+    nexus.enable(nexus_configuration)
+
+    rift_configuration = nexus.create_rift_configuration()
+    rift_configuration.with_space_type(RiftSpaceType.codegen)
+    rift = nexus.create_rift(configuration=rift_configuration, rift_name="cg")
+
+    _bind_target_frame_configuration(
+        "ops",
+        rift_enabled=True,
+        ai_native_enabled=False,
+        system_state=SystemState.automatic,
+    )
+    _seed_frame_descriptor("ops")
+    _bind_target_frame_configuration(
+        "forge",
+        rift_enabled=True,
+        ai_native_enabled=True,
+        system_state=SystemState.dynamic,
+    )
+    _seed_frame_descriptor("forge")
+
+    assert rift.list_accessible_non_nexus_frame_names() == ("forge",)
+    assert rift.space.frame_viewer.list_non_nexus_frame_names() == ["forge"]
+
+
+def test_command_system_surfaces_frame_link_and_nexus_root_conduit_helpers() -> None:
+    """
+    Verify the shared command surface can link frames and return rooted Nexus
+    conduits without returning frame objects.
+
+    Returns:
+        None.
+    """
+    nexus = Nexus()
+    configuration = nexus.create_system_configuration()
+    configuration.with_rift_creation_enabled(True)
+    configuration.with_direct_rift_access(True)
+    configuration.with_nexus_frame_mode("indexed")
+    configuration.with_max_nexus_frame_count(4)
+    configuration.with_allowed_target_frame_names(("ops", "managed"))
+    nexus.enable(configuration)
+
+    _bind_target_frame_configuration("ops", rift_enabled=True)
+    _seed_frame_descriptor("ops")
+
+    rift = nexus.create_rift(rift_name="alpha")
+    command_system = rift.space.command_system
+
+    command_system.link_frame("ops")
+
+    assert "ops" in rift.list_assigned_frame_names()
+    assert "link_frame" in command_system.list_supported_command_methods()
+    assert "get_nexus_frame" in command_system.list_supported_command_methods()
+
+    created_conduit = rift.create_nexus_frame(frame_name="managed")
+
+    assert command_system.get_nexus_frame("managed") is created_conduit
 
 
 def test_direct_rift_construction_is_not_the_normal_registry_path() -> None:

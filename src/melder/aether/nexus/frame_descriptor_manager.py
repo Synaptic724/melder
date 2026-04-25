@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
@@ -635,6 +635,27 @@ class FrameDescriptorManager(Cleanable):
         self.check_cleaned()
         with self._lock:
             return frame_name in self._frame_descriptors_by_name
+
+    def list_published_frame_names(self) -> Tuple[str, ...]:
+        """
+        Return the currently published frame names in sorted order.
+
+        Purpose:
+            Expose a detached snapshot of frame names whose descriptors still
+            own published frame-overview state.
+
+        Returns:
+            Tuple[str, ...]: Sorted published frame names.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return tuple(
+                sorted(
+                    frame_name
+                    for frame_name, descriptor in self._frame_descriptors_by_name.items()
+                    if descriptor.frame_overview is not None
+                )
+            )
 
     @classmethod
     def _validate_published_frame_payload(

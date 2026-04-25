@@ -322,6 +322,8 @@ class CommandSystem(Cleanable):
             Tuple[str, ...]: Shared base command-method names in stable order.
         """
         return (
+            "link_frame",
+            "get_nexus_frame",
             "describe_spells_in_conduit",
             "get_resolution_state",
             "get_active_spellspace",
@@ -891,6 +893,42 @@ class CommandSystem(Cleanable):
                     bind_result_weak_ref=bind_result_weak_ref,
                 )
             return result
+
+    def link_frame(self, frame_name: str) -> None:
+        """
+        Engage one target frame on this Rift through the shared command surface.
+
+        Args:
+            frame_name:
+                Target frame name to link.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="link_frame",
+                frame_name=frame_name,
+        ), self._lock:
+            self._rift.create_frame_link(frame_name)
+
+    def get_nexus_frame(self, frame_name: Optional[str] = None) -> object:
+        """
+        Return one rooted Nexus-managed conduit through the shared command surface.
+
+        Args:
+            frame_name:
+                Optional explicit Nexus frame name.
+
+        Returns:
+            object: Root conduit for the resolved Nexus-managed frame.
+        """
+        self.check_cleaned()
+        with self._entered_command_action(
+                action_name="get_nexus_frame",
+                frame_name=frame_name,
+        ), self._lock:
+            return self._rift.get_nexus_frame(frame_name=frame_name)
 
     def list_supported_command_methods(self) -> Tuple[str, ...]:
         """

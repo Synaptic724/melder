@@ -1000,6 +1000,23 @@ class Rift(Cleanable, IRift):
         self.check_cleaned()
         return self._nexus.list_accessible_nexus_frame_names(self._id)
 
+    def list_accessible_non_nexus_frame_names(self) -> Tuple[str, ...]:
+        """
+        Internal
+
+        Return the published non-Nexus frame names this Rift may currently
+        target.
+
+        Contract:
+            Delegates to Nexus and returns a snapshot tuple of currently
+            accessible published non-Nexus frame names for this Rift.
+
+        Returns:
+            Tuple[str, ...]: Accessible published non-Nexus frame names.
+        """
+        self.check_cleaned()
+        return self._nexus.list_accessible_non_nexus_frame_names(self._id)
+
     def on_nexus_frame_disposed(self, frame_name: str) -> None:
         """
         Internal

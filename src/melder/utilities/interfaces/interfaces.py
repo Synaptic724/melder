@@ -7040,6 +7040,18 @@ class ICommandSystem(ICleanable, Protocol):
         """
         ...
 
+    def link_frame(self, frame_name: str) -> None:
+        """
+        Engage one target frame for the owning Rift.
+        """
+        ...
+
+    def get_nexus_frame(self, frame_name: Optional[str] = None) -> object:
+        """
+        Return one rooted Nexus-managed conduit through the command surface.
+        """
+        ...
+
     def describe_spells_in_conduit(
             self,
             conduit_id: str,
@@ -8392,6 +8404,12 @@ class IRift(ICleanable, Protocol):
     def list_accessible_nexus_frame_names(self) -> Tuple[str, ...]:
         """
         Return the Nexus frame names this Rift may currently access.
+        """
+        ...
+
+    def list_accessible_non_nexus_frame_names(self) -> Tuple[str, ...]:
+        """
+        Return the published non-Nexus frame names this Rift may currently access.
         """
         ...
 
