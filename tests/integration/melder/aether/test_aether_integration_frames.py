@@ -367,7 +367,6 @@ def test_aether_spell_versions_drop_after_conduit_cleanup() -> None:
 
     conduit.cleanup()
 
-    versions = aether._get_all_spell_versions(frame_name)
-    assert service_id not in versions
-    assert config_id not in versions
-    assert aether._check_for_spell(service_id, frame_name) is None
+    assert frame_name not in aether._aetheric_frames
+    with pytest.raises(ValueError, match="does not exist"):
+        aether._get_all_spell_versions(frame_name)

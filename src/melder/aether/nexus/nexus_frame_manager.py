@@ -668,9 +668,7 @@ class NexusFrameManager(Cleanable):
             descriptor = self._nexus._frame_descriptor_manager._get_required_frame_descriptor(
                 frame_name
             )
-            descriptor.set_frame_handle(None)
-            descriptor.set_frame_configuration(None)
-            descriptor.set_frame_overview(None)
+            descriptor.clear_runtime_publication_state()
         self._nexus._frame_acl_manager._remove_frame_acl_container(frame_name)
         return True
 

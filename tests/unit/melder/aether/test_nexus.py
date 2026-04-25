@@ -38,6 +38,16 @@ from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjec
 from melder.aether.nexus.rift.projection.command_projection import CommandProjection
 from melder.aether.nexus.rift.projection.frame_projection_set import FrameProjectionSet
 from melder.aether.nexus.rift.projection.view_projection import ViewProjection
+from melder.aether.nexus.rift.codegen_system.codegen_system import CodegenSystem
+from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_builder import (
+    CodegenNamespaceBuilder,
+)
+from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_reporter import (
+    CodegenValidationReporter,
+)
+from melder.aether.nexus.rift.codegen_system.validation.codegen_validator import (
+    CodegenValidator,
+)
 from melder.aether.nexus.rift.command_system.capability_command_system import (
     CapabilityCommandSystem,
 )
@@ -1568,6 +1578,31 @@ def test_codegen_rift_space_composes_codegen_command_system() -> None:
     assert isinstance(space.command_system, CodegenCommandSystem)
 
 
+def test_codegen_rift_space_owns_codegen_system() -> None:
+    """
+    Verify codegen rooms own the internal `CodegenSystem`.
+
+    Returns:
+        None.
+    """
+    space = CodegenRiftSpace(
+        rift=_make_detached_rift_projection_owner(),
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    assert isinstance(space._codegen_system, CodegenSystem)
+    assert isinstance(space._codegen_system._validator, CodegenValidator)
+    assert isinstance(
+        space._codegen_system._validation_reporter,
+        CodegenValidationReporter,
+    )
+    assert isinstance(
+        space._codegen_system._namespace_builder,
+        CodegenNamespaceBuilder,
+    )
+
+
 def test_codegen_command_system_preserves_base_commands_and_adds_codegen_placeholders() -> None:
     """
     Verify codegen rooms expose the selected helper surface and the codegen
@@ -1792,6 +1827,69 @@ def test_codegen_execute_codegen_placeholder_rejects_until_exec_exists() -> None
     }
 
 
+def test_codegen_command_system_delegates_validate_and_execute_to_codegen_system(
+        monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """
+    Verify the room-facing codegen command seam delegates into `CodegenSystem`.
+
+    Returns:
+        None.
+    """
+    space = CodegenRiftSpace(
+        rift=_make_detached_rift_projection_owner(),
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    class _ValidationDouble:
+        def to_payload(self) -> Dict[str, object]:
+            return {
+                "accepted": True,
+                "frame_name": "ops",
+                "reason": "validate-double",
+            }
+
+    class _ExecutionDouble:
+        def to_payload(self) -> Dict[str, object]:
+            return {
+                "accepted": True,
+                "frame_name": "ops",
+                "reason": "execute-double",
+            }
+
+    monkeypatch.setattr(
+        CodegenSystem,
+        "validate_codegen",
+        lambda self, code, *, frame_name: _ValidationDouble(),
+    )
+    monkeypatch.setattr(
+        CodegenSystem,
+        "execute_codegen",
+        lambda self, code, *, frame_name: _ExecutionDouble(),
+    )
+
+    validation_result = space.command_system.validate_codegen(
+        "result = 1",
+        frame_name="ops",
+    )
+    execution_result = space.command_system.execute_codegen(
+        "result = 1",
+        frame_name="ops",
+    )
+
+    assert validation_result == {
+        "accepted": True,
+        "frame_name": "ops",
+        "reason": "validate-double",
+    }
+    assert execution_result == {
+        "accepted": True,
+        "frame_name": "ops",
+        "reason": "execute-double",
+    }
+
+
 @pytest.mark.parametrize(
     ("method_name", "code", "frame_name", "message"),
     [
@@ -1830,6 +1928,118 @@ def test_codegen_placeholder_methods_reject_empty_contract_inputs(
             space.command_system.validate_codegen(code, frame_name=frame_name)
             return
         space.command_system.execute_codegen(code, frame_name=frame_name)
+
+
+def test_codegen_validate_codegen_reports_syntax_failure() -> None:
+    """
+    Verify the validator now reports syntax failures explicitly.
+
+    Returns:
+        None.
+    """
+    space = CodegenRiftSpace(
+        rift=_make_detached_rift_projection_owner(),
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    result = space.command_system.validate_codegen(
+        "def broken(",
+        frame_name="ops",
+    )
+
+    assert result["accepted"] is False
+    assert result["reason"] == "codegen_validation_failed"
+    assert result["frame_name"] == "ops"
+    assert "validation_issues" in result
+    assert len(result["validation_issues"]) == 1
+
+
+def test_codegen_execute_codegen_reports_validation_failure_for_syntax_error() -> None:
+    """
+    Verify execute surfaces validation failure before the exec placeholder path.
+
+    Returns:
+        None.
+    """
+    space = CodegenRiftSpace(
+        rift=_make_detached_rift_projection_owner(),
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    result = space.command_system.execute_codegen(
+        "def broken(",
+        frame_name="ops",
+    )
+
+    assert result["accepted"] is False
+    assert result["reason"] == "codegen_execution_validation_failed"
+    assert result["frame_name"] == "ops"
+    assert "validation_issues" in result
+    assert len(result["validation_issues"]) == 1
+
+
+def test_codegen_system_builds_stable_namespace_contract() -> None:
+    """
+    Verify the namespace builder exposes the agreed stable namespace names.
+
+    Returns:
+        None.
+    """
+    space = CodegenRiftSpace(
+        rift=_make_detached_rift_projection_owner(),
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    transaction_context = space._codegen_system._build_transaction_context(
+        "result = 1",
+        frame_name="ops",
+    )
+    namespace = space._codegen_system._build_namespace(transaction_context)
+
+    assert namespace.configuration.exposed_names == (
+        "rift",
+        "space",
+        "viewer",
+        "workstation",
+        "command",
+        "target",
+        "frame_name",
+    )
+    assert namespace.globals_dict["rift"] is space._codegen_system._rift
+    assert namespace.globals_dict["space"] is space
+    assert namespace.globals_dict["viewer"] is space.frame_viewer
+    assert namespace.globals_dict["workstation"] is space.workstation
+    assert namespace.globals_dict["command"] is space.command_system
+    assert namespace.globals_dict["target"] is None
+    assert namespace.globals_dict["frame_name"] == "ops"
+
+
+def test_codegen_system_namespace_reflects_selected_target() -> None:
+    """
+    Verify the built namespace exposes the current workstation target.
+
+    Returns:
+        None.
+    """
+    space = CodegenRiftSpace(
+        rift=_make_detached_rift_projection_owner(),
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+    bound_target = object()
+    space.workstation.bind_object("service", bound_target, weak_ref=False)
+    space.workstation.set_target("service", store="objects")
+
+    transaction_context = space._codegen_system._build_transaction_context(
+        "result = 1",
+        frame_name="ops",
+    )
+    namespace = space._codegen_system._build_namespace(transaction_context)
+
+    assert namespace.globals_dict["target"] is bound_target
 
 
 def test_command_system_can_get_target_attribute_and_method() -> None:

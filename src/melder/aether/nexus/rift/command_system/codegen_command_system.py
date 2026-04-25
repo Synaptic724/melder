@@ -3,6 +3,7 @@ from typing import Dict, Optional, Tuple
 from melder.aether.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
+from melder.aether.nexus.rift.codegen_system.codegen_system import CodegenSystem
 
 
 class CodegenCommandSystem(CommandSystem):
@@ -50,6 +51,75 @@ class CodegenCommandSystem(CommandSystem):
         "validate_codegen",
         "execute_codegen",
     )
+
+    __slots__ = CommandSystem.__slots__ + [
+        "_codegen_system",
+    ]
+
+    def __init__(
+            self,
+            *,
+            rift: object,
+            space: object,
+            workstation: object,
+            codegen_system: Optional[CodegenSystem] = None,
+    ) -> None:
+        """
+        Initialize one codegen-room command surface.
+
+        Args:
+            rift:
+                Owning `Rift`.
+            space:
+                Owning `CodegenRiftSpace`.
+            workstation:
+                Room-local workstation owned by the same room.
+            codegen_system:
+                Optional attached `CodegenSystem`. When omitted, the room may
+                attach it after room initialization completes.
+
+        Returns:
+            None.
+        """
+        super().__init__(
+            rift=rift,
+            space=space,
+            workstation=workstation,
+        )
+        self._codegen_system: Optional[CodegenSystem] = codegen_system
+
+    def cleanup(self) -> None:
+        """
+        Idempotently clear codegen-command references.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        self._codegen_system = None
+        super().cleanup()
+
+    def attach_codegen_system(self, codegen_system: CodegenSystem) -> None:
+        """
+        Attach the room-owned `CodegenSystem` after room initialization.
+
+        Args:
+            codegen_system:
+                Root codegen system owned by the same room.
+
+        Returns:
+            None.
+
+        Raises:
+            TypeError:
+                If `codegen_system` is None.
+        """
+        self.check_cleaned()
+        if codegen_system is None:
+            raise TypeError("codegen_system cannot be None.")
+        with self._lock:
+            self._codegen_system = codegen_system
 
     def get_conduit_cloud(
             self,
@@ -473,11 +543,16 @@ class CodegenCommandSystem(CommandSystem):
             raise ValueError("code cannot be empty.")
         if not isinstance(frame_name, str) or not frame_name:
             raise ValueError("frame_name cannot be empty.")
-        return {
-            "accepted": False,
-            "reason": "codegen_validation_not_implemented",
-            "frame_name": frame_name,
-        }
+        with self._entered_command_action(
+                action_name="validate_codegen",
+                frame_name=frame_name,
+        ), self._lock:
+            codegen_system = self._require_codegen_system()
+            validation_result = codegen_system.validate_codegen(
+                code,
+                frame_name=frame_name,
+            )
+            return codegen_system.report_validation_result(validation_result)
 
     def execute_codegen(
             self,
@@ -518,11 +593,31 @@ class CodegenCommandSystem(CommandSystem):
             raise ValueError("code cannot be empty.")
         if not isinstance(frame_name, str) or not frame_name:
             raise ValueError("frame_name cannot be empty.")
-        return {
-            "accepted": False,
-            "reason": "codegen_execution_not_implemented",
-            "frame_name": frame_name,
-        }
+        with self._entered_command_action(
+                action_name="execute_codegen",
+                frame_name=frame_name,
+        ), self._lock:
+            codegen_system = self._require_codegen_system()
+            execution_result = codegen_system.execute_codegen(
+                code,
+                frame_name=frame_name,
+            )
+            return execution_result.to_payload()
+
+    def _require_codegen_system(self) -> CodegenSystem:
+        """
+        Return the attached room-owned `CodegenSystem`.
+
+        Returns:
+            CodegenSystem: Attached codegen system.
+
+        Raises:
+            RuntimeError:
+                If the room has not attached a codegen system yet.
+        """
+        if self._codegen_system is None:
+            raise RuntimeError("codegen system is not attached.")
+        return self._codegen_system
 
     def list_supported_command_methods(self) -> Tuple[str, ...]:
         """

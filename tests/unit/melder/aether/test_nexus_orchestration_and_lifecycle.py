@@ -614,7 +614,7 @@ def test_nexus_create_frame_projection_sets_respects_named_contract_selection() 
         (True, True, True, False, True),
         (True, False, True, False, True),
         (True, False, False, True, True),
-        (False, False, True, False, False),
+        (False, False, True, False, True),
     ],
 )
 def test_nexus_check_for_aetheric_frame_matrix(
@@ -636,6 +636,8 @@ def test_nexus_check_for_aetheric_frame_matrix(
         nexus._enabled = False
 
     frame_name = "ops"
+    if managed_frame:
+        frame_name = configuration.get_property("default_nexus_frame_name")
     if descriptor_seeded:
         record = _seed_descriptor(frame_name)
         descriptor = nexus._get_required_frame_descriptor(frame_name)
@@ -687,7 +689,8 @@ def test_nexus_repeated_init_with_logger_override_reuses_singleton_and_replaces_
 def test_nexus_cleanup_cleans_frame_manager_after_live_manager_population() -> None:
     nexus = _create_enabled_nexus()
     manager = nexus._frame_manager
-    nexus.frame_manager.create_dynamic_frame("ops")
+    shared_frame_name = nexus._configuration.get_property("default_nexus_frame_name")
+    nexus.frame_manager.create_dynamic_frame(shared_frame_name)
 
     nexus.cleanup()
 
@@ -699,7 +702,8 @@ def test_nexus_cleanup_cleans_frame_manager_after_live_manager_population() -> N
 def test_nexus_reset_singleton_for_tests_cleans_live_manager_state() -> None:
     nexus = _create_enabled_nexus()
     manager = nexus._frame_manager
-    nexus.frame_manager.create_dynamic_frame("ops")
+    shared_frame_name = nexus._configuration.get_property("default_nexus_frame_name")
+    nexus.frame_manager.create_dynamic_frame(shared_frame_name)
 
     Nexus._reset_singleton_for_tests()
 

@@ -1,0 +1,227 @@
+from typing import Dict, Optional, Tuple
+
+
+class CodegenExecutionResult:
+    """
+    Internal
+
+    Execution-layer result for one codegen request.
+
+    Purpose:
+        Represent the executor-owned outcome of `execute_codegen(...)`
+        separately from validation-only reporting.
+
+    Contract:
+        - Carries acceptance state, target frame name, optional reason,
+          optional validation issues, optional runtime error, and optional
+          `result` payload.
+        - Serializes to the current public payload shape expected by the room
+          placeholder tests.
+    """
+
+    __slots__ = [
+        "_accepted",
+        "_frame_name",
+        "_reason",
+        "_validation_issues",
+        "_runtime_error",
+        "_result",
+        "_transaction_id",
+    ]
+
+    def __init__(
+            self,
+            *,
+            accepted: bool,
+            frame_name: str,
+            reason: Optional[str] = None,
+            validation_issues: Optional[Tuple[str, ...]] = None,
+            runtime_error: Optional[str] = None,
+            result: Optional[object] = None,
+            transaction_id: Optional[str] = None,
+    ) -> None:
+        """
+        Initialize one execution result.
+
+        Args:
+            accepted:
+                Final execution acceptance state.
+            frame_name:
+                Target frame name for the execution request.
+            reason:
+                Optional top-level execution reason.
+            validation_issues:
+                Optional validation issue tuple propagated into execution
+                output.
+            runtime_error:
+                Optional runtime error summary.
+            result:
+                Optional final `result` value from execution.
+            transaction_id:
+                Optional internal transaction id.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If `frame_name` is empty.
+        """
+        if not isinstance(frame_name, str) or not frame_name:
+            raise ValueError("frame_name cannot be empty.")
+        self._accepted: bool = accepted
+        self._frame_name: str = frame_name
+        self._reason: Optional[str] = reason
+        self._validation_issues: Tuple[str, ...] = (
+            tuple(validation_issues) if validation_issues else tuple()
+        )
+        self._runtime_error: Optional[str] = runtime_error
+        self._result: Optional[object] = result
+        self._transaction_id: Optional[str] = transaction_id
+
+    @classmethod
+    def not_implemented(
+            cls,
+            *,
+            frame_name: str,
+            transaction_id: Optional[str] = None,
+    ) -> "CodegenExecutionResult":
+        """
+        Build the current placeholder execution result.
+
+        Args:
+            frame_name:
+                Target frame name for the execution request.
+            transaction_id:
+                Optional internal transaction id.
+
+        Returns:
+            CodegenExecutionResult: Rejected placeholder execution result.
+        """
+        return cls(
+            accepted=False,
+            frame_name=frame_name,
+            reason="codegen_execution_not_implemented",
+            transaction_id=transaction_id,
+        )
+
+    @classmethod
+    def validation_failed(
+            cls,
+            *,
+            frame_name: str,
+            validation_issues: Tuple[str, ...],
+            transaction_id: Optional[str] = None,
+    ) -> "CodegenExecutionResult":
+        """
+        Build an execution result representing pre-exec validation failure.
+
+        Args:
+            frame_name:
+                Target frame name for the execution request.
+            validation_issues:
+                Validation issue tuple to surface through execution output.
+            transaction_id:
+                Optional internal transaction id.
+
+        Returns:
+            CodegenExecutionResult: Rejected validation-failure result.
+        """
+        return cls(
+            accepted=False,
+            frame_name=frame_name,
+            reason="codegen_execution_validation_failed",
+            validation_issues=validation_issues,
+            transaction_id=transaction_id,
+        )
+
+    @property
+    def accepted(self) -> bool:
+        """
+        Return the execution acceptance state.
+
+        Returns:
+            bool: Execution acceptance state.
+        """
+        return self._accepted
+
+    @property
+    def frame_name(self) -> str:
+        """
+        Return the target frame name for this execution result.
+
+        Returns:
+            str: Target frame name.
+        """
+        return self._frame_name
+
+    @property
+    def reason(self) -> Optional[str]:
+        """
+        Return the optional top-level execution reason.
+
+        Returns:
+            Optional[str]: Top-level execution reason when present.
+        """
+        return self._reason
+
+    @property
+    def validation_issues(self) -> Tuple[str, ...]:
+        """
+        Return the propagated validation issues for this execution result.
+
+        Returns:
+            Tuple[str, ...]: Validation issues when present.
+        """
+        return self._validation_issues
+
+    @property
+    def runtime_error(self) -> Optional[str]:
+        """
+        Return the optional runtime error summary.
+
+        Returns:
+            Optional[str]: Runtime error summary when present.
+        """
+        return self._runtime_error
+
+    @property
+    def result(self) -> Optional[object]:
+        """
+        Return the optional final execution result object.
+
+        Returns:
+            Optional[object]: Final execution result when present.
+        """
+        return self._result
+
+    @property
+    def transaction_id(self) -> Optional[str]:
+        """
+        Return the optional internal transaction identifier.
+
+        Returns:
+            Optional[str]: Internal transaction id when present.
+        """
+        return self._transaction_id
+
+    def to_payload(self) -> Dict[str, object]:
+        """
+        Serialize this result to the current public execution payload shape.
+
+        Returns:
+            Dict[str, object]: Public execution payload.
+        """
+        payload: Dict[str, object] = {
+            "accepted": self._accepted,
+            "frame_name": self._frame_name,
+        }
+        if self._reason is not None:
+            payload["reason"] = self._reason
+        if len(self._validation_issues) > 0:
+            payload["validation_issues"] = self._validation_issues
+        if self._runtime_error is not None:
+            payload["runtime_error"] = self._runtime_error
+        if self._result is not None:
+            payload["result"] = self._result
+        return payload

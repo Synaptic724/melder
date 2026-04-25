@@ -2163,8 +2163,8 @@ class Nexus(Cleanable, INexus):
                 Frame name about to be removed from `Aether`.
 
         Contract:
-            - Short-circuits when Nexus is cleaned, disabled, or missing the
-              descriptor manager.
+            - Short-circuits when Nexus is cleaned or missing the descriptor
+              manager.
             - Drops manager-owned authored state when the frame is a
               Nexus-managed frame.
             - Falls back to descriptor/ACL cleanup for non-managed frames that
@@ -2178,7 +2178,7 @@ class Nexus(Cleanable, INexus):
         if self._cleaned:
             return
         with self._lock:
-            if self._cleaned or not self._enabled or self._frame_descriptor_manager is None:
+            if self._cleaned or self._frame_descriptor_manager is None:
                 return
             handled = self._frame_manager.handle_aether_frame_disposal(frame_name)
             if not handled:
@@ -2186,9 +2186,7 @@ class Nexus(Cleanable, INexus):
                     descriptor = self._frame_descriptor_manager._get_required_frame_descriptor(
                         frame_name
                     )
-                    descriptor.set_frame_handle(None)
-                    descriptor.set_frame_configuration(None)
-                    descriptor.set_frame_overview(None)
+                    descriptor.clear_runtime_publication_state()
                 acl_container_removed = self._frame_acl_manager._remove_frame_acl_container(
                     frame_name
                 )

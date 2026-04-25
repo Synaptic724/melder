@@ -68,6 +68,11 @@ class _FakeDescriptor:
     def set_frame_overview(self, frame_overview) -> None:
         self.frame_overview = frame_overview
 
+    def clear_runtime_publication_state(self) -> None:
+        self.frame_handle = None
+        self.frame_configuration = None
+        self.frame_overview = None
+
 
 class _FakeFrameDescriptorManager:
     def __init__(self) -> None:

@@ -333,6 +333,45 @@ class FrameDescriptor(Cleanable):
                 existing.cleanup()
             self._frame_overview = frame_overview
 
+    def clear_runtime_publication_state(self) -> None:
+        """
+        Clear all runtime-derived publication state while keeping the descriptor.
+
+        Purpose:
+            Drop the live frame reference, bound frame posture, frame overview,
+            conduit records, spell records, and secondary indexes after the
+            backing `AethericFrame` is detached.
+
+        Contract:
+            - Keeps the descriptor object and stable `frame_name` alive.
+            - Cleans every owned record object before clearing the primary and
+              secondary stores.
+            - Leaves the descriptor ready for later repopulation if the same
+              frame name is published again.
+
+        Threading:
+            Runs under the descriptor lock so detach cleanup cannot interleave
+            with publication or index mutation.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        with self._lock:
+            self._frame_handle = None
+            self._frame_configuration = None
+            if self._frame_overview is not None:
+                self._frame_overview.cleanup()
+                self._frame_overview = None
+            for conduit_record in self._conduit_records_by_id.values():
+                conduit_record.cleanup()
+            for spell_record in self._spell_records_by_key.values():
+                spell_record.cleanup()
+            self._conduit_records_by_id.clear()
+            self._spell_records_by_key.clear()
+            self._spell_keys_by_conduit_id.clear()
+            self._spell_keys_by_spellbook_id.clear()
+
     def upsert_conduit_record(self, conduit_record: IConduitRecord) -> None:
         """
         Upsert one conduit record owned by this descriptor.

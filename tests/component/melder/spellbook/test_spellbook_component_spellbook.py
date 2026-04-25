@@ -26,11 +26,13 @@ def reset_aether_singleton_for_component_spellbook() -> None:
     Returns:
         None.
     """
+    Nexus._reset_singleton_for_tests()
     Aether._reset_singleton_for_tests()
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
     yield
+    Nexus._reset_singleton_for_tests()
     Aether._reset_singleton_for_tests()
     aether = Aether()
     Spellbook._aether = aether
@@ -737,8 +739,6 @@ def test_component_spellbook_post_conjure_bind_publishes_incremental_nexus_spell
     Raises:
         AssertionError: If incremental Nexus publication is missing.
     """
-    Nexus._reset_singleton_for_tests()
-    Nexus(aether=Aether())
     configuration = Configuration(aether_frame="ops")
     configuration.automatic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
@@ -763,7 +763,6 @@ def test_component_spellbook_post_conjure_bind_publishes_incremental_nexus_spell
 
     descriptor = Nexus()._get_required_frame_descriptor("ops")
     assert (spellbook.id, late_spell_id) not in descriptor.spell_records_by_key
-    Nexus._reset_singleton_for_tests()
     spellbook.cleanup()
 
 
@@ -779,8 +778,6 @@ def test_component_spellbook_post_conjure_scan_publishes_passive_nexus_spell_rec
     Raises:
         AssertionError: If passive Nexus does not reflect the scan lifecycle.
     """
-    Nexus._reset_singleton_for_tests()
-    Nexus(aether=Aether())
     configuration = Configuration(aether_frame="ops")
     configuration.automatic_defaults()
     configuration.set_property("phase_scheduler_workers_per_spellbook", 1)
@@ -802,7 +799,6 @@ def test_component_spellbook_post_conjure_scan_publishes_passive_nexus_spell_rec
     descriptor = Nexus()._get_required_frame_descriptor("ops")
     for spell_id in spell_ids:
         assert (spellbook.id, spell_id) not in descriptor.spell_records_by_key
-    Nexus._reset_singleton_for_tests()
     spellbook.cleanup()
 
 

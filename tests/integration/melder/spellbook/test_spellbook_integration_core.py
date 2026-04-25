@@ -229,11 +229,7 @@ def test_spellbook_integration_conjure_registers_spell_versions_and_cleanup_clea
     finally:
         conduit.cleanup()
 
-    frame_obj = Spellbook._aether._aetheric_frames[frame]
-    registry = frame_obj._spell_registry
-    assert conduit_id in registry
-    assert registry[conduit_id] == set()
-    assert frame_obj.has_version(spell_id) is False
+    assert frame not in Spellbook._aether._aetheric_frames
 
 
 def test_spellbook_integration_conjure_uses_locked_configuration_from_aether() -> None:

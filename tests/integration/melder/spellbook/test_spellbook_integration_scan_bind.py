@@ -30,11 +30,13 @@ def reset_aether_singleton_for_integration_scan_bind() -> None:
     Returns:
         None.
     """
+    Nexus._reset_singleton_for_tests()
     Aether._reset_singleton_for_tests()
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
     yield
+    Nexus._reset_singleton_for_tests()
     Aether._reset_singleton_for_tests()
     aether = Aether()
     Spellbook._aether = aether
@@ -492,8 +494,6 @@ def test_scan_bind_integration_post_conjure_scan_updates_passive_nexus_records()
     Returns:
         None.
     """
-    Nexus._reset_singleton_for_tests()
-    Nexus(aether=Aether())
     spellbook = _make_spellbook()
     config = spellbook.get_configuration()
     config.set_property("rift_enabled", True)
@@ -514,4 +514,3 @@ def test_scan_bind_integration_post_conjure_scan_updates_passive_nexus_records()
     descriptor = Nexus()._get_required_frame_descriptor(frame_name)
     for spell_id in spell_ids:
         assert (spellbook.id, spell_id) not in descriptor.spell_records_by_key
-    Nexus._reset_singleton_for_tests()

@@ -6,12 +6,17 @@ from melder.aether.nexus.rift.command_system.command_system import (
 from melder.aether.nexus.rift.command_system.codegen_command_system import (
     CodegenCommandSystem,
 )
+from melder.aether.nexus.rift.codegen_system.codegen_system import CodegenSystem
 from melder.aether.nexus.rift.rift_space.rift_space import RiftSpace
 from melder.utilities.interfaces.interfaces import ICodegenRiftSpace, IRiftGate
 
 
 class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
     """
+
+    __slots__ = [
+        "_codegen_system",
+    ]
     Internal
 
     Purpose:
@@ -75,6 +80,11 @@ class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
             rift_gate=rift_gate,
             space_id=space_id,
         )
+        self._codegen_system: CodegenSystem = CodegenSystem(
+            rift=rift,
+            space=self,
+        )
+        self._command_system.attach_codegen_system(self._codegen_system)
 
     def _create_command_system(self, rift: object) -> CommandSystem:
         """
@@ -88,3 +98,19 @@ class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
             space=self,
             workstation=self._workstation,
         )
+
+    def cleanup(self) -> None:
+        """
+        Internal
+
+        Idempotently cleanup the owned codegen system before base room teardown.
+
+        Returns:
+            None.
+        """
+        if self._cleaned:
+            return
+        if self._codegen_system is not None:
+            self._codegen_system.cleanup()
+            self._codegen_system = None
+        super().cleanup()
