@@ -2,30 +2,38 @@ import threading
 from typing import Dict, Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.nexus.acl.configurations.frame_acl_command_configuration import (
-    FrameACLCommandConfiguration,
-)
 from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import (
     FrameACLRule,
 )
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import (
-    FrameACLRuleSet,
-)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.interfaces.interfaces import (
+    IFrameACLBuilder,
+    IFrameACLCommandConfiguration,
+    IFrameACLRuleSet,
+)
 
 
 class FrameACLCommandBuilder(Cleanable):
     """
     Purpose:
-        Provide a fluent authoring surface for one active command ACL draft.
+        Provide fluent authoring for one active command-family ACL draft.
 
     Contract:
-        - Layers over one active command draft owned by `FrameACLBuilder`.
-        - Does not replace the generic builder draft/commit lifecycle.
-        - Mutates the live draft configuration in place under the owning
-          builder's lock.
-        - Returns itself from fluent mutation methods.
+        - Borrows one active command draft from the generic ACL builder.
+        - Mutates the borrowed typed command configuration in place.
+        - Does not own persistence or configuration-chain installation.
+        - Returns itself from fluent mutation methods so authoring remains
+          chainable.
+
+    Threading:
+        All grouped draft mutations execute under the builder's instance
+        `RLock` because multiple builder-owned fields can change together in a
+        nogil runtime.
+
+    Lifecycle:
+        Cleanup is idempotent. It only drops borrowed references and does not
+        clean or commit the underlying draft automatically.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -35,31 +43,36 @@ class FrameACLCommandBuilder(Cleanable):
         "_frame_acl_builder",
     ]
 
-    def __init__(self, frame_acl_builder: object) -> None:
+    def __init__(self, frame_acl_builder: IFrameACLBuilder) -> None:
         """
         Initialize one fluent command ACL builder.
 
         Args:
             frame_acl_builder:
-                Owning generic frame ACL builder with an active command draft.
+                Borrowed generic ACL builder that currently owns one active
+                command-family draft session.
 
         Returns:
             None.
-        """
-        from melder.aether.nexus.acl.builder.frame_acl_builder import (
-            FrameACLBuilder,
-        )
 
+        Raises:
+            TypeError:
+                If `frame_acl_builder` does not satisfy `IFrameACLBuilder`.
+        """
         super().__init__()
-        if not isinstance(frame_acl_builder, FrameACLBuilder):
-            raise TypeError("frame_acl_builder must be a FrameACLBuilder.")
+        if not isinstance(frame_acl_builder, IFrameACLBuilder):
+            raise TypeError("frame_acl_builder must satisfy IFrameACLBuilder.")
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._frame_acl_builder: FrameACLBuilder = frame_acl_builder
+        self._frame_acl_builder: IFrameACLBuilder = frame_acl_builder
 
     def cleanup(self) -> None:
         """
         Idempotently clear fluent-builder-owned references.
+
+        Contract:
+            - Does not discard or commit the borrowed draft.
+            - Only drops this builder's local references.
 
         Returns:
             None.
@@ -77,22 +90,22 @@ class FrameACLCommandBuilder(Cleanable):
     @property
     def id(self) -> str:
         """
-        Return the stable fluent-builder identifier.
+        Return the stable identifier for this fluent builder instance.
 
         Returns:
-            str: Stable fluent-builder id.
+            str: Stable fluent-builder identifier.
         """
         self.check_cleaned()
         with self._lock:
             return self._id
 
     @property
-    def draft_configuration(self) -> FrameACLCommandConfiguration:
+    def draft_configuration(self) -> IFrameACLCommandConfiguration:
         """
-        Return the active command draft configuration.
+        Return the currently borrowed active command configuration draft.
 
         Returns:
-            FrameACLCommandConfiguration: Active command draft.
+            IFrameACLCommandConfiguration: Active mutable command draft.
         """
         self.check_cleaned()
         with self._lock:
@@ -104,7 +117,7 @@ class FrameACLCommandBuilder(Cleanable):
 
         Args:
             profile_name:
-                Registered base command profile name.
+                Registered reusable base command profile name.
 
         Returns:
             FrameACLCommandBuilder: This fluent builder.
@@ -123,7 +136,8 @@ class FrameACLCommandBuilder(Cleanable):
 
         Args:
             profile_name:
-                Precision profile name, or None to clear.
+                Registered precision profile name, or None to clear the current
+                precision selection.
 
         Returns:
             FrameACLCommandBuilder: This fluent builder.
@@ -143,6 +157,19 @@ class FrameACLCommandBuilder(Cleanable):
     ) -> "FrameACLCommandBuilder":
         """
         Upsert one frame-family rule on the active draft.
+
+        Args:
+            operation_name:
+                Target command-frame operation name.
+            allow:
+                True for an allow rule, False for a deny rule.
+            rule_name:
+                Optional stable rule name.
+            conditions:
+                Optional selector or condition payload.
+
+        Returns:
+            FrameACLCommandBuilder: This fluent builder.
         """
         return self._set_ruleset_operation(
             self.draft_configuration.frame_override_ruleset,
@@ -162,6 +189,19 @@ class FrameACLCommandBuilder(Cleanable):
     ) -> "FrameACLCommandBuilder":
         """
         Upsert one conduit-family rule on the active draft.
+
+        Args:
+            operation_name:
+                Target command-conduit operation name.
+            allow:
+                True for an allow rule, False for a deny rule.
+            rule_name:
+                Optional stable rule name.
+            conditions:
+                Optional selector or condition payload.
+
+        Returns:
+            FrameACLCommandBuilder: This fluent builder.
         """
         return self._set_ruleset_operation(
             self.draft_configuration.conduit_override_ruleset,
@@ -181,6 +221,19 @@ class FrameACLCommandBuilder(Cleanable):
     ) -> "FrameACLCommandBuilder":
         """
         Upsert one spell-family rule on the active draft.
+
+        Args:
+            operation_name:
+                Target command-spell operation name.
+            allow:
+                True for an allow rule, False for a deny rule.
+            rule_name:
+                Optional stable rule name.
+            conditions:
+                Optional selector or condition payload.
+
+        Returns:
+            FrameACLCommandBuilder: This fluent builder.
         """
         return self._set_ruleset_operation(
             self.draft_configuration.spell_override_ruleset,
@@ -200,6 +253,21 @@ class FrameACLCommandBuilder(Cleanable):
     ) -> "FrameACLCommandBuilder":
         """
         Upsert one member-family rule on the active draft.
+
+        Args:
+            operation_name:
+                Target command-member operation name.
+            allow:
+                True for an allow rule, False for a deny rule.
+            rule_name:
+                Optional stable rule name.
+            conditions:
+                Optional selector or condition payload. Member rules should be
+                selector-shaped so runtime consumers can map them
+                deterministically.
+
+        Returns:
+            FrameACLCommandBuilder: This fluent builder.
         """
         return self._set_ruleset_operation(
             self.draft_configuration.member_override_ruleset,
@@ -210,24 +278,66 @@ class FrameACLCommandBuilder(Cleanable):
         )
 
     def allow_frame_enable(self) -> "FrameACLCommandBuilder":
+        """
+        Allow command access to the frame in the active draft.
+
+        Returns:
+            FrameACLCommandBuilder: This fluent builder.
+        """
         return self.set_frame_operation("enable", allow=True)
 
     def deny_frame_enable(self) -> "FrameACLCommandBuilder":
+        """
+        Deny command access to the frame in the active draft.
+
+        Returns:
+            FrameACLCommandBuilder: This fluent builder.
+        """
         return self.set_frame_operation("enable", allow=False)
 
     def allow_conduit_enable(self) -> "FrameACLCommandBuilder":
+        """
+        Allow command access to conduits in the active draft.
+
+        Returns:
+            FrameACLCommandBuilder: This fluent builder.
+        """
         return self.set_conduit_operation("enable", allow=True)
 
     def deny_conduit_enable(self) -> "FrameACLCommandBuilder":
+        """
+        Deny command access to conduits in the active draft.
+
+        Returns:
+            FrameACLCommandBuilder: This fluent builder.
+        """
         return self.set_conduit_operation("enable", allow=False)
 
     def allow_spell_enable(self) -> "FrameACLCommandBuilder":
+        """
+        Allow command access to spells in the active draft.
+
+        Returns:
+            FrameACLCommandBuilder: This fluent builder.
+        """
         return self.set_spell_operation("enable", allow=True)
 
     def deny_spell_enable(self) -> "FrameACLCommandBuilder":
+        """
+        Deny command access to spells in the active draft.
+
+        Returns:
+            FrameACLCommandBuilder: This fluent builder.
+        """
         return self.set_spell_operation("enable", allow=False)
 
     def allow_member_read_attribute(self) -> "FrameACLCommandBuilder":
+        """
+        Allow attribute reads for any member name in the active draft.
+
+        Returns:
+            FrameACLCommandBuilder: This fluent builder.
+        """
         return self.set_member_operation(
             "read_attribute",
             allow=True,
@@ -235,6 +345,12 @@ class FrameACLCommandBuilder(Cleanable):
         )
 
     def deny_member_read_attribute(self) -> "FrameACLCommandBuilder":
+        """
+        Deny attribute reads for any member name in the active draft.
+
+        Returns:
+            FrameACLCommandBuilder: This fluent builder.
+        """
         return self.set_member_operation(
             "read_attribute",
             allow=False,
@@ -242,6 +358,12 @@ class FrameACLCommandBuilder(Cleanable):
         )
 
     def allow_member_invoke_method(self) -> "FrameACLCommandBuilder":
+        """
+        Allow method invocation for any member name in the active draft.
+
+        Returns:
+            FrameACLCommandBuilder: This fluent builder.
+        """
         return self.set_member_operation(
             "invoke_method",
             allow=True,
@@ -249,6 +371,12 @@ class FrameACLCommandBuilder(Cleanable):
         )
 
     def deny_member_invoke_method(self) -> "FrameACLCommandBuilder":
+        """
+        Deny method invocation for any member name in the active draft.
+
+        Returns:
+            FrameACLCommandBuilder: This fluent builder.
+        """
         return self.set_member_operation(
             "invoke_method",
             allow=False,
@@ -256,6 +384,12 @@ class FrameACLCommandBuilder(Cleanable):
         )
 
     def allow_member_write_attribute(self) -> "FrameACLCommandBuilder":
+        """
+        Allow attribute writes for any member name in the active draft.
+
+        Returns:
+            FrameACLCommandBuilder: This fluent builder.
+        """
         return self.set_member_operation(
             "write_attribute",
             allow=True,
@@ -263,6 +397,12 @@ class FrameACLCommandBuilder(Cleanable):
         )
 
     def deny_member_write_attribute(self) -> "FrameACLCommandBuilder":
+        """
+        Deny attribute writes for any member name in the active draft.
+
+        Returns:
+            FrameACLCommandBuilder: This fluent builder.
+        """
         return self.set_member_operation(
             "write_attribute",
             allow=False,
@@ -270,6 +410,12 @@ class FrameACLCommandBuilder(Cleanable):
         )
 
     def allow_member_dunder_access(self) -> "FrameACLCommandBuilder":
+        """
+        Allow dunder-member access for any member name in the active draft.
+
+        Returns:
+            FrameACLCommandBuilder: This fluent builder.
+        """
         return self.set_member_operation(
             "dunder_access",
             allow=True,
@@ -277,6 +423,12 @@ class FrameACLCommandBuilder(Cleanable):
         )
 
     def deny_member_dunder_access(self) -> "FrameACLCommandBuilder":
+        """
+        Deny dunder-member access for any member name in the active draft.
+
+        Returns:
+            FrameACLCommandBuilder: This fluent builder.
+        """
         return self.set_member_operation(
             "dunder_access",
             allow=False,
@@ -286,18 +438,25 @@ class FrameACLCommandBuilder(Cleanable):
     def remove_member_rule(self, rule_name: str) -> "FrameACLCommandBuilder":
         """
         Remove one member-family rule from the active draft.
+
+        Args:
+            rule_name:
+                Stable member-rule name to remove.
+
+        Returns:
+            FrameACLCommandBuilder: This fluent builder.
         """
         return self._remove_ruleset_rule(
             self.draft_configuration.member_override_ruleset,
             rule_name,
         )
 
-    def commit_change(self) -> FrameACLCommandConfiguration:
+    def commit_change(self) -> IFrameACLCommandConfiguration:
         """
-        Commit the active command draft through the owning generic builder.
+        Commit the active command draft through the borrowed generic builder.
 
         Returns:
-            FrameACLCommandConfiguration: Newly installed command revision.
+            IFrameACLCommandConfiguration: Newly installed command revision.
         """
         self.check_cleaned()
         with self._lock:
@@ -305,7 +464,7 @@ class FrameACLCommandBuilder(Cleanable):
 
     def discard_change(self) -> None:
         """
-        Discard the active command draft through the owning generic builder.
+        Discard the active command draft through the borrowed generic builder.
 
         Returns:
             None.
@@ -316,7 +475,7 @@ class FrameACLCommandBuilder(Cleanable):
 
     def _set_ruleset_operation(
             self,
-            ruleset: FrameACLRuleSet,
+            ruleset: IFrameACLRuleSet,
             *,
             operation_name: str,
             allow: bool,
@@ -325,6 +484,25 @@ class FrameACLCommandBuilder(Cleanable):
     ) -> "FrameACLCommandBuilder":
         """
         Upsert one typed rule into the supplied ruleset.
+
+        Args:
+            ruleset:
+                Borrowed ruleset from the active command configuration.
+            operation_name:
+                Target operation name.
+            allow:
+                True for an allow rule, False for a deny rule.
+            rule_name:
+                Optional stable rule name.
+            conditions:
+                Optional selector or condition payload.
+
+        Returns:
+            FrameACLCommandBuilder: This fluent builder.
+
+        Raises:
+            ValueError:
+                If the operation or resolved rule name is empty.
         """
         self.check_cleaned()
         with self._lock:
@@ -347,11 +525,24 @@ class FrameACLCommandBuilder(Cleanable):
 
     def _remove_ruleset_rule(
             self,
-            ruleset: FrameACLRuleSet,
+            ruleset: IFrameACLRuleSet,
             rule_name: str,
     ) -> "FrameACLCommandBuilder":
         """
         Remove one named rule from the supplied ruleset.
+
+        Args:
+            ruleset:
+                Borrowed ruleset from the active command configuration.
+            rule_name:
+                Stable rule name to remove.
+
+        Returns:
+            FrameACLCommandBuilder: This fluent builder.
+
+        Raises:
+            ValueError:
+                If `rule_name` is empty.
         """
         self.check_cleaned()
         with self._lock:

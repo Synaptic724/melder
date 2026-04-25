@@ -1,6 +1,6 @@
 import json
 import threading
-from typing import Optional
+from typing import Optional, Union
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.acl.builder.frame_acl_command_builder import (
@@ -18,29 +18,58 @@ from melder.aether.nexus.acl.configurations.frame_acl_command_configuration impo
 from melder.aether.nexus.acl.configurations.frame_acl_codegen_configuration import (
     FrameACLCodegenConfiguration,
 )
-from melder.aether.nexus.acl.configurations.profiles.frame_acl_profile import FrameACLProfile
 from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
-from melder.utilities.interfaces.interfaces import IFrameACLContainer
+from melder.utilities.interfaces.interfaces import (
+    IFrameACLCommandConfiguration,
+    IFrameACLCodegenConfiguration,
+    IFrameACLConfiguration,
+    IFrameACLContainer,
+    IFrameACLProfile,
+    IFrameACLViewConfiguration,
+)
+
+FrameACLDraftConfiguration = Optional[
+    Union[
+        IFrameACLViewConfiguration,
+        IFrameACLCommandConfiguration,
+        IFrameACLCodegenConfiguration,
+    ]
+]
+FrameACLCommittedConfiguration = Union[
+    IFrameACLViewConfiguration,
+    IFrameACLCommandConfiguration,
+    IFrameACLCodegenConfiguration,
+]
 
 
 class FrameACLBuilder(Cleanable):
     """
     Purpose:
-        Provide the frame-local mutable ACL authoring surface owned by one
+        Provide the frame-local mutable ACL authoring surface for one
         `FrameACLContainer`.
 
     Contract:
         - One builder object exists per container.
         - At most one draft change session may be active at a time.
         - Draft state targets one ACL family and one contract name.
+        - Family-specific fluent builders layer over this object; they do not
+          own persistence or chain installation directly.
         - Final installation and validation are delegated to the owning
           container.
-        - Uses an instance lock because draft lifecycle transitions and cleanup
-          mutate multiple fields together in a nogil runtime.
+        - Uses an instance lock because draft lifecycle transitions mutate
+          multiple builder-owned fields together in a nogil runtime.
+
+    Threading:
+        All grouped draft lifecycle transitions execute under the builder's
+        instance `RLock`.
+
+    Lifecycle:
+        Cleanup is idempotent, cleans any still-open draft configuration, and
+        then drops the borrowed container reference.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -56,14 +85,19 @@ class FrameACLBuilder(Cleanable):
 
     def __init__(self, container: IFrameACLContainer) -> None:
         """
-        Initialize one frame ACL builder for the owning container.
+        Initialize one frame-local ACL builder.
 
         Args:
             container:
-                Owning frame ACL container.
+                Owning frame ACL container that supplies current family
+                revisions, profile registries, and chain-installation methods.
 
         Returns:
             None.
+
+        Raises:
+            TypeError:
+                If `container` is None.
         """
         super().__init__()
         if container is None:
@@ -74,11 +108,16 @@ class FrameACLBuilder(Cleanable):
         self._change_active: bool = False
         self._draft_family_name: Optional[str] = None
         self._draft_contract_name: Optional[str] = None
-        self._draft_configuration: Optional[object] = None
+        self._draft_configuration: FrameACLDraftConfiguration = None
 
     def cleanup(self) -> None:
         """
-        Idempotently clear builder state.
+        Idempotently tear down the builder and any still-open draft.
+
+        Contract:
+            - If a draft configuration is still open, it is cleaned before the
+              builder drops its references.
+            - After cleanup, the builder must not be used again.
 
         Returns:
             None.
@@ -154,6 +193,12 @@ class FrameACLBuilder(Cleanable):
 
         Returns:
             None.
+
+        Raises:
+            RuntimeError:
+                If another draft session is already active.
+            ValueError:
+                If `family_name` is not one of the supported ACL families.
         """
         self.check_cleaned()
         with self._lock:
@@ -204,7 +249,7 @@ class FrameACLBuilder(Cleanable):
             reason: str = "builder_draft",
     ) -> FrameACLViewBuilder:
         """
-        Start one view draft session and return the fluent view builder.
+        Start one view-family draft and return its fluent builder.
 
         Args:
             contract_name:
@@ -229,7 +274,7 @@ class FrameACLBuilder(Cleanable):
             reason: str = "builder_draft",
     ) -> FrameACLCommandBuilder:
         """
-        Start one command draft session and return the fluent command builder.
+        Start one command-family draft and return its fluent builder.
 
         Args:
             contract_name:
@@ -254,7 +299,7 @@ class FrameACLBuilder(Cleanable):
             reason: str = "builder_draft",
     ) -> FrameACLCodegenBuilder:
         """
-        Start one codegen draft session and return the fluent codegen builder.
+        Start one codegen-family draft and return its fluent builder.
 
         Args:
             contract_name:
@@ -274,12 +319,16 @@ class FrameACLBuilder(Cleanable):
 
     def _require_active_codegen_configuration(
             self,
-    ) -> FrameACLCodegenConfiguration:
+    ) -> IFrameACLCodegenConfiguration:
         """
         Return the active codegen draft configuration or raise.
 
         Returns:
-            FrameACLCodegenConfiguration: Active codegen draft configuration.
+            IFrameACLCodegenConfiguration: Active codegen draft configuration.
+
+        Raises:
+            RuntimeError:
+                If there is no active draft or the active draft is not codegen.
         """
         self.check_cleaned()
         with self._lock:
@@ -291,12 +340,16 @@ class FrameACLBuilder(Cleanable):
 
     def _require_active_view_configuration(
             self,
-    ) -> FrameACLViewConfiguration:
+    ) -> IFrameACLViewConfiguration:
         """
         Return the active view draft configuration or raise.
 
         Returns:
-            FrameACLViewConfiguration: Active view draft configuration.
+            IFrameACLViewConfiguration: Active view draft configuration.
+
+        Raises:
+            RuntimeError:
+                If there is no active draft or the active draft is not view.
         """
         self.check_cleaned()
         with self._lock:
@@ -308,12 +361,16 @@ class FrameACLBuilder(Cleanable):
 
     def _require_active_command_configuration(
             self,
-    ) -> FrameACLCommandConfiguration:
+    ) -> IFrameACLCommandConfiguration:
         """
         Return the active command draft configuration or raise.
 
         Returns:
-            FrameACLCommandConfiguration: Active command draft configuration.
+            IFrameACLCommandConfiguration: Active command draft configuration.
+
+        Raises:
+            RuntimeError:
+                If there is no active draft or the active draft is not command.
         """
         self.check_cleaned()
         with self._lock:
@@ -325,10 +382,10 @@ class FrameACLBuilder(Cleanable):
 
     def apply_frame_acl_profile(
             self,
-            frame_acl_profile: FrameACLProfile,
+            frame_acl_profile: IFrameACLProfile,
     ) -> None:
         """
-        Apply one reusable ACL profile into an active family draft.
+        Apply one composed ACL profile into the active family draft.
 
         Args:
             frame_acl_profile:
@@ -336,10 +393,17 @@ class FrameACLBuilder(Cleanable):
 
         Returns:
             None.
+
+        Raises:
+            TypeError:
+                If `frame_acl_profile` does not satisfy the composed ACL
+                profile contract.
+            RuntimeError:
+                If no draft session is active.
         """
         self.check_cleaned()
-        if not isinstance(frame_acl_profile, FrameACLProfile):
-            raise TypeError("frame_acl_profile must be a FrameACLProfile.")
+        if not isinstance(frame_acl_profile, IFrameACLProfile):
+            raise TypeError("frame_acl_profile must satisfy IFrameACLProfile.")
         with self._lock:
             if not self._change_active or self._draft_configuration is None:
                 raise RuntimeError("FrameACLBuilder has no active change.")
@@ -392,6 +456,10 @@ class FrameACLBuilder(Cleanable):
 
         Returns:
             None.
+
+        Raises:
+            RuntimeError:
+                If no draft session is active.
         """
         self.check_cleaned()
         with self._lock:
@@ -450,6 +518,10 @@ class FrameACLBuilder(Cleanable):
 
         Returns:
             None.
+
+        Raises:
+            RuntimeError:
+                If no draft session is active.
         """
         self.check_cleaned()
         with self._lock:
@@ -511,6 +583,10 @@ class FrameACLBuilder(Cleanable):
 
         Returns:
             None.
+
+        Raises:
+            RuntimeError:
+                If no draft session is active.
         """
         self.check_cleaned()
         with self._lock:
@@ -542,12 +618,17 @@ class FrameACLBuilder(Cleanable):
             else:
                 raise RuntimeError("FrameACLBuilder has no draft family.")
 
-    def commit_change(self) -> object:
+    def commit_change(self) -> FrameACLCommittedConfiguration:
         """
         Finalize and install the next family configuration revision.
 
         Returns:
-            object: Newly installed family configuration revision.
+            FrameACLCommittedConfiguration: Newly installed family configuration
+            revision for the active family.
+
+        Raises:
+            RuntimeError:
+                If no draft session is active.
         """
         self.check_cleaned()
         with self._lock:
@@ -583,6 +664,10 @@ class FrameACLBuilder(Cleanable):
     def discard_change(self) -> None:
         """
         Discard the current builder-owned change session.
+
+        Contract:
+            - Cleans the draft configuration when one exists.
+            - Clears draft family/session state so a later draft may begin.
 
         Returns:
             None.

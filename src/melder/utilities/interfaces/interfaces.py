@@ -3227,7 +3227,7 @@ class IFrameACLContainer(ICleanable, Protocol):
     def get_current_view_configuration(
             self,
             contract_name: str = "default",
-    ) -> object:
+    ) -> IFrameACLViewConfiguration:
         """
         Return the current selected view configuration for one contract.
         """
@@ -3236,7 +3236,7 @@ class IFrameACLContainer(ICleanable, Protocol):
     def get_current_command_configuration(
             self,
             contract_name: str = "default",
-    ) -> object:
+    ) -> IFrameACLCommandConfiguration:
         """
         Return the current selected command configuration for one contract.
         """
@@ -3245,7 +3245,7 @@ class IFrameACLContainer(ICleanable, Protocol):
     def get_current_codegen_configuration(
             self,
             contract_name: str = "default",
-    ) -> object:
+    ) -> IFrameACLCodegenConfiguration:
         """
         Return the current selected codegen configuration for one contract.
         """
@@ -3257,7 +3257,7 @@ class IFrameACLContainer(ICleanable, Protocol):
             *,
             contract_name: str = "default",
             reason: str,
-    ) -> object:
+    ) -> IFrameACLViewConfiguration:
         """
         Create a new view draft copied from one existing view revision.
         """
@@ -3269,7 +3269,7 @@ class IFrameACLContainer(ICleanable, Protocol):
             *,
             contract_name: str = "default",
             reason: str,
-    ) -> object:
+    ) -> IFrameACLCommandConfiguration:
         """
         Create a new command draft copied from one existing command revision.
         """
@@ -3281,7 +3281,7 @@ class IFrameACLContainer(ICleanable, Protocol):
             *,
             contract_name: str = "default",
             reason: str,
-    ) -> object:
+    ) -> IFrameACLCodegenConfiguration:
         """
         Create a new codegen draft copied from one existing codegen revision.
         """
@@ -3289,11 +3289,11 @@ class IFrameACLContainer(ICleanable, Protocol):
 
     def insert_head_view_configuration(
             self,
-            configuration: object,
+            configuration: IFrameACLViewConfiguration,
             *,
             contract_name: str = "default",
             select_as_current: bool,
-    ) -> object:
+    ) -> IFrameACLViewConfiguration:
         """
         Insert one view configuration revision at the head of a named chain.
         """
@@ -3301,11 +3301,11 @@ class IFrameACLContainer(ICleanable, Protocol):
 
     def insert_head_command_configuration(
             self,
-            configuration: object,
+            configuration: IFrameACLCommandConfiguration,
             *,
             contract_name: str = "default",
             select_as_current: bool,
-    ) -> object:
+    ) -> IFrameACLCommandConfiguration:
         """
         Insert one command configuration revision at the head of a named chain.
         """
@@ -3313,11 +3313,11 @@ class IFrameACLContainer(ICleanable, Protocol):
 
     def insert_head_codegen_configuration(
             self,
-            configuration: object,
+            configuration: IFrameACLCodegenConfiguration,
             *,
             contract_name: str = "default",
             select_as_current: bool,
-    ) -> object:
+    ) -> IFrameACLCodegenConfiguration:
         """
         Insert one codegen configuration revision at the head of a named chain.
         """
@@ -3341,7 +3341,7 @@ class IFrameACLContainer(ICleanable, Protocol):
             configuration_id: str,
             *,
             contract_name: str = "default",
-    ) -> object:
+    ) -> IFrameACLViewConfiguration:
         """
         Select one existing view configuration revision as current.
         """
@@ -3352,7 +3352,7 @@ class IFrameACLContainer(ICleanable, Protocol):
             configuration_id: str,
             *,
             contract_name: str = "default",
-    ) -> object:
+    ) -> IFrameACLCommandConfiguration:
         """
         Select one existing command configuration revision as current.
         """
@@ -3363,7 +3363,7 @@ class IFrameACLContainer(ICleanable, Protocol):
             configuration_id: str,
             *,
             contract_name: str = "default",
-    ) -> object:
+    ) -> IFrameACLCodegenConfiguration:
         """
         Select one existing codegen configuration revision as current.
         """
@@ -3374,7 +3374,7 @@ class IFrameACLContainer(ICleanable, Protocol):
             configuration_id: str,
             *,
             contract_name: str = "default",
-    ) -> object:
+    ) -> IFrameACLViewConfiguration:
         """
         Roll current view selection back to one historical revision.
         """
@@ -3385,7 +3385,7 @@ class IFrameACLContainer(ICleanable, Protocol):
             configuration_id: str,
             *,
             contract_name: str = "default",
-    ) -> object:
+    ) -> IFrameACLCommandConfiguration:
         """
         Roll current command selection back to one historical revision.
         """
@@ -3396,7 +3396,7 @@ class IFrameACLContainer(ICleanable, Protocol):
             configuration_id: str,
             *,
             contract_name: str = "default",
-    ) -> object:
+    ) -> IFrameACLCodegenConfiguration:
         """
         Roll current codegen selection back to one historical revision.
         """

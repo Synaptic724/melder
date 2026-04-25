@@ -2,17 +2,16 @@ import threading
 from typing import Dict, Optional, Sequence, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
-from melder.aether.nexus.acl.configurations.frame_acl_codegen_configuration import (
-    FrameACLCodegenConfiguration,
-)
 from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import (
     FrameACLRule,
 )
-from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import (
-    FrameACLRuleSet,
-)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
+from melder.utilities.interfaces.interfaces import (
+    IFrameACLBuilder,
+    IFrameACLCodegenConfiguration,
+    IFrameACLRuleSet,
+)
 
 
 class FrameACLCodegenBuilder(Cleanable):
@@ -21,11 +20,19 @@ class FrameACLCodegenBuilder(Cleanable):
         Provide a fluent authoring surface for one active codegen ACL draft.
 
     Contract:
-        - Layers over one active codegen draft owned by `FrameACLBuilder`.
-        - Does not replace the generic builder's draft/commit lifecycle.
-        - Mutates the live draft configuration in place under the owning
-          builder's lock.
-        - Returns itself from fluent mutation methods.
+        - Layers over one active codegen draft owned by the generic ACL
+          builder contract.
+        - Does not replace the generic builder draft/commit lifecycle.
+        - Mutates the borrowed typed codegen configuration in place.
+        - Returns itself from fluent mutation methods so authoring remains
+          chainable.
+
+    Threading:
+        All grouped mutations execute under the builder's instance `RLock`.
+
+    Lifecycle:
+        Cleanup is idempotent and only drops borrowed references; it does not
+        own persistence or chain installation.
     """
 
     __melder_internal__ = _mrg.sentinel
@@ -43,27 +50,29 @@ class FrameACLCodegenBuilder(Cleanable):
     _DEFAULT_DUNDER_ACCESS_RULE_NAME = "builder_dunder_access"
     _DEFAULT_RECURSIVE_CODEGEN_RULE_NAME = "builder_recursive_codegen"
 
-    def __init__(self, frame_acl_builder: object) -> None:
+    def __init__(self, frame_acl_builder: IFrameACLBuilder) -> None:
         """
         Initialize one fluent codegen ACL builder.
 
         Args:
             frame_acl_builder:
-                Owning generic frame ACL builder with an active codegen draft.
+                Borrowed generic ACL builder that currently owns one active
+                codegen-family draft session.
 
         Returns:
             None.
+
+        Raises:
+            TypeError:
+                If `frame_acl_builder` does not satisfy the builder protocol.
         """
-        from melder.aether.nexus.acl.builder.frame_acl_builder import (
-            FrameACLBuilder,
-        )
 
         super().__init__()
-        if not isinstance(frame_acl_builder, FrameACLBuilder):
-            raise TypeError("frame_acl_builder must be a FrameACLBuilder.")
+        if not isinstance(frame_acl_builder, IFrameACLBuilder):
+            raise TypeError("frame_acl_builder must satisfy IFrameACLBuilder.")
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
-        self._frame_acl_builder: FrameACLBuilder = frame_acl_builder
+        self._frame_acl_builder: IFrameACLBuilder = frame_acl_builder
 
     def cleanup(self) -> None:
         """
@@ -95,12 +104,12 @@ class FrameACLCodegenBuilder(Cleanable):
             return self._id
 
     @property
-    def draft_configuration(self) -> FrameACLCodegenConfiguration:
+    def draft_configuration(self) -> IFrameACLCodegenConfiguration:
         """
         Return the active codegen draft configuration.
 
         Returns:
-            FrameACLCodegenConfiguration: Active codegen draft.
+            IFrameACLCodegenConfiguration: Active codegen draft.
         """
         self.check_cleaned()
         with self._lock:
@@ -183,6 +192,19 @@ class FrameACLCodegenBuilder(Cleanable):
     ) -> "FrameACLCodegenBuilder":
         """
         Upsert one conduit-family rule on the active draft.
+
+        Args:
+            operation_name:
+                Target conduit operation name.
+            allow:
+                True for an allow rule, False for a deny rule.
+            rule_name:
+                Optional stable rule name.
+            conditions:
+                Optional selector/condition payload carried by the rule.
+
+        Returns:
+            FrameACLCodegenBuilder: This fluent builder.
         """
         return self._set_ruleset_operation(
             self.draft_configuration.conduit_override_ruleset,
@@ -202,6 +224,19 @@ class FrameACLCodegenBuilder(Cleanable):
     ) -> "FrameACLCodegenBuilder":
         """
         Upsert one spell-family rule on the active draft.
+
+        Args:
+            operation_name:
+                Target spell operation name.
+            allow:
+                True for an allow rule, False for a deny rule.
+            rule_name:
+                Optional stable rule name.
+            conditions:
+                Optional selector/condition payload carried by the rule.
+
+        Returns:
+            FrameACLCodegenBuilder: This fluent builder.
         """
         return self._set_ruleset_operation(
             self.draft_configuration.spell_override_ruleset,
@@ -221,6 +256,19 @@ class FrameACLCodegenBuilder(Cleanable):
     ) -> "FrameACLCodegenBuilder":
         """
         Upsert one capability-family rule on the active draft.
+
+        Args:
+            operation_name:
+                Target capability operation name.
+            allow:
+                True for an allow rule, False for a deny rule.
+            rule_name:
+                Optional stable rule name.
+            conditions:
+                Optional selector/condition payload carried by the rule.
+
+        Returns:
+            FrameACLCodegenBuilder: This fluent builder.
         """
         return self._set_ruleset_operation(
             self.draft_configuration.capability_override_ruleset,
@@ -377,6 +425,17 @@ class FrameACLCodegenBuilder(Cleanable):
     def remove_capability_rule(self, rule_name: str) -> "FrameACLCodegenBuilder":
         """
         Remove one capability-family rule from the active draft.
+
+        Args:
+            rule_name:
+                Stable rule name to remove from the capability ruleset.
+
+        Returns:
+            FrameACLCodegenBuilder: This fluent builder.
+
+        Raises:
+            ValueError:
+                If `rule_name` is empty.
         """
         self.check_cleaned()
         with self._lock:
@@ -387,12 +446,12 @@ class FrameACLCodegenBuilder(Cleanable):
             )
             return self
 
-    def commit_change(self) -> FrameACLCodegenConfiguration:
+    def commit_change(self) -> IFrameACLCodegenConfiguration:
         """
         Commit the active codegen draft through the owning generic builder.
 
         Returns:
-            FrameACLCodegenConfiguration: Newly installed codegen revision.
+            IFrameACLCodegenConfiguration: Newly installed codegen revision.
         """
         self.check_cleaned()
         with self._lock:
@@ -411,7 +470,7 @@ class FrameACLCodegenBuilder(Cleanable):
 
     def _set_ruleset_operation(
             self,
-            ruleset: FrameACLRuleSet,
+            ruleset: IFrameACLRuleSet,
             *,
             operation_name: str,
             allow: bool,
@@ -423,7 +482,7 @@ class FrameACLCodegenBuilder(Cleanable):
 
         Args:
             ruleset:
-                Target ruleset.
+                Borrowed ruleset from the active codegen configuration.
             operation_name:
                 Target operation name.
             allow:
@@ -435,6 +494,10 @@ class FrameACLCodegenBuilder(Cleanable):
 
         Returns:
             FrameACLCodegenBuilder: This fluent builder.
+
+        Raises:
+            ValueError:
+                If the operation or resolved rule name is empty.
         """
         self.check_cleaned()
         with self._lock:
@@ -457,7 +520,7 @@ class FrameACLCodegenBuilder(Cleanable):
 
     def _merge_condition_values_rule(
             self,
-            ruleset: FrameACLRuleSet,
+            ruleset: IFrameACLRuleSet,
             *,
             rule_name: str,
             operation_name: str,
@@ -470,7 +533,7 @@ class FrameACLCodegenBuilder(Cleanable):
 
         Args:
             ruleset:
-                Target ruleset.
+                Borrowed ruleset from the active codegen configuration.
             rule_name:
                 Stable rule name.
             operation_name:
@@ -484,6 +547,10 @@ class FrameACLCodegenBuilder(Cleanable):
 
         Returns:
             FrameACLCodegenBuilder: This fluent builder.
+
+        Raises:
+            ValueError:
+                If `values` is empty or contains empty/non-string entries.
         """
         self.check_cleaned()
         with self._lock:
