@@ -300,10 +300,7 @@ class CodegenSystem(Cleanable, ICodegenSystem):
             self._monitor.on_validation_started(context)
             validation_result = self._validator.validate(context)
             self._monitor.on_validation_finished(context, validation_result)
-            if (
-                    not validation_result.accepted
-                    and validation_result.reason != "codegen_validation_not_implemented"
-            ):
+            if not validation_result.accepted:
                 execution_result = CodegenExecutionResult.validation_failed(
                     frame_name=frame_name,
                     validation_issues=validation_result.validation_issues,
@@ -396,8 +393,50 @@ class CodegenSystem(Cleanable, ICodegenSystem):
         Returns:
             CodegenNamespaceConfiguration: Default namespace configuration.
         """
+        imports_enabled = False
+        allowed_import_module_roots: Tuple[str, ...] = tuple()
+        denied_import_module_roots: Tuple[str, ...] = tuple()
+        denied_builtin_names: Tuple[str, ...] = (
+            "__import__",
+            "breakpoint",
+            "compile",
+            "dir",
+            "eval",
+            "exec",
+            "getattr",
+            "globals",
+            "input",
+            "locals",
+            "setattr",
+            "delattr",
+            "vars",
+        )
+        allow_unsafe_reflection = False
+        allow_dunder_access = False
+        if projection is not None:
+            compiled_access_surface = projection.compiled_access_surface
+            imports_enabled = compiled_access_surface.codegen_imports_enabled
+            allowed_import_module_roots = (
+                compiled_access_surface.allowed_import_module_roots
+            )
+            denied_import_module_roots = (
+                compiled_access_surface.denied_import_module_roots
+            )
+            denied_builtin_names = compiled_access_surface.denied_builtin_names
+            allow_unsafe_reflection = (
+                compiled_access_surface.codegen_unsafe_reflection_allowed
+            )
+            allow_dunder_access = (
+                compiled_access_surface.codegen_dunder_access_allowed
+            )
         return CodegenNamespaceConfiguration.create_default(
             frame_name=frame_name,
+            imports_enabled=imports_enabled,
+            allowed_import_module_roots=allowed_import_module_roots,
+            denied_import_module_roots=denied_import_module_roots,
+            denied_builtin_names=denied_builtin_names,
+            allow_unsafe_reflection=allow_unsafe_reflection,
+            allow_dunder_access=allow_dunder_access,
             metadata={
                 "has_projection": projection is not None,
             },

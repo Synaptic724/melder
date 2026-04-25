@@ -7725,6 +7725,13 @@ class ICodegenRiftSpace(IRiftSpace, Protocol):
     Interface for CodegenRiftSpace.
     """
 
+    @property
+    def codegen_system(self) -> "ICodegenSystem":
+        """
+        Return the room-owned internal codegen system.
+        """
+        ...
+
 
 @runtime_checkable
 class ICodegenNamespaceConfiguration(ICleanable, Protocol):
@@ -7743,6 +7750,48 @@ class ICodegenNamespaceConfiguration(ICleanable, Protocol):
     def exposed_names(self) -> Tuple[str, ...]:
         """
         Return the stable ordered namespace names enabled by this configuration.
+        """
+        ...
+
+    @property
+    def imports_enabled(self) -> bool:
+        """
+        Return whether import statements are enabled.
+        """
+        ...
+
+    @property
+    def allowed_import_module_roots(self) -> Tuple[str, ...]:
+        """
+        Return the allowed import module roots.
+        """
+        ...
+
+    @property
+    def denied_import_module_roots(self) -> Tuple[str, ...]:
+        """
+        Return the denied import module roots.
+        """
+        ...
+
+    @property
+    def denied_builtin_names(self) -> Tuple[str, ...]:
+        """
+        Return builtin names denied to codegen.
+        """
+        ...
+
+    @property
+    def allow_unsafe_reflection(self) -> bool:
+        """
+        Return whether unsafe reflection helpers are allowed.
+        """
+        ...
+
+    @property
+    def allow_dunder_access(self) -> bool:
+        """
+        Return whether dunder attribute access is allowed.
         """
         ...
 

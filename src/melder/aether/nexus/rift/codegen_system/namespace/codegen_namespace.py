@@ -115,14 +115,10 @@ class CodegenNamespace(Cleanable, ICodegenNamespace):
         Returns:
             CodegenNamespace: Placeholder namespace.
         """
-        globals_dict: Dict[str, object] = {}
-        if "frame_name" in configuration.exposed_names:
-            globals_dict["frame_name"] = configuration.frame_name
-        locals_dict: Dict[str, object] = {}
         return cls(
             configuration=configuration,
-            globals_dict=globals_dict,
-            locals_dict=locals_dict,
+            globals_dict={},
+            locals_dict={},
             metadata=metadata,
         )
 

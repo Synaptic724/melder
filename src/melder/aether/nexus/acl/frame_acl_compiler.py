@@ -182,6 +182,29 @@ class FrameACLCompiler(Cleanable):
             command_precision_profile,
             configuration,
         )
+        (
+            codegen_imports_enabled,
+            allowed_import_module_roots,
+            denied_import_module_roots,
+        ) = self._compile_codegen_import_controls(
+            codegen_profile,
+            codegen_precision_profile,
+            configuration,
+        )
+        denied_builtin_names = self._compile_codegen_builtin_controls(
+            codegen_profile,
+            codegen_precision_profile,
+            configuration,
+            imports_enabled=codegen_imports_enabled,
+        )
+        (
+            codegen_unsafe_reflection_allowed,
+            codegen_dunder_access_allowed,
+        ) = self._compile_codegen_meta_controls(
+            codegen_profile,
+            codegen_precision_profile,
+            configuration,
+        )
 
         metadata = {
             "view_profile_name": view_profile.name,
@@ -218,6 +241,12 @@ class FrameACLCompiler(Cleanable):
             view_profile_version=view_profile.version,
             codegen_profile_name=codegen_profile.name,
             codegen_profile_version=codegen_profile.version,
+            codegen_imports_enabled=codegen_imports_enabled,
+            allowed_import_module_roots=tuple(sorted(allowed_import_module_roots)),
+            denied_import_module_roots=tuple(sorted(denied_import_module_roots)),
+            denied_builtin_names=tuple(sorted(denied_builtin_names)),
+            codegen_unsafe_reflection_allowed=codegen_unsafe_reflection_allowed,
+            codegen_dunder_access_allowed=codegen_dunder_access_allowed,
             command_frame_enabled=command_frame_enabled,
             allowed_kinds=tuple(sorted(allowed_kinds)),
             allowed_commands=tuple(sorted(allowed_commands)),
@@ -473,6 +502,109 @@ class FrameACLCompiler(Cleanable):
         return allow_operations.difference(deny_operations)
 
     @staticmethod
+    def _compile_codegen_import_controls(
+            codegen_profile: FrameACLCodegenProfile,
+            precision_profile: FrameACLCodegenProfile,
+            configuration: FrameACLConfiguration,
+    ) -> Tuple[bool, Set[str], Set[str]]:
+        """
+        Derive codegen import posture from the capability ruleset family.
+
+        Returns:
+            Tuple[bool, Set[str], Set[str]]: Imports-enabled flag, allowed
+                import roots, and denied import roots.
+        """
+        rulesets = (
+            codegen_profile.capability_ruleset,
+            precision_profile.capability_ruleset if precision_profile is not None else None,
+            configuration.codegen_configuration.capability_override_ruleset,
+        )
+        allow_operations, deny_operations = (
+            FrameACLCompiler._collect_effective_operation_effects_from_rulesets(
+                *rulesets
+            )
+        )
+        imports_enabled = (
+            "enable_imports" in allow_operations
+            and "enable_imports" not in deny_operations
+        )
+        allowed_import_module_roots, denied_import_module_roots = (
+            FrameACLCompiler._collect_condition_string_values_from_rulesets(
+                "import_modules",
+                "module_roots",
+                *rulesets,
+            )
+        )
+        if not imports_enabled:
+            return False, set(), denied_import_module_roots
+        return (
+            True,
+            allowed_import_module_roots.difference(denied_import_module_roots),
+            denied_import_module_roots,
+        )
+
+    @staticmethod
+    def _compile_codegen_builtin_controls(
+            codegen_profile: FrameACLCodegenProfile,
+            precision_profile: FrameACLCodegenProfile,
+            configuration: FrameACLConfiguration,
+            *,
+            imports_enabled: bool,
+    ) -> Set[str]:
+        """
+        Derive the denied builtin-name set for codegen validation/runtime.
+
+        Returns:
+            Set[str]: Denied builtin names.
+        """
+        rulesets = (
+            codegen_profile.capability_ruleset,
+            precision_profile.capability_ruleset if precision_profile is not None else None,
+            configuration.codegen_configuration.capability_override_ruleset,
+        )
+        allowed_builtin_names, denied_builtin_names = (
+            FrameACLCompiler._collect_condition_string_values_from_rulesets(
+                "builtin_names",
+                "builtin_names",
+                *rulesets,
+            )
+        )
+        final_denied_builtin_names: Set[str] = set(denied_builtin_names)
+        if not imports_enabled:
+            final_denied_builtin_names.add("__import__")
+        return final_denied_builtin_names.difference(allowed_builtin_names)
+
+    @staticmethod
+    def _compile_codegen_meta_controls(
+            codegen_profile: FrameACLCodegenProfile,
+            precision_profile: FrameACLCodegenProfile,
+            configuration: FrameACLConfiguration,
+    ) -> Tuple[bool, bool]:
+        """
+        Derive reflection and dunder posture for codegen validation/runtime.
+
+        Returns:
+            Tuple[bool, bool]: Unsafe-reflection-allowed flag and
+                dunder-access-allowed flag.
+        """
+        rulesets = (
+            codegen_profile.capability_ruleset,
+            precision_profile.capability_ruleset if precision_profile is not None else None,
+            configuration.codegen_configuration.capability_override_ruleset,
+        )
+        allow_operations, deny_operations = (
+            FrameACLCompiler._collect_effective_operation_effects_from_rulesets(
+                *rulesets
+            )
+        )
+        return (
+            "unsafe_reflection" in allow_operations
+            and "unsafe_reflection" not in deny_operations,
+            "dunder_access" in allow_operations
+            and "dunder_access" not in deny_operations,
+        )
+
+    @staticmethod
     def _compile_command_enablement(
             frame_descriptor: FrameDescriptor,
             command_profile: FrameACLCommandProfile,
@@ -614,6 +746,42 @@ class FrameACLCompiler(Cleanable):
             allow_operations.update(ruleset_allows)
             deny_operations.update(ruleset_denies)
         return allow_operations, deny_operations
+
+    @staticmethod
+    def _collect_condition_string_values_from_rulesets(
+            operation_name: str,
+            condition_key: str,
+            *rulesets: FrameACLRuleSet,
+    ) -> Tuple[Set[str], Set[str]]:
+        """
+        Collect string condition values for one operation across rulesets.
+
+        Args:
+            operation_name:
+                Operation name to match.
+            condition_key:
+                Condition key storing the string values to collect.
+            *rulesets:
+                Ordered rulesets to inspect.
+
+        Returns:
+            Tuple[Set[str], Set[str]]: Allowed and denied values.
+        """
+        allowed_values: Set[str] = set()
+        denied_values: Set[str] = set()
+        for ruleset in rulesets:
+            if ruleset is None:
+                continue
+            for rule in ruleset.rules_by_name.values():
+                if rule.operation != operation_name:
+                    continue
+                condition_values = rule.conditions.get(condition_key, tuple())
+                for value in condition_values:
+                    if rule.effect == "allow":
+                        allowed_values.add(value)
+                    elif rule.effect == "deny":
+                        denied_values.add(value)
+        return allowed_values, denied_values
 
     @staticmethod
     def _collect_effective_spell_operation_effects_for_record(

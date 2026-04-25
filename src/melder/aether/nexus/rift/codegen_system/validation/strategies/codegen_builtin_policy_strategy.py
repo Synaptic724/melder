@@ -5,6 +5,9 @@ from typing import Optional
 from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import (
     CodegenTransactionContext,
 )
+from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
+    CodegenNamespaceConfiguration,
+)
 from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_result import (
     CodegenValidationResult,
 )
@@ -22,27 +25,12 @@ class CodegenBuiltinPolicyStrategy(Cleanable):
     Builtins-policy validation strategy.
 
     Purpose:
-        Block dangerous builtin usage in the current governed codegen mode.
+        Block dangerous builtin usage in the selected codegen posture.
     """
 
     __slots__ = Cleanable.__slots__ + [
         "_lock",
     ]
-    _DENIED_BUILTIN_NAMES = frozenset(
-        (
-            "__import__",
-            "eval",
-            "exec",
-            "compile",
-            "globals",
-            "locals",
-            "vars",
-            "getattr",
-            "setattr",
-            "delattr",
-        )
-    )
-
     def __init__(self) -> None:
         """
         Initialize the builtins-policy strategy.
@@ -88,6 +76,13 @@ class CodegenBuiltinPolicyStrategy(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
+            namespace_configuration = transaction_context.namespace_configuration
+            if namespace_configuration is None:
+                return self._reject(
+                    transaction_context,
+                    "Namespace configuration is missing for validation.",
+                )
+            denied_builtin_names = set(namespace_configuration.denied_builtin_names)
             for node in ast.walk(syntax_tree):
                 if not isinstance(node, ast.Call):
                     continue
@@ -95,7 +90,7 @@ class CodegenBuiltinPolicyStrategy(Cleanable):
                 if not isinstance(function_node, ast.Name):
                     continue
                 builtin_name = function_node.id
-                if builtin_name not in self._DENIED_BUILTIN_NAMES:
+                if builtin_name not in denied_builtin_names:
                     continue
                 return self._reject(
                     transaction_context,

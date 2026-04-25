@@ -1,6 +1,11 @@
 from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
+from melder.aether.nexus.acl.configurations.profiles.codegen.stdlib_import_sets import (
+    HYBRID_DENIED_BUILTIN_NAMES,
+    HYBRID_DENIED_IMPORT_MODULE_ROOTS,
+    HYBRID_IMPORT_MODULE_ROOTS,
+)
 from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
@@ -52,6 +57,35 @@ def create_hybrid_codegen_profile() -> FrameACLCodegenProfile:
         capability_ruleset=FrameACLViewProfile.build_ruleset(
             "hybrid_capability_codegen",
             [
+                FrameACLViewProfile.build_rule(
+                    "capability_enable_imports",
+                    "enable_imports",
+                    "allow",
+                ),
+                FrameACLViewProfile.build_rule(
+                    "capability_allow_import_modules",
+                    "import_modules",
+                    "allow",
+                    conditions={
+                        "module_roots": HYBRID_IMPORT_MODULE_ROOTS,
+                    },
+                ),
+                FrameACLViewProfile.build_rule(
+                    "capability_deny_import_modules",
+                    "import_modules",
+                    "deny",
+                    conditions={
+                        "module_roots": HYBRID_DENIED_IMPORT_MODULE_ROOTS,
+                    },
+                ),
+                FrameACLViewProfile.build_rule(
+                    "capability_deny_dangerous_builtins",
+                    "builtin_names",
+                    "deny",
+                    conditions={
+                        "builtin_names": HYBRID_DENIED_BUILTIN_NAMES,
+                    },
+                ),
                 FrameACLViewProfile.build_rule("capability_dynamic_access", "dynamic_access", "deny"),
                 FrameACLViewProfile.build_rule("capability_mutation", "mutation", "deny"),
                 FrameACLViewProfile.build_rule("capability_contract_override", "contract_override", "deny"),

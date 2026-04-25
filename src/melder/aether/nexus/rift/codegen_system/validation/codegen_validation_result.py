@@ -121,6 +121,32 @@ class CodegenValidationResult(Cleanable, ICodegenValidationResult):
         )
 
     @classmethod
+    def validation_accepted(
+            cls,
+            *,
+            frame_name: str,
+            transaction_id: Optional[str] = None,
+    ) -> "CodegenValidationResult":
+        """
+        Build an accepted validation result.
+
+        Args:
+            frame_name:
+                Target frame name for the validation request.
+            transaction_id:
+                Optional internal transaction id.
+
+        Returns:
+            CodegenValidationResult: Accepted validation result.
+        """
+        return cls(
+            accepted=True,
+            frame_name=frame_name,
+            reason="codegen_validation_accepted",
+            transaction_id=transaction_id,
+        )
+
+    @classmethod
     def syntax_error(
             cls,
             *,

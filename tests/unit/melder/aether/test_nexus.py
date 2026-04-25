@@ -17,6 +17,7 @@ from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguratio
 from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
     CompiledFrameACLAccessSurface,
 )
+from melder.aether.nexus.acl.frame_acl_compiler import FrameACLCompiler
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
 from melder.aether.nexus.frame_descriptor.frame_record import FrameRecord
 from melder.aether.nexus.frame_descriptor.frame_descriptor_payload import (
@@ -456,6 +457,7 @@ def _make_detached_rift_projection_owner() -> object:
         def __init__(self) -> None:
             self._projection_sets_by_frame_name = {}
             self._id = "detached-rift"
+            self._codegen_projections_by_frame_name = {}
 
         def _apply_projection_sets(
                 self,
@@ -494,8 +496,17 @@ def _make_detached_rift_projection_owner() -> object:
         def _get_required_view_projection(self, frame_name: str):
             return self._projection_sets_by_frame_name[frame_name].view_projection
 
+        def _get_required_codegen_projection(self, frame_name: str):
+            return self._codegen_projections_by_frame_name[frame_name]
+
         def list_assigned_frame_names(self):
             return tuple(sorted(self._projection_sets_by_frame_name.keys()))
+
+        def list_accessible_nexus_frame_names(self):
+            return tuple()
+
+        def list_accessible_non_nexus_frame_names(self):
+            return tuple()
 
         def _get_default_runtime_frame_name(self):
             if len(self._projection_sets_by_frame_name) == 1:
@@ -529,6 +540,66 @@ def _make_detached_rift_projection_owner() -> object:
         }
 
     return _DetachedRiftProjectionOwner()
+
+
+def _build_codegen_projection(
+        frame_name: str,
+        *,
+        codegen_profile_name: str = "safe",
+        precision_profile_name: Optional[str] = None,
+) -> CodegenProjection:
+    """
+    Build one detached codegen projection for the selected profile.
+
+    Args:
+        frame_name:
+            Target frame name.
+        codegen_profile_name:
+            Reusable codegen profile name.
+        precision_profile_name:
+            Optional reusable precision profile name.
+
+    Returns:
+        CodegenProjection: Detached codegen projection.
+    """
+    _seed_frame_descriptor(frame_name)
+    descriptor = Nexus()._get_required_frame_descriptor(frame_name)
+    configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        FrameACLConfiguration.create_default(frame_name),
+        reason="test_codegen_projection",
+    )
+    profile_builder = Nexus()._frame_acl_manager.frame_acl_profile_builder
+    base_profile = profile_builder.get_required_codegen_profile(codegen_profile_name)
+    precision_profile = (
+        profile_builder.get_required_codegen_precision_profile(
+            precision_profile_name
+        )
+        if precision_profile_name is not None
+        else None
+    )
+    configuration.set_codegen_configuration(
+        configuration.codegen_configuration.from_profile(
+            base_profile,
+            precision_profile=precision_profile,
+        )
+    )
+    compiler = FrameACLCompiler(profile_builder)
+    compiled_access_surface = compiler.compile_frame_access_surface(
+        descriptor,
+        configuration,
+    )
+    return CodegenProjection(
+        frame_name=frame_name,
+        frame_descriptor=descriptor,
+        frame_acl_configuration=Nexus._clone_frame_acl_configuration(
+            configuration,
+            reason="test_codegen_projection_clone",
+        ),
+        compiled_access_surface=Nexus._clone_compiled_access_surface(
+            compiled_access_surface
+        ),
+        metadata={"surface": "codegen"},
+    )
 
 
 def test_nexus_is_singleton() -> None:
@@ -1620,7 +1691,7 @@ def test_codegen_action_hooks_use_codegen_category_not_command_category() -> Non
         frame_name="ops",
     )
 
-    assert result["reason"] == "codegen_validation_not_implemented"
+    assert result["reason"] == "codegen_validation_accepted"
     assert command_calls == []
     assert codegen_calls == [
         "category-pre",
@@ -1870,11 +1941,48 @@ def test_codegen_command_system_preserves_base_commands_and_adds_codegen_placeho
     assert "get_conduit_by_id" in supported_methods
     assert "describe_spells_in_conduit" in supported_methods
     assert "execute_target_method" in supported_methods
+    assert "link_frame" in supported_methods
+    assert "get_nexus_frame" in supported_methods
     assert "validate_codegen" in supported_methods
     assert "execute_codegen" in supported_methods
     assert "get_spell_by_id" not in supported_methods
     assert "get_resolution_state" not in supported_methods
     assert "snapshot_state" not in supported_methods
+
+
+def test_all_room_viewers_expose_frame_navigation_name_queries() -> None:
+    """
+    Verify static, capability, and codegen rooms all expose the shared viewer
+    frame-navigation name queries.
+
+    Returns:
+        None.
+    """
+    detached_rift = _make_detached_rift_projection_owner()
+    static_space = StaticRiftSpace(
+        rift=detached_rift,
+        owner_rift_id="rift-1",
+        space_name="static",
+    )
+    capability_space = CapabilityRiftSpace(
+        rift=_make_detached_rift_projection_owner(),
+        owner_rift_id="rift-2",
+        space_name="capability",
+    )
+    codegen_space = CodegenRiftSpace(
+        rift=_make_detached_rift_projection_owner(),
+        owner_rift_id="rift-3",
+        space_name="codegen",
+    )
+
+    for viewer in (
+            static_space.frame_viewer,
+            capability_space.frame_viewer,
+            codegen_space.frame_viewer,
+    ):
+        assert viewer.list_linked_frame_names() == []
+        assert viewer.list_nexus_frame_names() == []
+        assert viewer.list_non_nexus_frame_names() == []
 
 
 def test_codegen_command_system_lists_selected_runtime_helpers_only() -> None:
@@ -2038,9 +2146,9 @@ def test_codegen_command_system_can_delegate_selected_runtime_helpers(
     ) == Permissions.create.name
 
 
-def test_codegen_validate_codegen_placeholder_rejects_until_validator_exists() -> None:
+def test_codegen_validate_codegen_accepts_clean_local_code() -> None:
     """
-    Verify the placeholder validation seam is explicit and non-executing.
+    Verify clean local code is now accepted by the validator.
 
     Returns:
         None.
@@ -2053,8 +2161,8 @@ def test_codegen_validate_codegen_placeholder_rejects_until_validator_exists() -
     )
 
     assert result == {
-        "accepted": False,
-        "reason": "codegen_validation_not_implemented",
+        "accepted": True,
+        "reason": "codegen_validation_accepted",
         "frame_name": "ops",
     }
 
@@ -2279,26 +2387,21 @@ def test_codegen_system_builds_stable_namespace_contract() -> None:
     namespace = space._codegen_system._build_namespace(transaction_context)
 
     assert namespace.configuration.exposed_names == (
-        "rift",
-        "space",
         "viewer",
         "workstation",
         "command",
-        "target",
-        "frame_name",
+        "codegen",
     )
-    assert namespace.globals_dict["rift"] is space._codegen_system._rift
-    assert namespace.globals_dict["space"] is space
     assert namespace.globals_dict["viewer"] is space.frame_viewer
     assert namespace.globals_dict["workstation"] is space.workstation
     assert namespace.globals_dict["command"] is space.command_system
-    assert namespace.globals_dict["target"] is None
-    assert namespace.globals_dict["frame_name"] == "ops"
+    assert namespace.globals_dict["codegen"] is space.codegen_system
+    assert "__builtins__" in namespace.globals_dict
 
 
-def test_codegen_system_namespace_reflects_selected_target() -> None:
+def test_codegen_system_namespace_exposes_codegen_object() -> None:
     """
-    Verify the built namespace exposes the current workstation target.
+    Verify the built namespace exposes the room-owned codegen object.
 
     Returns:
         None.
@@ -2308,17 +2411,13 @@ def test_codegen_system_namespace_reflects_selected_target() -> None:
         owner_rift_id="rift-1",
         space_name="main",
     )
-    bound_target = object()
-    space.workstation.bind_object("service", bound_target, weak_ref=False)
-    space.workstation.set_target("service", store="objects")
-
     transaction_context = space._codegen_system._build_transaction_context(
         "result = 1",
         frame_name="ops",
     )
     namespace = space._codegen_system._build_namespace(transaction_context)
 
-    assert namespace.globals_dict["target"] is bound_target
+    assert namespace.globals_dict["codegen"] is space.codegen_system
 
 
 def test_codegen_execute_codegen_reports_runtime_failure() -> None:
@@ -2335,16 +2434,14 @@ def test_codegen_execute_codegen_reports_runtime_failure() -> None:
     )
 
     result = space.command_system.execute_codegen(
-        "result = target.run()",
+        "result = 1 / 0",
         frame_name="ops",
     )
 
     assert result["accepted"] is False
     assert result["reason"] == "codegen_execution_runtime_failed"
     assert result["frame_name"] == "ops"
-    assert result["runtime_error"] == (
-        "AttributeError: 'NoneType' object has no attribute 'run'"
-    )
+    assert result["runtime_error"] == "ZeroDivisionError: division by zero"
 
 
 def test_codegen_validate_codegen_emits_full_source_memory_record() -> None:
@@ -2371,8 +2468,8 @@ def test_codegen_validate_codegen_emits_full_source_memory_record() -> None:
         frame_name="ops",
     )
 
-    assert result["accepted"] is False
-    assert result["reason"] == "codegen_validation_not_implemented"
+    assert result["accepted"] is True
+    assert result["reason"] == "codegen_validation_accepted"
     assert len(received_memories) == 1
     memory = received_memories[0]
     assert memory.frame_name == "ops"
@@ -2383,8 +2480,8 @@ def test_codegen_validate_codegen_emits_full_source_memory_record() -> None:
     assert memory.metadata["code_hash"] == hashlib.sha256(
         code.encode("utf-8")
     ).hexdigest()
-    assert memory.metadata["accepted"] is False
-    assert memory.metadata["reason"] == "codegen_validation_not_implemented"
+    assert memory.metadata["accepted"] is True
+    assert memory.metadata["reason"] == "codegen_validation_accepted"
     assert "transaction_id" in memory.metadata
 
 
@@ -2503,7 +2600,7 @@ def test_codegen_emits_descriptive_room_events_without_full_source() -> None:
     )
     assert (
         execution_validation_finished.payload["reason"]
-        == "codegen_validation_not_implemented"
+        == "codegen_validation_accepted"
     )
     assert execution_finished.payload["accepted"] is True
     assert execution_finished.payload["result_present"] is True
@@ -2512,11 +2609,11 @@ def test_codegen_emits_descriptive_room_events_without_full_source() -> None:
 @pytest.mark.parametrize(
     ("code", "expected_message"),
     [
-        ("def helper():\n    return 1", "Function definitions are not allowed"),
+        ("async def helper():\n    return 1", "Async function definitions are not allowed"),
         ("import math", "Import statements are not allowed"),
         ("result = eval('1')", "Builtin 'eval' is not allowed"),
         ("result = unknown_name", "Name 'unknown_name' is not available"),
-        ("result = target.__class__", "Dunder attribute access '__class__' is not allowed"),
+        ("result = viewer.__class__", "Dunder attribute access '__class__' is not allowed"),
     ],
 )
 def test_codegen_validate_codegen_reports_strategy_failures(
@@ -2570,10 +2667,100 @@ def test_codegen_validate_codegen_allows_locally_assigned_names() -> None:
     )
 
     assert result == {
-        "accepted": False,
-        "reason": "codegen_validation_not_implemented",
+        "accepted": True,
+        "reason": "codegen_validation_accepted",
         "frame_name": "ops",
     }
+
+
+def test_codegen_validate_codegen_hybrid_profile_allows_safe_stdlib_imports() -> None:
+    """
+    Verify hybrid codegen profiles allow curated stdlib imports.
+
+    Returns:
+        None.
+    """
+    detached_rift = _make_detached_rift_projection_owner()
+    detached_rift._codegen_projections_by_frame_name["ops"] = _build_codegen_projection(
+        "ops",
+        codegen_profile_name="hybrid",
+    )
+    space = CodegenRiftSpace(
+        rift=detached_rift,
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    result = space.command_system.validate_codegen(
+        'import json\nresult = json.loads("{}")',
+        frame_name="ops",
+    )
+
+    assert result == {
+        "accepted": True,
+        "reason": "codegen_validation_accepted",
+        "frame_name": "ops",
+    }
+
+
+def test_codegen_validate_codegen_hybrid_profile_rejects_denied_import_roots() -> None:
+    """
+    Verify hybrid codegen profiles reject denied import roots.
+
+    Returns:
+        None.
+    """
+    detached_rift = _make_detached_rift_projection_owner()
+    detached_rift._codegen_projections_by_frame_name["ops"] = _build_codegen_projection(
+        "ops",
+        codegen_profile_name="hybrid",
+    )
+    space = CodegenRiftSpace(
+        rift=detached_rift,
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    result = space.command_system.validate_codegen(
+        "import subprocess",
+        frame_name="ops",
+    )
+
+    assert result["accepted"] is False
+    assert result["reason"] == "codegen_validation_failed"
+    assert "Import root 'subprocess' is not allowed" in result["validation_issues"][0]
+
+
+def test_codegen_execute_codegen_permissive_profile_allows_eval_and_socket_import() -> None:
+    """
+    Verify permissive codegen profiles stay broadly usable for real work.
+
+    Returns:
+        None.
+    """
+    detached_rift = _make_detached_rift_projection_owner()
+    detached_rift._codegen_projections_by_frame_name["ops"] = _build_codegen_projection(
+        "ops",
+        codegen_profile_name="permissive",
+    )
+    space = CodegenRiftSpace(
+        rift=detached_rift,
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    validation_result = space.command_system.validate_codegen(
+        'import socket\nresult = eval("1 + 1")',
+        frame_name="ops",
+    )
+    execution_result = space.command_system.execute_codegen(
+        'import socket\nresult = eval("1 + 1")',
+        frame_name="ops",
+    )
+
+    assert validation_result["accepted"] is True
+    assert execution_result["accepted"] is True
+    assert execution_result["result"] == 2
 
 
 def test_codegen_execute_codegen_allows_missing_result_value() -> None:
@@ -4578,6 +4765,8 @@ def test_static_command_system_lists_only_supported_methods() -> None:
     assert "has_conduit_id" not in supported_methods
     assert "has_conduit_name" not in supported_methods
     assert "find_conduit_id_by_name" not in supported_methods
+    assert "link_frame" in supported_methods
+    assert "get_nexus_frame" in supported_methods
 
 
 def test_capability_command_system_lists_shared_manual_runtime_methods() -> None:
@@ -4612,6 +4801,8 @@ def test_capability_command_system_lists_shared_manual_runtime_methods() -> None
     assert "get_links" in supported_methods
     assert "meld" in supported_methods
     assert "meld_existing_spell" in supported_methods
+    assert "link_frame" in supported_methods
+    assert "get_nexus_frame" in supported_methods
 
 
 def test_base_command_system_does_not_expose_capability_only_methods() -> None:

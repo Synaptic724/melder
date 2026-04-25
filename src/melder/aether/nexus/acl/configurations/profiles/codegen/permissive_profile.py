@@ -1,6 +1,9 @@
 from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
+from melder.aether.nexus.acl.configurations.profiles.codegen.stdlib_import_sets import (
+    PERMISSIVE_IMPORT_MODULE_ROOTS,
+)
 from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
@@ -51,11 +54,24 @@ def create_permissive_codegen_profile() -> FrameACLCodegenProfile:
         capability_ruleset=FrameACLViewProfile.build_ruleset(
             "permissive_capability_codegen",
             [
+                FrameACLViewProfile.build_rule(
+                    "capability_enable_imports",
+                    "enable_imports",
+                    "allow",
+                ),
+                FrameACLViewProfile.build_rule(
+                    "capability_allow_import_modules",
+                    "import_modules",
+                    "allow",
+                    conditions={
+                        "module_roots": PERMISSIVE_IMPORT_MODULE_ROOTS,
+                    },
+                ),
                 FrameACLViewProfile.build_rule("capability_dynamic_access", "dynamic_access", "allow"),
                 FrameACLViewProfile.build_rule("capability_contract_override", "contract_override", "allow"),
-                FrameACLViewProfile.build_rule("capability_mutation", "mutation", "deny"),
-                FrameACLViewProfile.build_rule("capability_unsafe_reflection", "unsafe_reflection", "deny"),
-                FrameACLViewProfile.build_rule("capability_dunder_access", "dunder_access", "deny"),
+                FrameACLViewProfile.build_rule("capability_mutation", "mutation", "allow"),
+                FrameACLViewProfile.build_rule("capability_unsafe_reflection", "unsafe_reflection", "allow"),
+                FrameACLViewProfile.build_rule("capability_dunder_access", "dunder_access", "allow"),
             ],
         ),
     )

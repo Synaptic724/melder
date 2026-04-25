@@ -750,19 +750,21 @@ class CodegenCommandSystem(CommandSystem):
         Return the public command methods supported by codegen rooms.
 
         Purpose:
-            Preserve the full shared capability-grade command surface and append
-            the placeholder codegen seams without inheriting from
-            `CapabilityCommandSystem`.
+            Preserve the explicitly approved shared frame-navigation surface,
+            append the selected codegen runtime helpers, and then append the
+            codegen execution seams.
 
         Returns:
-            Tuple[str, ...]: Shared command names plus codegen placeholder
-            method names.
+            Tuple[str, ...]: Shared frame-navigation names plus selected
+                codegen helper and execution method names.
         """
         self.check_cleaned()
         with self._entered_command_action(
                 action_name="list_supported_command_methods",
                 frame_name=None,
         ):
-            return self._CODEGEN_RUNTIME_HELPER_METHOD_NAMES + (
-                self._CODEGEN_COMMAND_METHOD_NAMES
+            return (
+                ("link_frame", "get_nexus_frame")
+                + self._CODEGEN_RUNTIME_HELPER_METHOD_NAMES
+                + self._CODEGEN_COMMAND_METHOD_NAMES
             )

@@ -1,9 +1,13 @@
 import ast
+import builtins
 import threading
 from typing import Optional, Set
 
 from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import (
     CodegenTransactionContext,
+)
+from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
+    CodegenNamespaceConfiguration,
 )
 from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_result import (
     CodegenValidationResult,
@@ -93,6 +97,10 @@ class CodegenNameResolutionStrategy(Cleanable):
             allowed_names = set(namespace_configuration.exposed_names)
             allowed_names.update(self._ALWAYS_ALLOWED_NAME_NODES)
             allowed_names.update(self._collect_locally_assigned_names(syntax_tree))
+            allowed_names.update(self._collect_imported_names(syntax_tree))
+            allowed_names.update(
+                self._collect_allowed_builtin_names(namespace_configuration)
+            )
             for node in ast.walk(syntax_tree):
                 if not isinstance(node, ast.Name):
                     continue
@@ -127,3 +135,55 @@ class CodegenNameResolutionStrategy(Cleanable):
                 if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
                     assigned_names.add(node.id)
             return assigned_names
+
+    def _collect_imported_names(self, syntax_tree: ast.AST) -> Set[str]:
+        """
+        Collect imported names introduced by import statements.
+
+        Args:
+            syntax_tree:
+                Parsed AST for the request.
+
+        Returns:
+            Set[str]: Imported local names.
+        """
+        self.check_cleaned()
+        with self._lock:
+            imported_names: Set[str] = set()
+            for node in ast.walk(syntax_tree):
+                if isinstance(node, ast.Import):
+                    for alias in node.names:
+                        imported_names.add(
+                            alias.asname if alias.asname is not None else alias.name.split(".")[0]
+                        )
+                if isinstance(node, ast.ImportFrom):
+                    for alias in node.names:
+                        if alias.name == "*":
+                            continue
+                        imported_names.add(
+                            alias.asname if alias.asname is not None else alias.name
+                        )
+            return imported_names
+
+    def _collect_allowed_builtin_names(
+            self,
+            namespace_configuration: CodegenNamespaceConfiguration,
+    ) -> Set[str]:
+        """
+        Collect builtin names still available under the current configuration.
+
+        Args:
+            namespace_configuration:
+                Current namespace configuration.
+
+        Returns:
+            Set[str]: Allowed builtin names.
+        """
+        self.check_cleaned()
+        with self._lock:
+            denied_builtin_names = set(namespace_configuration.denied_builtin_names)
+            return {
+                builtin_name
+                for builtin_name in vars(builtins).keys()
+                if builtin_name not in denied_builtin_names
+            }

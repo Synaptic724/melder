@@ -22,7 +22,7 @@ class CodegenAstStructureStrategy(Cleanable):
     Structural AST validation strategy.
 
     Purpose:
-        Reject code shapes that are outside the initial governed codegen
+        Reject code shapes that are outside the current governed execution
         contract before deeper policy checks run.
     """
 
@@ -76,20 +76,25 @@ class CodegenAstStructureStrategy(Cleanable):
         self.check_cleaned()
         with self._lock:
             for node in ast.walk(syntax_tree):
-                if isinstance(node, ast.FunctionDef):
-                    return self._reject(
-                        transaction_context,
-                        "Function definitions are not allowed in this codegen mode.",
-                    )
                 if isinstance(node, ast.AsyncFunctionDef):
                     return self._reject(
                         transaction_context,
                         "Async function definitions are not allowed in this codegen mode.",
                     )
-                if isinstance(node, ast.ClassDef):
+                if isinstance(node, ast.Await):
                     return self._reject(
                         transaction_context,
-                        "Class definitions are not allowed in this codegen mode.",
+                        "await expressions are not allowed in this codegen mode.",
+                    )
+                if isinstance(node, ast.AsyncFor):
+                    return self._reject(
+                        transaction_context,
+                        "async for statements are not allowed in this codegen mode.",
+                    )
+                if isinstance(node, ast.AsyncWith):
+                    return self._reject(
+                        transaction_context,
+                        "async with statements are not allowed in this codegen mode.",
                     )
                 if isinstance(node, ast.Global):
                     return self._reject(

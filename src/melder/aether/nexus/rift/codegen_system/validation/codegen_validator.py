@@ -172,7 +172,7 @@ class CodegenValidator(Cleanable):
             )
             if validation_result is not None:
                 return validation_result
-            return CodegenValidationResult.not_implemented(
+            return CodegenValidationResult.validation_accepted(
                 frame_name=transaction_context.frame_name,
                 transaction_id=transaction_context.transaction_id,
             )

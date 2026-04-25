@@ -7,14 +7,17 @@ from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace import 
 from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
     CodegenNamespaceConfiguration,
 )
+from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_builtins_strategy import (
+    CodegenBuiltinsStrategy,
+)
 from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_command_strategy import (
     CodegenCommandStrategy,
 )
+from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_control_strategy import (
+    CodegenControlStrategy,
+)
 from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_room_objects_strategy import (
     CodegenRoomObjectsStrategy,
-)
-from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_target_strategy import (
-    CodegenTargetStrategy,
 )
 from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_workstation_strategy import (
     CodegenWorkstationStrategy,
@@ -50,7 +53,8 @@ class CodegenNamespaceBuilder(Cleanable):
         "_room_objects_strategy",
         "_workstation_strategy",
         "_command_strategy",
-        "_target_strategy",
+        "_codegen_control_strategy",
+        "_builtins_strategy",
     ]
 
     def __init__(self) -> None:
@@ -69,7 +73,12 @@ class CodegenNamespaceBuilder(Cleanable):
             CodegenWorkstationStrategy()
         )
         self._command_strategy: CodegenCommandStrategy = CodegenCommandStrategy()
-        self._target_strategy: CodegenTargetStrategy = CodegenTargetStrategy()
+        self._codegen_control_strategy: CodegenControlStrategy = (
+            CodegenControlStrategy()
+        )
+        self._builtins_strategy: CodegenBuiltinsStrategy = (
+            CodegenBuiltinsStrategy()
+        )
 
     def cleanup(self) -> None:
         """
@@ -87,11 +96,13 @@ class CodegenNamespaceBuilder(Cleanable):
             self._room_objects_strategy.cleanup()
             self._workstation_strategy.cleanup()
             self._command_strategy.cleanup()
-            self._target_strategy.cleanup()
+            self._codegen_control_strategy.cleanup()
+            self._builtins_strategy.cleanup()
             self._room_objects_strategy = None
             self._workstation_strategy = None
             self._command_strategy = None
-            self._target_strategy = None
+            self._codegen_control_strategy = None
+            self._builtins_strategy = None
         self._lock = None
 
     def build(
@@ -148,10 +159,13 @@ class CodegenNamespaceBuilder(Cleanable):
                 )
             )
             globals_dict.update(
-                self._target_strategy.build_namespace_entries(
+                self._codegen_control_strategy.build_namespace_entries(
                     configuration,
                     space=space,
                 )
+            )
+            globals_dict.update(
+                self._builtins_strategy.build_namespace_entries(configuration)
             )
             return CodegenNamespace(
                 configuration=configuration,

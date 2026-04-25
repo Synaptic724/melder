@@ -31,6 +31,12 @@ class CompiledFrameACLAccessSurface(Cleanable):
         "_view_profile_version",
         "_codegen_profile_name",
         "_codegen_profile_version",
+        "_codegen_imports_enabled",
+        "_allowed_import_module_roots",
+        "_denied_import_module_roots",
+        "_denied_builtin_names",
+        "_codegen_unsafe_reflection_allowed",
+        "_codegen_dunder_access_allowed",
         "_command_frame_enabled",
         "_allowed_kinds",
         "_allowed_commands",
@@ -54,6 +60,12 @@ class CompiledFrameACLAccessSurface(Cleanable):
             view_profile_version: str,
             codegen_profile_name: str,
             codegen_profile_version: str,
+            codegen_imports_enabled: bool = False,
+            allowed_import_module_roots: Tuple[str, ...] = tuple(),
+            denied_import_module_roots: Tuple[str, ...] = tuple(),
+            denied_builtin_names: Tuple[str, ...] = tuple(),
+            codegen_unsafe_reflection_allowed: bool = False,
+            codegen_dunder_access_allowed: bool = False,
             command_frame_enabled: bool = False,
             allowed_kinds: Tuple[str, ...],
             allowed_commands: Tuple[str, ...],
@@ -125,6 +137,22 @@ class CompiledFrameACLAccessSurface(Cleanable):
         self._view_profile_version: str = view_profile_version
         self._codegen_profile_name: str = codegen_profile_name
         self._codegen_profile_version: str = codegen_profile_version
+        self._codegen_imports_enabled: bool = bool(codegen_imports_enabled)
+        self._allowed_import_module_roots: Tuple[str, ...] = tuple(
+            allowed_import_module_roots
+        )
+        self._denied_import_module_roots: Tuple[str, ...] = tuple(
+            denied_import_module_roots
+        )
+        self._denied_builtin_names: Tuple[str, ...] = tuple(
+            denied_builtin_names
+        )
+        self._codegen_unsafe_reflection_allowed: bool = bool(
+            codegen_unsafe_reflection_allowed
+        )
+        self._codegen_dunder_access_allowed: bool = bool(
+            codegen_dunder_access_allowed
+        )
         self._command_frame_enabled: bool = bool(command_frame_enabled)
         self._allowed_kinds: Tuple[str, ...] = tuple(allowed_kinds)
         self._allowed_commands: Tuple[str, ...] = tuple(allowed_commands)
@@ -177,6 +205,12 @@ class CompiledFrameACLAccessSurface(Cleanable):
             self._view_profile_version = None
             self._codegen_profile_name = None
             self._codegen_profile_version = None
+            self._codegen_imports_enabled = None
+            self._allowed_import_module_roots = None
+            self._denied_import_module_roots = None
+            self._denied_builtin_names = None
+            self._codegen_unsafe_reflection_allowed = None
+            self._codegen_dunder_access_allowed = None
             self._command_frame_enabled = None
             self._allowed_kinds = None
             self._allowed_commands = None
@@ -257,6 +291,72 @@ class CompiledFrameACLAccessSurface(Cleanable):
         """
         self.check_cleaned()
         return self._codegen_profile_version
+
+    @property
+    def codegen_imports_enabled(self) -> bool:
+        """
+        Return whether codegen import statements are enabled.
+
+        Returns:
+            bool: True when import statements are enabled.
+        """
+        self.check_cleaned()
+        return self._codegen_imports_enabled
+
+    @property
+    def allowed_import_module_roots(self) -> Tuple[str, ...]:
+        """
+        Return the allowed import module roots for codegen validation.
+
+        Returns:
+            Tuple[str, ...]: Allowed import module roots.
+        """
+        self.check_cleaned()
+        return self._allowed_import_module_roots
+
+    @property
+    def denied_import_module_roots(self) -> Tuple[str, ...]:
+        """
+        Return the denied import module roots for codegen validation.
+
+        Returns:
+            Tuple[str, ...]: Denied import module roots.
+        """
+        self.check_cleaned()
+        return self._denied_import_module_roots
+
+    @property
+    def denied_builtin_names(self) -> Tuple[str, ...]:
+        """
+        Return builtin names denied to codegen validation/runtime.
+
+        Returns:
+            Tuple[str, ...]: Denied builtin names.
+        """
+        self.check_cleaned()
+        return self._denied_builtin_names
+
+    @property
+    def codegen_unsafe_reflection_allowed(self) -> bool:
+        """
+        Return whether unsafe reflection is allowed for codegen.
+
+        Returns:
+            bool: True when unsafe reflection is allowed.
+        """
+        self.check_cleaned()
+        return self._codegen_unsafe_reflection_allowed
+
+    @property
+    def codegen_dunder_access_allowed(self) -> bool:
+        """
+        Return whether dunder access is allowed for codegen.
+
+        Returns:
+            bool: True when dunder access is allowed.
+        """
+        self.check_cleaned()
+        return self._codegen_dunder_access_allowed
 
     @property
     def command_frame_enabled(self) -> bool:

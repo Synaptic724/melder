@@ -1561,6 +1561,20 @@ class Nexus(Cleanable, INexus):
             view_profile_version=compiled_access_surface.view_profile_version,
             codegen_profile_name=compiled_access_surface.codegen_profile_name,
             codegen_profile_version=compiled_access_surface.codegen_profile_version,
+            codegen_imports_enabled=compiled_access_surface.codegen_imports_enabled,
+            allowed_import_module_roots=(
+                compiled_access_surface.allowed_import_module_roots
+            ),
+            denied_import_module_roots=(
+                compiled_access_surface.denied_import_module_roots
+            ),
+            denied_builtin_names=compiled_access_surface.denied_builtin_names,
+            codegen_unsafe_reflection_allowed=(
+                compiled_access_surface.codegen_unsafe_reflection_allowed
+            ),
+            codegen_dunder_access_allowed=(
+                compiled_access_surface.codegen_dunder_access_allowed
+            ),
             command_frame_enabled=compiled_access_surface.command_frame_enabled,
             allowed_kinds=compiled_access_surface.allowed_kinds,
             allowed_commands=compiled_access_surface.allowed_commands,

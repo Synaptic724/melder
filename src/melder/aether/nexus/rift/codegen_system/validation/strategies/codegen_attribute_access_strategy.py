@@ -5,6 +5,9 @@ from typing import Optional
 from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import (
     CodegenTransactionContext,
 )
+from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
+    CodegenNamespaceConfiguration,
+)
 from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_result import (
     CodegenValidationResult,
 )
@@ -76,6 +79,15 @@ class CodegenAttributeAccessStrategy(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
+            namespace_configuration = transaction_context.namespace_configuration
+            if namespace_configuration is None:
+                return CodegenValidationResult.validation_failed(
+                    frame_name=transaction_context.frame_name,
+                    message="Namespace configuration is missing for validation.",
+                    transaction_id=transaction_context.transaction_id,
+                )
+            if namespace_configuration.allow_dunder_access:
+                return None
             for node in ast.walk(syntax_tree):
                 if not isinstance(node, ast.Attribute):
                     continue

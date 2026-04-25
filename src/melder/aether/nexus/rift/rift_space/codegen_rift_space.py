@@ -99,6 +99,17 @@ class CodegenRiftSpace(RiftSpace, ICodegenRiftSpace):
             workstation=self._workstation,
         )
 
+    @property
+    def codegen_system(self) -> CodegenSystem:
+        """
+        Return the room-owned internal codegen system.
+
+        Returns:
+            CodegenSystem: Room-owned codegen system.
+        """
+        self.check_cleaned()
+        return self._codegen_system
+
     def cleanup(self) -> None:
         """
         Internal

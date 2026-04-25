@@ -181,6 +181,20 @@ class StaticFrameViewer(FrameViewer):
             view_profile_version=base_compiled_access_surface.view_profile_version,
             codegen_profile_name=base_compiled_access_surface.codegen_profile_name,
             codegen_profile_version=base_compiled_access_surface.codegen_profile_version,
+            codegen_imports_enabled=base_compiled_access_surface.codegen_imports_enabled,
+            allowed_import_module_roots=(
+                base_compiled_access_surface.allowed_import_module_roots
+            ),
+            denied_import_module_roots=(
+                base_compiled_access_surface.denied_import_module_roots
+            ),
+            denied_builtin_names=base_compiled_access_surface.denied_builtin_names,
+            codegen_unsafe_reflection_allowed=(
+                base_compiled_access_surface.codegen_unsafe_reflection_allowed
+            ),
+            codegen_dunder_access_allowed=(
+                base_compiled_access_surface.codegen_dunder_access_allowed
+            ),
             command_frame_enabled=base_compiled_access_surface.command_frame_enabled,
             allowed_kinds=base_compiled_access_surface.allowed_kinds,
             allowed_commands=base_compiled_access_surface.allowed_commands,

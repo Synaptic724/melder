@@ -21,6 +21,7 @@ from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescripto
 from melder.utilities.general_base.cleanable import Cleanable
 
 from melder.aether.nexus.acl.frame_acl_configuration import FrameACLConfiguration
+from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_rule import FrameACLRule
 from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import FrameACLRuleSet
 from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import (
     FrameACLViewConfiguration,
@@ -132,6 +133,9 @@ class FrameACLValidator(Cleanable):
             "write_attribute",
         },
         "capability": {
+            "enable_imports",
+            "import_modules",
+            "builtin_names",
             "dynamic_access",
             "mutation",
             "contract_override",
@@ -1152,6 +1156,74 @@ class FrameACLValidator(Cleanable):
                             label
                         )
                     )
+            if rule.operation == "import_modules":
+                self._validate_import_module_rule_conditions(rule, label)
+            if rule.operation == "builtin_names":
+                self._validate_builtin_names_rule_conditions(rule, label)
+
+    @staticmethod
+    def _validate_import_module_rule_conditions(
+            rule: FrameACLRule,
+            label: str,
+    ) -> None:
+        """
+        Validate the condition payload for one import-module ACL rule.
+
+        Args:
+            rule:
+                Rule to validate.
+            label:
+                Human-readable validation label.
+
+        Returns:
+            None.
+        """
+        module_roots = rule.conditions.get("module_roots")
+        if not isinstance(module_roots, (list, tuple)) or len(module_roots) == 0:
+            raise ValueError(
+                "Import-module rules in {0} must declare non-empty 'module_roots'.".format(
+                    label
+                )
+            )
+        for module_root in module_roots:
+            if not isinstance(module_root, str) or not module_root:
+                raise ValueError(
+                    "Import-module rules in {0} must use non-empty module-root strings.".format(
+                        label
+                    )
+                )
+
+    @staticmethod
+    def _validate_builtin_names_rule_conditions(
+            rule: FrameACLRule,
+            label: str,
+    ) -> None:
+        """
+        Validate the condition payload for one builtin-name ACL rule.
+
+        Args:
+            rule:
+                Rule to validate.
+            label:
+                Human-readable validation label.
+
+        Returns:
+            None.
+        """
+        builtin_names = rule.conditions.get("builtin_names")
+        if not isinstance(builtin_names, (list, tuple)) or len(builtin_names) == 0:
+            raise ValueError(
+                "Builtin-name rules in {0} must declare non-empty 'builtin_names'.".format(
+                    label
+                )
+            )
+        for builtin_name in builtin_names:
+            if not isinstance(builtin_name, str) or not builtin_name:
+                raise ValueError(
+                    "Builtin-name rules in {0} must use non-empty builtin-name strings.".format(
+                        label
+                    )
+                )
 
     def _validate_safe_view_configuration(
             self,

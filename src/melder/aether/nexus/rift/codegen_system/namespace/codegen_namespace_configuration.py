@@ -25,13 +25,16 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_frame_name",
-        "_include_rift",
-        "_include_space",
         "_include_viewer",
         "_include_workstation",
         "_include_command",
-        "_include_target",
-        "_include_frame_name",
+        "_include_codegen",
+        "_imports_enabled",
+        "_allowed_import_module_roots",
+        "_denied_import_module_roots",
+        "_denied_builtin_names",
+        "_allow_unsafe_reflection",
+        "_allow_dunder_access",
         "_metadata",
     ]
 
@@ -39,13 +42,16 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
             self,
             *,
             frame_name: str,
-            include_rift: bool = True,
-            include_space: bool = True,
             include_viewer: bool = True,
             include_workstation: bool = True,
             include_command: bool = True,
-            include_target: bool = True,
-            include_frame_name: bool = True,
+            include_codegen: bool = True,
+            imports_enabled: bool = False,
+            allowed_import_module_roots: Tuple[str, ...] = tuple(),
+            denied_import_module_roots: Tuple[str, ...] = tuple(),
+            denied_builtin_names: Tuple[str, ...] = tuple(),
+            allow_unsafe_reflection: bool = False,
+            allow_dunder_access: bool = False,
             metadata: Optional[Dict[str, object]] = None,
     ) -> None:
         """
@@ -54,20 +60,26 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
         Args:
             frame_name:
                 Target frame name for this configuration.
-            include_rift:
-                Whether to expose `rift`.
-            include_space:
-                Whether to expose `space`.
             include_viewer:
                 Whether to expose `viewer`.
             include_workstation:
                 Whether to expose `workstation`.
             include_command:
                 Whether to expose `command`.
-            include_target:
-                Whether to expose `target`.
-            include_frame_name:
-                Whether to expose `frame_name`.
+            include_codegen:
+                Whether to expose `codegen`.
+            imports_enabled:
+                Whether import statements are enabled.
+            allowed_import_module_roots:
+                Allowed import module roots.
+            denied_import_module_roots:
+                Denied import module roots.
+            denied_builtin_names:
+                Denied builtin names.
+            allow_unsafe_reflection:
+                Whether unsafe reflection helpers are allowed.
+            allow_dunder_access:
+                Whether dunder attribute access is allowed.
             metadata:
                 Optional configuration metadata.
 
@@ -83,13 +95,22 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
             raise ValueError("frame_name cannot be empty.")
         self._lock: threading.RLock = threading.RLock()
         self._frame_name: str = frame_name
-        self._include_rift: bool = include_rift
-        self._include_space: bool = include_space
         self._include_viewer: bool = include_viewer
         self._include_workstation: bool = include_workstation
         self._include_command: bool = include_command
-        self._include_target: bool = include_target
-        self._include_frame_name: bool = include_frame_name
+        self._include_codegen: bool = include_codegen
+        self._imports_enabled: bool = imports_enabled
+        self._allowed_import_module_roots: Tuple[str, ...] = tuple(
+            allowed_import_module_roots
+        )
+        self._denied_import_module_roots: Tuple[str, ...] = tuple(
+            denied_import_module_roots
+        )
+        self._denied_builtin_names: Tuple[str, ...] = tuple(
+            denied_builtin_names
+        )
+        self._allow_unsafe_reflection: bool = allow_unsafe_reflection
+        self._allow_dunder_access: bool = allow_dunder_access
         self._metadata: Dict[str, object] = dict(metadata) if metadata else {}
 
     def cleanup(self) -> None:
@@ -106,13 +127,16 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
                 return
             self._cleaned = True
             self._frame_name = None
-            self._include_rift = None
-            self._include_space = None
             self._include_viewer = None
             self._include_workstation = None
             self._include_command = None
-            self._include_target = None
-            self._include_frame_name = None
+            self._include_codegen = None
+            self._imports_enabled = None
+            self._allowed_import_module_roots = None
+            self._denied_import_module_roots = None
+            self._denied_builtin_names = None
+            self._allow_unsafe_reflection = None
+            self._allow_dunder_access = None
             self._metadata.clear()
             self._metadata = None
         self._lock = None
@@ -122,6 +146,12 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
             cls,
             *,
             frame_name: str,
+            imports_enabled: bool = False,
+            allowed_import_module_roots: Tuple[str, ...] = tuple(),
+            denied_import_module_roots: Tuple[str, ...] = tuple(),
+            denied_builtin_names: Tuple[str, ...] = tuple(),
+            allow_unsafe_reflection: bool = False,
+            allow_dunder_access: bool = False,
             metadata: Optional[Dict[str, object]] = None,
     ) -> "CodegenNamespaceConfiguration":
         """
@@ -130,6 +160,18 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
         Args:
             frame_name:
                 Target frame name for the configuration.
+            imports_enabled:
+                Whether import statements are enabled.
+            allowed_import_module_roots:
+                Allowed import module roots.
+            denied_import_module_roots:
+                Denied import module roots.
+            denied_builtin_names:
+                Denied builtin names.
+            allow_unsafe_reflection:
+                Whether unsafe reflection helpers are allowed.
+            allow_dunder_access:
+                Whether dunder access is allowed.
             metadata:
                 Optional configuration metadata.
 
@@ -138,6 +180,12 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
         """
         return cls(
             frame_name=frame_name,
+            imports_enabled=imports_enabled,
+            allowed_import_module_roots=allowed_import_module_roots,
+            denied_import_module_roots=denied_import_module_roots,
+            denied_builtin_names=denied_builtin_names,
+            allow_unsafe_reflection=allow_unsafe_reflection,
+            allow_dunder_access=allow_dunder_access,
             metadata=metadata,
         )
 
@@ -164,21 +212,87 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
         self.check_cleaned()
         with self._lock:
             enabled_names = []
-            if self._include_rift:
-                enabled_names.append("rift")
-            if self._include_space:
-                enabled_names.append("space")
             if self._include_viewer:
                 enabled_names.append("viewer")
             if self._include_workstation:
                 enabled_names.append("workstation")
             if self._include_command:
                 enabled_names.append("command")
-            if self._include_target:
-                enabled_names.append("target")
-            if self._include_frame_name:
-                enabled_names.append("frame_name")
+            if self._include_codegen:
+                enabled_names.append("codegen")
             return tuple(enabled_names)
+
+    @property
+    def imports_enabled(self) -> bool:
+        """
+        Return whether import statements are enabled for this namespace.
+
+        Returns:
+            bool: True when imports are enabled.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._imports_enabled
+
+    @property
+    def allowed_import_module_roots(self) -> Tuple[str, ...]:
+        """
+        Return the allowed import module roots.
+
+        Returns:
+            Tuple[str, ...]: Allowed import module roots.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._allowed_import_module_roots
+
+    @property
+    def denied_import_module_roots(self) -> Tuple[str, ...]:
+        """
+        Return the denied import module roots.
+
+        Returns:
+            Tuple[str, ...]: Denied import module roots.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._denied_import_module_roots
+
+    @property
+    def denied_builtin_names(self) -> Tuple[str, ...]:
+        """
+        Return builtin names denied to codegen.
+
+        Returns:
+            Tuple[str, ...]: Denied builtin names.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._denied_builtin_names
+
+    @property
+    def allow_unsafe_reflection(self) -> bool:
+        """
+        Return whether unsafe reflection helpers are allowed.
+
+        Returns:
+            bool: True when unsafe reflection is allowed.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._allow_unsafe_reflection
+
+    @property
+    def allow_dunder_access(self) -> bool:
+        """
+        Return whether dunder access is allowed.
+
+        Returns:
+            bool: True when dunder access is allowed.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return self._allow_dunder_access
 
     @property
     def metadata(self) -> Dict[str, object]:

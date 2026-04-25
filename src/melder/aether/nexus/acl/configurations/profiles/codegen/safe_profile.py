@@ -1,6 +1,9 @@
 from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
+from melder.aether.nexus.acl.configurations.profiles.codegen.stdlib_import_sets import (
+    SAFE_DENIED_BUILTIN_NAMES,
+)
 from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
@@ -52,6 +55,14 @@ def create_safe_codegen_profile() -> FrameACLCodegenProfile:
         capability_ruleset=FrameACLViewProfile.build_ruleset(
             "safe_capability_codegen",
             [
+                FrameACLViewProfile.build_rule(
+                    "capability_deny_dangerous_builtins",
+                    "builtin_names",
+                    "deny",
+                    conditions={
+                        "builtin_names": SAFE_DENIED_BUILTIN_NAMES,
+                    },
+                ),
                 FrameACLViewProfile.build_rule("capability_dynamic_access", "dynamic_access", "deny"),
                 FrameACLViewProfile.build_rule("capability_mutation", "mutation", "deny"),
                 FrameACLViewProfile.build_rule("capability_contract_override", "contract_override", "deny"),

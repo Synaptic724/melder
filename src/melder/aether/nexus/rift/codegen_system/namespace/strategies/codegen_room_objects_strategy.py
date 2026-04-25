@@ -25,7 +25,7 @@ class CodegenRoomObjectsStrategy(Cleanable):
     Contract:
         - Exposes only names enabled by the namespace configuration.
         - Owns room-object exposure only:
-          `rift`, `space`, `viewer`, and `frame_name`.
+          `viewer`.
     """
 
     __slots__ = Cleanable.__slots__ + [
@@ -92,12 +92,6 @@ class CodegenRoomObjectsStrategy(Cleanable):
                 raise TypeError("space cannot be None.")
             namespace_entries: Dict[str, object] = {}
             exposed_names = configuration.exposed_names
-            if "rift" in exposed_names:
-                namespace_entries["rift"] = rift
-            if "space" in exposed_names:
-                namespace_entries["space"] = space
             if "viewer" in exposed_names:
                 namespace_entries["viewer"] = space.frame_viewer
-            if "frame_name" in exposed_names:
-                namespace_entries["frame_name"] = configuration.frame_name
             return namespace_entries

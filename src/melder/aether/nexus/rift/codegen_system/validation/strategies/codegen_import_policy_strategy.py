@@ -5,6 +5,9 @@ from typing import Optional
 from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import (
     CodegenTransactionContext,
 )
+from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
+    CodegenNamespaceConfiguration,
+)
 from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_result import (
     CodegenValidationResult,
 )
@@ -22,7 +25,7 @@ class CodegenImportPolicyStrategy(Cleanable):
     Import-policy validation strategy.
 
     Purpose:
-        Block import statements in the current governed codegen mode.
+        Validate import statements against the selected codegen posture.
     """
 
     __slots__ = Cleanable.__slots__ + [
@@ -74,18 +77,93 @@ class CodegenImportPolicyStrategy(Cleanable):
         """
         self.check_cleaned()
         with self._lock:
+            namespace_configuration = transaction_context.namespace_configuration
+            if namespace_configuration is None:
+                return self._reject(
+                    transaction_context,
+                    "Namespace configuration is missing for validation.",
+                )
             for node in ast.walk(syntax_tree):
                 if isinstance(node, ast.Import):
-                    return self._reject(
-                        transaction_context,
-                        "Import statements are not allowed in this codegen mode.",
-                    )
+                    if not namespace_configuration.imports_enabled:
+                        return self._reject(
+                            transaction_context,
+                            "Import statements are not allowed in this codegen mode.",
+                        )
+                    for alias in node.names:
+                        module_root = alias.name.split(".")[0]
+                        if self._import_root_is_denied(
+                                module_root,
+                                namespace_configuration,
+                        ):
+                            return self._reject(
+                                transaction_context,
+                                "Import root '{0}' is not allowed in this codegen mode.".format(
+                                    module_root
+                                ),
+                            )
                 if isinstance(node, ast.ImportFrom):
-                    return self._reject(
-                        transaction_context,
-                        "Import-from statements are not allowed in this codegen mode.",
+                    if not namespace_configuration.imports_enabled:
+                        return self._reject(
+                            transaction_context,
+                            "Import-from statements are not allowed in this codegen mode.",
+                        )
+                    if node.level != 0:
+                        return self._reject(
+                            transaction_context,
+                            "Relative imports are not allowed in this codegen mode.",
+                        )
+                    if any(alias.name == "*" for alias in node.names):
+                        return self._reject(
+                            transaction_context,
+                            "Wildcard imports are not allowed in this codegen mode.",
+                        )
+                    module_root = (
+                        node.module.split(".")[0]
+                        if node.module is not None
+                        else None
                     )
+                    if module_root is None:
+                        return self._reject(
+                            transaction_context,
+                            "Import-from statements must resolve to a module root.",
+                        )
+                    if self._import_root_is_denied(
+                            module_root,
+                            namespace_configuration,
+                    ):
+                        return self._reject(
+                            transaction_context,
+                            "Import root '{0}' is not allowed in this codegen mode.".format(
+                                module_root
+                            ),
+                        )
             return None
+
+    @staticmethod
+    def _import_root_is_denied(
+            module_root: str,
+            namespace_configuration: CodegenNamespaceConfiguration,
+    ) -> bool:
+        """
+        Return whether one import root is denied by the current config.
+
+        Args:
+            module_root:
+                Root module name being imported.
+            namespace_configuration:
+                Current namespace configuration.
+
+        Returns:
+            bool: True when the module root is denied.
+        """
+        denied_module_roots = set(namespace_configuration.denied_import_module_roots)
+        if module_root in denied_module_roots:
+            return True
+        allowed_module_roots = set(namespace_configuration.allowed_import_module_roots)
+        if len(allowed_module_roots) == 0:
+            return False
+        return module_root not in allowed_module_roots
 
     @staticmethod
     def _reject(
