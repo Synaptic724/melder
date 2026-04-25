@@ -5,6 +5,7 @@ This module owns the top-level viewer facade that routes all read-only viewer
 behavior through current `Rift` projection state instead of viewer-local
 projection caches.
 """
+from contextlib import contextmanager
 import threading
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
@@ -17,6 +18,10 @@ from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescripto
 from melder.aether.nexus.rift.projection.view_projection import ViewProjection
 from melder.aether.nexus.rift.frame_viewer.view_conduit import (
     ViewConduit,
+)
+from melder.aether.nexus.rift.frame_viewer.view_action_hooks import (
+    decorate_public_view_actions,
+    noop_action_scope,
 )
 from melder.aether.nexus.rift.frame_viewer.view_frame import (
     ViewFrame,
@@ -35,6 +40,7 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import IFrameLink
 
 
+@decorate_public_view_actions
 class FrameViewer(Cleanable):
     """
     Purpose:
@@ -79,12 +85,14 @@ class FrameViewer(Cleanable):
         "_id",
         "_lock",
         "_rift",
+        "_action_hook_scope_factory",
     ]
 
     def __init__(
             self,
             *,
             rift: Any,
+            action_hook_scope_factory: Optional[Callable[..., Any]] = None,
     ) -> None:
         """
         Initialize one Rift-backed projection-native frame viewer.
@@ -99,6 +107,9 @@ class FrameViewer(Cleanable):
         self._lock: threading.RLock = threading.RLock()
         self._id: str = IDBuilder.create_id()
         self._rift: Any = rift
+        self._action_hook_scope_factory: Optional[Callable[..., Any]] = (
+            action_hook_scope_factory
+        )
 
     def cleanup(self) -> None:
         """
@@ -117,6 +128,7 @@ class FrameViewer(Cleanable):
                 return
             self._cleaned = True
             self._rift = None
+            self._action_hook_scope_factory = None
             self._id = None
         self._lock = None
 
@@ -1296,6 +1308,7 @@ class FrameViewer(Cleanable):
         with self._lock:
             return FrameViewer(
                 rift=self._rift,
+                action_hook_scope_factory=self._action_hook_scope_factory,
             )
 
 
@@ -1327,6 +1340,7 @@ class FrameViewer(Cleanable):
                 selected_frame_name
             ),
             default_detail_level="detailed",
+            action_hook_scope_factory=self._entered_view_action,
         )
 
     def get_view_conduit(
@@ -3973,3 +3987,26 @@ class FrameViewer(Cleanable):
             ViewProjection: View projection for the frame.
         """
         return self._rift._get_required_view_projection(frame_name)
+
+    @contextmanager
+    def _entered_view_action(self, *, action_name: str) -> Any:
+        """
+        Enter one viewer action hook scope through the owning room.
+
+        Args:
+            action_name:
+                Stable viewer action name.
+
+        Returns:
+            Any: Viewer hook scope context manager.
+        """
+        self.check_cleaned()
+        if self._action_hook_scope_factory is None:
+            action_scope = noop_action_scope()
+        else:
+            action_scope = self._action_hook_scope_factory(
+                category="viewer",
+                action_name=action_name,
+            )
+        with action_scope:
+            yield

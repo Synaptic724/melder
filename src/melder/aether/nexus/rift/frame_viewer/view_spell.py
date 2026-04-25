@@ -6,6 +6,7 @@ queries, and spell comparison behavior over the currently selected frame
 helper.
 """
 
+from contextlib import contextmanager
 import threading
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -13,6 +14,9 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.nexus.rift.frame_link.frame_link import FrameLink
 from melder.aether.nexus.rift.frame_viewer.view_frame import (
     ViewFrame,
+)
+from melder.aether.nexus.rift.frame_viewer.view_action_hooks import (
+    decorate_public_view_actions,
 )
 from melder.spellbook.spell_crafter.spell_examiner.inspectors.profiles.class_profile import (
     ClassProfile,
@@ -24,6 +28,7 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import IFrameLink
 
 
+@decorate_public_view_actions
 class ViewSpell(Cleanable):
     """
     Purpose:
@@ -89,6 +94,24 @@ class ViewSpell(Cleanable):
             self._cleaned = True
             self._frame_view = None
             self._lock = None
+
+    @contextmanager
+    def _entered_view_action(self, *, action_name: str) -> Any:
+        """
+        Enter one viewer action hook scope through the selected frame helper.
+
+        Args:
+            action_name:
+                Stable viewer action name.
+
+        Returns:
+            Any: Viewer hook scope context manager.
+        """
+        self.check_cleaned()
+        with self._get_required_frame_view()._entered_view_action(
+                action_name=action_name,
+        ):
+            yield
 
     def list_spells(self, *, frame_name: Optional[str] = None) -> List[IFrameLink]:
         """

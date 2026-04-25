@@ -1478,6 +1478,245 @@ def test_rift_space_can_register_and_unregister_event_callbacks() -> None:
     assert len(received_events) == 1
 
 
+def test_capability_command_action_hooks_fire_pre_and_post() -> None:
+    """
+    Verify capability command actions fire room-local pre and post hooks.
+
+    Returns:
+        None.
+    """
+    space = CapabilityRiftSpace(
+        rift=_make_detached_rift_projection_owner(),
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+    received_calls = []
+    space.register_category_pre_hook(
+        "command",
+        lambda: received_calls.append("category-pre"),
+    )
+    space.register_action_pre_hook(
+        "command",
+        "list_supported_command_methods",
+        lambda: received_calls.append("action-pre"),
+    )
+    space.register_action_post_hook(
+        "command",
+        "list_supported_command_methods",
+        lambda: received_calls.append("action-post"),
+    )
+    space.register_category_post_hook(
+        "command",
+        lambda: received_calls.append("category-post"),
+    )
+
+    supported_methods = space.command_system.list_supported_command_methods()
+
+    assert len(supported_methods) > 0
+    assert received_calls == [
+        "category-pre",
+        "action-pre",
+        "action-post",
+        "category-post",
+    ]
+
+
+def test_static_command_action_hooks_fire_pre_and_post() -> None:
+    """
+    Verify static command actions fire room-local pre and post hooks.
+
+    Returns:
+        None.
+    """
+    space = StaticRiftSpace(
+        rift=_make_detached_rift_projection_owner(),
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+    received_calls = []
+    space.register_category_pre_hook(
+        "command",
+        lambda: received_calls.append("category-pre"),
+    )
+    space.register_action_pre_hook(
+        "command",
+        "list_supported_command_methods",
+        lambda: received_calls.append("action-pre"),
+    )
+    space.register_action_post_hook(
+        "command",
+        "list_supported_command_methods",
+        lambda: received_calls.append("action-post"),
+    )
+    space.register_category_post_hook(
+        "command",
+        lambda: received_calls.append("category-post"),
+    )
+
+    supported_methods = space.command_system.list_supported_command_methods()
+
+    assert len(supported_methods) > 0
+    assert received_calls == [
+        "category-pre",
+        "action-pre",
+        "action-post",
+        "category-post",
+    ]
+
+
+def test_codegen_action_hooks_use_codegen_category_not_command_category() -> None:
+    """
+    Verify codegen actions fire only the codegen-category hooks.
+
+    Returns:
+        None.
+    """
+    space = CodegenRiftSpace(
+        rift=_make_detached_rift_projection_owner(),
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+    command_calls = []
+    codegen_calls = []
+    space.register_category_pre_hook(
+        "command",
+        lambda: command_calls.append("category-pre"),
+    )
+    space.register_category_post_hook(
+        "command",
+        lambda: command_calls.append("category-post"),
+    )
+    space.register_action_pre_hook(
+        "command",
+        "validate_codegen",
+        lambda: command_calls.append("action-pre"),
+    )
+    space.register_action_post_hook(
+        "command",
+        "validate_codegen",
+        lambda: command_calls.append("action-post"),
+    )
+    space.register_category_pre_hook(
+        "codegen",
+        lambda: codegen_calls.append("category-pre"),
+    )
+    space.register_category_post_hook(
+        "codegen",
+        lambda: codegen_calls.append("category-post"),
+    )
+    space.register_action_pre_hook(
+        "codegen",
+        "validate_codegen",
+        lambda: codegen_calls.append("action-pre"),
+    )
+    space.register_action_post_hook(
+        "codegen",
+        "validate_codegen",
+        lambda: codegen_calls.append("action-post"),
+    )
+
+    result = space.command_system.validate_codegen(
+        "result = 1",
+        frame_name="ops",
+    )
+
+    assert result["reason"] == "codegen_validation_not_implemented"
+    assert command_calls == []
+    assert codegen_calls == [
+        "category-pre",
+        "action-pre",
+        "action-post",
+        "category-post",
+    ]
+
+
+def test_viewer_action_hooks_fire_once_for_nested_top_level_viewer_call() -> None:
+    """
+    Verify nested viewer helper calls do not double-fire one top-level hook.
+
+    Returns:
+        None.
+    """
+    space = CapabilityRiftSpace(
+        rift=_make_detached_rift_projection_owner(),
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+    received_calls = []
+    space.register_category_pre_hook(
+        "viewer",
+        lambda: received_calls.append("category-pre"),
+    )
+    space.register_action_pre_hook(
+        "viewer",
+        "count_frames",
+        lambda: received_calls.append("action-pre"),
+    )
+    space.register_action_post_hook(
+        "viewer",
+        "count_frames",
+        lambda: received_calls.append("action-post"),
+    )
+    space.register_category_post_hook(
+        "viewer",
+        lambda: received_calls.append("category-post"),
+    )
+
+    frame_count = space.frame_viewer.count_frames()
+
+    assert frame_count == 0
+    assert received_calls == [
+        "category-pre",
+        "action-pre",
+        "action-post",
+        "category-post",
+    ]
+
+
+def test_viewer_action_hooks_fire_for_direct_helper_call() -> None:
+    """
+    Verify direct helper calls also enter the viewer hook boundary.
+
+    Returns:
+        None.
+    """
+    space = CapabilityRiftSpace(
+        rift=_make_detached_rift_projection_owner(),
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+    view_multiframe = space.frame_viewer.get_view_multiframe()
+    received_calls = []
+    space.register_category_pre_hook(
+        "viewer",
+        lambda: received_calls.append("category-pre"),
+    )
+    space.register_action_pre_hook(
+        "viewer",
+        "count_frames",
+        lambda: received_calls.append("action-pre"),
+    )
+    space.register_action_post_hook(
+        "viewer",
+        "count_frames",
+        lambda: received_calls.append("action-post"),
+    )
+    space.register_category_post_hook(
+        "viewer",
+        lambda: received_calls.append("category-post"),
+    )
+
+    frame_count = view_multiframe.count_frames()
+
+    assert frame_count == 0
+    assert received_calls == [
+        "category-pre",
+        "action-pre",
+        "action-post",
+        "category-post",
+    ]
+
+
 def test_workstation_cleanup_target_calls_methods_then_clears_target() -> None:
     """
     Verify cleanup_target calls the requested cleanup methods then clears target selection.

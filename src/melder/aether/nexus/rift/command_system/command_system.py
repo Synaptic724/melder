@@ -918,6 +918,7 @@ class CommandSystem(Cleanable):
             *,
             action_name: str,
             frame_name: Optional[str],
+            category: str = "command",
     ) -> Any:
         """
         Enter one explicit top-level public command action.
@@ -932,18 +933,22 @@ class CommandSystem(Cleanable):
             Any: Context manager that guarantees symmetric RiftGate release and
             successful top-level memory emission.
         """
-        rift_gate = self._begin_command_action()
-        command_succeeded = False
-        try:
-            yield
-            command_succeeded = True
-        finally:
-            self._finish_command_action(
-                rift_gate=rift_gate,
+        with self._entered_action_hook_scope_if_available(
+                category=category,
                 action_name=action_name,
-                frame_name=frame_name,
-                emit_memory=command_succeeded,
-            )
+        ):
+            rift_gate = self._begin_command_action()
+            command_succeeded = False
+            try:
+                yield
+                command_succeeded = True
+            finally:
+                self._finish_command_action(
+                    rift_gate=rift_gate,
+                    action_name=action_name,
+                    frame_name=frame_name,
+                    emit_memory=command_succeeded,
+                )
 
     def _begin_command_action(self) -> Optional[Any]:
         """
@@ -1065,6 +1070,36 @@ class CommandSystem(Cleanable):
             return self._space.rift_gate
         except AttributeError:
             return None
+
+    @contextmanager
+    def _entered_action_hook_scope_if_available(
+            self,
+            *,
+            category: str,
+            action_name: str,
+    ) -> Any:
+        """
+        Enter the owning room's action-hook scope when one is available.
+
+        Args:
+            category:
+                Action category.
+            action_name:
+                Stable public action name.
+
+        Returns:
+            Any: Hook scope context manager.
+        """
+        try:
+            action_scope = self._space._entered_action_hook_scope(
+                category=category,
+                action_name=action_name,
+            )
+        except AttributeError:
+            yield
+            return
+        with action_scope:
+            yield
 
     def _resolve_memory_frame_name(
             self,

@@ -6,13 +6,18 @@ that reuses `FrameViewer` lookup utilities without taking ownership of frame-
 local descriptor or ACL state.
 """
 
-from typing import Callable, Dict, Iterator, List, Optional, Tuple
+from contextlib import contextmanager
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.frame_descriptor.frame_descriptor import FrameDescriptor
+from melder.aether.nexus.rift.frame_viewer.view_action_hooks import (
+    decorate_public_view_actions,
+)
 from melder.utilities.general_base.cleanable import Cleanable
 
 
+@decorate_public_view_actions
 class ViewMultiFrame(Cleanable):
     """
     Purpose:
@@ -94,6 +99,22 @@ class ViewMultiFrame(Cleanable):
             FrameDescriptor: Descriptor for the requested frame.
         """
         return self._viewer._get_required_frame_descriptor(frame_name)
+
+    @contextmanager
+    def _entered_view_action(self, *, action_name: str) -> Any:
+        """
+        Enter one viewer action hook scope through the parent viewer.
+
+        Args:
+            action_name:
+                Stable viewer action name.
+
+        Returns:
+            Any: Viewer hook scope context manager.
+        """
+        self.check_cleaned()
+        with self._viewer._entered_view_action(action_name=action_name):
+            yield
 
     def _get_frame_names_for_query(self, frame_name: Optional[str] = None):
         """

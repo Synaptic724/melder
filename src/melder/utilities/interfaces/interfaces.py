@@ -7664,6 +7664,34 @@ class IRiftSpace(ICleanable, Protocol):
         """
         ...
 
+    def register_action_pre_hook(
+            self,
+            category: str,
+            action_name: str,
+            callback: Callable[[], None],
+    ) -> str:
+        """
+        Register one pre-action hook for the selected category and action.
+        """
+        ...
+
+    def register_action_post_hook(
+            self,
+            category: str,
+            action_name: str,
+            callback: Callable[[], None],
+    ) -> str:
+        """
+        Register one post-action hook for the selected category and action.
+        """
+        ...
+
+    def unregister_action_hook(self, subscription_id: str) -> None:
+        """
+        Unregister one action-hook subscription by id.
+        """
+        ...
+
 
 @runtime_checkable
 class IStaticRiftSpace(IRiftSpace, Protocol):

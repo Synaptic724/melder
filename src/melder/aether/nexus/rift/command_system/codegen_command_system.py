@@ -564,31 +564,35 @@ class CodegenCommandSystem(CommandSystem):
             raise ValueError("code cannot be empty.")
         if not isinstance(frame_name, str) or not frame_name:
             raise ValueError("frame_name cannot be empty.")
-        rift_gate = self._begin_command_action()
-        transaction_context: Optional[CodegenTransactionContext] = None
-        validation_result: Optional[CodegenValidationResult] = None
-        try:
-            with self._lock:
-                codegen_system = self._require_codegen_system()
-                transaction_context, validation_result = (
-                    codegen_system.validate_codegen_request(
-                        code,
-                        frame_name=frame_name,
+        with self._entered_action_hook_scope_if_available(
+                category="codegen",
+                action_name="validate_codegen",
+        ):
+            rift_gate = self._begin_command_action()
+            transaction_context: Optional[ICodegenTransactionContext] = None
+            validation_result: Optional[ICodegenValidationResult] = None
+            try:
+                with self._lock:
+                    codegen_system = self._require_codegen_system()
+                    transaction_context, validation_result = (
+                        codegen_system.validate_codegen_request(
+                            code,
+                            frame_name=frame_name,
+                        )
                     )
-                )
-                return codegen_system.report_validation_result(validation_result)
-        finally:
-            if rift_gate is not None:
-                rift_gate.unregister_ticket()
-            if (
-                    transaction_context is not None
-                    and validation_result is not None
-            ):
-                self._emit_codegen_memory_if_enabled(
-                    action_name="validate_codegen",
-                    transaction_context=transaction_context,
-                    validation_result=validation_result,
-                )
+                    return codegen_system.report_validation_result(validation_result)
+            finally:
+                if rift_gate is not None:
+                    rift_gate.unregister_ticket()
+                if (
+                        transaction_context is not None
+                        and validation_result is not None
+                ):
+                    self._emit_codegen_memory_if_enabled(
+                        action_name="validate_codegen",
+                        transaction_context=transaction_context,
+                        validation_result=validation_result,
+                    )
 
     def execute_codegen(
             self,
@@ -630,31 +634,35 @@ class CodegenCommandSystem(CommandSystem):
             raise ValueError("code cannot be empty.")
         if not isinstance(frame_name, str) or not frame_name:
             raise ValueError("frame_name cannot be empty.")
-        rift_gate = self._begin_command_action()
-        transaction_context: Optional[CodegenTransactionContext] = None
-        execution_result: Optional[CodegenExecutionResult] = None
-        try:
-            with self._lock:
-                codegen_system = self._require_codegen_system()
-                transaction_context, execution_result = (
-                    codegen_system.execute_codegen_request(
-                        code,
-                        frame_name=frame_name,
+        with self._entered_action_hook_scope_if_available(
+                category="codegen",
+                action_name="execute_codegen",
+        ):
+            rift_gate = self._begin_command_action()
+            transaction_context: Optional[ICodegenTransactionContext] = None
+            execution_result: Optional[ICodegenExecutionResult] = None
+            try:
+                with self._lock:
+                    codegen_system = self._require_codegen_system()
+                    transaction_context, execution_result = (
+                        codegen_system.execute_codegen_request(
+                            code,
+                            frame_name=frame_name,
+                        )
                     )
-                )
-                return execution_result.to_payload()
-        finally:
-            if rift_gate is not None:
-                rift_gate.unregister_ticket()
-            if (
-                    transaction_context is not None
-                    and execution_result is not None
-            ):
-                self._emit_codegen_memory_if_enabled(
-                    action_name="execute_codegen",
-                    transaction_context=transaction_context,
-                    execution_result=execution_result,
-                )
+                    return execution_result.to_payload()
+            finally:
+                if rift_gate is not None:
+                    rift_gate.unregister_ticket()
+                if (
+                        transaction_context is not None
+                        and execution_result is not None
+                ):
+                    self._emit_codegen_memory_if_enabled(
+                        action_name="execute_codegen",
+                        transaction_context=transaction_context,
+                        execution_result=execution_result,
+                    )
 
     def _emit_codegen_memory_if_enabled(
             self,

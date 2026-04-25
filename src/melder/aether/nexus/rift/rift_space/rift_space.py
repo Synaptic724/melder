@@ -1,5 +1,6 @@
+from contextlib import contextmanager
 import threading
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
@@ -95,7 +96,18 @@ class RiftSpace(Cleanable, IRiftSpace):
         "_event_system",
         "_workstation",
         "_command_system",
+        "_pre_category_hooks_by_name",
+        "_post_category_hooks_by_name",
+        "_pre_action_hooks_by_key",
+        "_post_action_hooks_by_key",
+        "_action_hook_keys_by_subscription_id",
+        "_action_hook_depth_by_category",
     ]
+    _ACTION_HOOK_CATEGORIES: Tuple[str, ...] = (
+        "command",
+        "viewer",
+        "codegen",
+    )
 
     def __init__(
             self,
@@ -170,16 +182,42 @@ class RiftSpace(Cleanable, IRiftSpace):
             event_publisher=self._publish_runtime_event,
         )
         self._command_system: CommandSystem = self._create_command_system(rift)
+        self._pre_category_hooks_by_name: Dict[
+            str,
+            Dict[str, Callable[[], None]],
+        ] = {}
+        self._post_category_hooks_by_name: Dict[
+            str,
+            Dict[str, Callable[[], None]],
+        ] = {}
+        self._pre_action_hooks_by_key: Dict[
+            Tuple[str, str],
+            Dict[str, Callable[[], None]],
+        ] = {}
+        self._post_action_hooks_by_key: Dict[
+            Tuple[str, str],
+            Dict[str, Callable[[], None]],
+        ] = {}
+        self._action_hook_keys_by_subscription_id: Dict[
+            str,
+            Tuple[str, str, str],
+        ] = {}
+        self._action_hook_depth_by_category: Dict[str, int] = {
+            category_name: 0
+            for category_name in self._ACTION_HOOK_CATEGORIES
+        }
         if space_kind == RiftSpaceType.static.value:
             from melder.aether.nexus.rift.frame_viewer.static_frame_viewer import (
                 StaticFrameViewer,
             )
             self._frame_viewer = StaticFrameViewer(
                 rift=rift,
+                action_hook_scope_factory=self._entered_action_hook_scope,
             )
         else:
             self._frame_viewer = FrameViewer(
                 rift=rift,
+                action_hook_scope_factory=self._entered_action_hook_scope,
             )
 
     def cleanup(self) -> None:
@@ -223,8 +261,68 @@ class RiftSpace(Cleanable, IRiftSpace):
             self._event_system = None
             self._workstation = None
             self._command_system = None
+            self._pre_category_hooks_by_name.clear()
+            self._post_category_hooks_by_name.clear()
+            self._pre_action_hooks_by_key.clear()
+            self._post_action_hooks_by_key.clear()
+            self._action_hook_keys_by_subscription_id.clear()
+            self._action_hook_depth_by_category.clear()
+            self._pre_category_hooks_by_name = None
+            self._post_category_hooks_by_name = None
+            self._pre_action_hooks_by_key = None
+            self._post_action_hooks_by_key = None
+            self._action_hook_keys_by_subscription_id = None
+            self._action_hook_depth_by_category = None
             self._id = None
         self._lock = None
+
+    def register_category_pre_hook(
+            self,
+            category: str,
+            callback: Callable[[], None],
+    ) -> str:
+        """
+        Register one category-wide pre hook.
+
+        Args:
+            category:
+                Action category (`command`, `viewer`, or `codegen`).
+            callback:
+                Zero-argument callback to run before any top-level action in
+                the category.
+
+        Returns:
+            str: Stable subscription id for later unregistration.
+        """
+        return self._register_category_hook(
+            phase="pre",
+            category=category,
+            callback=callback,
+        )
+
+    def register_category_post_hook(
+            self,
+            category: str,
+            callback: Callable[[], None],
+    ) -> str:
+        """
+        Register one category-wide post hook.
+
+        Args:
+            category:
+                Action category (`command`, `viewer`, or `codegen`).
+            callback:
+                Zero-argument callback to run after any top-level action in the
+                category.
+
+        Returns:
+            str: Stable subscription id for later unregistration.
+        """
+        return self._register_category_hook(
+            phase="post",
+            category=category,
+            callback=callback,
+        )
 
     @property
     def space_id(self) -> str:
@@ -414,6 +512,175 @@ class RiftSpace(Cleanable, IRiftSpace):
         with self._lock:
             return self._memory_system
 
+    def register_action_pre_hook(
+            self,
+            category: str,
+            action_name: str,
+            callback: Callable[[], None],
+    ) -> str:
+        """
+        Register one pre-action hook for one room action category and name.
+
+        Args:
+            category:
+                Action category (`command`, `viewer`, or `codegen`).
+            action_name:
+                Stable public action name.
+            callback:
+                Zero-argument callback to run before the action body.
+
+        Returns:
+            str: Stable subscription id for later unregistration.
+        """
+        return self._register_action_hook(
+            phase="pre",
+            category=category,
+            action_name=action_name,
+            callback=callback,
+        )
+
+    def register_action_post_hook(
+            self,
+            category: str,
+            action_name: str,
+            callback: Callable[[], None],
+    ) -> str:
+        """
+        Register one post-action hook for one room action category and name.
+
+        Args:
+            category:
+                Action category (`command`, `viewer`, or `codegen`).
+            action_name:
+                Stable public action name.
+            callback:
+                Zero-argument callback to run after the action exits.
+
+        Returns:
+            str: Stable subscription id for later unregistration.
+        """
+        return self._register_action_hook(
+            phase="post",
+            category=category,
+            action_name=action_name,
+            callback=callback,
+        )
+
+    def unregister_action_hook(self, subscription_id: str) -> None:
+        """
+        Remove one action-hook subscription by id.
+
+        Args:
+            subscription_id:
+                Stable subscription id returned by hook registration.
+
+        Returns:
+            None.
+        """
+        self.check_cleaned()
+        if not subscription_id:
+            raise ValueError("subscription_id cannot be empty.")
+        with self._lock:
+            hook_key = self._action_hook_keys_by_subscription_id.pop(
+                subscription_id,
+                None,
+            )
+            if hook_key is None:
+                return
+            phase, category, action_name = hook_key
+            if action_name == "*":
+                registry = self._get_category_hook_registry(phase)
+                category_hooks = registry.get(category)
+                if category_hooks is None:
+                    return
+                category_hooks.pop(subscription_id, None)
+                if len(category_hooks) == 0:
+                    registry.pop(category, None)
+                return
+            registry = self._get_action_hook_registry(phase)
+            action_hooks = registry.get((category, action_name))
+            if action_hooks is None:
+                return
+            action_hooks.pop(subscription_id, None)
+            if len(action_hooks) == 0:
+                registry.pop((category, action_name), None)
+
+    @contextmanager
+    def _entered_action_hook_scope(
+            self,
+            *,
+            category: str,
+            action_name: str,
+    ) -> Any:
+        """
+        Enter one room-owned action-hook scope.
+
+        Contract:
+            - Fires pre hooks on the first nested entry for the category.
+            - Suppresses nested re-entry for the same category so nested
+              viewer/helper calls do not double-fire hooks.
+            - Fires post hooks only when the matching top-level entry exits
+              after pre hooks completed successfully.
+        """
+        self.check_cleaned()
+        self._validate_action_hook_category(category)
+        if not action_name:
+            raise ValueError("action_name cannot be empty.")
+        pre_category_callbacks: Tuple[Callable[[], None], ...] = tuple()
+        pre_action_callbacks: Tuple[Callable[[], None], ...] = tuple()
+        top_level = False
+        pre_completed = False
+        with self._lock:
+            current_depth = self._action_hook_depth_by_category[category]
+            top_level = current_depth == 0
+            self._action_hook_depth_by_category[category] = current_depth + 1
+            if top_level:
+                pre_category_callbacks = tuple(
+                    self._pre_category_hooks_by_name.get(
+                        category,
+                        {},
+                    ).values()
+                )
+                pre_action_callbacks = tuple(
+                    self._pre_action_hooks_by_key.get(
+                        (category, action_name),
+                        {},
+                    ).values()
+                )
+        try:
+            if top_level:
+                for callback in pre_category_callbacks:
+                    callback()
+                for callback in pre_action_callbacks:
+                    callback()
+                pre_completed = True
+            yield
+        finally:
+            post_action_callbacks: Tuple[Callable[[], None], ...] = tuple()
+            post_category_callbacks: Tuple[Callable[[], None], ...] = tuple()
+            with self._lock:
+                current_depth = self._action_hook_depth_by_category[category]
+                next_depth = current_depth - 1
+                self._action_hook_depth_by_category[category] = next_depth
+                if top_level and pre_completed and next_depth == 0:
+                    post_action_callbacks = tuple(
+                        self._post_action_hooks_by_key.get(
+                            (category, action_name),
+                            {},
+                        ).values()
+                    )
+                    post_category_callbacks = tuple(
+                        self._post_category_hooks_by_name.get(
+                            category,
+                            {},
+                        ).values()
+                    )
+            if top_level and pre_completed:
+                for callback in post_action_callbacks:
+                    callback()
+                for callback in post_category_callbacks:
+                    callback()
+
     def _publish_runtime_event(self, event_payload: Dict[str, object]) -> None:
         """
         Adapt one producer payload into a room-local event emission.
@@ -439,3 +706,147 @@ class RiftSpace(Cleanable, IRiftSpace):
             frame_name=frame_name,
             metadata=metadata,
         )
+
+    def _register_action_hook(
+            self,
+            *,
+            phase: str,
+            category: str,
+            action_name: str,
+            callback: Callable[[], None],
+    ) -> str:
+        """
+        Register one room-owned action hook.
+
+        Args:
+            phase:
+                Hook phase (`pre` or `post`).
+            category:
+                Action category (`command`, `viewer`, or `codegen`).
+            action_name:
+                Stable public action name.
+            callback:
+                Zero-argument hook callback.
+
+        Returns:
+            str: Stable subscription id.
+        """
+        self.check_cleaned()
+        if phase not in ("pre", "post"):
+            raise ValueError("phase must be 'pre' or 'post'.")
+        self._validate_action_hook_category(category)
+        if not action_name:
+            raise ValueError("action_name cannot be empty.")
+        if not callable(callback):
+            raise TypeError("callback must be callable.")
+        with self._lock:
+            subscription_id = IDBuilder.create_id()
+            registry = self._get_action_hook_registry(phase)
+            action_key = (category, action_name)
+            action_hooks = registry.setdefault(action_key, {})
+            action_hooks[subscription_id] = callback
+            self._action_hook_keys_by_subscription_id[subscription_id] = (
+                phase,
+                category,
+                action_name,
+            )
+            return subscription_id
+
+    def _register_category_hook(
+            self,
+            *,
+            phase: str,
+            category: str,
+            callback: Callable[[], None],
+    ) -> str:
+        """
+        Register one room-owned category-wide hook.
+
+        Args:
+            phase:
+                Hook phase (`pre` or `post`).
+            category:
+                Action category (`command`, `viewer`, or `codegen`).
+            callback:
+                Zero-argument hook callback.
+
+        Returns:
+            str: Stable subscription id.
+        """
+        self.check_cleaned()
+        if phase not in ("pre", "post"):
+            raise ValueError("phase must be 'pre' or 'post'.")
+        self._validate_action_hook_category(category)
+        if not callable(callback):
+            raise TypeError("callback must be callable.")
+        with self._lock:
+            subscription_id = IDBuilder.create_id()
+            registry = self._get_category_hook_registry(phase)
+            category_hooks = registry.setdefault(category, {})
+            category_hooks[subscription_id] = callback
+            self._action_hook_keys_by_subscription_id[subscription_id] = (
+                phase,
+                category,
+                "*",
+            )
+            return subscription_id
+
+    def _get_action_hook_registry(
+            self,
+            phase: str,
+    ) -> Dict[Tuple[str, str], Dict[str, Callable[[], None]]]:
+        """
+        Return the room-owned registry for one hook phase.
+
+        Args:
+            phase:
+                Hook phase (`pre` or `post`).
+
+        Returns:
+            Dict[Tuple[str, str], Dict[str, Callable[[], None]]]:
+                Registry keyed by `(category, action_name)`.
+        """
+        if phase == "pre":
+            return self._pre_action_hooks_by_key
+        if phase == "post":
+            return self._post_action_hooks_by_key
+        raise ValueError("phase must be 'pre' or 'post'.")
+
+    def _get_category_hook_registry(
+            self,
+            phase: str,
+    ) -> Dict[str, Dict[str, Callable[[], None]]]:
+        """
+        Return the room-owned registry for one category-wide hook phase.
+
+        Args:
+            phase:
+                Hook phase (`pre` or `post`).
+
+        Returns:
+            Dict[str, Dict[str, Callable[[], None]]]:
+                Registry keyed by category name.
+        """
+        if phase == "pre":
+            return self._pre_category_hooks_by_name
+        if phase == "post":
+            return self._post_category_hooks_by_name
+        raise ValueError("phase must be 'pre' or 'post'.")
+
+    def _validate_action_hook_category(self, category: str) -> None:
+        """
+        Validate one action-hook category name.
+
+        Args:
+            category:
+                Candidate category name.
+
+        Returns:
+            None.
+        """
+        if not category:
+            raise ValueError("category cannot be empty.")
+        if category not in self._ACTION_HOOK_CATEGORIES:
+            raise ValueError(
+                "Unsupported action hook category '{0}'.".format(category)
+            )
