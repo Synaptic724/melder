@@ -3,6 +3,9 @@ import threading
 from typing import Optional
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.aether.nexus.acl.builder.frame_acl_codegen_builder import (
+    FrameACLCodegenBuilder,
+)
 from melder.aether.nexus.acl.configurations.frame_acl_command_configuration import (
     FrameACLCommandConfiguration,
 )
@@ -187,6 +190,48 @@ class FrameACLBuilder(Cleanable):
             self._draft_family_name = family_name
             self._draft_contract_name = contract_name
             self._change_active = True
+
+    def begin_codegen_change(
+            self,
+            *,
+            contract_name: str = "default",
+            reason: str = "builder_draft",
+    ) -> FrameACLCodegenBuilder:
+        """
+        Start one codegen draft session and return the fluent codegen builder.
+
+        Args:
+            contract_name:
+                Named codegen contract to edit.
+            reason:
+                Human-readable draft reason.
+
+        Returns:
+            FrameACLCodegenBuilder: Fluent builder over the active codegen draft.
+        """
+        self.begin_change(
+            "codegen",
+            contract_name=contract_name,
+            reason=reason,
+        )
+        return FrameACLCodegenBuilder(self)
+
+    def _require_active_codegen_configuration(
+            self,
+    ) -> FrameACLCodegenConfiguration:
+        """
+        Return the active codegen draft configuration or raise.
+
+        Returns:
+            FrameACLCodegenConfiguration: Active codegen draft configuration.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if not self._change_active or self._draft_configuration is None:
+                raise RuntimeError("FrameACLBuilder has no active change.")
+            if self._draft_family_name != "codegen":
+                raise RuntimeError("FrameACLBuilder has no active codegen change.")
+            return self._draft_configuration
 
     def apply_frame_acl_profile(
             self,
