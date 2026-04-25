@@ -27,10 +27,22 @@ class CodegenControlStrategy(Cleanable):
     ]
 
     def __init__(self) -> None:
+        """
+        Initialize the codegen control-surface exposure strategy.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
 
     def cleanup(self) -> None:
+        """
+        Idempotently cleanup the control-surface exposure strategy.
+
+        Returns:
+            None.
+        """
         if self._cleaned:
             return
         with self._lock:
@@ -56,6 +68,10 @@ class CodegenControlStrategy(Cleanable):
 
         Returns:
             Dict[str, object]: Codegen namespace entries.
+
+        Raises:
+            TypeError:
+                If `configuration` or `space` is None.
         """
         self.check_cleaned()
         with self._lock:

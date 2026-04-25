@@ -27,10 +27,22 @@ class CodegenTargetStrategy(Cleanable):
     ]
 
     def __init__(self) -> None:
+        """
+        Initialize the target exposure strategy.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
 
     def cleanup(self) -> None:
+        """
+        Idempotently cleanup the target exposure strategy.
+
+        Returns:
+            None.
+        """
         if self._cleaned:
             return
         with self._lock:

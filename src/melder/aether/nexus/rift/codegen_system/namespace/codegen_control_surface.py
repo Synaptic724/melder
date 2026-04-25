@@ -6,6 +6,11 @@ from melder.aether.nexus.rift.codegen_system.execution.codegen_execution_result 
 from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_result import (
     CodegenValidationResult,
 )
+from melder.utilities.interfaces.interfaces import (
+    ICodegenExecutionResult,
+    ICodegenSystem,
+    ICodegenValidationResult,
+)
 
 
 class CodegenControlSurface:
@@ -35,7 +40,7 @@ class CodegenControlSurface:
     def __init__(
             self,
             *,
-            codegen_system: object,
+            codegen_system: ICodegenSystem,
             default_frame_name: str,
             recursive_codegen_allowed: bool,
     ) -> None:
@@ -44,11 +49,14 @@ class CodegenControlSurface:
 
         Args:
             codegen_system:
-                Room-owned internal `CodegenSystem`.
+                Room-owned internal codegen system.
             default_frame_name:
                 Frame name to use when recursive calls omit `frame_name`.
             recursive_codegen_allowed:
                 True when recursive codegen is permitted.
+
+        Returns:
+            None.
         """
         self._codegen_system = codegen_system
         self._default_frame_name = default_frame_name
@@ -80,7 +88,7 @@ class CodegenControlSurface:
         resolved_frame_name = (
             frame_name if frame_name is not None else self._default_frame_name
         )
-        validation_result: CodegenValidationResult = (
+        validation_result: ICodegenValidationResult = (
             self._codegen_system.validate_codegen(
                 code,
                 frame_name=resolved_frame_name,
@@ -114,7 +122,7 @@ class CodegenControlSurface:
         resolved_frame_name = (
             frame_name if frame_name is not None else self._default_frame_name
         )
-        execution_result: CodegenExecutionResult = (
+        execution_result: ICodegenExecutionResult = (
             self._codegen_system.execute_codegen(
                 code,
                 frame_name=resolved_frame_name,

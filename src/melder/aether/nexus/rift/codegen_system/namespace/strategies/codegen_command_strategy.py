@@ -1,9 +1,6 @@
 import threading
 from typing import Dict
 
-from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
-    CodegenNamespaceConfiguration,
-)
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import (
     ICodegenNamespaceConfiguration,
@@ -27,10 +24,22 @@ class CodegenCommandStrategy(Cleanable):
     ]
 
     def __init__(self) -> None:
+        """
+        Initialize the command exposure strategy.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
 
     def cleanup(self) -> None:
+        """
+        Idempotently cleanup the command exposure strategy.
+
+        Returns:
+            None.
+        """
         if self._cleaned:
             return
         with self._lock:

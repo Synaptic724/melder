@@ -23,10 +23,22 @@ class CodegenBuiltinsStrategy(Cleanable):
     ]
 
     def __init__(self) -> None:
+        """
+        Initialize the builtins exposure strategy.
+
+        Returns:
+            None.
+        """
         super().__init__()
         self._lock: threading.RLock = threading.RLock()
 
     def cleanup(self) -> None:
+        """
+        Idempotently cleanup the builtins strategy.
+
+        Returns:
+            None.
+        """
         if self._cleaned:
             return
         with self._lock:
@@ -48,6 +60,10 @@ class CodegenBuiltinsStrategy(Cleanable):
 
         Returns:
             Dict[str, object]: Builtins namespace entries.
+
+        Raises:
+            TypeError:
+                If `configuration` is None.
         """
         self.check_cleaned()
         with self._lock:
