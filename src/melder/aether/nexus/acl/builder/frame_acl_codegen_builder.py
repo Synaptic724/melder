@@ -9,12 +9,13 @@ from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import (
     IFrameACLBuilder,
+    IFrameACLCodegenBuilder,
     IFrameACLCodegenConfiguration,
     IFrameACLRuleSet,
 )
 
 
-class FrameACLCodegenBuilder(Cleanable):
+class FrameACLCodegenBuilder(Cleanable, IFrameACLCodegenBuilder):
     """
     Purpose:
         Provide a fluent authoring surface for one active codegen ACL draft.
@@ -115,7 +116,7 @@ class FrameACLCodegenBuilder(Cleanable):
         with self._lock:
             return self._frame_acl_builder._require_active_codegen_configuration()
 
-    def use_profile(self, profile_name: str) -> "FrameACLCodegenBuilder":
+    def use_profile(self, profile_name: str) -> "IFrameACLCodegenBuilder":
         """
         Replace the base codegen profile on the active draft.
 
@@ -134,7 +135,7 @@ class FrameACLCodegenBuilder(Cleanable):
     def use_precision_profile(
             self,
             profile_name: Optional[str],
-    ) -> "FrameACLCodegenBuilder":
+    ) -> "IFrameACLCodegenBuilder":
         """
         Replace or clear the precision codegen profile on the active draft.
 
@@ -157,7 +158,7 @@ class FrameACLCodegenBuilder(Cleanable):
             allow: bool,
             rule_name: Optional[str] = None,
             conditions: Optional[Dict[str, object]] = None,
-    ) -> "FrameACLCodegenBuilder":
+    ) -> "IFrameACLCodegenBuilder":
         """
         Upsert one frame-family rule on the active draft.
 
@@ -189,7 +190,7 @@ class FrameACLCodegenBuilder(Cleanable):
             allow: bool,
             rule_name: Optional[str] = None,
             conditions: Optional[Dict[str, object]] = None,
-    ) -> "FrameACLCodegenBuilder":
+    ) -> "IFrameACLCodegenBuilder":
         """
         Upsert one conduit-family rule on the active draft.
 
@@ -221,7 +222,7 @@ class FrameACLCodegenBuilder(Cleanable):
             allow: bool,
             rule_name: Optional[str] = None,
             conditions: Optional[Dict[str, object]] = None,
-    ) -> "FrameACLCodegenBuilder":
+    ) -> "IFrameACLCodegenBuilder":
         """
         Upsert one spell-family rule on the active draft.
 
@@ -253,7 +254,7 @@ class FrameACLCodegenBuilder(Cleanable):
             allow: bool,
             rule_name: Optional[str] = None,
             conditions: Optional[Dict[str, object]] = None,
-    ) -> "FrameACLCodegenBuilder":
+    ) -> "IFrameACLCodegenBuilder":
         """
         Upsert one capability-family rule on the active draft.
 
@@ -278,7 +279,7 @@ class FrameACLCodegenBuilder(Cleanable):
             conditions=conditions,
         )
 
-    def enable_imports(self) -> "FrameACLCodegenBuilder":
+    def enable_imports(self) -> "IFrameACLCodegenBuilder":
         """
         Allow import statements for the active draft.
         """
@@ -288,7 +289,7 @@ class FrameACLCodegenBuilder(Cleanable):
             rule_name=self._DEFAULT_IMPORTS_RULE_NAME,
         )
 
-    def disable_imports(self) -> "FrameACLCodegenBuilder":
+    def disable_imports(self) -> "IFrameACLCodegenBuilder":
         """
         Deny import statements for the active draft.
         """
@@ -301,7 +302,7 @@ class FrameACLCodegenBuilder(Cleanable):
     def allow_import_module_roots(
             self,
             *module_roots: str,
-    ) -> "FrameACLCodegenBuilder":
+    ) -> "IFrameACLCodegenBuilder":
         """
         Merge allowed import roots into the active draft.
         """
@@ -317,7 +318,7 @@ class FrameACLCodegenBuilder(Cleanable):
     def deny_import_module_roots(
             self,
             *module_roots: str,
-    ) -> "FrameACLCodegenBuilder":
+    ) -> "IFrameACLCodegenBuilder":
         """
         Merge denied import roots into the active draft.
         """
@@ -333,7 +334,7 @@ class FrameACLCodegenBuilder(Cleanable):
     def allow_builtin_names(
             self,
             *builtin_names: str,
-    ) -> "FrameACLCodegenBuilder":
+    ) -> "IFrameACLCodegenBuilder":
         """
         Merge explicitly allowed builtin names into the active draft.
         """
@@ -349,7 +350,7 @@ class FrameACLCodegenBuilder(Cleanable):
     def deny_builtin_names(
             self,
             *builtin_names: str,
-    ) -> "FrameACLCodegenBuilder":
+    ) -> "IFrameACLCodegenBuilder":
         """
         Merge explicitly denied builtin names into the active draft.
         """
@@ -362,7 +363,7 @@ class FrameACLCodegenBuilder(Cleanable):
             values=builtin_names,
         )
 
-    def allow_unsafe_reflection(self) -> "FrameACLCodegenBuilder":
+    def allow_unsafe_reflection(self) -> "IFrameACLCodegenBuilder":
         """
         Allow unsafe reflection for the active draft.
         """
@@ -372,7 +373,7 @@ class FrameACLCodegenBuilder(Cleanable):
             rule_name=self._DEFAULT_UNSAFE_REFLECTION_RULE_NAME,
         )
 
-    def deny_unsafe_reflection(self) -> "FrameACLCodegenBuilder":
+    def deny_unsafe_reflection(self) -> "IFrameACLCodegenBuilder":
         """
         Deny unsafe reflection for the active draft.
         """
@@ -382,7 +383,7 @@ class FrameACLCodegenBuilder(Cleanable):
             rule_name=self._DEFAULT_UNSAFE_REFLECTION_RULE_NAME,
         )
 
-    def allow_dunder_access(self) -> "FrameACLCodegenBuilder":
+    def allow_dunder_access(self) -> "IFrameACLCodegenBuilder":
         """
         Allow dunder access for the active draft.
         """
@@ -392,7 +393,7 @@ class FrameACLCodegenBuilder(Cleanable):
             rule_name=self._DEFAULT_DUNDER_ACCESS_RULE_NAME,
         )
 
-    def deny_dunder_access(self) -> "FrameACLCodegenBuilder":
+    def deny_dunder_access(self) -> "IFrameACLCodegenBuilder":
         """
         Deny dunder access for the active draft.
         """
@@ -402,7 +403,7 @@ class FrameACLCodegenBuilder(Cleanable):
             rule_name=self._DEFAULT_DUNDER_ACCESS_RULE_NAME,
         )
 
-    def allow_recursive_codegen(self) -> "FrameACLCodegenBuilder":
+    def allow_recursive_codegen(self) -> "IFrameACLCodegenBuilder":
         """
         Allow recursive codegen for the active draft.
         """
@@ -412,7 +413,7 @@ class FrameACLCodegenBuilder(Cleanable):
             rule_name=self._DEFAULT_RECURSIVE_CODEGEN_RULE_NAME,
         )
 
-    def deny_recursive_codegen(self) -> "FrameACLCodegenBuilder":
+    def deny_recursive_codegen(self) -> "IFrameACLCodegenBuilder":
         """
         Deny recursive codegen for the active draft.
         """
@@ -422,7 +423,7 @@ class FrameACLCodegenBuilder(Cleanable):
             rule_name=self._DEFAULT_RECURSIVE_CODEGEN_RULE_NAME,
         )
 
-    def remove_capability_rule(self, rule_name: str) -> "FrameACLCodegenBuilder":
+    def remove_capability_rule(self, rule_name: str) -> "IFrameACLCodegenBuilder":
         """
         Remove one capability-family rule from the active draft.
 
@@ -476,7 +477,7 @@ class FrameACLCodegenBuilder(Cleanable):
             allow: bool,
             rule_name: Optional[str],
             conditions: Optional[Dict[str, object]],
-    ) -> "FrameACLCodegenBuilder":
+    ) -> "IFrameACLCodegenBuilder":
         """
         Upsert one typed rule into the supplied ruleset.
 
@@ -527,7 +528,7 @@ class FrameACLCodegenBuilder(Cleanable):
             effect: str,
             condition_key: str,
             values: Sequence[str],
-    ) -> "FrameACLCodegenBuilder":
+    ) -> "IFrameACLCodegenBuilder":
         """
         Merge string condition values into one stable named rule.
 

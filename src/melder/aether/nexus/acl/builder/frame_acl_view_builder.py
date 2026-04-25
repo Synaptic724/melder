@@ -10,11 +10,12 @@ from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import (
     IFrameACLBuilder,
     IFrameACLRuleSet,
+    IFrameACLViewBuilder,
     IFrameACLViewConfiguration,
 )
 
 
-class FrameACLViewBuilder(Cleanable):
+class FrameACLViewBuilder(Cleanable, IFrameACLViewBuilder):
     """
     Purpose:
         Provide fluent authoring for one active view-family ACL draft.
@@ -111,7 +112,7 @@ class FrameACLViewBuilder(Cleanable):
         with self._lock:
             return self._frame_acl_builder._require_active_view_configuration()
 
-    def use_profile(self, profile_name: str) -> "FrameACLViewBuilder":
+    def use_profile(self, profile_name: str) -> "IFrameACLViewBuilder":
         """
         Replace the base view profile on the active draft.
 
@@ -130,7 +131,7 @@ class FrameACLViewBuilder(Cleanable):
     def use_precision_profile(
             self,
             profile_name: Optional[str],
-    ) -> "FrameACLViewBuilder":
+    ) -> "IFrameACLViewBuilder":
         """
         Replace or clear the precision view profile on the active draft.
 
@@ -154,7 +155,7 @@ class FrameACLViewBuilder(Cleanable):
             allow: bool,
             rule_name: Optional[str] = None,
             conditions: Optional[Dict[str, object]] = None,
-    ) -> "FrameACLViewBuilder":
+    ) -> "IFrameACLViewBuilder":
         """
         Upsert one frame-family rule on the active draft.
 
@@ -186,7 +187,7 @@ class FrameACLViewBuilder(Cleanable):
             allow: bool,
             rule_name: Optional[str] = None,
             conditions: Optional[Dict[str, object]] = None,
-    ) -> "FrameACLViewBuilder":
+    ) -> "IFrameACLViewBuilder":
         """
         Upsert one conduit-family rule on the active draft.
 
@@ -218,7 +219,7 @@ class FrameACLViewBuilder(Cleanable):
             allow: bool,
             rule_name: Optional[str] = None,
             conditions: Optional[Dict[str, object]] = None,
-    ) -> "FrameACLViewBuilder":
+    ) -> "IFrameACLViewBuilder":
         """
         Upsert one spell-family rule on the active draft.
 
@@ -250,7 +251,7 @@ class FrameACLViewBuilder(Cleanable):
             allow: bool,
             rule_name: Optional[str] = None,
             conditions: Optional[Dict[str, object]] = None,
-    ) -> "FrameACLViewBuilder":
+    ) -> "IFrameACLViewBuilder":
         """
         Upsert one member-family rule on the active draft.
 
@@ -276,7 +277,7 @@ class FrameACLViewBuilder(Cleanable):
             conditions=conditions,
         )
 
-    def allow_frame_visibility(self) -> "FrameACLViewBuilder":
+    def allow_frame_visibility(self) -> "IFrameACLViewBuilder":
         """
         Allow frame visibility in the active draft.
 
@@ -285,7 +286,7 @@ class FrameACLViewBuilder(Cleanable):
         """
         return self.set_frame_operation("visible", allow=True)
 
-    def deny_frame_visibility(self) -> "FrameACLViewBuilder":
+    def deny_frame_visibility(self) -> "IFrameACLViewBuilder":
         """
         Deny frame visibility in the active draft.
 
@@ -294,7 +295,7 @@ class FrameACLViewBuilder(Cleanable):
         """
         return self.set_frame_operation("visible", allow=False)
 
-    def allow_frame_payload(self) -> "FrameACLViewBuilder":
+    def allow_frame_payload(self) -> "IFrameACLViewBuilder":
         """
         Allow frame payload visibility in the active draft.
 
@@ -303,7 +304,7 @@ class FrameACLViewBuilder(Cleanable):
         """
         return self.set_frame_operation("show_payload", allow=True)
 
-    def deny_frame_payload(self) -> "FrameACLViewBuilder":
+    def deny_frame_payload(self) -> "IFrameACLViewBuilder":
         """
         Deny frame payload visibility in the active draft.
 
@@ -312,7 +313,7 @@ class FrameACLViewBuilder(Cleanable):
         """
         return self.set_frame_operation("show_payload", allow=False)
 
-    def allow_conduit_policy(self) -> "FrameACLViewBuilder":
+    def allow_conduit_policy(self) -> "IFrameACLViewBuilder":
         """
         Allow conduit policy visibility in the active draft.
 
@@ -321,7 +322,7 @@ class FrameACLViewBuilder(Cleanable):
         """
         return self.set_conduit_operation("show_policy", allow=True)
 
-    def deny_conduit_policy(self) -> "FrameACLViewBuilder":
+    def deny_conduit_policy(self) -> "IFrameACLViewBuilder":
         """
         Deny conduit policy visibility in the active draft.
 
@@ -330,7 +331,7 @@ class FrameACLViewBuilder(Cleanable):
         """
         return self.set_conduit_operation("show_policy", allow=False)
 
-    def allow_conduit_peer_links(self) -> "FrameACLViewBuilder":
+    def allow_conduit_peer_links(self) -> "IFrameACLViewBuilder":
         """
         Allow conduit peer-link visibility in the active draft.
 
@@ -339,7 +340,7 @@ class FrameACLViewBuilder(Cleanable):
         """
         return self.set_conduit_operation("show_peer_links", allow=True)
 
-    def deny_conduit_peer_links(self) -> "FrameACLViewBuilder":
+    def deny_conduit_peer_links(self) -> "IFrameACLViewBuilder":
         """
         Deny conduit peer-link visibility in the active draft.
 
@@ -348,7 +349,7 @@ class FrameACLViewBuilder(Cleanable):
         """
         return self.set_conduit_operation("show_peer_links", allow=False)
 
-    def allow_spell_class_profile(self) -> "FrameACLViewBuilder":
+    def allow_spell_class_profile(self) -> "IFrameACLViewBuilder":
         """
         Allow class-profile visibility for spells in the active draft.
 
@@ -357,7 +358,7 @@ class FrameACLViewBuilder(Cleanable):
         """
         return self.set_spell_operation("show_class_profile", allow=True)
 
-    def deny_spell_class_profile(self) -> "FrameACLViewBuilder":
+    def deny_spell_class_profile(self) -> "IFrameACLViewBuilder":
         """
         Deny class-profile visibility for spells in the active draft.
 
@@ -366,7 +367,7 @@ class FrameACLViewBuilder(Cleanable):
         """
         return self.set_spell_operation("show_class_profile", allow=False)
 
-    def allow_spell_callable_profile(self) -> "FrameACLViewBuilder":
+    def allow_spell_callable_profile(self) -> "IFrameACLViewBuilder":
         """
         Allow callable-profile visibility for spells in the active draft.
 
@@ -375,7 +376,7 @@ class FrameACLViewBuilder(Cleanable):
         """
         return self.set_spell_operation("show_callable_profile", allow=True)
 
-    def deny_spell_callable_profile(self) -> "FrameACLViewBuilder":
+    def deny_spell_callable_profile(self) -> "IFrameACLViewBuilder":
         """
         Deny callable-profile visibility for spells in the active draft.
 
@@ -384,7 +385,7 @@ class FrameACLViewBuilder(Cleanable):
         """
         return self.set_spell_operation("show_callable_profile", allow=False)
 
-    def allow_spell_instance_members(self) -> "FrameACLViewBuilder":
+    def allow_spell_instance_members(self) -> "IFrameACLViewBuilder":
         """
         Allow spell instance-member visibility in the active draft.
 
@@ -393,7 +394,7 @@ class FrameACLViewBuilder(Cleanable):
         """
         return self.set_spell_operation("show_instance_members", allow=True)
 
-    def deny_spell_instance_members(self) -> "FrameACLViewBuilder":
+    def deny_spell_instance_members(self) -> "IFrameACLViewBuilder":
         """
         Deny spell instance-member visibility in the active draft.
 
@@ -402,7 +403,7 @@ class FrameACLViewBuilder(Cleanable):
         """
         return self.set_spell_operation("show_instance_members", allow=False)
 
-    def allow_spell_dynamic_access(self) -> "FrameACLViewBuilder":
+    def allow_spell_dynamic_access(self) -> "IFrameACLViewBuilder":
         """
         Allow spell dynamic-access visibility in the active draft.
 
@@ -411,7 +412,7 @@ class FrameACLViewBuilder(Cleanable):
         """
         return self.set_spell_operation("show_dynamic_access", allow=True)
 
-    def deny_spell_dynamic_access(self) -> "FrameACLViewBuilder":
+    def deny_spell_dynamic_access(self) -> "IFrameACLViewBuilder":
         """
         Deny spell dynamic-access visibility in the active draft.
 
@@ -425,7 +426,7 @@ class FrameACLViewBuilder(Cleanable):
             member_name: str,
             *,
             rule_name: Optional[str] = None,
-    ) -> "FrameACLViewBuilder":
+    ) -> "IFrameACLViewBuilder":
         """
         Allow one exact member name in the active draft.
 
@@ -456,7 +457,7 @@ class FrameACLViewBuilder(Cleanable):
             member_name: str,
             *,
             rule_name: Optional[str] = None,
-    ) -> "FrameACLViewBuilder":
+    ) -> "IFrameACLViewBuilder":
         """
         Deny one exact member name in the active draft.
 
@@ -487,7 +488,7 @@ class FrameACLViewBuilder(Cleanable):
             pattern: str,
             *,
             rule_name: Optional[str] = None,
-    ) -> "FrameACLViewBuilder":
+    ) -> "IFrameACLViewBuilder":
         """
         Allow one member-pattern rule in the active draft.
 
@@ -518,7 +519,7 @@ class FrameACLViewBuilder(Cleanable):
             pattern: str,
             *,
             rule_name: Optional[str] = None,
-    ) -> "FrameACLViewBuilder":
+    ) -> "IFrameACLViewBuilder":
         """
         Deny one member-pattern rule in the active draft.
 
@@ -544,7 +545,7 @@ class FrameACLViewBuilder(Cleanable):
             conditions={"pattern": pattern},
         )
 
-    def remove_member_rule(self, rule_name: str) -> "FrameACLViewBuilder":
+    def remove_member_rule(self, rule_name: str) -> "IFrameACLViewBuilder":
         """
         Remove one member-family rule from the active draft.
 
@@ -590,7 +591,7 @@ class FrameACLViewBuilder(Cleanable):
             allow: bool,
             rule_name: Optional[str],
             conditions: Optional[Dict[str, object]],
-    ) -> "FrameACLViewBuilder":
+    ) -> "IFrameACLViewBuilder":
         """
         Upsert one typed rule into the supplied ruleset.
 
@@ -636,7 +637,7 @@ class FrameACLViewBuilder(Cleanable):
             self,
             ruleset: IFrameACLRuleSet,
             rule_name: str,
-    ) -> "FrameACLViewBuilder":
+    ) -> "IFrameACLViewBuilder":
         """
         Remove one named rule from the supplied ruleset.
 

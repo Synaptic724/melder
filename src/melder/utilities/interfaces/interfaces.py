@@ -3038,6 +3038,380 @@ class IFrameACLCodegenConfiguration(ICleanable, Protocol):
 
 
 @runtime_checkable
+class IFrameACLViewBuilder(ICleanable, Protocol):
+    """
+    Fluent builder contract for one active view-family ACL draft.
+    """
+
+    id: str
+    draft_configuration: IFrameACLViewConfiguration
+
+    def use_profile(self, profile_name: str) -> "IFrameACLViewBuilder":
+        ...
+
+    def use_precision_profile(
+            self,
+            profile_name: Optional[str],
+    ) -> "IFrameACLViewBuilder":
+        ...
+
+    def set_frame_operation(
+            self,
+            operation_name: str,
+            *,
+            allow: bool,
+            rule_name: Optional[str] = None,
+            conditions: Optional[Dict[str, Any]] = None,
+    ) -> "IFrameACLViewBuilder":
+        ...
+
+    def set_conduit_operation(
+            self,
+            operation_name: str,
+            *,
+            allow: bool,
+            rule_name: Optional[str] = None,
+            conditions: Optional[Dict[str, Any]] = None,
+    ) -> "IFrameACLViewBuilder":
+        ...
+
+    def set_spell_operation(
+            self,
+            operation_name: str,
+            *,
+            allow: bool,
+            rule_name: Optional[str] = None,
+            conditions: Optional[Dict[str, Any]] = None,
+    ) -> "IFrameACLViewBuilder":
+        ...
+
+    def set_member_operation(
+            self,
+            operation_name: str,
+            *,
+            allow: bool,
+            rule_name: Optional[str] = None,
+            conditions: Optional[Dict[str, Any]] = None,
+    ) -> "IFrameACLViewBuilder":
+        ...
+
+    def allow_frame_visibility(self) -> "IFrameACLViewBuilder":
+        ...
+
+    def deny_frame_visibility(self) -> "IFrameACLViewBuilder":
+        ...
+
+    def allow_frame_payload(self) -> "IFrameACLViewBuilder":
+        ...
+
+    def deny_frame_payload(self) -> "IFrameACLViewBuilder":
+        ...
+
+    def allow_conduit_policy(self) -> "IFrameACLViewBuilder":
+        ...
+
+    def deny_conduit_policy(self) -> "IFrameACLViewBuilder":
+        ...
+
+    def allow_conduit_peer_links(self) -> "IFrameACLViewBuilder":
+        ...
+
+    def deny_conduit_peer_links(self) -> "IFrameACLViewBuilder":
+        ...
+
+    def allow_spell_class_profile(self) -> "IFrameACLViewBuilder":
+        ...
+
+    def deny_spell_class_profile(self) -> "IFrameACLViewBuilder":
+        ...
+
+    def allow_spell_callable_profile(self) -> "IFrameACLViewBuilder":
+        ...
+
+    def deny_spell_callable_profile(self) -> "IFrameACLViewBuilder":
+        ...
+
+    def allow_spell_instance_members(self) -> "IFrameACLViewBuilder":
+        ...
+
+    def deny_spell_instance_members(self) -> "IFrameACLViewBuilder":
+        ...
+
+    def allow_spell_dynamic_access(self) -> "IFrameACLViewBuilder":
+        ...
+
+    def deny_spell_dynamic_access(self) -> "IFrameACLViewBuilder":
+        ...
+
+    def allow_member_name(
+            self,
+            member_name: str,
+            *,
+            rule_name: Optional[str] = None,
+    ) -> "IFrameACLViewBuilder":
+        ...
+
+    def deny_member_name(
+            self,
+            member_name: str,
+            *,
+            rule_name: Optional[str] = None,
+    ) -> "IFrameACLViewBuilder":
+        ...
+
+    def allow_member_pattern(
+            self,
+            pattern: str,
+            *,
+            rule_name: Optional[str] = None,
+    ) -> "IFrameACLViewBuilder":
+        ...
+
+    def deny_member_pattern(
+            self,
+            pattern: str,
+            *,
+            rule_name: Optional[str] = None,
+    ) -> "IFrameACLViewBuilder":
+        ...
+
+    def remove_member_rule(self, rule_name: str) -> "IFrameACLViewBuilder":
+        ...
+
+    def commit_change(self) -> IFrameACLViewConfiguration:
+        ...
+
+    def discard_change(self) -> None:
+        ...
+
+
+@runtime_checkable
+class IFrameACLCommandBuilder(ICleanable, Protocol):
+    """
+    Fluent builder contract for one active command-family ACL draft.
+    """
+
+    id: str
+    draft_configuration: IFrameACLCommandConfiguration
+
+    def use_profile(self, profile_name: str) -> "IFrameACLCommandBuilder":
+        ...
+
+    def use_precision_profile(
+            self,
+            profile_name: Optional[str],
+    ) -> "IFrameACLCommandBuilder":
+        ...
+
+    def set_frame_operation(
+            self,
+            operation_name: str,
+            *,
+            allow: bool,
+            rule_name: Optional[str] = None,
+            conditions: Optional[Dict[str, Any]] = None,
+    ) -> "IFrameACLCommandBuilder":
+        ...
+
+    def set_conduit_operation(
+            self,
+            operation_name: str,
+            *,
+            allow: bool,
+            rule_name: Optional[str] = None,
+            conditions: Optional[Dict[str, Any]] = None,
+    ) -> "IFrameACLCommandBuilder":
+        ...
+
+    def set_spell_operation(
+            self,
+            operation_name: str,
+            *,
+            allow: bool,
+            rule_name: Optional[str] = None,
+            conditions: Optional[Dict[str, Any]] = None,
+    ) -> "IFrameACLCommandBuilder":
+        ...
+
+    def set_member_operation(
+            self,
+            operation_name: str,
+            *,
+            allow: bool,
+            rule_name: Optional[str] = None,
+            conditions: Optional[Dict[str, Any]] = None,
+    ) -> "IFrameACLCommandBuilder":
+        ...
+
+    def allow_frame_enable(self) -> "IFrameACLCommandBuilder":
+        ...
+
+    def deny_frame_enable(self) -> "IFrameACLCommandBuilder":
+        ...
+
+    def allow_conduit_enable(self) -> "IFrameACLCommandBuilder":
+        ...
+
+    def deny_conduit_enable(self) -> "IFrameACLCommandBuilder":
+        ...
+
+    def allow_spell_enable(self) -> "IFrameACLCommandBuilder":
+        ...
+
+    def deny_spell_enable(self) -> "IFrameACLCommandBuilder":
+        ...
+
+    def allow_member_read_attribute(self) -> "IFrameACLCommandBuilder":
+        ...
+
+    def deny_member_read_attribute(self) -> "IFrameACLCommandBuilder":
+        ...
+
+    def allow_member_invoke_method(self) -> "IFrameACLCommandBuilder":
+        ...
+
+    def deny_member_invoke_method(self) -> "IFrameACLCommandBuilder":
+        ...
+
+    def allow_member_write_attribute(self) -> "IFrameACLCommandBuilder":
+        ...
+
+    def deny_member_write_attribute(self) -> "IFrameACLCommandBuilder":
+        ...
+
+    def allow_member_dunder_access(self) -> "IFrameACLCommandBuilder":
+        ...
+
+    def deny_member_dunder_access(self) -> "IFrameACLCommandBuilder":
+        ...
+
+    def remove_member_rule(self, rule_name: str) -> "IFrameACLCommandBuilder":
+        ...
+
+    def commit_change(self) -> IFrameACLCommandConfiguration:
+        ...
+
+    def discard_change(self) -> None:
+        ...
+
+
+@runtime_checkable
+class IFrameACLCodegenBuilder(ICleanable, Protocol):
+    """
+    Fluent builder contract for one active codegen-family ACL draft.
+    """
+
+    id: str
+    draft_configuration: IFrameACLCodegenConfiguration
+
+    def use_profile(self, profile_name: str) -> "IFrameACLCodegenBuilder":
+        ...
+
+    def use_precision_profile(
+            self,
+            profile_name: Optional[str],
+    ) -> "IFrameACLCodegenBuilder":
+        ...
+
+    def set_frame_operation(
+            self,
+            operation_name: str,
+            *,
+            allow: bool,
+            rule_name: Optional[str] = None,
+            conditions: Optional[Dict[str, Any]] = None,
+    ) -> "IFrameACLCodegenBuilder":
+        ...
+
+    def set_conduit_operation(
+            self,
+            operation_name: str,
+            *,
+            allow: bool,
+            rule_name: Optional[str] = None,
+            conditions: Optional[Dict[str, Any]] = None,
+    ) -> "IFrameACLCodegenBuilder":
+        ...
+
+    def set_spell_operation(
+            self,
+            operation_name: str,
+            *,
+            allow: bool,
+            rule_name: Optional[str] = None,
+            conditions: Optional[Dict[str, Any]] = None,
+    ) -> "IFrameACLCodegenBuilder":
+        ...
+
+    def set_capability_operation(
+            self,
+            operation_name: str,
+            *,
+            allow: bool,
+            rule_name: Optional[str] = None,
+            conditions: Optional[Dict[str, Any]] = None,
+    ) -> "IFrameACLCodegenBuilder":
+        ...
+
+    def enable_imports(self) -> "IFrameACLCodegenBuilder":
+        ...
+
+    def disable_imports(self) -> "IFrameACLCodegenBuilder":
+        ...
+
+    def allow_import_module_roots(
+            self,
+            *module_roots: str,
+    ) -> "IFrameACLCodegenBuilder":
+        ...
+
+    def deny_import_module_roots(
+            self,
+            *module_roots: str,
+    ) -> "IFrameACLCodegenBuilder":
+        ...
+
+    def allow_builtin_names(
+            self,
+            *builtin_names: str,
+    ) -> "IFrameACLCodegenBuilder":
+        ...
+
+    def deny_builtin_names(
+            self,
+            *builtin_names: str,
+    ) -> "IFrameACLCodegenBuilder":
+        ...
+
+    def allow_unsafe_reflection(self) -> "IFrameACLCodegenBuilder":
+        ...
+
+    def deny_unsafe_reflection(self) -> "IFrameACLCodegenBuilder":
+        ...
+
+    def allow_dunder_access(self) -> "IFrameACLCodegenBuilder":
+        ...
+
+    def deny_dunder_access(self) -> "IFrameACLCodegenBuilder":
+        ...
+
+    def allow_recursive_codegen(self) -> "IFrameACLCodegenBuilder":
+        ...
+
+    def deny_recursive_codegen(self) -> "IFrameACLCodegenBuilder":
+        ...
+
+    def remove_capability_rule(self, rule_name: str) -> "IFrameACLCodegenBuilder":
+        ...
+
+    def commit_change(self) -> IFrameACLCodegenConfiguration:
+        ...
+
+    def discard_change(self) -> None:
+        ...
+
+
+@runtime_checkable
 class IFrameACLSetCompatibilityReport(ICleanable, Protocol):
     """
     Detached compatibility-validation report for one ACL bundle.
@@ -3093,6 +3467,50 @@ class IFrameACLBuilder(ICleanable, Protocol):
     change_active: bool
     draft_family_name: Optional[str]
     draft_contract_name: Optional[str]
+
+    def begin_view_change(
+            self,
+            *,
+            contract_name: str = "default",
+            reason: str = "builder_draft",
+    ) -> IFrameACLViewBuilder:
+        """
+        Start one view draft session and return the fluent view builder.
+
+        Returns:
+            IFrameACLViewBuilder: Fluent builder over the active view draft.
+        """
+        ...
+
+    def begin_command_change(
+            self,
+            *,
+            contract_name: str = "default",
+            reason: str = "builder_draft",
+    ) -> IFrameACLCommandBuilder:
+        """
+        Start one command draft session and return the fluent command builder.
+
+        Returns:
+            IFrameACLCommandBuilder: Fluent builder over the active command
+            draft.
+        """
+        ...
+
+    def begin_codegen_change(
+            self,
+            *,
+            contract_name: str = "default",
+            reason: str = "builder_draft",
+    ) -> IFrameACLCodegenBuilder:
+        """
+        Start one codegen draft session and return the fluent codegen builder.
+
+        Returns:
+            IFrameACLCodegenBuilder: Fluent builder over the active codegen
+            draft.
+        """
+        ...
 
     def set_profile_name(self, profile_name: str) -> None:
         """

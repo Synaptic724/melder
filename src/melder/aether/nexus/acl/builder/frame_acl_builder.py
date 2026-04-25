@@ -24,11 +24,15 @@ from melder.aether.nexus.acl.configurations.frame_acl_view_configuration import 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
 from melder.utilities.interfaces.interfaces import (
+    IFrameACLBuilder,
+    IFrameACLCommandBuilder,
     IFrameACLCommandConfiguration,
+    IFrameACLCodegenBuilder,
     IFrameACLCodegenConfiguration,
     IFrameACLConfiguration,
     IFrameACLContainer,
     IFrameACLProfile,
+    IFrameACLViewBuilder,
     IFrameACLViewConfiguration,
 )
 
@@ -46,7 +50,7 @@ FrameACLCommittedConfiguration = Union[
 ]
 
 
-class FrameACLBuilder(Cleanable):
+class FrameACLBuilder(Cleanable, IFrameACLBuilder):
     """
     Purpose:
         Provide the frame-local mutable ACL authoring surface for one
@@ -247,7 +251,7 @@ class FrameACLBuilder(Cleanable):
             *,
             contract_name: str = "default",
             reason: str = "builder_draft",
-    ) -> FrameACLViewBuilder:
+    ) -> IFrameACLViewBuilder:
         """
         Start one view-family draft and return its fluent builder.
 
@@ -272,7 +276,7 @@ class FrameACLBuilder(Cleanable):
             *,
             contract_name: str = "default",
             reason: str = "builder_draft",
-    ) -> FrameACLCommandBuilder:
+    ) -> IFrameACLCommandBuilder:
         """
         Start one command-family draft and return its fluent builder.
 
@@ -297,7 +301,7 @@ class FrameACLBuilder(Cleanable):
             *,
             contract_name: str = "default",
             reason: str = "builder_draft",
-    ) -> FrameACLCodegenBuilder:
+    ) -> IFrameACLCodegenBuilder:
         """
         Start one codegen-family draft and return its fluent builder.
 
