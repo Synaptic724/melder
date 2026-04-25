@@ -171,6 +171,32 @@ def test_frame_acl_compiler_safe_codegen_profile_denies_recursive_codegen() -> N
     assert compiled_surface.codegen_recursive_codegen_allowed is False
 
 
+def test_frame_acl_compiler_full_access_codegen_profile_leaves_import_roots_open() -> None:
+    configuration = FrameACLConfiguration.create_new_from_acl_configuration(
+        FrameACLConfiguration.create_default("ops"),
+        reason="full_access_codegen_validation",
+    )
+    configuration.set_codegen_configuration(
+        configuration.codegen_configuration.from_profile(
+            FrameACLCodegenProfile.create_full_access()
+        )
+    )
+    configuration.finalize()
+
+    compiled_surface = _build_compiler().compile_frame_access_surface(
+        _build_frame_descriptor(),
+        configuration,
+    )
+
+    assert compiled_surface.codegen_imports_enabled is True
+    assert compiled_surface.allowed_import_module_roots == tuple()
+    assert compiled_surface.denied_import_module_roots == tuple()
+    assert compiled_surface.denied_builtin_names == tuple()
+    assert compiled_surface.codegen_unsafe_reflection_allowed is True
+    assert compiled_surface.codegen_dunder_access_allowed is True
+    assert compiled_surface.codegen_recursive_codegen_allowed is True
+
+
 def test_frame_acl_validator_rejects_codegen_import_rule_without_module_roots() -> None:
     configuration = FrameACLConfiguration.create_new_from_acl_configuration(
         FrameACLConfiguration.create_default("ops"),

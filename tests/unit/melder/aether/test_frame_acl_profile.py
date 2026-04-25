@@ -310,7 +310,12 @@ def test_frame_acl_profile_builder_seeds_defaults_and_composes_profiles() -> Non
 
     assert builder.version == "0.0.1"
     assert builder.list_view_profile_names() == ["safe", "hybrid", "permissive"]
-    assert builder.list_codegen_profile_names() == ["safe", "hybrid", "permissive"]
+    assert builder.list_codegen_profile_names() == [
+        "safe",
+        "hybrid",
+        "permissive",
+        "full_access",
+    ]
     assert composed_profile.name == "support"
     assert composed_profile.version == "0.0.1"
     assert composed_profile.view_profile is builder.get_required_view_profile(
@@ -352,6 +357,7 @@ def test_frame_acl_profile_builder_registers_custom_profiles_and_blocks_default_
         "safe",
         "hybrid",
         "permissive",
+        "full_access",
         "support_codegen",
     ]
     assert builder.remove_view_profile("support_view") is True

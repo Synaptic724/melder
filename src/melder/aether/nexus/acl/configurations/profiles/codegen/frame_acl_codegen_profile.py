@@ -198,6 +198,24 @@ class FrameACLCodegenProfile(Cleanable):
         return create_permissive_codegen_profile()
 
     @classmethod
+    def create_full_access(cls) -> "FrameACLCodegenProfile":
+        """
+        Create the reusable `full_access` codegen profile.
+
+        Contract:
+            Returns the least restrictive standard codegen posture in the
+            current ACL model.
+
+        Returns:
+            FrameACLCodegenProfile: Reusable `full_access` codegen profile.
+        """
+        from melder.aether.nexus.acl.configurations.profiles.codegen.full_access_profile import (
+            create_full_access_codegen_profile,
+        )
+
+        return create_full_access_codegen_profile()
+
+    @classmethod
     def create_precision(cls) -> "FrameACLCodegenProfile":
         """
         Create the reusable `precision` codegen profile.

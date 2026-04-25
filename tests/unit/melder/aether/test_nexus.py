@@ -2763,6 +2763,94 @@ def test_codegen_validate_codegen_hybrid_profile_rejects_reflection_helpers() ->
     )
 
 
+def test_codegen_validate_codegen_hybrid_profile_rejects_reflection_module_aliases() -> None:
+    """
+    Verify hybrid codegen profiles reject aliased reflection modules.
+
+    Returns:
+        None.
+    """
+    detached_rift = _make_detached_rift_projection_owner()
+    detached_rift._codegen_projections_by_frame_name["ops"] = _build_codegen_projection(
+        "ops",
+        codegen_profile_name="hybrid",
+    )
+    space = CodegenRiftSpace(
+        rift=detached_rift,
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    result = space.command_system.validate_codegen(
+        "import inspect as i\nresult = i.signature(command.link_frame)",
+        frame_name="ops",
+    )
+
+    assert result["accepted"] is False
+    assert result["reason"] == "codegen_validation_failed"
+    assert "Reflection helper 'i.signature' is not allowed" in (
+        result["validation_issues"][0]
+    )
+
+
+def test_codegen_validate_codegen_hybrid_profile_rejects_imported_reflection_helpers() -> None:
+    """
+    Verify hybrid codegen profiles reject imported reflection helper names.
+
+    Returns:
+        None.
+    """
+    detached_rift = _make_detached_rift_projection_owner()
+    detached_rift._codegen_projections_by_frame_name["ops"] = _build_codegen_projection(
+        "ops",
+        codegen_profile_name="hybrid",
+    )
+    space = CodegenRiftSpace(
+        rift=detached_rift,
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    result = space.command_system.validate_codegen(
+        "from inspect import signature\nresult = signature(command.link_frame)",
+        frame_name="ops",
+    )
+
+    assert result["accepted"] is False
+    assert result["reason"] == "codegen_validation_failed"
+    assert "Reflection helper 'signature' is not allowed" in (
+        result["validation_issues"][0]
+    )
+
+
+def test_codegen_validate_codegen_hybrid_profile_rejects_builtin_introspection_helpers() -> None:
+    """
+    Verify hybrid codegen profiles reject direct builtin reflection helpers.
+
+    Returns:
+        None.
+    """
+    detached_rift = _make_detached_rift_projection_owner()
+    detached_rift._codegen_projections_by_frame_name["ops"] = _build_codegen_projection(
+        "ops",
+        codegen_profile_name="hybrid",
+    )
+    space = CodegenRiftSpace(
+        rift=detached_rift,
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    result = space.command_system.validate_codegen(
+        "result = type(command)",
+        frame_name="ops",
+    )
+
+    assert result["accepted"] is False
+    assert result["reason"] == "codegen_validation_failed"
+    assert "Reflection helper 'type' is not allowed" in result["validation_issues"][0]
+
+
 def test_codegen_validate_codegen_precision_profile_uses_narrower_import_set() -> None:
     """
     Verify precision codegen profiles reject imports that hybrid still allows.
@@ -2822,6 +2910,33 @@ def test_codegen_execute_codegen_permissive_profile_allows_eval_and_socket_impor
     assert validation_result["accepted"] is True
     assert execution_result["accepted"] is True
     assert execution_result["result"] == 2
+
+
+def test_codegen_execute_codegen_permissive_profile_allows_builtin_reflection_helpers() -> None:
+    """
+    Verify permissive codegen keeps builtin reflection helpers available.
+
+    Returns:
+        None.
+    """
+    detached_rift = _make_detached_rift_projection_owner()
+    detached_rift._codegen_projections_by_frame_name["ops"] = _build_codegen_projection(
+        "ops",
+        codegen_profile_name="permissive",
+    )
+    space = CodegenRiftSpace(
+        rift=detached_rift,
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    result = space.command_system.execute_codegen(
+        'result = type(command).__name__',
+        frame_name="ops",
+    )
+
+    assert result["accepted"] is True
+    assert result["result"] == "CodegenCommandSystem"
 
 
 def test_codegen_validate_codegen_safe_profile_rejects_direct_recursive_codegen_call() -> None:
@@ -2910,6 +3025,33 @@ def test_codegen_execute_codegen_permissive_profile_allows_recursive_codegen() -
 
     assert result["accepted"] is True
     assert result["result"] == 4
+
+
+def test_codegen_execute_codegen_full_access_profile_allows_importlib_and_recursive_codegen() -> None:
+    """
+    Verify full-access codegen leaves import posture and recursive codegen open.
+
+    Returns:
+        None.
+    """
+    detached_rift = _make_detached_rift_projection_owner()
+    detached_rift._codegen_projections_by_frame_name["ops"] = _build_codegen_projection(
+        "ops",
+        codegen_profile_name="full_access",
+    )
+    space = CodegenRiftSpace(
+        rift=detached_rift,
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    result = space.command_system.execute_codegen(
+        'import importlib\nresult = codegen.execute_codegen("import importlib\\nresult = importlib.__name__")["result"]',
+        frame_name="ops",
+    )
+
+    assert result["accepted"] is True
+    assert result["result"] == "importlib"
 
 
 def test_codegen_execute_codegen_allows_missing_result_value() -> None:

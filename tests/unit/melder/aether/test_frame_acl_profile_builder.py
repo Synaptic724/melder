@@ -28,7 +28,12 @@ def test_frame_acl_profile_builder_exposes_id_and_registry_snapshots() -> None:
     assert builder.version == "0.0.1"
     assert set(builder.list_view_profile_names()) == {"safe", "hybrid", "permissive"}
     assert set(builder.list_command_profile_names()) == {"safe", "hybrid", "permissive"}
-    assert set(builder.list_codegen_profile_names()) == {"safe", "hybrid", "permissive"}
+    assert set(builder.list_codegen_profile_names()) == {
+        "safe",
+        "hybrid",
+        "permissive",
+        "full_access",
+    }
     assert set(builder.list_view_precision_profile_names()) == {"precision"}
     assert set(builder.list_command_precision_profile_names()) == {"precision"}
     assert set(builder.list_codegen_precision_profile_names()) == {"precision"}
@@ -38,7 +43,12 @@ def test_frame_acl_profile_builder_exposes_id_and_registry_snapshots() -> None:
 
     assert set(builder.list_view_profile_names()) == {"safe", "hybrid", "permissive"}
     assert set(builder.list_command_profile_names()) == {"safe", "hybrid", "permissive"}
-    assert set(builder.list_codegen_profile_names()) == {"safe", "hybrid", "permissive"}
+    assert set(builder.list_codegen_profile_names()) == {
+        "safe",
+        "hybrid",
+        "permissive",
+        "full_access",
+    }
 
 
 def test_frame_acl_profile_builder_exposes_command_and_precision_registry_snapshots() -> None:

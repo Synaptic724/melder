@@ -106,6 +106,19 @@ def test_frame_acl_codegen_profile_create_hybrid_exposes_hybrid_identity() -> No
     assert profile.validation_strategy_name == "generic"
 
 
+def test_frame_acl_codegen_profile_create_full_access_exposes_identity() -> None:
+    """
+    Verify the reusable full-access codegen profile can be created directly.
+
+    Returns:
+        None.
+    """
+    profile = FrameACLCodegenProfile.create_full_access()
+
+    assert profile.name == "full_access"
+    assert profile.validation_strategy_name == "generic"
+
+
 def test_frame_acl_codegen_profile_cleanup_is_idempotent() -> None:
     """
     Verify cleanup can be called repeatedly.

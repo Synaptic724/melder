@@ -39,6 +39,50 @@ class CodegenReflectionPolicyStrategy(Cleanable):
             "builtins",
         )
     )
+    _REFLECTION_BUILTIN_NAMES = frozenset(
+        (
+            "dir",
+            "getattr",
+            "hasattr",
+            "setattr",
+            "delattr",
+            "globals",
+            "locals",
+            "vars",
+            "type",
+        )
+    )
+    _REFLECTION_HELPER_NAMES_BY_MODULE = {
+        "inspect": frozenset(
+            (
+                "getmembers",
+                "getmodule",
+                "getsource",
+                "getsourcelines",
+                "signature",
+                "stack",
+            )
+        ),
+        "importlib": frozenset(
+            (
+                "import_module",
+                "reload",
+            )
+        ),
+        "builtins": frozenset(
+            (
+                "dir",
+                "getattr",
+                "hasattr",
+                "setattr",
+                "delattr",
+                "globals",
+                "locals",
+                "vars",
+                "type",
+            )
+        ),
+    }
 
     def __init__(self) -> None:
         super().__init__()
@@ -83,16 +127,37 @@ class CodegenReflectionPolicyStrategy(Cleanable):
                 )
             if namespace_configuration.allow_unsafe_reflection:
                 return None
+            reflection_module_aliases = self._collect_reflection_module_aliases(
+                syntax_tree
+            )
+            reflection_helper_aliases = self._collect_reflection_helper_aliases(
+                syntax_tree,
+            )
             for node in ast.walk(syntax_tree):
                 if not isinstance(node, ast.Call):
                     continue
                 function_node = node.func
+                if isinstance(function_node, ast.Name):
+                    if (
+                            function_node.id in self._REFLECTION_BUILTIN_NAMES
+                            or function_node.id in reflection_helper_aliases
+                    ):
+                        return CodegenValidationResult.validation_failed(
+                            frame_name=transaction_context.frame_name,
+                            message=(
+                                "Reflection helper '{0}' is not allowed in this codegen mode.".format(
+                                    function_node.id
+                                )
+                            ),
+                            transaction_id=transaction_context.transaction_id,
+                        )
+                    continue
                 if not isinstance(function_node, ast.Attribute):
                     continue
                 owner_node = function_node.value
                 if not isinstance(owner_node, ast.Name):
                     continue
-                if owner_node.id not in self._REFLECTION_MODULE_NAMES:
+                if owner_node.id not in reflection_module_aliases:
                     continue
                 return CodegenValidationResult.validation_failed(
                     frame_name=transaction_context.frame_name,
@@ -105,3 +170,99 @@ class CodegenReflectionPolicyStrategy(Cleanable):
                     transaction_id=transaction_context.transaction_id,
                 )
             return None
+
+    def _collect_reflection_module_aliases(
+            self,
+            syntax_tree: ast.AST,
+    ) -> set[str]:
+        """
+        Collect names bound to reflection-capable modules.
+
+        Args:
+            syntax_tree:
+                Parsed AST for the request.
+
+        Returns:
+            set[str]: Names bound to reflection-capable modules.
+        """
+        self.check_cleaned()
+        with self._lock:
+            reflection_module_aliases = set(self._REFLECTION_MODULE_NAMES)
+            for node in ast.walk(syntax_tree):
+                if isinstance(node, ast.Import):
+                    for alias in node.names:
+                        module_root = alias.name.split(".")[0]
+                        if module_root not in self._REFLECTION_MODULE_NAMES:
+                            continue
+                        reflection_module_aliases.add(
+                            alias.asname if alias.asname is not None else module_root
+                        )
+                if isinstance(node, ast.ImportFrom):
+                    if node.module is None:
+                        continue
+                    module_root = node.module.split(".")[0]
+                    if module_root not in self._REFLECTION_MODULE_NAMES:
+                        continue
+                    for alias in node.names:
+                        if alias.name == "*":
+                            continue
+                        reflection_module_aliases.add(
+                            alias.asname if alias.asname is not None else alias.name
+                        )
+                if isinstance(node, ast.Assign):
+                    if len(node.targets) != 1:
+                        continue
+                    target_node = node.targets[0]
+                    if not isinstance(target_node, ast.Name):
+                        continue
+                    value_node = node.value
+                    if not isinstance(value_node, ast.Name):
+                        continue
+                    if value_node.id in reflection_module_aliases:
+                        reflection_module_aliases.add(target_node.id)
+            return reflection_module_aliases
+
+    def _collect_reflection_helper_aliases(
+            self,
+            syntax_tree: ast.AST,
+    ) -> set[str]:
+        """
+        Collect direct names bound to reflection helper callables.
+
+        Args:
+            syntax_tree:
+                Parsed AST for the request.
+
+        Returns:
+            set[str]: Names bound to reflection helper callables.
+        """
+        self.check_cleaned()
+        with self._lock:
+            reflection_helper_aliases = set(self._REFLECTION_BUILTIN_NAMES)
+            for node in ast.walk(syntax_tree):
+                if isinstance(node, ast.ImportFrom):
+                    if node.module is None:
+                        continue
+                    module_root = node.module.split(".")[0]
+                    helper_names = self._REFLECTION_HELPER_NAMES_BY_MODULE.get(
+                        module_root,
+                        frozenset(),
+                    )
+                    for alias in node.names:
+                        if alias.name not in helper_names:
+                            continue
+                        reflection_helper_aliases.add(
+                            alias.asname if alias.asname is not None else alias.name
+                        )
+                if isinstance(node, ast.Assign):
+                    if len(node.targets) != 1:
+                        continue
+                    target_node = node.targets[0]
+                    if not isinstance(target_node, ast.Name):
+                        continue
+                    value_node = node.value
+                    if not isinstance(value_node, ast.Name):
+                        continue
+                    if value_node.id in reflection_helper_aliases:
+                        reflection_helper_aliases.add(target_node.id)
+            return reflection_helper_aliases

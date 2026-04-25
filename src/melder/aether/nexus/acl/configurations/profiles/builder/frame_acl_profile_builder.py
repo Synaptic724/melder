@@ -11,6 +11,9 @@ from melder.aether.nexus.acl.configurations.profiles.codegen.hybrid_profile impo
 from melder.aether.nexus.acl.configurations.profiles.codegen.permissive_profile import (
     create_permissive_codegen_profile,
 )
+from melder.aether.nexus.acl.configurations.profiles.codegen.full_access_profile import (
+    create_full_access_codegen_profile,
+)
 from melder.aether.nexus.acl.configurations.profiles.codegen.precision import (
     create_precision_codegen_profile,
 )
@@ -113,6 +116,7 @@ class FrameACLProfileBuilder(Cleanable):
         self.register_codegen_profile(create_safe_codegen_profile())
         self.register_codegen_profile(create_hybrid_codegen_profile())
         self.register_codegen_profile(create_permissive_codegen_profile())
+        self.register_codegen_profile(create_full_access_codegen_profile())
         self.register_view_precision_profile(create_precision_view_profile())
         self.register_command_precision_profile(create_precision_command_profile())
         self.register_codegen_precision_profile(create_precision_codegen_profile())
