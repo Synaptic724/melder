@@ -1,5 +1,5 @@
 import threading
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import (
     CodegenTransactionContext,
@@ -21,6 +21,9 @@ from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_builder
 )
 from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
     CodegenNamespaceConfiguration,
+)
+from melder.aether.nexus.rift.codegen_system.observability.codegen_monitor import (
+    CodegenMonitor,
 )
 from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_result import (
     CodegenValidationResult,
@@ -52,10 +55,12 @@ class CodegenSystem(Cleanable):
         - Owns root transaction creation for validate/execute calls.
         - Resolves the optional `CodegenProjection` when the owning Rift can
           supply one.
-        - Builds the current foundation namespace configuration and placeholder
-          namespace objects for the first slice.
-        - Returns validator-owned and executor-owned result types while the
-          full validator/executor subsystems remain unimplemented.
+        - Builds the current foundation namespace configuration and live
+          namespace objects.
+        - Publishes lightweight codegen lifecycle events through the owning
+          room event system instead of owning a local event queue or cache.
+        - Returns validator-owned and executor-owned result types without
+          owning room-memory emission itself.
     """
 
     __slots__ = Cleanable.__slots__ + [
@@ -69,6 +74,7 @@ class CodegenSystem(Cleanable):
         "_namespace_builder",
         "_compiler",
         "_executor",
+        "_monitor",
     ]
 
     def __init__(self, *, rift: Any, space: Any) -> None:
@@ -105,6 +111,7 @@ class CodegenSystem(Cleanable):
         self._namespace_builder: CodegenNamespaceBuilder = CodegenNamespaceBuilder()
         self._compiler: CodegenCompiler = CodegenCompiler()
         self._executor: CodegenExecutor = CodegenExecutor()
+        self._monitor: CodegenMonitor = CodegenMonitor(space=space)
 
     def cleanup(self) -> None:
         """
@@ -127,6 +134,8 @@ class CodegenSystem(Cleanable):
             self._namespace_builder = None
             self._compiler = None
             self._executor = None
+            self._monitor.cleanup()
+            self._monitor = None
             self._id = None
         self._lock = None
 
@@ -159,7 +168,7 @@ class CodegenSystem(Cleanable):
             frame_name: str,
     ) -> CodegenValidationResult:
         """
-        Build the current placeholder validation result through the new engine.
+        Validate one codegen request through the internal engine.
 
         Args:
             code:
@@ -168,17 +177,17 @@ class CodegenSystem(Cleanable):
                 Target frame name for the request.
 
         Returns:
-            CodegenValidationResult: Placeholder validation result.
+            CodegenValidationResult: Validator-owned result for the request.
 
         Raises:
             ValueError:
                 If `code` or `frame_name` is empty.
         """
-        context = self._build_transaction_context(
+        _, validation_result = self.validate_codegen_request(
             code,
             frame_name=frame_name,
         )
-        return self._validator.validate(context)
+        return validation_result
 
     def execute_codegen(
             self,
@@ -187,7 +196,7 @@ class CodegenSystem(Cleanable):
             frame_name: str,
     ) -> CodegenExecutionResult:
         """
-        Build the current placeholder execution result through the new engine.
+        Execute one codegen request through the internal engine.
 
         Args:
             code:
@@ -196,30 +205,100 @@ class CodegenSystem(Cleanable):
                 Target frame name for the request.
 
         Returns:
-            CodegenExecutionResult: Placeholder execution result.
+            CodegenExecutionResult: Executor-owned result for the request.
 
         Raises:
             ValueError:
                 If `code` or `frame_name` is empty.
         """
+        _, execution_result = self.execute_codegen_request(
+            code,
+            frame_name=frame_name,
+        )
+        return execution_result
+
+    def validate_codegen_request(
+            self,
+            code: str,
+            *,
+            frame_name: str,
+    ) -> Tuple[CodegenTransactionContext, CodegenValidationResult]:
+        """
+        Validate one codegen request and return both context and result.
+
+        Purpose:
+            Let the room-facing command surface reuse the exact transaction
+            context for room-memory emission while the internal engine keeps
+            ownership of validation and event publication.
+
+        Args:
+            code:
+                Generated Python source to validate.
+            frame_name:
+                Target frame name for the request.
+
+        Returns:
+            Tuple[CodegenTransactionContext, CodegenValidationResult]:
+                Shared transaction context plus validator-owned result.
+        """
         context = self._build_transaction_context(
             code,
             frame_name=frame_name,
         )
+        self._monitor.on_validation_started(context)
         validation_result = self._validator.validate(context)
+        self._monitor.on_validation_finished(context, validation_result)
+        return context, validation_result
+
+    def execute_codegen_request(
+            self,
+            code: str,
+            *,
+            frame_name: str,
+    ) -> Tuple[CodegenTransactionContext, CodegenExecutionResult]:
+        """
+        Execute one codegen request and return both context and result.
+
+        Purpose:
+            Let the room-facing command surface reuse the exact transaction
+            context for room-memory emission while the internal engine keeps
+            ownership of validation, execution, and event publication.
+
+        Args:
+            code:
+                Generated Python source to execute.
+            frame_name:
+                Target frame name for the request.
+
+        Returns:
+            Tuple[CodegenTransactionContext, CodegenExecutionResult]:
+                Shared transaction context plus executor-owned result.
+        """
+        context = self._build_transaction_context(
+            code,
+            frame_name=frame_name,
+        )
+        self._monitor.on_execution_started(context)
+        self._monitor.on_validation_started(context)
+        validation_result = self._validator.validate(context)
+        self._monitor.on_validation_finished(context, validation_result)
         if (
                 not validation_result.accepted
                 and validation_result.reason != "codegen_validation_not_implemented"
         ):
-            return CodegenExecutionResult.validation_failed(
+            execution_result = CodegenExecutionResult.validation_failed(
                 frame_name=frame_name,
                 validation_issues=validation_result.validation_issues,
                 transaction_id=context.transaction_id,
             )
+            self._monitor.on_execution_finished(context, execution_result)
+            return context, execution_result
         namespace = self._build_namespace(context)
         context.set_namespace(namespace)
         compiled_code = self._compiler.compile(context)
-        return self._executor.execute(compiled_code, context)
+        execution_result = self._executor.execute(compiled_code, context)
+        self._monitor.on_execution_finished(context, execution_result)
+        return context, execution_result
 
     def report_validation_result(
             self,

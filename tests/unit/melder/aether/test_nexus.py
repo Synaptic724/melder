@@ -1,4 +1,5 @@
 import gc
+import hashlib
 import logging
 import threading
 import weakref
@@ -39,6 +40,9 @@ from melder.aether.nexus.rift.projection.command_projection import CommandProjec
 from melder.aether.nexus.rift.projection.frame_projection_set import FrameProjectionSet
 from melder.aether.nexus.rift.projection.view_projection import ViewProjection
 from melder.aether.nexus.rift.codegen_system.codegen_system import CodegenSystem
+from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import (
+    CodegenTransactionContext,
+)
 from melder.aether.nexus.rift.codegen_system.execution.codegen_compiler import (
     CodegenCompiler,
 )
@@ -1851,6 +1855,12 @@ def test_codegen_command_system_delegates_validate_and_execute_to_codegen_system
     )
 
     class _ValidationDouble:
+        accepted = True
+        frame_name = "ops"
+        reason = "validate-double"
+        validation_issues = tuple()
+        transaction_id = "txn-1"
+
         def to_payload(self) -> Dict[str, object]:
             return {
                 "accepted": True,
@@ -1859,6 +1869,14 @@ def test_codegen_command_system_delegates_validate_and_execute_to_codegen_system
             }
 
     class _ExecutionDouble:
+        accepted = True
+        frame_name = "ops"
+        reason = "execute-double"
+        validation_issues = tuple()
+        runtime_error = None
+        result = None
+        transaction_id = "txn-2"
+
         def to_payload(self) -> Dict[str, object]:
             return {
                 "accepted": True,
@@ -1868,13 +1886,25 @@ def test_codegen_command_system_delegates_validate_and_execute_to_codegen_system
 
     monkeypatch.setattr(
         CodegenSystem,
-        "validate_codegen",
-        lambda self, code, *, frame_name: _ValidationDouble(),
+        "validate_codegen_request",
+        lambda self, code, *, frame_name: (
+            CodegenTransactionContext(
+                frame_name=frame_name,
+                code=code,
+            ),
+            _ValidationDouble(),
+        ),
     )
     monkeypatch.setattr(
         CodegenSystem,
-        "execute_codegen",
-        lambda self, code, *, frame_name: _ExecutionDouble(),
+        "execute_codegen_request",
+        lambda self, code, *, frame_name: (
+            CodegenTransactionContext(
+                frame_name=frame_name,
+                code=code,
+            ),
+            _ExecutionDouble(),
+        ),
     )
 
     validation_result = space.command_system.validate_codegen(
@@ -2074,6 +2104,168 @@ def test_codegen_execute_codegen_reports_runtime_failure() -> None:
     assert result["runtime_error"] == (
         "AttributeError: 'NoneType' object has no attribute 'run'"
     )
+
+
+def test_codegen_validate_codegen_emits_full_source_memory_record() -> None:
+    """
+    Verify validation emits one full-source memory artifact through room memory.
+
+    Returns:
+        None.
+    """
+    space = CodegenRiftSpace(
+        rift=_make_detached_rift_projection_owner(),
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+    received_memories = []
+    code = "result = 1"
+
+    space.memory_system.register_memory_callback(
+        lambda memory: received_memories.append(memory)
+    )
+
+    result = space.command_system.validate_codegen(
+        code,
+        frame_name="ops",
+    )
+
+    assert result["accepted"] is False
+    assert result["reason"] == "codegen_validation_not_implemented"
+    assert len(received_memories) == 1
+    memory = received_memories[0]
+    assert memory.frame_name == "ops"
+    assert memory.action_name == "validate_codegen"
+    assert memory.metadata["surface"] == "codegen"
+    assert memory.metadata["phase"] == "validate"
+    assert memory.metadata["code"] == code
+    assert memory.metadata["code_hash"] == hashlib.sha256(
+        code.encode("utf-8")
+    ).hexdigest()
+    assert memory.metadata["accepted"] is False
+    assert memory.metadata["reason"] == "codegen_validation_not_implemented"
+    assert "transaction_id" in memory.metadata
+
+
+def test_codegen_execute_codegen_emits_full_source_memory_record() -> None:
+    """
+    Verify execution emits one full-source memory artifact through room memory.
+
+    Returns:
+        None.
+    """
+    space = CodegenRiftSpace(
+        rift=_make_detached_rift_projection_owner(),
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+    received_memories = []
+    code = "result = 1 + 1"
+
+    space.memory_system.register_memory_callback(
+        lambda memory: received_memories.append(memory)
+    )
+
+    result = space.command_system.execute_codegen(
+        code,
+        frame_name="ops",
+    )
+
+    assert result["accepted"] is True
+    assert result["result"] == 2
+    assert len(received_memories) == 1
+    memory = received_memories[0]
+    assert memory.frame_name == "ops"
+    assert memory.action_name == "execute_codegen"
+    assert memory.metadata["surface"] == "codegen"
+    assert memory.metadata["phase"] == "execute"
+    assert memory.metadata["code"] == code
+    assert memory.metadata["code_hash"] == hashlib.sha256(
+        code.encode("utf-8")
+    ).hexdigest()
+    assert memory.metadata["accepted"] is True
+    assert memory.metadata["result_present"] is True
+    assert "transaction_id" in memory.metadata
+
+
+def test_codegen_emits_descriptive_room_events_without_full_source() -> None:
+    """
+    Verify codegen lifecycle events are descriptive and omit full source text.
+
+    Returns:
+        None.
+    """
+    space = CodegenRiftSpace(
+        rift=_make_detached_rift_projection_owner(),
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+    received_events = []
+
+    space.event_system.register_event_callback(
+        lambda event: received_events.append(event)
+    )
+
+    validation_result = space.command_system.validate_codegen(
+        "def broken(",
+        frame_name="ops",
+    )
+    execution_result = space.command_system.execute_codegen(
+        "result = 1 + 1",
+        frame_name="ops",
+    )
+
+    assert validation_result["accepted"] is False
+    assert execution_result["accepted"] is True
+    assert tuple(event.event_type for event in received_events) == (
+        "codegen_validation_started",
+        "codegen_validation_finished",
+        "codegen_execution_started",
+        "codegen_validation_started",
+        "codegen_validation_finished",
+        "codegen_execution_finished",
+    )
+    validation_started = received_events[0]
+    validation_finished = received_events[1]
+    execution_started = received_events[2]
+    execution_validation_started = received_events[3]
+    execution_validation_finished = received_events[4]
+    execution_finished = received_events[5]
+
+    assert (
+        validation_started.payload["transaction_id"]
+        == validation_finished.payload["transaction_id"]
+    )
+    assert (
+        validation_started.payload["code_hash"]
+        == validation_finished.payload["code_hash"]
+    )
+    assert "code" not in validation_started.payload
+    assert "code" not in validation_finished.payload
+    assert validation_finished.payload["accepted"] is False
+    assert validation_finished.payload["reason"] == "codegen_validation_failed"
+    assert validation_finished.frame_name == "ops"
+
+    assert (
+        execution_started.payload["transaction_id"]
+        == execution_finished.payload["transaction_id"]
+    )
+    assert (
+        execution_started.payload["code_hash"]
+        == execution_finished.payload["code_hash"]
+    )
+    assert "code" not in execution_started.payload
+    assert "code" not in execution_finished.payload
+    assert (
+        execution_validation_started.payload["transaction_id"]
+        == execution_validation_finished.payload["transaction_id"]
+    )
+    assert (
+        execution_validation_finished.payload["reason"]
+        == "codegen_validation_not_implemented"
+    )
+    assert execution_finished.payload["accepted"] is True
+    assert execution_finished.payload["result_present"] is True
 
 
 @pytest.mark.parametrize(

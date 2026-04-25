@@ -3,7 +3,16 @@ from typing import Dict, Optional, Tuple
 from melder.aether.nexus.rift.command_system.command_system import (
     CommandSystem,
 )
+from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import (
+    CodegenTransactionContext,
+)
 from melder.aether.nexus.rift.codegen_system.codegen_system import CodegenSystem
+from melder.aether.nexus.rift.codegen_system.execution.codegen_execution_result import (
+    CodegenExecutionResult,
+)
+from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_result import (
+    CodegenValidationResult,
+)
 
 
 class CodegenCommandSystem(CommandSystem):
@@ -21,9 +30,11 @@ class CodegenCommandSystem(CommandSystem):
           `CommandSystem`.
         - Owns the explicitly selected conduit/runtime helper subset for
           codegen work without inheriting the full capability command surface.
-        - Keeps `validate_codegen(...)` and `execute_codegen(...)` as explicit
-          placeholders; AST validation and compile/exec behavior are
-          intentionally not active yet.
+        - Routes `validate_codegen(...)` and `execute_codegen(...)` into the
+          attached `CodegenSystem`.
+        - Emits full-source top-level codegen memory records through the
+          owning room's `RiftMemorySystem` instead of using the generic
+          command-memory metadata shape.
     """
 
     _CODEGEN_RUNTIME_HELPER_METHOD_NAMES: Tuple[str, ...] = (
@@ -512,16 +523,17 @@ class CodegenCommandSystem(CommandSystem):
             frame_name: str,
     ) -> Dict[str, object]:
         """
-        Placeholder validation surface for generated Python code.
+        Validate generated Python code through the attached codegen system.
 
         Purpose:
-            Reserve the public codegen validation seam while the AST validation
-            engine is still being designed.
+            Keep the public room-facing validation seam on the command surface
+            while delegating real validation work into the internal
+            `CodegenSystem`.
 
         Contract:
-            - Does not parse, compile, or execute the supplied code yet.
-            - Returns an explicit rejected payload so callers cannot mistake
-              the placeholder for a working validator.
+            - Delegates validation into the attached `CodegenSystem`.
+            - Emits one full-source codegen memory record for the completed
+              top-level validation action when room memory is enabled.
             - Requires non-empty `code` and `frame_name` to preserve the future
               call contract.
 
@@ -533,7 +545,7 @@ class CodegenCommandSystem(CommandSystem):
                 applied.
 
         Returns:
-            Dict[str, object]: Rejected placeholder validation payload.
+            Dict[str, object]: Public validation payload.
 
         Raises:
             ValueError: If `code` or `frame_name` is empty.
@@ -543,16 +555,31 @@ class CodegenCommandSystem(CommandSystem):
             raise ValueError("code cannot be empty.")
         if not isinstance(frame_name, str) or not frame_name:
             raise ValueError("frame_name cannot be empty.")
-        with self._entered_command_action(
-                action_name="validate_codegen",
-                frame_name=frame_name,
-        ), self._lock:
-            codegen_system = self._require_codegen_system()
-            validation_result = codegen_system.validate_codegen(
-                code,
-                frame_name=frame_name,
-            )
-            return codegen_system.report_validation_result(validation_result)
+        rift_gate = self._begin_command_action()
+        transaction_context: Optional[CodegenTransactionContext] = None
+        validation_result: Optional[CodegenValidationResult] = None
+        try:
+            with self._lock:
+                codegen_system = self._require_codegen_system()
+                transaction_context, validation_result = (
+                    codegen_system.validate_codegen_request(
+                        code,
+                        frame_name=frame_name,
+                    )
+                )
+                return codegen_system.report_validation_result(validation_result)
+        finally:
+            if rift_gate is not None:
+                rift_gate.unregister_ticket()
+            if (
+                    transaction_context is not None
+                    and validation_result is not None
+            ):
+                self._emit_codegen_memory_if_enabled(
+                    action_name="validate_codegen",
+                    transaction_context=transaction_context,
+                    validation_result=validation_result,
+                )
 
     def execute_codegen(
             self,
@@ -561,17 +588,18 @@ class CodegenCommandSystem(CommandSystem):
             frame_name: str,
     ) -> Dict[str, object]:
         """
-        Placeholder execution surface for generated Python code.
+        Execute generated Python code through the attached codegen system.
 
         Purpose:
-            Reserve the single public codegen execution seam while preserving
-            the permanent one-command model: generated Python will later be
-            AST-validated, compiled, and executed through this method.
+            Keep the public room-facing execution seam on the command surface
+            while delegating real validation, namespace construction,
+            compile/exec, and lifecycle event publication into the internal
+            `CodegenSystem`.
 
         Contract:
-            - Does not parse, compile, or execute the supplied code yet.
-            - Returns an explicit rejected payload so callers cannot mistake
-              the placeholder for a working exec surface.
+            - Delegates execution into the attached `CodegenSystem`.
+            - Emits one full-source codegen memory record for the completed
+              top-level execution action when room memory is enabled.
             - Requires non-empty `code` and `frame_name` to preserve the future
               call contract.
 
@@ -583,7 +611,7 @@ class CodegenCommandSystem(CommandSystem):
                 applied.
 
         Returns:
-            Dict[str, object]: Rejected placeholder execution payload.
+            Dict[str, object]: Public execution payload.
 
         Raises:
             ValueError: If `code` or `frame_name` is empty.
@@ -593,16 +621,97 @@ class CodegenCommandSystem(CommandSystem):
             raise ValueError("code cannot be empty.")
         if not isinstance(frame_name, str) or not frame_name:
             raise ValueError("frame_name cannot be empty.")
-        with self._entered_command_action(
-                action_name="execute_codegen",
-                frame_name=frame_name,
-        ), self._lock:
-            codegen_system = self._require_codegen_system()
-            execution_result = codegen_system.execute_codegen(
-                code,
-                frame_name=frame_name,
+        rift_gate = self._begin_command_action()
+        transaction_context: Optional[CodegenTransactionContext] = None
+        execution_result: Optional[CodegenExecutionResult] = None
+        try:
+            with self._lock:
+                codegen_system = self._require_codegen_system()
+                transaction_context, execution_result = (
+                    codegen_system.execute_codegen_request(
+                        code,
+                        frame_name=frame_name,
+                    )
+                )
+                return execution_result.to_payload()
+        finally:
+            if rift_gate is not None:
+                rift_gate.unregister_ticket()
+            if (
+                    transaction_context is not None
+                    and execution_result is not None
+            ):
+                self._emit_codegen_memory_if_enabled(
+                    action_name="execute_codegen",
+                    transaction_context=transaction_context,
+                    execution_result=execution_result,
+                )
+
+    def _emit_codegen_memory_if_enabled(
+            self,
+            *,
+            action_name: str,
+            transaction_context: CodegenTransactionContext,
+            validation_result: Optional[CodegenValidationResult] = None,
+            execution_result: Optional[CodegenExecutionResult] = None,
+    ) -> None:
+        """
+        Emit one full-source codegen memory record when room memory is enabled.
+
+        Args:
+            action_name:
+                Stable public action name.
+            transaction_context:
+                Shared transaction context for the completed action.
+            validation_result:
+                Optional validation result for `validate_codegen(...)`.
+            execution_result:
+                Optional execution result for `execute_codegen(...)`.
+
+        Returns:
+            None.
+
+        Raises:
+            ValueError:
+                If neither result object is supplied.
+        """
+        memory_system = self._get_memory_system_if_available()
+        if memory_system is None or not memory_system.memory_enabled:
+            return
+        if validation_result is None and execution_result is None:
+            raise ValueError(
+                "One codegen result object must be provided for memory emission."
             )
-            return execution_result.to_payload()
+        metadata: Dict[str, object] = {
+            "surface": "codegen",
+            "command_system_id": self._id,
+            "owner_space_id": self._owner_space_id,
+            "transaction_id": transaction_context.transaction_id,
+            "code": transaction_context.code,
+            "code_hash": transaction_context.code_hash,
+        }
+        if validation_result is not None:
+            metadata["phase"] = "validate"
+            metadata["accepted"] = validation_result.accepted
+            if validation_result.reason is not None:
+                metadata["reason"] = validation_result.reason
+            if len(validation_result.validation_issues) > 0:
+                metadata["validation_issues"] = validation_result.validation_issues
+        if execution_result is not None:
+            metadata["phase"] = "execute"
+            metadata["accepted"] = execution_result.accepted
+            metadata["result_present"] = execution_result.result is not None
+            if execution_result.reason is not None:
+                metadata["reason"] = execution_result.reason
+            if len(execution_result.validation_issues) > 0:
+                metadata["validation_issues"] = execution_result.validation_issues
+            if execution_result.runtime_error is not None:
+                metadata["runtime_error"] = execution_result.runtime_error
+        memory_system.create_and_emit_memory(
+            frame_name=transaction_context.frame_name,
+            action_name=action_name,
+            metadata=metadata,
+        )
 
     def _require_codegen_system(self) -> CodegenSystem:
         """
