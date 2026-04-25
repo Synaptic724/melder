@@ -135,6 +135,65 @@ class CodegenExecutionResult:
             transaction_id=transaction_id,
         )
 
+    @classmethod
+    def runtime_failed(
+            cls,
+            *,
+            frame_name: str,
+            runtime_error: str,
+            transaction_id: Optional[str] = None,
+    ) -> "CodegenExecutionResult":
+        """
+        Build an execution result representing runtime failure.
+
+        Args:
+            frame_name:
+                Target frame name for the execution request.
+            runtime_error:
+                Runtime error summary.
+            transaction_id:
+                Optional internal transaction id.
+
+        Returns:
+            CodegenExecutionResult: Rejected runtime-failure result.
+        """
+        return cls(
+            accepted=False,
+            frame_name=frame_name,
+            reason="codegen_execution_runtime_failed",
+            runtime_error=runtime_error,
+            transaction_id=transaction_id,
+        )
+
+    @classmethod
+    def executed(
+            cls,
+            *,
+            frame_name: str,
+            result: Optional[object],
+            transaction_id: Optional[str] = None,
+    ) -> "CodegenExecutionResult":
+        """
+        Build an execution result for one successful codegen execution.
+
+        Args:
+            frame_name:
+                Target frame name for the execution request.
+            result:
+                Optional final `result` value from the namespace.
+            transaction_id:
+                Optional internal transaction id.
+
+        Returns:
+            CodegenExecutionResult: Successful execution result.
+        """
+        return cls(
+            accepted=True,
+            frame_name=frame_name,
+            result=result,
+            transaction_id=transaction_id,
+        )
+
     @property
     def accepted(self) -> bool:
         """

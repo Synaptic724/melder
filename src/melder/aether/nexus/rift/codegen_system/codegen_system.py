@@ -7,6 +7,12 @@ from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import 
 from melder.aether.nexus.rift.codegen_system.execution.codegen_execution_result import (
     CodegenExecutionResult,
 )
+from melder.aether.nexus.rift.codegen_system.execution.codegen_compiler import (
+    CodegenCompiler,
+)
+from melder.aether.nexus.rift.codegen_system.execution.codegen_executor import (
+    CodegenExecutor,
+)
 from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace import (
     CodegenNamespace,
 )
@@ -61,6 +67,8 @@ class CodegenSystem(Cleanable):
         "_validator",
         "_validation_reporter",
         "_namespace_builder",
+        "_compiler",
+        "_executor",
     ]
 
     def __init__(self, *, rift: Any, space: Any) -> None:
@@ -95,6 +103,8 @@ class CodegenSystem(Cleanable):
             CodegenValidationReporter()
         )
         self._namespace_builder: CodegenNamespaceBuilder = CodegenNamespaceBuilder()
+        self._compiler: CodegenCompiler = CodegenCompiler()
+        self._executor: CodegenExecutor = CodegenExecutor()
 
     def cleanup(self) -> None:
         """
@@ -115,6 +125,8 @@ class CodegenSystem(Cleanable):
             self._validator = None
             self._validation_reporter = None
             self._namespace_builder = None
+            self._compiler = None
+            self._executor = None
             self._id = None
         self._lock = None
 
@@ -206,10 +218,8 @@ class CodegenSystem(Cleanable):
             )
         namespace = self._build_namespace(context)
         context.set_namespace(namespace)
-        return CodegenExecutionResult.not_implemented(
-            frame_name=frame_name,
-            transaction_id=context.transaction_id,
-        )
+        compiled_code = self._compiler.compile(context)
+        return self._executor.execute(compiled_code, context)
 
     def report_validation_result(
             self,

@@ -39,6 +39,12 @@ from melder.aether.nexus.rift.projection.command_projection import CommandProjec
 from melder.aether.nexus.rift.projection.frame_projection_set import FrameProjectionSet
 from melder.aether.nexus.rift.projection.view_projection import ViewProjection
 from melder.aether.nexus.rift.codegen_system.codegen_system import CodegenSystem
+from melder.aether.nexus.rift.codegen_system.execution.codegen_compiler import (
+    CodegenCompiler,
+)
+from melder.aether.nexus.rift.codegen_system.execution.codegen_executor import (
+    CodegenExecutor,
+)
 from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_builder import (
     CodegenNamespaceBuilder,
 )
@@ -1601,6 +1607,8 @@ def test_codegen_rift_space_owns_codegen_system() -> None:
         space._codegen_system._namespace_builder,
         CodegenNamespaceBuilder,
     )
+    assert isinstance(space._codegen_system._compiler, CodegenCompiler)
+    assert isinstance(space._codegen_system._executor, CodegenExecutor)
 
 
 def test_codegen_command_system_preserves_base_commands_and_adds_codegen_placeholders() -> None:
@@ -1808,7 +1816,7 @@ def test_codegen_validate_codegen_placeholder_rejects_until_validator_exists() -
 
 def test_codegen_execute_codegen_placeholder_rejects_until_exec_exists() -> None:
     """
-    Verify the placeholder execution seam is explicit and non-executing.
+    Verify valid code now executes through the real compile/exec path.
 
     Returns:
         None.
@@ -1816,14 +1824,14 @@ def test_codegen_execute_codegen_placeholder_rejects_until_exec_exists() -> None
     space = CodegenRiftSpace(rift=_make_detached_rift_projection_owner(), owner_rift_id="rift-1", space_name="main")
 
     result = space.command_system.execute_codegen(
-        "result = 1",
+        "result = 1 + 1",
         frame_name="ops",
     )
 
     assert result == {
-        "accepted": False,
-        "reason": "codegen_execution_not_implemented",
+        "accepted": True,
         "frame_name": "ops",
+        "result": 2,
     }
 
 
@@ -2040,6 +2048,122 @@ def test_codegen_system_namespace_reflects_selected_target() -> None:
     namespace = space._codegen_system._build_namespace(transaction_context)
 
     assert namespace.globals_dict["target"] is bound_target
+
+
+def test_codegen_execute_codegen_reports_runtime_failure() -> None:
+    """
+    Verify runtime exceptions surface through the execution result payload.
+
+    Returns:
+        None.
+    """
+    space = CodegenRiftSpace(
+        rift=_make_detached_rift_projection_owner(),
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    result = space.command_system.execute_codegen(
+        "result = target.run()",
+        frame_name="ops",
+    )
+
+    assert result["accepted"] is False
+    assert result["reason"] == "codegen_execution_runtime_failed"
+    assert result["frame_name"] == "ops"
+    assert result["runtime_error"] == (
+        "AttributeError: 'NoneType' object has no attribute 'run'"
+    )
+
+
+@pytest.mark.parametrize(
+    ("code", "expected_message"),
+    [
+        ("def helper():\n    return 1", "Function definitions are not allowed"),
+        ("import math", "Import statements are not allowed"),
+        ("result = eval('1')", "Builtin 'eval' is not allowed"),
+        ("result = unknown_name", "Name 'unknown_name' is not available"),
+        ("result = target.__class__", "Dunder attribute access '__class__' is not allowed"),
+    ],
+)
+def test_codegen_validate_codegen_reports_strategy_failures(
+        code: str,
+        expected_message: str,
+) -> None:
+    """
+    Verify validator strategy failures surface through validate_codegen.
+
+    Args:
+        code:
+            Code sample that should fail one validator strategy.
+        expected_message:
+            Expected validation issue substring.
+
+    Returns:
+        None.
+    """
+    space = CodegenRiftSpace(
+        rift=_make_detached_rift_projection_owner(),
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    result = space.command_system.validate_codegen(
+        code,
+        frame_name="ops",
+    )
+
+    assert result["accepted"] is False
+    assert result["reason"] == "codegen_validation_failed"
+    assert expected_message in result["validation_issues"][0]
+
+
+def test_codegen_validate_codegen_allows_locally_assigned_names() -> None:
+    """
+    Verify local assignment names are allowed by name-resolution validation.
+
+    Returns:
+        None.
+    """
+    space = CodegenRiftSpace(
+        rift=_make_detached_rift_projection_owner(),
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    result = space.command_system.validate_codegen(
+        "value = 7\nresult = value",
+        frame_name="ops",
+    )
+
+    assert result == {
+        "accepted": False,
+        "reason": "codegen_validation_not_implemented",
+        "frame_name": "ops",
+    }
+
+
+def test_codegen_execute_codegen_allows_missing_result_value() -> None:
+    """
+    Verify successful execution may return without an explicit `result`.
+
+    Returns:
+        None.
+    """
+    space = CodegenRiftSpace(
+        rift=_make_detached_rift_projection_owner(),
+        owner_rift_id="rift-1",
+        space_name="main",
+    )
+
+    result = space.command_system.execute_codegen(
+        "value = 7",
+        frame_name="ops",
+    )
+
+    assert result["accepted"] is True
+    assert result["frame_name"] == "ops"
+    assert "result" not in result
 
 
 def test_command_system_can_get_target_attribute_and_method() -> None:

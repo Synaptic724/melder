@@ -123,6 +123,36 @@ class CodegenValidationResult:
             transaction_id=transaction_id,
         )
 
+    @classmethod
+    def validation_failed(
+            cls,
+            *,
+            frame_name: str,
+            message: str,
+            transaction_id: Optional[str] = None,
+    ) -> "CodegenValidationResult":
+        """
+        Build a validation result for one non-syntax validation failure.
+
+        Args:
+            frame_name:
+                Target frame name for the validation request.
+            message:
+                Human-readable validation failure summary.
+            transaction_id:
+                Optional internal transaction id.
+
+        Returns:
+            CodegenValidationResult: Rejected validation-failure result.
+        """
+        return cls(
+            accepted=False,
+            frame_name=frame_name,
+            reason="codegen_validation_failed",
+            validation_issues=(message,),
+            transaction_id=transaction_id,
+        )
+
     @property
     def accepted(self) -> bool:
         """

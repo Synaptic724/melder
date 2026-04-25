@@ -1,7 +1,23 @@
 import ast
+from typing import Optional
 
 from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import (
     CodegenTransactionContext,
+)
+from melder.aether.nexus.rift.codegen_system.validation.strategies.codegen_ast_structure_strategy import (
+    CodegenAstStructureStrategy,
+)
+from melder.aether.nexus.rift.codegen_system.validation.strategies.codegen_attribute_access_strategy import (
+    CodegenAttributeAccessStrategy,
+)
+from melder.aether.nexus.rift.codegen_system.validation.strategies.codegen_builtin_policy_strategy import (
+    CodegenBuiltinPolicyStrategy,
+)
+from melder.aether.nexus.rift.codegen_system.validation.strategies.codegen_import_policy_strategy import (
+    CodegenImportPolicyStrategy,
+)
+from melder.aether.nexus.rift.codegen_system.validation.strategies.codegen_name_resolution_strategy import (
+    CodegenNameResolutionStrategy,
 )
 from melder.aether.nexus.rift.codegen_system.validation.codegen_validation_result import (
     CodegenValidationResult,
@@ -26,7 +42,36 @@ class CodegenValidator:
           the deeper strategy family is not yet implemented.
     """
 
-    __slots__ = []
+    __slots__ = [
+        "_ast_structure_strategy",
+        "_import_policy_strategy",
+        "_builtin_policy_strategy",
+        "_name_resolution_strategy",
+        "_attribute_access_strategy",
+    ]
+
+    def __init__(self) -> None:
+        """
+        Initialize the validator and its strategy family.
+
+        Returns:
+            None.
+        """
+        self._ast_structure_strategy: CodegenAstStructureStrategy = (
+            CodegenAstStructureStrategy()
+        )
+        self._import_policy_strategy: CodegenImportPolicyStrategy = (
+            CodegenImportPolicyStrategy()
+        )
+        self._builtin_policy_strategy: CodegenBuiltinPolicyStrategy = (
+            CodegenBuiltinPolicyStrategy()
+        )
+        self._name_resolution_strategy: CodegenNameResolutionStrategy = (
+            CodegenNameResolutionStrategy()
+        )
+        self._attribute_access_strategy: CodegenAttributeAccessStrategy = (
+            CodegenAttributeAccessStrategy()
+        )
 
     def validate(
             self,
@@ -49,13 +94,48 @@ class CodegenValidator:
         if transaction_context is None:
             raise TypeError("transaction_context cannot be None.")
         try:
-            ast.parse(transaction_context.code, mode="exec")
+            syntax_tree = ast.parse(transaction_context.code, mode="exec")
         except SyntaxError as exc:
             return CodegenValidationResult.syntax_error(
                 frame_name=transaction_context.frame_name,
                 transaction_id=transaction_context.transaction_id,
                 message=self._build_syntax_error_message(exc),
             )
+        validation_result = self._run_strategy(
+            self._ast_structure_strategy,
+            transaction_context,
+            syntax_tree,
+        )
+        if validation_result is not None:
+            return validation_result
+        validation_result = self._run_strategy(
+            self._import_policy_strategy,
+            transaction_context,
+            syntax_tree,
+        )
+        if validation_result is not None:
+            return validation_result
+        validation_result = self._run_strategy(
+            self._builtin_policy_strategy,
+            transaction_context,
+            syntax_tree,
+        )
+        if validation_result is not None:
+            return validation_result
+        validation_result = self._run_strategy(
+            self._name_resolution_strategy,
+            transaction_context,
+            syntax_tree,
+        )
+        if validation_result is not None:
+            return validation_result
+        validation_result = self._run_strategy(
+            self._attribute_access_strategy,
+            transaction_context,
+            syntax_tree,
+        )
+        if validation_result is not None:
+            return validation_result
         return CodegenValidationResult.not_implemented(
             frame_name=transaction_context.frame_name,
             transaction_id=transaction_context.transaction_id,
@@ -83,3 +163,25 @@ class CodegenValidator:
             exc.msg,
         )
 
+    @staticmethod
+    def _run_strategy(
+            strategy: object,
+            transaction_context: CodegenTransactionContext,
+            syntax_tree: ast.AST,
+    ) -> Optional[CodegenValidationResult]:
+        """
+        Execute one validation strategy and return its optional failure result.
+
+        Args:
+            strategy:
+                Strategy object exposing `validate(...)`.
+            transaction_context:
+                Per-call transaction context.
+            syntax_tree:
+                Parsed AST for the request.
+
+        Returns:
+            Optional[CodegenValidationResult]: Failure result when the strategy
+            rejects the request; otherwise None.
+        """
+        return strategy.validate(transaction_context, syntax_tree)
