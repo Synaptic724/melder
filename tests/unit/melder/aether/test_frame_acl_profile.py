@@ -666,7 +666,7 @@ def test_frame_acl_manager_exposes_profile_builder_and_profile_registry_surface(
     assert manager.version == "0.0.1"
     assert manager.frame_acl_profile_builder.version == "0.0.1"
     assert manager._list_view_acl_profile_names() == ["safe", "hybrid", "permissive"]
-    assert manager._list_codegen_acl_profile_names() == ["safe", "hybrid", "permissive"]
+    assert manager._list_codegen_acl_profile_names() == ["safe", "hybrid", "permissive", "full_access"]
     assert manager._get_required_frame_acl_profile("support") is profile
     assert manager._list_frame_acl_profile_names() == ["support"]
     assert manager.frame_acl_profiles_by_name == {"support": profile}

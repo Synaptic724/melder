@@ -487,7 +487,7 @@ def test_unit_codegen_recursive_control_strategy_matrix(
         ("result = getattr(command, 'x')", False, "codegen_validation_failed"),
         ("result = command.__dict__", False, "codegen_validation_failed"),
         ("global x\nx = 1", False, "codegen_validation_failed"),
-        ("def helper(x: int) -> int:\n    return x + 1\nresult = helper(2)", False, "codegen_validation_failed"),
+        ("def helper(x: int) -> int:\n    return x + 1\nresult = helper(2)", True, "codegen_validation_accepted"),
         ("result = unknown_name", False, "codegen_validation_failed"),
         ("result = codegen.execute_codegen('result = 1')", False, "codegen_validation_failed"),
     ]
