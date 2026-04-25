@@ -1,3 +1,5 @@
+import inspect
+
 import pytest
 
 from tests._codegen_system_support import (
@@ -134,3 +136,122 @@ def test_integration_codegen_execute_matrix(
             assert "result" not in result
         else:
             assert result["result"] == expected_result
+
+
+def test_integration_codegen_generated_definition_getsource_fails_but_binding_persists() -> None:
+    nexus, rift, conduit, space = _build_codegen_space(
+        profile_name="full_access",
+    )
+    code = """
+import inspect
+conduit = command.get_conduit_by_name("root", frame_name="ops")
+
+class GeneratedService:
+    def __init__(self) -> None:
+        self.value = 7
+
+    def read(self) -> int:
+        return self.value
+
+conduit.begin_binding_transaction()
+try:
+    spell_id = conduit.bind(
+        spell=GeneratedService,
+        existence="unique",
+        permissions="create",
+        spellframe="generated_runtime",
+        binding_name="generated_service",
+    )
+finally:
+    conduit.end_binding_transaction()
+
+result = inspect.getsource(GeneratedService)
+""".strip()
+
+    try:
+        execute_result = space.command_system.execute_codegen(
+            code,
+            frame_name="ops",
+        )
+        spell_id = conduit.find_spell_id(
+            "generated_runtime",
+            "GeneratedService",
+            "generated_service",
+        )
+        spell = conduit.get_spell_by_id(spell_id, "ops")
+        outside_error = None
+        try:
+            inspect.getsource(spell.spell)
+        except Exception as exc:
+            outside_error = "{0}: {1}".format(exc.__class__.__name__, exc)
+    finally:
+        conduit.cleanup()
+
+    assert execute_result["accepted"] is False
+    assert execute_result["reason"] == "codegen_execution_runtime_failed"
+    assert "built-in class" in execute_result["runtime_error"]
+    assert spell.spell_name == "GeneratedService"
+    assert spell.binding_name == "generated_service"
+    assert spell.spellframe == "generated_runtime"
+    assert spell.spell_type.name == "SPELL_WITH_BINDING_NAME_WITH_SPELLFRAME"
+    assert outside_error is not None
+    assert "built-in class" in outside_error
+
+
+def test_integration_codegen_can_bind_generated_reference_and_use_it_afterward() -> None:
+    nexus, rift, conduit, space = _build_codegen_space(
+        profile_name="full_access",
+    )
+    code = """
+conduit = command.get_conduit_by_name("root", frame_name="ops")
+
+class GeneratedService:
+    def __init__(self) -> None:
+        self.value = 7
+
+    def read(self) -> int:
+        return self.value
+
+conduit.begin_binding_transaction()
+try:
+    spell_id = conduit.bind(
+        spell=GeneratedService,
+        existence="unique",
+        permissions="create",
+        spellframe="generated_runtime",
+        binding_name="generated_service",
+    )
+finally:
+    conduit.end_binding_transaction()
+
+result = spell_id
+""".strip()
+
+    try:
+        execute_result = space.command_system.execute_codegen(
+            code,
+            frame_name="ops",
+        )
+        spell_id = conduit.find_spell_id(
+            "generated_runtime",
+            "GeneratedService",
+            "generated_service",
+        )
+        creation = conduit.meld(
+            spell_name="GeneratedService",
+            spellframe="generated_runtime",
+            binding_name="generated_service",
+        )
+        repeated_creation = conduit.meld(
+            spell_name="GeneratedService",
+            spellframe="generated_runtime",
+            binding_name="generated_service",
+        )
+    finally:
+        conduit.cleanup()
+
+    assert execute_result["accepted"] is True
+    assert execute_result["result"] == spell_id
+    assert creation.__class__.__name__ == "GeneratedService"
+    assert creation.read() == 7
+    assert repeated_creation is creation
