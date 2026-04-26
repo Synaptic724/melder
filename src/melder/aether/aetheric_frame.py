@@ -120,28 +120,21 @@ class AethericFrame(Cleanable, IAethericFrame):
         if self._cleaned:
             return
 
-        owner_aether = None
-        frame_name = None
-
         with self._lock:
             if self._cleaned:
                 return
-
-            owner_aether = self._aether
-            frame_name = self.name
             self._cleaned = True
             self._cleanup_data_structures()
-
-            self._aether = None
             if self._frame_configuration is not None:
                 self._frame_configuration.cleanup()
                 self._frame_configuration = None
             self._configuration = None
-            self.name = None
             self._id = None
-
+            self._aether._detach_cleaned_frame(self.name, self)
+            self.name = None
+            self._aether = None
         self._lock = None
-        owner_aether._detach_cleaned_frame(frame_name, self)
+
 
 
     def _cleanup_data_structures(self) -> None:
