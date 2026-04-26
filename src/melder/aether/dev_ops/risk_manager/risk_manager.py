@@ -132,7 +132,6 @@ class RiskManager(Cleanable):
             if self._lineage_conduits is not None:
                 self._lineage_conduits.clear()
             self._spell_system_states = None
-        self._lock = None
 
     def register_conduit(self, conduit_id: str, spellbook: ISpellbook) -> None:
         """

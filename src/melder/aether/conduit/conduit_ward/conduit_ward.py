@@ -138,7 +138,7 @@ class ConduitWard(Cleanable, IConduitWard):
             raise
 
     #region Cleanup
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
         Public API
 

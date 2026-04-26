@@ -153,7 +153,6 @@ class FrameACLProfileBuilder(Cleanable):
             self._codegen_precision_profiles_by_name = None
             self._version = None
             self._id = None
-        self._lock = None
 
     @property
     def id(self) -> str:

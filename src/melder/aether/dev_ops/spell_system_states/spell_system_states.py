@@ -197,9 +197,6 @@ class SpellSystemStates(Cleanable, ISpellSystemStates):
             self._frame = None
             self._risk_manager = None
 
-        # Drop lock last
-        self._lock = None
-
     # ------------------------------------------------------------------
     # Registration / lookup
     # ------------------------------------------------------------------

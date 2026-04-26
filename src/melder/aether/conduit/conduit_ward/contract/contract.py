@@ -50,7 +50,7 @@ class Contract(Cleanable, IContract):
         self._details_b: Dict[str, Detail] = {} # Borrowed from conduit a
 
     #region Cleanup
-    def cleanup(self):
+    def cleanup(self) -> None:
         """
         Idempotently tear down this contract and all contained Details.
 

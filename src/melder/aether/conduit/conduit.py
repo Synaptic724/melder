@@ -263,17 +263,14 @@ class Conduit(Cleanable, IConduit):
             self._meld_hooks = None
             self._local_conduit_hooks = None
 
-        # Logger last
-        if self._logger is not None:
-            try:
-                if hasattr(self._logger, "cleanup"):
-                    self._logger.cleanup()
-            except Exception:
-                pass
-            self._logger = None
-
-        # Release lock reference after teardown
-        self._lock = None
+            # Logger last
+            if self._logger is not None:
+                try:
+                    if hasattr(self._logger, "cleanup"):
+                        self._logger.cleanup()
+                except Exception:
+                    pass
+                self._logger = None
 
 
     def _cleanup_lesser_conduit(self):

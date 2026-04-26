@@ -105,7 +105,6 @@ class FrameACLRule(Cleanable):
             self._effect = None
             self._conditions = None
             self._id = None
-            self._lock = None
 
     @property
     def id(self) -> str:

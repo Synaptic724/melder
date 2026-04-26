@@ -1,3 +1,4 @@
+import threading
 from typing import Optional
 from melder.__melder_registration_guard__ import (
     __melder_registration_guard__ as _mrg,
@@ -54,6 +55,7 @@ class SpellSpace(Cleanable, ISpellSpace):
         super().__init__()
         if owner_conduit is None:
             raise ValueError("owner_conduit must not be None.")
+        self._lock: Optional[threading.RLock] = threading.RLock()
         self._id: str = IDBuilder.create_id()
         self._owner_conduit = owner_conduit
         self._version: int = 0
@@ -70,6 +72,9 @@ class SpellSpace(Cleanable, ISpellSpace):
         """
         if self._cleaned:
             return
+        with self._lock:
+            if self._cleaned:
+                return
         try:
             self.reset()
         finally:
@@ -174,10 +179,11 @@ class SpellSpace(Cleanable, ISpellSpace):
             RuntimeError: If this spellspace has already been cleaned.
         """
         self.check_cleaned()
-        creations = self._owner_conduit._creations
-        if creations is None:
-            raise SpellSpaceScopeError(
-                "Owner conduit does not expose spellspace storage."
-            )
-        creations.clear_spellspace_instances(self._id)
-        self._version += 1
+        with self._lock:
+            creations = self._owner_conduit._creations
+            if creations is None:
+                raise SpellSpaceScopeError(
+                    "Owner conduit does not expose spellspace storage."
+                )
+            creations.clear_spellspace_instances(self._id)
+            self._version += 1

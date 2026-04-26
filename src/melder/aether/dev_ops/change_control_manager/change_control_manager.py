@@ -222,8 +222,6 @@ class ChangeControlManager(Cleanable, IChangeControlManager):
             # our reference so GC can do its job.
             self._spell_system_states = None
 
-        # Drop the lock last.
-        self._lock = None
 
     # ----------------------------------------------------------------------
     # Accessors

@@ -139,7 +139,6 @@ class FrameACLBuilder(Cleanable, IFrameACLBuilder):
             self._draft_contract_name = None
             self._container = None
             self._change_active = None
-        self._lock = None
 
     @property
     def change_active(self) -> bool:

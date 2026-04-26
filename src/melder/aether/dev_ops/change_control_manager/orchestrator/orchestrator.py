@@ -95,7 +95,6 @@ class ChangeControlOrchestrator(Cleanable):
             self._commit_validator = None
             self._commit_hook = None
             self._abort_hook = None
-        self._lock = None
 
     def set_commit_validator(
             self,
