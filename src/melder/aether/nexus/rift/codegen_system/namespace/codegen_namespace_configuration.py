@@ -27,6 +27,7 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
         "_frame_name",
         "_include_viewer",
         "_include_workstation",
+        "_include_target",
         "_include_command",
         "_include_codegen",
         "_imports_enabled",
@@ -45,6 +46,7 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
             frame_name: str,
             include_viewer: bool = True,
             include_workstation: bool = True,
+            include_target: bool = True,
             include_command: bool = True,
             include_codegen: bool = True,
             imports_enabled: bool = False,
@@ -66,6 +68,8 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
                 Whether to expose `viewer`.
             include_workstation:
                 Whether to expose `workstation`.
+            include_target:
+                Whether to expose `target`.
             include_command:
                 Whether to expose `command`.
             include_codegen:
@@ -101,6 +105,7 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
         self._frame_name: str = frame_name
         self._include_viewer: bool = include_viewer
         self._include_workstation: bool = include_workstation
+        self._include_target: bool = include_target
         self._include_command: bool = include_command
         self._include_codegen: bool = include_codegen
         self._imports_enabled: bool = imports_enabled
@@ -134,6 +139,7 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
             self._frame_name = None
             self._include_viewer = None
             self._include_workstation = None
+            self._include_target = None
             self._include_command = None
             self._include_codegen = None
             self._imports_enabled = None
@@ -152,6 +158,7 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
             cls,
             *,
             frame_name: str,
+            include_target: bool = True,
             imports_enabled: bool = False,
             allowed_import_module_roots: Tuple[str, ...] = tuple(),
             denied_import_module_roots: Tuple[str, ...] = tuple(),
@@ -167,6 +174,8 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
         Args:
             frame_name:
                 Target frame name for the configuration.
+            include_target:
+                Whether to expose `target`.
             imports_enabled:
                 Whether import statements are enabled.
             allowed_import_module_roots:
@@ -189,6 +198,7 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
         """
         return cls(
             frame_name=frame_name,
+            include_target=include_target,
             imports_enabled=imports_enabled,
             allowed_import_module_roots=allowed_import_module_roots,
             denied_import_module_roots=denied_import_module_roots,
@@ -226,6 +236,8 @@ class CodegenNamespaceConfiguration(Cleanable, ICodegenNamespaceConfiguration):
                 enabled_names.append("viewer")
             if self._include_workstation:
                 enabled_names.append("workstation")
+            if self._include_target:
+                enabled_names.append("target")
             if self._include_command:
                 enabled_names.append("command")
             if self._include_codegen:

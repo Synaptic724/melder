@@ -19,6 +19,9 @@ from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_contro
 from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_room_objects_strategy import (
     CodegenRoomObjectsStrategy,
 )
+from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_target_strategy import (
+    CodegenTargetStrategy,
+)
 from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_workstation_strategy import (
     CodegenWorkstationStrategy,
 )
@@ -52,6 +55,7 @@ class CodegenNamespaceBuilder(Cleanable):
         "_lock",
         "_room_objects_strategy",
         "_workstation_strategy",
+        "_target_strategy",
         "_command_strategy",
         "_codegen_control_strategy",
         "_builtins_strategy",
@@ -72,6 +76,7 @@ class CodegenNamespaceBuilder(Cleanable):
         self._workstation_strategy: CodegenWorkstationStrategy = (
             CodegenWorkstationStrategy()
         )
+        self._target_strategy: CodegenTargetStrategy = CodegenTargetStrategy()
         self._command_strategy: CodegenCommandStrategy = CodegenCommandStrategy()
         self._codegen_control_strategy: CodegenControlStrategy = (
             CodegenControlStrategy()
@@ -95,11 +100,13 @@ class CodegenNamespaceBuilder(Cleanable):
             self._cleaned = True
             self._room_objects_strategy.cleanup()
             self._workstation_strategy.cleanup()
+            self._target_strategy.cleanup()
             self._command_strategy.cleanup()
             self._codegen_control_strategy.cleanup()
             self._builtins_strategy.cleanup()
             self._room_objects_strategy = None
             self._workstation_strategy = None
+            self._target_strategy = None
             self._command_strategy = None
             self._codegen_control_strategy = None
             self._builtins_strategy = None
@@ -148,6 +155,12 @@ class CodegenNamespaceBuilder(Cleanable):
             )
             globals_dict.update(
                 self._workstation_strategy.build_namespace_entries(
+                    configuration,
+                    space=space,
+                )
+            )
+            globals_dict.update(
+                self._target_strategy.build_namespace_entries(
                     configuration,
                     space=space,
                 )

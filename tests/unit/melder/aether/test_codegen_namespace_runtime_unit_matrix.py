@@ -35,6 +35,9 @@ from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_contro
 from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_room_objects_strategy import (
     CodegenRoomObjectsStrategy,
 )
+from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_target_strategy import (
+    CodegenTargetStrategy,
+)
 from melder.aether.nexus.rift.codegen_system.namespace.strategies.codegen_workstation_strategy import (
     CodegenWorkstationStrategy,
 )
@@ -89,11 +92,24 @@ def test_unit_codegen_namespace_configuration_exposed_names_matrix(
         frame_name="ops",
         include_viewer=include_viewer,
         include_workstation=include_workstation,
+        include_target=False,
         include_command=include_command,
         include_codegen=include_codegen,
     )
 
     assert configuration.exposed_names == expected
+
+
+def test_unit_codegen_namespace_configuration_default_exposed_names_include_target() -> None:
+    configuration = build_namespace_configuration()
+
+    assert configuration.exposed_names == (
+        "viewer",
+        "workstation",
+        "target",
+        "command",
+        "codegen",
+    )
 
 
 @pytest.mark.parametrize(
@@ -165,9 +181,13 @@ def test_unit_codegen_namespace_strategies_expose_expected_entries(
         frame_name="ops",
         include_viewer=("viewer" in exposed_names),
         include_workstation=("workstation" in exposed_names),
+        include_target=("target" in exposed_names),
         include_command=("command" in exposed_names),
         include_codegen=("codegen" in exposed_names),
     )
+    target_value = object()
+    if "target" in exposed_names:
+        space.workstation.set_target(target_value)
 
     room_entries = CodegenRoomObjectsStrategy().build_namespace_entries(
         configuration,
@@ -175,6 +195,10 @@ def test_unit_codegen_namespace_strategies_expose_expected_entries(
         space=space,
     )
     workstation_entries = CodegenWorkstationStrategy().build_namespace_entries(
+        configuration,
+        space=space,
+    )
+    target_entries = CodegenTargetStrategy().build_namespace_entries(
         configuration,
         space=space,
     )
@@ -189,10 +213,44 @@ def test_unit_codegen_namespace_strategies_expose_expected_entries(
     merged_entries = {}
     merged_entries.update(room_entries)
     merged_entries.update(workstation_entries)
+    merged_entries.update(target_entries)
     merged_entries.update(command_entries)
     merged_entries.update(codegen_entries)
 
     assert expected_key in merged_entries
+    if expected_key == "target":
+        assert merged_entries["target"] is target_value
+
+
+def test_unit_codegen_namespace_builder_exposes_target_when_present() -> None:
+    builder = CodegenNamespaceBuilder()
+    space = CodegenSpaceDouble()
+    rift = DetachedRiftProjectionOwner()
+    target_value = object()
+    space.workstation.set_target(target_value)
+
+    namespace = builder.build(
+        build_namespace_configuration(),
+        rift=rift,
+        space=space,
+    )
+
+    assert namespace.globals_dict["target"] is target_value
+
+
+def test_unit_codegen_namespace_builder_exposes_none_when_target_missing() -> None:
+    builder = CodegenNamespaceBuilder()
+    space = CodegenSpaceDouble()
+    rift = DetachedRiftProjectionOwner()
+
+    namespace = builder.build(
+        build_namespace_configuration(),
+        rift=rift,
+        space=space,
+    )
+
+    assert "target" in namespace.globals_dict
+    assert namespace.globals_dict["target"] is None
 
 
 @pytest.mark.parametrize(

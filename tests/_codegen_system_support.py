@@ -81,9 +81,18 @@ class WorkstationDouble:
 
     def __init__(self) -> None:
         self.bindings = {}
+        self._target = None
 
     def bind_object(self, name: str, value: object) -> None:
         self.bindings[name] = value
+
+    def set_target(self, value: object) -> None:
+        self._target = value
+
+    def get_target(self) -> object:
+        if self._target is None:
+            raise ValueError("no target is selected")
+        return self._target
 
 
 class CommandSystemDouble:
@@ -179,6 +188,7 @@ def build_codegen_projection(
 def build_namespace_configuration(
         *,
         frame_name: str = "ops",
+        include_target: bool = True,
         imports_enabled: bool = False,
         allowed_import_module_roots: Tuple[str, ...] = tuple(),
         denied_import_module_roots: Tuple[str, ...] = tuple(),
@@ -192,6 +202,7 @@ def build_namespace_configuration(
     """
     return CodegenNamespaceConfiguration.create_default(
         frame_name=frame_name,
+        include_target=include_target,
         imports_enabled=imports_enabled,
         allowed_import_module_roots=allowed_import_module_roots,
         denied_import_module_roots=denied_import_module_roots,
