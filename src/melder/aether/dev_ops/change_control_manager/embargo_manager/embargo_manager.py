@@ -90,6 +90,7 @@ class ChangeControlEmbargoManager(Cleanable):
             if self._embargoes_by_owner is not None:
                 self._embargoes_by_owner.clear()
                 self._embargoes_by_owner = None
+        self._lock = None
 
     def open_embargo(
             self,

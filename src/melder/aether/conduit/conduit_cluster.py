@@ -84,6 +84,7 @@ class ConduitCluster(Cleanable):
             self.auto_link_dependencies = None
             self._name = None
             self._cleaned = True
+        self._lock = None
 
     def add_member(self, conduit_id: str) -> None:
         """

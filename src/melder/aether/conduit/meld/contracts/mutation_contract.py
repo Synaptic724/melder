@@ -1,4 +1,3 @@
-import threading
 from typing import Any, Optional, Union, Tuple
 # Melder Imports
 from melder.utilities.general_base.cleanable import Cleanable
@@ -115,7 +114,6 @@ class MutationContract(Cleanable):
                 "to be provided."
             )
         super().__init__()
-        self._lock: Optional[threading.RLock] = threading.RLock()
         self.spell = spell
         self.spellframe = spellframe
         self.binding_name = (

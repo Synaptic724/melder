@@ -126,6 +126,7 @@ class FrameACLCodegenProfile(Cleanable):
             self._version = None
             self._name = None
             self._id = None
+        self._lock = None
 
     @classmethod
     def create_default(cls) -> "FrameACLCodegenProfile":

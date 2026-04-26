@@ -142,6 +142,8 @@ class Incident(Cleanable):
             self._status = None
             self._id = None
 
+        self._lock = None
+
     @property
     def id(self) -> str:
         """

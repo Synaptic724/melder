@@ -80,6 +80,8 @@ class IncidentManager(Cleanable, IIncidentManager):
 
             self._next_numeric_id = 0
 
+        self._lock = None
+
     def _allocate_id(self) -> str:
         """
         Allocate the next incident id.

@@ -150,6 +150,9 @@ class SpellSystemState(Cleanable):
             self._spell_index_id = None
             self._current_spell_id = None
 
+        # Drop lock last
+        self._lock = None
+
     # ------------------------------------------------------------------
     # Properties
     # ------------------------------------------------------------------

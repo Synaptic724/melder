@@ -119,6 +119,8 @@ class DevOpsManager(Cleanable, IDevOpsManager):
             self._creation_gate_controller = None
             self._spell_system_states = None
 
+        self._lock = None
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------

@@ -43,7 +43,7 @@ class ConduitCloud(Cleanable, IConduitCloud):
         self._registry: Dict = {}
         self._id: str = str(ulid.ULID())
 
-    def cleanup(self) -> None:
+    def cleanup(self):
         """
         Clear the conduit registry and finalize the cloud.
 
@@ -61,10 +61,10 @@ class ConduitCloud(Cleanable, IConduitCloud):
         with self._lock:
             if self._cleaned:
                 return
-            self._cleaned = True
             self._registry.clear()
             self._registry = None
-
+            self._cleaned = True
+        self._lock = None
 
 
     #region Context Manager

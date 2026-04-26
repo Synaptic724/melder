@@ -102,6 +102,7 @@ class ChangeControlTransactionManager(Cleanable):
                 self._link_mirror.clear()
                 self._link_mirror = None
             self._audit_log_fn = None
+        self._lock = None
 
     def set_audit_logger(
             self,

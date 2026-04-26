@@ -137,6 +137,8 @@ class Detail(Cleanable, IDetail):
             self.sources = None
 
             self._id = None
+        self._lock = None
+
 
     # ------------------------------------------------------------------
     # Helper

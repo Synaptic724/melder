@@ -84,6 +84,7 @@ class FrameACLRuleSet(Cleanable):
             self._rules_by_name = None
             self._name = None
             self._id = None
+        self._lock = None
 
     @property
     def id(self) -> str:

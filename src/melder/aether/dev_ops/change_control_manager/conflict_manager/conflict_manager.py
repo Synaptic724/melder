@@ -52,6 +52,7 @@ class ChangeControlConflictManager(Cleanable):
             if self._cleaned:
                 return
             self._cleaned = True
+        self._lock = None
 
     def find_conflicts(
             self,
