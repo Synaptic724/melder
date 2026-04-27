@@ -204,6 +204,7 @@ class SpellCrystal(Cleanable):
             self._active_spellbook_name = None
             self._active_spell_id = None
             self._active_spell_index_id = None
+            self._lock = None
 
     @staticmethod
     def _copy_from_imports(

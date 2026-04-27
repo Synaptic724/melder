@@ -146,7 +146,7 @@ class SyntheticModule(ModuleType):
             self._physical_file_path = None
             self._materialized_directory_path = None
             self._published_in_sys_modules = False
-
+            self._lock = None
     @property
     def cleaned(self) -> bool:
         """
