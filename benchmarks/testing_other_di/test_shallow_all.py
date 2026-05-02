@@ -76,6 +76,58 @@ def _average_call_ns(call: Callable[[], Any], *, iters: int) -> float:
     total = time.perf_counter_ns() - t0
     return total / float(iters)
 
+
+def _average_spellspace_metrics_ns(
+        *,
+        enter_scope: Callable[[], Any],
+        resolve_in_scope: Callable[[Any], Any],
+        exit_scope: Callable[[Any], None],
+        iters: int,
+) -> tuple[float, float, float, float, float]:
+    """
+    Measure split spellspace metrics over N iterations.
+
+    Contract:
+        - Measures scope-build time separately from resolve time.
+        - Measures first and cached meld time separately inside the
+          already-active scope.
+        - Measures scope-exit time separately from meld time.
+        - Measures total time across build + two resolves + teardown.
+    """
+    if iters <= 0:
+        raise AssertionError("iters must be > 0")
+    build_total = 0
+    first_total = 0
+    cached_total = 0
+    exit_total = 0
+    whole_total = 0
+
+    for _ in range(iters):
+        t0 = time.perf_counter_ns()
+        scope_handle = enter_scope()
+        t1 = time.perf_counter_ns()
+        try:
+            resolve_in_scope(scope_handle)
+            t2 = time.perf_counter_ns()
+            resolve_in_scope(scope_handle)
+            t3 = time.perf_counter_ns()
+        finally:
+            exit_scope(scope_handle)
+        t4 = time.perf_counter_ns()
+
+        build_total += t1 - t0
+        first_total += t2 - t1
+        cached_total += t3 - t2
+        exit_total += t4 - t3
+        whole_total += t4 - t0
+
+    avg_build = build_total / float(iters)
+    avg_first = first_total / float(iters)
+    avg_cached = cached_total / float(iters)
+    avg_exit = exit_total / float(iters)
+    avg_total = whole_total / float(iters)
+    return avg_build, avg_first, avg_cached, avg_exit, avg_total
+
 # ======================================================================================
 # Synthetic graphs: solo / shallow / wide / diamond
 #
@@ -735,6 +787,9 @@ class _RuntimeOps:
     get_root_a: Callable[[], Any]
     get_root_b: Callable[[], Any]
     spellspace_cycle: Callable[[], None]
+    spellspace_enter: Callable[[], Any]
+    spellspace_resolve: Callable[[Any], Any]
+    spellspace_exit: Callable[[Any], None]
     cleanup: Callable[[], None]
 
 
@@ -834,6 +889,18 @@ def _build_runtime_dependency_injector(g: _GraphSpec) -> _RuntimeOps:
 
         ctx.run(run)
 
+    def spellspace_enter() -> Any:
+        return contextvars.Context()
+
+    def spellspace_resolve(ctx: Any) -> Any:
+        root = ctx.run(lambda: providers_by_type[g.spellspace_root]())
+        if not isinstance(root, g.spellspace_root):
+            raise AssertionError("Dependency Injector: spellspace root resolve returned wrong type")
+        return root
+
+    def spellspace_exit(ctx: Any) -> None:
+        return None
+
     def cleanup() -> None:
         for prov in providers_by_type.values():
             reset = getattr(prov, "reset", None)
@@ -846,6 +913,9 @@ def _build_runtime_dependency_injector(g: _GraphSpec) -> _RuntimeOps:
         get_root_a=get_root_a,
         get_root_b=get_root_b,
         spellspace_cycle=spellspace_cycle,
+        spellspace_enter=spellspace_enter,
+        spellspace_resolve=spellspace_resolve,
+        spellspace_exit=spellspace_exit,
         cleanup=cleanup,
     )
 
@@ -902,6 +972,22 @@ def _build_runtime_lagom(g: _GraphSpec) -> _RuntimeOps:
             if r1 is not r2:
                 raise AssertionError("Lagom: spellspace root not cached within spellspace")
 
+    def spellspace_enter() -> Any:
+        ctx = container.temporary_singletons(list(g.spellspace_classes))
+        scope = ctx.__enter__()
+        return ctx, scope
+
+    def spellspace_resolve(handle: Any) -> Any:
+        _, space = handle
+        root = space[g.spellspace_root]
+        if not isinstance(root, g.spellspace_root):
+            raise AssertionError("Lagom: spellspace root resolve returned wrong type")
+        return root
+
+    def spellspace_exit(handle: Any) -> None:
+        ctx, _ = handle
+        ctx.__exit__(None, None, None)
+
     def cleanup() -> None:
         gc.collect()
 
@@ -910,6 +996,9 @@ def _build_runtime_lagom(g: _GraphSpec) -> _RuntimeOps:
         get_root_a=get_root_a,
         get_root_b=get_root_b,
         spellspace_cycle=spellspace_cycle,
+        spellspace_enter=spellspace_enter,
+        spellspace_resolve=spellspace_resolve,
+        spellspace_exit=spellspace_exit,
         cleanup=cleanup,
     )
 
@@ -1003,6 +1092,21 @@ def _build_runtime_injector(g: _GraphSpec) -> _RuntimeOps:
             if r1 is not r2:
                 raise AssertionError("Injector: spellspace root not cached within spellspace")
 
+    def spellspace_enter() -> Any:
+        scope = state.injector.get(state.spellspace_scope_type)
+        ctx = scope.enter()
+        ctx.__enter__()
+        return ctx
+
+    def spellspace_resolve(handle: Any) -> Any:
+        root = state.injector.get(g.spellspace_root)
+        if not isinstance(root, g.spellspace_root):
+            raise AssertionError("Injector: spellspace root resolve returned wrong type")
+        return root
+
+    def spellspace_exit(handle: Any) -> None:
+        handle.__exit__(None, None, None)
+
     def cleanup() -> None:
         for cls, orig in state.original_inits.items():
             cls.__init__ = orig
@@ -1013,6 +1117,9 @@ def _build_runtime_injector(g: _GraphSpec) -> _RuntimeOps:
         get_root_a=get_root_a,
         get_root_b=get_root_b,
         spellspace_cycle=spellspace_cycle,
+        spellspace_enter=spellspace_enter,
+        spellspace_resolve=spellspace_resolve,
+        spellspace_exit=spellspace_exit,
         cleanup=cleanup,
     )
 
@@ -1060,6 +1167,22 @@ def _build_runtime_dishka(g: _GraphSpec) -> _RuntimeOps:
             if r1 is not r2:
                 raise AssertionError("Dishka: spellspace root not cached within spellspace")
 
+    def spellspace_enter() -> Any:
+        ctx = container()
+        request_container = ctx.__enter__()
+        return ctx, request_container
+
+    def spellspace_resolve(handle: Any) -> Any:
+        _, request_container = handle
+        root = request_container.get(g.spellspace_root)
+        if not isinstance(root, g.spellspace_root):
+            raise AssertionError("Dishka: spellspace root resolve returned wrong type")
+        return root
+
+    def spellspace_exit(handle: Any) -> None:
+        ctx, _ = handle
+        ctx.__exit__(None, None, None)
+
     def cleanup() -> None:
         container.close()
         gc.collect()
@@ -1069,6 +1192,9 @@ def _build_runtime_dishka(g: _GraphSpec) -> _RuntimeOps:
         get_root_a=get_root_a,
         get_root_b=get_root_b,
         spellspace_cycle=spellspace_cycle,
+        spellspace_enter=spellspace_enter,
+        spellspace_resolve=spellspace_resolve,
+        spellspace_exit=spellspace_exit,
         cleanup=cleanup,
     )
 
@@ -1144,6 +1270,22 @@ def _build_runtime_melder(g: _GraphSpec) -> _RuntimeOps:
             if r1 is not r2:
                 raise AssertionError("Melder: spellspace root not cached within spellspace")
 
+    def spellspace_enter() -> Any:
+        ctx = conduit.enter_spellspace()
+        space = ctx.__enter__()
+        return ctx, space
+
+    def spellspace_resolve(handle: Any) -> Any:
+        _, space = handle
+        root = space.meld(spell=root_space_id)
+        if not isinstance(root, g.spellspace_root):
+            raise AssertionError("Melder: spellspace root meld returned wrong type")
+        return root
+
+    def spellspace_exit(handle: Any) -> None:
+        ctx, _ = handle
+        ctx.__exit__(None, None, None)
+
     def cleanup() -> None:
         try:
             conduit.cleanup()
@@ -1159,6 +1301,9 @@ def _build_runtime_melder(g: _GraphSpec) -> _RuntimeOps:
         get_root_a=get_root_a,
         get_root_b=get_root_b,
         spellspace_cycle=spellspace_cycle,
+        spellspace_enter=spellspace_enter,
+        spellspace_resolve=spellspace_resolve,
+        spellspace_exit=spellspace_exit,
         cleanup=cleanup,
     )
 
@@ -1620,13 +1765,24 @@ def test_single_resolve_timings(graph: str, lib: str) -> None:
 
         avg_a_ns = _average_call_ns(ops.get_root_a, iters=avg_iters)
         avg_b_ns = _average_call_ns(ops.get_root_b, iters=avg_iters)
-        avg_spellspace_ns = _average_call_ns(ops.spellspace_cycle, iters=avg_iters)
+        avg_spellspace_build_ns, avg_spellspace_first_ns, avg_spellspace_cached_ns, avg_spellspace_exit_ns, avg_spellspace_total_ns = (
+            _average_spellspace_metrics_ns(
+                enter_scope=ops.spellspace_enter,
+                resolve_in_scope=ops.spellspace_resolve,
+                exit_scope=ops.spellspace_exit,
+                iters=avg_iters,
+            )
+        )
 
         print(
             f"[{ops.name}] single ({g.name}) "
             f"A avg({avg_iters})={avg_a_ns/1_000.0:.2f}us | "
             f"B avg({avg_iters})={avg_b_ns/1_000.0:.2f}us | "
-            f"spellspace avg({avg_iters})={avg_spellspace_ns/1_000.0:.2f}us"
+            f"build avg({avg_iters})={avg_spellspace_build_ns/1_000.0:.2f}us | "
+            f"spellspace first meld avg({avg_iters})={avg_spellspace_first_ns/1_000.0:.2f}us | "
+            f"spellspace cached meld avg({avg_iters})={avg_spellspace_cached_ns/1_000.0:.2f}us | "
+            f"exit avg({avg_iters})={avg_spellspace_exit_ns/1_000.0:.2f}us | "
+            f"total avg({avg_iters})={avg_spellspace_total_ns/1_000.0:.2f}us"
         )
     finally:
         ops.cleanup()
