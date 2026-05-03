@@ -23,17 +23,8 @@ from melder.aether.nexus.acl.configurations.profiles.codegen.safe_profile import
 from melder.aether.nexus.acl.configurations.profiles.command.frame_acl_command_profile import (
     FrameACLCommandProfile,
 )
-from melder.aether.nexus.acl.configurations.profiles.command.hybrid_profile import (
-    create_hybrid_command_profile,
-)
-from melder.aether.nexus.acl.configurations.profiles.command.permissive_profile import (
-    create_permissive_command_profile,
-)
-from melder.aether.nexus.acl.configurations.profiles.command.precision import (
-    create_precision_command_profile,
-)
-from melder.aether.nexus.acl.configurations.profiles.command.safe_profile import (
-    create_safe_command_profile,
+from melder.aether.nexus.acl.configurations.profiles.command.frame_acl_command_profile_builder import (
+    FrameACLCommandProfileBuilder,
 )
 from melder.aether.nexus.acl.configurations.profiles.frame_acl_profile import (
     FrameACLProfile,
@@ -41,20 +32,11 @@ from melder.aether.nexus.acl.configurations.profiles.frame_acl_profile import (
 from melder.aether.nexus.acl.configurations.profiles.rules.frame_acl_ruleset import (
     FrameACLRuleSet,
 )
+from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile_builder import (
+    FrameACLViewProfileBuilder,
+)
 from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
-)
-from melder.aether.nexus.acl.configurations.profiles.view.hybrid_profile import (
-    create_hybrid_view_profile,
-)
-from melder.aether.nexus.acl.configurations.profiles.view.permissive_profile import (
-    create_permissive_view_profile,
-)
-from melder.aether.nexus.acl.configurations.profiles.view.precision import (
-    create_precision_view_profile,
-)
-from melder.aether.nexus.acl.configurations.profiles.view.safe_profile import (
-    create_safe_view_profile,
 )
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.helpers.id_builder import IDBuilder
@@ -82,6 +64,8 @@ class FrameACLProfileBuilder(Cleanable):
         "_id",
         "_lock",
         "_version",
+        "_view_profile_builder",
+        "_command_profile_builder",
         "_view_profiles_by_name",
         "_command_profiles_by_name",
         "_codegen_profiles_by_name",
@@ -101,24 +85,34 @@ class FrameACLProfileBuilder(Cleanable):
         self._id: str = IDBuilder.create_id()
         self._lock: threading.RLock = threading.RLock()
         self._version: str = "0.0.1"
+        self._view_profile_builder: FrameACLViewProfileBuilder = (
+            FrameACLViewProfileBuilder()
+        )
+        self._command_profile_builder: FrameACLCommandProfileBuilder = (
+            FrameACLCommandProfileBuilder()
+        )
         self._view_profiles_by_name: Dict[str, FrameACLViewProfile] = {}
         self._command_profiles_by_name: Dict[str, FrameACLCommandProfile] = {}
         self._codegen_profiles_by_name: Dict[str, FrameACLCodegenProfile] = {}
         self._view_precision_profiles_by_name: Dict[str, FrameACLViewProfile] = {}
         self._command_precision_profiles_by_name: Dict[str, FrameACLCommandProfile] = {}
         self._codegen_precision_profiles_by_name: Dict[str, FrameACLCodegenProfile] = {}
-        self.register_view_profile(create_safe_view_profile())
-        self.register_view_profile(create_hybrid_view_profile())
-        self.register_view_profile(create_permissive_view_profile())
-        self.register_command_profile(create_safe_command_profile())
-        self.register_command_profile(create_hybrid_command_profile())
-        self.register_command_profile(create_permissive_command_profile())
+        self.register_view_profile(self._view_profile_builder.build_profile("safe"))
+        self.register_view_profile(self._view_profile_builder.build_profile("hybrid"))
+        self.register_view_profile(self._view_profile_builder.build_profile("permissive"))
+        self.register_command_profile(self._command_profile_builder.build_profile("safe"))
+        self.register_command_profile(self._command_profile_builder.build_profile("hybrid"))
+        self.register_command_profile(self._command_profile_builder.build_profile("permissive"))
         self.register_codegen_profile(create_safe_codegen_profile())
         self.register_codegen_profile(create_hybrid_codegen_profile())
         self.register_codegen_profile(create_permissive_codegen_profile())
         self.register_codegen_profile(create_full_access_codegen_profile())
-        self.register_view_precision_profile(create_precision_view_profile())
-        self.register_command_precision_profile(create_precision_command_profile())
+        self.register_view_precision_profile(
+            self._view_profile_builder.build_profile("precision")
+        )
+        self.register_command_precision_profile(
+            self._command_profile_builder.build_profile("precision")
+        )
         self.register_codegen_precision_profile(create_precision_codegen_profile())
 
     def cleanup(self) -> None:
@@ -151,6 +145,10 @@ class FrameACLProfileBuilder(Cleanable):
             self._view_precision_profiles_by_name = None
             self._command_precision_profiles_by_name = None
             self._codegen_precision_profiles_by_name = None
+            self._view_profile_builder.cleanup()
+            self._command_profile_builder.cleanup()
+            self._view_profile_builder = None
+            self._command_profile_builder = None
             self._version = None
             self._id = None
         self._lock = None
@@ -166,6 +164,22 @@ class FrameACLProfileBuilder(Cleanable):
         """Return the current version string for this ACL profile builder/library."""
         self.check_cleaned()
         return self._version
+
+    @property
+    def view_profile_builder(self) -> FrameACLViewProfileBuilder:
+        """
+        Return the family builder that owns view profile strategies.
+        """
+        self.check_cleaned()
+        return self._view_profile_builder
+
+    @property
+    def command_profile_builder(self) -> FrameACLCommandProfileBuilder:
+        """
+        Return the family builder that owns command profile strategies.
+        """
+        self.check_cleaned()
+        return self._command_profile_builder
 
     @property
     def view_profiles_by_name(self) -> Dict[str, FrameACLViewProfile]:

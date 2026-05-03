@@ -182,10 +182,10 @@ class FrameACLViewProfile(Cleanable):
             FrameACLViewProfile: Default reusable view profile.
         """
         from melder.aether.nexus.acl.configurations.profiles.view.safe_profile import (
-            create_safe_view_profile,
+            SafeViewProfileStrategy,
         )
 
-        return create_safe_view_profile()
+        return SafeViewProfileStrategy().build()
 
     @classmethod
     def create_safe(cls) -> "FrameACLViewProfile":
@@ -199,10 +199,10 @@ class FrameACLViewProfile(Cleanable):
             FrameACLViewProfile: Reusable `safe` view profile.
         """
         from melder.aether.nexus.acl.configurations.profiles.view.safe_profile import (
-            create_safe_view_profile,
+            SafeViewProfileStrategy,
         )
 
-        return create_safe_view_profile()
+        return SafeViewProfileStrategy().build()
 
     @classmethod
     def create_hybrid(cls) -> "FrameACLViewProfile":
@@ -216,10 +216,10 @@ class FrameACLViewProfile(Cleanable):
             FrameACLViewProfile: Reusable `hybrid` view profile.
         """
         from melder.aether.nexus.acl.configurations.profiles.view.hybrid_profile import (
-            create_hybrid_view_profile,
+            HybridViewProfileStrategy,
         )
 
-        return create_hybrid_view_profile()
+        return HybridViewProfileStrategy().build()
 
     @classmethod
     def create_permissive(cls) -> "FrameACLViewProfile":
@@ -233,10 +233,10 @@ class FrameACLViewProfile(Cleanable):
             FrameACLViewProfile: Reusable `permissive` view profile.
         """
         from melder.aether.nexus.acl.configurations.profiles.view.permissive_profile import (
-            create_permissive_view_profile,
+            PermissiveViewProfileStrategy,
         )
 
-        return create_permissive_view_profile()
+        return PermissiveViewProfileStrategy().build()
 
     @classmethod
     def create_precision(cls) -> "FrameACLViewProfile":
@@ -250,10 +250,10 @@ class FrameACLViewProfile(Cleanable):
             FrameACLViewProfile: Reusable `precision` view profile.
         """
         from melder.aether.nexus.acl.configurations.profiles.view.precision import (
-            create_precision_view_profile,
+            PrecisionViewProfileStrategy,
         )
 
-        return create_precision_view_profile()
+        return PrecisionViewProfileStrategy().build()
 
     @property
     def id(self) -> str:

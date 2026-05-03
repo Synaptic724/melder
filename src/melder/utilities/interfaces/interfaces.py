@@ -2468,6 +2468,38 @@ class IFrameACLViewProfile(ICleanable, Protocol):
 
 
 @runtime_checkable
+class IFrameACLViewProfileStrategy(Protocol):
+    """
+    Reusable strategy contract for building one configured view ACL profile.
+
+    Contract:
+        - Exposes one stable strategy/profile name.
+        - Returns a freshly configured `IFrameACLViewProfile` instance when
+          asked to build.
+        - Carries no shared mutable module-level state itself.
+    """
+
+    @property
+    def name(self) -> str:
+        """
+        Return the stable view-profile strategy name.
+
+        Returns:
+            str: Canonical strategy/profile name.
+        """
+        ...
+
+    def build(self) -> "IFrameACLViewProfile":
+        """
+        Build and return one configured view ACL profile instance.
+
+        Returns:
+            IFrameACLViewProfile: Fresh configured profile instance.
+        """
+        ...
+
+
+@runtime_checkable
 class IFrameACLCommandProfile(ICleanable, Protocol):
     """
     Reusable command-side ACL profile contract.
@@ -2480,6 +2512,38 @@ class IFrameACLCommandProfile(ICleanable, Protocol):
     conduit_ruleset: IFrameACLRuleSet
     spell_ruleset: IFrameACLRuleSet
     member_ruleset: IFrameACLRuleSet
+
+
+@runtime_checkable
+class IFrameACLCommandProfileStrategy(Protocol):
+    """
+    Reusable strategy contract for building one configured command ACL profile.
+
+    Contract:
+        - Exposes one stable strategy/profile name.
+        - Returns a freshly configured `IFrameACLCommandProfile` instance when
+          asked to build.
+        - Carries no shared mutable module-level state itself.
+    """
+
+    @property
+    def name(self) -> str:
+        """
+        Return the stable command-profile strategy name.
+
+        Returns:
+            str: Canonical strategy/profile name.
+        """
+        ...
+
+    def build(self) -> "IFrameACLCommandProfile":
+        """
+        Build and return one configured command ACL profile instance.
+
+        Returns:
+            IFrameACLCommandProfile: Fresh configured profile instance.
+        """
+        ...
 
 
 @runtime_checkable

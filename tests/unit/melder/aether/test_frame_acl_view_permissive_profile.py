@@ -2,7 +2,7 @@ from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile
     FrameACLViewProfile,
 )
 from melder.aether.nexus.acl.configurations.profiles.view.permissive_profile import (
-    create_permissive_view_profile,
+    PermissiveViewProfileStrategy,
 )
 
 
@@ -13,7 +13,7 @@ def test_permissive_view_profile_exposes_expected_identity_and_rulesets() -> Non
     Returns:
         None.
     """
-    profile = create_permissive_view_profile()
+    profile = PermissiveViewProfileStrategy().build()
 
     assert isinstance(profile, FrameACLViewProfile)
     assert profile.name == "permissive"

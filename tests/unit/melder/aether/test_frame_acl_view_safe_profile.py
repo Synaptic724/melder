@@ -2,7 +2,7 @@ from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile
     FrameACLViewProfile,
 )
 from melder.aether.nexus.acl.configurations.profiles.view.safe_profile import (
-    create_safe_view_profile,
+    SafeViewProfileStrategy,
 )
 
 
@@ -13,7 +13,7 @@ def test_safe_view_profile_exposes_expected_identity_and_rulesets() -> None:
     Returns:
         None.
     """
-    profile = create_safe_view_profile()
+    profile = SafeViewProfileStrategy().build()
 
     assert isinstance(profile, FrameACLViewProfile)
     assert profile.id is not None

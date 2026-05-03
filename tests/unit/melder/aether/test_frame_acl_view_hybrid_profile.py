@@ -2,7 +2,7 @@ from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile
     FrameACLViewProfile,
 )
 from melder.aether.nexus.acl.configurations.profiles.view.hybrid_profile import (
-    create_hybrid_view_profile,
+    HybridViewProfileStrategy,
 )
 
 
@@ -13,7 +13,7 @@ def test_hybrid_view_profile_exposes_expected_identity_and_rulesets() -> None:
     Returns:
         None.
     """
-    profile = create_hybrid_view_profile()
+    profile = HybridViewProfileStrategy().build()
 
     assert isinstance(profile, FrameACLViewProfile)
     assert profile.name == "hybrid"

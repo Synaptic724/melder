@@ -134,46 +134,46 @@ class FrameACLCommandProfile(Cleanable):
     def create_default(cls) -> "FrameACLCommandProfile":
         """Create the default reusable command profile."""
         from melder.aether.nexus.acl.configurations.profiles.command.safe_profile import (
-            create_safe_command_profile,
+            SafeCommandProfileStrategy,
         )
 
-        return create_safe_command_profile()
+        return SafeCommandProfileStrategy().build()
 
     @classmethod
     def create_safe(cls) -> "FrameACLCommandProfile":
         """Create the reusable `safe` command profile."""
         from melder.aether.nexus.acl.configurations.profiles.command.safe_profile import (
-            create_safe_command_profile,
+            SafeCommandProfileStrategy,
         )
 
-        return create_safe_command_profile()
+        return SafeCommandProfileStrategy().build()
 
     @classmethod
     def create_hybrid(cls) -> "FrameACLCommandProfile":
         """Create the reusable `hybrid` command profile."""
         from melder.aether.nexus.acl.configurations.profiles.command.hybrid_profile import (
-            create_hybrid_command_profile,
+            HybridCommandProfileStrategy,
         )
 
-        return create_hybrid_command_profile()
+        return HybridCommandProfileStrategy().build()
 
     @classmethod
     def create_permissive(cls) -> "FrameACLCommandProfile":
         """Create the reusable `permissive` command profile."""
         from melder.aether.nexus.acl.configurations.profiles.command.permissive_profile import (
-            create_permissive_command_profile,
+            PermissiveCommandProfileStrategy,
         )
 
-        return create_permissive_command_profile()
+        return PermissiveCommandProfileStrategy().build()
 
     @classmethod
     def create_precision(cls) -> "FrameACLCommandProfile":
         """Create the reusable `precision` command profile."""
         from melder.aether.nexus.acl.configurations.profiles.command.precision import (
-            create_precision_command_profile,
+            PrecisionCommandProfileStrategy,
         )
 
-        return create_precision_command_profile()
+        return PrecisionCommandProfileStrategy().build()
 
     @property
     def id(self) -> str:

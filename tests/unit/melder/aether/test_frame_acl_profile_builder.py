@@ -8,6 +8,12 @@ from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_p
 from melder.aether.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder import (
     FrameACLProfileBuilder,
 )
+from melder.aether.nexus.acl.configurations.profiles.command.frame_acl_command_profile_builder import (
+    FrameACLCommandProfileBuilder,
+)
+from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile_builder import (
+    FrameACLViewProfileBuilder,
+)
 from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
@@ -48,6 +54,84 @@ def test_frame_acl_profile_builder_exposes_id_and_registry_snapshots() -> None:
         "hybrid",
         "permissive",
         "full_access",
+    }
+
+
+def test_frame_acl_view_profile_builder_loads_default_strategies() -> None:
+    """
+    Verify the dedicated view family builder exposes and builds the defaults.
+
+    Returns:
+        None.
+    """
+    builder = FrameACLViewProfileBuilder()
+
+    assert set(builder.list_strategy_names()) == {
+        "safe",
+        "hybrid",
+        "permissive",
+        "precision",
+    }
+    assert builder.build_profile("safe").name == "safe"
+    assert builder.build_profile("hybrid").name == "hybrid"
+    assert builder.build_profile("permissive").name == "permissive"
+    assert builder.build_profile("precision").name == "precision"
+
+
+def test_frame_acl_profile_builder_exposes_view_family_builder() -> None:
+    """
+    Verify the top-level builder exposes its dedicated view family builder.
+
+    Returns:
+        None.
+    """
+    builder = FrameACLProfileBuilder()
+
+    assert isinstance(builder.view_profile_builder, FrameACLViewProfileBuilder)
+    assert set(builder.view_profile_builder.list_strategy_names()) == {
+        "safe",
+        "hybrid",
+        "permissive",
+        "precision",
+    }
+
+
+def test_frame_acl_command_profile_builder_loads_default_strategies() -> None:
+    """
+    Verify the dedicated command family builder exposes and builds the defaults.
+
+    Returns:
+        None.
+    """
+    builder = FrameACLCommandProfileBuilder()
+
+    assert set(builder.list_strategy_names()) == {
+        "safe",
+        "hybrid",
+        "permissive",
+        "precision",
+    }
+    assert builder.build_profile("safe").name == "safe"
+    assert builder.build_profile("hybrid").name == "hybrid"
+    assert builder.build_profile("permissive").name == "permissive"
+    assert builder.build_profile("precision").name == "precision"
+
+
+def test_frame_acl_profile_builder_exposes_command_family_builder() -> None:
+    """
+    Verify the top-level builder exposes its dedicated command family builder.
+
+    Returns:
+        None.
+    """
+    builder = FrameACLProfileBuilder()
+
+    assert isinstance(builder.command_profile_builder, FrameACLCommandProfileBuilder)
+    assert set(builder.command_profile_builder.list_strategy_names()) == {
+        "safe",
+        "hybrid",
+        "permissive",
+        "precision",
     }
 
 
