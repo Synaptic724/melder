@@ -1,5 +1,5 @@
 from melder.aether.nexus.acl.configurations.profiles.codegen.hybrid_profile import (
-    create_hybrid_codegen_profile,
+    HybridCodegenProfileStrategy,
 )
 from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
@@ -13,7 +13,7 @@ def test_hybrid_codegen_profile_exposes_expected_identity_and_rulesets() -> None
     Returns:
         None.
     """
-    profile = create_hybrid_codegen_profile()
+    profile = HybridCodegenProfileStrategy().build()
 
     assert isinstance(profile, FrameACLCodegenProfile)
     assert profile.name == "hybrid"

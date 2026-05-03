@@ -7,9 +7,11 @@ from melder.aether.nexus.acl.configurations.profiles.codegen.stdlib_import_sets 
 from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.utilities.interfaces.interfaces import IFrameACLCodegenProfileStrategy
 
 
-def create_permissive_codegen_profile() -> FrameACLCodegenProfile:
+class PermissiveCodegenProfileStrategy(IFrameACLCodegenProfileStrategy):
     """
     Build the reusable `permissive` codegen profile.
 
@@ -18,11 +20,19 @@ def create_permissive_codegen_profile() -> FrameACLCodegenProfile:
         broadest set of conduit and spell operations while still denying the
         highest-risk capability gates such as mutation and unsafe reflection.
 
-    Returns:
-        FrameACLCodegenProfile: Reusable `permissive` codegen profile.
     """
-    return FrameACLCodegenProfile(
-        "permissive",
+    __melder_internal__ = _mrg.sentinel
+    _NAME = "permissive"
+
+    @property
+    def name(self) -> str:
+        """Return the stable codegen-profile strategy name."""
+        return self._NAME
+
+    def build(self) -> FrameACLCodegenProfile:
+        """Build and return one configured `permissive` codegen profile."""
+        return FrameACLCodegenProfile(
+        self._NAME,
         validation_strategy_name="generic",
         frame_ruleset=FrameACLViewProfile.build_ruleset(
             "permissive_frame_codegen",

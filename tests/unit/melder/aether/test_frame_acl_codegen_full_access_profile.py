@@ -2,7 +2,7 @@ from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_p
     FrameACLCodegenProfile,
 )
 from melder.aether.nexus.acl.configurations.profiles.codegen.full_access_profile import (
-    create_full_access_codegen_profile,
+    FullAccessCodegenProfileStrategy,
 )
 
 
@@ -14,7 +14,7 @@ def test_full_access_codegen_profile_exposes_expected_identity_and_rulesets() ->
     Returns:
         None.
     """
-    profile = create_full_access_codegen_profile()
+    profile = FullAccessCodegenProfileStrategy().build()
 
     assert isinstance(profile, FrameACLCodegenProfile)
     assert profile.name == "full_access"

@@ -5,20 +5,8 @@ from melder.__melder_registration_guard__ import __melder_registration_guard__ a
 from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
-from melder.aether.nexus.acl.configurations.profiles.codegen.hybrid_profile import (
-    create_hybrid_codegen_profile,
-)
-from melder.aether.nexus.acl.configurations.profiles.codegen.permissive_profile import (
-    create_permissive_codegen_profile,
-)
-from melder.aether.nexus.acl.configurations.profiles.codegen.full_access_profile import (
-    create_full_access_codegen_profile,
-)
-from melder.aether.nexus.acl.configurations.profiles.codegen.precision import (
-    create_precision_codegen_profile,
-)
-from melder.aether.nexus.acl.configurations.profiles.codegen.safe_profile import (
-    create_safe_codegen_profile,
+from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile_builder import (
+    FrameACLCodegenProfileBuilder,
 )
 from melder.aether.nexus.acl.configurations.profiles.command.frame_acl_command_profile import (
     FrameACLCommandProfile,
@@ -66,6 +54,7 @@ class FrameACLProfileBuilder(Cleanable):
         "_version",
         "_view_profile_builder",
         "_command_profile_builder",
+        "_codegen_profile_builder",
         "_view_profiles_by_name",
         "_command_profiles_by_name",
         "_codegen_profiles_by_name",
@@ -91,6 +80,9 @@ class FrameACLProfileBuilder(Cleanable):
         self._command_profile_builder: FrameACLCommandProfileBuilder = (
             FrameACLCommandProfileBuilder()
         )
+        self._codegen_profile_builder: FrameACLCodegenProfileBuilder = (
+            FrameACLCodegenProfileBuilder()
+        )
         self._view_profiles_by_name: Dict[str, FrameACLViewProfile] = {}
         self._command_profiles_by_name: Dict[str, FrameACLCommandProfile] = {}
         self._codegen_profiles_by_name: Dict[str, FrameACLCodegenProfile] = {}
@@ -103,17 +95,19 @@ class FrameACLProfileBuilder(Cleanable):
         self.register_command_profile(self._command_profile_builder.build_profile("safe"))
         self.register_command_profile(self._command_profile_builder.build_profile("hybrid"))
         self.register_command_profile(self._command_profile_builder.build_profile("permissive"))
-        self.register_codegen_profile(create_safe_codegen_profile())
-        self.register_codegen_profile(create_hybrid_codegen_profile())
-        self.register_codegen_profile(create_permissive_codegen_profile())
-        self.register_codegen_profile(create_full_access_codegen_profile())
+        self.register_codegen_profile(self._codegen_profile_builder.build_profile("safe"))
+        self.register_codegen_profile(self._codegen_profile_builder.build_profile("hybrid"))
+        self.register_codegen_profile(self._codegen_profile_builder.build_profile("permissive"))
+        self.register_codegen_profile(self._codegen_profile_builder.build_profile("full_access"))
         self.register_view_precision_profile(
             self._view_profile_builder.build_profile("precision")
         )
         self.register_command_precision_profile(
             self._command_profile_builder.build_profile("precision")
         )
-        self.register_codegen_precision_profile(create_precision_codegen_profile())
+        self.register_codegen_precision_profile(
+            self._codegen_profile_builder.build_profile("precision")
+        )
 
     def cleanup(self) -> None:
         """
@@ -147,8 +141,10 @@ class FrameACLProfileBuilder(Cleanable):
             self._codegen_precision_profiles_by_name = None
             self._view_profile_builder.cleanup()
             self._command_profile_builder.cleanup()
+            self._codegen_profile_builder.cleanup()
             self._view_profile_builder = None
             self._command_profile_builder = None
+            self._codegen_profile_builder = None
             self._version = None
             self._id = None
         self._lock = None
@@ -180,6 +176,14 @@ class FrameACLProfileBuilder(Cleanable):
         """
         self.check_cleaned()
         return self._command_profile_builder
+
+    @property
+    def codegen_profile_builder(self) -> FrameACLCodegenProfileBuilder:
+        """
+        Return the family builder that owns codegen profile strategies.
+        """
+        self.check_cleaned()
+        return self._codegen_profile_builder
 
     @property
     def view_profiles_by_name(self) -> Dict[str, FrameACLViewProfile]:

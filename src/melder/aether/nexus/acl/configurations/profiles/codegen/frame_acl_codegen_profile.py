@@ -140,10 +140,10 @@ class FrameACLCodegenProfile(Cleanable):
             FrameACLCodegenProfile: Default reusable codegen profile.
         """
         from melder.aether.nexus.acl.configurations.profiles.codegen.safe_profile import (
-            create_safe_codegen_profile,
+            SafeCodegenProfileStrategy,
         )
 
-        return create_safe_codegen_profile()
+        return SafeCodegenProfileStrategy().build()
 
     @classmethod
     def create_safe(cls) -> "FrameACLCodegenProfile":
@@ -157,10 +157,10 @@ class FrameACLCodegenProfile(Cleanable):
             FrameACLCodegenProfile: Reusable `safe` codegen profile.
         """
         from melder.aether.nexus.acl.configurations.profiles.codegen.safe_profile import (
-            create_safe_codegen_profile,
+            SafeCodegenProfileStrategy,
         )
 
-        return create_safe_codegen_profile()
+        return SafeCodegenProfileStrategy().build()
 
     @classmethod
     def create_hybrid(cls) -> "FrameACLCodegenProfile":
@@ -175,10 +175,10 @@ class FrameACLCodegenProfile(Cleanable):
             FrameACLCodegenProfile: Reusable `hybrid` codegen profile.
         """
         from melder.aether.nexus.acl.configurations.profiles.codegen.hybrid_profile import (
-            create_hybrid_codegen_profile,
+            HybridCodegenProfileStrategy,
         )
 
-        return create_hybrid_codegen_profile()
+        return HybridCodegenProfileStrategy().build()
 
     @classmethod
     def create_permissive(cls) -> "FrameACLCodegenProfile":
@@ -192,10 +192,10 @@ class FrameACLCodegenProfile(Cleanable):
             FrameACLCodegenProfile: Reusable `permissive` codegen profile.
         """
         from melder.aether.nexus.acl.configurations.profiles.codegen.permissive_profile import (
-            create_permissive_codegen_profile,
+            PermissiveCodegenProfileStrategy,
         )
 
-        return create_permissive_codegen_profile()
+        return PermissiveCodegenProfileStrategy().build()
 
     @classmethod
     def create_full_access(cls) -> "FrameACLCodegenProfile":
@@ -210,10 +210,10 @@ class FrameACLCodegenProfile(Cleanable):
             FrameACLCodegenProfile: Reusable `full_access` codegen profile.
         """
         from melder.aether.nexus.acl.configurations.profiles.codegen.full_access_profile import (
-            create_full_access_codegen_profile,
+            FullAccessCodegenProfileStrategy,
         )
 
-        return create_full_access_codegen_profile()
+        return FullAccessCodegenProfileStrategy().build()
 
     @classmethod
     def create_precision(cls) -> "FrameACLCodegenProfile":
@@ -227,10 +227,10 @@ class FrameACLCodegenProfile(Cleanable):
             FrameACLCodegenProfile: Reusable `precision` codegen profile.
         """
         from melder.aether.nexus.acl.configurations.profiles.codegen.precision import (
-            create_precision_codegen_profile,
+            PrecisionCodegenProfileStrategy,
         )
 
-        return create_precision_codegen_profile()
+        return PrecisionCodegenProfileStrategy().build()
 
     @property
     def id(self) -> str:

@@ -9,9 +9,11 @@ from melder.aether.nexus.acl.configurations.profiles.codegen.stdlib_import_sets 
 from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.utilities.interfaces.interfaces import IFrameACLCodegenProfileStrategy
 
 
-def create_hybrid_codegen_profile() -> FrameACLCodegenProfile:
+class HybridCodegenProfileStrategy(IFrameACLCodegenProfileStrategy):
     """
     Build the reusable `hybrid` codegen profile.
 
@@ -21,11 +23,19 @@ def create_hybrid_codegen_profile() -> FrameACLCodegenProfile:
         operations while still denying local creation, direct mutation, and
         the more aggressive capability overrides.
 
-    Returns:
-        FrameACLCodegenProfile: Reusable `hybrid` codegen profile.
     """
-    return FrameACLCodegenProfile(
-        "hybrid",
+    __melder_internal__ = _mrg.sentinel
+    _NAME = "hybrid"
+
+    @property
+    def name(self) -> str:
+        """Return the stable codegen-profile strategy name."""
+        return self._NAME
+
+    def build(self) -> FrameACLCodegenProfile:
+        """Build and return one configured `hybrid` codegen profile."""
+        return FrameACLCodegenProfile(
+        self._NAME,
         validation_strategy_name="generic",
         frame_ruleset=FrameACLViewProfile.build_ruleset(
             "hybrid_frame_codegen",

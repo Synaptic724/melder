@@ -5,6 +5,9 @@ import pytest
 from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
 )
+from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile_builder import (
+    FrameACLCodegenProfileBuilder,
+)
 from melder.aether.nexus.acl.configurations.profiles.builder.frame_acl_profile_builder import (
     FrameACLProfileBuilder,
 )
@@ -131,6 +134,48 @@ def test_frame_acl_profile_builder_exposes_command_family_builder() -> None:
         "safe",
         "hybrid",
         "permissive",
+        "precision",
+    }
+
+
+def test_frame_acl_codegen_profile_builder_loads_default_strategies() -> None:
+    """
+    Verify the dedicated codegen family builder exposes and builds the defaults.
+
+    Returns:
+        None.
+    """
+    builder = FrameACLCodegenProfileBuilder()
+
+    assert set(builder.list_strategy_names()) == {
+        "safe",
+        "hybrid",
+        "permissive",
+        "full_access",
+        "precision",
+    }
+    assert builder.build_profile("safe").name == "safe"
+    assert builder.build_profile("hybrid").name == "hybrid"
+    assert builder.build_profile("permissive").name == "permissive"
+    assert builder.build_profile("full_access").name == "full_access"
+    assert builder.build_profile("precision").name == "precision"
+
+
+def test_frame_acl_profile_builder_exposes_codegen_family_builder() -> None:
+    """
+    Verify the top-level builder exposes its dedicated codegen family builder.
+
+    Returns:
+        None.
+    """
+    builder = FrameACLProfileBuilder()
+
+    assert isinstance(builder.codegen_profile_builder, FrameACLCodegenProfileBuilder)
+    assert set(builder.codegen_profile_builder.list_strategy_names()) == {
+        "safe",
+        "hybrid",
+        "permissive",
+        "full_access",
         "precision",
     }
 

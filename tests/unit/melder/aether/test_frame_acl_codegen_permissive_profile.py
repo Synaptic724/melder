@@ -1,5 +1,5 @@
 from melder.aether.nexus.acl.configurations.profiles.codegen.permissive_profile import (
-    create_permissive_codegen_profile,
+    PermissiveCodegenProfileStrategy,
 )
 from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
@@ -13,7 +13,7 @@ def test_permissive_codegen_profile_exposes_expected_identity_and_rulesets() -> 
     Returns:
         None.
     """
-    profile = create_permissive_codegen_profile()
+    profile = PermissiveCodegenProfileStrategy().build()
 
     assert isinstance(profile, FrameACLCodegenProfile)
     assert profile.name == "permissive"

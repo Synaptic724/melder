@@ -4,9 +4,11 @@ from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_p
 from melder.aether.nexus.acl.configurations.profiles.view.frame_acl_view_profile import (
     FrameACLViewProfile,
 )
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.utilities.interfaces.interfaces import IFrameACLCodegenProfileStrategy
 
 
-def create_full_access_codegen_profile() -> FrameACLCodegenProfile:
+class FullAccessCodegenProfileStrategy(IFrameACLCodegenProfileStrategy):
     """
     Build the reusable `full_access` codegen profile.
 
@@ -16,11 +18,19 @@ def create_full_access_codegen_profile() -> FrameACLCodegenProfile:
         posture open, and allows the broadest conduit, spell, and capability
         operations including recursive codegen.
 
-    Returns:
-        FrameACLCodegenProfile: Reusable `full_access` codegen profile.
     """
-    return FrameACLCodegenProfile(
-        "full_access",
+    __melder_internal__ = _mrg.sentinel
+    _NAME = "full_access"
+
+    @property
+    def name(self) -> str:
+        """Return the stable codegen-profile strategy name."""
+        return self._NAME
+
+    def build(self) -> FrameACLCodegenProfile:
+        """Build and return one configured `full_access` codegen profile."""
+        return FrameACLCodegenProfile(
+        self._NAME,
         validation_strategy_name="generic",
         frame_ruleset=FrameACLViewProfile.build_ruleset(
             "full_access_frame_codegen",

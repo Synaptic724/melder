@@ -1,5 +1,5 @@
 from melder.aether.nexus.acl.configurations.profiles.codegen.safe_profile import (
-    create_safe_codegen_profile,
+    SafeCodegenProfileStrategy,
 )
 from melder.aether.nexus.acl.configurations.profiles.codegen.frame_acl_codegen_profile import (
     FrameACLCodegenProfile,
@@ -13,7 +13,7 @@ def test_safe_codegen_profile_exposes_expected_identity_and_rulesets() -> None:
     Returns:
         None.
     """
-    profile = create_safe_codegen_profile()
+    profile = SafeCodegenProfileStrategy().build()
 
     assert isinstance(profile, FrameACLCodegenProfile)
     assert profile.name == "safe"
