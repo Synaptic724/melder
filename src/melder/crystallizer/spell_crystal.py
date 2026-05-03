@@ -5,7 +5,7 @@ import site
 import sys
 import threading
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Union
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
@@ -66,6 +66,7 @@ class SpellCrystal(Cleanable):
     def __init__(
             self,
             spell: ISpell,
+            user_source_root_paths: Optional[Sequence[Union[str, Path]]] = None,
     ) -> None:
         """
         Initialize one spell-targeted module dependency manifest.
@@ -89,6 +90,10 @@ class SpellCrystal(Cleanable):
         Args:
             spell:
                 Live spell whose module world should be captured.
+            user_source_root_paths:
+                Optional explicit source roots used to classify user-controlled
+                modules. When omitted, the current working directory remains
+                the first-slice fallback.
 
         Returns:
             None.
@@ -127,7 +132,9 @@ class SpellCrystal(Cleanable):
         self._created_from_site_package_root: bool = False
         self._created_from_user_source_root: bool = False
 
-        self._user_root_paths: Optional[Tuple[Path, ...]] = self._resolve_user_root_paths()
+        self._user_root_paths: Optional[Tuple[Path, ...]] = (
+            self._resolve_user_root_paths(user_source_root_paths)
+        )
         self._site_package_root_paths: Optional[Tuple[Path, ...]] = self._resolve_site_package_root_paths()
 
         (
@@ -215,11 +222,45 @@ class SpellCrystal(Cleanable):
         self._lock = None
 
     @staticmethod
-    def _resolve_user_root_paths() -> Tuple[Path, ...]:
+    def _resolve_user_root_paths(
+            user_source_root_paths: Optional[Sequence[Union[str, Path]]],
+    ) -> Tuple[Path, ...]:
         """
-        Resolve the current user-source roots for the first manifest slice.
+        Resolve the configured user-source roots for the current manifest.
+
+        Purpose:
+            Normalize the source-root inputs used for classifying user-owned
+            physical modules.
+
+        Args:
+            user_source_root_paths:
+                Optional explicit source-root sequence. Each element must be a
+                string path or `Path`.
+
+        Returns:
+            Tuple[Path, ...]:
+                Normalized, deduplicated root paths.
+
+        Raises:
+            TypeError:
+                If any configured root is not a string path or `Path`.
         """
-        return (Path.cwd().resolve(),)
+        if not user_source_root_paths:
+            return (Path.cwd().resolve(),)
+
+        normalized_paths: List[Path] = []
+        seen_paths: Set[Path] = set()
+        for candidate in user_source_root_paths:
+            if not isinstance(candidate, (str, Path)):
+                raise TypeError(
+                    "user_source_root_paths entries must be str or Path values."
+                )
+            root_path = Path(candidate).resolve()
+            if root_path in seen_paths:
+                continue
+            seen_paths.add(root_path)
+            normalized_paths.append(root_path)
+        return tuple(normalized_paths)
 
     @staticmethod
     def _resolve_site_package_root_paths() -> Tuple[Path, ...]:
@@ -681,11 +722,10 @@ class SpellCrystal(Cleanable):
             - Uses module names as the cycle-protection identity.
             - Reads dependencies from source imports, not from runtime object
               traversal.
-            - Records only the dependency classes the current manifest cares
-              about.
-            - Unknown imports are currently skipped from the tracked dependency
-              graph even though the manifest exposes `unknown_targets` for
-              recorded modules.
+            - Records the dependency classes the current manifest cares about.
+            - Unknown imports are still recorded explicitly so the manifest
+              does not silently imply a more complete dependency picture than
+              the source actually provides.
         """
         pending: List[Tuple[str, Optional[Any], Optional[Path]]] = [
             (module_name, module_obj, module_path),
@@ -725,6 +765,15 @@ class SpellCrystal(Cleanable):
                     module_path=dependency_module_path,
                 )
                 if dependency_kind == "unknown":
+                    tracked_dependencies.append(dependency_module_name)
+                    self._record_module_target(
+                        module_name=dependency_module_name,
+                        module_path=dependency_module_path,
+                        module_kind=dependency_kind,
+                        direct_dependencies=[],
+                        ast_import_targets=[],
+                        ast_from_import_targets={},
+                    )
                     continue
                 tracked_dependencies.append(dependency_module_name)
                 if dependency_module_name not in visited_module_names:
@@ -875,10 +924,33 @@ class SpellCrystal(Cleanable):
     def unknown_targets(self) -> List[str]:
         """
         Return the tracked unresolved/unknown module names.
+
+        Contract:
+            This list now includes unknown imported dependencies that were
+            discovered during the AST walk, not only unknown root/module
+            records that happened to be recorded elsewhere.
         """
         self.check_cleaned()
         with self._lock:
             return list(self._unknown_targets)
+
+    @property
+    def user_source_root_paths(self) -> List[str]:
+        """
+        Return the normalized user-source roots used for classification.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return [str(root_path) for root_path in self._user_root_paths]
+
+    @property
+    def site_package_root_paths(self) -> List[str]:
+        """
+        Return the normalized site-package roots used for classification.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return [str(root_path) for root_path in self._site_package_root_paths]
 
     @property
     def module_to_path(self) -> Dict[str, str]:
@@ -955,6 +1027,12 @@ class SpellCrystal(Cleanable):
                 "user_source_targets": list(self._user_source_targets),
                 "site_package_targets": list(self._site_package_targets),
                 "unknown_targets": list(self._unknown_targets),
+                "user_source_root_paths": [
+                    str(root_path) for root_path in self._user_root_paths
+                ],
+                "site_package_root_paths": [
+                    str(root_path) for root_path in self._site_package_root_paths
+                ],
                 "module_to_path": dict(self._module_to_path),
                 "module_to_kind": dict(self._module_to_kind),
                 "module_to_extension": dict(self._module_to_extension),
