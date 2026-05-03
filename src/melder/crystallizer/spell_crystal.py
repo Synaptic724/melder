@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
-from melder.utilities.interfaces.interfaces import ISpell
+from melder.utilities.interfaces.interfaces import ISpell, ISyntheticModule
 
 
 class SpellCrystal(Cleanable):
@@ -70,9 +70,28 @@ class SpellCrystal(Cleanable):
         """
         Initialize one spell-targeted module dependency manifest.
 
+        Purpose:
+            Snapshot the module world that one concrete spell version depends
+            on so a loader can later validate that world before a rebuild or
+            activation step.
+
+        Contract:
+            - Accepts exactly one live `ISpell`.
+            - Uses the spell's concrete `spell_id` as the current crystal id.
+            - Resolves the root bound target and its root module.
+            - Classifies the root module into user-source, site-package,
+              synthetic, or unknown.
+            - Walks tracked imports and records the flat manifest fields the
+              current loader slice needs.
+            - Does not retain the live `ISpell` or the live root target
+              reference after construction.
+
         Args:
             spell:
                 Live spell whose module world should be captured.
+
+        Returns:
+            None.
 
         Raises:
             TypeError:
@@ -86,9 +105,9 @@ class SpellCrystal(Cleanable):
             raise TypeError("spell cannot be None.")
 
         self._lock: Optional[threading.RLock] = threading.RLock()
-        self._spell_id: Optional[str] = getattr(spell, "spell_id", None)
-        if not self._spell_id:
+        if spell.spell_id is None:
             raise ValueError("spell must expose a non-empty spell_id.")
+        self._spell_id: Optional[str] = spell.spell_id
 
         self._module_targets: Optional[List[str]] = []
         self._path_targets: Optional[List[str]] = []
@@ -154,6 +173,12 @@ class SpellCrystal(Cleanable):
     def cleanup(self) -> None:
         """
         Idempotently clear the retained manifest state.
+
+        Contract:
+            - Idempotent.
+            - Clears all retained manifest fields and diagnostics.
+            - Drops classification flags and resolved root-path caches.
+            - Leaves the object unusable after cleanup completes.
         """
         if self._cleaned:
             return
@@ -221,33 +246,45 @@ class SpellCrystal(Cleanable):
         return tuple(unique_paths)
 
     @staticmethod
-    def _resolve_target_name(target: Any) -> str:
+    def _resolve_target_identity(target: Any) -> Tuple[str, str, str, str]:
         """
-        Resolve a short target name from one bound spell object.
-        """
-        return getattr(target, "__name__", type(target).__name__)
+        Resolve stable target identity data from one bound spell object.
 
-    @staticmethod
-    def _resolve_target_qualname(target: Any) -> str:
-        """
-        Resolve the qualified target name from one bound spell object.
-        """
-        return getattr(target, "__qualname__", SpellCrystal._resolve_target_name(target))
-
-    @staticmethod
-    def _resolve_target_kind(target: Any) -> str:
-        """
-        Classify the root bound target in broad runtime terms.
+        Returns:
+            Tuple[str, str, str, str]:
+                `(name, qualname, kind, module_name)` for the bound target.
         """
         if inspect.isclass(target):
-            return "class"
+            return (
+                target.__name__,
+                target.__qualname__,
+                "class",
+                target.__module__,
+            )
         if inspect.ismethod(target):
-            return "method"
+            return (
+                target.__name__,
+                target.__qualname__,
+                "method",
+                target.__module__,
+            )
         if inspect.isfunction(target):
-            return "lambda" if getattr(target, "__name__", "") == "<lambda>" else "function"
-        if callable(target):
-            return "callable_object"
-        return "instance"
+            target_kind = "lambda" if target.__name__ == "<lambda>" else "function"
+            return (
+                target.__name__,
+                target.__qualname__,
+                target_kind,
+                target.__module__,
+            )
+
+        target_type = type(target)
+        target_kind = "callable_object" if callable(target) else "instance"
+        return (
+            target_type.__name__,
+            target_type.__qualname__,
+            target_kind,
+            target_type.__module__,
+        )
 
     def _resolve_root_target_from_spell(
             self,
@@ -255,20 +292,36 @@ class SpellCrystal(Cleanable):
     ) -> Tuple[Any, str, str, str, str]:
         """
         Resolve the root bound target and its root module identity from `ISpell`.
+
+        Purpose:
+            Convert one live spell into the smallest target-identity tuple the
+            manifest needs before any module walking happens.
+
+        Returns:
+            Tuple[Any, str, str, str, str]:
+                `(root_target, target_name, target_qualname, target_kind,
+                root_module_name)`.
+
+        Raises:
+            ValueError:
+                If the spell exposes no live target or no resolvable module
+                name for that target.
         """
-        root_target = getattr(spell, "spell", None)
+        root_target = spell.spell
         if root_target is None:
             raise ValueError("spell must expose a live spell target.")
 
-        root_target_name = self._resolve_target_name(root_target)
-        root_target_qualname = self._resolve_target_qualname(root_target)
-        root_target_kind = self._resolve_target_kind(root_target)
+        (
+            root_target_name,
+            root_target_qualname,
+            root_target_kind,
+            root_module_name,
+        ) = self._resolve_target_identity(root_target)
 
-        root_module_name = getattr(root_target, "__module__", None)
         if not root_module_name:
             root_module = inspect.getmodule(root_target)
             if root_module is not None:
-                root_module_name = getattr(root_module, "__name__", None)
+                root_module_name = root_module.__name__
         if not root_module_name:
             raise ValueError("spell target must expose a resolvable module name.")
 
@@ -287,17 +340,30 @@ class SpellCrystal(Cleanable):
     ) -> Optional[Path]:
         """
         Resolve the physical path backing one module when available.
+
+        Contract:
+            - Synthetic modules use their crystallizer-managed physical path
+              when one exists.
+            - Non-synthetic modules prefer `__file__` on the live module
+              object.
+            - Falls back to `importlib.util.find_spec(...)` when a live module
+              object is missing or incomplete.
+            - Returns None for built-in/frozen modules and for modules without
+              a usable physical origin.
         """
         if module_obj is not None:
-            if bool(getattr(module_obj, "__melder_synthetic_module__", False)):
-                physical_file_path = getattr(module_obj, "physical_file_path", None)
+            if isinstance(module_obj, ISyntheticModule):
+                physical_file_path = module_obj.physical_file_path
                 if isinstance(physical_file_path, str) and physical_file_path:
                     try:
                         return Path(physical_file_path).resolve()
                     except Exception:
                         return Path(physical_file_path)
                 return None
-            module_file = getattr(module_obj, "__file__", None)
+            try:
+                module_file = module_obj.__file__
+            except AttributeError:
+                module_file = None
             if module_file:
                 try:
                     path = Path(module_file)
@@ -310,7 +376,10 @@ class SpellCrystal(Cleanable):
             spec = None
         if spec is None:
             return None
-        origin = getattr(spec, "origin", None)
+        try:
+            origin = spec.origin
+        except AttributeError:
+            origin = None
         if not origin or origin in ("built-in", "frozen"):
             return None
         try:
@@ -352,7 +421,7 @@ class SpellCrystal(Cleanable):
         """
         if module_obj is None:
             return False
-        return bool(getattr(module_obj, "__melder_synthetic_module__", False))
+        return isinstance(module_obj, ISyntheticModule)
 
     def _classify_module_target(
             self,
@@ -363,6 +432,18 @@ class SpellCrystal(Cleanable):
     ) -> str:
         """
         Classify one module target for the loader-facing manifest.
+
+        Returns:
+            str:
+                One of:
+                - `synthetic_module`
+                - `user_source`
+                - `site_package`
+                - `unknown`
+
+        Notes:
+            The current user-source classification is still rooted in the
+            active working directory for this first slice.
         """
         if self._is_synthetic_module(module_obj):
             return "synthetic_module"
@@ -395,13 +476,17 @@ class SpellCrystal(Cleanable):
     ) -> Optional[str]:
         """
         Resolve source text for AST analysis when the module format supports it.
+
+        Contract:
+            - Synthetic modules provide source through the protocol surface.
+            - Physical modules are only read when their backing file extension
+              is source-like (`.py` / `.pyi`).
+            - Read failures are recorded into `walk_errors` instead of raising
+              immediately.
         """
-        if self._is_synthetic_module(module_obj):
-            source_text = getattr(module_obj, "source_text", None)
-            if isinstance(source_text, str):
-                return source_text
-            fallback_text = getattr(module_obj, "_source_text", None)
-            return fallback_text if isinstance(fallback_text, str) else None
+        if isinstance(module_obj, ISyntheticModule):
+            source_text = module_obj.source_text
+            return source_text if isinstance(source_text, str) else None
 
         extension = self._resolve_file_extension(module_path)
         if extension not in (".py", ".pyi"):
@@ -443,6 +528,16 @@ class SpellCrystal(Cleanable):
     ) -> Tuple[List[str], Dict[str, List[str]]]:
         """
         Parse import targets from one module source.
+
+        Returns:
+            Tuple[List[str], Dict[str, List[str]]]:
+                - flat direct/candidate dependency module names
+                - `from ... import ...` mapping for diagnostics and later
+                  inspection
+
+        Notes:
+            This is intentionally a source-level import walk. It is not a full
+            object graph or runtime reachability analysis.
         """
         source_text = self._resolve_module_source_text(
             module_name=module_name,
@@ -465,9 +560,20 @@ class SpellCrystal(Cleanable):
 
         direct_import_targets: List[str] = []
         from_import_targets: Dict[str, List[str]] = {}
-        current_package = getattr(module_obj, "__package__", None)
+        try:
+            current_package = module_obj.__package__
+        except AttributeError:
+            current_package = None
         if not current_package:
-            current_package = module_name if getattr(module_obj, "__path__", None) else module_name.rpartition(".")[0]
+            try:
+                module_path_entries = module_obj.__path__
+            except AttributeError:
+                module_path_entries = None
+            current_package = (
+                module_name
+                if module_path_entries
+                else module_name.rpartition(".")[0]
+            )
 
         for node in ast.walk(syntax_tree):
             if isinstance(node, ast.Import):
@@ -524,6 +630,12 @@ class SpellCrystal(Cleanable):
     ) -> None:
         """
         Record one module target into the loader-facing manifest fields.
+
+        Contract:
+            - Appends deduplicated module/path targets.
+            - Updates kind/extension/dependency lookup maps.
+            - Mirrors the module into the kind-specific flat list used by the
+              loader-facing manifest surface.
         """
         if module_name not in self._module_targets:
             self._module_targets.append(module_name)
@@ -564,6 +676,16 @@ class SpellCrystal(Cleanable):
     ) -> None:
         """
         Walk the tracked module dependency graph rooted at one spell module.
+
+        Contract:
+            - Uses module names as the cycle-protection identity.
+            - Reads dependencies from source imports, not from runtime object
+              traversal.
+            - Records only the dependency classes the current manifest cares
+              about.
+            - Unknown imports are currently skipped from the tracked dependency
+              graph even though the manifest exposes `unknown_targets` for
+              recorded modules.
         """
         pending: List[Tuple[str, Optional[Any], Optional[Path]]] = [
             (module_name, module_obj, module_path),
@@ -809,6 +931,11 @@ class SpellCrystal(Cleanable):
     def describe(self) -> Dict[str, Any]:
         """
         Return a loader-facing snapshot of the manifest state.
+
+        Returns:
+            Dict[str, Any]:
+                Detached manifest snapshot suitable for debugging, inspection,
+                or future persistence/loader handoff work.
         """
         self.check_cleaned()
         with self._lock:

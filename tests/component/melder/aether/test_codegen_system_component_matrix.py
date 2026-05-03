@@ -95,19 +95,19 @@ def test_component_codegen_system_execution_matrix(
 @pytest.mark.parametrize(
     ("projection_kwargs", "expected_names", "denied_builtin_name"),
     [
-        ({}, ("viewer", "workstation", "command", "codegen"), "eval"),
-        ({"imports_enabled": True}, ("viewer", "workstation", "command", "codegen"), "eval"),
-        ({"denied_builtin_names": ("eval", "exec")}, ("viewer", "workstation", "command", "codegen"), "eval"),
-        ({"allowed_import_module_roots": ("json",)}, ("viewer", "workstation", "command", "codegen"), "eval"),
-        ({"recursive_codegen_allowed": True}, ("viewer", "workstation", "command", "codegen"), "eval"),
-        ({"unsafe_reflection_allowed": True}, ("viewer", "workstation", "command", "codegen"), "eval"),
-        ({"dunder_access_allowed": True}, ("viewer", "workstation", "command", "codegen"), "eval"),
-        ({"imports_enabled": True, "allowed_import_module_roots": ("json",), "denied_builtin_names": ("eval", "exec")}, ("viewer", "workstation", "command", "codegen"), "eval"),
-        ({"imports_enabled": True, "allowed_import_module_roots": ("json",), "denied_builtin_names": ("compile",)}, ("viewer", "workstation", "command", "codegen"), "compile"),
-        ({}, ("viewer", "workstation", "command", "codegen"), "getattr"),
+        ({}, ("viewer", "workstation", "target", "command", "codegen"), "eval"),
+        ({"imports_enabled": True}, ("viewer", "workstation", "target", "command", "codegen"), "eval"),
+        ({"denied_builtin_names": ("eval", "exec")}, ("viewer", "workstation", "target", "command", "codegen"), "eval"),
+        ({"allowed_import_module_roots": ("json",)}, ("viewer", "workstation", "target", "command", "codegen"), "eval"),
+        ({"recursive_codegen_allowed": True}, ("viewer", "workstation", "target", "command", "codegen"), "eval"),
+        ({"unsafe_reflection_allowed": True}, ("viewer", "workstation", "target", "command", "codegen"), "eval"),
+        ({"dunder_access_allowed": True}, ("viewer", "workstation", "target", "command", "codegen"), "eval"),
+        ({"imports_enabled": True, "allowed_import_module_roots": ("json",), "denied_builtin_names": ("eval", "exec")}, ("viewer", "workstation", "target", "command", "codegen"), "eval"),
+        ({"imports_enabled": True, "allowed_import_module_roots": ("json",), "denied_builtin_names": ("compile",)}, ("viewer", "workstation", "target", "command", "codegen"), "compile"),
+        ({}, ("viewer", "workstation", "target", "command", "codegen"), "getattr"),
     ]
     + [
-        ({}, ("viewer", "workstation", "command", "codegen"), builtin_name)
+        ({}, ("viewer", "workstation", "target", "command", "codegen"), builtin_name)
         for builtin_name in ("globals", "locals", "vars", "setattr", "delattr", "__import__", "breakpoint", "compile", "dir", "eval")
     ],
 )

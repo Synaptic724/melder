@@ -82,6 +82,7 @@ class CommandSystem(Cleanable):
             raise TypeError("space cannot be None.")
         if workstation is None:
             raise TypeError("workstation cannot be None.")
+        type(self)._aether = Aether()
         self._id: str = IDBuilder.create_id()
         self._owner_space_id: str = space.space_id
         self._lock: threading.RLock = threading.RLock()

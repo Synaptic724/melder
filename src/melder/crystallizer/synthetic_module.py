@@ -4,8 +4,9 @@ from types import ModuleType
 from typing import Any, Dict, List, Mapping, Optional, Sequence
 
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+from melder.utilities.interfaces.interfaces import ISyntheticModule
 
-class SyntheticModule(ModuleType):
+class SyntheticModule(ModuleType, ISyntheticModule):
     """
     Live in-memory module embodiment for crystallized source.
 
@@ -27,7 +28,6 @@ class SyntheticModule(ModuleType):
     """
 
     __melder_internal__ = _mrg.sentinel
-    __melder_synthetic_module__ = True
 
     def __init__(
             self,
