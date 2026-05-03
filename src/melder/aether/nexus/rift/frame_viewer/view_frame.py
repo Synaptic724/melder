@@ -9,8 +9,8 @@ summaries.
 from contextlib import contextmanager
 import threading
 from typing import Any, Callable, Dict, List, Optional, Tuple
-
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
 from melder.aether.nexus.acl.frame_acl_compiled_access_surface import (
     CompiledFrameACLAccessSurface,
 )

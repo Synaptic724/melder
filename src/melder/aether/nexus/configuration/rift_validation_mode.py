@@ -1,6 +1,6 @@
 from enum import Enum
-
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
 
 
 class RiftValidationMode(Enum):

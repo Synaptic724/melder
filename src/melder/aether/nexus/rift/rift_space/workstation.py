@@ -1,7 +1,7 @@
 import threading
 from typing import Any, Callable, Dict, List, Optional, Tuple
-
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
 from melder.utilities.data_structures.weak_data_structures.weak_concurrent_dict import (
     WeakConcurrentDict,
 )

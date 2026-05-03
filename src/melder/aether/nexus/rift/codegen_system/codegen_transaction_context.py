@@ -1,6 +1,7 @@
 import threading
 import hashlib
 from typing import Dict, Optional
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace import (
     CodegenNamespace,
@@ -33,6 +34,7 @@ class CodegenTransactionContext(Cleanable, ICodegenTransactionContext):
         - Does not own or cleanup the referenced projection.
     """
 
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_transaction_id",

@@ -1,692 +1,842 @@
+import ast
+import importlib.util
+import inspect
+import site
+import sys
 import threading
-from typing import Any, Dict, List, Mapping, Optional, Sequence
+from pathlib import Path
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Set, Tuple
 
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 from melder.utilities.general_base.cleanable import Cleanable
+from melder.utilities.interfaces.interfaces import ISpell
 
 
 class SpellCrystal(Cleanable):
     """
-    Persisted source-bearing representation for one crystallized spell asset.
+    Loader-facing module dependency manifest for one concrete spell version.
 
-    `SpellCrystal` is the smallest stored unit that Crystallizer owns directly.
-    It preserves the source/module truth needed to identify, inspect, persist,
-    and later restore one spell-backed asset without requiring the live runtime
-    object to remain present.
+    Purpose:
+        Build a narrow retained view of the module world one spell depends on
+        so loaders can validate and activate that world before bind/conjure
+        work continues.
 
     Contract:
-    - `spell_crystal_id` is the stable crystal identity.
-    - `source_text` and `source_sha256` describe the current persisted source.
-    - import/export/dependency metadata is derived state and may be updated as
-      analysis improves.
-    - `spell_crystal_active` reflects whether this crystal is currently
-      attached to one live spell registration in the process.
-    - active runtime metadata is process-local and may be cleared without
-      changing the crystal identity.
-    - cleanup is deterministic and renders the object unusable afterward.
+        - constructed from one live `ISpell`
+        - anchored to the spell's concrete SHA256 identity
+        - resolves the root target module
+        - recursively walks tracked module dependencies
+        - retains flat module/path/classification targets plus direct
+          dependency maps
+        - does not mirror the mutable live `Spell` object
     """
+
+    __melder_internal__ = _mrg.sentinel
+
+    __slots__ = Cleanable.__slots__ + [
+        "_lock",
+        "_spell_id",
+        "_root_module_name",
+        "_root_module_path",
+        "_root_module_kind",
+        "_root_file_extension",
+        "_root_target_name",
+        "_root_target_qualname",
+        "_root_target_kind",
+        "_module_targets",
+        "_path_targets",
+        "_synthetic_module_targets",
+        "_user_source_targets",
+        "_site_package_targets",
+        "_unknown_targets",
+        "_module_to_path",
+        "_module_to_kind",
+        "_module_to_extension",
+        "_module_to_direct_dependencies",
+        "_ast_import_targets_by_module",
+        "_ast_from_import_targets_by_module",
+        "_walk_errors",
+        "_created_from_synthetic_root",
+        "_created_from_site_package_root",
+        "_created_from_user_source_root",
+        "_user_root_paths",
+        "_site_package_root_paths",
+    ]
 
     def __init__(
             self,
-            spell_crystal_id: str,
-            module_name: str,
-            source_text: str,
-            source_sha256: str,
-            binding_signature: str,
-            source_authority_kind: str,
-            target_kind: str,
-            target_qualname: str,
-            ast_imports: Optional[Sequence[str]] = None,
-            ast_from_imports: Optional[Mapping[str, Sequence[str]]] = None,
-            export_names: Optional[Sequence[str]] = None,
-            internal_dependency_names: Optional[Sequence[str]] = None,
-            external_dependency_names: Optional[Sequence[str]] = None,
-            physical_file_path: Optional[str] = None,
-            materialized_directory_path: Optional[str] = None,
-            spell_crystal_active: bool = False,
-            active_frame_name: Optional[str] = None,
-            active_conduit_name: Optional[str] = None,
-            active_spellbook_name: Optional[str] = None,
-            active_spell_id: Optional[str] = None,
-            active_spell_index_id: Optional[str] = None,
+            spell: ISpell,
     ) -> None:
         """
-        Initialize one persisted crystallized asset record.
+        Initialize one spell-targeted module dependency manifest.
 
         Args:
-            spell_crystal_id:
-                Stable crystal identifier.
-            module_name:
-                Canonical module or synthetic module name for the asset.
-            source_text:
-                Current persisted source representation.
-            source_sha256:
-                SHA256 fingerprint of `source_text`.
-            binding_signature:
-                Spell-provided binding-signature string used to reconnect the
-                asset to spell registration semantics later.
-            source_authority_kind:
-                Declares where the authoritative source comes from, such as
-                `synthetic` or `physical`.
-            target_kind:
-                High-level kind for the primary target, such as `class`,
-                `function`, or `runtime_object`.
-            target_qualname:
-                Qualified name of the primary target within the module source.
-            ast_imports:
-                Direct `import ...` statements discovered by analysis.
-            ast_from_imports:
-                Mapping of `from module import names` discovered by analysis.
-            export_names:
-                Exported names or detected public surface names.
-            internal_dependency_names:
-                Dependency names considered managed/internal to the system.
-            external_dependency_names:
-                Dependency names considered environment/external support.
-            physical_file_path:
-                Optional physical module file backing this crystal.
-            materialized_directory_path:
-                Optional directory path where the source has been materialized.
-            spell_crystal_active:
-                True when the crystal is currently attached to one live spell
-                registration in this process.
-            active_frame_name:
-                Frame name for the active live registration, if any.
-            active_conduit_name:
-                Conduit name for the active live registration, if any.
-            active_spellbook_name:
-                Spellbook name/identity for the active live registration, if
-                any.
-            active_spell_id:
-                SHA256 spell identity for the active registration, if any.
-            active_spell_index_id:
-                Stable spell-lineage identity for the active registration, if
-                any.
+            spell:
+                Live spell whose module world should be captured.
 
         Raises:
+            TypeError:
+                If `spell` is None.
             ValueError:
-                If any required identity or source field is empty.
+                If the spell has no concrete SHA256 identity or no resolvable
+                root module name.
         """
         super().__init__()
-
-        if not spell_crystal_id:
-            raise ValueError("spell_crystal_id must not be empty.")
-        if not module_name:
-            raise ValueError("module_name must not be empty.")
-        if not source_text:
-            raise ValueError("source_text must not be empty.")
-        if not source_sha256:
-            raise ValueError("source_sha256 must not be empty.")
-        if not binding_signature:
-            raise ValueError("binding_signature must not be empty.")
-        if not source_authority_kind:
-            raise ValueError("source_authority_kind must not be empty.")
-        if not target_kind:
-            raise ValueError("target_kind must not be empty.")
-        if not target_qualname:
-            raise ValueError("target_qualname must not be empty.")
+        if spell is None:
+            raise TypeError("spell cannot be None.")
 
         self._lock: Optional[threading.RLock] = threading.RLock()
+        self._spell_id: Optional[str] = getattr(spell, "spell_id", None)
+        if not self._spell_id:
+            raise ValueError("spell must expose a non-empty spell_id.")
 
-        self._spell_crystal_id: Optional[str] = spell_crystal_id
-        self._module_name: Optional[str] = module_name
-        self._source_text: Optional[str] = source_text
-        self._source_sha256: Optional[str] = source_sha256
-        self._binding_signature: Optional[str] = binding_signature
-        self._source_authority_kind: Optional[str] = source_authority_kind
-        self._target_kind: Optional[str] = target_kind
-        self._target_qualname: Optional[str] = target_qualname
+        self._module_targets: Optional[List[str]] = []
+        self._path_targets: Optional[List[str]] = []
+        self._synthetic_module_targets: Optional[List[str]] = []
+        self._user_source_targets: Optional[List[str]] = []
+        self._site_package_targets: Optional[List[str]] = []
+        self._unknown_targets: Optional[List[str]] = []
+        self._module_to_path: Optional[Dict[str, str]] = {}
+        self._module_to_kind: Optional[Dict[str, str]] = {}
+        self._module_to_extension: Optional[Dict[str, str]] = {}
+        self._module_to_direct_dependencies: Optional[Dict[str, List[str]]] = {}
+        self._ast_import_targets_by_module: Optional[Dict[str, List[str]]] = {}
+        self._ast_from_import_targets_by_module: Optional[Dict[str, Dict[str, List[str]]]] = {}
+        self._walk_errors: Optional[List[str]] = []
 
-        self._ast_imports: Optional[List[str]] = (
-            list(ast_imports) if ast_imports is not None else []
+        self._created_from_synthetic_root: bool = False
+        self._created_from_site_package_root: bool = False
+        self._created_from_user_source_root: bool = False
+
+        self._user_root_paths: Optional[Tuple[Path, ...]] = self._resolve_user_root_paths()
+        self._site_package_root_paths: Optional[Tuple[Path, ...]] = self._resolve_site_package_root_paths()
+
+        (
+            root_target,
+            root_target_name,
+            root_target_qualname,
+            root_target_kind,
+            root_module_name,
+        ) = self._resolve_root_target_from_spell(spell)
+
+        self._root_target_name: Optional[str] = root_target_name
+        self._root_target_qualname: Optional[str] = root_target_qualname
+        self._root_target_kind: Optional[str] = root_target_kind
+        self._root_module_name: Optional[str] = root_module_name
+
+        root_module_obj, root_module_path = self._resolve_root_module(
+            root_target=root_target,
+            root_module_name=root_module_name,
         )
-        self._ast_from_imports: Optional[Dict[str, List[str]]] = (
-            self._copy_from_imports(ast_from_imports)
-        )
-        self._export_names: Optional[List[str]] = (
-            list(export_names) if export_names is not None else []
-        )
-        self._internal_dependency_names: Optional[List[str]] = (
-            list(internal_dependency_names)
-            if internal_dependency_names is not None
-            else []
-        )
-        self._external_dependency_names: Optional[List[str]] = (
-            list(external_dependency_names)
-            if external_dependency_names is not None
-            else []
+        root_module_kind = self._classify_module_target(
+            module_name=root_module_name,
+            module_obj=root_module_obj,
+            module_path=root_module_path,
         )
 
-        self._physical_file_path: Optional[str] = physical_file_path
-        self._materialized_directory_path: Optional[str] = materialized_directory_path
+        self._root_module_path: Optional[str] = (
+            str(root_module_path) if root_module_path is not None else None
+        )
+        self._root_module_kind: Optional[str] = root_module_kind
+        self._root_file_extension: Optional[str] = self._resolve_file_extension(
+            root_module_path
+        )
+        self._created_from_synthetic_root = root_module_kind == "synthetic_module"
+        self._created_from_site_package_root = root_module_kind == "site_package"
+        self._created_from_user_source_root = root_module_kind == "user_source"
 
-        self._spell_crystal_active: bool = spell_crystal_active
-        self._active_frame_name: Optional[str] = active_frame_name
-        self._active_conduit_name: Optional[str] = active_conduit_name
-        self._active_spellbook_name: Optional[str] = active_spellbook_name
-        self._active_spell_id: Optional[str] = active_spell_id
-        self._active_spell_index_id: Optional[str] = active_spell_index_id
+        self._walk_module_dependencies(
+            module_name=root_module_name,
+            module_obj=root_module_obj,
+            module_path=root_module_path,
+        )
 
     def cleanup(self) -> None:
         """
-        Tear down the crystal record and mark it cleaned.
-
-        Cleanup contract:
-        - idempotent
-        - clears owned metadata collections
-        - clears runtime projection metadata
-        - drops the lock reference last
+        Idempotently clear the retained manifest state.
         """
         if self._cleaned:
             return
-
         with self._lock:
             if self._cleaned:
                 return
             self._cleaned = True
-            self._spell_crystal_id = None
-            self._module_name = None
-            self._source_text = None
-            self._source_sha256 = None
-            self._binding_signature = None
-            self._source_authority_kind = None
-            self._target_kind = None
-            self._target_qualname = None
-            self._ast_imports = None
-            self._ast_from_imports = None
-            self._export_names = None
-            self._internal_dependency_names = None
-            self._external_dependency_names = None
-            self._physical_file_path = None
-            self._materialized_directory_path = None
-            self._spell_crystal_active = False
-            self._active_frame_name = None
-            self._active_conduit_name = None
-            self._active_spellbook_name = None
-            self._active_spell_id = None
-            self._active_spell_index_id = None
-            self._lock = None
+            self._spell_id = None
+            self._root_module_name = None
+            self._root_module_path = None
+            self._root_module_kind = None
+            self._root_file_extension = None
+            self._root_target_name = None
+            self._root_target_qualname = None
+            self._root_target_kind = None
+            self._module_targets = None
+            self._path_targets = None
+            self._synthetic_module_targets = None
+            self._user_source_targets = None
+            self._site_package_targets = None
+            self._unknown_targets = None
+            self._module_to_path = None
+            self._module_to_kind = None
+            self._module_to_extension = None
+            self._module_to_direct_dependencies = None
+            self._ast_import_targets_by_module = None
+            self._ast_from_import_targets_by_module = None
+            self._walk_errors = None
+            self._created_from_synthetic_root = False
+            self._created_from_site_package_root = False
+            self._created_from_user_source_root = False
+            self._user_root_paths = None
+            self._site_package_root_paths = None
+        self._lock = None
 
     @staticmethod
-    def _copy_from_imports(
-            ast_from_imports: Optional[Mapping[str, Sequence[str]]],
-    ) -> Dict[str, List[str]]:
+    def _resolve_user_root_paths() -> Tuple[Path, ...]:
         """
-        Copy `from ... import ...` metadata into an owned mutable structure.
-
-        Args:
-            ast_from_imports:
-                Optional mapping from module path to imported names.
-
-        Returns:
-            Dict[str, List[str]]:
-                Deep-copied mapping owned by this crystal instance.
+        Resolve the current user-source roots for the first manifest slice.
         """
-        if ast_from_imports is None:
-            return {}
-        return {
-            module_name: list(import_names)
-            for module_name, import_names in ast_from_imports.items()
+        return (Path.cwd().resolve(),)
+
+    @staticmethod
+    def _resolve_site_package_root_paths() -> Tuple[Path, ...]:
+        """
+        Resolve known site-package roots for classification.
+        """
+        resolved_paths: List[Path] = []
+        try:
+            for candidate in site.getsitepackages():
+                resolved_paths.append(Path(candidate).resolve())
+        except Exception:
+            pass
+        try:
+            resolved_paths.append(Path(site.getusersitepackages()).resolve())
+        except Exception:
+            pass
+        unique_paths: List[Path] = []
+        seen_paths: Set[Path] = set()
+        for path in resolved_paths:
+            if path in seen_paths:
+                continue
+            seen_paths.add(path)
+            unique_paths.append(path)
+        return tuple(unique_paths)
+
+    @staticmethod
+    def _resolve_target_name(target: Any) -> str:
+        """
+        Resolve a short target name from one bound spell object.
+        """
+        return getattr(target, "__name__", type(target).__name__)
+
+    @staticmethod
+    def _resolve_target_qualname(target: Any) -> str:
+        """
+        Resolve the qualified target name from one bound spell object.
+        """
+        return getattr(target, "__qualname__", SpellCrystal._resolve_target_name(target))
+
+    @staticmethod
+    def _resolve_target_kind(target: Any) -> str:
+        """
+        Classify the root bound target in broad runtime terms.
+        """
+        if inspect.isclass(target):
+            return "class"
+        if inspect.ismethod(target):
+            return "method"
+        if inspect.isfunction(target):
+            return "lambda" if getattr(target, "__name__", "") == "<lambda>" else "function"
+        if callable(target):
+            return "callable_object"
+        return "instance"
+
+    def _resolve_root_target_from_spell(
+            self,
+            spell: ISpell,
+    ) -> Tuple[Any, str, str, str, str]:
+        """
+        Resolve the root bound target and its root module identity from `ISpell`.
+        """
+        root_target = getattr(spell, "spell", None)
+        if root_target is None:
+            raise ValueError("spell must expose a live spell target.")
+
+        root_target_name = self._resolve_target_name(root_target)
+        root_target_qualname = self._resolve_target_qualname(root_target)
+        root_target_kind = self._resolve_target_kind(root_target)
+
+        root_module_name = getattr(root_target, "__module__", None)
+        if not root_module_name:
+            root_module = inspect.getmodule(root_target)
+            if root_module is not None:
+                root_module_name = getattr(root_module, "__name__", None)
+        if not root_module_name:
+            raise ValueError("spell target must expose a resolvable module name.")
+
+        return (
+            root_target,
+            root_target_name,
+            root_target_qualname,
+            root_target_kind,
+            root_module_name,
+        )
+
+    @staticmethod
+    def _resolve_module_path(
+            module_name: str,
+            module_obj: Optional[Any],
+    ) -> Optional[Path]:
+        """
+        Resolve the physical path backing one module when available.
+        """
+        if module_obj is not None:
+            if bool(getattr(module_obj, "__melder_synthetic_module__", False)):
+                physical_file_path = getattr(module_obj, "physical_file_path", None)
+                if isinstance(physical_file_path, str) and physical_file_path:
+                    try:
+                        return Path(physical_file_path).resolve()
+                    except Exception:
+                        return Path(physical_file_path)
+                return None
+            module_file = getattr(module_obj, "__file__", None)
+            if module_file:
+                try:
+                    path = Path(module_file)
+                    return path.resolve() if path.is_absolute() or path.exists() else path
+                except Exception:
+                    pass
+        try:
+            spec = importlib.util.find_spec(module_name)
+        except Exception:
+            spec = None
+        if spec is None:
+            return None
+        origin = getattr(spec, "origin", None)
+        if not origin or origin in ("built-in", "frozen"):
+            return None
+        try:
+            return Path(origin).resolve()
+        except Exception:
+            return None
+
+    def _resolve_root_module(
+            self,
+            *,
+            root_target: Any,
+            root_module_name: str,
+    ) -> Tuple[Optional[Any], Optional[Path]]:
+        """
+        Resolve the root module object and path backing the spell target.
+        """
+        root_module_obj = sys.modules.get(root_module_name)
+        if root_module_obj is None:
+            root_module_obj = inspect.getmodule(root_target)
+        root_module_path = self._resolve_module_path(
+            root_module_name,
+            root_module_obj,
+        )
+        return root_module_obj, root_module_path
+
+    @staticmethod
+    def _resolve_file_extension(module_path: Optional[Path]) -> Optional[str]:
+        """
+        Resolve the file extension for one module path when present.
+        """
+        if module_path is None:
+            return None
+        return module_path.suffix.lower()
+
+    @staticmethod
+    def _is_synthetic_module(module_obj: Optional[Any]) -> bool:
+        """
+        Return whether one module object is explicitly marked synthetic.
+        """
+        if module_obj is None:
+            return False
+        return bool(getattr(module_obj, "__melder_synthetic_module__", False))
+
+    def _classify_module_target(
+            self,
+            *,
+            module_name: str,
+            module_obj: Optional[Any],
+            module_path: Optional[Path],
+    ) -> str:
+        """
+        Classify one module target for the loader-facing manifest.
+        """
+        if self._is_synthetic_module(module_obj):
+            return "synthetic_module"
+        if module_path is None:
+            return "unknown"
+        try:
+            resolved_path = module_path.resolve()
+        except Exception:
+            resolved_path = module_path
+        if any(
+                resolved_path.is_relative_to(root_path)
+                for root_path in self._user_root_paths
+        ):
+            return "user_source"
+        if any(
+                resolved_path.is_relative_to(root_path)
+                for root_path in self._site_package_root_paths
+        ):
+            return "site_package"
+        if "site-packages" in str(resolved_path) or "dist-packages" in str(resolved_path):
+            return "site_package"
+        return "unknown"
+
+    def _resolve_module_source_text(
+            self,
+            *,
+            module_name: str,
+            module_obj: Optional[Any],
+            module_path: Optional[Path],
+    ) -> Optional[str]:
+        """
+        Resolve source text for AST analysis when the module format supports it.
+        """
+        if self._is_synthetic_module(module_obj):
+            source_text = getattr(module_obj, "source_text", None)
+            if isinstance(source_text, str):
+                return source_text
+            fallback_text = getattr(module_obj, "_source_text", None)
+            return fallback_text if isinstance(fallback_text, str) else None
+
+        extension = self._resolve_file_extension(module_path)
+        if extension not in (".py", ".pyi"):
+            return None
+        if module_path is None or not module_path.exists():
+            return None
+        try:
+            return module_path.read_text(encoding="utf-8")
+        except Exception as exc:
+            self._walk_errors.append(
+                "Failed to read source text for module '{0}': {1}: {2}".format(
+                    module_name,
+                    exc.__class__.__name__,
+                    exc,
+                )
+            )
+            return None
+
+    @staticmethod
+    def _resolve_relative_import_target(
+            *,
+            current_package: str,
+            relative_module_name: str,
+    ) -> Optional[str]:
+        """
+        Resolve one relative import target into an absolute module name.
+        """
+        try:
+            return importlib.util.resolve_name(relative_module_name, current_package)
+        except Exception:
+            return None
+
+    def _extract_import_targets_from_ast(
+            self,
+            *,
+            module_name: str,
+            module_obj: Optional[Any],
+            module_path: Optional[Path],
+    ) -> Tuple[List[str], Dict[str, List[str]]]:
+        """
+        Parse import targets from one module source.
+        """
+        source_text = self._resolve_module_source_text(
+            module_name=module_name,
+            module_obj=module_obj,
+            module_path=module_path,
+        )
+        if not source_text:
+            return [], {}
+
+        try:
+            syntax_tree = ast.parse(source_text)
+        except SyntaxError as exc:
+            self._walk_errors.append(
+                "Failed to parse AST for module '{0}': SyntaxError: {1}".format(
+                    module_name,
+                    exc,
+                )
+            )
+            return [], {}
+
+        direct_import_targets: List[str] = []
+        from_import_targets: Dict[str, List[str]] = {}
+        current_package = getattr(module_obj, "__package__", None)
+        if not current_package:
+            current_package = module_name if getattr(module_obj, "__path__", None) else module_name.rpartition(".")[0]
+
+        for node in ast.walk(syntax_tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    direct_import_targets.append(alias.name)
+            elif isinstance(node, ast.ImportFrom):
+                if node.level > 0:
+                    relative_name = "." * node.level
+                    if node.module:
+                        relative_name += node.module
+                    resolved_base = self._resolve_relative_import_target(
+                        current_package=current_package,
+                        relative_module_name=relative_name,
+                    )
+                else:
+                    resolved_base = node.module
+                if not resolved_base:
+                    continue
+                imported_names: List[str] = []
+                for alias in node.names:
+                    imported_names.append(alias.name)
+                    if alias.name != "*":
+                        candidate_module_name = "{0}.{1}".format(
+                            resolved_base,
+                            alias.name,
+                        )
+                        try:
+                            spec = importlib.util.find_spec(candidate_module_name)
+                        except Exception:
+                            spec = None
+                        if spec is not None:
+                            direct_import_targets.append(candidate_module_name)
+                from_import_targets.setdefault(resolved_base, []).extend(imported_names)
+                direct_import_targets.append(resolved_base)
+
+        deduped_import_targets: List[str] = []
+        seen_targets: Set[str] = set()
+        for target_name in direct_import_targets:
+            if target_name in seen_targets:
+                continue
+            seen_targets.add(target_name)
+            deduped_import_targets.append(target_name)
+        return deduped_import_targets, from_import_targets
+
+    def _record_module_target(
+            self,
+            *,
+            module_name: str,
+            module_path: Optional[Path],
+            module_kind: str,
+            direct_dependencies: Sequence[str],
+            ast_import_targets: Sequence[str],
+            ast_from_import_targets: Mapping[str, Sequence[str]],
+    ) -> None:
+        """
+        Record one module target into the loader-facing manifest fields.
+        """
+        if module_name not in self._module_targets:
+            self._module_targets.append(module_name)
+        if module_path is not None:
+            path_text = str(module_path)
+            if path_text not in self._path_targets:
+                self._path_targets.append(path_text)
+            self._module_to_path[module_name] = path_text
+
+        extension = self._resolve_file_extension(module_path)
+        if extension:
+            self._module_to_extension[module_name] = extension
+
+        self._module_to_kind[module_name] = module_kind
+        self._module_to_direct_dependencies[module_name] = list(direct_dependencies)
+        self._ast_import_targets_by_module[module_name] = list(ast_import_targets)
+        self._ast_from_import_targets_by_module[module_name] = {
+            imported_module_name: list(imported_names)
+            for imported_module_name, imported_names in ast_from_import_targets.items()
         }
+
+        target_list_by_kind: Dict[str, List[str]] = {
+            "synthetic_module": self._synthetic_module_targets,
+            "user_source": self._user_source_targets,
+            "site_package": self._site_package_targets,
+            "unknown": self._unknown_targets,
+        }
+        target_list = target_list_by_kind[module_kind]
+        if module_name not in target_list:
+            target_list.append(module_name)
+
+    def _walk_module_dependencies(
+            self,
+            *,
+            module_name: str,
+            module_obj: Optional[Any],
+            module_path: Optional[Path],
+    ) -> None:
+        """
+        Walk the tracked module dependency graph rooted at one spell module.
+        """
+        pending: List[Tuple[str, Optional[Any], Optional[Path]]] = [
+            (module_name, module_obj, module_path),
+        ]
+        visited_module_names: Set[str] = set()
+
+        while pending:
+            current_module_name, current_module_obj, current_module_path = pending.pop()
+            if current_module_name in visited_module_names:
+                continue
+            visited_module_names.add(current_module_name)
+
+            current_module_kind = self._classify_module_target(
+                module_name=current_module_name,
+                module_obj=current_module_obj,
+                module_path=current_module_path,
+            )
+
+            ast_import_targets, ast_from_import_targets = (
+                self._extract_import_targets_from_ast(
+                    module_name=current_module_name,
+                    module_obj=current_module_obj,
+                    module_path=current_module_path,
+                )
+            )
+
+            tracked_dependencies: List[str] = []
+            for dependency_module_name in ast_import_targets:
+                dependency_module_obj = sys.modules.get(dependency_module_name)
+                dependency_module_path = self._resolve_module_path(
+                    dependency_module_name,
+                    dependency_module_obj,
+                )
+                dependency_kind = self._classify_module_target(
+                    module_name=dependency_module_name,
+                    module_obj=dependency_module_obj,
+                    module_path=dependency_module_path,
+                )
+                if dependency_kind == "unknown":
+                    continue
+                tracked_dependencies.append(dependency_module_name)
+                if dependency_module_name not in visited_module_names:
+                    pending.append(
+                        (
+                            dependency_module_name,
+                            dependency_module_obj,
+                            dependency_module_path,
+                        )
+                    )
+
+            self._record_module_target(
+                module_name=current_module_name,
+                module_path=current_module_path,
+                module_kind=current_module_kind,
+                direct_dependencies=tracked_dependencies,
+                ast_import_targets=ast_import_targets,
+                ast_from_import_targets=ast_from_import_targets,
+            )
 
     @property
     def spell_crystal_id(self) -> str:
         """
-        Return the stable crystal identity.
-
-        Returns:
-            str:
-                Stable `SpellCrystal` identifier.
+        Return the concrete spell SHA used as the crystal identity in this slice.
         """
         self.check_cleaned()
         with self._lock:
-            return self._spell_crystal_id
+            return self._spell_id
 
     @property
-    def module_name(self) -> str:
+    def spell_id(self) -> str:
         """
-        Return the canonical module name for this crystal.
-
-        Returns:
-            str:
-                Synthetic or physical module name for the asset.
+        Return the concrete spell SHA for this manifest.
         """
         self.check_cleaned()
         with self._lock:
-            return self._module_name
+            return self._spell_id
 
     @property
-    def source_text(self) -> str:
+    def root_module_name(self) -> str:
         """
-        Return the current persisted source representation.
-
-        Returns:
-            str:
-                Current source text owned by this crystal.
+        Return the root module name for the bound spell target.
         """
         self.check_cleaned()
         with self._lock:
-            return self._source_text
+            return self._root_module_name
 
     @property
-    def source_sha256(self) -> str:
+    def root_module_path(self) -> Optional[str]:
         """
-        Return the persisted SHA256 fingerprint of the current source.
-
-        Returns:
-            str:
-                SHA256 fingerprint for `source_text`.
+        Return the root module path when one exists.
         """
         self.check_cleaned()
         with self._lock:
-            return self._source_sha256
+            return self._root_module_path
 
     @property
-    def binding_signature(self) -> str:
+    def root_module_kind(self) -> str:
         """
-        Return the persisted binding-signature string.
-
-        Returns:
-            str:
-                Spell-provided binding signature for restore/rebind flows.
+        Return the root module classification.
         """
         self.check_cleaned()
         with self._lock:
-            return self._binding_signature
+            return self._root_module_kind
 
     @property
-    def source_authority_kind(self) -> str:
+    def root_file_extension(self) -> Optional[str]:
         """
-        Return the high-level source-authority kind.
-
-        Returns:
-            str:
-                Authority kind such as `synthetic` or `physical`.
+        Return the root module file extension when present.
         """
         self.check_cleaned()
         with self._lock:
-            return self._source_authority_kind
+            return self._root_file_extension
 
     @property
-    def target_kind(self) -> str:
+    def root_target_name(self) -> str:
         """
-        Return the primary target classification for this crystal.
-
-        Returns:
-            str:
-                High-level target kind carried by the crystal.
+        Return the short name of the bound root target.
         """
         self.check_cleaned()
         with self._lock:
-            return self._target_kind
+            return self._root_target_name
 
     @property
-    def target_qualname(self) -> str:
+    def root_target_qualname(self) -> str:
         """
-        Return the primary qualified target name for this crystal.
-
-        Returns:
-            str:
-                Qualified target name used to identify the asset surface.
+        Return the qualified name of the bound root target.
         """
         self.check_cleaned()
         with self._lock:
-            return self._target_qualname
+            return self._root_target_qualname
 
     @property
-    def ast_imports(self) -> List[str]:
+    def root_target_kind(self) -> str:
         """
-        Return the direct import-statement metadata for this crystal.
-
-        Returns:
-            List[str]:
-                Copy of direct `import ...` names discovered by analysis.
+        Return the broad kind of the bound root target.
         """
         self.check_cleaned()
         with self._lock:
-            return list(self._ast_imports)
+            return self._root_target_kind
 
     @property
-    def ast_from_imports(self) -> Dict[str, List[str]]:
+    def module_targets(self) -> List[str]:
         """
-        Return the `from ... import ...` metadata for this crystal.
-
-        Returns:
-            Dict[str, List[str]]:
-                Deep-copied mapping from module path to imported names.
+        Return the full tracked module-name list.
         """
         self.check_cleaned()
         with self._lock:
-            return self._copy_from_imports(self._ast_from_imports)
+            return list(self._module_targets)
 
     @property
-    def export_names(self) -> List[str]:
+    def path_targets(self) -> List[str]:
         """
-        Return the persisted export/public-surface names.
-
-        Returns:
-            List[str]:
-                Copy of the detected export names.
+        Return the full tracked path-target list.
         """
         self.check_cleaned()
         with self._lock:
-            return list(self._export_names)
+            return list(self._path_targets)
 
     @property
-    def internal_dependency_names(self) -> List[str]:
+    def synthetic_module_targets(self) -> List[str]:
         """
-        Return the managed/internal dependency names for this crystal.
-
-        Returns:
-            List[str]:
-                Copy of internal dependency names.
+        Return the tracked synthetic module names.
         """
         self.check_cleaned()
         with self._lock:
-            return list(self._internal_dependency_names)
+            return list(self._synthetic_module_targets)
 
     @property
-    def external_dependency_names(self) -> List[str]:
+    def user_source_targets(self) -> List[str]:
         """
-        Return the external/environment dependency names for this crystal.
-
-        Returns:
-            List[str]:
-                Copy of external dependency names.
+        Return the tracked user-source module names.
         """
         self.check_cleaned()
         with self._lock:
-            return list(self._external_dependency_names)
+            return list(self._user_source_targets)
 
     @property
-    def physical_file_path(self) -> Optional[str]:
+    def site_package_targets(self) -> List[str]:
         """
-        Return the physical source file path, if one exists.
-
-        Returns:
-            Optional[str]:
-                Physical file path backing this crystal, if any.
+        Return the tracked site-package module names.
         """
         self.check_cleaned()
         with self._lock:
-            return self._physical_file_path
+            return list(self._site_package_targets)
 
     @property
-    def materialized_directory_path(self) -> Optional[str]:
+    def unknown_targets(self) -> List[str]:
         """
-        Return the materialized directory path, if one exists.
-
-        Returns:
-            Optional[str]:
-                Directory path where the crystal has been materialized, if any.
+        Return the tracked unresolved/unknown module names.
         """
         self.check_cleaned()
         with self._lock:
-            return self._materialized_directory_path
+            return list(self._unknown_targets)
 
     @property
-    def spell_crystal_active(self) -> bool:
+    def module_to_path(self) -> Dict[str, str]:
         """
-        Return whether this crystal is currently active in the live process.
-
-        Returns:
-            bool:
-                True when one live spell registration currently consumes the
-                crystal in this process.
+        Return a detached copy of the module-name -> path mapping.
         """
         self.check_cleaned()
         with self._lock:
-            return self._spell_crystal_active
+            return dict(self._module_to_path)
 
     @property
-    def active_frame_name(self) -> Optional[str]:
+    def module_to_kind(self) -> Dict[str, str]:
         """
-        Return the active frame name, if the crystal is live.
-
-        Returns:
-            Optional[str]:
-                Active frame name for the live registration.
+        Return a detached copy of the module-name -> kind mapping.
         """
         self.check_cleaned()
         with self._lock:
-            return self._active_frame_name
+            return dict(self._module_to_kind)
 
     @property
-    def active_conduit_name(self) -> Optional[str]:
+    def module_to_extension(self) -> Dict[str, str]:
         """
-        Return the active conduit name, if the crystal is live.
-
-        Returns:
-            Optional[str]:
-                Active conduit name for the live registration.
+        Return a detached copy of the module-name -> file-extension mapping.
         """
         self.check_cleaned()
         with self._lock:
-            return self._active_conduit_name
+            return dict(self._module_to_extension)
 
     @property
-    def active_spellbook_name(self) -> Optional[str]:
+    def module_to_direct_dependencies(self) -> Dict[str, List[str]]:
         """
-        Return the active spellbook identity, if the crystal is live.
-
-        Returns:
-            Optional[str]:
-                Active spellbook name/identity for the live registration.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self._active_spellbook_name
-
-    @property
-    def active_spell_id(self) -> Optional[str]:
-        """
-        Return the active SHA256 spell id, if the crystal is live.
-
-        Returns:
-            Optional[str]:
-                Active spell identity for the live registration.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self._active_spell_id
-
-    @property
-    def active_spell_index_id(self) -> Optional[str]:
-        """
-        Return the active spell-lineage id, if the crystal is live.
-
-        Returns:
-            Optional[str]:
-                Active spell index id for the live registration.
-        """
-        self.check_cleaned()
-        with self._lock:
-            return self._active_spell_index_id
-
-    def update_source_text(self, source_text: str, source_sha256: str) -> None:
-        """
-        Replace the persisted source text and hash for this crystal.
-
-        Args:
-            source_text:
-                Replacement source representation.
-            source_sha256:
-                SHA256 fingerprint for the replacement source.
-
-        Raises:
-            ValueError:
-                If either value is empty.
-            RuntimeError:
-                If the crystal has already been cleaned.
-        """
-        self.check_cleaned()
-        with self._lock:
-            if not source_text:
-                raise ValueError("source_text must not be empty.")
-            if not source_sha256:
-                raise ValueError("source_sha256 must not be empty.")
-
-            self._source_text = source_text
-            self._source_sha256 = source_sha256
-
-    def update_analysis(
-            self,
-            ast_imports: Optional[Sequence[str]] = None,
-            ast_from_imports: Optional[Mapping[str, Sequence[str]]] = None,
-            export_names: Optional[Sequence[str]] = None,
-            internal_dependency_names: Optional[Sequence[str]] = None,
-            external_dependency_names: Optional[Sequence[str]] = None,
-    ) -> None:
-        """
-        Replace the derived import/export/dependency metadata for this crystal.
-
-        Args:
-            ast_imports:
-                Replacement direct import list, if provided.
-            ast_from_imports:
-                Replacement `from ... import ...` mapping, if provided.
-            export_names:
-                Replacement export/public-surface names, if provided.
-            internal_dependency_names:
-                Replacement managed/internal dependency names, if provided.
-            external_dependency_names:
-                Replacement external/environment dependency names, if provided.
-
-        Raises:
-            RuntimeError:
-                If the crystal has already been cleaned.
-        """
-        self.check_cleaned()
-        with self._lock:
-            if ast_imports is not None:
-                self._ast_imports = list(ast_imports)
-            if ast_from_imports is not None:
-                self._ast_from_imports = self._copy_from_imports(ast_from_imports)
-            if export_names is not None:
-                self._export_names = list(export_names)
-            if internal_dependency_names is not None:
-                self._internal_dependency_names = list(internal_dependency_names)
-            if external_dependency_names is not None:
-                self._external_dependency_names = list(external_dependency_names)
-
-    def set_materialization_location(
-            self,
-            physical_file_path: Optional[str],
-            materialized_directory_path: Optional[str],
-    ) -> None:
-        """
-        Update the materialized filesystem location metadata for this crystal.
-
-        Args:
-            physical_file_path:
-                Physical module file path, if one exists.
-            materialized_directory_path:
-                Materialized directory location, if one exists.
-
-        Raises:
-            RuntimeError:
-                If the crystal has already been cleaned.
-        """
-        self.check_cleaned()
-        with self._lock:
-            self._physical_file_path = physical_file_path
-            self._materialized_directory_path = materialized_directory_path
-
-    def activate(
-            self,
-            frame_name: str,
-            conduit_name: str,
-            spellbook_name: str,
-            spell_id: str,
-            spell_index_id: str,
-    ) -> None:
-        """
-        Mark this crystal as actively consumed by one live spell registration.
-
-        Args:
-            frame_name:
-                Active frame name for the live registration.
-            conduit_name:
-                Active conduit name for the live registration.
-            spellbook_name:
-                Active spellbook identity for the live registration.
-            spell_id:
-                Active SHA256 spell identity.
-            spell_index_id:
-                Active stable spell-lineage identity.
-
-        Raises:
-            ValueError:
-                If any required runtime identity value is empty.
-            RuntimeError:
-                If the crystal has already been cleaned.
-        """
-        self.check_cleaned()
-        with self._lock:
-            if not frame_name:
-                raise ValueError("frame_name must not be empty.")
-            if not conduit_name:
-                raise ValueError("conduit_name must not be empty.")
-            if not spellbook_name:
-                raise ValueError("spellbook_name must not be empty.")
-            if not spell_id:
-                raise ValueError("spell_id must not be empty.")
-            if not spell_index_id:
-                raise ValueError("spell_index_id must not be empty.")
-
-            self._spell_crystal_active = True
-            self._active_frame_name = frame_name
-            self._active_conduit_name = conduit_name
-            self._active_spellbook_name = spellbook_name
-            self._active_spell_id = spell_id
-            self._active_spell_index_id = spell_index_id
-
-    def deactivate(self) -> None:
-        """
-        Clear the live runtime projection metadata for this crystal.
-
-        Raises:
-            RuntimeError:
-                If the crystal has already been cleaned.
-        """
-        self.check_cleaned()
-        with self._lock:
-            self._spell_crystal_active = False
-            self._active_frame_name = None
-            self._active_conduit_name = None
-            self._active_spellbook_name = None
-            self._active_spell_id = None
-            self._active_spell_index_id = None
-
-    def describe(self) -> Dict[str, Any]:
-        """
-        Return a persistence-facing snapshot of the crystal state.
-
-        Returns:
-            Dict[str, Any]:
-                Dictionary snapshot of the current crystal fields.
+        Return a detached copy of the direct dependency map.
         """
         self.check_cleaned()
         with self._lock:
             return {
-                "spell_crystal_id": self._spell_crystal_id,
-                "module_name": self._module_name,
-                "source_text": self._source_text,
-                "source_sha256": self._source_sha256,
-                "binding_signature": self._binding_signature,
-                "source_authority_kind": self._source_authority_kind,
-                "target_kind": self._target_kind,
-                "target_qualname": self._target_qualname,
-                "ast_imports": list(self._ast_imports),
-                "ast_from_imports": self._copy_from_imports(self._ast_from_imports),
-                "export_names": list(self._export_names),
-                "internal_dependency_names": list(self._internal_dependency_names),
-                "external_dependency_names": list(self._external_dependency_names),
-                "physical_file_path": self._physical_file_path,
-                "materialized_directory_path": self._materialized_directory_path,
-                "spell_crystal_active": self._spell_crystal_active,
-                "active_frame_name": self._active_frame_name,
-                "active_conduit_name": self._active_conduit_name,
-                "active_spellbook_name": self._active_spellbook_name,
-                "active_spell_id": self._active_spell_id,
-                "active_spell_index_id": self._active_spell_index_id,
+                module_name: list(dependency_names)
+                for module_name, dependency_names in self._module_to_direct_dependencies.items()
+            }
+
+    @property
+    def walk_errors(self) -> List[str]:
+        """
+        Return the dependency-walk diagnostics collected so far.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return list(self._walk_errors)
+
+    def describe(self) -> Dict[str, Any]:
+        """
+        Return a loader-facing snapshot of the manifest state.
+        """
+        self.check_cleaned()
+        with self._lock:
+            return {
+                "spell_id": self._spell_id,
+                "spell_crystal_id": self._spell_id,
+                "root_module_name": self._root_module_name,
+                "root_module_path": self._root_module_path,
+                "root_module_kind": self._root_module_kind,
+                "root_file_extension": self._root_file_extension,
+                "root_target_name": self._root_target_name,
+                "root_target_qualname": self._root_target_qualname,
+                "root_target_kind": self._root_target_kind,
+                "module_targets": list(self._module_targets),
+                "path_targets": list(self._path_targets),
+                "synthetic_module_targets": list(self._synthetic_module_targets),
+                "user_source_targets": list(self._user_source_targets),
+                "site_package_targets": list(self._site_package_targets),
+                "unknown_targets": list(self._unknown_targets),
+                "module_to_path": dict(self._module_to_path),
+                "module_to_kind": dict(self._module_to_kind),
+                "module_to_extension": dict(self._module_to_extension),
+                "module_to_direct_dependencies": {
+                    module_name: list(dependency_names)
+                    for module_name, dependency_names in self._module_to_direct_dependencies.items()
+                },
+                "walk_errors": list(self._walk_errors),
+                "created_from_synthetic_root": self._created_from_synthetic_root,
+                "created_from_site_package_root": self._created_from_site_package_root,
+                "created_from_user_source_root": self._created_from_user_source_root,
             }

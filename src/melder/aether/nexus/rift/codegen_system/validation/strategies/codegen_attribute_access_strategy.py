@@ -1,6 +1,7 @@
 import ast
 import threading
 from typing import Optional
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.rift.codegen_system.codegen_transaction_context import (
     CodegenTransactionContext,
@@ -29,6 +30,7 @@ class CodegenAttributeAccessStrategy(Cleanable):
         governed codegen mode.
     """
 
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
     ]

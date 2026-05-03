@@ -1,5 +1,6 @@
 import threading
 from typing import Dict, Optional, Tuple
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.utilities.general_base.cleanable import Cleanable
 from melder.utilities.interfaces.interfaces import ICodegenExecutionResult
@@ -23,6 +24,7 @@ class CodegenExecutionResult(Cleanable, ICodegenExecutionResult):
           placeholder tests.
     """
 
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_accepted",

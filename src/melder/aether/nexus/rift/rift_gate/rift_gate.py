@@ -2,6 +2,7 @@ import threading
 import time
 from collections import deque
 from typing import Deque, Optional
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.utilities.general_base.cleanable import Cleanable
 
@@ -37,6 +38,7 @@ class RiftGate(Cleanable):
         - ``enabled`` is intentionally readable without lock on hot paths.
     """
 
+    __melder_internal__ = _mrg.sentinel
     ENTRY_MODE_WAIT = "wait"
     ENTRY_MODE_RAISE = "raise"
     __slots__ = ("_lock", "enabled", "_entry_mode", "_event", "_tickets", "_closed")

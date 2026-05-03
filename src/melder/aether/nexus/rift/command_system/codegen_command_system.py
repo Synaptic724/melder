@@ -1,4 +1,5 @@
 from typing import Dict, Optional, Tuple
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.rift.command_system.command_system import (
     CommandSystem,
@@ -46,6 +47,7 @@ class CodegenCommandSystem(CommandSystem):
           command-memory metadata shape.
     """
 
+    __melder_internal__ = _mrg.sentinel
     _CODEGEN_RUNTIME_HELPER_METHOD_NAMES: Tuple[str, ...] = (
         "get_conduit_cloud",
         "get_conduit_by_id",

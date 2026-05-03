@@ -1,4 +1,5 @@
 from typing import Optional
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.rift.command_system.command_system import (
     CommandSystem,
@@ -26,6 +27,7 @@ class StaticCommandSystem(CommandSystem):
           after inheritance.
         - Leaves already-bound workstation objects outside post-bind policing.
     """
+    __melder_internal__ = _mrg.sentinel
     _STATIC_COMMAND_METHOD_NAMES: tuple[str, ...] = (
         "meld_existing_spell",
         "describe_spell_status_by_source_id",

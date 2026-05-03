@@ -1,4 +1,5 @@
 from typing import Dict, Optional
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.rift.command_system.capability_command_system import (
     CapabilityCommandSystem,
@@ -35,6 +36,7 @@ class CapabilityRiftSpace(RiftSpace, ICapabilityRiftSpace):
           conduit object instead of mirroring every lower method into command.
     """
 
+    __melder_internal__ = _mrg.sentinel
     def __init__(
             self,
             owner_rift_id: str,

@@ -1,7 +1,7 @@
 import threading
 from typing import Any, Dict, Optional, Sequence, Tuple
-
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
 from melder.aether.nexus.configuration.rift_space_type import RiftSpaceType
 from melder.aether.nexus.rift.frame_link.frame_link_contract import FrameLinkContract
 from melder.aether.nexus.rift.frame_viewer.frame_viewer import FrameViewer

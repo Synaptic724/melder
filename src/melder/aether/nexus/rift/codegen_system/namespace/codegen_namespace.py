@@ -1,5 +1,6 @@
 import threading
 from typing import Dict, Optional
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.rift.codegen_system.namespace.codegen_namespace_configuration import (
     CodegenNamespaceConfiguration,
@@ -25,6 +26,7 @@ class CodegenNamespace(Cleanable, ICodegenNamespace):
         - Keeps metadata separate from the raw globals/locals mappings.
     """
 
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_lock",
         "_configuration",

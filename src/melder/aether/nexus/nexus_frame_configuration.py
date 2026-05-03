@@ -1,7 +1,7 @@
 import threading
 from typing import Dict, Optional
-
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.configuration.system_state import SystemState

@@ -1,7 +1,7 @@
 import threading
 from typing import Any, Optional, Tuple
-
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_ward.permissions.permissions import Permissions
 from melder.utilities.interfaces.interfaces import ISpellDescriptorPayload

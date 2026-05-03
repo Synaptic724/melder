@@ -1309,6 +1309,7 @@ def test_execute_moves_registry_and_spellbook_and_clears_change_intent() -> None
     with env.target._spellbook._lock:
         assert env.spell_index in env.target._spellbook._spells
     assert env.spell._owner_conduit_id == TARGET_ID
+    assert env.spell.spell_index._owner_conduit_id == TARGET_ID
     assert env.change_control_manager.get_pending_change(env.spell_index.id) is None
     assert any(call["spell_index"] == env.spell_index for call in env.states_system.mark_calls)
 
@@ -2789,6 +2790,7 @@ def test_rollback_spellbook_move_restores_source_ownership() -> None:
         assert env.spell._key in env.source._spellbook._lookup_spells
         assert env.spell._key not in env.target._spellbook._lookup_spells
     assert env.spell._owner_conduit_id == SOURCE_ID
+    assert env.spell.spell_index._owner_conduit_id == SOURCE_ID
 
 
 def test_rollback_spellbook_move_restores_source_resolution_required_default() -> None:
@@ -3229,6 +3231,7 @@ def test_flip_registry_and_spellbooks_moves_spell_id_map() -> None:
     assert env.target._spellbook._spells_by_id[spell_id] is env.spell
     assert env.spell.spell_index._owner_spellbook is env.target._spellbook
     assert env.spell.spell_index._owner_spell is env.spell
+    assert env.spell.spell_index._owner_conduit_id == TARGET_ID
 
 
 def test_flip_registry_and_spellbooks_republishes_spell_to_nexus() -> None:

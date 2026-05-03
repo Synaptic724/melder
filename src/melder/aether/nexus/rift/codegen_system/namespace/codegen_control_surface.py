@@ -1,4 +1,5 @@
 from typing import Dict, Optional
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.rift.codegen_system.execution.codegen_execution_result import (
     CodegenExecutionResult,
@@ -31,6 +32,7 @@ class CodegenControlSurface:
           objects.
     """
 
+    __melder_internal__ = _mrg.sentinel
     __slots__ = [
         "_codegen_system",
         "_default_frame_name",

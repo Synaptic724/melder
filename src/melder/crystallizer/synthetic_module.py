@@ -3,6 +3,8 @@ import threading
 from types import ModuleType
 from typing import Any, Dict, List, Mapping, Optional, Sequence
 
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
 class SyntheticModule(ModuleType):
     """
     Live in-memory module embodiment for crystallized source.
@@ -23,6 +25,9 @@ class SyntheticModule(ModuleType):
     - cleanup is deterministic and unpublishes the module before dropping owned
       metadata
     """
+
+    __melder_internal__ = _mrg.sentinel
+    __melder_synthetic_module__ = True
 
     def __init__(
             self,

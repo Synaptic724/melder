@@ -1,4 +1,5 @@
 from typing import Dict, Optional
+from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
 
 from melder.aether.nexus.rift.projection.codegen_projection import CodegenProjection
 from melder.aether.nexus.rift.projection.command_projection import CommandProjection
@@ -22,6 +23,7 @@ class FrameProjectionSet(Cleanable):
         - Cleanup cascades into the owned projections.
     """
 
+    __melder_internal__ = _mrg.sentinel
     __slots__ = Cleanable.__slots__ + [
         "_frame_name",
         "_id",

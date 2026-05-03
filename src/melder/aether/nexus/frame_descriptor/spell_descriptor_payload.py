@@ -1,7 +1,7 @@
 import threading
 from typing import Any, Dict, Optional
-
 from melder.__melder_registration_guard__ import __melder_registration_guard__ as _mrg
+
 from melder.spellbook.spell_crafter.spell_examiner.profiles.binding_profile import (
     CallableBindingProfile,
     ClassBindingProfile,
