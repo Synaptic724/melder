@@ -167,6 +167,21 @@ class ISyntheticModule(ICleanable, Protocol):
         """Return whether the module is currently published in sys.modules."""
         ...
 
+    @property
+    def parent_name(self) -> Optional[str]:
+        """Return the parent package name, if any."""
+        ...
+
+    @property
+    def is_package(self) -> bool:
+        """Return whether the module behaves like a package shell."""
+        ...
+
+    @property
+    def executed_source(self) -> bool:
+        """Return whether the module source has executed at least once."""
+        ...
+
     def update_source_text(self, source_text: str, source_sha256: str) -> None:
         """
         Replace the module source text and fingerprint.
@@ -212,6 +227,15 @@ class ISyntheticModule(ICleanable, Protocol):
         """
         ...
 
+    def execute_source(self) -> None:
+        """
+        Execute the module source into the live namespace.
+
+        Returns:
+            None.
+        """
+        ...
+
     def publish_to_sys_modules(self) -> None:
         """
         Publish this module object into sys.modules.
@@ -227,6 +251,52 @@ class ISyntheticModule(ICleanable, Protocol):
 
         Returns:
             None.
+        """
+        ...
+
+    def register_in_import_registry(
+            self,
+            auto_parent_package_shells: bool = True,
+    ) -> None:
+        """
+        Register this module in the synthetic import registry.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def unregister_from_import_registry(self) -> None:
+        """
+        Remove this module from the synthetic import registry.
+
+        Returns:
+            None.
+        """
+        ...
+
+    def materialize(
+            self,
+            auto_parent_package_shells: bool = True,
+            install_import_hook: bool = False,
+    ) -> "ISyntheticModule":
+        """
+        Register, publish, and execute this module as live world state.
+
+        Returns:
+            ISyntheticModule: This live module object.
+        """
+        ...
+
+    def reload_via_importlib(
+            self,
+            install_import_hook: bool = True,
+    ) -> "ISyntheticModule":
+        """
+        Reload this registered module through importlib.
+
+        Returns:
+            ISyntheticModule: The reloaded live module object.
         """
         ...
 

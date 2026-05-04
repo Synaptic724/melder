@@ -1,21 +1,19 @@
 import sys
-import tempfile
 import shutil
 from pathlib import Path
 from types import ModuleType
 
+import pytest
+
 from melder.crystallizer.spell_crystal import SpellCrystal
 from melder.crystallizer.synthetic_module import SyntheticModule
-
-
-class _DummySpell:
-    """
-    Minimal spell double for `SpellCrystal` construction tests.
-    """
-
-    def __init__(self, spell_id: str, spell) -> None:
-        self.spell_id = spell_id
-        self.spell = spell
+from tests.mocks.crystallizer.spell_crystal_harness import (
+    DummySpell,
+    SYNTHETIC_CASES,
+    cleanup_synthetic_case,
+    install_synthetic_case,
+    synthetic_case_id,
+)
 
 
 def test_spell_crystal_records_unknown_import_targets_honestly() -> None:
@@ -47,7 +45,7 @@ def test_spell_crystal_records_unknown_import_targets_honestly() -> None:
             (),
             {"__module__": module_name},
         )
-        crystal = SpellCrystal(_DummySpell("spell-1", generated_service))
+        crystal = SpellCrystal(DummySpell("spell-1", generated_service))
 
         assert "missing_dep" in crystal.unknown_targets
         assert "another_missing" in crystal.unknown_targets
@@ -57,6 +55,131 @@ def test_spell_crystal_records_unknown_import_targets_honestly() -> None:
         if crystal is not None:
             crystal.cleanup()
         module.cleanup()
+        sys.modules.pop(module_name, None)
+
+@pytest.fixture(params=SYNTHETIC_CASES, ids=synthetic_case_id)
+def synthetic_case_crystal(request):
+    """
+    Build one synthetic graph case and the resulting `SpellCrystal`.
+    """
+    case = request.param
+    root_type, installed_modules = install_synthetic_case(case)
+    crystal = SpellCrystal(
+        DummySpell("unit-{0}".format(case["case_id"]), root_type)
+    )
+    try:
+        yield case, crystal
+    finally:
+        crystal.cleanup()
+        cleanup_synthetic_case(case, installed_modules)
+
+
+def test_unit_synthetic_case_collects_expected_module_targets(
+        synthetic_case_crystal,
+) -> None:
+    """
+    Verify each synthetic case records the full expected module target set.
+    """
+    case, crystal = synthetic_case_crystal
+    assert set(crystal.module_targets) == set(case["expected_module_targets"])
+
+
+def test_unit_synthetic_case_collects_expected_direct_dependencies(
+        synthetic_case_crystal,
+) -> None:
+    """
+    Verify each synthetic case records the expected direct dependency map.
+    """
+    case, crystal = synthetic_case_crystal
+    expected_direct_dependencies = case["expected_direct_dependencies"]
+    assert {
+        module_name: set(dependency_names)
+        for module_name, dependency_names in crystal.module_to_direct_dependencies.items()
+    } == {
+        module_name: set(dependency_names)
+        for module_name, dependency_names in expected_direct_dependencies.items()
+    }
+
+
+def test_unit_synthetic_case_classifies_all_modules_as_synthetic(
+        synthetic_case_crystal,
+) -> None:
+    """
+    Verify each synthetic case classifies every tracked module as synthetic.
+    """
+    case, crystal = synthetic_case_crystal
+    expected_kinds = case["expected_kind_by_module"]
+    assert crystal.module_to_kind == expected_kinds
+
+
+def test_unit_synthetic_case_collects_all_synthetic_targets(
+        synthetic_case_crystal,
+) -> None:
+    """
+    Verify each synthetic case mirrors all tracked modules into synthetic targets.
+    """
+    case, crystal = synthetic_case_crystal
+    assert set(crystal.synthetic_module_targets) == set(case["expected_module_targets"])
+
+
+def test_unit_synthetic_case_reports_no_unknown_targets_for_closed_graphs(
+        synthetic_case_crystal,
+) -> None:
+    """
+    Verify closed synthetic graph cases do not report unknown targets.
+    """
+    _case, crystal = synthetic_case_crystal
+    assert crystal.unknown_targets == []
+
+
+def test_unit_synthetic_case_reports_no_walk_errors_for_closed_graphs(
+        synthetic_case_crystal,
+) -> None:
+    """
+    Verify closed synthetic graph cases do not report walk errors.
+    """
+    _case, crystal = synthetic_case_crystal
+    assert crystal.walk_errors == []
+
+
+def test_unit_synthetic_case_root_metadata_is_stable(
+        synthetic_case_crystal,
+) -> None:
+    """
+    Verify each synthetic case exposes stable root manifest metadata.
+    """
+    case, crystal = synthetic_case_crystal
+    assert crystal.root_module_name == case["root_module_name"]
+    assert crystal.root_module_kind == "synthetic_module"
+    assert crystal.root_target_kind == "class"
+
+
+def test_unit_synthetic_case_describe_snapshot_matches_dependency_maps(
+        synthetic_case_crystal,
+) -> None:
+    """
+    Verify each synthetic case `describe()` snapshot mirrors the dependency map.
+    """
+    case, crystal = synthetic_case_crystal
+    description = crystal.describe()
+    assert set(description["module_targets"]) == set(case["expected_module_targets"])
+    assert {
+        module_name: set(dependency_names)
+        for module_name, dependency_names in description["module_to_direct_dependencies"].items()
+    } == {
+        module_name: set(dependency_names)
+        for module_name, dependency_names in case["expected_direct_dependencies"].items()
+    }
+
+
+def test_unit_synthetic_case_keeps_path_targets_empty_without_physical_projection(
+        synthetic_case_crystal,
+) -> None:
+    """
+    Verify pure synthetic cases do not fabricate physical path targets.
+    """
+    _case, crystal = synthetic_case_crystal
+    assert crystal.path_targets == []
 
 
 def test_spell_crystal_uses_configured_user_source_roots() -> None:
@@ -66,9 +189,14 @@ def test_spell_crystal_uses_configured_user_source_roots() -> None:
     Returns:
         None.
     """
-    temp_root = Path(tempfile.mkdtemp(prefix="spell_crystal_", dir="C:\\tmp"))
+    temp_root = (
+        Path(__file__).resolve().parent
+        / "_spell_crystal_test_data"
+        / "configured_user_source_roots"
+    )
+    shutil.rmtree(temp_root.parent, ignore_errors=True)
     package_root = temp_root / "demo_pkg"
-    package_root.mkdir()
+    package_root.mkdir(parents=True)
     (package_root / "__init__.py").write_text("", encoding="utf-8")
     (package_root / "helper.py").write_text(
         "class Helper:\n"
@@ -107,7 +235,7 @@ def test_spell_crystal_uses_configured_user_source_roots() -> None:
     crystal = None
     try:
         crystal = SpellCrystal(
-            _DummySpell("spell-2", target_service),
+            DummySpell("spell-2", target_service),
             user_source_root_paths=[temp_root],
         )
 
@@ -121,4 +249,4 @@ def test_spell_crystal_uses_configured_user_source_roots() -> None:
         sys.modules.pop("demo_pkg.target", None)
         sys.modules.pop("demo_pkg.helper", None)
         sys.modules.pop("demo_pkg", None)
-        shutil.rmtree(temp_root, ignore_errors=True)
+        shutil.rmtree(temp_root.parent, ignore_errors=True)
