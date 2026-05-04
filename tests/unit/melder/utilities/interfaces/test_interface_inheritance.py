@@ -1,3 +1,4 @@
+import importlib
 from typing import Dict
 
 import pytest
@@ -22,11 +23,13 @@ from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.spell import Spell
 from melder.spellbook.spellbook import Spellbook
+from melder.utilities.interfaces.assets.icleanable import ICleanable as AssetICleanable
 from melder.utilities.interfaces.interfaces import (
     IAether,
     IAethericFrame,
     IBind,
     IChangeControlManager,
+    ICleanable,
     IConduit,
     IConduitCloud,
     IConduitResolutionState,
@@ -71,6 +74,37 @@ _INTERFACE_MAP: Dict[type, type] = {
     ISpellSpace: SpellSpace,
     ISpellSystemStates: SpellSystemStates,
 }
+
+
+def test_interfaces_aggregator_exports_asset_icleanable() -> None:
+    """
+    Verify `interfaces.py` re-exports the asset-backed `ICleanable` contract.
+
+    Returns:
+        None.
+    """
+    assert ICleanable is AssetICleanable
+
+
+def test_interfaces_star_import_surface_matches___all__() -> None:
+    """
+    Verify the interfaces aggregator can populate a namespace from `__all__`.
+
+    Returns:
+        None.
+    """
+    interfaces_module = importlib.import_module(
+        "melder.utilities.interfaces.interfaces"
+    )
+    namespace = {}
+    exec(
+        "from melder.utilities.interfaces.interfaces import *",
+        {},
+        namespace,
+    )
+
+    for exported_name in interfaces_module.__all__:
+        assert exported_name in namespace
 
 
 @pytest.mark.parametrize(("interface_type", "implementation_type"), list(_INTERFACE_MAP.items()))
