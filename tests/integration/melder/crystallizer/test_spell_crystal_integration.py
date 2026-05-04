@@ -5,7 +5,8 @@ import pytest
 from melder.aether.aether import Aether
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.conduit.conduit import Conduit
-from melder.crystallizer.spell_crystal import SpellCrystal
+from melder.aether.nexus.nexus import Nexus
+from melder.crystallizer.crystallizer import Crystallizer
 from melder.spellbook.configuration.configuration import Configuration
 from melder.spellbook.existence.existence import Existence
 from melder.spellbook.spellbook import Spellbook
@@ -28,17 +29,39 @@ def reset_singletons_for_spell_crystal_integration() -> None:
     Returns:
         None.
     """
+    Nexus._reset_singleton_for_tests()
+    Crystallizer._reset_singleton_for_tests()
     AetherUtilitySystem._reset_singleton_for_tests()
     Aether._reset_singleton_for_tests()
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
     yield
+    Nexus._reset_singleton_for_tests()
+    Crystallizer._reset_singleton_for_tests()
     Aether._reset_singleton_for_tests()
     AetherUtilitySystem._reset_singleton_for_tests()
     aether = Aether()
     Spellbook._aether = aether
     Conduit._aether = aether
+
+
+def _create_integration_crystallizer() -> Crystallizer:
+    """
+    Build one activated hosted crystallizer for integration graph cases.
+
+    Returns:
+        Crystallizer: Activated hosted crystallizer.
+    """
+    aether = Aether()
+    crystallizer = aether._ensure_crystallizer()
+    configuration = (
+        crystallizer.create_configuration()
+        .with_user_source_root_paths((PHYSICAL_USER_SOURCE_ROOT,))
+        .activate()
+    )
+    crystallizer.activate(configuration)
+    return crystallizer
 
 
 def _make_configuration(frame_name: str) -> Configuration:
@@ -82,10 +105,7 @@ def integration_spell_crystal_case(request):
         existence=Existence.unique,
     )
     spell = spellbook._spells_by_id[spell_id]
-    crystal = SpellCrystal(
-        spell,
-        user_source_root_paths=[PHYSICAL_USER_SOURCE_ROOT],
-    )
+    crystal = _create_integration_crystallizer().create_spell_crystal(spell)
     try:
         yield case, spell_id, crystal
     finally:

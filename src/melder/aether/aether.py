@@ -5,6 +5,7 @@ import ulid
 # Melder Imports
 from melder.aether.aether_utility_system import AetherUtilitySystem
 from melder.aether.nexus.nexus import Nexus
+from melder.crystallizer.crystallizer import Crystallizer
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence
 from melder.aether.conduit.conduit_cluster import ConduitCluster
@@ -26,11 +27,12 @@ class Aether(Cleanable, IAether):
     conduit, cluster, spell, or DevOps state.
 
     Contract:
-    - Enforces singleton construction through `__new__`.
-    - Owns the lifecycle of registered `AethericFrame` instances.
-    - Owns the default frame and ensures it exists while the singleton is live.
-    - Hosts singleton-level subsystems such as Nexus and the utility system.
-    - Becomes reinitializable only after `cleanup()` fully resets singleton state.
+        - Enforces singleton construction through `__new__`.
+        - Owns the lifecycle of registered `AethericFrame` instances.
+        - Owns the default frame and ensures it exists while the singleton is live.
+        - Hosts singleton-level subsystems such as Nexus, Crystallizer, and the
+          utility system.
+        - Becomes reinitializable only after `cleanup()` fully resets singleton state.
 
     Threading / Concurrency:
     - Uses the class-level `_lock` to serialize singleton construction and reset.
@@ -92,6 +94,7 @@ class Aether(Cleanable, IAether):
             self._aetheric_frames = None
             self._default_frame = None
             self._nexus = None
+            self._crystallizer = None
             self._aether_utility_system = None
             self._logger = InitHelpers.resolve_safe_logger(None)
 
@@ -120,6 +123,7 @@ class Aether(Cleanable, IAether):
             # --- Frame setup ---
             self._aetheric_frames: Dict[str, AethericFrame] = {"default": AethericFrame(self, "default")}
             self._default_frame: AethericFrame = self._aetheric_frames["default"]
+            self._crystallizer: Crystallizer = self._ensure_crystallizer()
             self._nexus: INexus = Nexus(aether=self)
 
     def cleanup(self):
@@ -154,6 +158,9 @@ class Aether(Cleanable, IAether):
                     self._aetheric_frames.clear() # This cleans the ConcurrentDictionary
                     self._aetheric_frames = None
 
+                if self._crystallizer is not None:
+                    self._crystallizer.cleanup()
+                    self._crystallizer = None
                 if self._nexus is not None:
                     self._nexus.cleanup()
                     self._nexus = None
@@ -211,6 +218,26 @@ class Aether(Cleanable, IAether):
             finally:
                 cls._instance = None
                 cls._initialized = False
+
+    def _ensure_crystallizer(self) -> Crystallizer:
+        """
+        Ensure the singleton still has a live hosted crystallizer root.
+
+        Contract:
+            - Returns the currently hosted crystallizer when it exists and is
+              still live.
+            - Creates and stores a new hosted crystallizer when the host slot
+              is empty or the prior root has already been cleaned.
+
+        Returns:
+            Crystallizer: The live hosted crystallizer singleton.
+        """
+        self.check_cleaned()
+        with self._lock:
+            if self._crystallizer is not None and not self._crystallizer.cleaned:
+                return self._crystallizer
+            self._crystallizer = Crystallizer(aether=self)
+            return self._crystallizer
 
     def _ensure_default_frame(self) -> None:
         """

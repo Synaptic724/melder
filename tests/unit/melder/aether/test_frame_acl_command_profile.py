@@ -153,3 +153,4 @@ def test_frame_acl_command_profile_cleanup_rechecks_cleaned_inside_lock() -> Non
     thread.join(timeout=1.0)
 
     assert profile.cleaned is True
+    assert thread.is_alive() is False

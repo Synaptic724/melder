@@ -6,6 +6,7 @@ from melder.aether.aether import Aether
 from melder.aether.aetheric_frame import AethericFrame
 from melder.aether.aetheric_frame_configuration import AethericFrameConfiguration
 from melder.aether.nexus.nexus import Nexus
+from melder.crystallizer.crystallizer import Crystallizer
 from melder.utilities.interfaces.interfaces import IConduit, IConduitCloud
 from melder.spellbook.bind.spell_index import SpellIndex
 from melder.spellbook.existence.existence import Existence
@@ -125,6 +126,9 @@ def test_initialization_creates_default_frame(mock_frame_cls):
     assert isinstance(a._nexus, Nexus)
     assert a._nexus.is_configured is False
     assert a._nexus.is_enabled is False
+    assert isinstance(a._crystallizer, Crystallizer)
+    assert a._crystallizer.is_configured is False
+    assert a._crystallizer.is_activated is False
 
 def test_cleanup_clears_state(aether_with_mocks):
     """
@@ -145,6 +149,7 @@ def test_cleanup_clears_state(aether_with_mocks):
     assert a._aetheric_frames is None
     assert a._default_frame is None
     assert a._nexus is None
+    assert a._crystallizer is None
     default_frame.cleanup.assert_called_once()
     
     # Verify Singleton reset
@@ -387,6 +392,18 @@ def test_aether_privately_hosts_nexus_singleton(aether_with_mocks):
     assert nexus.is_enabled is False
 
 
+def test_aether_privately_hosts_crystallizer_singleton(aether_with_mocks):
+    """
+    Verify Aether boots a private hosted Crystallizer instance.
+    """
+    a = aether_with_mocks
+    crystallizer = Crystallizer()
+
+    assert a._crystallizer is crystallizer
+    assert crystallizer.is_configured is False
+    assert crystallizer.is_activated is False
+
+
 def test_aether_cleanup_cleans_hosted_nexus(aether_with_mocks):
     """
     Verify Aether cleanup tears down the hosted Nexus singleton.
@@ -398,6 +415,19 @@ def test_aether_cleanup_cleans_hosted_nexus(aether_with_mocks):
 
     assert nexus.cleaned is True
     assert a._nexus is None
+
+
+def test_aether_cleanup_cleans_hosted_crystallizer(aether_with_mocks):
+    """
+    Verify Aether cleanup tears down the hosted Crystallizer singleton.
+    """
+    a = aether_with_mocks
+    crystallizer = a._crystallizer
+
+    a.cleanup()
+
+    assert crystallizer.cleaned is True
+    assert a._crystallizer is None
 
 def test_add_conduit_delegates_to_custom_frame(aether_with_mocks):
     """_add_conduit delegates to a specific frame."""

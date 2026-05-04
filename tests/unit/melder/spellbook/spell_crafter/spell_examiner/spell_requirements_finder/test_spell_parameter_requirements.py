@@ -120,3 +120,4 @@ def test_cleanup_rechecks_cleaned_inside_lock() -> None:
     thread.join(timeout=1.0)
 
     assert req.cleaned is True
+    assert thread.is_alive() is False

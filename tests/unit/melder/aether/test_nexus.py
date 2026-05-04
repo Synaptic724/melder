@@ -2389,6 +2389,7 @@ def test_codegen_system_builds_stable_namespace_contract() -> None:
     assert namespace.configuration.exposed_names == (
         "viewer",
         "workstation",
+        "target",
         "command",
         "codegen",
     )

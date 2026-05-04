@@ -5,7 +5,10 @@ from types import ModuleType
 
 import pytest
 
-from melder.crystallizer.spell_crystal import SpellCrystal
+from melder.aether.aether import Aether
+from melder.aether.aether_utility_system import AetherUtilitySystem
+from melder.aether.nexus.nexus import Nexus
+from melder.crystallizer.crystallizer import Crystallizer
 from melder.crystallizer.synthetic_module import SyntheticModule
 from tests.mocks.crystallizer.spell_crystal_harness import (
     DummySpell,
@@ -14,6 +17,51 @@ from tests.mocks.crystallizer.spell_crystal_harness import (
     install_synthetic_case,
     synthetic_case_id,
 )
+
+
+@pytest.fixture(autouse=True)
+def reset_hosted_crystallizer_runtime() -> None:
+    """
+    Reset the hosted crystallizer runtime around each unit test.
+
+    Returns:
+        None.
+    """
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Crystallizer._reset_singleton_for_tests()
+    yield
+    Aether._reset_singleton_for_tests()
+    AetherUtilitySystem._reset_singleton_for_tests()
+    Nexus._reset_singleton_for_tests()
+    Crystallizer._reset_singleton_for_tests()
+
+
+def _create_activated_crystallizer(
+        user_source_root_paths=None,
+) -> Crystallizer:
+    """
+    Build one activated hosted crystallizer for test use.
+
+    Args:
+        user_source_root_paths:
+            Optional explicit user-source roots for the activation config.
+
+    Returns:
+        Crystallizer: Activated hosted crystallizer.
+    """
+    aether = Aether()
+    crystallizer = aether._ensure_crystallizer()
+    configuration = crystallizer.create_configuration()
+    if user_source_root_paths is None:
+        configuration = configuration.with_defaults().activate()
+    else:
+        configuration = configuration.with_user_source_root_paths(
+            user_source_root_paths
+        ).activate()
+    crystallizer.activate(configuration)
+    return crystallizer
 
 
 def test_spell_crystal_records_unknown_import_targets_honestly() -> None:
@@ -45,7 +93,9 @@ def test_spell_crystal_records_unknown_import_targets_honestly() -> None:
             (),
             {"__module__": module_name},
         )
-        crystal = SpellCrystal(DummySpell("spell-1", generated_service))
+        crystal = _create_activated_crystallizer().create_spell_crystal(
+            DummySpell("spell-1", generated_service)
+        )
 
         assert "missing_dep" in crystal.unknown_targets
         assert "another_missing" in crystal.unknown_targets
@@ -64,7 +114,7 @@ def synthetic_case_crystal(request):
     """
     case = request.param
     root_type, installed_modules = install_synthetic_case(case)
-    crystal = SpellCrystal(
+    crystal = _create_activated_crystallizer().create_spell_crystal(
         DummySpell("unit-{0}".format(case["case_id"]), root_type)
     )
     try:
@@ -234,9 +284,10 @@ def test_spell_crystal_uses_configured_user_source_roots() -> None:
     )
     crystal = None
     try:
-        crystal = SpellCrystal(
-            DummySpell("spell-2", target_service),
+        crystal = _create_activated_crystallizer(
             user_source_root_paths=[temp_root],
+        ).create_spell_crystal(
+            DummySpell("spell-2", target_service)
         )
 
         assert crystal.root_module_kind == "user_source"
